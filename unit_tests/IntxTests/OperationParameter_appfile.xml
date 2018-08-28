@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<Operation>
+  <Function>ComputeSolution</Function>
+  <Name>Compute Displacement Solution</Name>
+  <ProblemDefinition>OperationParameter_input.xml</ProblemDefinition>
+  <Input>
+    <ArgumentName>Topology</ArgumentName>
+  </Input>
+  <Parameter>
+    <ArgumentName>Traction X</ArgumentName>
+    <Target>[Plato Problem]:[Natural Boundary Conditions]:[Traction Vector Boundary Condition]:Values(0)</Target>
+    <InitialValue>0.0</InitialValue>
+  </Parameter>
+</Operation>

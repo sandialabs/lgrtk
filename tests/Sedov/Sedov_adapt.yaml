@@ -1,0 +1,102 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: Sedov.osh
+  Time: 
+    Steps: 20
+    Time Step Factor: 0.9
+    Number of States: 2
+  Visualization: 
+    Step Period: 4
+    Tags: 
+      Node: [coordinates, metric, class_dim, class_id, velocity]
+      Element: [class_id, mass_density, internal_energy_density, userMatID]
+  Associations: 
+    File: ./assoc.txt
+  Adaptivity: 
+    Every Step: false
+    Trigger Quality: 0.28
+    Trigger Length: 2.1
+    Debug Momentum: true
+    Always Recompute Metric: false
+    Debug Metric: false
+    Metric Tags: 
+      Element: [internal_energy_density]
+    Omega_h: 
+      Verbosity: Each Rebuild
+      Max Length Allowed: 2.1
+      Metric: 
+        Limit Lengths: true
+        Max Length: 0.1
+        Min Length: 0.01
+        Limit Gradation: true
+        Max Gradation Rate: 0.5
+        Sources: 
+          Resolve Energy Density: 
+            Type: Variation
+            Tag Name: internal_energy_density
+            Knob: 1.0
+            Isotropy: Preserve Length
+      Transfer: 
+        Fields: 
+          vel: 
+            Type: Momentum Velocity
+            Density: mass_density
+          mass_density: 
+            Type: Conserve
+            Integral: mass
+          internal_energy_density: 
+            Type: Conserve
+            Integral: internal_energy
+            Diffusion Convergence: 
+              Type: Relative
+              Tolerance: 0.8
+              Floor: 0.0
+          deformation_gradient: 
+            Type: Pointwise
+          fine_scale_displacement: 
+            Type: Pointwise
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    some gas: 
+      user id: 12
+      Model Type: ideal gas
+      gamma: 1.4
+      Element Block: [eb_1, eb_2]
+  Initial Conditions: 
+    block 1 density: 
+      Type: Constant
+      Variable: Density
+      Element Block: eb_1
+      Value: 1.0
+    block 1 ie: 
+      Type: Constant
+      Variable: Specific Internal Energy
+      Element Block: eb_1
+      Value: 1.0e-12
+    block 2 density: 
+      Type: Constant
+      Variable: Density
+      Element Block: eb_2
+      Value: 1.0
+    block 2 ie: 
+      Type: Constant
+      Variable: Specific Internal Energy
+      Element Block: eb_2
+      Value: 106.375
+  Boundary Conditions: 
+    X Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_3
+    Y Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_2
+    Z Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_1
+...

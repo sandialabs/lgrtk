@@ -1,0 +1,47 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: cylinder.osh
+  Time: 
+    Steps: 50
+  Visualization: 
+    Step Period: 10
+    Index Viz By Time: true
+    Tags: 
+      Node: [global, coordinates, velocity]
+      Element: [stress, time_step, mass_density, internal_energy_density, class_id]
+  Associations: 
+    File: assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    cylinder: 
+      user id: 1
+      Model Type: neo hookean
+      Youngs Modulus: 117.0e+09
+      Poissons Ratio: 0.35
+      Element Block: eb_1
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: eb_1
+      Value: 8930.0
+    Block 1 velocity: 
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, -227.0]
+      Nodeset: ns_2
+    Block 2 velocity:
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, -227.0]
+      Nodeset: ns_1
+  Contact:
+    Penalty Contact:
+      Type: Penalty
+      Penalty Coefficient: 1.0e06
+      Gap Length: -0.0165
+      Node Set: ns_1
+...

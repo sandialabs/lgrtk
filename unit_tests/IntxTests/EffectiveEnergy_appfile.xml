@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<Operation>
+  <Function>ComputeObjectiveValue</Function>
+  <Name>Compute Objective Value</Name>
+  <Input>
+    <ArgumentName>Topology</ArgumentName>
+  </Input>
+  <Output>
+    <ArgumentName>Objective Value</ArgumentName>
+  </Output>
+</Operation>

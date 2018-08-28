@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<Operation>
+  <Function>ComputeSolution</Function>
+  <Name>Compute Displacement Solution 1</Name>
+  <ProblemDefinition>MultipleProblemDefinitions_input_1.xml</ProblemDefinition>
+  <Input>
+    <ArgumentName>Topology</ArgumentName>
+  </Input>
+</Operation>
+
+<Operation>
+  <Function>ComputeSolution</Function>
+  <Name>Compute Displacement Solution 2</Name>
+  <ProblemDefinition>MultipleProblemDefinitions_input_2.xml</ProblemDefinition>
+  <Input>
+    <ArgumentName>Topology</ArgumentName>
+  </Input>
+</Operation>

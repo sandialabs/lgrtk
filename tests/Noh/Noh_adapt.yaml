@@ -1,0 +1,113 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: Noh.osh
+  Time: 
+    Steps: 50
+    Number of States: 2
+  Visualization: 
+    Step Period: 25
+    Tags: 
+      Node: 
+        - coordinates
+        - metric
+        - global
+        - class_dim
+        - class_id
+        - vel
+        - mass
+        - force
+        - momentum_velocity_fixed
+      Element: 
+        - global
+        - class_dim
+        - class_id
+        - spatialDensity
+        - userMatID
+        - momentum_velocity_fixed
+        - mass
+        - internal_energy
+        - deformation_gradient
+        - quality
+  Adaptivity: 
+    Every Step: true
+    Omega_h: 
+      Metric: 
+        Sources: 
+          Only Source: 
+            Type: Constant
+            Knob: 0.15
+      Transfer: 
+        Fields: 
+          vel: 
+            Type: Momentum Velocity
+            Density: mass_density
+          mass_density: 
+            Type: Conserve
+            Integral: mass
+          internal_energy_density: 
+            Type: Conserve
+            Integral: internal_energy
+          deformation_gradient: 
+            Type: Pointwise
+          fine_scale_displacement: 
+            Type: Pointwise
+      Verbosity: Each Rebuild
+  Associations: 
+    File: ./assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    some gas: 
+      user id: 12
+      Model Type: ideal gas
+      gamma: 1.4
+      Element Block: es_1
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: es_1
+      Value: 1.0
+    initial energy: 
+      Type: Constant
+      Variable: Specific Internal Energy
+      Element Block: es_1
+      Value: 1.0e-12
+    X Velocity block translation: 
+      Type: Constant
+      Variable: Velocity
+      Value: [-1.0, 0.0, 0.0]
+      Nodeset: ns_100
+    X Velocity left wall: 
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, 0.0]
+      Nodeset: ns_3
+  Boundary Conditions: 
+    X Zero Acceleration Face3 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_3
+    X Zero Acceleration Face5 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_5
+    Y Zero Acceleration Face2 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_2
+    Y Zero Acceleration Face4 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_4
+    Z Zero Acceleration Face1 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_1
+    Z Zero Acceleration Face6 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_6
+...

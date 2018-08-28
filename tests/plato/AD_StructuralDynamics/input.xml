@@ -1,0 +1,91 @@
+<ParameterList name="Problem">
+  <Parameter name="Physics" type="string" value="Plato Driver"/>
+  <Parameter  name="Spatial Dimension"    type="int"    value="2"/>
+
+  <Parameter name="Input Mesh" type="string" value="./beam2d.osh"/>
+
+  <ParameterList name="Visualization">
+    <Parameter name="Index Viz By Time" type="bool" value="false"/>
+    <ParameterList name="Tags">
+      <Parameter name="Node" type="Array(string)" value="{coordinates,displacement}"/>
+      <Parameter name="Element" type="Array(string)" value="{}"/>
+    </ParameterList>
+  </ParameterList>
+
+  <ParameterList  name="Associations">
+    <Parameter name="File" type="string" value="./beam2d_assoc.txt"/>
+  </ParameterList>
+ 
+  <ParameterList name="Plato Problem">
+    <Parameter name="Physics"         type="string"  value="StructuralDynamics"/>
+    <Parameter name="PDE Constraint"  type="string"  value="StructuralDynamics"/>
+    <Parameter name="Objective"       type="string"  value="Dynamic Compliance"/>
+
+    <ParameterList name="Dynamic Compliance">
+      <ParameterList name="Penalty Function">
+        <Parameter name="Type" type="string" value="SIMP"/>
+        <Parameter name="Exponent" type="double" value="1.0"/>
+      </ParameterList>
+    </ParameterList>
+
+    <ParameterList name="Frequency Steps">
+      <Parameter name="Values" type="Array(double)" value="{0}"/>
+      <Parameter name="Rayleigh Mass Damping" type="double" value="0.0"/>
+      <Parameter name="Rayleigh Stiffness Damping" type="double" value="0.0"/>
+    </ParameterList>
+
+    <ParameterList name="StructuralDynamics">
+      <ParameterList name="Penalty Function">
+        <Parameter name="Type" type="string" value="SIMP"/>
+        <Parameter name="Exponent" type="double" value="1.0"/>
+      </ParameterList>
+    </ParameterList>
+
+    <ParameterList name="Material Model">
+      <Parameter  name="Density" type="double" value="1000"/>
+      <ParameterList name="Isotropic Linear Elastic">
+        <Parameter  name="Poissons Ratio" type="double" value="0.3"/>
+        <Parameter  name="Youngs Modulus" type="double" value="1e8"/>
+      </ParameterList>
+    </ParameterList>
+  
+    <ParameterList  name="Natural Boundary Conditions">
+      <ParameterList  name="Traction Vector Boundary Condition">
+        <Parameter  name="Type"     type="string"        value="Uniform"/>
+        <Parameter  name="Values"   type="Array(double)" value="{0.0, 1.0e5, 0.0, 1.0e5}"/>
+        <Parameter  name="Sides"    type="string"        value="neumann"/>
+      </ParameterList>
+    </ParameterList>
+
+    <ParameterList  name="Essential Boundary Conditions">
+
+      <ParameterList  name="Real-X Fixed Displacement Boundary Condition">
+        <Parameter  name="Type"     type="string" value="Zero Value"/>
+        <Parameter  name="Index"    type="int"    value="0"/>
+        <Parameter  name="Sides"    type="string" value="dirichlet"/>
+      </ParameterList>
+
+      <ParameterList  name="Real-Y Fixed Displacement Boundary Condition">
+        <Parameter  name="Type"     type="string" value="Zero Value"/>
+        <Parameter  name="Index"    type="int"    value="1"/>
+        <Parameter  name="Sides"    type="string" value="dirichlet"/>
+      </ParameterList>
+
+      <ParameterList  name="Imag-X Fixed Displacement Boundary Condition">
+        <Parameter  name="Type"     type="string" value="Zero Value"/>
+        <Parameter  name="Index"    type="int"    value="2"/>
+        <Parameter  name="Sides"    type="string" value="dirichlet"/>
+      </ParameterList>
+
+      <ParameterList  name="Imag-Y Fixed Displacement Boundary Condition">
+        <Parameter  name="Type"     type="string" value="Zero Value"/>
+        <Parameter  name="Index"    type="int"    value="3"/>
+        <Parameter  name="Sides"    type="string" value="dirichlet"/>
+      </ParameterList>
+
+    </ParameterList>
+
+  </ParameterList>
+
+</ParameterList>
+

@@ -1,0 +1,49 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: cylinder.osh
+  Time: 
+    Steps: 10
+  Visualization: 
+    Step Period: 1
+    Index Viz By Time: true
+    Tags: 
+      Node: [global, coordinates, velocity, force]
+      Element: [time_step, mass_density, internal_energy_density, class_id, deformation_gradient]
+  Associations: 
+    File: assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    cylinder: 
+      user id: 1
+      Model Type: j2 plasticity
+      Youngs Modulus: 117.0e+09
+      Poissons Ratio: 0.35
+      Yield Stress: 400.0e+06
+      Hardening Modulus: 100.0e+06
+      Element Block: eb_1
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: eb_1
+      Value: 8930.0
+    Block 1 velocity: 
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, -227.0]
+      Nodeset: ns_2
+    Block 2 velocity:
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, -227.0]
+      Nodeset: ns_1
+  Contact:
+    Penalty Contact:
+      Type: Penalty
+      Penalty Coefficient: 1.0e14
+      Gap Length: 0.0
+      Node Set: ns_1
+...

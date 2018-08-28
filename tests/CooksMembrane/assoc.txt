@@ -1,0 +1,14 @@
+element set es_1 1
+3 1
+node set ns_1 1
+2 1
+node set ns_2 1
+2 2
+node set ns_3 1
+2 3
+node set ns_4 1
+2 4
+node set ns_5 1
+2 5
+node set ns_6 1
+2 6

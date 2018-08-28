@@ -1,0 +1,59 @@
+<ParameterList name="Problem">
+<!-- added lines -->
+  <Parameter name="Physics" type="string" value="Linear Elastostatics"/>
+  <Parameter  name="Spatial Dimension"    type="int"    value="3"/>
+  <Parameter  name="Use Block Matrix"    type="bool"    value="true"/>
+<!-- end added lines -->
+
+  <Parameter name="Input Mesh" type="string" value="./soap.osh"/>
+
+  <ParameterList name="Visualization">
+    <Parameter name="Index Viz By Time" type="bool" value="false"/>
+    <ParameterList name="Tags">
+      <Parameter name="Node" type="Array(string)" value="{coordinates,displacement}"/>
+      <Parameter name="Element" type="Array(string)" value="{}"/>
+    </ParameterList>
+  </ParameterList>
+
+  <ParameterList  name="Associations">
+    <Parameter name="File" type="string" value="./soap_assoc.txt"/>
+  </ParameterList>
+
+  <ParameterList  name="Field Data">
+    <Parameter  name="Linear Bulk Viscosity" type="double" value="0.15"/>
+    <Parameter  name="Quadratic Bulk Viscosity" type="double" value="1.5"/>
+  </ParameterList>
+
+  <ParameterList name="Material Model">
+    <ParameterList name="Isotropic Linear Elastic">
+      <Parameter  name="Poissons Ratio" type="double" value="0.3"/>
+      <Parameter  name="Youngs Modulus" type="double" value="1.0e6"/>
+    </ParameterList>
+  </ParameterList>
+
+  <ParameterList  name="Body Loads">
+    <ParameterList  name="Gravity Force">
+      <Parameter  name="Function" type="string" value="1.0"/>
+      <Parameter  name="Index"    type="int"    value="0"/>
+    </ParameterList>
+  </ParameterList>
+
+  <ParameterList  name="Essential Boundary Conditions">
+    <ParameterList  name="X Fixed Displacement Boundary Condition">
+      <Parameter  name="Type"     type="string" value="Zero Value"/>
+      <Parameter  name="Index"    type="int"    value="0"/>
+      <Parameter  name="Sides"    type="string" value="ns_1440"/>
+    </ParameterList>
+    <ParameterList  name="Y Fixed Displacement Boundary Condition">
+      <Parameter  name="Type"     type="string" value="Zero Value"/>
+      <Parameter  name="Index"    type="int"    value="1"/>
+      <Parameter  name="Sides"    type="string" value="ns_1440"/>
+    </ParameterList>
+    <ParameterList  name="Z Fixed Displacement Boundary Condition">
+      <Parameter  name="Type"     type="string" value="Zero Value"/>
+      <Parameter  name="Index"    type="int"    value="2"/>
+      <Parameter  name="Sides"    type="string" value="ns_1440"/>
+    </ParameterList>
+  </ParameterList>
+</ParameterList>
+
