@@ -1,0 +1,78 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: Noh.osh
+  Time: 
+    Steps: 100
+    Number of States: 2
+  Visualization: 
+    Step Period: 100
+    Tags: 
+      Node: [coordinates, global, class_dim, class_id, vel, mass, force]
+      Element: [global, class_dim, class_id, spatialDensity, userMatID]
+  Scatterplots: 
+    Density: 
+      File: density.csv
+      Field: mass_density
+      Entity: Cell
+      Direction: [1.0, 0.0, 0.0]
+  ExactSolution:
+    Value: x + y + z 
+  Associations: 
+    File: ./assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    some gas: 
+      user id: 12
+      Model Type: ideal gas
+      gamma: 1.4
+      Element Block: es_1
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: es_1
+      Value: 1.0
+    initial energy: 
+      Type: Constant
+      Variable: Specific Internal Energy
+      Element Block: es_1
+      Value: 1.0e-12
+    X Velocity block translation: 
+      Type: Constant
+      Variable: Velocity
+      Value: [-1.0, 0.0, 0.0]
+      Nodeset: ns_100
+    X Velocity left wall: 
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, 0.0]
+      Nodeset: ns_3
+  Boundary Conditions: 
+    X Zero Acceleration Face3 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_3
+    X Zero Acceleration Face5 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_5
+    Y Zero Acceleration Face2 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_2
+    Y Zero Acceleration Face4 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_4
+    Z Zero Acceleration Face1 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_1
+    Z Zero Acceleration Face6 Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_6
+...

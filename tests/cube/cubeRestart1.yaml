@@ -1,0 +1,77 @@
+%YAML 1.1
+---
+Problem:
+  Input Mesh: cube.osh
+  Time: 
+    Steps: 500
+    Number of States: 2
+    Fixed Time Step: 1.0e-6
+  Visualization: 
+    Step Period: 100
+    Tags: 
+      Node: 
+        - coordinates
+        - global
+        - class_dim
+        - class_id
+        - vel
+        - nodal_mass
+        - force
+      Element:
+        - global
+        - class_dim
+        - class_id
+        - mass_density
+        - userMatID
+  Restart:
+    Step Period: 500
+  Associations: 
+    Element Sets: 
+      eb_1: [[3, 95]]
+    Node Sets: 
+      ns_1: [[2, 85]]
+      ns_2: [[2, 83], [2, 43]]
+    Side Sets: 
+      ss_1: [[2, 81]]
+  Material Models: 
+    some solid: 
+      user id: 27
+      Model Type: neo hookean
+      Youngs Modulus: 1.0e+06
+      Poissons Ratio: 0.0
+      Element Block: [eb_1]
+  Field Data: 
+    Linear Bulk Viscosity: 0.0
+    Quadratic Bulk Viscosity: 0.0
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: [eb_1]
+      Value: 8.0e-04
+    initial energy: 
+      Type: Constant
+      Variable: Specific Internal Energy
+      Element Block: [eb_1]
+      Value: 0.0e+00
+    X Velocity pulse on left side: 
+      Type: Constant
+      Variable: Velocity
+      Value: [1.0e+03, 0.0, 0.0]
+      Nodeset: ns_1
+  Boundary Conditions: 
+    X Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_1
+    Y Zero Acceleration Boundary Condition: 
+      Type: Fixed Acceleration
+      Index: 1
+      Sides: ns_1
+      Value: 0.0
+    Z Zero Acceleration Boundary Condition: 
+      Type: Function Acceleration
+      Index: 2
+      Sides: ns_1
+      Value: '0.0'
+...

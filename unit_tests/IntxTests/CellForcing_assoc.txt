@@ -1,0 +1,24 @@
+node set ns_1 1
+2 7
+node set ns_2 1
+2 8
+node set ns_3 1
+2 9
+node set ns_4 1
+2 10
+node set ns_5 1
+2 11
+node set ns_6 1
+2 12
+side set ss_1 1
+2 1
+side set ss_2 1
+2 2
+side set ss_3 1
+2 3
+side set ss_4 1
+2 4
+side set ss_5 1
+2 5
+side set ss_6 1
+2 6

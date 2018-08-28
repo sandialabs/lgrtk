@@ -1,0 +1,108 @@
+  <!-- Source: 
+       author  = Stephane Del Pino,
+       title   = "Metric-based mesh adaptation for 2D Lagrangian compressible flows",
+       journal = Journal of Computational Physics,
+       year    = 2011,
+       volume  = 203,
+       pages   = {1793-1821}
+  -->
+  <ParameterList name="Problem">
+    <Parameter docString="Query and Print machine parameters and exit."  name="Query" type="bool" value="false"/>
+    <ParameterList  name="Kokkos">
+      <Parameter docString="Name of the input vtk file to use."  name="Input Filename" type="string" value="triple_point_problem.vtu"/>
+      <Parameter docString="Name of the model dmg file to use."  name="Model Filename" type="string" value="triple_point_problem.dmg"/>
+    </ParameterList>
+    <ParameterList  name="Time">
+      <Parameter docString=""  name="Termination Time" type="double" value="4."/>
+      <Parameter docString=""  name="Time Step Factor" type="double" value=".90"/>
+      <Parameter docString=""  name="Number of States" type="int" value="2"/>
+      <Parameter docString=""  name="Plot Time Period" type="double" value=".05"/>
+    </ParameterList>
+    <ParameterList  name="PUMI Mesh Associations">
+      <Parameter docString="Name of the associations text file to use."  name="Associations Filename" type="string" value="./assoc.txt"/>
+    </ParameterList>
+    <ParameterList  name="Field Data">
+      <Parameter  name="Linear Bulk Viscosity" type="double" value="0.15"/>
+      <Parameter  name="Quadratic Bulk Viscosity" type="double" value="1.2"/>
+    </ParameterList>
+
+   <ParameterList name="Adaptivity">
+      <Parameter name="Isotropic Size" type="double" value=".25"/>
+   </ParameterList>
+    
+   <ParameterList name="Material Models">
+      <ParameterList name="green">
+        <Parameter  name="user id"  type="int" value="1"/>
+        <Parameter  name="Model Type" type="string" value="ideal gas"/>
+        <Parameter  name="gamma" type="double" value="1.5"/>
+        <Parameter  name="Element Block"  type="Array(string)" value="{eb_1}"/>
+      </ParameterList>  
+      <ParameterList name="blue">
+        <Parameter  name="user id"  type="int" value="3"/>
+        <Parameter  name="Model Type" type="string" value="ideal gas"/>
+        <Parameter  name="gamma" type="double" value="1.5"/>
+        <Parameter  name="Element Block"  type="Array(string)" value="{eb_3}"/>
+      </ParameterList>  
+      <ParameterList name="red">
+        <Parameter  name="user id"  type="int" value="2"/>
+        <Parameter  name="Model Type" type="string" value="ideal gas"/>
+        <Parameter  name="gamma" type="double" value="1.4"/>
+        <Parameter  name="Element Block"  type="Array(string)" value="{eb_2}"/>
+      </ParameterList>  
+   </ParameterList>
+   <ParameterList  name="Initial Conditions">
+     <ParameterList  name="block 1 density">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Density"/>
+       <Parameter  name="Element Block"    type="string" value="eb_1"/>
+       <Parameter  name="Value"    type="double" value="0.1"/>
+     </ParameterList>
+     <ParameterList  name="block 1 ie">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Internal Energy"/>
+       <Parameter  name="Element Block"    type="string" value="eb_1"/>
+       <Parameter  name="Value"    type="double" value="2.5"/>
+     </ParameterList>
+     <ParameterList  name="block 2 density">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Density"/>
+       <Parameter  name="Element Block"    type="string" value="eb_2"/>
+       <Parameter  name="Value"    type="double" value="1.0"/>
+     </ParameterList>
+     <ParameterList  name="block 2 ie">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Internal Energy"/>
+       <Parameter  name="Element Block"    type="string" value="eb_2"/>
+       <Parameter  name="Value"    type="double" value="0.3125"/>
+     </ParameterList>
+     <ParameterList  name="block 3 density">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Density"/>
+       <Parameter  name="Element Block"    type="string" value="eb_3"/>
+       <Parameter  name="Value"    type="double" value="1.0"/>
+     </ParameterList>
+     <ParameterList  name="block 3 ie">
+       <Parameter  name="Type"     type="string" value="Constant"/>
+       <Parameter  name="Variable" type="string" value="Internal Energy"/>
+       <Parameter  name="Element Block"    type="string" value="eb_3"/>
+       <Parameter  name="Value"    type="double" value="2."/>
+     </ParameterList>
+   </ParameterList>
+   <ParameterList  name="Boundary Conditions">
+     <ParameterList  name="X Zero Acceleration Boundary Condition">
+       <Parameter  name="Type"     type="string" value="Zero Acceleration"/>
+       <Parameter  name="Index"    type="int"    value="0"/>
+       <Parameter  name="Sides"    type="string" value="ns_3"/>
+     </ParameterList>
+     <ParameterList  name="Y Zero Acceleration Boundary Condition">
+       <Parameter  name="Type"     type="string" value="Zero Acceleration"/>
+       <Parameter  name="Index"    type="int"    value="1"/>
+       <Parameter  name="Sides"    type="string" value="ns_2"/>
+     </ParameterList>
+     <ParameterList  name="Z Zero Acceleration Boundary Condition">
+       <Parameter  name="Type"     type="string" value="Zero Acceleration"/>
+       <Parameter  name="Index"    type="int"    value="2"/>
+       <Parameter  name="Sides"    type="string" value="ns_1"/>
+     </ParameterList>
+   </ParameterList>
+ </ParameterList>

@@ -1,0 +1,57 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Input Mesh: ../cube/cube.osh
+  Time: 
+    Steps: 2000
+    Number of States: 2
+    Fixed Time Step: 1.0e-6
+  Visualization: 
+    Step Period: 100
+    Tags: 
+      Node: [coordinates, global, class_dim, class_id, vel, nodal_mass, force]
+      Element: [global, class_dim, class_id, mass_density, userMatID]
+  Associations: 
+    File: ../cube/assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 0.15
+    Quadratic Bulk Viscosity: 1.2
+  Material Models: 
+    some solid: 
+      user id: 12
+      Model Type: mie gruneisen
+      rho0: 8960.0
+      Gamma0: 2.0
+      cs: 3933.0
+      s1: 1.5
+      Element Block: es_1
+  Initial Conditions: 
+    initial density: 
+      Type: Function
+      Variable: Density
+      Element Block: es_1
+      Value: '8960.0'
+    initial energy: 
+      Type: Function
+      Variable: Specific Internal Energy
+      Element Block: es_1
+      Value: '5.654296875'
+    X Velocity pulse on left side: 
+      Type: Function
+      Variable: Velocity
+      Nodeset: ns_1
+      Value: 'vector(1.0e3,0,0)'
+  Boundary Conditions: 
+    X Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_1
+    Y Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_1
+    Z Zero Acceleration Boundary Condition: 
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_1
+...

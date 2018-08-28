@@ -1,0 +1,70 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Query: false
+  Input Mesh: ./CooksMembrane.osh
+  Time: 
+    Steps: 1000
+    Number of States: 2
+  Visualization: 
+    Step Period: 100
+    Tags: 
+      Node: [coordinates, global, class_dim, class_id, vel, mass, force]
+      Element: [stress, global, class_dim, class_id, spatialDensity, userMatID]
+  Associations: 
+    File: ./assoc.txt
+  Field Data: 
+    Linear Bulk Viscosity: 1.5e-01
+    Quadratic Bulk Viscosity: 1.2e+00
+  Material Models: 
+    plate: # Properties from Scovazzi et al., 2015, IJNME
+      user id: 1
+      Model Type: neo hookean
+      Youngs Modulus: 250.
+      Poissons Ratio: 0.33
+      Element Block: es_1
+  Initial Conditions: 
+    initial density: 
+      Type: Constant
+      Variable: Density
+      Element Block: es_1
+      Value: 1.
+    initial energy: 
+      Type: Constant
+      Variable: Internal Energy
+      Element Block: es_1
+      Value: 1.e-12
+    X Velocity left wall: 
+      Type: Constant
+      Variable: Velocity
+      Value: [0.0, 0.0, 0.0]
+      Nodeset: ns_3
+  Boundary Conditions:
+    Constrain X Face 2 X:
+      Type: Zero Acceleration
+      Index: 0
+      Sides: ns_2
+    Constrain X Face 2 Y:
+      Type: Zero Acceleration
+      Index: 1
+      Sides: ns_2
+    Constrain X Face 2 Z:
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_2
+    Constrain Z Face1:
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_1
+    Constrain Z Face6:
+      Type: Zero Acceleration
+      Index: 2
+      Sides: ns_6
+  Traction Boundary Conditions:
+    Traction X Face 4:
+      Type: Fixed Traction
+      Index: 1
+      Sides: ns_4
+      Value: 10.
+...
+

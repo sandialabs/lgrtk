@@ -1,0 +1,18 @@
+## /projects/cubit/claro.Lin64.15.3/bin/cubitx
+## Cubit Version 15.3
+## Cubit Build 410037
+## Revised 2017-08-28 12:10:34 -0600 (Mon, 28 Aug 2017)
+## Running 10/25/2017 04:21:42 PM
+## Command Options:
+create brick x 2 y 1 z 0.75
+webcut volume 1 with cylinder radius 0.25 axis z
+delete volume 2
+move volume all x 1
+volume all scheme tetmesh
+body all size 0.1
+mesh volume all
+nodeset 1440 surface 4
+sideset 2 surface 6
+block 1 volume 1
+block 1 element type TETRA
+export mesh "soap.gen" overwrite

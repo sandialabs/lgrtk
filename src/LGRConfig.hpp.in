@@ -1,0 +1,10 @@
+#ifndef LGR_CONFIG_HPP
+#define LGR_CONFIG_HPP
+
+#cmakedefine LGR_ENABLE_PLATO
+
+const int version_major = @LGR_VERSION_MAJOR@ ;
+const int version_minor = @LGR_VERSION_MINOR@ ;
+const int version_patch = @LGR_VERSION_PATCH@ ;
+
+#endif

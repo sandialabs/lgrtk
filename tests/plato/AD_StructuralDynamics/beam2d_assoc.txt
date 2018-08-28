@@ -1,0 +1,4 @@
+side set neumann 1
+1 2
+node set dirichlet 1
+1 5
