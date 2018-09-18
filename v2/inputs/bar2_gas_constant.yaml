@@ -1,0 +1,60 @@
+lgr:
+  end time: 1.0
+  element type: Bar2
+  mesh:
+    box:
+      x elements: 2
+  material models:
+    model1:
+      type: perfect gas
+  conditions:
+    density:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    heat capacity ratio:
+      cond1:
+        at time: 0.0
+        value: '1.4'
+    specific internal energy:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    stress:
+      cond1:
+        at time: 0.0
+        value: '0.0'
+    velocity:
+      cond1:
+        at time: 0.0
+        value: 'vector(1.0)'
+    acceleration:
+      cond1:
+        sets: ['x-', 'x+']
+        value: 'vector(0.0)'
+  scalars:
+    stress error:
+      type: L2 error
+      field: stress
+      expected value: '-0.4'
+  responses:
+#   viz:
+#     type: VTK output
+#     fields:
+#       - velocity
+#       - specific internal energy
+#       - stress
+    stdout:
+      type: command line history
+      scalars:
+        - step
+        - CPU time
+        - time
+        - dt
+        - stress error
+    stress regression:
+      type: comparison
+      scalar: stress error
+      expected value: '0.0'
+      tolerance: 0.0
+      floor: 2.0e-16

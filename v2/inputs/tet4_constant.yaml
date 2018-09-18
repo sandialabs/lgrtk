@@ -1,0 +1,55 @@
+lgr:
+  end time: 1.0
+  print all fields: false
+  element type: Tet4
+  mesh:
+    box:
+      x elements: 2
+      y elements: 2
+      z elements: 2
+  material models:
+    model1:
+      type: linear elastic
+  conditions:
+    density:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    bulk modulus:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    shear modulus:
+      cond1:
+        at time: 0.0
+        value: '0.0'
+    deformation gradient:
+      cond1:
+        at time: 0.0
+        value: 'I'
+    velocity:
+      cond1:
+        at time: 0.0
+        value: 'vector(1.0)'
+  scalars:
+    velocity error:
+      type: L2 error
+      field: velocity
+      expected value: 'vector(1.0)'
+  responses:
+#   viz:
+#     type: VTK output
+#     fields:
+#       - velocity
+    stdout:
+      type: command line history
+      scalars:
+        - step
+        - CPU time
+        - time
+        - dt
+        - velocity error
+    regression:
+      type: comparison
+      scalar: velocity error
+      expected value: '0.0'

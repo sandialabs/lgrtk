@@ -1,0 +1,68 @@
+#include <lgr_vtk_output.hpp>
+#include <Omega_h_file.hpp>
+#include <lgr_field_index.hpp>
+#include <lgr_response.hpp>
+#include <lgr_simulation.hpp>
+
+namespace lgr {
+
+struct VtkOutput : public Response {
+  std::vector<FieldIndex> field_indices;
+  Omega_h::vtk::Writer writer;
+  Omega_h::TagSet tags;
+  VtkOutput(Simulation& sim_in, Teuchos::ParameterList& pl)
+    :Response(sim_in, pl)
+    ,writer(pl.get<std::string>("path", "lgr_viz"), &sim.disc.mesh, sim.dim(), sim.time, Omega_h::vtk::dont_compress)
+  {
+    auto stdim = std::size_t(sim.dim());
+    std::map<std::string, std::size_t> omega_h_tags = {{"quality", stdim}, {"metric", 0}};
+    auto field_names_in = pl.get<Teuchos::Array<std::string>>("fields");
+    for (auto& field_name : field_names_in) {
+      if (omega_h_tags.count(field_name)) {
+        tags[omega_h_tags[field_name]].insert(field_name);
+        continue;
+      }
+      auto fi = sim.fields.find(field_name);
+      if (!fi.is_valid()) {
+        Omega_h_fail("Cannot visualize "
+            "undefined field \"%s\"\n", field_name.c_str());
+      }
+      auto support = sim.fields[fi].support;
+      if (!support->subset->mapping.is_identity) {
+        Omega_h_fail("\"%s\" is on a subset of the mesh, "
+            "and Dan hasn't coded support for visualizing that yet!\n",
+            field_name.c_str());
+      }
+      if (support->subset->entity_type == NODES) {
+        tags[0].insert(field_name);
+      } else if (support->subset->entity_type == ELEMS) {
+        if (support->on_points() && (sim.disc.points_per_ent(ELEMS) > 1)) {
+          Omega_h_fail("\"%s\" is on integration points, and there is more than one per element, "
+              "and Dan hasn't coded support for visualizing that yet!\n",
+              field_name.c_str());
+        } else {
+          tags[std::size_t(sim.dim())].insert(field_name);
+        }
+      } else {
+        Omega_h_fail("\"%s\" is not on nodes or elements, VTK can't visualize it!\n",
+            field_name.c_str());
+      }
+      field_indices.push_back(fi);
+    }
+  }
+  void out_of_line_virtual_method() override;
+  void respond() override final {
+    sim.disc.mesh.set_coords(sim.get(sim.position)); // linear specific!
+    sim.fields.copy_to_omega_h(sim.disc, field_indices);
+    writer.write(sim.step, sim.time, tags);
+    sim.fields.remove_from_omega_h(sim.disc, field_indices);
+  }
+};
+
+void VtkOutput::out_of_line_virtual_method() {}
+
+Response* vtk_output_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+  return new VtkOutput(sim, pl);
+}
+
+}
