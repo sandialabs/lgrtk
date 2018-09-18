@@ -85,9 +85,6 @@ lgr:
         at time: 0.0
         value: 'vector(-1.0, 0.0)'
     acceleration:
-      cond0:
-        at time: 0.0
-        value: 'vector(0.0, 0.0)'
       cond1:
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'

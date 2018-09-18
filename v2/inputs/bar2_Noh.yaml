@@ -39,9 +39,6 @@ lgr:
         at time: 0.0
         value: 'norm(x) > 1.0e-10 ? -x / norm(x) : vector(0.0)'
     acceleration:
-      cond1:
-        at time: 0.0
-        value: 'vector(0.0)'
       cond2:
         sets: ['x-']
         value: 'vector(0.0)'
