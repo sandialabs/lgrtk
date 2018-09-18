@@ -1,4 +1,4 @@
-#include <lgr_perfect_gas.hpp>
+#include <lgr_internal_energy.hpp>
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
