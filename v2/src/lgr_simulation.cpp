@@ -130,6 +130,7 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   //fields[position].remap_type = RemapType::NODAL; // position is special
   velocity = fields.define("v", "velocity", dim(), NODES, false, everywhere);
   fields[velocity].remap_type = RemapType::NODAL;
+  fields[velocity].default_value = "vector(0.0)";
   acceleration = fields.define("a", "acceleration", dim(), NODES, false, everywhere);
   fields[acceleration].remap_type = RemapType::NODAL;
   force = fields.define("f", "force", dim(), NODES, false, everywhere);
