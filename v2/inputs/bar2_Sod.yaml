@@ -38,10 +38,6 @@ lgr:
       cond1:
         at time: 0.0
         value: 'symm(0.0)'
-    velocity:
-      cond1:
-        at time: 0.0
-        value: 'vector(0.0)'
     acceleration:
       cond1:
         at time: 0.0
