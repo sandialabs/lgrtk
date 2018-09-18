@@ -1,5 +1,6 @@
 #include <lgr_subsets.hpp>
 #include <lgr_subset.hpp>
+#include <lgr_disc.hpp>
 #include <Omega_h_map.hpp>
 
 namespace lgr {
@@ -68,7 +69,7 @@ void SubsetBridge::learn_disc(Subsets& all_subsets, TypeSubsets& type_subsets) {
         "a subset not allowed\n");
   } else {
     auto& by_class_names = type_subsets.by_class_names;
-    auto it2 = by_class_names.find({});
+    auto it2 = by_class_names.find(all_subsets.disc.covering_class_names());
     OMEGA_H_CHECK(it2 != by_class_names.end());
     auto& identity = *it2;
     auto ntotal = identity.count();
