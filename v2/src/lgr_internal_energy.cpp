@@ -16,6 +16,7 @@ struct InternalEnergy : public Model<Elem> {
     specific_internal_energy_rate =
       this->point_define("e_dot", "specific internal energy rate", 1,
           RemapType::PER_UNIT_VOLUME, "");
+    this->sim.fields[this->sim.stress].default_value = "symm(0.0)";
   }
   ModelOrder order() override final { return IS_FIELD_UPDATE; }
   char const* name() override final { return "internal energy"; }

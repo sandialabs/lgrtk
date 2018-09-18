@@ -40,14 +40,14 @@ lgr:
 #     type: VTK output
 #     fields:
 #       - velocity
-    stdout:
-      type: command line history
-      scalars:
-        - step
-        - CPU time
-        - time
-        - dt
-        - velocity error
+#   stdout:
+#     type: command line history
+#     scalars:
+#       - step
+#       - CPU time
+#       - time
+#       - dt
+#       - velocity error
     regression:
       type: comparison
       scalar: velocity error

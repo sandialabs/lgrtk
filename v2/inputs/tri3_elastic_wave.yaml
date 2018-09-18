@@ -56,13 +56,13 @@ lgr:
 #     fields:
 #       - velocity
 #       - density
-    stdout:
-      type: command line history
-      scalars:
-        - step
-        - time
-        - dt
-        - velocity error
+#   stdout:
+#     type: command line history
+#     scalars:
+#       - step
+#       - time
+#       - dt
+#       - velocity error
     regression:
       type: comparison
       scalar: velocity error
