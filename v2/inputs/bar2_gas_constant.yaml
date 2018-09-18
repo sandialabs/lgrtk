@@ -6,7 +6,7 @@ lgr:
       x elements: 2
   material models:
     model1:
-      type: perfect gas
+      type: ideal gas
   conditions:
     density:
       cond1:

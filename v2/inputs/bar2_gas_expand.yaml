@@ -8,7 +8,7 @@ lgr:
       x size: 1.0
   material models:
     model1:
-      type: perfect gas
+      type: ideal gas
   conditions:
     density:
       cond1:

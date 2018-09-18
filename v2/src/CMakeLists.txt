@@ -7,7 +7,7 @@ add_library(lgr_library
     lgr_hydro.cpp
     lgr_linear_elastic.cpp
     lgr_hyper_ep.cpp
-    lgr_perfect_gas.cpp
+    lgr_ideal_gas.cpp
     lgr_mie_gruneisen.cpp
     lgr_model.cpp
     lgr_models.cpp
