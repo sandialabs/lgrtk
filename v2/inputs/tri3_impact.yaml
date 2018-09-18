@@ -75,10 +75,6 @@ lgr:
       cond1:
         at time: 0.0
         value: '0.0'
-    stress:
-      cond1:
-        at time: 0.0
-        value: 'symm(0.0)'
     velocity:
       cond1:
         sets: ['near_fluid', 'far_fluid', 'wall']

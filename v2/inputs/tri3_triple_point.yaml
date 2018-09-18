@@ -94,10 +94,6 @@ lgr:
       cond1:
         at time: 0.0
         value: '0.0'
-    stress:
-      cond1:
-        at time: 0.0
-        value: 'symm(0.0)'
     acceleration:
       cond0:
         at time: 0.0
