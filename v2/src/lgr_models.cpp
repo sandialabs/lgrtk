@@ -4,6 +4,7 @@
 #include <lgr_hyper_ep.hpp>
 #include <lgr_perfect_gas.hpp>
 #include <lgr_mie_gruneisen.hpp>
+#include <lgr_neo_hookean.hpp>
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_deformation_gradient.hpp>
@@ -58,6 +59,7 @@ ModelFactories get_builtin_material_model_factories() {
   out["hyper elastic-plastic"] = hyper_ep_factory<Elem>;
   out["perfect gas"] = perfect_gas_factory<Elem>;
   out["Mie-Gruneisen"] = mie_gruneisen_factory<Elem>;
+  out["neo-Hookean"] = neo_hookean_factory<Elem>;
   return out;
 }
 
