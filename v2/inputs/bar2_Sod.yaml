@@ -35,9 +35,6 @@ lgr:
         at time: 0.0
         value: '0.0'
     acceleration:
-      cond1:
-        at time: 0.0
-        value: 'vector(0.0)'
       cond2:
         sets: ['x-', 'x+']
         value: 'vector(0.0)'
