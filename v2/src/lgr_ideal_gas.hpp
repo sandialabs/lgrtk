@@ -7,7 +7,7 @@
 
 namespace lgr {
 
-OMEGA_H_INLINE void perfect_gas_update(
+OMEGA_H_INLINE void ideal_gas_update(
     double gamma,
     double density,
     double specific_internal_energy,
@@ -21,10 +21,10 @@ OMEGA_H_INLINE void perfect_gas_update(
 }
 
 template <class Elem>
-ModelBase* perfect_gas_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl);
+ModelBase* ideal_gas_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl);
 
 #define LGR_EXPL_INST(Elem) \
-extern template ModelBase* perfect_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+extern template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

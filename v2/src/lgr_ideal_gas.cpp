@@ -1,4 +1,4 @@
-#include <lgr_perfect_gas.hpp>
+#include <lgr_ideal_gas.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
 
@@ -22,7 +22,7 @@ struct PerfectGas : public Model<Elem> {
     this->sim.fields[this->sim.stress].remap_type = RemapType::PER_UNIT_VOLUME;
   }
   ModelOrder order() override final { return IS_MATERIAL_MODEL; }
-  char const* name() override final { return "perfect gas"; }
+  char const* name() override final { return "ideal gas"; }
   void update_state() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_rho = this->points_get(this->sim.density);
@@ -40,22 +40,22 @@ struct PerfectGas : public Model<Elem> {
       auto gamma = points_to_gamma[point];
       double c;
       double pressure;
-      perfect_gas_update(gamma, rho_np1, e_np1_est, pressure, c);
+      ideal_gas_update(gamma, rho_np1, e_np1_est, pressure, c);
       auto sigma = diagonal(fill_vector<Elem::dim>(-pressure));
       setsymm<Elem>(points_to_sigma, point, sigma);
       points_to_c[point] = c;
     };
-    parallel_for("perfect gas kernel", this->points(), std::move(functor));
+    parallel_for("ideal gas kernel", this->points(), std::move(functor));
   }
 };
 
 template <class Elem>
-ModelBase* perfect_gas_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* ideal_gas_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
   return new PerfectGas<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* perfect_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

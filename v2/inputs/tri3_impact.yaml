@@ -40,7 +40,7 @@ lgr:
     element count: 1000.0
   material models:
     model1:
-      type: perfect gas
+      type: ideal gas
   modifiers:
     model2:
       type: artificial viscosity
