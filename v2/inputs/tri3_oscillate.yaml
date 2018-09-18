@@ -1,0 +1,80 @@
+lgr:
+  CFL: 0.1
+  end time: 6.28
+  element type: Tri3
+  mesh:
+    box:
+      x elements: 1
+      x size: 1.0
+      y elements: 1
+      y size: 1.0
+      symmetric: true
+  material models:
+    model1:
+      type: linear elastic
+#safety check that models don't overlap!
+  conditions:
+    density:
+      cond1:
+        at time: 0.0
+        value: '2.0'
+    bulk modulus:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    shear modulus:
+      cond1:
+        at time: 0.0
+        value: '0.0'
+    deformation gradient:
+      cond1:
+        at time: 0.0
+        value: 'I'
+    velocity:
+      cond1:
+        at time: 0.0
+        value: 'vector(0.01 * x(0), 0.0)'
+    acceleration:
+      cond1:
+        sets: ['x-']
+        value: 'vector(0.0, 0.0)'
+      cond2:
+        sets: ['x+']
+        value: 'vector(a(0), 0.0)'
+# scalars:
+#   mass position:
+#     type: node
+#     field: position
+#     set: 'x+'
+#     component: 0
+#   mass velocity:
+#     type: node
+#     field: velocity
+#     set: 'x+'
+#     component: 0
+  responses:
+    viz:
+      type: VTK output
+      fields:
+        - velocity
+        - density
+    stdout:
+      type: command line history
+      scalars:
+        - step
+        - time
+        - dt
+#       - mass position
+#       - mass velocity
+#   position regression:
+#     type: comparison
+#     scalar: mass position
+#     expected value: '1.0 + 0.01003 * sin(t)'
+#     tolerance: 1.0e-4
+#   velocity regression:
+#     start time: 1.0
+#     end time: 6.28
+#     type: comparison
+#     scalar: mass velocity
+#     expected value: '0.01 * cos(t)'
+#     tolerance: 5.0e-2

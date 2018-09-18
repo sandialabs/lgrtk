@@ -1,0 +1,68 @@
+lgr:
+  CFL: 0.9
+  end time: 0.14
+  element type: Bar2
+  initialize with NaN: false
+  mesh:
+    box:
+      x elements: 100
+      x size: 1.0
+  material models:
+    model1:
+      type: perfect gas
+  modifiers:
+    model2:
+      type: artificial viscosity
+  conditions:
+    density:
+      cond1:
+        at time: 0.0
+        value: 'x(0) < 0.5 ? 1.0 : 0.125'
+    heat capacity ratio:
+      cond1:
+        at time: 0.0
+        value: '1.4'
+    specific internal energy:
+      cond1:
+        at time: 0.0
+        value: 'x(0) < 0.5 ? 1.0 / ((1.4 - 1.0) * 1.0) : 0.1 / ((1.4 - 1.0) * 0.125)'
+    linear artificial viscosity:
+      cond1:
+        at time: 0.0
+        value: '1.0'
+    quadratic artificial viscosity:
+      cond1:
+        at time: 0.0
+        value: '0.0'
+    stress:
+      cond1:
+        at time: 0.0
+        value: 'symm(0.0)'
+    velocity:
+      cond1:
+        at time: 0.0
+        value: 'vector(0.0)'
+    acceleration:
+      cond1:
+        at time: 0.0
+        value: 'vector(0.0)'
+      cond2:
+        sets: ['x-', 'x+']
+        value: 'vector(0.0)'
+  scalars:
+  responses:
+    stdout:
+      type: command line history
+      scalars:
+        - step
+        - time
+        - dt
+    viz:
+      time period: 0.01
+      type: VTK output
+      path: bar2_Sod
+      fields:
+        - velocity
+        - specific internal energy
+        - stress
+        - density

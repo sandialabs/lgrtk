@@ -1,0 +1,49 @@
+Primary Practices:
+ - Sit Together
+ - Whole Team
+   - don't have people fractionally on multiple teams
+   - up to 12 people work well as a simple team
+ - Informative Workspace
+ - Energized Work
+ - Pair Programming
+   - all production code by pair
+   - max 6 hours / day
+   - rotate partners
+ - Stories
+ - Weekly Cycle
+   - customers pick stories
+   - review actual/predicted progress
+ - Quarterly Cycle
+ - Slack
+   - small tasks to fill in time gaps
+ - Ten-Minute Build
+   - and test!
+ - Continuous Integration
+   - All the way to final deployment
+   - Daily
+ - Test-First Programming
+ - Incremental Design
+Corollary Practices:
+ - Real Customer Involvement
+ - Incremental Deployment
+   - Replace parts of old system, not all at once
+ - Team Continuity
+   - Large org idea of "coder resources" ignores human bonds and trust
+ - Shrinking Teams
+   - Not well tested, but involves keeping teams a certain size through shrinking and merging
+ - Root-Cause Analysis
+   - Dont just fix the bug, fix the systemic flaw that made the bug possible, including social causes
+ - Shared Code
+   - Let everyone edit every part of the codebase (requires good CI)
+ - Code and Tests
+   - Keep only the code and tests as permanent artifacts
+ - Single Code Base
+   - Only one branch! max lifetime for other branches is a few hours
+ - Daily Deployment
+   - Fully deploy once a day (requires great testing/CI, low defect rate)
+ - Negotiated Scope Contract
+   - Fix time, costs, and quality, but continuously renegotiate scope
+   - Provide a clear goal scope, will do as much as possible towards X
+ - Pay-per-use
+   - Collecting usage information is key to driving development by predicting improved/increased use
+   - Next best thing is a subscription model
