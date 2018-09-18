@@ -42,6 +42,35 @@ set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
 bob_library_includes(lgr_library)
 bob_link_dependency(lgr_library PUBLIC Omega_h)
 
+install(FILES
+    lgr_math.hpp
+    lgr_element_types.hpp
+    lgr_factories.hpp
+    lgr_run.hpp
+    lgr_for.hpp
+    lgr_model.hpp
+    lgr_field_index.hpp
+    lgr_field_access.hpp
+    lgr_remap_type.hpp
+    lgr_class_names.hpp
+    lgr_mapping.hpp
+    lgr_disc.hpp
+    lgr_entity_type.hpp
+    lgr_subsets.hpp
+    lgr_subset.hpp
+    lgr_supports.hpp
+    lgr_support.hpp
+    lgr_field.hpp
+    lgr_fields.hpp
+    lgr_models.hpp
+    lgr_scalar.hpp
+    lgr_scalars.hpp
+    lgr_response.hpp
+    lgr_responses.hpp
+    lgr_adapt.hpp
+    lgr_remap.hpp
+    DESTINATION include)
+
 add_executable(lgr_executable lgr.cpp)
 target_link_libraries(lgr_executable lgr_library)
 set_target_properties(lgr_executable PROPERTIES
