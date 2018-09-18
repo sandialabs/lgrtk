@@ -5,11 +5,11 @@
 namespace lgr {
 
 template <class Elem>
-struct PerfectGas : public Model<Elem> {
+struct IdealGas : public Model<Elem> {
   FieldIndex heat_capacity_ratio;
   FieldIndex specific_internal_energy;
   FieldIndex specific_internal_energy_rate;
-  PerfectGas(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
+  IdealGas(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
     this->specific_internal_energy =
       this->point_define("e", "specific internal energy", 1,
           RemapType::PER_UNIT_MASS, "");
@@ -51,7 +51,7 @@ struct PerfectGas : public Model<Elem> {
 
 template <class Elem>
 ModelBase* ideal_gas_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
-  return new PerfectGas<Elem>(sim, pl);
+  return new IdealGas<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
