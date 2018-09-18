@@ -28,11 +28,6 @@ struct VtkOutput : public Response {
             "undefined field \"%s\"\n", field_name.c_str());
       }
       auto support = sim.fields[fi].support;
-      if (!support->subset->mapping.is_identity) {
-        Omega_h_fail("\"%s\" is on a subset of the mesh, "
-            "and Dan hasn't coded support for visualizing that yet!\n",
-            field_name.c_str());
-      }
       if (support->subset->entity_type == NODES) {
         tags[0].insert(field_name);
       } else if (support->subset->entity_type == ELEMS) {
