@@ -1,4 +1,5 @@
 #include <lgr_disc.hpp>
+#include <lgr_config.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_build.hpp>
@@ -117,9 +118,10 @@ void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
     bool symmetric = box_pl.get<bool>("symmetric", false);
     mesh = Omega_h::build_box(comm, (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE),
         x_size, y_size, z_size, x_elements, y_elements, z_elements, symmetric);
+#ifdef LGR_USE_CUBIT
   } else if (pl.isSublist("CUBIT")) {
     auto& cubit_pl = pl.sublist("CUBIT");
-    auto cubit_path = cubit_pl.get<std::string>("executable", "cubit.command");
+    auto cubit_path = LGR_CUBIT;
     std::string journal_path;
     if (cubit_pl.isType<std::string>("commands")) {
       auto commands = cubit_pl.get<std::string>("commands");
@@ -152,6 +154,7 @@ void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
       if (ret != 0) Omega_h_fail("Running CUBIT failed!\n");
     }
     mesh = Omega_h::read_mesh_file(exodus_path, comm);
+#endif
   } else {
     Omega_h_fail("no input mesh!\n");
   }
