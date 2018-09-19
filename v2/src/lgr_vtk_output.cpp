@@ -19,6 +19,7 @@ struct VtkOutput : public Response {
     auto field_names_in = pl.get<Teuchos::Array<std::string>>("fields");
     for (auto& field_name : field_names_in) {
       if (omega_h_tags.count(field_name)) {
+        if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
         tags[omega_h_tags[field_name]].insert(field_name);
         continue;
       }
