@@ -1,3 +1,5 @@
+bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp")
+
 add_library(lgr_library
     lgr_scope.cpp
     lgr_condition.cpp
