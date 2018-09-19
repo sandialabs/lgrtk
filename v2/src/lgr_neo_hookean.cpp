@@ -57,15 +57,17 @@ struct NeoHookean : public Model<Elem> {
     auto points_to_stress = this->points_set(this->sim.stress);
     auto points_to_wave_speed = this->points_set(this->sim.wave_speed);
     auto functor = OMEGA_H_LAMBDA(int point) {
-      auto F = getfull<Elem>(points_to_F, point);
+      auto F_small = getfull<Elem>(points_to_F, point);
       auto kappa = points_to_kappa[point];
       auto nu = points_to_nu[point];
       auto rho = points_to_rho[point];
-      auto I = identity_matrix<Elem::dim, Elem::dim>();
-      auto grad_u = resize<3>(F - I);
+      auto F = identity_matrix<3, 3>();
+      for (int i = 0; i < Elem::dim; ++i)
+      for (int j = 0; j < Elem::dim; ++j)
+        F(i,j) = F_small(i,j);
       Matrix<3, 3> sigma;
       double c;
-      neo_hookean_update(kappa, nu, rho, grad_u, sigma, c);
+      neo_hookean_update(kappa, nu, rho, F, sigma, c);
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(sigma));
       points_to_wave_speed[point] = c;
     };
