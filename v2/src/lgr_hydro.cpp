@@ -182,12 +182,15 @@ void compute_point_time_steps(Simulation& sim) {
   auto points_to_c = sim.get(sim.wave_speed);
   auto elems_to_h = sim.get(sim.time_step_length);
   auto points_to_dt = sim.set(sim.point_time_step);
-  double max = std::numeric_limits<double>::max();
+  double const max = std::numeric_limits<double>::max();
   auto functor = OMEGA_H_LAMBDA(int point) {
-    auto elem = point / Elem::points;
-    auto h = elems_to_h[elem];
-    auto c = points_to_c[point];
-    auto dt = (c == 0.0) ? max : (h / c);
+    auto const elem = point / Elem::points;
+    auto const h = elems_to_h[elem];
+    OMEGA_H_CHECK(h > 0.0);
+    auto const c = points_to_c[point];
+    OMEGA_H_CHECK(c >= 0.0);
+    auto const dt = (c == 0.0) ? max : (h / c);
+    OMEGA_H_CHECK(dt > 0.0);
     points_to_dt[point] = dt;
   };
   parallel_for("time delta kernel", sim.points(), std::move(functor));
