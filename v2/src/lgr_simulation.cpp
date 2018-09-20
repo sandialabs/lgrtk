@@ -116,6 +116,7 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   dt = 0.0;
   prev_dt = 0.0;
   max_dt = pl.get<double>("max dt", std::numeric_limits<double>::max());
+  min_dt = pl.get<double>("min dt", 0.0);
   cfl = pl.get<double>("CFL", 0.9);
   step = pl.get<int>("start step", 0);
   end_step = pl.get<int>("end step", std::numeric_limits<int>::max());
@@ -210,6 +211,10 @@ void update_time(Simulation& sim) {
   if (next_event < sim.time) {
     sim.time = next_event;
     sim.dt = sim.time - sim.prev_time;
+  }
+  if (sim.dt < sim.min_dt) {
+    Omega_h_fail("Simulation dt %g went below user-specified minimum dt %g\n",
+        sim.dt, sim.min_dt);
   }
 }
 
