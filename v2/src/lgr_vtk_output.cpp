@@ -15,12 +15,17 @@ struct VtkOutput : public Response {
     ,writer(pl.get<std::string>("path", "lgr_viz"), &sim.disc.mesh, sim.dim(), sim.time, Omega_h::vtk::dont_compress)
   {
     auto stdim = std::size_t(sim.dim());
-    std::map<std::string, std::size_t> omega_h_tags = {{"quality", stdim}, {"metric", 0}};
+    std::map<std::string, std::size_t> omega_h_adapt_tags = {{"quality", stdim}, {"metric", 0}};
+    std::map<std::string, std::pair<std::size_t, std::string>> omega_h_multi_dim_tags = {{"element class_id", {stdim, "class_id"}}};
     auto field_names_in = pl.get<Teuchos::Array<std::string>>("fields");
     for (auto& field_name : field_names_in) {
-      if (omega_h_tags.count(field_name)) {
+      if (omega_h_adapt_tags.count(field_name)) {
         if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
-        tags[omega_h_tags[field_name]].insert(field_name);
+        tags[omega_h_adapt_tags[field_name]].insert(field_name);
+        continue;
+      }
+      if (omega_h_multi_dim_tags.count(field_name)) {
+        tags[omega_h_multi_dim_tags[field_name].first].insert(omega_h_multi_dim_tags[field_name].second);
         continue;
       }
       auto fi = sim.fields.find(field_name);
