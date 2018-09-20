@@ -80,6 +80,7 @@ struct Simulation {
   Omega_h::Now start_cpu_time_point;
   double prev_cpu_time;
   double cpu_time;
+  double min_dt;
 };
 
 void apply_conditions(Simulation& sim,
