@@ -81,6 +81,7 @@ struct Simulation {
   double prev_cpu_time;
   double cpu_time;
   double min_dt;
+  bool enable_flooding;
 };
 
 void apply_conditions(Simulation& sim,
