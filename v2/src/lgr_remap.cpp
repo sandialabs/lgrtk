@@ -9,6 +9,9 @@ RemapBase::RemapBase(Simulation& sim_in):sim(sim_in) {
     if (field_ptr->remap_type != RemapType::NONE) {
       fields_to_remap[field_ptr->remap_type].push_back(field_ptr->long_name);
       field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
+      if (field_ptr->remap_type == RemapType::POSITIVE_DETERMINANT) {
+        fields_to_remap[RemapType::PER_UNIT_VOLUME].push_back(field_ptr->long_name);
+      }
     }
   }
 }
@@ -41,6 +44,17 @@ template <class Elem>
 struct Remap : public RemapBase {
   Remap(Simulation& sim_in):RemapBase(sim_in) {}
   void before_adapt() override final {
+    for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
+      auto fi = sim.fields.find(name);
+      auto points_to_F = sim.getset(fi);
+      auto npoints = sim.fields[fi].support->count();
+      auto functor = OMEGA_H_LAMBDA(int point) {
+        auto const F = getfull<Elem>(points_to_F, point);
+        auto const log_F = Omega_h::log_glp(F);
+        setfull<Elem>(points_to_F, point, log_F);
+      };
+      parallel_for("log(F)", npoints, std::move(functor));
+    }
     sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
   }
   Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh, int ent_dim, int ncomps,
@@ -228,6 +242,9 @@ struct Remap : public RemapBase {
     } else if (ncomps == Omega_h::symm_ncomps(Elem::dim)) {
       refine_point_remap_ncomps<Weighter, Omega_h::symm_ncomps(Elem::dim)>(old_mesh, new_mesh, key_dim, prod_dim,
           keys2kds, keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
+    } else if (ncomps == Omega_h::square(Elem::dim)) {
+      refine_point_remap_ncomps<Weighter, Omega_h::square(Elem::dim)>(old_mesh, new_mesh, key_dim, prod_dim,
+          keys2kds, keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
     } else {
       Omega_h_fail("unexpected refine point remap ncomps %d\n", ncomps);
     }
@@ -244,6 +261,9 @@ struct Remap : public RemapBase {
           keys2kds, keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
     } else if (ncomps == Omega_h::symm_ncomps(Elem::dim)) {
       swap_point_remap_ncomps<Weighter, Omega_h::symm_ncomps(Elem::dim)>(old_mesh, new_mesh, key_dim, prod_dim,
+          keys2kds, keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
+    } else if (ncomps == Omega_h::square(Elem::dim)) {
+      swap_point_remap_ncomps<Weighter, Omega_h::square(Elem::dim)>(old_mesh, new_mesh, key_dim, prod_dim,
           keys2kds, keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
     } else {
       Omega_h_fail("unexpected weighted ncomps %d\n", ncomps);
@@ -342,6 +362,17 @@ struct Remap : public RemapBase {
     sim.fields[sim.position].storage = Omega_h::deep_copy(sim.disc.mesh.coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
+    for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
+      auto fi = sim.fields.find(name);
+      auto points_to_F = sim.getset(fi);
+      auto npoints = sim.fields[fi].support->count();
+      auto functor = OMEGA_H_LAMBDA(int point) {
+        auto const log_F = getfull<Elem>(points_to_F, point);
+        auto const F = Omega_h::exp_glp(log_F);
+        setfull<Elem>(points_to_F, point, F);
+      };
+      parallel_for("log(F)", npoints, std::move(functor));
+    }
   }
 };
 
