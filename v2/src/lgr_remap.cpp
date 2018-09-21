@@ -285,14 +285,6 @@ struct Remap : public RemapBase {
         refine_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
-      for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
-        refine_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents, name);
-      }
-      for (auto& name : fields_to_remap[RemapType::UNIT_DETERMINANT]) {
-        refine_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents, name);
-      }
     }
   }
   void coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
@@ -322,18 +314,6 @@ struct Remap : public RemapBase {
             same_ents2old_ents, same_ents2new_ents,
             name);
       }
-      for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
-        coarsen_point_remap(old_mesh, new_mesh, prod_dim,
-            keys2doms.a2ab, keys2doms.ab2b, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents,
-            name);
-      }
-      for (auto& name : fields_to_remap[RemapType::UNIT_DETERMINANT]) {
-        coarsen_point_remap(old_mesh, new_mesh, prod_dim,
-            keys2doms.a2ab, keys2doms.ab2b, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents,
-            name);
-      }
     }
   }
   void swap_copy_verts(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh) override final {
@@ -354,14 +334,6 @@ struct Remap : public RemapBase {
       }
       for (auto& name : fields_to_remap[RemapType::PER_UNIT_MASS]) {
         swap_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents, name);
-      }
-      for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
-        swap_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
-            same_ents2old_ents, same_ents2new_ents, name);
-      }
-      for (auto& name : fields_to_remap[RemapType::UNIT_DETERMINANT]) {
-        swap_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
     }

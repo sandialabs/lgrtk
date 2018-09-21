@@ -16,6 +16,7 @@ struct SavedField {
 };
 
 bool flood(Simulation& sim) {
+  if (!sim.enable_flooding) return false;
   OMEGA_H_TIME_FUNCTION;
   auto qualities = sim.disc.mesh.ask_qualities();
   auto desired_quality = sim.adapter.opts.min_quality_desired;

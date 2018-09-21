@@ -45,7 +45,7 @@ struct NeoHookean : public Model<Elem> {
     constexpr auto dim = Elem::dim;
     this->deformation_gradient =
       this->point_define("F", "deformation gradient",
-          square(dim), RemapType::POSITIVE_DETERMINANT, "I");
+          square(dim), RemapType::NONE, "I");
   }
   ModelOrder order() override final { return IS_MATERIAL_MODEL; }
   char const* name() override final { return "neo-Hookean"; }

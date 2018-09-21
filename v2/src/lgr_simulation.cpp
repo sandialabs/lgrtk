@@ -176,6 +176,7 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   responses.setup(pl.sublist("responses"));
   // done setting up responses
   adapter.setup(pl);
+  enable_flooding = pl.get<bool>("enable flooding", true);
   // echo parameters
   if (pl.get<bool>("echo parameters", false)) {
     Omega_h::echo_parameters(std::cout, pl);
