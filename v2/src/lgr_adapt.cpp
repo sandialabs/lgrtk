@@ -21,6 +21,7 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
     minimum_length =
       adapt_pl.get<double>("minimum length", 0.0);
     opts.verbosity = Omega_h::EACH_ADAPT;
+    opts.should_coarsen_slivers = false;
   }
 #define LGR_EXPL_INST(Elem) \
   if (sim.elem_name == Elem::name()) { \
