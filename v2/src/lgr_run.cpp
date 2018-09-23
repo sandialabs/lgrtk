@@ -63,6 +63,7 @@ static void run_simulation(Simulation& sim) {
       sim.prev_time = sim.time;
       sim.prev_dt = sim.dt;
       sim.dt = 0.0;
+      ++sim.step;
       close_state<Elem>(sim);
     }
     update_time(sim);
