@@ -4,7 +4,6 @@
 #include <lgr_support.hpp>
 #include <lgr_disc.hpp>
 #include <Omega_h_map.hpp>
-#include <cstdio>
 
 namespace lgr {
 
@@ -202,9 +201,10 @@ void Fields::copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices
       field.storage = Omega_h::deep_copy(
           disc.mesh.get_array<double>(entity_dim, field.long_name), field.long_name);
     } else {
-      auto ncomps = divide_no_remainder(field.storage.size(), mapping.things.size());
-      auto subset_data = Omega_h::unmap(mapping.things,
-          disc.mesh.get_array<double>(entity_dim, field.long_name), ncomps);
+      auto tag = disc.mesh.get_tag<double>(entity_dim, field.long_name);
+      auto full_data = tag->array();
+      auto ncomps = tag->ncomps();
+      auto subset_data = Omega_h::unmap(mapping.things, full_data, ncomps);
       field.storage = subset_data;
     }
   }
