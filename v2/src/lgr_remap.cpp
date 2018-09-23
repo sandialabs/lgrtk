@@ -40,6 +40,21 @@ struct MassWeighter {
   }
 };
 
+static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents) {
+  if (!old_mesh.has_tag(old_mesh.dim(), "old class_id")) return;
+  OMEGA_H_TIME_FUNCTION;
+  auto old_data = old_mesh.get_array<Omega_h::ClassId>(old_mesh.dim(), "old class_id");
+  auto new_data = Omega_h::Write<Omega_h::ClassId>(new_mesh.nelems(), -1);
+  auto same_functor = OMEGA_H_LAMBDA(int same_elem) {
+    auto old_elem = same_ents2old_ents[same_elem];
+    auto new_elem = same_ents2new_ents[same_elem];
+    new_data[new_elem] = old_data[old_elem];
+  };
+  parallel_for("remap old class_id", same_ents2old_ents.size(), std::move(same_functor));
+  new_mesh.add_tag(new_mesh.dim(), "old class_id", 1, read(new_data));
+}
+
 template <class Elem>
 struct Remap : public RemapBase {
   Remap(Simulation& sim_in):RemapBase(sim_in) {}
@@ -50,6 +65,7 @@ struct Remap : public RemapBase {
       auto npoints = sim.fields[fi].support->count();
       auto functor = OMEGA_H_LAMBDA(int point) {
         auto const F = getfull<Elem>(points_to_F, point);
+        OMEGA_H_CHECK(determinant(F) > 0.0);
         auto const log_F = Omega_h::log_glp(F);
         setfull<Elem>(points_to_F, point, log_F);
       };
@@ -61,11 +77,11 @@ struct Remap : public RemapBase {
       Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
       Omega_h::Reals old_data) {
     auto new_data = Omega_h::Write<double>(new_mesh.nents(ent_dim) * ncomps);
-    auto same_functor = OMEGA_H_LAMBDA(int same_vert) {
-      auto old_vert = same_ents2old_ents[same_vert];
-      auto new_vert = same_ents2new_ents[same_vert];
+    auto same_functor = OMEGA_H_LAMBDA(int same_ent) {
+      auto old_ent = same_ents2old_ents[same_ent];
+      auto new_ent = same_ents2new_ents[same_ent];
       for (int comp = 0; comp < ncomps; ++comp) {
-        new_data[new_vert * ncomps + comp] = old_data[old_vert * ncomps + comp];
+        new_data[new_ent * ncomps + comp] = old_data[old_ent * ncomps + comp];
       }
     };
     parallel_for("fill with same", same_ents2old_ents.size(), std::move(same_functor));
@@ -305,6 +321,7 @@ struct Remap : public RemapBase {
         refine_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
+      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
@@ -334,6 +351,7 @@ struct Remap : public RemapBase {
             same_ents2old_ents, same_ents2new_ents,
             name);
       }
+      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void swap_copy_verts(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh) override final {
@@ -356,9 +374,11 @@ struct Remap : public RemapBase {
         swap_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
+      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void after_adapt() override final {
+    Omega_h::vtk::write_vtu("debug.vtu", &sim.disc.mesh);
     sim.fields[sim.position].storage = Omega_h::deep_copy(sim.disc.mesh.coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
@@ -369,9 +389,10 @@ struct Remap : public RemapBase {
       auto functor = OMEGA_H_LAMBDA(int point) {
         auto const log_F = getfull<Elem>(points_to_F, point);
         auto const F = Omega_h::exp_glp(log_F);
+        OMEGA_H_CHECK(determinant(F) > 0.0);
         setfull<Elem>(points_to_F, point, F);
       };
-      parallel_for("log(F)", npoints, std::move(functor));
+      parallel_for("exp(log(F))", npoints, std::move(functor));
     }
   }
 };
