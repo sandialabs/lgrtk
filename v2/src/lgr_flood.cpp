@@ -29,16 +29,14 @@ bool flood(Simulation& sim) {
   auto const have_old_old_class_ids = sim.disc.mesh.has_tag(sim.disc.mesh.dim(), "old class_id");
   auto const old_old_class_ids = have_old_old_class_ids ?
     sim.disc.mesh.get_array<Omega_h::ClassId>(sim.disc.mesh.dim(), "old class_id") :
-    Omega_h::Read<Omega_h::ClassId>();
+    old_elem_class_ids;
   auto const nelems = sim.disc.mesh.nelems();
   auto const elems_could_flood = Omega_h::Write<Omega_h::Byte>(nelems);
   auto decision_functor = OMEGA_H_LAMBDA(int elem) {
-    if (have_old_old_class_ids) {
-      // if you've already flooded, no more flooding!
-      if (old_old_class_ids[elem] != old_elem_class_ids[elem]) {
-        elems_could_flood[elem] = Omega_h::Byte(0);
-        return;
-      }
+    // if you've already flooded, no more flooding!
+    if (old_old_class_ids[elem] != old_elem_class_ids[elem]) {
+      elems_could_flood[elem] = Omega_h::Byte(0);
+      return;
     }
     if (qualities[elem] < desired_quality) {
       elems_could_flood[elem] = Omega_h::Byte(1);
@@ -68,7 +66,6 @@ bool flood(Simulation& sim) {
   auto const floodable_elems = collect_marked(read(elems_could_flood));
   if (floodable_elems.size() == 0) return false;
   std::cerr << floodable_elems.size() << " floodable elems!\n";
-  Omega_h::Write<int> elems_to_pull_from(floodable_elems.size(), -1);
   auto const densities = sim.get(sim.density);
   auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
   auto const elem_class_ids = Omega_h::Write<Omega_h::ClassId>(nelems);
@@ -81,6 +78,7 @@ bool flood(Simulation& sim) {
       pull_mapping[elem] = elem;
       new_old_class_ids[elem] = old_old_class_ids[elem];
       elems_did_flood[elem] = Omega_h::Byte(0);
+      elem_class_ids[elem] = old_elem_class_ids[elem];
       return;
     }
     std::cerr << "elem " << elem << " is floodable!\n";
@@ -126,6 +124,7 @@ bool flood(Simulation& sim) {
       best = elem;
       elems_did_flood[elem] = Omega_h::Byte(0);
     }
+    OMEGA_H_CHECK(best != -1);
     pull_mapping[elem] = best;
     new_old_class_ids[elem] = old_elem_class_ids[elem];
     elem_class_ids[elem] = old_elem_class_ids[best];
@@ -172,8 +171,6 @@ bool flood(Simulation& sim) {
   sim.fields.learn_disc();
   Omega_h::Write<int> old_inverse(nelems, -1);
   Omega_h::Write<int> new_inverse(nelems, -1);
-  Omega_h::map_into(
-      Omega_h::read(elems_to_pull_from), floodable_elems, pull_mapping, 1);
   for (auto& saved_field : saved_fields) {
     auto const fi = sim.fields.find(saved_field.name);
     auto& field = sim.fields[fi];
@@ -197,8 +194,10 @@ bool flood(Simulation& sim) {
         old_data.size(), old_set_size);
     auto const new_data = sim.set(fi);
     OMEGA_H_CHECK(new_data.exists());
+    auto const debug_c_str = field.long_name.c_str();
     auto flood_field_functor = OMEGA_H_LAMBDA(int elem_to) {
       auto const elem_from = pull_mapping[elem_to];
+      OMEGA_H_CHECK(elem_from != -1);
       int old_set_elem, new_set_elem;
       if (old_mapping.is_identity) {
         old_set_elem = elem_from;
@@ -209,12 +208,19 @@ bool flood(Simulation& sim) {
         new_set_elem = new_inverse[elem_to];
       }
       for (int comp = 0; comp < ncomps; ++comp) {
+        if ((!(new_set_elem * ncomps + comp < new_data.size())) || (new_set_elem * ncomps + comp < 0)) {
+          Omega_h_fail("field \"%s\" new_set_elem %d ncomps %d comp %d new_data.size() %d\n",
+              debug_c_str, new_set_elem, ncomps, comp, new_data.size());
+        }
+        if ((!(old_set_elem * ncomps + comp < old_data.size())) || (old_set_elem * ncomps + comp < 0)) {
+          Omega_h_fail("field \"%s\" old_set_elem %d ncomps %d comp %d old_data.size() %d\n",
+              debug_c_str, old_set_elem, ncomps, comp, old_data.size());
+        }
         new_data[new_set_elem * ncomps + comp] =
           old_data[old_set_elem * ncomps + comp];
       }
     };
-    parallel_for("flood field", nelems,
-        std::move(flood_field_functor));
+    parallel_for("flood field", nelems, std::move(flood_field_functor));
     if (!old_mapping.is_identity) {
       Omega_h::map_value_into(-1, old_mapping.things, old_inverse);
       Omega_h::map_value_into(-1, new_mapping.things, new_inverse);
