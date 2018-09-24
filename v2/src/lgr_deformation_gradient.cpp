@@ -2,6 +2,7 @@
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <Omega_h_print.hpp>
 
 namespace lgr {
 
@@ -31,7 +32,13 @@ struct DeformationGradient : public Model<Elem> {
       auto dxn_dxnp1 = I - dt * dv_dxnp1;
       auto dxnp1_dxn = invert(dxn_dxnp1);
       auto dxn_dX = getfull<Elem>(points_to_F, point);
+      if (!(determinant(dxn_dX) > 0.0)) {
+        std::cerr << "got old F = " << dxn_dX << '\n';
+      }
+      OMEGA_H_CHECK(determinant(dxn_dX) > 0.0);
+      OMEGA_H_CHECK(determinant(dxnp1_dxn) > 0.0);
       auto dxnp1_dX = dxn_dX * dxnp1_dxn;
+      OMEGA_H_CHECK(determinant(dxnp1_dX) > 0.0);
       setfull<Elem>(points_to_F, point, dxnp1_dX);
     };
     parallel_for("deformation gradient kernel", this->points(), std::move(functor));
