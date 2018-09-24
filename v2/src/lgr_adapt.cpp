@@ -1,6 +1,7 @@
 #include <lgr_adapt.hpp>
 #include <lgr_simulation.hpp>
 #include <Omega_h_stack.hpp>
+#include <Omega_h_metric.hpp>
 
 namespace lgr {
 
@@ -21,7 +22,7 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
     minimum_length =
       adapt_pl.get<double>("minimum length", 0.0);
     opts.verbosity = Omega_h::EACH_ADAPT;
-    opts.should_coarsen_slivers = false;
+    this->gradation_rate = adapt_pl.get<double>("gradation rate", 1.0);
   }
 #define LGR_EXPL_INST(Elem) \
   if (sim.elem_name == Elem::name()) { \
@@ -40,6 +41,11 @@ bool Adapter::adapt() {
   auto minqual = sim.disc.mesh.min_quality();
   auto maxlen = sim.disc.mesh.max_length();
   if (minqual >= trigger_quality && maxlen <= trigger_length_ratio) return false;
+  {
+    auto metric = sim.disc.mesh.get_array<double>(0, "metric");
+    metric = Omega_h::limit_metric_gradation(&sim.disc.mesh, metric, this->gradation_rate);
+    sim.disc.mesh.add_tag(0, "metric", 1, metric);
+  }
   remap->before_adapt();
   sim.fields.forget_disc();
   sim.subsets.forget_disc();
