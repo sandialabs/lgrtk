@@ -11,8 +11,9 @@ OMEGA_H_INLINE void neo_hookean_update(
     Matrix<3, 3> F,
     Matrix<3, 3>& stress,
     double& wave_speed) {
-  auto const B = F * transpose(F);
+  OMEGA_H_CHECK(density > 0.0);
   auto const J = Omega_h::determinant(F);
+  OMEGA_H_CHECK(J > 0.0);
   auto const Jinv = 1.0 / J;
   auto const half_bulk_modulus = (1.0 / 2.0) * bulk_modulus;
   auto const negative_pressure = half_bulk_modulus * (J - Jinv);
@@ -21,13 +22,16 @@ OMEGA_H_INLINE void neo_hookean_update(
   auto const Jm13 = 1.0 / std::cbrt(J);
   auto const Jm23 = Jm13 * Jm13;
   auto const Jm53 = Jm23 * Jm23 * Jm13;
+  auto const B = F * transpose(F);
   auto const devB = Omega_h::deviator(B);
   auto const deviatoric_stress = shear_modulus * Jm53 * devB;
   stress = volumetric_stress + deviatoric_stress;
   auto const tangent_bulk_modulus = half_bulk_modulus * (J + Jinv);
   auto const plane_wave_modulus =
     tangent_bulk_modulus + (4.0 / 3.0) * shear_modulus;
+  OMEGA_H_CHECK(plane_wave_modulus > 0.0);
   wave_speed = std::sqrt(plane_wave_modulus / density);
+  OMEGA_H_CHECK(wave_speed > 0.0);
 }
 
 template <class Elem>
