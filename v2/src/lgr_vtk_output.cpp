@@ -16,7 +16,13 @@ struct VtkOutput : public Response {
   {
     auto stdim = std::size_t(sim.dim());
     std::map<std::string, std::size_t> omega_h_adapt_tags = {{"quality", stdim}, {"metric", 0}};
-    std::map<std::string, std::pair<std::size_t, std::string>> omega_h_multi_dim_tags = {{"element class_id", {stdim, "class_id"}}};
+    std::map<std::string, std::pair<std::size_t, std::string>>
+      omega_h_multi_dim_tags =
+      {{"element class_id", {stdim, "class_id"}},
+       {"node local", {0, "local"}},
+       {"node global", {0, "global"}},
+       {"element local", {stdim, "local"}},
+       {"element global", {stdim, "global"}}};
     auto field_names_in = pl.get<Teuchos::Array<std::string>>("fields");
     for (auto& field_name : field_names_in) {
       if (omega_h_adapt_tags.count(field_name)) {
