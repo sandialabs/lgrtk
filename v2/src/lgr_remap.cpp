@@ -40,18 +40,24 @@ struct MassWeighter {
   }
 };
 
-static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
+static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh, Omega_h::LOs prods2new_ents,
     Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents) {
   if (!old_mesh.has_tag(old_mesh.dim(), "old class_id")) return;
   OMEGA_H_TIME_FUNCTION;
   auto old_data = old_mesh.get_array<Omega_h::ClassId>(old_mesh.dim(), "old class_id");
-  auto new_data = Omega_h::Write<Omega_h::ClassId>(new_mesh.nelems(), -1);
+  auto new_data = Omega_h::Write<Omega_h::ClassId>(new_mesh.nelems());
   auto same_functor = OMEGA_H_LAMBDA(int same_elem) {
     auto old_elem = same_ents2old_ents[same_elem];
     auto new_elem = same_ents2new_ents[same_elem];
     new_data[new_elem] = old_data[old_elem];
   };
-  parallel_for("remap old class_id", same_ents2old_ents.size(), std::move(same_functor));
+  parallel_for("remap same old class_id", same_ents2old_ents.size(), std::move(same_functor));
+  auto class_ids = new_mesh.get_array<Omega_h::ClassId>(new_mesh.dim(), "class_id");
+  auto prod_functor = OMEGA_H_LAMBDA(int prod_elem) {
+    auto elem = prods2new_ents[prod_elem];
+    new_data[elem] = class_ids[elem];
+  };
+  parallel_for("remap prod old class_id", prods2new_ents.size(), std::move(prod_functor));
   new_mesh.add_tag(new_mesh.dim(), "old class_id", 1, read(new_data));
 }
 
@@ -321,7 +327,7 @@ struct Remap : public RemapBase {
         refine_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
-      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
+      remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
@@ -351,7 +357,7 @@ struct Remap : public RemapBase {
             same_ents2old_ents, same_ents2new_ents,
             name);
       }
-      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
+      remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void swap_copy_verts(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh) override final {
@@ -374,7 +380,7 @@ struct Remap : public RemapBase {
         swap_point_remap<MassWeighter>(old_mesh, new_mesh, 1, prod_dim, keys2edges, keys2prods, prods2new_ents,
             same_ents2old_ents, same_ents2new_ents, name);
       }
-      remap_old_class_id(old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents);
+      remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents, same_ents2new_ents);
     }
   }
   void after_adapt() override final {

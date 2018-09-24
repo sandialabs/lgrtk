@@ -35,10 +35,13 @@ bool flood(Simulation& sim) {
   auto decision_functor = OMEGA_H_LAMBDA(int elem) {
     // if you've already flooded, no more flooding!
     if (old_old_class_ids[elem] != old_elem_class_ids[elem]) {
+      OMEGA_H_CHECK(old_old_class_ids[elem] != -1);
       elems_could_flood[elem] = Omega_h::Byte(0);
+      std::cerr << "element " << elem << " rejected for having already flooded\n";
       return;
     }
     if (qualities[elem] < desired_quality) {
+      std::cerr << "element " << elem << " selected for low quality\n";
       elems_could_flood[elem] = Omega_h::Byte(1);
       return;
     }
@@ -55,6 +58,7 @@ bool flood(Simulation& sim) {
             (old_old_class_ids[other_elem] != old_elem_class_ids[other_elem]) &&
             (old_elem_class_ids[elem] == old_old_class_ids[other_elem])) {
           elems_could_flood[elem] = Omega_h::Byte(1);
+          std::cerr << "element " << elem << " selected for adjacency to low-quality already-flooded\n";
           return;
         }
       }
