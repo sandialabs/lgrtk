@@ -28,12 +28,9 @@ static void initialize_state(Simulation& sim) {
 template <class Elem>
 static void close_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
-  sim.models.evaluate(AT_FIELD_UPDATE);
-  sim.models.evaluate(AFTER_FIELD_UPDATE);
-  sim.models.evaluate(BEFORE_MATERIAL_MODEL);
-  sim.models.evaluate(AT_MATERIAL_MODEL);
-  sim.models.evaluate(AFTER_MATERIAL_MODEL);
-  sim.models.evaluate(BEFORE_FORCES);
+  sim.models.at_field_update();
+  sim.models.at_material_model();
+  sim.models.after_material_model();
   compute_point_time_steps<Elem>(sim);
   compute_stress_divergence<Elem>(sim);
   // tractions will go here
@@ -42,13 +39,6 @@ static void close_state(Simulation& sim) {
   apply_acceleration_conditions(sim);
   update_cpu_time(sim);
   sim.responses.evaluate();
-}
-
-template <class Elem>
-static void update_state(Simulation& sim) {
-  OMEGA_H_TIME_FUNCTION;
-  update_position<Elem>(sim);
-  update_configuration<Elem>(sim);
 }
 
 template <class Elem>
@@ -67,10 +57,12 @@ static void run_simulation(Simulation& sim) {
       close_state<Elem>(sim);
     }
     update_time(sim);
-    update_state<Elem>(sim);
+    update_position<Elem>(sim);
+    update_configuration<Elem>(sim);
     ++sim.step;
     close_state<Elem>(sim);
     correct_velocity<Elem>(sim);
+    sim.models.after_correction();
   }
 }
 

@@ -21,7 +21,7 @@ struct InternalEnergy : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final { return AT_FIELD_UPDATE; }
   char const* name() override final { return "internal energy"; }
-  void update_state() override final {
+  void at_field_update() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_rho = this->points_get(this->sim.density);
     auto points_to_sigma = this->points_get(this->sim.stress);

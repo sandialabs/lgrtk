@@ -53,7 +53,7 @@ struct NeoHookean : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "neo-Hookean"; }
-  void update_state() override final {
+  void at_material_model() override final {
     auto points_to_kappa = this->points_get(this->bulk_modulus);
     auto points_to_nu = this->points_get(this->shear_modulus);
     auto points_to_rho = this->points_get(this->sim.density);

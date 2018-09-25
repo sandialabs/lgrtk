@@ -36,7 +36,7 @@ struct ArtificialViscosity : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final { return AFTER_MATERIAL_MODEL; }
   char const* name() override final { return "artificial viscosity"; }
-  void update_state() override final {
+  void after_material_model() override final {
     auto points_to_nu_l = this->points_get(this->linear);
     auto points_to_nu_q = this->points_get(this->quadratic);
     auto points_to_grad = this->points_get(this->sim.gradient);

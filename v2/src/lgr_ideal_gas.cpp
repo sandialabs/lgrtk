@@ -23,7 +23,7 @@ struct IdealGas : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "ideal gas"; }
-  void update_state() override final {
+  void at_material_model() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_rho = this->points_get(this->sim.density);
     auto points_to_e = this->points_get(this->specific_internal_energy);
