@@ -31,12 +31,12 @@ struct IdealGas : public Model<Elem> {
     auto points_to_gamma = this->points_get(this->heat_capacity_ratio);
     auto points_to_sigma = this->points_set(this->sim.stress);
     auto points_to_c = this->points_set(this->sim.wave_speed);
-    auto dt_np12 = this->sim.dt;
+    auto dt = this->sim.dt;
     auto functor = OMEGA_H_LAMBDA(int point) {
       auto rho_np1 = points_to_rho[point];
       auto e_dot_n = points_to_e_dot[point];
       auto e_np12 = points_to_e[point];
-      auto e_np1_est = e_np12 + e_dot_n * (1.0 / 2.0) * dt_np12;
+      auto e_np1_est = e_np12 + e_dot_n * (1.0 / 2.0) * dt;
       auto gamma = points_to_gamma[point];
       double c;
       double pressure;

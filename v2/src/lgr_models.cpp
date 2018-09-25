@@ -36,9 +36,18 @@ void Models::setup_field_updates() {
     if (it == factories.end()) continue;
     auto& factory = it->second;
     auto ptr = factory(sim, name, dummy_pl);
-    OMEGA_H_CHECK((ptr->exec_stages() & AT_FIELD_UPDATE) != 0);
     std::unique_ptr<ModelBase> unique_ptr(ptr);
     models.push_back(std::move(unique_ptr));
+  }
+}
+
+void Models::before_position_update() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    if ((model->exec_stages() & BEFORE_POSITION_UPDATE) != 0) {
+      Scope scope{sim, model->name()};
+      model->before_position_update();
+    }
   }
 }
 

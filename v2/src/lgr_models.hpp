@@ -13,6 +13,7 @@ struct Models {
   Models(Simulation& sim_in);
   void setup_material_models_and_modifiers(Teuchos::ParameterList& pl);
   void setup_field_updates(); 
+  void before_position_update();
   void at_field_update();
   void at_material_model();
   void after_material_model();
