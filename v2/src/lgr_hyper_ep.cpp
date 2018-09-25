@@ -156,7 +156,7 @@ struct HyperEP : public Model<Elem>
 
   char const* name() override final { return "hyper elastic-plastic"; }
 
-  void update_state() override final {
+  void at_material_model() override final {
     using tensor_type = Matrix<3,3>;
 
     auto elastic = this->elastic_;

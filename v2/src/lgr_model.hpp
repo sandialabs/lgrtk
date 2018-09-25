@@ -15,12 +15,9 @@ struct Support;
 
 enum ExecStage : std::uint64_t {
   AT_FIELD_UPDATE        = std::uint64_t(1) << 0,
-  AFTER_FIELD_UPDATE     = std::uint64_t(1) << 1,
-  BEFORE_MATERIAL_MODEL  = std::uint64_t(1) << 2,
-  AT_MATERIAL_MODEL      = std::uint64_t(1) << 3,
-  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 4,
-  BEFORE_FORCES          = std::uint64_t(1) << 5,
-  AFTER_CORRECTION       = std::uint64_t(1) << 6,
+  AT_MATERIAL_MODEL      = std::uint64_t(1) << 1,
+  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 2,
+  AFTER_CORRECTION       = std::uint64_t(1) << 3,
 };
 
 struct ModelBase {
@@ -33,7 +30,6 @@ struct ModelBase {
   ModelBase(Simulation& sim_in, Teuchos::ParameterList& pl);
   virtual std::uint64_t exec_stages() = 0;
   virtual char const* name() = 0;
-  virtual void update_state() = 0;
   FieldIndex point_define(std::string const& short_name, std::string const& long_name,
       int ncomps);
   FieldIndex point_define(std::string const& short_name, std::string const& long_name,
@@ -51,6 +47,10 @@ struct ModelBase {
   MappedRead elems_get(FieldIndex fi);
   MappedWrite elems_set(FieldIndex fi);
   MappedWrite elems_getset(FieldIndex fi);
+  virtual void at_field_update() {}
+  virtual void at_material_model() {}
+  virtual void after_material_model() {}
+  virtual void after_correction() {}
 };
 
 template <class Elem>

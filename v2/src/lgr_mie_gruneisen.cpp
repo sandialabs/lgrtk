@@ -33,7 +33,7 @@ struct MieGruneisen : public Model<Elem> {
 
   char const* name() override final { return "linear elastic"; }
 
-  void update_state() override final {
+  void at_material_model() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_rho = this->points_get(this->sim.density);
 

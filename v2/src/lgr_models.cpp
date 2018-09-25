@@ -42,12 +42,42 @@ void Models::setup_field_updates() {
   }
 }
 
-void Models::evaluate(ExecStage stage) {
+void Models::at_field_update() {
   OMEGA_H_TIME_FUNCTION;
   for (auto& model : models) {
-    if ((model->exec_stages() & stage) != 0) {
+    if ((model->exec_stages() & AT_FIELD_UPDATE) != 0) {
       Scope scope{sim, model->name()};
-      model->update_state();
+      model->at_field_update();
+    }
+  }
+}
+
+void Models::at_material_model() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    if ((model->exec_stages() & AT_MATERIAL_MODEL) != 0) {
+      Scope scope{sim, model->name()};
+      model->at_material_model();
+    }
+  }
+}
+
+void Models::after_material_model() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    if ((model->exec_stages() & AFTER_MATERIAL_MODEL) != 0) {
+      Scope scope{sim, model->name()};
+      model->after_material_model();
+    }
+  }
+}
+
+void Models::after_correction() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    if ((model->exec_stages() & AFTER_CORRECTION) != 0) {
+      Scope scope{sim, model->name()};
+      model->after_correction();
     }
   }
 }

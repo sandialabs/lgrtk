@@ -16,7 +16,7 @@ struct DeformationGradient : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final { return AT_FIELD_UPDATE; }
   char const* name() override final { return "deformation gradient"; }
-  void update_state() override final {
+  void at_field_update() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_F = this->points_getset(this->deformation_gradient);
     auto elems_to_nodes = this->get_elems_to_nodes();
