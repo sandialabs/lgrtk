@@ -57,6 +57,7 @@ static void run_simulation(Simulation& sim) {
       close_state<Elem>(sim);
     }
     update_time(sim);
+    sim.models.before_position_update();
     update_position<Elem>(sim);
     update_configuration<Elem>(sim);
     ++sim.step;

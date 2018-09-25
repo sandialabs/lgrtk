@@ -96,6 +96,27 @@ MappedWrite ModelBase::elems_getset(FieldIndex fi) {
   return sim.getset(fi, elem_support->subset);
 }
 
+void ModelBase::before_position_update() {
+  Omega_h_fail("before_position_update called on a Model that didn't define it!\n");
+}
+
+void ModelBase::at_field_update() {
+  Omega_h_fail("at_field_update called on a Model that didn't define it!\n");
+}
+
+void ModelBase::at_material_model() {
+  Omega_h_fail("at_material_model called on a Model that didn't define it!\n");
+}
+
+void ModelBase::after_material_model() {
+  Omega_h_fail("after_material_model called on a Model that didn't define it!\n");
+}
+
+void ModelBase::after_correction() {
+  Omega_h_fail("after_correction called on a Model that didn't define it!\n");
+}
+
+
 template <class Elem>
 Model<Elem>::Model(Simulation& sim_in, Teuchos::ParameterList& pl)
 :ModelBase(sim_in, pl)
