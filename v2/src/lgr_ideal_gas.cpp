@@ -19,7 +19,6 @@ struct IdealGas : public Model<Elem> {
     this->heat_capacity_ratio =
       this->point_define("gamma", "heat capacity ratio", 1,
           RemapType::PER_UNIT_VOLUME, "");
-    this->sim.fields[this->sim.stress].remap_type = RemapType::PER_UNIT_VOLUME;
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "ideal gas"; }
