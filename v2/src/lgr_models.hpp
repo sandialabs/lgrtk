@@ -13,7 +13,7 @@ struct Models {
   Models(Simulation& sim_in);
   void setup_material_models_and_modifiers(Teuchos::ParameterList& pl);
   void setup_field_updates(); 
-  void evaluate(ModelOrder order);
+  void evaluate(ExecStage stage);
 };
 
 template <class Elem>

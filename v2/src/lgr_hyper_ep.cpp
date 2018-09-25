@@ -152,7 +152,7 @@ struct HyperEP : public Model<Elem>
     this->defgrad = this->point_define("F", "deformation gradient", square(dim), "I");
   }
 
-  ModelOrder order() override final { return IS_MATERIAL_MODEL; }
+  std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
 
   char const* name() override final { return "hyper elastic-plastic"; }
 

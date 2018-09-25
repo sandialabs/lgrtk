@@ -29,7 +29,7 @@ struct MieGruneisen : public Model<Elem> {
     this->specific_internal_energy = this->point_define("e", "specific internal energy", 1, to_string(e0));
   }
 
-  ModelOrder order() override final { return IS_MATERIAL_MODEL; }
+  std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
 
   char const* name() override final { return "linear elastic"; }
 

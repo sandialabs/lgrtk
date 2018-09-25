@@ -13,13 +13,14 @@ namespace lgr {
 struct Simulation;
 struct Support;
 
-enum ModelOrder {
-  IS_FIELD_UPDATE,
-  AFTER_FIELD_UPDATE,
-  BEFORE_MATERIAL_MODEL,
-  IS_MATERIAL_MODEL,
-  AFTER_MATERIAL_MODEL,
-  BEFORE_FORCES,
+enum ExecStage : std::uint64_t {
+  AT_FIELD_UPDATE        = std::uint64_t(1) << 0,
+  AFTER_FIELD_UPDATE     = std::uint64_t(1) << 1,
+  BEFORE_MATERIAL_MODEL  = std::uint64_t(1) << 2,
+  AT_MATERIAL_MODEL      = std::uint64_t(1) << 3,
+  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 4,
+  BEFORE_FORCES          = std::uint64_t(1) << 5,
+  AFTER_CORRECTION       = std::uint64_t(1) << 6,
 };
 
 struct ModelBase {
@@ -30,7 +31,7 @@ struct ModelBase {
   virtual void out_of_line_virtual_function();
   ModelBase(Simulation& sim_in, ClassNames const& class_names);
   ModelBase(Simulation& sim_in, Teuchos::ParameterList& pl);
-  virtual ModelOrder order() = 0;
+  virtual std::uint64_t exec_stages() = 0;
   virtual char const* name() = 0;
   virtual void update_state() = 0;
   FieldIndex point_define(std::string const& short_name, std::string const& long_name,

@@ -21,7 +21,7 @@ Models::Models(Simulation& sim_in)
 void Models::setup_material_models_and_modifiers(Teuchos::ParameterList& pl) {
   ::lgr::setup(sim.factories.material_model_factories, sim, pl.sublist("material models"), models, "material model");
   for (auto& model_ptr : models) {
-    OMEGA_H_CHECK(model_ptr->order() == IS_MATERIAL_MODEL);
+    OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
   if (models.empty()) Omega_h_fail("no material models defined!\n");
   ::lgr::setup(sim.factories.modifier_factories, sim, pl.sublist("modifiers"), models, "modifier");
@@ -36,16 +36,16 @@ void Models::setup_field_updates() {
     if (it == factories.end()) continue;
     auto& factory = it->second;
     auto ptr = factory(sim, name, dummy_pl);
-    OMEGA_H_CHECK(ptr->order() == IS_FIELD_UPDATE);
+    OMEGA_H_CHECK((ptr->exec_stages() & AT_FIELD_UPDATE) != 0);
     std::unique_ptr<ModelBase> unique_ptr(ptr);
     models.push_back(std::move(unique_ptr));
   }
 }
 
-void Models::evaluate(ModelOrder order) {
+void Models::evaluate(ExecStage stage) {
   OMEGA_H_TIME_FUNCTION;
   for (auto& model : models) {
-    if (model->order() == order) {
+    if ((model->exec_stages() & stage) != 0) {
       Scope scope{sim, model->name()};
       model->update_state();
     }

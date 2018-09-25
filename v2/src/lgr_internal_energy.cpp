@@ -19,7 +19,7 @@ struct InternalEnergy : public Model<Elem> {
     this->sim.fields[this->sim.stress].default_value = "symm(0.0)";
     this->sim.fields[this->sim.acceleration].default_value = "vector(0.0)";
   }
-  ModelOrder order() override final { return IS_FIELD_UPDATE; }
+  std::uint64_t exec_stages() override final { return AT_FIELD_UPDATE; }
   char const* name() override final { return "internal energy"; }
   void update_state() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
@@ -54,6 +54,8 @@ struct InternalEnergy : public Model<Elem> {
       auto e_dot_n = e_rho_dot_n / rho_n;
       auto e_nm12 = points_to_e[point];
       auto e_np12 = e_nm12 + e_dot_n * dt_n;
+      // HACK! FLOORING SPECIFIC INTERNAL ENERGY
+      if (e_np12 < 1.0e-10) e_np12 = 1.0e-10;
       points_to_e[point] = e_np12;
       points_to_e_dot[point] = e_dot_n;
     };

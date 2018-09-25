@@ -14,7 +14,7 @@ struct DeformationGradient : public Model<Elem> {
     ,deformation_gradient(sim_in.fields.find("deformation gradient"))
   {
   }
-  ModelOrder order() override final { return IS_FIELD_UPDATE; }
+  std::uint64_t exec_stages() override final { return AT_FIELD_UPDATE; }
   char const* name() override final { return "deformation gradient"; }
   void update_state() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
