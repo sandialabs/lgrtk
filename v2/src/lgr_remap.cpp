@@ -393,7 +393,15 @@ struct Remap : public RemapBase {
       auto points_to_F = sim.getset(fi);
       auto npoints = sim.fields[fi].support->count();
       auto functor = OMEGA_H_LAMBDA(int point) {
-        auto const log_F = getfull<Elem>(points_to_F, point);
+        auto log_F = getfull<Elem>(points_to_F, point);
+        // HACK! throw away rotation!!
+        for (int i = 0; i < Elem::dim; ++i) {
+          for (int j = 0; j < Elem::dim; ++j) {
+            if (i != j) {
+              log_F(i, j) = 0.0;
+            }
+          }
+        }
         auto const F = Omega_h::exp_glp(log_F);
         OMEGA_H_CHECK(determinant(F) > 0.0);
         setfull<Elem>(points_to_F, point, F);
