@@ -28,10 +28,10 @@ static void initialize_state(Simulation& sim) {
 template <class Elem>
 static void close_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
-  sim.models.evaluate(IS_FIELD_UPDATE);
+  sim.models.evaluate(AT_FIELD_UPDATE);
   sim.models.evaluate(AFTER_FIELD_UPDATE);
   sim.models.evaluate(BEFORE_MATERIAL_MODEL);
-  sim.models.evaluate(IS_MATERIAL_MODEL);
+  sim.models.evaluate(AT_MATERIAL_MODEL);
   sim.models.evaluate(AFTER_MATERIAL_MODEL);
   sim.models.evaluate(BEFORE_FORCES);
   compute_point_time_steps<Elem>(sim);

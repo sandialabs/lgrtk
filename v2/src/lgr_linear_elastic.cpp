@@ -38,7 +38,7 @@ struct LinearElastic : public Model<Elem> {
       this->point_define("F", "deformation gradient",
           square(dim), RemapType::NONE, "I");
   }
-  ModelOrder order() override final { return IS_MATERIAL_MODEL; }
+  std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "linear elastic"; }
   void update_state() override final {
     auto points_to_kappa = this->points_get(this->bulk_modulus);

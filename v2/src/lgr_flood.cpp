@@ -70,6 +70,18 @@ bool flood(Simulation& sim) {
   auto const floodable_elems = collect_marked(read(elems_could_flood));
   if (floodable_elems.size() == 0) return false;
   std::cerr << floodable_elems.size() << " floodable elems!\n";
+  {
+    std::vector<FieldIndex> field_indices_to_remap;
+    for (auto& field_ptr : sim.fields.storage) {
+      if (field_ptr->remap_type != RemapType::NONE) {
+        field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
+      }
+    }
+    sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
+    OMEGA_H_CHECK(sim.disc.mesh.dim() == 2);
+    Omega_h::vtk::write_vtu("before_flood.vtu", &sim.disc.mesh);
+    sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
+  }
   auto const densities = sim.get(sim.density);
   auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
   auto const elem_class_ids = Omega_h::Write<Omega_h::ClassId>(nelems);
@@ -229,6 +241,17 @@ bool flood(Simulation& sim) {
       Omega_h::map_value_into(-1, old_mapping.things, old_inverse);
       Omega_h::map_value_into(-1, new_mapping.things, new_inverse);
     }
+  }
+  {
+    std::vector<FieldIndex> field_indices_to_remap;
+    for (auto& field_ptr : sim.fields.storage) {
+      if (field_ptr->remap_type != RemapType::NONE) {
+        field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
+      }
+    }
+    sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
+    Omega_h::vtk::write_vtu("after_flood.vtu", &sim.disc.mesh);
+    sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
   }
   return true;
 }

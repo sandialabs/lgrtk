@@ -21,7 +21,7 @@ struct IdealGas : public Model<Elem> {
           RemapType::PER_UNIT_VOLUME, "");
     this->sim.fields[this->sim.stress].remap_type = RemapType::PER_UNIT_VOLUME;
   }
-  ModelOrder order() override final { return IS_MATERIAL_MODEL; }
+  std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "ideal gas"; }
   void update_state() override final {
     auto points_to_grad = this->points_get(this->sim.gradient);
@@ -37,6 +37,12 @@ struct IdealGas : public Model<Elem> {
       auto e_dot_n = points_to_e_dot[point];
       auto e_np12 = points_to_e[point];
       auto e_np1_est = e_np12 + e_dot_n * (1.0 / 2.0) * dt_np12;
+      // HACK! FLOORING SPECIFIC INTERNAL ENERGY
+      if (e_np1_est < 1.0e-10) e_np1_est = 1.0e-10;
+      if (e_np1_est < 0.0) {
+        std::cerr << std::scientific << std::setprecision(17);
+        std::cerr << "e_np1_est " << e_np1_est << " e_np12 " << e_np12 << " e_dot_n " << e_dot_n << " dt_np12 " << dt_np12 << '\n';
+      }
       auto gamma = points_to_gamma[point];
       double c;
       double pressure;
