@@ -12,7 +12,7 @@ struct CmdLineHist : public Response {
   {
     auto scalars_teuchos = pl.get<Teuchos::Array<std::string>>("scalars");
     scalars.assign(scalars_teuchos.begin(), scalars_teuchos.end());
-    column_width = 8;
+    column_width = decltype(column_width)(pl.get<int>("minimum column width", 8));
     for (auto& name : scalars) {
       column_width = Omega_h::max2(column_width, name.length());
     }
