@@ -18,7 +18,6 @@ struct SavedField {
 bool flood(Simulation& sim) {
   if (!sim.enable_flooding) return false;
   OMEGA_H_TIME_FUNCTION;
-  std::cerr << "flooding!\n";
   auto const dim = sim.disc.mesh.dim();
   auto const qualities = sim.disc.mesh.ask_qualities();
   auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
