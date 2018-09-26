@@ -174,12 +174,13 @@ void Fields::copy_to_omega_h(Disc& disc, std::vector<FieldIndex> field_indices) 
       entity_dim = disc.dim(); 
     }
     auto& mapping = field.support->subset->mapping;
+    auto const data = field.get();
     if (field.support->subset->mapping.is_identity) {
-      auto ncomps = divide_no_remainder(field.storage.size(), disc.mesh.nents(entity_dim));
-      disc.mesh.add_tag(entity_dim, field.long_name, ncomps, Omega_h::Reals(field.storage));
+      auto ncomps = divide_no_remainder(data.size(), disc.mesh.nents(entity_dim));
+      disc.mesh.add_tag(entity_dim, field.long_name, ncomps, data);
     } else {
-      auto ncomps = divide_no_remainder(field.storage.size(), mapping.things.size());
-      auto full_data = Omega_h::map_onto(Omega_h::Reals(field.storage), mapping.things,
+      auto ncomps = divide_no_remainder(data.size(), mapping.things.size());
+      auto full_data = Omega_h::map_onto(data, mapping.things,
           disc.mesh.nents(entity_dim), 0.0, ncomps);
       disc.mesh.add_tag(entity_dim, field.long_name, ncomps, full_data);
     }

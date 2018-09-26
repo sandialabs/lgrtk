@@ -55,6 +55,23 @@ lgr:
         sets: ['projectile', 'wall']
         at time: 0.0
         value: '1.0'
+    flood priority:
+      cond1:
+        sets: ['far_fluid']
+        at time: 0.0
+        value: '0.0'
+      cond2:
+        sets: ['near_fluid']
+        at time: 0.0
+        value: '1.0'
+      cond3:
+        sets: ['wall']
+        at time: 0.0
+        value: '2.0'
+      cond4:
+        sets: ['projectile']
+        at time: 0.0
+        value: '3.0'
     heat capacity ratio:
       cond1:
         at time: 0.0
@@ -111,6 +128,10 @@ lgr:
         - weight
         - quality
         - metric
+        - node class_dim
+        - flood priority
+        - element class_id
   adapt:
     gradation rate: 0.1
     desired quality: 0.38
+  flood:

@@ -15,7 +15,8 @@ struct Fields {
   void setup(Teuchos::ParameterList& pl);
   FieldIndex define(std::string const& short_name,
       std::string const& long_name, int ncomps,
-      EntityType type, bool on_points, ClassNames const& class_names);
+      EntityType type, bool on_points,
+      ClassNames const& class_names);
   FieldIndex define(std::string const& short_name,
       std::string const& long_name, int ncomps,
       Support* support);
