@@ -17,9 +17,11 @@ struct Adapter {
   double trigger_length_ratio;
   double minimum_length;
   double gradation_rate;
+  bool should_coarsen_with_expansion;
   Adapter(Simulation& sim);
   void setup(Teuchos::ParameterList& pl);
   bool adapt();
+  void coarsen_metric_with_expansion();
 };
 
 }
