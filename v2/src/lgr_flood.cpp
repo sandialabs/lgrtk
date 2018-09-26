@@ -15,167 +15,96 @@ struct SavedField {
   Mapping mapping;
 };
 
-static Omega_h::Bytes decide_whether_elements_can_flood(
-    Simulation& sim,
-    Omega_h::Read<Omega_h::ClassId> old_old_class_ids,
-    Omega_h::Read<Omega_h::ClassId> old_elem_class_ids
-    ) {
-  auto const densities = sim.get(sim.density);
-  auto const qualities = sim.disc.mesh.ask_qualities();
-  auto const desired_quality = sim.adapter.opts.min_quality_desired;
-  auto const nelems = sim.disc.mesh.nelems();
-  auto const elems_could_flood = Omega_h::Write<Omega_h::Byte>(nelems);
-  auto const nverts = sim.disc.mesh.nverts();
-  auto const vertex_flood_suggestions = Omega_h::Write<Omega_h::ClassId>(nverts);
-  auto const verts2elems = sim.disc.mesh.ask_graph(0, sim.dim());
-  auto vertex_functor = OMEGA_H_LAMBDA(int vert) {
-    Omega_h::ClassId suggestion = -1;
-    double suggestion_density = 0.0;
-    for (auto vert_elem = verts2elems.a2ab[vert];
-        vert_elem < verts2elems.a2ab[vert + 1]; ++vert_elem) {
-      auto const elem = verts2elems.ab2b[vert_elem];
-      // looking for elements that have already flooded and are still bad quality
-      if ((old_old_class_ids[elem] != old_elem_class_ids[elem]) &&
-          (qualities[elem] < desired_quality)) {
-        if (suggestion == -1 || densities[elem] < suggestion_density) {
-          // write down the material that the element *used to be*, *prior to flooding*
-          suggestion = old_old_class_ids[elem];
-          suggestion_density = densities[elem];
-        }
-      }
-    }
-    vertex_flood_suggestions[vert] = suggestion;
-  };
-  parallel_for("spread flooding to vertices", nverts, std::move(vertex_functor));
-  auto const elems2verts = sim.disc.mesh.ask_verts_of(sim.dim());
-  auto const verts_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), sim.dim(), 0);
-  auto decision_functor = OMEGA_H_LAMBDA(int elem) {
-    // if you've already flooded, no more flooding!
-    if (old_old_class_ids[elem] != old_elem_class_ids[elem]) {
-      OMEGA_H_CHECK(old_old_class_ids[elem] != -1);
-      elems_could_flood[elem] = Omega_h::Byte(0);
-      std::cerr << "element " << elem << " rejected for having already flooded\n";
-      return;
-    }
-    if (qualities[elem] < desired_quality) {
-      std::cerr << "element " << elem << " selected for low quality\n";
-      elems_could_flood[elem] = Omega_h::Byte(1);
-      return;
-    }
-    for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
-      auto vert = elems2verts[elem * verts_per_elem + elem_vert];
-      auto vert_suggestion = vertex_flood_suggestions[vert];
-      if (vert_suggestion == old_elem_class_ids[elem]) {
-        std::cerr << "element " << elem << " selected for proximity to flooded low-quality\n";
-        elems_could_flood[elem] = Omega_h::Byte(1);
-        return;
-      }
-    }
-    // anything else, no flooding
-    elems_could_flood[elem] = Omega_h::Byte(0);
-  };
-  parallel_for("flood decision", nelems, std::move(decision_functor));
-  return elems_could_flood;
+Flooder::Flooder(Simulation& sim_in):
+  sim(sim_in)
+{
 }
 
-bool flood(Simulation& sim) {
-  if (!sim.enable_flooding) return false;
-  OMEGA_H_TIME_FUNCTION;
-  auto const dim = sim.disc.mesh.dim();
-  auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
-  auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
-  auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
-  auto const old_elem_class_ids = sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id");
-  auto const have_old_old_class_ids = sim.disc.mesh.has_tag(sim.disc.mesh.dim(), "old class_id");
-  auto const old_old_class_ids = have_old_old_class_ids ?
-    sim.disc.mesh.get_array<Omega_h::ClassId>(sim.disc.mesh.dim(), "old class_id") :
-    old_elem_class_ids;
-  auto const nelems = sim.disc.mesh.nelems();
-  auto const elems_could_flood = decide_whether_elements_can_flood(
-      sim,
-      old_old_class_ids,
-      old_elem_class_ids
-      );
-  auto const floodable_elems = collect_marked(elems_could_flood);
-  if (floodable_elems.size() == 0) return false;
-  std::cerr << floodable_elems.size() << " floodable elems!\n";
-  {
-    std::vector<FieldIndex> field_indices_to_remap;
-    for (auto& field_ptr : sim.fields.storage) {
-      if (field_ptr->remap_type != RemapType::NONE) {
-        field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
-      }
+void Flooder::setup(Teuchos::ParameterList& pl)
+{
+  enabled = pl.isSublist("flood");
+  if (!enabled) return;
+  auto& flood_pl = pl.sublist("flood");
+  max_depth = flood_pl.get<int>("max depth", 3);
+  flood_priority = sim.fields.define("flood priority",
+      "flood priority", 1, ELEMS, false,
+      sim.disc.covering_class_names());
+  sim.fields[flood_priority].remap_type =
+    RemapType::PER_UNIT_VOLUME;
+}
+
+void Flooder::flood() {
+  auto const max_priority = get_max(sim.get(flood_priority));
+  for (int depth = 0; depth < max_depth; ++depth) {
+    for (double up_to_priority = 1.0; up_to_priority <= max_priority;
+        up_to_priority += 1.0) {
+      auto const status = flood_once(depth, up_to_priority);
+      if (!status.some_were_bad) return;
+      if (status.some_did_flood) return;
     }
-    sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
-    OMEGA_H_CHECK(sim.disc.mesh.dim() == 2);
-    Omega_h::vtk::write_vtu("before_flood.vtu", &sim.disc.mesh);
-    sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
   }
-  auto const densities = sim.get(sim.density);
+}
+
+// returns true iff a deeper flooding should be called
+Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
+  OMEGA_H_TIME_FUNCTION;
+  FloodStatus status;
+  auto const dim = sim.disc.mesh.dim();
+  auto const old_elem_class_ids = sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id");
+  auto const nelems = sim.disc.mesh.nelems();
+  auto const qualities = sim.disc.mesh.ask_qualities();
+  auto elems_can_flood = each_lt(qualities,
+      sim.adapter.opts.min_quality_desired);
+  status.some_were_bad = (get_max(elems_can_flood) == Omega_h::Byte(1));
+  if (!status.some_were_bad) return status;
+  for (int i = 0; i < depth; ++i) {
+    auto const adj_verts = mark_down(
+        &sim.disc.mesh, sim.dim(), 0, elems_can_flood);
+    elems_can_flood = mark_up(
+        &sim.disc.mesh, 0, sim.dim(), adj_verts);
+  }
+  auto const floodable_elems = collect_marked(elems_can_flood);
+  auto const elems_to_priority = sim.get(flood_priority);
   auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
   auto const elem_class_ids = Omega_h::Write<Omega_h::ClassId>(nelems);
-  auto const new_old_class_ids = Omega_h::Write<Omega_h::ClassId>(nelems);
   Omega_h::Write<int> pull_mapping(nelems, 0, 1);
   OMEGA_H_CHECK(sim.disc.points_per_ent(ELEMS) == 1);
   auto const elems_did_flood = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
+  auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
+  auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
   auto pull_decision_functor = OMEGA_H_LAMBDA(int elem) {
-    if (!elems_could_flood[elem]) {
-      pull_mapping[elem] = elem;
-      new_old_class_ids[elem] = old_old_class_ids[elem];
-      elems_did_flood[elem] = Omega_h::Byte(0);
-      elem_class_ids[elem] = old_elem_class_ids[elem];
-      return;
-    }
-    std::cerr << "elem " << elem << " is floodable!\n";
-    auto const density = densities[elem]; // single point specific !!!
-    int best_floodable = -1;
-    double best_floodable_density = Omega_h::ArithTraits<double>::max();
-    int best_non_floodable = -1;
-    double best_non_floodable_density = Omega_h::ArithTraits<double>::max();
-    for (int elem_side = 0; elem_side < sides_per_elem; ++elem_side) {
-      auto const side = elems_to_sides[elem * sides_per_elem + elem_side];
-      // don't flood from the same material
-      if (int(side_class_dims[side]) != dim - 1) continue;
-      for (auto side_elem = sides_to_elems.a2ab[side];
-          side_elem < sides_to_elems.a2ab[side + 1]; ++side_elem) {
-        auto const other_elem = sides_to_elems.ab2b[side_elem];
-        if (other_elem == elem) continue;
-        auto const other_density = densities[other_elem];
-        if (elems_could_flood[other_elem]) {
-          if ((other_density < density) &&
-              (other_density < best_floodable_density)) {
-            best_floodable = other_elem;
-            best_floodable_density = other_density;
-          }
-        } else {
-          if (other_density < best_non_floodable_density) {
-            best_non_floodable = other_elem;
-            best_non_floodable_density = other_density;
+    auto best_elem = elem;
+    if (elems_can_flood[elem]) {
+      auto const self_priority = elems_to_priority[best_elem];
+      if (self_priority <= up_to_priority) {
+        auto best_priority = self_priority;
+        for (int elem_side = 0; elem_side < sides_per_elem;
+            ++elem_side) {
+          auto const side =
+            elems_to_sides[elem * sides_per_elem + elem_side];
+          for (auto side_elem = sides_to_elems.a2ab[side];
+              side_elem < sides_to_elems.a2ab[side + 1];
+              ++side_elem) {
+            auto const other_elem = sides_to_elems.ab2b[side_elem];
+            if (other_elem == elem) continue;
+            auto const other_priority = 
+              elems_to_priority[other_elem];
+            if (other_priority < best_priority) {
+              best_elem = other_elem;
+              best_priority = other_priority;
+            }
           }
         }
       }
     }
-    int best = -1;
-    if (best_non_floodable != -1) {
-      std::cerr << "elem " << elem << " is flooding from best non-floodable " << best_non_floodable << '\n';
-      best = best_non_floodable;
-      elems_did_flood[elem] = Omega_h::Byte(1);
-    } else if (best_floodable != -1) {
-      std::cerr << "elem " << elem << " is flooding from best floodable " << best_floodable << '\n';
-      best = best_floodable;
-      elems_did_flood[elem] = Omega_h::Byte(1);
-    } else {
-      std::cerr << "elem " << elem << " isn't flooding!\n";
-      best = elem;
-      elems_did_flood[elem] = Omega_h::Byte(0);
-    }
-    OMEGA_H_CHECK(best != -1);
-    pull_mapping[elem] = best;
-    new_old_class_ids[elem] = old_elem_class_ids[elem];
-    elem_class_ids[elem] = old_elem_class_ids[best];
+    elems_did_flood[elem] = (best_elem != elem) ? Omega_h::Byte(1) : Omega_h::Byte(0);
+    pull_mapping[elem] = best_elem;
+    elem_class_ids[elem] = old_elem_class_ids[best_elem];
   };
   parallel_for("flood pull decision", nelems, std::move(pull_decision_functor));
-  sim.disc.mesh.add_tag(dim, "old class_id", 1, read(new_old_class_ids));
+  status.some_did_flood = (get_max(read(elems_did_flood)) == Omega_h::Byte(1));
+  if (!status.some_did_flood) return status;
   Omega_h::Few<Omega_h::Read<Omega_h::I8>, 3> old_class_dims;
   Omega_h::Few<Omega_h::Read<Omega_h::ClassId>, 3> old_class_ids;
   for (int ent_dim = 0; ent_dim < dim; ++ent_dim) {
@@ -271,18 +200,7 @@ bool flood(Simulation& sim) {
       Omega_h::map_value_into(-1, new_mapping.things, new_inverse);
     }
   }
-  {
-    std::vector<FieldIndex> field_indices_to_remap;
-    for (auto& field_ptr : sim.fields.storage) {
-      if (field_ptr->remap_type != RemapType::NONE) {
-        field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
-      }
-    }
-    sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
-    Omega_h::vtk::write_vtu("after_flood.vtu", &sim.disc.mesh);
-    sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
-  }
-  return true;
+  return status;
 }
 
 }

@@ -48,7 +48,7 @@ static void run_simulation(Simulation& sim) {
   close_state<Elem>(sim);
   while (sim.time < sim.end_time && sim.step < sim.end_step) {
     if (sim.adapter.adapt()) {
-      flood(sim);
+      sim.flooder.flood();
       lump_masses<Elem>(sim);
       sim.prev_time = sim.time;
       sim.prev_dt = sim.dt;

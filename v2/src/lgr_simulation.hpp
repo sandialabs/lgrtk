@@ -12,6 +12,7 @@
 #include <lgr_scalars.hpp>
 #include <lgr_responses.hpp>
 #include <lgr_adapt.hpp>
+#include <lgr_flood.hpp>
 #include <Omega_h_timer.hpp>
 
 namespace lgr {
@@ -28,6 +29,7 @@ struct Simulation {
   Scalars scalars;
   Responses responses;
   Adapter adapter;
+  Flooder flooder;
   Simulation(Omega_h::CommPtr comm, Factories&& factories_in);
   template <class Elem>
   void set_elem();
@@ -81,7 +83,6 @@ struct Simulation {
   double prev_cpu_time;
   double cpu_time;
   double min_dt;
-  bool enable_flooding;
 };
 
 void apply_conditions(Simulation& sim,

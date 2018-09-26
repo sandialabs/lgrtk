@@ -101,6 +101,7 @@ Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
  ,scalars(*this)
  ,responses(*this)
  ,adapter(*this)
+ ,flooder(*this)
 {
 }
 
@@ -158,6 +159,7 @@ void Simulation::setup(Teuchos::ParameterList& pl)
       1, ELEMS, true, everywhere);
   // done defining fields
   models.setup_material_models_and_modifiers(pl);
+  flooder.setup(pl);
   models.setup_field_updates();
   finalize_definitions();
   // setup conditions
@@ -176,7 +178,6 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   responses.setup(pl.sublist("responses"));
   // done setting up responses
   adapter.setup(pl);
-  enable_flooding = pl.get<bool>("enable flooding", true);
   // echo parameters
   if (pl.get<bool>("echo parameters", false)) {
     Omega_h::echo_parameters(std::cout, pl);
