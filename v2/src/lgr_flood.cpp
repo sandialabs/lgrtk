@@ -15,22 +15,40 @@ struct SavedField {
   Mapping mapping;
 };
 
-bool flood(Simulation& sim) {
-  if (!sim.enable_flooding) return false;
-  OMEGA_H_TIME_FUNCTION;
-  auto const dim = sim.disc.mesh.dim();
+static Omega_h::Bytes decide_whether_elements_can_flood(
+    Simulation& sim,
+    Omega_h::Read<Omega_h::ClassId> old_old_class_ids,
+    Omega_h::Read<Omega_h::ClassId> old_elem_class_ids
+    ) {
+  auto const densities = sim.get(sim.density);
   auto const qualities = sim.disc.mesh.ask_qualities();
-  auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
-  auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
-  auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
   auto const desired_quality = sim.adapter.opts.min_quality_desired;
-  auto const old_elem_class_ids = sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id");
-  auto const have_old_old_class_ids = sim.disc.mesh.has_tag(sim.disc.mesh.dim(), "old class_id");
-  auto const old_old_class_ids = have_old_old_class_ids ?
-    sim.disc.mesh.get_array<Omega_h::ClassId>(sim.disc.mesh.dim(), "old class_id") :
-    old_elem_class_ids;
   auto const nelems = sim.disc.mesh.nelems();
   auto const elems_could_flood = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto const nverts = sim.disc.mesh.nverts();
+  auto const vertex_flood_suggestions = Omega_h::Write<Omega_h::ClassId>(nverts);
+  auto const verts2elems = sim.disc.mesh.ask_graph(0, sim.dim());
+  auto vertex_functor = OMEGA_H_LAMBDA(int vert) {
+    Omega_h::ClassId suggestion = -1;
+    double suggestion_density = 0.0;
+    for (auto vert_elem = verts2elems.a2ab[vert];
+        vert_elem < verts2elems.a2ab[vert + 1]; ++vert_elem) {
+      auto const elem = verts2elems.ab2b[vert_elem];
+      // looking for elements that have already flooded and are still bad quality
+      if ((old_old_class_ids[elem] != old_elem_class_ids[elem]) &&
+          (qualities[elem] < desired_quality)) {
+        if (suggestion == -1 || densities[elem] < suggestion_density) {
+          // write down the material that the element *used to be*, *prior to flooding*
+          suggestion = old_old_class_ids[elem];
+          suggestion_density = densities[elem];
+        }
+      }
+    }
+    vertex_flood_suggestions[vert] = suggestion;
+  };
+  parallel_for("spread flooding to vertices", nverts, std::move(vertex_functor));
+  auto const elems2verts = sim.disc.mesh.ask_verts_of(sim.dim());
+  auto const verts_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), sim.dim(), 0);
   auto decision_functor = OMEGA_H_LAMBDA(int elem) {
     // if you've already flooded, no more flooding!
     if (old_old_class_ids[elem] != old_elem_class_ids[elem]) {
@@ -44,29 +62,41 @@ bool flood(Simulation& sim) {
       elems_could_flood[elem] = Omega_h::Byte(1);
       return;
     }
-    for (int elem_side = 0; elem_side < sides_per_elem; ++elem_side) {
-      auto const side = elems_to_sides[elem * sides_per_elem + elem_side];
-      for (auto side_elem = sides_to_elems.a2ab[side];
-          side_elem < sides_to_elems.a2ab[side + 1]; ++side_elem) {
-        auto const other_elem = sides_to_elems.ab2b[side_elem];
-        if (other_elem == elem) continue;
-        // an adjacent element, which used to be of the same material,
-        // flooded but it still exists and is still low-quality.
-        // try to open up more room for quality repair by flooding further
-        if ((qualities[other_elem] < desired_quality) &&
-            (old_old_class_ids[other_elem] != old_elem_class_ids[other_elem]) &&
-            (old_elem_class_ids[elem] == old_old_class_ids[other_elem])) {
-          elems_could_flood[elem] = Omega_h::Byte(1);
-          std::cerr << "element " << elem << " selected for adjacency to low-quality already-flooded\n";
-          return;
-        }
+    for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
+      auto vert = elems2verts[elem * verts_per_elem + elem_vert];
+      auto vert_suggestion = vertex_flood_suggestions[vert];
+      if (vert_suggestion == old_elem_class_ids[elem]) {
+        std::cerr << "element " << elem << " selected for proximity to flooded low-quality\n";
+        elems_could_flood[elem] = Omega_h::Byte(1);
+        return;
       }
     }
     // anything else, no flooding
     elems_could_flood[elem] = Omega_h::Byte(0);
   };
   parallel_for("flood decision", nelems, std::move(decision_functor));
-  auto const floodable_elems = collect_marked(read(elems_could_flood));
+  return elems_could_flood;
+}
+
+bool flood(Simulation& sim) {
+  if (!sim.enable_flooding) return false;
+  OMEGA_H_TIME_FUNCTION;
+  auto const dim = sim.disc.mesh.dim();
+  auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
+  auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
+  auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
+  auto const old_elem_class_ids = sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id");
+  auto const have_old_old_class_ids = sim.disc.mesh.has_tag(sim.disc.mesh.dim(), "old class_id");
+  auto const old_old_class_ids = have_old_old_class_ids ?
+    sim.disc.mesh.get_array<Omega_h::ClassId>(sim.disc.mesh.dim(), "old class_id") :
+    old_elem_class_ids;
+  auto const nelems = sim.disc.mesh.nelems();
+  auto const elems_could_flood = decide_whether_elements_can_flood(
+      sim,
+      old_old_class_ids,
+      old_elem_class_ids
+      );
+  auto const floodable_elems = collect_marked(elems_could_flood);
   if (floodable_elems.size() == 0) return false;
   std::cerr << floodable_elems.size() << " floodable elems!\n";
   {

@@ -14,6 +14,9 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
   if (should_adapt) {
     opts = decltype(opts)(&sim.disc.mesh);
     auto& adapt_pl = pl.sublist("adapt");
+    opts.min_quality_desired =
+      adapt_pl.get<double>("desired quality",
+          sim.dim() == 3 ? 0.3 : 0.4);
     trigger_quality =
       adapt_pl.get<double>("trigger quality", opts.min_quality_desired - 0.02);
     trigger_length_ratio =
@@ -21,7 +24,7 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
           opts.max_length_allowed * 0.9);
     minimum_length =
       adapt_pl.get<double>("minimum length", 0.0);
-    opts.verbosity = Omega_h::EACH_ADAPT;
+    opts.verbosity = Omega_h::EACH_REBUILD;
     this->gradation_rate = adapt_pl.get<double>("gradation rate", 1.0);
   }
 #define LGR_EXPL_INST(Elem) \
