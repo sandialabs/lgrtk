@@ -1,5 +1,6 @@
 #include <lgr_adapt.hpp>
 #include <lgr_simulation.hpp>
+#include <lgr_for.hpp>
 #include <Omega_h_stack.hpp>
 #include <Omega_h_metric.hpp>
 
@@ -26,6 +27,7 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
       adapt_pl.get<double>("minimum length", 0.0);
     opts.verbosity = Omega_h::EACH_REBUILD;
     this->gradation_rate = adapt_pl.get<double>("gradation rate", 1.0);
+    should_coarsen_with_expansion = adapt_pl.get<bool>("coarsen with expansion", false);
   }
 #define LGR_EXPL_INST(Elem) \
   if (sim.elem_name == Elem::name()) { \
@@ -44,6 +46,7 @@ bool Adapter::adapt() {
   auto minqual = sim.disc.mesh.min_quality();
   auto maxlen = sim.disc.mesh.max_length();
   if (minqual >= trigger_quality && maxlen <= trigger_length_ratio) return false;
+  if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
     auto metric = sim.disc.mesh.get_array<double>(0, "metric");
     metric = Omega_h::limit_metric_gradation(&sim.disc.mesh, metric, this->gradation_rate);
@@ -57,6 +60,24 @@ bool Adapter::adapt() {
   sim.fields.learn_disc();
   remap->after_adapt();
   return true;
+}
+
+void Adapter::coarsen_metric_with_expansion() {
+  auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
+  auto const implied_metric = get_implied_isos(&sim.disc.mesh);
+  auto const nverts = sim.disc.mesh.nverts();
+  auto const class_dims = sim.disc.mesh.get_array<Omega_h::Byte>(0, "class_dim");
+  auto const new_metric = Omega_h::Write<double>(nverts);
+  auto const dim = sim.disc.mesh.dim();
+  auto functor = OMEGA_H_LAMBDA(int vert) {
+    if (class_dims[vert] == Omega_h::Byte(dim)) {
+      new_metric[vert] = Omega_h::min2(implied_metric[vert], old_metric[vert]);
+    } else {
+      new_metric[vert] = old_metric[vert];
+    }
+  };
+  parallel_for("metric expansion kernel", nverts, std::move(functor));
+  sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
 }
 
 }
