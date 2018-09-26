@@ -1,6 +1,7 @@
 lgr:
   CFL: 0.9
   end time: 4.0
+# end time: 3.58
   element type: Tri3
   mesh:
     CUBIT:
@@ -109,4 +110,7 @@ lgr:
         - density
         - weight
         - quality
+        - metric
   adapt:
+    gradation rate: 0.1
+    desired quality: 0.38
