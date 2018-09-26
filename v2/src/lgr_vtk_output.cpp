@@ -19,6 +19,7 @@ struct VtkOutput : public Response {
     std::map<std::string, std::pair<std::size_t, std::string>>
       omega_h_multi_dim_tags =
       {{"element class_id", {stdim, "class_id"}},
+       {"node class_dim", {0, "class_dim"}},
        {"node local", {0, "local"}},
        {"node global", {0, "global"}},
        {"element local", {stdim, "local"}},
