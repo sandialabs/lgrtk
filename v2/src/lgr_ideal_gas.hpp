@@ -1,5 +1,5 @@
-#ifndef LGR_PERFECT_GAS_HPP
-#define LGR_PERFECT_GAS_HPP
+#ifndef LGR_IDEAL_GAS_HPP
+#define LGR_IDEAL_GAS_HPP
 
 #include <lgr_element_types.hpp>
 #include <lgr_model.hpp>

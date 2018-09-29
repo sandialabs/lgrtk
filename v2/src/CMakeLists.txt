@@ -72,6 +72,10 @@ install(FILES
     lgr_responses.hpp
     lgr_adapt.hpp
     lgr_remap.hpp
+    lgr_simulation.hpp
+    lgr_condition.hpp
+    lgr_when.hpp
+    lgr_flood.hpp
     DESTINATION include)
 
 add_executable(lgr_executable lgr.cpp)
