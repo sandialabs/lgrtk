@@ -316,23 +316,18 @@ radial_return(Hardening const hardening,
     if (flag != StateFlag::REMAPPED) flag = StateFlag::PLASTIC;
     auto const N = S0 / norm_S0;  // Flow direction
     for (int iter = 0; iter < 100; ++iter) {
-
       // Compute the yield stress
       Y = flow_stress(hardening, rate_dep, props, temp, ep, epdot);
-
       // Compute g
-      double g = norm_S0 - sq23 * Y - twomu * gamma;
-
+      auto const g = norm_S0 - sq23 * Y - twomu * gamma;
       // Compute derivatives of g
-      double dydg = dflow_stress(hardening, rate_dep, props, temp, ep, epdot, dtime);
-      double dg = -twothird * dydg - twomu;
-
+      auto const dydg = dflow_stress(hardening, rate_dep, props, temp, ep, epdot, dtime);
+      auto const dg = -twothird * dydg - twomu;
       // Update dgamma
-      double dgamma = -g / dg;
+      auto const dgamma = -g / dg;
       gamma += dgamma;
-
       // Update state
-      double dep = std::max(sq23 * gamma, 0.0);
+      auto const dep = Omega_h::max2(sq23 * gamma, 0.0);
       epdot = dep / dtime;
       ep += dep;
 
