@@ -6,33 +6,156 @@ namespace lgr {
 
 namespace HyperEPDetails {
 
-std::string
-get_error_code_string(const ErrorCode& code) {
-  std::string error_code_string{"UNKNOWN"};
+char const* get_error_code_string(ErrorCode code) {
   switch (code) {
     case ErrorCode::NOT_SET:
-      error_code_string = "NOT SET";
-      break;
+      return "NOT SET";
     case ErrorCode::SUCCESS:
-      error_code_string = "SUCCESS";
-      break;
+      return "SUCCESS";
     case ErrorCode::LINEAR_ELASTIC_FAILURE:
-      error_code_string = "LINEAR ELASTIC FAILURE";
-      break;
+      return "LINEAR ELASTIC FAILURE";
     case ErrorCode::HYPERELASTIC_FAILURE:
-      error_code_string = "HYPERELASTIC FAILURE";
-      break;
+      return "HYPERELASTIC FAILURE";
     case ErrorCode::RADIAL_RETURN_FAILURE:
-      error_code_string = "RADIAL RETURN FAILURE";
-      break;
+      return "RADIAL RETURN FAILURE";
     case ErrorCode::ELASTIC_DEFORMATION_UPDATE_FAILURE:
-      error_code_string = "ELASTIC DEFORMATION UPDATE FAILURE";
-      break;
+      return "ELASTIC DEFORMATION UPDATE FAILURE";
     case ErrorCode::MODEL_EVAL_FAILURE:
-      error_code_string = "MODEL EVAL FAILURE";
-      break;
+      return "MODEL EVAL FAILURE";
   }
-  return error_code_string;
+  return "UNKNOWN";
+}
+
+void read_and_validate_elastic_params(
+    Teuchos::ParameterList& params,
+    std::vector<double>& props,
+    Elastic& elastic)
+{
+  // Set the defaults
+  elastic = Elastic::LINEAR_ELASTIC;
+  // Elastic model
+  if (!params.isSublist("elastic")) {
+    Omega_h_fail("elastic submodel must be defined");
+  }
+  props.resize(2);
+  auto pl = params.sublist("elastic");
+  if (pl.isParameter("hyperelastic")) {
+    std::string hyperelastic = pl.get<std::string>("hyperelastic");
+    if (hyperelastic == "neo hookean") {
+      elastic = HyperEPDetails::Elastic::NEO_HOOKEAN;
+    } else {
+      std::ostringstream os;
+      os << "Hyper elastic model \""<< hyperelastic << "\" not recognized";
+      auto str = os.str();
+      Omega_h_fail("%s\n", str.c_str());
+    }
+  }
+  if (!pl.isParameter("E")) {
+    Omega_h_fail("Young's modulus \"E\" modulus must be defined");
+  }
+  double E = pl.get<double>("E");
+  if (E <= 0.) {
+    Omega_h_fail("Young's modulus \"E\" must be positive");
+  }
+  if (!pl.isParameter("Nu")) {
+    Omega_h_fail("Poisson's ratio \"Nu\" must be defined");
+  }
+  double Nu = pl.get<double>("Nu");
+  if (Nu <= -1. || Nu >= .5) {
+    Omega_h_fail("Invalid value for Poisson's ratio \"Nu\"");
+  }
+  props[0] = E;
+  props[1] = Nu;
+}
+
+void read_and_validate_plastic_params(
+    Teuchos::ParameterList& params,
+    std::vector<double>& props,
+    Hardening& hardening,
+    RateDependence& rate_dep)
+{
+  // Set the defaults
+  hardening = Hardening::NONE;
+  rate_dep = RateDependence::NONE;
+  props.resize(8);
+  double max_double = std::numeric_limits<double>::max();
+  props[0] = max_double;  // Yield strength
+  props[1] = 0.;          // Hardening modulus
+  props[2] = 1.;          // Power law hardening exponent
+  props[3] = 298.;        // The rest of the properties are model dependent
+  props[4] = 0.;
+  props[5] = 0.;
+  props[6] = 0.;
+  props[7] = 0.;
+  if (!params.isSublist("plastic")) {
+    return;
+  }
+  auto& pl = params.sublist("plastic");
+  if (!pl.isParameter("hardening")) {
+    hardening = Hardening::NONE;
+    props[0] = pl.get<double>("A", props[0]);
+  } else {
+    std::string model = pl.get<std::string>("hardening");
+    if (model == "linear isotropic") {
+      // Linear isotropic hardening J2 plasticity
+      hardening = Hardening::LINEAR_ISOTROPIC;
+      props[0] = pl.get<double>("A", props[0]);
+      props[1] = pl.get<double>("B", props[1]);
+    } else if (model == "power law") {
+      // Power law hardening
+      hardening = Hardening::POWER_LAW;
+      props[0] = pl.get<double>("A", props[0]);
+      props[1] = pl.get<double>("B", props[1]);
+      props[2] = pl.get<double>("N", props[2]);
+    } else if (model == "zerilli armstrong") {
+      // Zerilli Armstrong hardening
+      hardening = Hardening::ZERILLI_ARMSTRONG;
+      props[0] = pl.get<double>("A", props[0]);
+      props[1] = pl.get<double>("B", props[1]);
+      props[2] = pl.get<double>("N", props[2]);
+      props[3] = pl.get<double>("C1", 0.0);
+      props[4] = pl.get<double>("C2", 0.0);
+      props[5] = pl.get<double>("C3", 0.0);
+    } else if (model == "johnson cook") {
+      // Johnson Cook hardening
+      hardening = Hardening::JOHNSON_COOK;
+      props[0] = pl.get<double>("A", props[0]);
+      props[1] = pl.get<double>("B", props[1]);
+      props[2] = pl.get<double>("N", props[2]);
+      props[3] = pl.get<double>("T0", props[3]);
+      props[4] = pl.get<double>("TM", props[4]);
+      props[5] = pl.get<double>("M", props[5]);
+    } else {
+      std::ostringstream os;
+      os << "Unrecognized hardening model \"" << model << "\"";
+      auto str = os.str();
+      Omega_h_fail("%s\n", str.c_str());
+    }
+  }
+  if (pl.isSublist("rate dependent")) {
+    // Rate dependence
+    auto& p = pl.sublist("rate dependent");
+    auto const type = p.get<std::string>("type", "None");
+    if (type == "johnson cook") {
+      if (hardening != Hardening::JOHNSON_COOK) {
+        Omega_h_fail("johnson cook rate dependent model requires johnson cook hardening");
+      }
+      rate_dep = RateDependence::JOHNSON_COOK;
+      props[6] = p.get<double>("C", props[6]);
+      props[7] = p.get<double>("EPDOT0", props[7]);
+    } else if (type == "zerilli armstrong") {
+      if (hardening != Hardening::ZERILLI_ARMSTRONG) {
+        Omega_h_fail("zerilli armstrong rate dependent model requires zerilli armstrong hardening");
+      }
+      rate_dep = RateDependence::ZERILLI_ARMSTRONG;
+      props[6] = p.get<double>("C4", 0.0);
+    } else if (type != "None") {
+      std::ostringstream os;
+      os << "Unrecognized rate dependent type \"" << type << "\"";
+      auto str = os.str();
+      Omega_h_fail("%s\n", str.c_str());
+    }
+  }
 }
 
 } // Hyperepdetails
