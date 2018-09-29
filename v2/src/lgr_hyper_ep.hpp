@@ -300,29 +300,22 @@ radial_return(Hardening const hardening,
   auto const mu = E / 2.0 / (1.0 + Nu);
   auto const twomu = 2.0 * mu;
   auto gamma = epdot * dtime * sq32;
-
   // Possible states at this point are TRIAL or REMAPPED
   if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
-
   // check yield
-  double Y = flow_stress(hardening, rate_dep, props, temp, ep, epdot);
-  tensor_type S0 = Omega_h::deviator(Te);
-  double norm_S0 = Omega_h::norm(S0);
-  double f = norm_S0 / sq2 - Y / sq3;
-
+  auto Y = flow_stress(hardening, rate_dep, props, temp, ep, epdot);
+  auto const S0 = deviator(Te);
+  auto const norm_S0 = norm(S0);
+  auto f = norm_S0 / sq2 - Y / sq3;
   if (f <= tol1) {
     // Elastic loading
     T = 1. * Te;
     if (flag != StateFlag::REMAPPED) flag = StateFlag::ELASTIC;
-  }
-
-  else {
-
+  } else {
     int conv = 0;
     if (flag != StateFlag::REMAPPED) flag = StateFlag::PLASTIC;
-    tensor_type N = S0 / norm_S0;  // Flow direction
-
-    for (int iter=0; iter<100; iter++) {
+    auto const N = S0 / norm_S0;  // Flow direction
+    for (int iter = 0; iter < 100; ++iter) {
 
       // Compute the yield stress
       Y = flow_stress(hardening, rate_dep, props, temp, ep, epdot);
