@@ -288,19 +288,18 @@ radial_return(Hardening const hardening,
               double& epdot,
               StateFlag& flag)
 {
-  const double tol1 = 1e-12;
-  const double tol2 = std::min(dtime, 1e-6);
+  constexpr double tol1 = 1e-12;
+  auto const tol2 = Omega_h::min2(dtime, 1e-6);
   constexpr double twothird = 2.0 / 3.0;
-  const double sq2 = sqrt(2.0);
-  const double sq3 = sqrt(3.0);
-  const double sq23 = sq2 / sq3;
-  const double sq32 = 1.0 / sq23;
-
-  const double E = props[0];
-  const double Nu = props[1];
-  const double mu = E / 2.0 / (1. + Nu);
-  const double twomu = 2. * mu;
-  double gamma = epdot * dtime * sq32;
+  auto const sq2 = std::sqrt(2.0);
+  auto const sq3 = std::sqrt(3.0);
+  auto const sq23 = sq2 / sq3;
+  auto const sq32 = 1.0 / sq23;
+  auto const E = props[0];
+  auto const Nu = props[1];
+  auto const mu = E / 2.0 / (1.0 + Nu);
+  auto const twomu = 2.0 * mu;
+  auto gamma = epdot * dtime * sq32;
 
   // Possible states at this point are TRIAL or REMAPPED
   if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
