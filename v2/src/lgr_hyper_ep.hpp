@@ -330,18 +330,15 @@ radial_return(Hardening const hardening,
       auto const dep = Omega_h::max2(sq23 * gamma, 0.0);
       epdot = dep / dtime;
       ep += dep;
-
-      tensor_type S = S0 - twomu * gamma * N;
-      f = Omega_h::norm(S) / sq2 - Y / sq3;
+      auto const S = S0 - twomu * gamma * N;
+      f = norm(S) / sq2 - Y / sq3;
       if (f < tol1) {
         conv = 1;
         break;
-      }
-      else if (std::abs(dgamma) < tol2) {
+      } else if (std::abs(dgamma) < tol2) {
         conv = 1;
         break;
-      }
-      else if (iter > 24 && f <= tol1*1000.) {
+      } else if (iter > 24 && f <= tol1 * 1000.0) {
         // Weaker convergence
         conv = 2;
         break;
@@ -357,10 +354,8 @@ radial_return(Hardening const hardening,
                 << "\tdg: " << dg << "\n\n\n";
 #endif
     }
-
     // Update the stress tensor
     T = Te - twomu * gamma * N;
-
     if (!conv) {
       return ErrorCode::RADIAL_RETURN_FAILURE;
     }
@@ -368,16 +363,13 @@ radial_return(Hardening const hardening,
       // print warning about weaker convergence
     }
   }
-
   if (flag != StateFlag::ELASTIC) {
-
     // determine elastic deformation
     double jac = Omega_h::determinant(F);
     auto const Bbe = find_bbe(T, mu);
     tensor_type Be = Bbe * std::pow(jac, 2./3.);
     tensor_type Ve = Omega_h::sqrt_spd(Be);
     Fp = Omega_h::invert(Ve) * F;
-
     if (flag == StateFlag::REMAPPED) {
       // Correct pressure term
       double p = Omega_h::trace(T);
