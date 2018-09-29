@@ -193,79 +193,66 @@ double flow_stress(
 }
 
 OMEGA_H_INLINE
-double
-dflow_stress(const Hardening& hardening,
-             const RateDependence& rate_dep,
-             const std::vector<double>& props,
-             const double& temp, const double& ep,
-             const double& epdot, const double& dtime)
+double dflow_stress(
+    Hardening const hardening,
+    RateDependence const rate_dep,
+    std::vector<double> const& props,
+    double const temp,
+    double const ep,
+    double const epdot,
+    double const dtime)
 {
   double deriv = 0.;
   if (hardening == Hardening::LINEAR_ISOTROPIC) {
-    double b = props[3];
+    auto const b = props[3];
     deriv = b;
-  }
-
-  else if (hardening == Hardening::POWER_LAW) {
-    double b = props[3];
-    double n = props[4];
+  } else if (hardening == Hardening::POWER_LAW) {
+    auto const b = props[3];
+    auto const n = props[4];
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-  }
-
-  else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
-    double b = props[3];
-    double n = props[4];
+  } else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
+    auto const b = props[3];
+    auto const n = props[4];
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-
-    double c1 = props[5];
-    double c2 = props[6];
-    double c3 = props[7];
-
-    double alpha = c3;
+    auto const c1 = props[5];
+    auto const c2 = props[6];
+    auto const c3 = props[7];
+    auto alpha = c3;
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      double c4 = props[8];
+      auto const c4 = props[8];
       alpha -= c4 * std::log(epdot);
     }
     deriv += .5 * c2 / std::sqrt(ep <= 0.0 ? 1.e-8 : ep) * std::exp(-alpha * temp);
-
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      double c4 = props[8];
-      double term1 = c1 * c4 * temp * std::exp(-alpha * temp);
-      double term2 = c2 * sqrt(ep) * c4 * temp * std::exp(-alpha * temp);
+      auto const c4 = props[8];
+      auto const term1 = c1 * c4 * temp * std::exp(-alpha * temp);
+      auto const term2 = c2 * sqrt(ep) * c4 * temp * std::exp(-alpha * temp);
       deriv += (term1 + term2) / (epdot <= 0.0 ? 1.e-8 : epdot) / dtime;
     }
-  }
-
-  else if (hardening == Hardening::JOHNSON_COOK) {
-    double bjo = props[3];
-    double njo = props[4];
-    double temp_ref = props[5];
-    double temp_melt = props[6];
-    double mjo = props[7];
-
+  } else if (hardening == Hardening::JOHNSON_COOK) {
+    auto const bjo = props[3];
+    auto const njo = props[4];
+    auto const temp_ref = props[5];
+    auto const temp_melt = props[6];
+    auto const mjo = props[7];
     // Calculate temperature contribution
     double temp_contrib = 1.0;
-    if (fabs(temp_melt - std::numeric_limits<double>::max()) + 1.0 != 1.0) {
-      double tstar = (temp > temp_melt) ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
-      temp_contrib = (tstar < 0.0) ? (1.0 - tstar) : (1.0 - pow(tstar, mjo));
+    if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 != 1.0) {
+      auto const tstar = (temp > temp_melt) ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
+      temp_contrib = (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
     }
-
-    deriv = (ep > 0.0) ? (bjo * njo * pow(ep, njo - 1) * temp_contrib) : 0.0;
-
+    deriv = (ep > 0.0) ? (bjo * njo * std::pow(ep, njo - 1) * temp_contrib) : 0.0;
     if (rate_dep == RateDependence::JOHNSON_COOK) {
-      double ajo = props[2];
-      double cjo = props[8];
-      double epdot0 = props[9];
-      double rfac = epdot / epdot0;
-
+      auto const ajo = props[2];
+      auto const cjo = props[8];
+      auto const epdot0 = props[9];
+      auto const rfac = epdot / epdot0;
       // Calculate strain rate contribution
-      double term1 = (rfac < 1.0) ?  (std::pow((1.0 + rfac), cjo)) : (1.0 + cjo * std::log(rfac));
-
-      double term2 = (ajo + bjo * std::pow(ep, njo)) * temp_contrib;
+      auto const term1 = (rfac < 1.0) ?  (std::pow((1.0 + rfac), cjo)) : (1.0 + cjo * std::log(rfac));
+      auto term2 = (ajo + bjo * std::pow(ep, njo)) * temp_contrib;
       if (rfac < 1.0) {
-        term2 *= cjo * pow((1.0 + rfac), (cjo - 1.0));
-      }
-      else {
+        term2 *= cjo * std::pow((1.0 + rfac), (cjo - 1.0));
+      } else {
         term2 *= cjo / rfac;
       }
       deriv *= term1;
