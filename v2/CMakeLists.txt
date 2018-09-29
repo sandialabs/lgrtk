@@ -23,6 +23,7 @@ endif()
 
 set(LGR_KEY_BOOLS
   LGR_USE_CUBIT
+  LGR_USE_GTest
   )
 
 set(LGR_KEY_STRINGS
