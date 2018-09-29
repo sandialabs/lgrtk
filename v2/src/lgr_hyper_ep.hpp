@@ -275,12 +275,17 @@ double dflow_stress(
  */
 OMEGA_H_INLINE
 ErrorCode
-radial_return(const Hardening& hardening,
-              const RateDependence& rate_dep,
-              const std::vector<double>& props,
-              const tensor_type& Te, const tensor_type& F,
-              const double& temp, const double& dtime,
-              tensor_type& T, tensor_type& Fp, double& ep, double& epdot,
+radial_return(Hardening const hardening,
+              RateDependence const rate_dep,
+              std::vector<double> const& props,
+              tensor_type const Te,
+              tensor_type const F,
+              double const temp,
+              double const dtime,
+              tensor_type& T,
+              tensor_type& Fp,
+              double& ep,
+              double& epdot,
               StateFlag& flag)
 {
   const double tol1 = 1e-12;
