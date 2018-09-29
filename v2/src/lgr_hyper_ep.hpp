@@ -238,8 +238,8 @@ iterations
                       Subject to:  det(X) = 1
 
 where Y = dev(tau) / mu
-
 */
+
 OMEGA_H_INLINE
 ErrorCode
 find_bbe(tensor_type& Be, const tensor_type& tau, const double& mu)
@@ -255,29 +255,23 @@ find_bbe(tensor_type& Be, const tensor_type& tau, const double& mu)
   double txz = .5*(tau(0,2) + tau(2,0));
   double tyz = .5*(tau(1,2) + tau(2,1));
 
-  auto fun = OMEGA_H_LAMBDA(const double& bzz) {
-    // Returns det(BBe) - 1, where BBe is the iscohoric deformation
-    double f2 = (bzz*mu*(-txy*txy + (bzz*mu + txx - tzz)*(bzz*mu + tyy - tzz))
-                 + 2*txy*txz*tyz + txz*txz*(-bzz*mu - tyy + tzz)
-                 + tyz*tyz*(-bzz*mu - txx + tzz)) / (mu*mu*mu);
-    return f2 - 1;
-  };
-
-  auto dfun = OMEGA_H_LAMBDA(const double& bzz) {
-    // Returns d(det(BBe) - 1)/d(be_zz), where BBe is the iscohoric deformation
-    double df2 = (bzz*mu*(2.0*bzz*mu + txx + tyy - 2*tzz)
-                 - txy*txy - txz*txz - tyz*tyz
-                 + (bzz*mu + txx - tzz)*(bzz*mu + tyy - tzz))/(mu*mu);
-    return df2;
-  };
-
   Be = Omega_h::deviator(tau) / mu;
-  double bzz_old{1};
-  double bzz_new{1};
+  double bzz_old = 1;
+  double bzz_new = 1;
   for (int i=0; i<maxit; i++) {
-    bzz_new = bzz_old - fun(bzz_old) / dfun(bzz_old);
-    Be(0,0) = 1./mu * (mu*bzz_new + txx - tzz);
-    Be(1,1) = 1./mu * (mu*bzz_new + tyy - tzz);
+    // computes det(BBe), where BBe is the iscohoric deformation
+    auto const fun_val =
+      (bzz_old * mu * (-txy * txy + (bzz_old*mu + txx - tzz)*(bzz_old*mu + tyy - tzz))
+      + 2*txy*txz*tyz + txz*txz*(-bzz_old*mu - tyy + tzz)
+      + tyz*tyz*(-bzz_old*mu - txx + tzz)) / (mu*mu*mu);
+    // computes d(det(BBe) - 1)/d(be_zz), where BBe is the iscohoric deformation
+    auto const dfun_val =
+      (bzz_old*mu*(2.0*bzz_old*mu + txx + tyy - 2.0*tzz)
+      - txy*txy - txz*txz - tyz*tyz
+      + (bzz_old*mu + txx - tzz)*(bzz_old*mu + tyy - tzz))/(mu*mu);
+    bzz_new = bzz_old - (fun_val - 1.0) / dfun_val;
+    Be(0,0) = (1.0 / mu) * (mu * bzz_new + txx - tzz);
+    Be(1,1) = (1.0 / mu) * (mu * bzz_new + tyy - tzz);
     Be(2,2) = bzz_new;
     if ((bzz_new-bzz_old)*(bzz_new-bzz_old) < tol) {
       return ErrorCode::SUCCESS;
