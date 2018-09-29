@@ -104,6 +104,10 @@ void ModelBase::at_field_update() {
   Omega_h_fail("at_field_update called on a Model that didn't define it!\n");
 }
 
+void ModelBase::after_field_update() {
+  Omega_h_fail("after_field_update called on a Model that didn't define it!\n");
+}
+
 void ModelBase::at_material_model() {
   Omega_h_fail("at_material_model called on a Model that didn't define it!\n");
 }

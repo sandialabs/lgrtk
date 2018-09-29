@@ -61,6 +61,16 @@ void Models::at_field_update() {
   }
 }
 
+void Models::after_field_update() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    if ((model->exec_stages() & AFTER_FIELD_UPDATE) != 0) {
+      Scope scope{sim, model->name()};
+      model->after_field_update();
+    }
+  }
+}
+
 void Models::at_material_model() {
   OMEGA_H_TIME_FUNCTION;
   for (auto& model : models) {

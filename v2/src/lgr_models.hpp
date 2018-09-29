@@ -15,6 +15,7 @@ struct Models {
   void setup_field_updates(); 
   void before_position_update();
   void at_field_update();
+  void after_field_update();
   void at_material_model();
   void after_material_model();
   void after_correction();
