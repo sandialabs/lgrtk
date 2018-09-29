@@ -91,7 +91,7 @@ where Y = dev(tau) / mu
 */
 
 OMEGA_H_INLINE
-tensor_type find_bbe(const tensor_type& tau, const double& mu) {
+tensor_type find_bbe(tensor_type const tau, double const mu) {
   constexpr int maxit = 25;
   constexpr double tol = 1e-12;
   auto const txx = tau(0,0);
@@ -127,77 +127,63 @@ tensor_type find_bbe(const tensor_type& tau, const double& mu) {
 }
 
 OMEGA_H_INLINE
-double
-flow_stress(const Hardening& hardening,
-            const RateDependence& rate_dep,
-            const std::vector<double>& props,
-            const double& temp, const double& ep, const double& epdot)
-{
-  double Y = std::numeric_limits<double>::max();
-
+double flow_stress(
+    Hardening const hardening,
+    RateDependence const rate_dep,
+    std::vector<double> const& props,
+    double const temp,
+    double const ep,
+    double const epdot) {
+  auto Y = Omega_h::ArithTraits<double>::max();
   if (hardening == Hardening::NONE) {
     Y = props[2];
-  }
-
-  else if (hardening == Hardening::LINEAR_ISOTROPIC) {
+  } else if (hardening == Hardening::LINEAR_ISOTROPIC) {
     Y = props[2] + props[3] * ep;
-  }
-
-  else if (hardening == Hardening::POWER_LAW) {
-    double a = props[2];
-    double b = props[3];
-    double n = props[4];
+  } else if (hardening == Hardening::POWER_LAW) {
+    auto const a = props[2];
+    auto const b = props[3];
+    auto const n = props[4];
     Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-  }
-
-  else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
-    double a = props[2];
-    double b = props[3];
-    double n = props[4];
+  } else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
+    auto const a = props[2];
+    auto const b = props[3];
+    auto const n = props[4];
     Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-
-    double c1 = props[5];
-    double c2 = props[6];
-    double c3 = props[7];
-    double alpha = c3;
+    auto const c1 = props[5];
+    auto const c2 = props[6];
+    auto const c3 = props[7];
+    auto alpha = c3;
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      double c4 = props[8];
+      auto const c4 = props[8];
       alpha -= c4 * std::log(epdot);
     }
     Y += (c1 + c2 * std::sqrt(ep)) * std::exp(-alpha * temp);
-  }
-
-  else if (hardening == Hardening::JOHNSON_COOK) {
-    double ajo = props[2];
-    double bjo = props[3];
-    double njo = props[4];
-    double temp_ref = props[5];
-    double temp_melt = props[6];
-    double mjo = props[7];
-
+  } else if (hardening == Hardening::JOHNSON_COOK) {
+    auto const ajo = props[2];
+    auto const bjo = props[3];
+    auto const njo = props[4];
+    auto const temp_ref = props[5];
+    auto const temp_melt = props[6];
+    auto const mjo = props[7];
     // Constant contribution
     Y = ajo;
-
     // Plastic strain contribution
     if (bjo > 0.0) {
       Y += (fabs(njo) > 0.0) ? bjo * std::pow(ep, njo) : bjo;
     }
-
     // Temperature contribution
     if (fabs(temp_melt - std::numeric_limits<double>::max()) + 1.0 != 1.0) {
       double tstar = (temp > temp_melt) ? 1.0 : ((temp - temp_ref) / (temp_melt - temp_ref));
       Y *= (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
     }
-
   }
-
   if (rate_dep == RateDependence::JOHNSON_COOK) {
-
-    double cjo = props[8];
-    double epdot0 = props[9];
-    double rfac = epdot / epdot0;  // FIXME: This assumes that all the
-                                           // strain rate is plastic.  Should
-                                           // use actual strain rate.
+    auto const cjo = props[8];
+    auto const epdot0 = props[9];
+    auto const rfac = epdot / epdot0;
+    // FIXME: This assumes that all the
+    // strain rate is plastic.  Should
+    // use actual strain rate.
     // Rate of plastic strain contribution
     if (cjo > 0.0) {
       Y *= (rfac < 1.0) ?  std::pow((1.0 + rfac), cjo) : (1.0 + cjo * std::log(rfac));
