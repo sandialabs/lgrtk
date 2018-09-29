@@ -241,21 +241,18 @@ where Y = dev(tau) / mu
 */
 
 OMEGA_H_INLINE
-ErrorCode
-find_bbe(tensor_type& Be, const tensor_type& tau, const double& mu)
+tensor_type
+find_bbe(const tensor_type& tau, const double& mu)
 {
-
-  int maxit = 25;
-  double tol = 1e-12;
-
-  double txx = tau(0,0);
-  double tyy = tau(1,1);
-  double tzz = tau(2,2);
-  double txy = .5*(tau(0,1) + tau(1,0));
-  double txz = .5*(tau(0,2) + tau(2,0));
-  double tyz = .5*(tau(1,2) + tau(2,1));
-
-  Be = Omega_h::deviator(tau) / mu;
+  constexpr int maxit = 25;
+  constexpr double tol = 1e-12;
+  auto const txx = tau(0,0);
+  auto const tyy = tau(1,1);
+  auto const tzz = tau(2,2);
+  auto const txy = .5 * (tau(0,1) + tau(1,0));
+  auto const txz = .5 * (tau(0,2) + tau(2,0));
+  auto const tyz = .5 * (tau(1,2) + tau(2,1));
+  auto Be = Omega_h::deviator(tau) / mu;
   double bzz_old = 1;
   double bzz_new = 1;
   for (int i=0; i<maxit; i++) {
@@ -273,13 +270,12 @@ find_bbe(tensor_type& Be, const tensor_type& tau, const double& mu)
     Be(0,0) = (1.0 / mu) * (mu * bzz_new + txx - tzz);
     Be(1,1) = (1.0 / mu) * (mu * bzz_new + tyy - tzz);
     Be(2,2) = bzz_new;
-    if ((bzz_new-bzz_old)*(bzz_new-bzz_old) < tol) {
-      return ErrorCode::SUCCESS;
+    if (square(bzz_new - bzz_old) < tol) {
+      return Be;
     }
     bzz_old = bzz_new;
   }
-
-  return ErrorCode::ELASTIC_DEFORMATION_UPDATE_FAILURE;
+  OMEGA_H_NORETURN(tensor_type());
 }
 
 OMEGA_H_INLINE
@@ -564,11 +560,7 @@ radial_return(const Hardening& hardening,
 
     // determine elastic deformation
     double jac = Omega_h::determinant(F);
-    tensor_type Bbe;
-    ErrorCode err_c = find_bbe(Bbe, T, mu);
-    if (err_c != ErrorCode::SUCCESS) {
-      return err_c;
-    }
+    auto const Bbe = find_bbe(T, mu);
     tensor_type Be = Bbe * std::pow(jac, 2./3.);
     tensor_type Ve = Omega_h::sqrt_spd(Be);
     Fp = Omega_h::invert(Ve) * F;
