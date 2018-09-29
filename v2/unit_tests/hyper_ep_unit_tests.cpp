@@ -208,19 +208,6 @@ TEST(HyperEPMaterialModel, ParameterValidation)
   scalar_type tol = 1e-14;
 
   { // Elastic
-    {
-      auto params = ParameterList("model");
-      std::vector<scalar_type> props;
-      Details::Elastic elastic;
-      try {
-        Details::read_and_validate_elastic_params(params, props, elastic);
-        EXPECT_TRUE(false);
-      }
-      catch (invalid_argument&) {
-        // Test passed
-      }
-    }
-
     auto p = ParameterList("elastic");
     p.set<scalar_type>("E", 10.);
     p.set<scalar_type>("Nu", .1);

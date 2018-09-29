@@ -11,19 +11,6 @@ namespace lgr {
 
 namespace HyperEPDetails {
 
-#ifdef OMEGA_H_THROW
-#define LGR_THROW_IF(cond, message)                                          \
-  if (cond) {                                                                  \
-    throw Omega_h::exception(message);                                         \
-  }
-#else
-#include <exception>
-#define LGR_THROW_IF(cond, message)                                          \
-  if (cond) {                                                                  \
-    throw std::invalid_argument(message);                                      \
-  }
-#endif
-
 enum class ErrorCode {
   NOT_SET,
   SUCCESS,
@@ -63,153 +50,16 @@ enum class StateFlag {
 
 using tensor_type = Matrix<3, 3>;
 
-std::string
-get_error_code_string(const ErrorCode& code);
-
-OMEGA_H_INLINE
-void
-read_and_validate_elastic_params(Teuchos::ParameterList& params,
-                                 std::vector<double>& props,
-                                 Elastic& elastic)
-{
-  // Set the defaults
-  elastic = Elastic::LINEAR_ELASTIC;
-
-  // Elastic model
-  LGR_THROW_IF(!params.isSublist("elastic"),
-                   "elastic submodel must be defined");
-
-  props.resize(2);
-  auto pl = params.sublist("elastic");
-  if (pl.isParameter("hyperelastic")) {
-    std::string hyperelastic = pl.get<std::string>("hyperelastic");
-    if (hyperelastic == "neo hookean") {
-      elastic = HyperEPDetails::Elastic::NEO_HOOKEAN;
-    }
-    else {
-      std::ostringstream os;
-      os << "Hyper elastic model \""<< hyperelastic << "\" not recognized";
-      LGR_THROW_IF(true, os.str());
-    }
-  }
-
-  LGR_THROW_IF(!pl.isParameter("E"), "Young's modulus \"E\" modulus must be defined");
-  double E = pl.get<double>("E");
-  LGR_THROW_IF(E <= 0., "Young's modulus \"E\" must be positive");
-
-  LGR_THROW_IF(!pl.isParameter("Nu"), "Poisson's ratio \"Nu\" must be defined");
-  double Nu = pl.get<double>("Nu");
-  LGR_THROW_IF(Nu <= -1. || Nu >= .5, "Invalid value for Poisson's ratio \"Nu\"");
-
-  props[0] = E;
-  props[1] = Nu;
-
-}
-
-OMEGA_H_INLINE
-void
-read_and_validate_plastic_params(Teuchos::ParameterList& params,
-                                 std::vector<double>& props,
-                                 Hardening& hardening,
-                                 RateDependence& rate_dep)
-{
-  // Set the defaults
-  hardening = Hardening::NONE;
-  rate_dep = RateDependence::NONE;
-
-  props.resize(8);
-  double max_double = std::numeric_limits<double>::max();
-  props[0] = max_double;  // Yield strength
-  props[1] = 0.;          // Hardening modulus
-  props[2] = 1.;          // Power law hardening exponent
-  props[3] = 298.;        // The rest of the properties are model dependent
-  props[4] = 0.;
-  props[5] = 0.;
-  props[6] = 0.;
-  props[7] = 0.;
-
-  if (!params.isSublist("plastic")) {
-    return;
-  }
-
-  auto pl = params.sublist("plastic");
-  if (!pl.isParameter("hardening")) {
-    hardening = Hardening::NONE;
-    props[0] = pl.get<double>("A", props[0]);
-  }
-
-  else {
-    std::string model = pl.get<std::string>("hardening");
-    if (model == "linear isotropic") {
-      // Linear isotropic hardening J2 plasticity
-      hardening = Hardening::LINEAR_ISOTROPIC;
-      props[0] = pl.get<double>("A", props[0]);
-      props[1] = pl.get<double>("B", props[1]);
-    }
-
-    else if (model == "power law") {
-      // Power law hardening
-      hardening = Hardening::POWER_LAW;
-      props[0] = pl.get<double>("A", props[0]);
-      props[1] = pl.get<double>("B", props[1]);
-      props[2] = pl.get<double>("N", props[2]);
-    }
-
-    else if (model == "zerilli armstrong") {
-      // Zerilli Armstrong hardening
-      hardening = Hardening::ZERILLI_ARMSTRONG;
-      props[0] = pl.get<double>("A", props[0]);
-      props[1] = pl.get<double>("B", props[1]);
-      props[2] = pl.get<double>("N", props[2]);
-      props[3] = pl.get<double>("C1", 0.0);
-      props[4] = pl.get<double>("C2", 0.0);
-      props[5] = pl.get<double>("C3", 0.0);
-    }
-
-    else if (model == "johnson cook") {
-      // Johnson Cook hardening
-      hardening = Hardening::JOHNSON_COOK;
-      props[0] = pl.get<double>("A", props[0]);
-      props[1] = pl.get<double>("B", props[1]);
-      props[2] = pl.get<double>("N", props[2]);
-      props[3] = pl.get<double>("T0", props[3]);
-      props[4] = pl.get<double>("TM", props[4]);
-      props[5] = pl.get<double>("M", props[5]);
-    }
-
-    else {
-      std::ostringstream os;
-      os << "Unrecognized hardening model \"" << model << "\"";
-      LGR_THROW_IF(true, os.str());
-    }
-  }
-
-  if (pl.isSublist("rate dependent")) {
-    // Rate dependence
-    auto p = pl.sublist("rate dependent");
-    std::string type = p.get<std::string>("type", "None");
-    if (type == "johnson cook") {
-      LGR_THROW_IF(hardening != Hardening::JOHNSON_COOK,
-                       "johnson cook rate dependent model requires johnson cook hardening");
-      rate_dep = RateDependence::JOHNSON_COOK;
-      props[6] = p.get<double>("C", props[6]);
-      props[7] = p.get<double>("EPDOT0", props[7]);
-    }
-
-    else if (type == "zerilli armstrong") {
-      LGR_THROW_IF(hardening != Hardening::ZERILLI_ARMSTRONG,
-                     "zerilli armstrong rate dependent model requires zerilli armstrong hardening");
-      rate_dep = RateDependence::ZERILLI_ARMSTRONG;
-      props[6] = p.get<double>("C4", 0.0);
-    }
-
-    else if (type != "None") {
-      std::ostringstream os;
-      os << "Unrecognized rate dependent type \"" << type << "\"";
-      LGR_THROW_IF(true, os.str());
-    }
-  }
-}
+char const* get_error_code_string(ErrorCode code);
+void read_and_validate_elastic_params(
+    Teuchos::ParameterList& params,
+    std::vector<double>& props,
+    Elastic& elastic);
+void read_and_validate_plastic_params(
+    Teuchos::ParameterList& params,
+    std::vector<double>& props,
+    Hardening& hardening,
+    RateDependence& rate_dep);
 
 /** \brief Determine the square of the left stretch B=V.V
 
@@ -241,9 +91,7 @@ where Y = dev(tau) / mu
 */
 
 OMEGA_H_INLINE
-tensor_type
-find_bbe(const tensor_type& tau, const double& mu)
-{
+tensor_type find_bbe(const tensor_type& tau, const double& mu) {
   constexpr int maxit = 25;
   constexpr double tol = 1e-12;
   auto const txx = tau(0,0);
@@ -681,7 +529,6 @@ eval(const Elastic& elastic,
   return ErrorCode::SUCCESS;
 }
 
-#undef LGR_THROW_IF
 } // HyperEpDetails
 
 template <class Elem>
