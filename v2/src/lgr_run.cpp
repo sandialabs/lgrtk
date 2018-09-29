@@ -29,6 +29,7 @@ template <class Elem>
 static void close_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
   sim.models.at_field_update();
+  sim.models.after_field_update();
   sim.models.at_material_model();
   sim.models.after_material_model();
   compute_point_time_steps<Elem>(sim);

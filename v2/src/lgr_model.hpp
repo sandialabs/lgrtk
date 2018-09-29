@@ -16,9 +16,10 @@ struct Support;
 enum ExecStage : std::uint64_t {
   BEFORE_POSITION_UPDATE = std::uint64_t(1) << 0,
   AT_FIELD_UPDATE        = std::uint64_t(1) << 1,
-  AT_MATERIAL_MODEL      = std::uint64_t(1) << 2,
-  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 3,
-  AFTER_CORRECTION       = std::uint64_t(1) << 4,
+  AFTER_FIELD_UPDATE     = std::uint64_t(1) << 2,
+  AT_MATERIAL_MODEL      = std::uint64_t(1) << 3,
+  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 4,
+  AFTER_CORRECTION       = std::uint64_t(1) << 5,
 };
 
 struct ModelBase {
@@ -50,6 +51,7 @@ struct ModelBase {
   MappedWrite elems_getset(FieldIndex fi);
   virtual void before_position_update();
   virtual void at_field_update();
+  virtual void after_field_update();
   virtual void at_material_model();
   virtual void after_material_model();
   virtual void after_correction();
