@@ -343,7 +343,7 @@ radial_return(Hardening const hardening,
         conv = 2;
         break;
       }
-#ifdef HYPER_EP_VERBOSE_DEBUG
+#ifdef LGR_HYPER_EP_VERBOSE_DEBUG
       std::cout << "Iteration: " << iter + 1 << "\n"
                 << "\tROOTJ20: " << Omega_h::norm(S0) << "\n"
                 << "\tROOTJ2: " << Omega_h::norm(S) << "\n"
