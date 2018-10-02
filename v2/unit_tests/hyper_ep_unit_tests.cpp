@@ -108,7 +108,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "UNIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
@@ -121,7 +121,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "UNIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
@@ -131,7 +131,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "SIMPLE SHEAR, 2D EVAL FAILED WITH ERROR "
@@ -141,7 +141,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. - eps;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "HYDROSTATIC COMPRESSION EVAL FAILED WITH ERROR "
@@ -151,7 +151,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. + eps;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "HYDROSTATIC TENSION EVAL FAILED WITH ERROR "
@@ -161,7 +161,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = eps;
   F(2,0) = eps;      F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "SIMPLE SHEAR, 3D EVAL FAILED WITH ERROR "
@@ -171,7 +171,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "BIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
@@ -181,7 +181,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "BIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
@@ -191,7 +191,7 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err = Details::update(elastic, hardening, rate_dep, props, rho,
                       F, dtime, temp, T, wave_speed, Fp, ep, epdot);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "PURE SHEAR, 2D EVAL FAILED WITH ERROR "
@@ -405,7 +405,7 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   scalar_type c = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
-  Details::eval(elastic, hardening, rate_dep, props, rho,
+  Details::update(elastic, hardening, rate_dep, props, rho,
                 F, dtime, temp, T, c, Fp, ep, epdot);
 
   scalar_type fac = 1.66666666666667;  // 10/6
@@ -445,7 +445,7 @@ TEST(HyperEPMaterialModel, LinearElastic)
   scalar_type c = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
-  Details::eval(elastic, hardening, rate_dep, props, rho,
+  Details::update(elastic, hardening, rate_dep, props, rho,
                 F, dtime, temp, T, c, Fp, ep, epdot);
 
   scalar_type K = E / 3. / (1. - 2. * Nu);
@@ -485,13 +485,13 @@ TEST(HyperEPMaterialModel, SimpleJ2)
   // Uniaxial strain
   F(0,0) = 1.004;
   auto err_c =
-    Details::eval(elastic, hardening, rate_dep, props, rho,
+    Details::update(elastic, hardening, rate_dep, props, rho,
                   F, dtime, temp, T, c, Fp, ep, epdot);
   EXPECT_TRUE(Omega_h::are_close(ep, 0.));
 
   c = 0.;
   F(0,0) = 1.005;
-  err_c = Details::eval(elastic, hardening, rate_dep, props, rho,
+  err_c = Details::update(elastic, hardening, rate_dep, props, rho,
                         F, dtime, temp, T, c, Fp, ep, epdot);
   EXPECT_TRUE(Omega_h::are_close(T(0,0), 47500.));
   EXPECT_TRUE(Omega_h::are_close(T(1,1), 7500.));

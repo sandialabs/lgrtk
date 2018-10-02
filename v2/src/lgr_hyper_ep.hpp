@@ -431,19 +431,20 @@ hyper_elastic_stress(
 
 OMEGA_H_INLINE
 ErrorCode
-eval(Elastic const elastic,
-     Hardening const hardening,
-     RateDependence const rate_dep,
-     std::vector<double> const& props,
-     double const rho,
-     tensor_type const F,
-     double const dtime,
-     double const temp,
-     tensor_type& T,
-     double& wave_speed,
-     tensor_type& Fp,
-     double& ep,
-     double& epdot)
+update(
+    Elastic const elastic,
+    Hardening const hardening,
+    RateDependence const rate_dep,
+    std::vector<double> const& props,
+    double const rho,
+    tensor_type const F,
+    double const dtime,
+    double const temp,
+    tensor_type& T,
+    double& wave_speed,
+    tensor_type& Fp,
+    double& ep,
+    double& epdot)
 {
   auto const jac = determinant(F);
   {
@@ -464,7 +465,8 @@ eval(Elastic const elastic,
   }
   // check yield
   auto flag = StateFlag::TRIAL;
-  err_c = radial_return(hardening, rate_dep, props, Te, F, temp,
+  err_c = radial_return(
+      hardening, rate_dep, props, Te, F, temp,
       dtime, T, Fp, ep, epdot, flag);
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
@@ -472,7 +474,7 @@ eval(Elastic const elastic,
   return ErrorCode::SUCCESS;
 }
 
-} // HyperEpDetails
+} // hyper_ep
 
 template <class Elem>
 ModelBase* hyper_ep_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl);

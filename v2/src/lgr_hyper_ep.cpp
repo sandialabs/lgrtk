@@ -355,7 +355,7 @@ struct HyperEP : public Model<Elem>
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
 
       // Update the material response
-      auto err_c = hyper_ep::eval(elastic, hardening, rate_dep,
+      auto err_c = hyper_ep::update(elastic, hardening, rate_dep,
           props, rho, F, dt, temp, T, c, Fp, ep, epdot);
       if(err_c != hyper_ep::ErrorCode::SUCCESS)
         Omega_h_fail("Failed to update stress tensor");
