@@ -387,14 +387,14 @@ linear_elastic_stress(
     std::vector<double> const& props,
     tensor_type const Fe)
 {
-  double K = props[0] / (3. * (1. - 2. * props[1]));
-  double G = props[0] / 2.0 / (1. + props[1]);
-  auto I = identity_matrix<3,3>();
-  auto grad_u = Fe - I;
-  auto strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
-  auto isotropic_strain = (trace(strain) / 3.) * I;
-  auto deviatoric_strain = strain - isotropic_strain;
-  return (3. * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
+  auto const K = props[0] / (3.0 * (1.0 - 2.0 * props[1]));
+  auto const G = props[0] / 2.0 / (1.0 + props[1]);
+  auto const I = identity_matrix<3,3>();
+  auto const grad_u = Fe - I;
+  auto const strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
+  auto const isotropic_strain = (trace(strain) / 3.0) * I;
+  auto const deviatoric_strain = strain - isotropic_strain;
+  return (3.0 * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
 }
 
 /*
