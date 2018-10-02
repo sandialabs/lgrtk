@@ -403,34 +403,29 @@ linear_elastic_stress(
  */
 OMEGA_H_INLINE
 tensor_type
-hyperstress(const std::vector<double>& props,
-            const tensor_type& Fe, const double& jac)
+hyper_elastic_stress(
+    std::vector<double> const& props,
+    tensor_type const Fe,
+    double const jac)
 {
-
-  double E = props[0];
-  double Nu = props[1];
-
+  auto const E = props[0];
+  auto const Nu = props[1];
   // Jacobian and distortion tensor
-  double scale = std::pow(jac, -1./3.);
-  tensor_type Fb = scale * Fe;
-
+  auto const scale = std::pow(jac, -1.0 / 3.0);
+  auto const Fb = scale * Fe;
   // Elastic moduli
-  double C10 = E / (4. * (1. + Nu));
-  double D1 = 6. * (1. - 2. * Nu) / E;
-  double EG = 2. * C10 / jac;
-
+  auto const C10 = E / (4.0 * (1.0 + Nu));
+  auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
+  auto const EG = 2.0 * C10 / jac;
   // Deviatoric left Cauchy-Green deformation tensor
-  tensor_type Bb = Fb * Omega_h::transpose(Fb);
-
+  auto Bb = Fb * transpose(Fb);
   // Deviatoric Cauchy stress
-  double TRBb = Omega_h::trace(Bb) / 3.;
-  for (int i=0; i<3; ++i) Bb(i,i) -= TRBb;
+  auto const TRBb = trace(Bb) / 3.0;
+  for (int i = 0; i < 3; ++i) Bb(i,i) -= TRBb;
   auto T = EG * Bb;
-
   // Pressure response
-  double PR{2. / D1 * (jac - 1.)};
-  for (int i=0; i<3; ++i) T(i,i) += PR;
-
+  auto const PR = 2.0 / D1 * (jac - 1.0);
+  for (int i = 0; i < 3; ++i) T(i,i) += PR;
   return T;
 }
 
@@ -466,7 +461,7 @@ eval(const Elastic& elastic,
     err_c = ErrorCode::SUCCESS;
   }
   else if (elastic == Elastic::NEO_HOOKEAN) {
-    Te = hyperstress(props, Fe, jac);
+    Te = hyper_elastic_stress(props, Fe, jac);
     err_c = ErrorCode::SUCCESS;
   }
 
