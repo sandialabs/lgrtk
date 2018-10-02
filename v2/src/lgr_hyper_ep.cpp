@@ -184,12 +184,9 @@ struct HyperEP : public Model<Elem>
   HyperEP(Simulation& sim_in, Teuchos::ParameterList& params) :
     Model<Elem>(sim_in, params)
   {
-    using std::to_string;
-
     elastic_ = hyper_ep::Elastic::LINEAR_ELASTIC;
     hardening_ = hyper_ep::Hardening::NONE;
     rate_dep_ = hyper_ep::RateDependence::NONE;
-
     // Read input parameters
     // Elastic model
     hyper_ep::read_and_validate_elastic_params(
@@ -197,10 +194,8 @@ struct HyperEP : public Model<Elem>
     // Plastic model
     hyper_ep::read_and_validate_plastic_params(
         params, this->properties, hardening_, rate_dep_);
-
     // Problem dimension
     constexpr auto dim = Elem::dim;
-
     // Define state dependent variables
     this->equivalent_plastic_strain =
       this->point_define("ep", "equivalent plastic strain", 1, "0");
@@ -208,7 +203,6 @@ struct HyperEP : public Model<Elem>
       this->point_define("ep_dot", "equivalent plastic strain rate", 1, "0");
     this->defgrad_p =
       this->point_define("Fp", "plastic deformation gradient", square(dim), "I");
-
     // Define kinematic quantities
     this->defgrad = this->point_define("F", "deformation gradient", square(dim), "I");
   }
