@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(LGR VERSION 1.0.0 LANGUAGES CXX)
+project(LGRTK VERSION 1.0.0 LANGUAGES CXX)
 MESSAGE("\n\nConfiguring LGR Version ${LGR_VERSION_MAJOR}.${LGR_VERSION_MINOR}.${LGR_VERSION_PATCH}")
 
 IF (DEFINED Trilinos_PREFIX)

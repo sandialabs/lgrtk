@@ -365,20 +365,19 @@ radial_return(Hardening const hardening,
   }
   if (flag != StateFlag::ELASTIC) {
     // determine elastic deformation
-    double jac = Omega_h::determinant(F);
+    auto const jac = determinant(F);
     auto const Bbe = find_bbe(T, mu);
-    tensor_type Be = Bbe * std::pow(jac, 2./3.);
-    tensor_type Ve = Omega_h::sqrt_spd(Be);
-    Fp = Omega_h::invert(Ve) * F;
+    auto const Be = Bbe * std::pow(jac, 2.0 / 3.0);
+    auto const Ve = sqrt_spd(Be);
+    Fp = invert(Ve) * F;
     if (flag == StateFlag::REMAPPED) {
       // Correct pressure term
-      double p = Omega_h::trace(T);
-      const double D1 = 6. * (1. - 2. * Nu) / E;
-      p = 2. * jac / D1 * (jac - 1.) - p / 3.;
+      auto p = trace(T);
+      auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
+      p = (2.0 * jac / D1 * (jac - 1.0)) - (p / 3.0);
       for(int i = 0; i < 3; ++i) T(i,i) = p;
     }
   }
-
   return ErrorCode::SUCCESS;
 }
 
