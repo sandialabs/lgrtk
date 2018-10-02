@@ -1,6 +1,7 @@
 #include <lgr_hyper_ep.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <sstream>
 
 namespace lgr {
 
