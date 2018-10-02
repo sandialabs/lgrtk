@@ -383,8 +383,9 @@ radial_return(Hardening const hardening,
 
 OMEGA_H_INLINE
 tensor_type
-linearelasticstress(const std::vector<double>& props,
-                    const tensor_type& Fe, const double&)
+linear_elastic_stress(
+    std::vector<double> const& props,
+    tensor_type const Fe)
 {
   double K = props[0] / (3. * (1. - 2. * props[1]));
   double G = props[0] / 2.0 / (1. + props[1]);
@@ -462,7 +463,7 @@ eval(const Elastic& elastic,
   ErrorCode err_c = ErrorCode::NOT_SET;
 
   if (elastic == Elastic::LINEAR_ELASTIC) {
-    Te = linearelasticstress(props, Fe, jac);
+    Te = linear_elastic_stress(props, Fe);
     err_c = ErrorCode::SUCCESS;
   }
   else if (elastic == Elastic::NEO_HOOKEAN) {
