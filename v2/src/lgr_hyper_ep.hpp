@@ -2,7 +2,6 @@
 #define LGR_HYPER_EP_HPP
 
 #include <string>
-#include <sstream>
 
 #include <lgr_element_types.hpp>
 #include <lgr_model.hpp>
