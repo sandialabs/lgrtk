@@ -443,7 +443,7 @@ hyper_elastic_stress(
   return T;
 }
 
-OMEGA_H_INLINE
+OMEGA_H_INLINE_BIG
 ErrorCode
 update(
     Elastic const elastic,

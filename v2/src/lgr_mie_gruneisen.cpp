@@ -13,20 +13,25 @@ struct MieGruneisen : public Model<Elem> {
   FieldIndex cs_;
   FieldIndex s1_;
   FieldIndex specific_internal_energy;
+  FieldIndex specific_internal_energy_rate;
 
   MieGruneisen(Simulation& sim_in, Teuchos::ParameterList& pl) :
     Model<Elem>(sim_in, pl)
   {
-    using std::to_string;
-
-    double rho0, gamma0, c0, s1, e0;
-    mie_gruneisen_details::read_and_validate_params(pl, rho0, gamma0, c0, s1, e0);
-
-    this->rho0_ = this->point_define("rho_0", "initial density", 1, to_string(rho0));
-    this->gamma0_ = this->point_define("gamma_0", "Gruneisen parameter", 1, to_string(gamma0));
-    this->cs_ = this->point_define("c_0", "unshocked sound speed", 1, to_string(c0));
-    this->s1_ = this->point_define("S1", "Us/Up ratio", 1, to_string(s1));
-    this->specific_internal_energy = this->point_define("e", "specific internal energy", 1, to_string(e0));
+    this->rho0_ = this->point_define(
+        "rho_0", "initial density", 1, "");
+    this->gamma0_ = this->point_define(
+        "gamma_0", "Gruneisen parameter", 1, "");
+    this->cs_ = this->point_define(
+        "c_0", "unshocked sound speed", 1, "");
+    this->s1_ = this->point_define(
+        "S1", "Us/Up ratio", 1, "");
+    this->specific_internal_energy =
+      this->point_define("e", "specific internal energy", 1,
+          RemapType::PER_UNIT_MASS, "");
+    this->specific_internal_energy_rate =
+      this->point_define("e_dot", "specific internal energy rate", 1,
+          RemapType::PER_UNIT_VOLUME, "");
   }
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
@@ -34,61 +39,35 @@ struct MieGruneisen : public Model<Elem> {
   char const* name() override final { return "linear elastic"; }
 
   void at_material_model() override final {
-    auto points_to_grad = this->points_get(this->sim.gradient);
     auto points_to_rho = this->points_get(this->sim.density);
 
-    auto points_to_e = this->points_getset(this->specific_internal_energy);
+    auto points_to_e = this->points_get(this->specific_internal_energy);
+    auto points_to_e_dot = this->points_get(this->specific_internal_energy);
     auto points_to_rho0 = this->points_get(this->rho0_);
     auto points_to_gamma0 = this->points_get(this->gamma0_);
     auto points_to_cs = this->points_get(this->cs_);
     auto points_to_s1 = this->points_get(this->s1_);
 
-    auto points_to_sigma = this->points_getset(this->sim.stress);
+    auto points_to_sigma = this->points_set(this->sim.stress);
     auto points_to_c = this->points_set(this->sim.wave_speed);
-    auto elems_to_nodes = this->get_elems_to_nodes();
-    auto nodes_to_v = this->sim.get(this->sim.velocity);
-    auto nodes_to_a = this->sim.get(this->sim.acceleration);
-    auto dt_nm12 = this->sim.prev_dt;
-    auto dt_np12 = this->sim.dt;
-    auto dt_n = (1.0 / 2.0) * (dt_np12 + dt_nm12);
+    auto dt = this->sim.dt;
     auto functor = OMEGA_H_LAMBDA(int point) {
-      auto elem = point / Elem::points;
-      auto elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
-      auto v_np12 = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto a_n = getvecs<Elem>(nodes_to_a, elem_nodes);
-      auto v_nm12 = v_np12 - dt_n * a_n;
-      auto vavg = (1.0 / 2.0) * (v_np12 + v_nm12); // not the same as v_n if dt != prev_dt
-      auto dN_dxnp1 = getgrads<Elem>(points_to_grad, point);
-      auto dvavg_dxnp1 = grad<Elem>(dN_dxnp1, vavg);
-      auto dvnp12_dxnp1 = grad<Elem>(dN_dxnp1, v_np12);
-      auto I = identity_matrix<Elem::dim, Elem::dim>();
-      auto dxn_dxnp1 = I - dt_np12 * dvnp12_dxnp1;
-      auto dxnp1_dxn = invert(dxn_dxnp1);
-      auto dvavg_dxn = dxnp1_dxn * dvavg_dxnp1;
-      auto sigma_n = getsymm<Elem>(points_to_sigma, point);
-      auto e_rho_dot_n = inner_product(dvavg_dxn, sigma_n);
-      auto rho_np1 = points_to_rho[point];
-      auto rho_n = determinant(dxnp1_dxn) * rho_np1;
-      auto e_dot_n = e_rho_dot_n / rho_n;
-      auto e_nm12 = points_to_e[point];
-      auto e_np12 = e_nm12 + e_dot_n * dt_n;
-      auto e_np1_est = e_nm12 + e_dot_n * (dt_n + (1.0 / 2.0) * dt_np12);
-
-      auto rho0 = points_to_rho0[point];
-      auto gamma0 = points_to_gamma0[point];
-      auto c0 = points_to_cs[point];
-      auto s1 = points_to_s1[point];
-
+      auto const rho_np1 = points_to_rho[point];
+      auto const e_dot_n = points_to_e_dot[point];
+      auto const e_np12 = points_to_e[point];
+      auto const e_np1_est = e_np12 + e_dot_n * (1.0 / 2.0) * dt;
+      auto const rho0 = points_to_rho0[point];
+      auto const gamma0 = points_to_gamma0[point];
+      auto const c0 = points_to_cs[point];
+      auto const s1 = points_to_s1[point];
       double c;
       double pressure;
-      mie_gruneisen_update(rho0, gamma0, c0, s1, rho_n, e_np1_est, pressure, c);
-
+      mie_gruneisen_update(rho0, gamma0, c0, s1, rho_np1, e_np1_est, pressure, c);
       auto sigma = diagonal(fill_vector<Elem::dim>(-pressure));
       setsymm<Elem>(points_to_sigma, point, sigma);
       points_to_c[point] = c;
-      points_to_e[point] = e_np12;
     };
-    parallel_for("Mie Gruniesen kernel", this->points(), std::move(functor));
+    parallel_for("Mie-Gruniesen kernel", this->points(), std::move(functor));
   }
 };
 
