@@ -431,14 +431,19 @@ hyper_elastic_stress(
 
 OMEGA_H_INLINE
 ErrorCode
-eval(const Elastic& elastic,
-     const Hardening& hardening,
-     const RateDependence& rate_dep,
-     const std::vector<double>& props,
-     const double& rho, const tensor_type& F,
-     const double& dtime, const double& temp,
-     tensor_type& T, double& wave_speed,
-     tensor_type& Fp, double& ep, double& epdot)
+eval(Elastic const elastic,
+     Hardening const hardening,
+     RateDependence const rate_dep,
+     std::vector<double> const& props,
+     double const rho,
+     tensor_type const F,
+     double const dtime,
+     double const temp,
+     tensor_type& T,
+     double& wave_speed,
+     tensor_type& Fp,
+     double& ep,
+     double& epdot)
 {
   const double jac = Omega_h::determinant(F);
 
