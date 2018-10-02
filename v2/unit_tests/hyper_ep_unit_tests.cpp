@@ -18,77 +18,62 @@ using invalid_argument = std::invalid_argument;
 
 namespace hyper_ep_utils {
 
-static scalar_type copper_density() { return 8930.; }
+static scalar_type copper_density() { return 8930.0; }
 
-static std::vector<scalar_type> copper_johnson_cook_props()
+static Details::Properties copper_johnson_cook_props()
 {
+  Details::Properties props;
   // Properties
-  scalar_type youngs_modulus = 200.e9;
-  scalar_type poisson_ratio = 0.333;
-
+  props.youngs_modulus = 200.0e9;
+  props.poissons_ratio = 0.333;
   // Johnson cook hardening
-  scalar_type ajo = 8.970000E+08;
-  scalar_type bjo = 2.918700E+09;
-  scalar_type njo = 3.100000E-01;
-
+  props.yield_strength = 8.970000E+08;
+  props.hardening_modulus = 2.918700E+09;
+  props.hardening_exponent = 3.100000E-01;
   // Temperature dependence
-  scalar_type tjo = 1.189813E-01;
-  scalar_type tmo = std::numeric_limits<scalar_type>::max();
-  scalar_type mjo = 1.090000E+00;
-
+  props.c1 = 1.189813E-01;
+  props.c2 = std::numeric_limits<scalar_type>::max();
+  props.c3 = 1.090000E+00;
   // Rate dependence
-  scalar_type cjo = 2.500000E-02  ;
-  scalar_type epdot0 = 1.;
-
-  std::vector<scalar_type> props {youngs_modulus, poisson_ratio,
-                                  ajo, bjo, njo, tjo, tmo, mjo, cjo, epdot0};
-
+  props.c4 = 2.500000E-02  ;
+  props.ep_dot_0 = 1.0;
   return props;
 }
 
-
-static std::vector<scalar_type> copper_zerilli_armstrong_props()
+static Details::Properties copper_zerilli_armstrong_props()
 {
+  Details::Properties props;
   // Properties
-  scalar_type youngs_modulus = 200.e9;
-  scalar_type poisson_ratio = 0.333;
-
+  props.youngs_modulus = 200.0e9;
+  props.poissons_ratio = 0.333;
   // Constant yield strength
-  scalar_type a = 6.500000E+08;
-
+  props.yield_strength = 6.500000E+08;
   // Power law hardening
-  scalar_type b = 0.000000E+00;
-  scalar_type n = 1.000000E+00;
-
+  props.hardening_modulus = 0.000000E+00;
+  props.hardening_exponent = 1.000000E+00;
   //
-  scalar_type c1 = 0.000000E+00;
-  scalar_type c2 = 8.900000E+09;
-  scalar_type c3 = 3.249400E+01;
-
+  props.c1 = 0.000000E+00;
+  props.c2 = 8.900000E+09;
+  props.c3 = 3.249400E+01;
   // Rate dependence
-  scalar_type c4 = 1.334575E+00;
-
-  std::vector<scalar_type> props {youngs_modulus, poisson_ratio,
-                                  a, b, n, c1, c2, c3, c4};
-
+  props.c4 = 1.334575E+00;
   return props;
 }
-
 
 static void eval_prescribed_motions(
     const scalar_type eps,
     const Details::Elastic& elastic,
     const Details::Hardening& hardening,
     const Details::RateDependence& rate_dep,
-    const std::vector<scalar_type>& props,
+    Details::Properties const props,
     const scalar_type& rho)
 {
 
-  scalar_type youngs_modulus = props[0];
-  scalar_type poisson_ratio = props[1];
-  scalar_type bulk_modulus = youngs_modulus/3./(1.-2.*poisson_ratio);
-  scalar_type shear_modulus = youngs_modulus/2./(1.+poisson_ratio);
-  scalar_type wave_speed_expected = std::sqrt((bulk_modulus+(4./3.)*shear_modulus)/rho);
+  auto const youngs_modulus = props.youngs_modulus;
+  auto const poisson_ratio = props.poissons_ratio;
+  auto const bulk_modulus = youngs_modulus / 3.0 / (1.0 - 2.0 * poisson_ratio);
+  auto const shear_modulus = youngs_modulus/2./(1.+poisson_ratio);
+  auto const wave_speed_expected = std::sqrt((bulk_modulus+(4./3.)*shear_modulus)/rho);
 
   scalar_type dtime = 1.;
   scalar_type temp = 298.;
@@ -214,12 +199,11 @@ TEST(HyperEPMaterialModel, ParameterValidation)
     {
       auto params = ParameterList("model");
       params.set("elastic", p);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Elastic elastic;
       Details::read_and_validate_elastic_params(params, props, elastic);
-      EXPECT_TRUE(props.size() == 2);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - .1) < tol);
+      EXPECT_TRUE(std::abs(props.youngs_modulus - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.poissons_ratio - .1) < tol);
       EXPECT_TRUE(elastic == Details::Elastic::LINEAR_ELASTIC);
     }
 
@@ -227,12 +211,11 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       p.set<std::string>("hyperelastic", "neo hookean");
       auto params = ParameterList("model");
       params.set("elastic", p);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Elastic elastic;
       Details::read_and_validate_elastic_params(params, props, elastic);
-      EXPECT_TRUE(props.size() == 2);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - .1) < tol);
+      EXPECT_TRUE(std::abs(props.youngs_modulus - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.poissons_ratio - .1) < tol);
       EXPECT_TRUE(elastic == Details::Elastic::NEO_HOOKEAN);
     }
   }
@@ -255,12 +238,11 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       // Von Mises
       auto params = ParameterList("model");
       params.set("plastic", p0);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::NONE);
       EXPECT_TRUE(rate_dep == Details::RateDependence::NONE);
     }
@@ -270,13 +252,12 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       p0.set<std::string>("hardening", "linear isotropic");
       auto params = ParameterList("model");
       params.set("plastic", p0);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - 2.) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_modulus - 2.) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::LINEAR_ISOTROPIC);
       EXPECT_TRUE(rate_dep == Details::RateDependence::NONE);
     }
@@ -286,14 +267,13 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       p0.set<std::string>("hardening", "power law");
       auto params = ParameterList("model");
       params.set("plastic", p0);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - 2.) < tol);
-      EXPECT_TRUE(std::abs(props[2] - .1) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_modulus - 2.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_exponent - .1) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::POWER_LAW);
       EXPECT_TRUE(rate_dep == Details::RateDependence::NONE);
     }
@@ -303,17 +283,16 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       p0.set<std::string>("hardening", "johnson cook");
       auto params = ParameterList("model");
       params.set("plastic", p0);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - 2.) < tol);
-      EXPECT_TRUE(std::abs(props[2] - .1) < tol);
-      EXPECT_TRUE(std::abs(props[3] - 400.) < tol);
-      EXPECT_TRUE(std::abs(props[4] - 500.) < tol);
-      EXPECT_TRUE(std::abs(props[5] - .2) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_modulus - 2.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_exponent - .1) < tol);
+      EXPECT_TRUE(std::abs(props.c1 - 400.) < tol);
+      EXPECT_TRUE(std::abs(props.c2 - 500.) < tol);
+      EXPECT_TRUE(std::abs(props.c3 - .2) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::JOHNSON_COOK);
       EXPECT_TRUE(rate_dep == Details::RateDependence::NONE);
     }
@@ -324,17 +303,16 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       p0.set("rate dependent", p1);
       auto params = ParameterList("model");
       params.set("plastic", p0);
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 10.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - 2.) < tol);
-      EXPECT_TRUE(std::abs(props[2] - .1) < tol);
-      EXPECT_TRUE(std::abs(props[3] - 400.) < tol);
-      EXPECT_TRUE(std::abs(props[4] - 500.) < tol);
-      EXPECT_TRUE(std::abs(props[5] - .2) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_modulus - 2.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_exponent - .1) < tol);
+      EXPECT_TRUE(std::abs(props.c1 - 400.) < tol);
+      EXPECT_TRUE(std::abs(props.c2 - 500.) < tol);
+      EXPECT_TRUE(std::abs(props.c3 - .2) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::JOHNSON_COOK);
       EXPECT_TRUE(rate_dep == Details::RateDependence::JOHNSON_COOK);
     }
@@ -358,18 +336,17 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       auto params = ParameterList("model");
       params.set("plastic", p_za);
 
-      std::vector<scalar_type> props;
+      Details::Properties props;
       Details::Hardening hardening;
       Details::RateDependence rate_dep;
       Details::read_and_validate_plastic_params(params, props, hardening, rate_dep);
-      EXPECT_TRUE(props.size() == 8);
-      EXPECT_TRUE(std::abs(props[0] - 1.) < tol);
-      EXPECT_TRUE(std::abs(props[1] - 2.) < tol);
-      EXPECT_TRUE(std::abs(props[2] - 3.) < tol);
-      EXPECT_TRUE(std::abs(props[3] - 4.) < tol);
-      EXPECT_TRUE(std::abs(props[4] - 5.) < tol);
-      EXPECT_TRUE(std::abs(props[5] - 6.) < tol);
-      EXPECT_TRUE(std::abs(props[6] - 7.) < tol);
+      EXPECT_TRUE(std::abs(props.yield_strength - 1.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_modulus - 2.) < tol);
+      EXPECT_TRUE(std::abs(props.hardening_exponent - 3.) < tol);
+      EXPECT_TRUE(std::abs(props.c1 - 4.) < tol);
+      EXPECT_TRUE(std::abs(props.c2 - 5.) < tol);
+      EXPECT_TRUE(std::abs(props.c3 - 6.) < tol);
+      EXPECT_TRUE(std::abs(props.c4 - 7.) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::ZERILLI_ARMSTRONG);
       EXPECT_TRUE(rate_dep == Details::RateDependence::ZERILLI_ARMSTRONG);
     }
@@ -390,7 +367,10 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   scalar_type E = 10.;
   scalar_type Nu = .1;
   scalar_type A = std::numeric_limits<scalar_type>::max();
-  std::vector<scalar_type> props {E, Nu, A};
+  Details::Properties props;
+  props.youngs_modulus = E;
+  props.poissons_ratio = Nu;
+  props.yield_strength = A;
 
   scalar_type C10 = E / (4. * (1. + Nu));
   scalar_type D1 = 6. * (1. - 2. * Nu) / E;
@@ -433,7 +413,10 @@ TEST(HyperEPMaterialModel, LinearElastic)
   scalar_type E = 10.;
   scalar_type Nu = .1;
   scalar_type A = std::numeric_limits<scalar_type>::max();
-  std::vector<scalar_type> props {E, Nu, A};
+  Details::Properties props;
+  props.youngs_modulus = E;
+  props.poissons_ratio = Nu;
+  props.yield_strength = A;
 
   auto elastic = Details::Elastic::LINEAR_ELASTIC;
   auto hardening = Details::Hardening::NONE;
@@ -473,7 +456,10 @@ TEST(HyperEPMaterialModel, SimpleJ2)
   scalar_type E = 10e6;
   scalar_type Nu = 0.1;
   scalar_type A = 40e3;
-  std::vector<scalar_type> props {E, Nu, A};
+  Details::Properties props;
+  props.youngs_modulus = E;
+  props.poissons_ratio = Nu;
+  props.yield_strength = A;
 
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::NONE;
@@ -513,7 +499,10 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type E = 10e6;
   scalar_type Nu = 0.1;
   scalar_type A = 40e3;
-  std::vector<scalar_type> props {E, Nu, A};
+  Details::Properties props;
+  props.youngs_modulus = E;
+  props.poissons_ratio = Nu;
+  props.yield_strength = A;
 
   auto hardening = Details::Hardening::NONE;
   auto rate_dep = Details::RateDependence::NONE;

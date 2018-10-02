@@ -48,16 +48,29 @@ enum class StateFlag {
   REMAPPED
 };
 
+struct Properties {
+  double youngs_modulus;
+  double poissons_ratio;
+  double yield_strength;
+  double hardening_modulus;
+  double hardening_exponent;
+  double c1;
+  double c2;
+  double c3;
+  double c4;
+  double ep_dot_0;
+};
+
 using tensor_type = Matrix<3, 3>;
 
 char const* get_error_code_string(ErrorCode code);
 void read_and_validate_elastic_params(
     Teuchos::ParameterList& params,
-    std::vector<double>& props,
+    Properties& props,
     Elastic& elastic);
 void read_and_validate_plastic_params(
     Teuchos::ParameterList& params,
-    std::vector<double>& props,
+    Properties& props,
     Hardening& hardening,
     RateDependence& rate_dep);
 
@@ -130,56 +143,56 @@ OMEGA_H_INLINE
 double flow_stress(
     Hardening const hardening,
     RateDependence const rate_dep,
-    std::vector<double> const& props,
+    Properties props,
     double const temp,
     double const ep,
     double const epdot) {
   auto Y = Omega_h::ArithTraits<double>::max();
   if (hardening == Hardening::NONE) {
-    Y = props[2];
+    Y = props.yield_strength;
   } else if (hardening == Hardening::LINEAR_ISOTROPIC) {
-    Y = props[2] + props[3] * ep;
+    Y = props.yield_strength + props.hardening_modulus * ep;
   } else if (hardening == Hardening::POWER_LAW) {
-    auto const a = props[2];
-    auto const b = props[3];
-    auto const n = props[4];
+    auto const a = props.yield_strength;
+    auto const b = props.hardening_modulus;
+    auto const n = props.hardening_exponent;
     Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
   } else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
-    auto const a = props[2];
-    auto const b = props[3];
-    auto const n = props[4];
+    auto const a = props.yield_strength;
+    auto const b = props.hardening_modulus;
+    auto const n = props.hardening_exponent;
     Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-    auto const c1 = props[5];
-    auto const c2 = props[6];
-    auto const c3 = props[7];
+    auto const c1 = props.c1;
+    auto const c2 = props.c2;
+    auto const c3 = props.c3;
     auto alpha = c3;
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      auto const c4 = props[8];
+      auto const c4 = props.c4;
       alpha -= c4 * std::log(epdot);
     }
     Y += (c1 + c2 * std::sqrt(ep)) * std::exp(-alpha * temp);
   } else if (hardening == Hardening::JOHNSON_COOK) {
-    auto const ajo = props[2];
-    auto const bjo = props[3];
-    auto const njo = props[4];
-    auto const temp_ref = props[5];
-    auto const temp_melt = props[6];
-    auto const mjo = props[7];
+    auto const ajo = props.yield_strength;
+    auto const bjo = props.hardening_modulus;
+    auto const njo = props.hardening_exponent;
+    auto const temp_ref = props.c1;
+    auto const temp_melt = props.c2;
+    auto const mjo = props.c3;
     // Constant contribution
     Y = ajo;
     // Plastic strain contribution
     if (bjo > 0.0) {
-      Y += (fabs(njo) > 0.0) ? bjo * std::pow(ep, njo) : bjo;
+      Y += (std::abs(njo) > 0.0) ? bjo * std::pow(ep, njo) : bjo;
     }
     // Temperature contribution
-    if (fabs(temp_melt - std::numeric_limits<double>::max()) + 1.0 != 1.0) {
-      double tstar = (temp > temp_melt) ? 1.0 : ((temp - temp_ref) / (temp_melt - temp_ref));
+    if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 != 1.0) {
+      auto const tstar = (temp > temp_melt) ? 1.0 : ((temp - temp_ref) / (temp_melt - temp_ref));
       Y *= (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
     }
   }
   if (rate_dep == RateDependence::JOHNSON_COOK) {
-    auto const cjo = props[8];
-    auto const epdot0 = props[9];
+    auto const cjo = props.c4;
+    auto const epdot0 = props.ep_dot_0;
     auto const rfac = epdot / epdot0;
     // FIXME: This assumes that all the
     // strain rate is plastic.  Should
@@ -196,7 +209,7 @@ OMEGA_H_INLINE
 double dflow_stress(
     Hardening const hardening,
     RateDependence const rate_dep,
-    std::vector<double> const& props,
+    Properties const props,
     double const temp,
     double const ep,
     double const epdot,
@@ -204,37 +217,37 @@ double dflow_stress(
 {
   double deriv = 0.;
   if (hardening == Hardening::LINEAR_ISOTROPIC) {
-    auto const b = props[3];
+    auto const b = props.hardening_modulus;
     deriv = b;
   } else if (hardening == Hardening::POWER_LAW) {
-    auto const b = props[3];
-    auto const n = props[4];
+    auto const b = props.hardening_modulus;
+    auto const n = props.hardening_exponent;
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
   } else if (hardening == Hardening::ZERILLI_ARMSTRONG) {
-    auto const b = props[3];
-    auto const n = props[4];
+    auto const b = props.hardening_modulus;
+    auto const n = props.hardening_exponent;
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-    auto const c1 = props[5];
-    auto const c2 = props[6];
-    auto const c3 = props[7];
+    auto const c1 = props.c1;
+    auto const c2 = props.c2;
+    auto const c3 = props.c3;
     auto alpha = c3;
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      auto const c4 = props[8];
+      auto const c4 = props.c4;
       alpha -= c4 * std::log(epdot);
     }
     deriv += .5 * c2 / std::sqrt(ep <= 0.0 ? 1.e-8 : ep) * std::exp(-alpha * temp);
     if (rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
-      auto const c4 = props[8];
+      auto const c4 = props.c4;
       auto const term1 = c1 * c4 * temp * std::exp(-alpha * temp);
       auto const term2 = c2 * sqrt(ep) * c4 * temp * std::exp(-alpha * temp);
       deriv += (term1 + term2) / (epdot <= 0.0 ? 1.e-8 : epdot) / dtime;
     }
   } else if (hardening == Hardening::JOHNSON_COOK) {
-    auto const bjo = props[3];
-    auto const njo = props[4];
-    auto const temp_ref = props[5];
-    auto const temp_melt = props[6];
-    auto const mjo = props[7];
+    auto const bjo = props.hardening_modulus;
+    auto const njo = props.hardening_exponent;
+    auto const temp_ref = props.c1;
+    auto const temp_melt = props.c2;
+    auto const mjo = props.c3;
     // Calculate temperature contribution
     double temp_contrib = 1.0;
     if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 != 1.0) {
@@ -243,9 +256,9 @@ double dflow_stress(
     }
     deriv = (ep > 0.0) ? (bjo * njo * std::pow(ep, njo - 1) * temp_contrib) : 0.0;
     if (rate_dep == RateDependence::JOHNSON_COOK) {
-      auto const ajo = props[2];
-      auto const cjo = props[8];
-      auto const epdot0 = props[9];
+      auto const ajo = props.yield_strength;
+      auto const cjo = props.c4;
+      auto const epdot0 = props.ep_dot_0;
       auto const rfac = epdot / epdot0;
       // Calculate strain rate contribution
       auto const term1 = (rfac < 1.0) ?  (std::pow((1.0 + rfac), cjo)) : (1.0 + cjo * std::log(rfac));
@@ -277,7 +290,7 @@ OMEGA_H_INLINE
 ErrorCode
 radial_return(Hardening const hardening,
               RateDependence const rate_dep,
-              std::vector<double> const& props,
+              Properties const props,
               tensor_type const Te,
               tensor_type const F,
               double const temp,
@@ -295,8 +308,8 @@ radial_return(Hardening const hardening,
   auto const sq3 = std::sqrt(3.0);
   auto const sq23 = sq2 / sq3;
   auto const sq32 = 1.0 / sq23;
-  auto const E = props[0];
-  auto const Nu = props[1];
+  auto const E = props.youngs_modulus;
+  auto const Nu = props.poissons_ratio;
   auto const mu = E / 2.0 / (1.0 + Nu);
   auto const twomu = 2.0 * mu;
   auto gamma = epdot * dtime * sq32;
@@ -384,11 +397,13 @@ radial_return(Hardening const hardening,
 OMEGA_H_INLINE
 tensor_type
 linear_elastic_stress(
-    std::vector<double> const& props,
+    Properties props,
     tensor_type const Fe)
 {
-  auto const K = props[0] / (3.0 * (1.0 - 2.0 * props[1]));
-  auto const G = props[0] / 2.0 / (1.0 + props[1]);
+  auto const E = props.youngs_modulus;
+  auto const nu = props.poissons_ratio;
+  auto const K = E / (3.0 * (1.0 - 2.0 * nu));
+  auto const G = E / 2.0 / (1.0 + nu);
   auto const I = identity_matrix<3,3>();
   auto const grad_u = Fe - I;
   auto const strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
@@ -404,12 +419,12 @@ linear_elastic_stress(
 OMEGA_H_INLINE
 tensor_type
 hyper_elastic_stress(
-    std::vector<double> const& props,
+    Properties const props,
     tensor_type const Fe,
     double const jac)
 {
-  auto const E = props[0];
-  auto const Nu = props[1];
+  auto const E = props.youngs_modulus;
+  auto const Nu = props.poissons_ratio;
   // Jacobian and distortion tensor
   auto const scale = std::pow(jac, -1.0 / 3.0);
   auto const Fb = scale * Fe;
@@ -435,7 +450,7 @@ update(
     Elastic const elastic,
     Hardening const hardening,
     RateDependence const rate_dep,
-    std::vector<double> const& props,
+    Properties const props,
     double const rho,
     tensor_type const F,
     double const dtime,
@@ -449,8 +464,10 @@ update(
   auto const jac = determinant(F);
   {
     // wave speed
-    auto const K = props[0] / 3.0 / (1.0 - 2. * props[1]);
-    auto const G = props[0] / 2.0 / (1.0 + props[1]);
+    auto const E = props.youngs_modulus;
+    auto const nu = props.poissons_ratio;
+    auto const K = E / 3.0 / (1.0 - 2.0 * nu);
+    auto const G = E / 2.0 / (1.0 + nu);
     auto const plane_wave_modulus = K + (4.0 / 3.0) * G;
     wave_speed = std::sqrt(plane_wave_modulus / rho);
   }
