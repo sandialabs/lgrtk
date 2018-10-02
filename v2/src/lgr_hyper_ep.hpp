@@ -402,10 +402,9 @@ linear_elastic_stress(
  *
  */
 OMEGA_H_INLINE
-ErrorCode
+tensor_type
 hyperstress(const std::vector<double>& props,
-            const tensor_type& Fe, const double& jac,
-            tensor_type& T)
+            const tensor_type& Fe, const double& jac)
 {
 
   double E = props[0];
@@ -426,13 +425,13 @@ hyperstress(const std::vector<double>& props,
   // Deviatoric Cauchy stress
   double TRBb = Omega_h::trace(Bb) / 3.;
   for (int i=0; i<3; ++i) Bb(i,i) -= TRBb;
-  T = EG * Bb;
+  auto T = EG * Bb;
 
   // Pressure response
   double PR{2. / D1 * (jac - 1.)};
   for (int i=0; i<3; ++i) T(i,i) += PR;
 
-  return ErrorCode::SUCCESS;
+  return T;
 }
 
 OMEGA_H_INLINE
@@ -467,7 +466,8 @@ eval(const Elastic& elastic,
     err_c = ErrorCode::SUCCESS;
   }
   else if (elastic == Elastic::NEO_HOOKEAN) {
-    err_c = hyperstress(props, Fe, jac, Te);
+    Te = hyperstress(props, Fe, jac);
+    err_c = ErrorCode::SUCCESS;
   }
 
   if (err_c != ErrorCode::SUCCESS) {
