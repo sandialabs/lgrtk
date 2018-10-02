@@ -445,35 +445,23 @@ eval(Elastic const elastic,
      double& ep,
      double& epdot)
 {
-  const double jac = Omega_h::determinant(F);
-
+  auto const jac = determinant(F);
   {
     // wave speed
-    double K = props[0] / 3.0 / (1. - 2. * props[1]);
-    double G = props[0] / 2.0 / (1. + props[1]);
-    auto plane_wave_modulus = K + (4.0 / 3.0) * G;
+    auto const K = props[0] / 3.0 / (1.0 - 2. * props[1]);
+    auto const G = props[0] / 2.0 / (1.0 + props[1]);
+    auto const plane_wave_modulus = K + (4.0 / 3.0) * G;
     wave_speed = std::sqrt(plane_wave_modulus / rho);
   }
-
   // Determine the stress predictor.
   tensor_type Te;
-  tensor_type Fe = F * Omega_h::invert(Fp);
-
+  auto const Fe = F * invert(Fp);
   ErrorCode err_c = ErrorCode::NOT_SET;
-
   if (elastic == Elastic::LINEAR_ELASTIC) {
     Te = linear_elastic_stress(props, Fe);
-    err_c = ErrorCode::SUCCESS;
-  }
-  else if (elastic == Elastic::NEO_HOOKEAN) {
+  } else if (elastic == Elastic::NEO_HOOKEAN) {
     Te = hyper_elastic_stress(props, Fe, jac);
-    err_c = ErrorCode::SUCCESS;
   }
-
-  if (err_c != ErrorCode::SUCCESS) {
-    return err_c;
-  }
-
   // check yield
   auto flag = StateFlag::TRIAL;
   err_c = radial_return(hardening, rate_dep, props, Te, F, temp,
@@ -481,7 +469,6 @@ eval(Elastic const elastic,
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
   }
-
   return ErrorCode::SUCCESS;
 }
 
