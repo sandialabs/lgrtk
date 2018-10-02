@@ -9,7 +9,7 @@
 
 namespace lgr {
 
-namespace HyperEPDetails {
+namespace hyper_ep {
 
 enum class ErrorCode {
   NOT_SET,

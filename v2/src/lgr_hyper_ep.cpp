@@ -4,7 +4,7 @@
 
 namespace lgr {
 
-namespace HyperEPDetails {
+namespace hyper_ep {
 
 char const* get_error_code_string(ErrorCode code) {
   switch (code) {
@@ -42,7 +42,7 @@ void read_and_validate_elastic_params(
   if (pl.isParameter("hyperelastic")) {
     std::string hyperelastic = pl.get<std::string>("hyperelastic");
     if (hyperelastic == "neo hookean") {
-      elastic = HyperEPDetails::Elastic::NEO_HOOKEAN;
+      elastic = hyper_ep::Elastic::NEO_HOOKEAN;
     } else {
       std::ostringstream os;
       os << "Hyper elastic model \""<< hyperelastic << "\" not recognized";
@@ -166,9 +166,9 @@ struct HyperEP : public Model<Elem>
 {
 
   // Constant model parameters
-  HyperEPDetails::Elastic elastic_;
-  HyperEPDetails::Hardening hardening_;
-  HyperEPDetails::RateDependence rate_dep_;
+  hyper_ep::Elastic elastic_;
+  hyper_ep::Hardening hardening_;
+  hyper_ep::RateDependence rate_dep_;
 
   // Field varying model parameters
   FieldIndex E;
@@ -199,32 +199,32 @@ struct HyperEP : public Model<Elem>
   {
     using std::to_string;
 
-    elastic_ = HyperEPDetails::Elastic::LINEAR_ELASTIC;
-    hardening_ = HyperEPDetails::Hardening::NONE;
-    rate_dep_ = HyperEPDetails::RateDependence::NONE;
+    elastic_ = hyper_ep::Elastic::LINEAR_ELASTIC;
+    hardening_ = hyper_ep::Hardening::NONE;
+    rate_dep_ = hyper_ep::RateDependence::NONE;
 
     // Read input parameters
     std::vector<double> props;
 
     // Elastic model
-    HyperEPDetails::read_and_validate_elastic_params(params, props, elastic_);
+    hyper_ep::read_and_validate_elastic_params(params, props, elastic_);
     this->E = this->point_define("E", "Young's modulus", 1, to_string(props[0]));
     this->Nu = this->point_define("Nu", "Poisson's ratio", 1, to_string(props[1]));
 
     // Plastic model
-    HyperEPDetails::read_and_validate_plastic_params(params, props, hardening_, rate_dep_);
+    hyper_ep::read_and_validate_plastic_params(params, props, hardening_, rate_dep_);
     this->A = this->point_define("A", "A", 1, to_string(props[0]));
 
-    if (hardening_ == HyperEPDetails::Hardening::NONE) {
+    if (hardening_ == hyper_ep::Hardening::NONE) {
       this->B = this->point_define("B", "UNUSED B", 1, to_string(props[1]));
       this->N = this->point_define("N", "UNUSED N", 1, to_string(props[2]));
       this->C1 = this->point_define("C1", "UNUSED C1", 1, to_string(props[3]));
       this->C2 = this->point_define("C2", "UNUSED C2", 1, to_string(props[4]));
       this->C3 = this->point_define("C3", "UNUSED C3", 1, to_string(props[5]));
     }
-    else if (hardening_ == HyperEPDetails::Hardening::LINEAR_ISOTROPIC ||
-             hardening_ == HyperEPDetails::Hardening::POWER_LAW) {
-      this->B = (hardening_ == HyperEPDetails::Hardening::LINEAR_ISOTROPIC) ?
+    else if (hardening_ == hyper_ep::Hardening::LINEAR_ISOTROPIC ||
+             hardening_ == hyper_ep::Hardening::POWER_LAW) {
+      this->B = (hardening_ == hyper_ep::Hardening::LINEAR_ISOTROPIC) ?
                 this->point_define("B", "UNUSED B", 1, to_string(props[1])) :
                 this->point_define("B", "B", 1, to_string(props[1]));
       this->N = this->point_define("N", "N", 1, to_string(props[2]));
@@ -232,14 +232,14 @@ struct HyperEP : public Model<Elem>
       this->C2 = this->point_define("C2", "UNUSED C2", 1, to_string(props[4]));
       this->C3 = this->point_define("C3", "UNUSED C3", 1, to_string(props[5]));
     }
-    else if (hardening_ == HyperEPDetails::Hardening::JOHNSON_COOK) {
+    else if (hardening_ == hyper_ep::Hardening::JOHNSON_COOK) {
       this->B = this->point_define("B", "B", 1, to_string(props[1]));
       this->N = this->point_define("N", "N", 1, to_string(props[2]));
       this->C1 = this->point_define("T0", "reference temperature", 1, to_string(props[3]));
       this->C2 = this->point_define("TM", "melt temperature", 1, to_string(props[4]));
       this->C3 = this->point_define("M", "M", 1, to_string(props[5]));
     }
-    else if (hardening_ == HyperEPDetails::Hardening::ZERILLI_ARMSTRONG) {
+    else if (hardening_ == hyper_ep::Hardening::ZERILLI_ARMSTRONG) {
       this->B = this->point_define("B", "B", 1, to_string(props[1]));
       this->N = this->point_define("N", "N", 1, to_string(props[2]));
       this->C1 = this->point_define("C1", "C1", 1, to_string(props[3]));
@@ -247,15 +247,15 @@ struct HyperEP : public Model<Elem>
       this->C3 = this->point_define("C3", "C3", 1, to_string(props[5]));
     }
 
-    if (rate_dep_ == HyperEPDetails::RateDependence::NONE) {
+    if (rate_dep_ == hyper_ep::RateDependence::NONE) {
       this->C4 = this->point_define("C4", "UNUSED C4", 1, to_string(props[7]));
       this->C5 = this->point_define("C5", "UNUSED C5", 1, to_string(props[7]));
     }
-    else if (rate_dep_ == HyperEPDetails::RateDependence::JOHNSON_COOK) {
+    else if (rate_dep_ == hyper_ep::RateDependence::JOHNSON_COOK) {
       this->C4 = this->point_define("C", "C", 1, to_string(props[6]));
       this->C5 = this->point_define("EPDOT0", "EPDOT0", 1, to_string(props[7]));
     }
-    else if (rate_dep_ == HyperEPDetails::RateDependence::ZERILLI_ARMSTRONG) {
+    else if (rate_dep_ == hyper_ep::RateDependence::ZERILLI_ARMSTRONG) {
       this->C4 = this->point_define("C4", "C4", 1, to_string(props[6]));
       this->C5 = this->point_define("C5", "UNUSED C5", 1, to_string(props[7]));
     }
@@ -355,9 +355,9 @@ struct HyperEP : public Model<Elem>
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
 
       // Update the material response
-      auto err_c = HyperEPDetails::eval(elastic, hardening, rate_dep,
+      auto err_c = hyper_ep::eval(elastic, hardening, rate_dep,
           props, rho, F, dt, temp, T, c, Fp, ep, epdot);
-      if(err_c != HyperEPDetails::ErrorCode::SUCCESS)
+      if(err_c != hyper_ep::ErrorCode::SUCCESS)
         Omega_h_fail("Failed to update stress tensor");
 
       // Update in/output variables

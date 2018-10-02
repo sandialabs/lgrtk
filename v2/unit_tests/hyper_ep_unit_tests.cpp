@@ -7,7 +7,7 @@
 namespace {
 
 using scalar_type = double;
-namespace Details = lgr::HyperEPDetails;
+namespace Details = lgr::hyper_ep;
 using tensor_type = Details::tensor_type;
 
 #ifdef OMEGA_H_THROW
