@@ -11,6 +11,20 @@ bob_add_dependency(PUBLIC NAME Omega_h TARGETS Omega_h::omega_h)
 set(LGR_USE_GTest_DEFAULT ${BUILD_TESTING})
 bob_add_dependency(PUBLIC NAME GTest TARGETS GTest::gtest_main)
 
+bob_input(LGR_ELEMENTS "Bar2;Tri3;Tet4" STRING "Element types to instantiate")
+
+foreach(ELEMENT IN LISTS LGR_ELEMENTS)
+  if(${ELEMENT} STREQUAL "Bar2")
+    set(LGR_BAR2 ON)
+  endif()
+  if(${ELEMENT} STREQUAL "Tri3")
+    set(LGR_TRI3 ON)
+  endif()
+  if(${ELEMENT} STREQUAL "Tet4")
+    set(LGR_TET4 ON)
+  endif()
+endforeach()
+
 set(CMAKE_CXX_FLAGS "${Omega_h_CXX_FLAGS}")
 
 find_program(LGR_CUBIT NAMES cubit cubit.command PATHS "${CUBIT_PREFIX}")
@@ -24,6 +38,9 @@ endif()
 set(LGR_KEY_BOOLS
   LGR_USE_CUBIT
   LGR_USE_GTest
+  LGR_BAR2
+  LGR_TRI3
+  LGR_TET4
   )
 
 set(LGR_KEY_STRINGS
