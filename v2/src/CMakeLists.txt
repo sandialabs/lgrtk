@@ -46,6 +46,7 @@ bob_library_includes(lgr_library)
 bob_link_dependency(lgr_library PUBLIC Omega_h)
 
 install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp
     lgr_math.hpp
     lgr_element_types.hpp
     lgr_factories.hpp
