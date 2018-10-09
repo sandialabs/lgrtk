@@ -1,6 +1,7 @@
 #ifndef LGR_ELEMENT_TYPES_HPP
 #define LGR_ELEMENT_TYPES_HPP
 
+#include <lgr_config.hpp>
 #include <lgr_math.hpp>
 
 namespace lgr {
@@ -199,18 +200,42 @@ struct CompositeTet {
   static constexpr bool is_simplex = true;
 };
 
+#ifdef LGR_BAR2
+#define LGR_EXPL_INST_BAR2 LGR_EXPL_INST(Bar2)
+#define LGR_EXPL_INST_BAR2_SIDE LGR_EXPL_INST(Bar2::side)
+#else
+#define LGR_EXPL_INST_BAR2
+#define LGR_EXPL_INST_BAR2_SIDE
+#endif
+
+#ifdef LGR_TRI3
+#define LGR_EXPL_INST_TRI3 LGR_EXPL_INST(Tri3)
+#define LGR_EXPL_INST_TRI3_SIDE LGR_EXPL_INST(Tri3::side)
+#else
+#define LGR_EXPL_INST_TRI3
+#define LGR_EXPL_INST_TRI3_SIDE
+#endif
+
+#ifdef LGR_TET4
+#define LGR_EXPL_INST_TET4 LGR_EXPL_INST(Tet4)
+#define LGR_EXPL_INST_TET4_SIDE LGR_EXPL_INST(Tet4::side)
+#else
+#define LGR_EXPL_INST_TET4
+#define LGR_EXPL_INST_TET4_SIDE
+#endif
+
 #define LGR_EXPL_INST_ELEMS \
-LGR_EXPL_INST(Bar2) \
-LGR_EXPL_INST(Tri3) \
-LGR_EXPL_INST(Tet4)
+LGR_EXPL_INST_BAR2 \
+LGR_EXPL_INST_TRI3 \
+LGR_EXPL_INST_TET4
 
 #define LGR_EXPL_INST_ELEMS_AND_SIDES \
-LGR_EXPL_INST(Bar2) \
-LGR_EXPL_INST(Bar2::side) \
-LGR_EXPL_INST(Tri3) \
-LGR_EXPL_INST(Tri3::side) \
-LGR_EXPL_INST(Tet4) \
-LGR_EXPL_INST(Tet4::side)
+LGR_EXPL_INST_BAR2 \
+LGR_EXPL_INST_BAR2_SIDE \
+LGR_EXPL_INST_TRI3 \
+LGR_EXPL_INST_TRI3_SIDE \
+LGR_EXPL_INST_TET4 \
+LGR_EXPL_INST_TET4_SIDE
 
 }
 
