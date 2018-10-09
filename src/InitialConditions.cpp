@@ -205,13 +205,12 @@ void FunctionInitialCondition<Field>::set(
     };
     Kokkos::parallel_for(nset_nodes, prepare);
     Omega_h::ExprReader reader(nset_nodes, Field::SpaceDim);
-    reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_w)));
-    reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_w)));
-    reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_w)));
-    Teuchos::any result;
-    reader.read_string(result, this->expr_string, this->name);
+    reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_w)));
+    reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_w)));
+    reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_w)));
+    auto result = reader.read_string(this->expr_string, this->name);
     reader.repeat(result);
-    auto field_osh = Teuchos::any_cast<Omega_h::Reals>(result);
+    auto field_osh = Omega_h::any_cast<Omega_h::Reals>(result);
     auto save = LAMBDA_EXPRESSION(int set_node) {
       auto node = nodeLids[set_node];
       for (int s = 0; s < Field::SpaceDim; ++s)
@@ -257,13 +256,12 @@ void FunctionInitialCondition<Field>::set(
     };
     Kokkos::parallel_for(nset_elems, prepare);
     Omega_h::ExprReader reader(nset_elems, Field::SpaceDim);
-    reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_w)));
-    reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_w)));
-    reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_w)));
-    Teuchos::any result;
-    reader.read_string(result, this->expr_string, this->name);
+    reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_w)));
+    reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_w)));
+    reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_w)));
+    auto result = reader.read_string(this->expr_string, this->name);
     reader.repeat(result);
-    auto field_osh = Teuchos::any_cast<Omega_h::Reals>(result);
+    auto field_osh = Omega_h::any_cast<Omega_h::Reals>(result);
     auto save = LAMBDA_EXPRESSION(int set_elem) {
       auto elem = elementLids[set_elem];
       field(elem) = field_osh[set_elem];
@@ -327,13 +325,12 @@ void FunctionInitialCondition<Field>::set(
     Kokkos::parallel_for(nset_faces, prepare);
     const std::vector<std::string> S={"x","y","z"};
     Omega_h::ExprReader reader(N*nset_faces, D);
-    reader.register_variable(S[0], Teuchos::any(Omega_h::Reals(Cx)));
-    reader.register_variable(S[1], Teuchos::any(Omega_h::Reals(Cy)));
-    reader.register_variable(S[2], Teuchos::any(Omega_h::Reals(Cz)));
-    Teuchos::any result;
-    reader.read_string(result, this->expr_string, this->name);
+    reader.register_variable(S[0], Omega_h::any(Omega_h::Reals(Cx)));
+    reader.register_variable(S[1], Omega_h::any(Omega_h::Reals(Cy)));
+    reader.register_variable(S[2], Omega_h::any(Omega_h::Reals(Cz)));
+    auto result = reader.read_string(this->expr_string, this->name);
     reader.repeat(result);
-    Omega_h::Reals field_osh = Teuchos::any_cast<Omega_h::Reals>(result);
+    Omega_h::Reals field_osh = Omega_h::any_cast<Omega_h::Reals>(result);
 
     const array_type fld=field;
     auto save = LAMBDA_EXPRESSION(int set_face) {
@@ -406,13 +403,12 @@ void FunctionInitialCondition<Field>::set(
     Kokkos::parallel_for(nset_faces, prepare);
     const std::vector<std::string> S={"x","y","z"};
     Omega_h::ExprReader reader(N*nset_faces, D);
-    reader.register_variable(S[0], Teuchos::any(Omega_h::Reals(Cx)));
-    reader.register_variable(S[1], Teuchos::any(Omega_h::Reals(Cy)));
-    reader.register_variable(S[2], Teuchos::any(Omega_h::Reals(Cz)));
-    Teuchos::any result;
-    reader.read_string(result, this->expr_string, this->name);
+    reader.register_variable(S[0], Omega_h::any(Omega_h::Reals(Cx)));
+    reader.register_variable(S[1], Omega_h::any(Omega_h::Reals(Cy)));
+    reader.register_variable(S[2], Omega_h::any(Omega_h::Reals(Cz)));
+    auto result = reader.read_string(this->expr_string, this->name);
     reader.repeat(result);
-    Omega_h::Reals field_osh = Teuchos::any_cast<Omega_h::Reals>(result);
+    Omega_h::Reals field_osh = Omega_h::any_cast<Omega_h::Reals>(result);
 
     const array_type fld=field;
     auto save = LAMBDA_EXPRESSION(int set_face) {
