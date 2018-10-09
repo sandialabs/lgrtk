@@ -363,7 +363,7 @@ inline void set_point_load(const Omega_h::LO& aNodeOrdinal,
         auto tOffset = aIndex * aValues.extent(1);
         auto tNumDofsPerNode = aValues.extent(0) * aValues.extent(1);
         auto tMyNodeDof = tNumDofsPerNode * aNodeOrdinals[aNodeOrdinal];
-        for(Plato::OrdinalType tDim = 0; tDim <  aValues.extent(1); tDim++)
+        for(Plato::OrdinalType tDim = 0; tDim <  Plato::OrdinalType(aValues.extent(1)); tDim++)
         {
             auto tOutputIndex = tMyNodeDof + tOffset + tDim;
             aOutput(tOutputIndex) = aValues(aIndex, tDim);
