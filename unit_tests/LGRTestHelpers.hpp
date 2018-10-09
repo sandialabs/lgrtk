@@ -40,14 +40,13 @@ namespace lgr
     }, "fill coords");
     
     Omega_h::ExprReader reader(nodeCount, spaceDim);
-    if (spaceDim > 0) reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_coords)));
-    if (spaceDim > 1) reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_coords)));
-    if (spaceDim > 2) reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_coords)));
+    if (spaceDim > 0) reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_coords)));
+    if (spaceDim > 1) reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
+    if (spaceDim > 2) reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
 
-    Teuchos::any result;
-    reader.read_string(result, expressionInXYZ, "expression in x/y/z");
+    auto result = reader.read_string(expressionInXYZ, "expression in x/y/z");
     reader.repeat(result);
-    auto fxnValues = Teuchos::any_cast<Omega_h::Reals>(result);
+    auto fxnValues = Omega_h::any_cast<Omega_h::Reals>(result);
     
     // assuming that values is a flat Kokkos view with entries of the same type as fxnValues, an Omega_h array,
     // copy to the values view
