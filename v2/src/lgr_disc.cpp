@@ -16,18 +16,18 @@ namespace lgr {
 
 template <int dim>
 static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_name, Omega_h::any const& pos_any) {
-  auto pos = Omega_h::any_cast<Vector<dim>>(pos_any);
-  auto coords = mesh.coords();
+  auto const pos = Omega_h::any_cast<Vector<dim>>(pos_any);
+  auto const coords = mesh.coords();
   auto min_dist_functor = OMEGA_H_LAMBDA(int vertex) -> double {
     auto vertex_pos = Omega_h::get_vector<dim>(coords, vertex);
     return Omega_h::norm(vertex_pos - pos);
   };
-  auto min_dist = Omega_h::transform_reduce(
+  double const min_dist = Omega_h::transform_reduce(
       Omega_h::IntIterator(0),
       Omega_h::IntIterator(mesh.nverts()),
-      min_dist_functor,
       std::numeric_limits<double>::max(),
-      Omega_h::minimum<double>());
+      Omega_h::minimum<double>(),
+      std::move(min_dist_functor));
   auto globals = mesh.globals(Omega_h::VERT);
   // tiebreaker pass
   auto min_global_functor = OMEGA_H_LAMBDA(int vertex) -> std::int64_t {
@@ -36,25 +36,25 @@ static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_
     if (dist == min_dist) return globals[vertex];
     else return Omega_h::ArithTraits<std::int64_t>::max();
   };
-  auto min_global = Omega_h::transform_reduce(
+  auto const min_global = Omega_h::transform_reduce(
       Omega_h::IntIterator(0),
       Omega_h::IntIterator(mesh.nverts()),
-      min_global_functor,
       std::numeric_limits<std::int64_t>::max(),
-      Omega_h::minimum<std::int64_t>());
+      Omega_h::minimum<std::int64_t>(),
+      std::move(min_global_functor));
   auto class_ids = Omega_h::deep_copy(mesh.get_array<Omega_h::ClassId>(Omega_h::VERT, "class_id"));
   auto class_dims = Omega_h::deep_copy(mesh.get_array<std::int8_t>(Omega_h::VERT, "class_dim"));
   auto max_class_id_functor = OMEGA_H_LAMBDA(int vertex) -> Omega_h::ClassId {
     if (class_dims[vertex] == std::int8_t(0)) return class_ids[vertex];
     else return Omega_h::ClassId(-1);
   };
-  auto max_class_id = Omega_h::transform_reduce(
+  auto const max_class_id = Omega_h::transform_reduce(
       Omega_h::IntIterator(0),
       Omega_h::IntIterator(mesh.nverts()),
-      max_class_id_functor,
       Omega_h::ClassId(-1),
-      Omega_h::maximum<Omega_h::ClassId>());
-  auto new_class_id = max_class_id + 1;
+      Omega_h::maximum<Omega_h::ClassId>(),
+      std::move(max_class_id_functor));
+  auto const new_class_id = max_class_id + 1;
   auto set_functor = OMEGA_H_LAMBDA(int vertex) {
     if (globals[vertex] == min_global) {
       class_ids[vertex] = new_class_id;

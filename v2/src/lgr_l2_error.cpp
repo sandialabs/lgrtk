@@ -67,7 +67,7 @@ struct L2Error : public Scalar {
       }
       return term * w;
     };
-    auto sum_squares = transform_reduce(II(0), II(support->count()), transform, 0.0, plus<double>());
+    double const sum_squares = transform_reduce(II(0), II(support->count()), 0.0, plus<double>(), std::move(transform));
     return std::sqrt(sum_squares);
   }
   void out_of_line_virtual_method() override;
