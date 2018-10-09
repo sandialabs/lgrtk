@@ -55,7 +55,6 @@ void MeshFixture<SpatialDim>::verify(
   typedef typename FEMeshType::size_type size_type;
 
   const size_type node_count_total = node_coords.extent(0);
-  const size_type elem_count_total = elem_node_ids.extent(0);
 
   for (size_type node_index = 0; node_index < node_count_total;
        ++node_index) {
