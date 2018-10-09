@@ -72,13 +72,12 @@ static Omega_h::Reals evaluate_expression_at_set_nodes(
   const char* const dim_names[3] = {"x", "y", "z"};
   for (int d = 0; d < SpatialDim; ++d) {
     reader.register_variable(dim_names[d],
-        Teuchos::any(Omega_h::Reals(coords_w[d])));
+        Omega_h::any(Omega_h::Reals(coords_w[d])));
   }
-  reader.register_variable("t", Teuchos::any(Omega_h::Real(time)));
-  Teuchos::any result_any;
-  reader.read_string(result_any, expr, name);
+  reader.register_variable("t", Omega_h::any(Omega_h::Real(time)));
+  auto result_any = reader.read_string(expr, name);
   reader.repeat(result_any);
-  return Teuchos::any_cast<Omega_h::Reals>(result_any);
+  return Omega_h::any_cast<Omega_h::Reals>(result_any);
 }
 
 template <int SpatialDim>
