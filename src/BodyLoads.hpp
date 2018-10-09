@@ -42,14 +42,13 @@ getFunctionValues(Kokkos::View<Plato::Scalar***, Kokkos::LayoutRight, Plato::Mem
   },"fill coords");
   
   Omega_h::ExprReader reader(numCells*numPoints, SpaceDim);
-  if (SpaceDim > 0) reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_coords)));
-  if (SpaceDim > 1) reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_coords)));
-  if (SpaceDim > 2) reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_coords)));
+  if (SpaceDim > 0) reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_coords)));
+  if (SpaceDim > 1) reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
+  if (SpaceDim > 2) reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
   
-  Teuchos::any result;
-  reader.read_string(result, aFuncString, "Integrand");
+  auto result = reader.read_string(aFuncString, "Integrand");
   reader.repeat(result);
-  aFxnValues = Teuchos::any_cast<Omega_h::Reals>(result);
+  aFxnValues = Omega_h::any_cast<Omega_h::Reals>(result);
 }
   
 

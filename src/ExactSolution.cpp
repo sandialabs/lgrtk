@@ -100,13 +100,12 @@ void ExactSolution(const Teuchos::ParameterList& param_list,
   };  
   Kokkos::parallel_for(num_elem, prepare);
   Omega_h::ExprReader reader(num_elem, dim); 
-  reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_w)));
-  reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_w)));
-  reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_w)));
-  Teuchos::any result;
-  reader.read_string(result, expr_string, field_name);
+  reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_w)));
+  reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_w)));
+  reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_w)));
+  auto result = reader.read_string(expr_string, field_name);
   reader.repeat(result);
-  auto exact = Teuchos::any_cast<Omega_h::Reals>(result);
+  auto exact = Omega_h::any_cast<Omega_h::Reals>(result);
   long double diff = 0;
   
   const typename Fields::array_type vol = ElementVolume<Fields>();
@@ -118,7 +117,7 @@ void ExactSolution(const Teuchos::ParameterList& param_list,
   diff = Omega_h::get_sum(Omega_h::Reals(diffs_w));
   diff = comm::sum(machine, diff);
   if (!comm::rank(machine)) 
-    std::cout<<" L1 difference with Exact Soluion of "<<expr_string<<" is:"<<diff<<std::endl;
+    std::cout<<" L1 difference with Exact Solution of "<<expr_string<<" is:"<<diff<<std::endl;
   mesh_fields->cleanTagsFromMesh(tags);
 }
 

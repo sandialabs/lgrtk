@@ -363,16 +363,15 @@ void LowRmPotentialSolve<SpatialDim>::assemble(
 
     Omega_h::ExprReader reader(numCells * numPoints, SpatialDim);
     if (SpatialDim > 0)
-      reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_coords)));
+      reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_coords)));
     if (SpatialDim > 1)
-      reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_coords)));
+      reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
     if (SpatialDim > 2)
-      reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_coords)));
+      reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
 
-    Teuchos::any result;
-    reader.read_string(result, _forcingFunctionExpr, "Low Rm forcing function");
+    auto result = reader.read_string(_forcingFunctionExpr, "Low Rm forcing function");
     reader.repeat(result);
-    auto fxnValues = Teuchos::any_cast<Omega_h::Reals>(result);
+    auto fxnValues = Omega_h::any_cast<Omega_h::Reals>(result);
 
     auto rhs = _rhs;
     Kokkos::parallel_for(
@@ -653,16 +652,15 @@ void LowRmPotentialSolve<spaceDim>::fusedAssemble() {
 
     Omega_h::ExprReader reader(numCells * numPoints, spaceDim);
     if (spaceDim > 0)
-      reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_coords)));
+      reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_coords)));
     if (spaceDim > 1)
-      reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_coords)));
+      reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
     if (spaceDim > 2)
-      reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_coords)));
+      reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
 
-    Teuchos::any result;
-    reader.read_string(result, _forcingFunctionExpr, "Low Rm forcing function");
+    auto result = reader.read_string(_forcingFunctionExpr, "Low Rm forcing function");
     reader.repeat(result);
-    auto fxnValues = Teuchos::any_cast<Omega_h::Reals>(result);
+    auto fxnValues = Omega_h::any_cast<Omega_h::Reals>(result);
 
     auto rhs = _rhs;
     Kokkos::parallel_for(
@@ -1189,16 +1187,15 @@ void LowRmPotentialSolve<spaceDim>::setBC(
 
   Omega_h::ExprReader reader(numBCs, spaceDim);
   if (spaceDim > 0)
-    reader.register_variable("x", Teuchos::any(Omega_h::Reals(x_coords)));
+    reader.register_variable("x", Omega_h::any(Omega_h::Reals(x_coords)));
   if (spaceDim > 1)
-    reader.register_variable("y", Teuchos::any(Omega_h::Reals(y_coords)));
+    reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
   if (spaceDim > 2)
-    reader.register_variable("z", Teuchos::any(Omega_h::Reals(z_coords)));
+    reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
 
-  Teuchos::any result;
-  reader.read_string(result, bcExpr, "Low Rm bc expression");
+  auto result = reader.read_string(bcExpr, "Low Rm bc expression");
   reader.repeat(result);
-  auto bcValues = Teuchos::any_cast<Omega_h::Reals>(result);
+  auto bcValues = Omega_h::any_cast<Omega_h::Reals>(result);
 
   setBC(localNodeOrdinals, bcValues, addToExisting);
 }
