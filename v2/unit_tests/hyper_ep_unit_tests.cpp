@@ -470,14 +470,13 @@ TEST(HyperEPMaterialModel, SimpleJ2)
   scalar_type epdot = 0.;
   // Uniaxial strain
   F(0,0) = 1.004;
-  auto err_c =
-    Details::update(elastic, hardening, rate_dep, props, rho,
+  Details::update(elastic, hardening, rate_dep, props, rho,
                   F, dtime, temp, T, c, Fp, ep, epdot);
   EXPECT_TRUE(Omega_h::are_close(ep, 0.));
 
   c = 0.;
   F(0,0) = 1.005;
-  err_c = Details::update(elastic, hardening, rate_dep, props, rho,
+  Details::update(elastic, hardening, rate_dep, props, rho,
                         F, dtime, temp, T, c, Fp, ep, epdot);
   EXPECT_TRUE(Omega_h::are_close(T(0,0), 47500.));
   EXPECT_TRUE(Omega_h::are_close(T(1,1), 7500.));
@@ -510,7 +509,6 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
 
-  Details::ErrorCode err;
   Details::StateFlag flag;
 
   // Uniaxial stress, below yield
@@ -518,7 +516,7 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type fac = .9;
   Te(0,0) = fac * A;
   flag = Details::StateFlag::TRIAL;
-  err = Details::radial_return(hardening, rate_dep, props, Te, F,
+  Details::radial_return(hardening, rate_dep, props, Te, F,
                                temp, dtime, T, Fp, ep, epdot, flag);
 
   EXPECT_TRUE(Omega_h::are_close(T(0,0), Te(0,0)));
@@ -532,7 +530,7 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   fac = 1.1;
   Te(0,0) = fac * A;
   flag = Details::StateFlag::TRIAL;
-  err = Details::radial_return(hardening, rate_dep, props, Te, F,
+  Details::radial_return(hardening, rate_dep, props, Te, F,
                                temp, dtime, T, Fp, ep, epdot, flag);
 
   scalar_type Txx = 2.*std::pow(A,2)*fac/(3.*A*fac) + A*fac/3.;

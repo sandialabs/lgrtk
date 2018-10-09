@@ -7,7 +7,7 @@ target_link_libraries(unit_tests
     PUBLIC
     lgr_library)
 bob_link_dependency(unit_tests PUBLIC GTest)
-add_test(run_unit_tests COMMAND
+add_test(NAME run_unit_tests COMMAND
   "${CMAKE_CURRENT_BINARY_DIR}/unit_tests")
 
 bob_end_subdir()
