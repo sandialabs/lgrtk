@@ -182,14 +182,6 @@ Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
         new_set_elem = new_inverse[elem_to];
       }
       for (int comp = 0; comp < ncomps; ++comp) {
-        if ((!(new_set_elem * ncomps + comp < new_data.size())) || (new_set_elem * ncomps + comp < 0)) {
-          Omega_h_fail("field \"%s\" new_set_elem %d ncomps %d comp %d new_data.size() %d\n",
-              debug_c_str, new_set_elem, ncomps, comp, new_data.size());
-        }
-        if ((!(old_set_elem * ncomps + comp < old_data.size())) || (old_set_elem * ncomps + comp < 0)) {
-          Omega_h_fail("field \"%s\" old_set_elem %d ncomps %d comp %d old_data.size() %d\n",
-              debug_c_str, old_set_elem, ncomps, comp, old_data.size());
-        }
         new_data[new_set_elem * ncomps + comp] =
           old_data[old_set_elem * ncomps + comp];
       }
