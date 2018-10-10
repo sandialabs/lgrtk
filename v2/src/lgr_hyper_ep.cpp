@@ -247,8 +247,7 @@ struct HyperEP : public Model<Elem>
       double c;
       auto err_c = hyper_ep::update(elastic, hardening, rate_dep,
           props, rho, F, dt, temp, T, c, Fp, ep, epdot);
-      if(err_c != hyper_ep::ErrorCode::SUCCESS)
-        Omega_h_fail("Failed to update stress tensor");
+      OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(T));
       points_to_wave_speed[point] = c;
