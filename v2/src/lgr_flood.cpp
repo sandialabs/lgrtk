@@ -169,7 +169,6 @@ Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
         old_data.size(), old_set_size);
     auto const new_data = sim.set(fi);
     OMEGA_H_CHECK(new_data.exists());
-    auto const debug_c_str = field.long_name.c_str();
     auto flood_field_functor = OMEGA_H_LAMBDA(int elem_to) {
       auto const elem_from = pull_mapping[elem_to];
       OMEGA_H_CHECK(elem_from != -1);
