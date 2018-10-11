@@ -34,6 +34,7 @@ void Flooder::setup(Teuchos::ParameterList& pl)
 }
 
 void Flooder::flood() {
+  if (!enabled) return;
   auto const max_priority = get_max(sim.get(flood_priority));
   for (int depth = 0; depth < max_depth; ++depth) {
     for (double up_to_priority = 1.0; up_to_priority <= max_priority;
