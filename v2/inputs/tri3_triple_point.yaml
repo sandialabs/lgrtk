@@ -109,7 +109,7 @@ lgr:
         - time
         - dt
     viz:
-      time period: 0.05
+      time period: 0.1
       type: VTK output
       path: triple_point
       fields:
