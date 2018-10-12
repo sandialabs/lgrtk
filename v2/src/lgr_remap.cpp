@@ -384,7 +384,6 @@ struct Remap : public RemapBase {
     }
   }
   void after_adapt() override final {
-    Omega_h::vtk::write_vtu("debug.vtu", &sim.disc.mesh);
     sim.fields[sim.position].storage = Omega_h::deep_copy(sim.disc.mesh.coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
