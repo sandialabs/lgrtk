@@ -34,6 +34,7 @@ void Flooder::setup(Teuchos::ParameterList& pl)
 }
 
 void Flooder::flood() {
+  if (!enabled) return;
   auto const max_priority = get_max(sim.get(flood_priority));
   for (int depth = 0; depth < max_depth; ++depth) {
     for (double up_to_priority = 1.0; up_to_priority <= max_priority;
@@ -168,7 +169,6 @@ Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
         old_data.size(), old_set_size);
     auto const new_data = sim.set(fi);
     OMEGA_H_CHECK(new_data.exists());
-    auto const debug_c_str = field.long_name.c_str();
     auto flood_field_functor = OMEGA_H_LAMBDA(int elem_to) {
       auto const elem_from = pull_mapping[elem_to];
       OMEGA_H_CHECK(elem_from != -1);
@@ -182,14 +182,6 @@ Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
         new_set_elem = new_inverse[elem_to];
       }
       for (int comp = 0; comp < ncomps; ++comp) {
-        if ((!(new_set_elem * ncomps + comp < new_data.size())) || (new_set_elem * ncomps + comp < 0)) {
-          Omega_h_fail("field \"%s\" new_set_elem %d ncomps %d comp %d new_data.size() %d\n",
-              debug_c_str, new_set_elem, ncomps, comp, new_data.size());
-        }
-        if ((!(old_set_elem * ncomps + comp < old_data.size())) || (old_set_elem * ncomps + comp < 0)) {
-          Omega_h_fail("field \"%s\" old_set_elem %d ncomps %d comp %d old_data.size() %d\n",
-              debug_c_str, old_set_elem, ncomps, comp, old_data.size());
-        }
         new_data[new_set_elem * ncomps + comp] =
           old_data[old_set_elem * ncomps + comp];
       }
