@@ -25,7 +25,16 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
           opts.max_length_allowed * 0.9);
     minimum_length =
       adapt_pl.get<double>("minimum length", 0.0);
-    opts.verbosity = Omega_h::EACH_REBUILD;
+    auto verbosity = adapt_pl.get<std::string>("verbosity", "each adapt");
+    if (verbosity == "each adapt") {
+      opts.verbosity = Omega_h::EACH_ADAPT;
+    } else if (verbosity == "each rebuild") {
+      opts.verbosity = Omega_h::EACH_REBUILD;
+    } else if (verbosity == "extra stats") {
+      opts.verbosity = Omega_h::EXTRA_STATS;
+    } else if (verbosity == "silent") {
+      opts.verbosity = Omega_h::SILENT;
+    }
     this->gradation_rate = adapt_pl.get<double>("gradation rate", 1.0);
     should_coarsen_with_expansion = adapt_pl.get<bool>("coarsen with expansion", false);
   }
