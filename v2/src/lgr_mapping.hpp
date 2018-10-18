@@ -9,7 +9,7 @@ struct Mapping {
   bool is_identity;
   Mapping():is_identity(false) {}
   Omega_h::LOs things;
-  OMEGA_H_INLINE int operator[](int const i) const {
+  OMEGA_H_DEVICE int operator[](int const i) const {
     if (is_identity) return i;
     return things[i];
   }

@@ -23,7 +23,7 @@ struct VolumeWeighter {
   VolumeWeighter(Omega_h::Mesh& mesh) {
     points_to_w = mesh.get_array<double>(mesh.dim(), "weight");
   }
-  OMEGA_H_INLINE double get_weight(int point) const {
+  OMEGA_H_DEVICE double get_weight(int point) const {
     return points_to_w[point];
   }
 };
@@ -35,7 +35,7 @@ struct MassWeighter {
     points_to_w = mesh.get_array<double>(mesh.dim(), "weight");
     points_to_rho = mesh.get_array<double>(mesh.dim(), "density");
   }
-  OMEGA_H_INLINE double get_weight(int point) const {
+  OMEGA_H_DEVICE double get_weight(int point) const {
     return points_to_w[point] * points_to_rho[point];
   }
 };
@@ -384,7 +384,6 @@ struct Remap : public RemapBase {
     }
   }
   void after_adapt() override final {
-    Omega_h::vtk::write_vtu("debug.vtu", &sim.disc.mesh);
     sim.fields[sim.position].storage = Omega_h::deep_copy(sim.disc.mesh.coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
