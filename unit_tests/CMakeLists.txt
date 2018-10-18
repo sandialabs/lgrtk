@@ -15,6 +15,7 @@ set(SOURCES
   TwoDMesh.cpp
   ElementHelpersReplacements.cpp
   mhdTests.cpp
+  R3D.cpp
 )
 
 IF (AMGX_FOUND)
