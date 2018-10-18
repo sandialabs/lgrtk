@@ -45,6 +45,15 @@
 
 #include <r3d.hpp>
 
+#include "Omega_h_build.hpp"
+#include "Omega_h_map.hpp"
+#include "Omega_h_matrix.hpp"
+#include "LGRTestHelpers.hpp"
+
+#include <FEMesh.hpp>
+#include <Fields.hpp>
+#include <FieldDB.hpp>
+
 namespace {
 
 template <typename T, int n>
@@ -54,11 +63,12 @@ bool equal(const r3d::Few<T,n> v1, const r3d::Few<T,n> v2) {
   return r;
 }
 
-TEUCHOS_UNIT_TEST(r3d, intersect)
+TEUCHOS_UNIT_TEST(r3d, intersect_two_tets)
 {
   constexpr int dim  = 3;
   constexpr int vert = dim+1;
   constexpr int moment  =  2;  
+  constexpr double tol=1e-10;
   typedef r3d::Few<r3d::Vector<dim>,vert> Tet;
   typedef r3d::Polytope<dim>              Polytope;
   typedef r3d::Polynomial<dim,moment>     Polynomial;
@@ -80,7 +90,6 @@ TEUCHOS_UNIT_TEST(r3d, intersect)
   double moments[Polynomial::nterms] = {}; 
   r3d::reduce<moment>(intersection, moments);
 
-  const double tol=1e-10;
   double check[Polynomial::nterms] = // From Mathematica
    {0.0416666666667,
     0.0208333333333,
@@ -94,5 +103,89 @@ TEUCHOS_UNIT_TEST(r3d, intersect)
     0.0010416666667};
   for (int i=0; i<Polynomial::nterms; ++i)
     TEST_FLOATING_EQUALITY(check[i],moments[i],tol);
+}
+
+r3d::Few<r3d::Vector<3>,4> 
+extract_tet(const Omega_h::Reals &coords, const Omega_h::LOs &elem_verts, const int e) {
+  constexpr int dim  = 3;
+  constexpr int vert = dim+1;
+  r3d::Few<r3d::Vector<dim>,vert> tet;
+  for (int v=0; v<vert; ++v) 
+    for (int d=0; d<dim; ++d) 
+      tet[v][d] = coords[dim*elem_verts[vert*e+v]+d];
+  return tet;
+}
+double dot (const double *moments,const double *quad_poly) {
+  constexpr int dim     = 3;
+  constexpr int moment  =  2;  
+  typedef r3d::Polynomial<dim,moment> Polynomial;
+  double d = 0;
+  for (int i=0; i<Polynomial::nterms; ++i) 
+    d += moments[i]*quad_poly[i];
+  return d;
+}
+
+TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
+{
+  constexpr int dim     = 3;
+  constexpr int vert    = dim+1;
+  constexpr int moment  =  2;  
+  constexpr double tol=1e-10;
+  typedef r3d::Few<r3d::Vector<dim>,vert> Tet;
+  typedef r3d::Polytope<dim>              Polytope;
+  typedef r3d::Polynomial<dim,moment>     Polynomial;
+  
+  // 1+2x+3y+4z+5xx+6xy+7xz+8yy+9yz+10zz
+  const double quad_poly[Polynomial::nterms] = {1,2,3,4,5,6,7,8,9,10}; 
+  const double check[3] = {69.3333333333333, 63.8333333333333, 18.6666666666667};
+
+  const Teuchos::RCP<Omega_h::Library> libOmegaH = lgr::getLibraryOmegaH();
+  Omega_h::Mesh omega_h_mesh_1 = build_box(libOmegaH->world(),OMEGA_H_SIMPLEX,1,1,2,2,2,2);
+  Omega_h::Mesh omega_h_mesh_2 = build_box(libOmegaH->world(),OMEGA_H_SIMPLEX,1,2,1,3,3,3);
+
+  const Omega_h::LOs elem_verts_1 = omega_h_mesh_1.ask_elem_verts();
+  const Omega_h::LOs elem_verts_2 = omega_h_mesh_2.ask_elem_verts();
+  
+  const Omega_h::Reals coords_1 = omega_h_mesh_1.coords();
+  const Omega_h::Reals coords_2 = omega_h_mesh_2.coords();
+
+  const int nelem_1 = omega_h_mesh_1.nelems();
+  const int nelem_2 = omega_h_mesh_2.nelems();
+
+  double volume = 0;
+  for (int e1=0; e1<nelem_1; ++e1) {
+    const Tet tet1 = extract_tet(coords_1, elem_verts_1, e1);
+    Polytope intersection;
+    r3d::intersect_simplices(intersection, tet1, tet1);
+    double moments[Polynomial::nterms] = {}; 
+    r3d::reduce<moment>(intersection, moments);
+    volume += dot (moments,quad_poly);
+  }
+  TEST_FLOATING_EQUALITY(volume,check[0],tol);
+
+  volume = 0;
+  for (int e2=0; e2<nelem_2; ++e2) {
+    const Tet tet2 = extract_tet(coords_2, elem_verts_2, e2);
+    Polytope intersection;
+    r3d::intersect_simplices(intersection, tet2, tet2);
+    double moments[Polynomial::nterms] = {}; 
+    r3d::reduce<moment>(intersection, moments);
+    volume += dot (moments,quad_poly);
+  }
+  TEST_FLOATING_EQUALITY(volume,check[1],tol);
+
+  volume = 0;
+  for (int e1=0; e1<nelem_1; ++e1) {
+    const Tet tet1 = extract_tet(coords_1, elem_verts_1, e1);
+    for (int e2=0; e2<nelem_2; ++e2) {
+      const Tet tet2 = extract_tet(coords_2, elem_verts_2, e2);
+      Polytope intersection;
+      r3d::intersect_simplices(intersection, tet1, tet2);
+      double moments[Polynomial::nterms] = {}; 
+      r3d::reduce<moment>(intersection, moments);
+      volume += dot (moments,quad_poly);
+    }
+  }
+  TEST_FLOATING_EQUALITY(volume,check[2],tol);
 }
 }
