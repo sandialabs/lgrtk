@@ -1,0 +1,50 @@
+lgr:
+  CFL: 0.75
+  end time: 1.0e-3
+  element type: Quad4
+  mesh:
+    box:
+      x elements: 100
+      x size: 1.0
+      y elements: 1
+      y size: 1.0e-2
+  material models:
+    model1:
+      type: linear elastic
+  conditions:
+    density:
+      cond1:
+        at time: 0.0
+        value: '1000.0'
+    bulk modulus:
+      cond1:
+        at time: 0.0
+        value: '1.0e9'
+    shear modulus:
+      cond1:
+        at time: 0.0
+        value: '0.0'
+    velocity:
+      cond1:
+        at time: 0.0
+        value: 'vector(1e-4 * exp(-(x(0) - 0.5)^2 / (2 * (0.05)^2)), 0.0)'
+    acceleration:
+      cond1:
+        sets: ['x-', 'x+']
+        value: 'vector(0.0, a(1))'
+      cond2:
+        sets: ['y-', 'y+']
+        value: 'vector(a(0), 0.0)'
+  scalars:
+  responses:
+   viz:
+     time period: 1.0e-5
+     type: VTK output
+     fields:
+       - velocity
+   stdout:
+     type: command line history
+     scalars:
+       - step
+       - time
+       - dt
