@@ -9,7 +9,7 @@
 #include <lgr_internal_energy.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_scope.hpp>
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 
 namespace lgr {
 
