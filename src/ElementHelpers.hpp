@@ -10,9 +10,11 @@ namespace lgr {
 KOKKOS_INLINE_FUNCTION Scalar dot4(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
+
 KOKKOS_INLINE_FUNCTION Scalar dot3(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
+
 template <int NumNodes>
 KOKKOS_INLINE_FUNCTION Scalar dot(const Scalar *a, const Scalar *b);
 
@@ -20,6 +22,7 @@ template <>
 KOKKOS_INLINE_FUNCTION Scalar dot<4>(const Scalar *a, const Scalar *b){
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
+
 template <>
 KOKKOS_INLINE_FUNCTION Scalar dot<3>(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
