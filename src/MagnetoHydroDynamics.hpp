@@ -185,6 +185,25 @@ namespace lgr{
       return modulus;
     }
 
+    KOKKOS_INLINE_FUNCTION 
+    Scalar
+    elementDivergenceB( const int ielem, 
+			const Scalar * const x,
+			const Scalar * const y,
+			const Scalar * const z ) const
+    {
+      const Scalar volume = tet4Volume(x,y,z);
+      constexpr int elemFaceCount = Fields::ElemFaceCount;
+      Scalar totalFaceFlux(0.0);
+      for ( int face=0; face<elemFaceCount; ++face ) {
+	const int sign = elemFaceOrientations(ielem,face);
+	const size_type faceID = elemFaceIDs(ielem,face);
+	totalFaceFlux += sign * magneticFaceFlux(faceID);  
+      }	
+      const Scalar divB = totalFaceFlux/volume;
+      return divB;
+    }
+
     MHD() = delete;
     MHD(const MHD &) = default;
     MHD& operator=(const MHD &) = delete;
