@@ -123,6 +123,110 @@ struct Tri3 {
   using side = Tri3Side;
 };
 
+struct Quad4Side {
+  static constexpr int dim = 2;
+  static constexpr int nodes = 2;
+  static constexpr int points = 1;
+  static constexpr bool is_simplex = true;
+  static OMEGA_H_INLINE Matrix<nodes, points> basis_values() {
+    Matrix<nodes, points> out;
+    out[0][0] = 1.0 / 2.0;
+    out[0][1] = 1.0 / 2.0;
+    return out;
+  }
+};
+
+struct Quad4 {
+  public:
+    static constexpr int dim = 2;
+    static constexpr int nodes = 4;
+    static constexpr int points = 4;
+    static constexpr bool is_simplex = false;
+  private:
+    static OMEGA_H_INLINE Matrix<2, 4> pts() {
+      Matrix<2, 4> out;
+      out[0][0] = -1.0 / std::sqrt(3.0); out[0][1] = -1.0 / std::sqrt(3.0);
+      out[1][0] =  1.0 / std::sqrt(3.0); out[1][1] = -1.0 / std::sqrt(3.0);
+      out[2][0] =  1.0 / std::sqrt(3.0); out[2][1] =  1.0 / std::sqrt(3.0);
+      out[3][0] = -1.0 / std::sqrt(3.0); out[3][1] =  1.0 / std::sqrt(3.0);
+      return out;
+    }
+    static OMEGA_H_INLINE Matrix<2, 4> bgrads(Vector<2> xi) {
+      Matrix<2, 4> out;
+      out[0][0] = -0.25 * (1.0 - xi[1]); out[0][1] = -0.25 * (1.0 - xi[0]);
+      out[1][0] =  0.25 * (1.0 - xi[1]); out[1][1] = -0.25 * (1.0 - xi[0]);
+      out[2][0] =  0.25 * (1.0 + xi[1]); out[2][1] =  0.25 * (1.0 + xi[0]);
+      out[3][0] = -0.25 * (1.0 + xi[1]); out[3][1] =  0.25 * (1.0 + xi[0]);
+      return out;
+    }
+    static OMEGA_H_INLINE void compute_lengths(
+        Matrix<2, 4> node_coords, Shape<Quad4>& shape) {
+      Matrix<2, 4> edge_vectors;
+      edge_vectors[0] = node_coords[1] - node_coords[0];
+      edge_vectors[1] = node_coords[2] - node_coords[1];
+      edge_vectors[2] = node_coords[3] - node_coords[2];
+      edge_vectors[3] = node_coords[0] - node_coords[3];
+      Vector<4> squared_edge_lengths;
+      for (int i = 0; i < 4; ++i) {
+        squared_edge_lengths[i] = Omega_h::norm_squared(edge_vectors[i]);
+      }
+      auto max_squared_edge_length =
+        Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
+      auto min_squared_edge_length =
+        Omega_h::reduce(squared_edge_lengths, Omega_h::minimum<double>());
+      auto max_edge_length = std::sqrt(max_squared_edge_length);
+      auto min_edge_length = std::sqrt(min_squared_edge_length);
+      shape.lengths.viscosity_length = max_edge_length;
+      shape.lengths.time_step_length = min_edge_length;
+    }
+    static OMEGA_H_INLINE void compute_gradients(
+        Matrix<2, 4> node_coords, Shape<Quad4>& shape) {
+      Matrix<2, 4> ips = pts();
+      Matrix<4, 2> x = Omega_h::transpose(node_coords);
+      for (int ip = 0; ip < 4; ++ip) {
+        Vector<2> xi = ips[ip];
+        Matrix<2, 4> dNdxi = bgrads(xi);
+        Matrix<2, 2> J = dNdxi * x;
+        Matrix<2, 2> Jinv = Omega_h::invert(J);
+        Matrix<2, 4> dNdx = Jinv * dNdxi;
+        shape.basis_gradients[ip] = dNdx;
+        shape.weights[ip] = Omega_h::determinant(J);
+      }
+    }
+  public:
+    static OMEGA_H_INLINE
+    Shape<Quad4> shape(Matrix<dim, nodes> node_coords) {
+      Shape<Quad4> out;
+      compute_lengths(node_coords, out);
+      compute_gradients(node_coords, out);
+      return out;
+    }
+    static OMEGA_H_INLINE
+    constexpr double lumping_factor(int /* node */) { return 1.0 / 4.0; }
+    static OMEGA_H_INLINE Matrix<nodes, points> basis_values() {
+      Matrix<nodes, points> out;
+      out[0][0] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
+      out[0][1] = 1.0 / 6.0;
+      out[0][2] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
+      out[0][3] = 1.0 / 6.0;
+      out[1][0] = 1.0 / 6.0;
+      out[1][1] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
+      out[1][2] = 1.0 / 6.0;
+      out[1][3] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
+      out[2][0] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
+      out[2][1] = 1.0 / 6.0;
+      out[2][2] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
+      out[2][3] = 1.0 / 6.0;
+      out[3][0] = 1.0 / 6.0;
+      out[3][1] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
+      out[3][2] = 1.0 / 6.0;
+      out[3][3] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
+      return out;
+    }
+    static constexpr char const* name() { return "Quad4"; }
+    using side = Quad4Side;
+};
+
 struct Tet4Side {
   static constexpr int dim = 3;
   static constexpr int nodes = 3;
@@ -216,6 +320,14 @@ struct CompositeTet {
 #define LGR_EXPL_INST_TRI3_SIDE
 #endif
 
+#ifdef LGR_QUAD4
+#define LGR_EXPL_INST_QUAD4 LGR_EXPL_INST(Quad4)
+#define LGR_EXPL_INST_QUAD4_SIDE LGR_EXPL_INST(Quad4::side)
+#else
+#define LGR_EXPL_INST_QUAD4
+#define LGR_EXPL_INST_QUAD4_SIDE
+#endif
+
 #ifdef LGR_TET4
 #define LGR_EXPL_INST_TET4 LGR_EXPL_INST(Tet4)
 #define LGR_EXPL_INST_TET4_SIDE LGR_EXPL_INST(Tet4::side)
@@ -227,6 +339,7 @@ struct CompositeTet {
 #define LGR_EXPL_INST_ELEMS \
 LGR_EXPL_INST_BAR2 \
 LGR_EXPL_INST_TRI3 \
+LGR_EXPL_INST_QUAD4 \
 LGR_EXPL_INST_TET4
 
 #define LGR_EXPL_INST_ELEMS_AND_SIDES \
@@ -234,6 +347,8 @@ LGR_EXPL_INST_BAR2 \
 LGR_EXPL_INST_BAR2_SIDE \
 LGR_EXPL_INST_TRI3 \
 LGR_EXPL_INST_TRI3_SIDE \
+LGR_EXPL_INST_QUAD4 \
+LGR_EXPL_INST_QUAD4_SIDE \
 LGR_EXPL_INST_TET4 \
 LGR_EXPL_INST_TET4_SIDE
 
