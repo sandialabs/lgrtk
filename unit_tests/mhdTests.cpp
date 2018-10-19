@@ -230,6 +230,62 @@ ANONYMOUS:
       TEST_FLOATING_EQUALITY(errorPlusOne[i], 1.0, 1.0e-15);
   }
 
+  {
+    const auto iter = mesh_sets[Omega_h::ELEM_SET].find("eb_1");
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      iter == mesh_sets[Omega_h::ELEM_SET].end(), std::invalid_argument,
+      "mhdTests element set eb_1 doesn't exist!\n");
+    auto elemLids = iter->second;
+    Omega_h::Write<Scalar> errorPlusOneCell(elemLids.size());
+    const int ElemNodeCount = Fields::ElemNodeCount;
+    const int ElemFaceCount = Fields::ElemFaceCount;
+    const auto elem_node_ids = femesh.elem_node_ids;
+    const auto node_coords = femesh.node_coords;
+    const auto elemFaceIDs = femesh.elem_face_ids;
+    const auto elemFaceOrientations = femesh.elem_face_orientations;
+    const auto magneticFaceFlux = MagneticFaceFlux<Fields>();
+    Kokkos::parallel_for(elemLids.size(), LAMBDA_EXPRESSION(int e) {
+
+	lgr::Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
+	Omega_h::Few< Omega_h::Vector<3>, ElemNodeCount> nodalCoordinates;
+	const size_t ielem = elemLids[e];
+
+        for (int i = 0; i < ElemNodeCount; ++i) {
+          const int n = elem_node_ids(ielem, i);
+          x[i] = node_coords(n, 0);
+          y[i] = node_coords(n, 1);
+          z[i] = node_coords(n, 2);
+	  Omega_h::Vector<3> &coord = nodalCoordinates[i];
+	  coord[0] = x[i];
+	  coord[1] = y[i];
+	  coord[2] = z[i];
+        } 
+
+	Omega_h::Vector<ElemFaceCount> faceFlux;
+        for (int face = 0; face < ElemFaceCount; ++face) {
+	  const int sign = elemFaceOrientations(ielem,face);
+	  const size_t faceID = elemFaceIDs(ielem,face);
+	  faceFlux[face] = sign * magneticFaceFlux(faceID);  
+        }       
+	
+	Omega_h::Vector<3> constantTerm;
+	lgr::Scalar linearFactor;
+	lgr::elementPhysicalFacePolynomial( /*input*/
+					   nodalCoordinates,
+					   faceFlux,
+					   /*output*/
+					   constantTerm,
+					   linearFactor );
+
+	Omega_h::Vector<3> Bexact; 
+	Bexact(0) = 0.0; Bexact(1) = +1.0; Bexact(2) = +1.0;
+	errorPlusOneCell[e] = Omega_h::norm(Bexact-constantTerm) + fabs(linearFactor-0.0) + 1.0;
+      }, "element face polynomial check");
+    Omega_h::HostWrite<Scalar> errorPlusOne(errorPlusOneCell);
+    for (int i=0; i<elemLids.size(); ++i) 
+      TEST_FLOATING_EQUALITY(errorPlusOne[i], 1.0, 1.0e-15);
+  }
+
 }
 
 
