@@ -1,7 +1,7 @@
 #include <lgr_run.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_hydro.hpp>
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 #include <lgr_flood.hpp>
 
 namespace lgr {

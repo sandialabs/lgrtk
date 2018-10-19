@@ -1,7 +1,7 @@
 #include <lgr_adapt.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 #include <Omega_h_metric.hpp>
 
 namespace lgr {
