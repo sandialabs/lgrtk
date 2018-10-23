@@ -2,7 +2,7 @@
 
 namespace lgr {
 
-Response::Response(Simulation& sim_in, Teuchos::ParameterList& pl)
+Response::Response(Simulation& sim_in, Omega_h::InputMap& pl)
   :sim(sim_in)
 {
   when.reset(setup_when(pl));

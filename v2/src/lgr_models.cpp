@@ -18,18 +18,18 @@ Models::Models(Simulation& sim_in)
 {
 }
 
-void Models::setup_material_models_and_modifiers(Teuchos::ParameterList& pl) {
-  ::lgr::setup(sim.factories.material_model_factories, sim, pl.sublist("material models"), models, "material model");
+void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
+  ::lgr::setup(sim.factories.material_model_factories, sim, pl.get_map("material models"), models, "material model");
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
   if (models.empty()) Omega_h_fail("no material models defined!\n");
-  ::lgr::setup(sim.factories.modifier_factories, sim, pl.sublist("modifiers"), models, "modifier");
+  ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_map("modifiers"), models, "modifier");
 }
 
 void Models::setup_field_updates() {
   auto const& factories = sim.factories.field_update_factories;
-  Teuchos::ParameterList dummy_pl;
+  Omega_h::InputMap dummy_pl;
   for (auto& f_ptr : sim.fields.storage) {
     auto& name = f_ptr->long_name;
     auto it = factories.find(name);

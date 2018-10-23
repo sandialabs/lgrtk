@@ -10,7 +10,7 @@ struct VtkOutput : public Response {
   std::vector<FieldIndex> field_indices;
   Omega_h::vtk::Writer writer;
   Omega_h::TagSet tags;
-  VtkOutput(Simulation& sim_in, Teuchos::ParameterList& pl)
+  VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl)
     :Response(sim_in, pl)
     ,writer(pl.get<std::string>("path", "lgr_viz"), &sim.disc.mesh, sim.dim(), sim.time, Omega_h::vtk::dont_compress)
   {
@@ -24,8 +24,9 @@ struct VtkOutput : public Response {
        {"node global", {0, "global"}},
        {"element local", {stdim, "local"}},
        {"element global", {stdim, "global"}}};
-    auto field_names_in = pl.get<Teuchos::Array<std::string>>("fields");
-    for (auto& field_name : field_names_in) {
+    auto& field_names_in = pl.get_list("fields");
+    for (int i = 0; i < field_names_in.size(); ++i) {
+      auto field_name = field_names_in.get<std::string>(i);
       if (omega_h_adapt_tags.count(field_name)) {
         if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
         tags[omega_h_adapt_tags[field_name]].insert(field_name);
@@ -69,7 +70,7 @@ struct VtkOutput : public Response {
 
 void VtkOutput::out_of_line_virtual_method() {}
 
-Response* vtk_output_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+Response* vtk_output_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new VtkOutput(sim, pl);
 }
 

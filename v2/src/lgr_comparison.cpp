@@ -11,14 +11,14 @@ struct Comparison : public Response {
   std::shared_ptr<Omega_h::ExprOp> op;
   double tolerance;
   double floor;
-  Comparison(Simulation& sim_in, std::string const& name_in, Teuchos::ParameterList& pl)
+  Comparison(Simulation& sim_in, std::string const& name_in, Omega_h::InputMap& pl)
     :Response(sim_in, pl)
     ,name(name_in)
     ,env(1, 1)
   {
     scalar = pl.get<std::string>("scalar");
-    tolerance = pl.get<double>("tolerance", 1e-10);
-    floor = pl.get<double>("floor", tolerance);
+    tolerance = pl.get<double>("tolerance", "1e-10");
+    floor = pl.get<double>("floor", "1e-10");
     auto str = pl.get<std::string>("expected value");
     Omega_h::ExprOpsReader reader;
     op = reader.read_ops(str);
@@ -38,7 +38,7 @@ struct Comparison : public Response {
 void Comparison::out_of_line_virtual_method() {}
 
 Response* comparison_factory(Simulation& sim, std::string const& name,
-    Teuchos::ParameterList& pl)
+    Omega_h::InputMap& pl)
 {
   return new Comparison(sim, name, pl);
 }

@@ -1,7 +1,6 @@
 #include <lgr_run.hpp>
 #include <Omega_h_library.hpp>
 #include <Omega_h_cmdline.hpp>
-#include <Omega_h_teuchos.hpp>
 
 int main(int argc, char** argv) {
   Omega_h::Library lib(&argc, &argv);
@@ -12,8 +11,7 @@ int main(int argc, char** argv) {
     return -1;
   }
   auto config_path = cmdline.get<std::string>("input.yaml");
-  auto comm_teuchos = Omega_h::make_teuchos_comm(world);
-  auto params = Teuchos::ParameterList{};
-  Omega_h::update_parameters_from_file(config_path, &params, *comm_teuchos);
+  auto params = Omega_h::read_input(config_path);
+  OMEGA_H_CHECK(params.used);
   lgr::run(world, params);
 }

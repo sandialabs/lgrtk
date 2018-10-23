@@ -9,7 +9,7 @@ struct IdealGas : public Model<Elem> {
   FieldIndex heat_capacity_ratio;
   FieldIndex specific_internal_energy;
   FieldIndex specific_internal_energy_rate;
-  IdealGas(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
+  IdealGas(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->specific_internal_energy =
       this->point_define("e", "specific internal energy", 1,
           RemapType::PER_UNIT_MASS, "");
@@ -48,12 +48,12 @@ struct IdealGas : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* ideal_gas_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* ideal_gas_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new IdealGas<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

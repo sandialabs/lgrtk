@@ -3,7 +3,7 @@
 
 #include <lgr_field_index.hpp>
 #include <lgr_field_access.hpp>
-#include <Omega_h_teuchos.hpp>
+#include <Omega_h_input.hpp>
 #include <lgr_element_types.hpp>
 #include <lgr_remap_type.hpp>
 #include <lgr_class_names.hpp>
@@ -29,7 +29,7 @@ struct ModelBase {
   virtual ~ModelBase() = default;
   virtual void out_of_line_virtual_function();
   ModelBase(Simulation& sim_in, ClassNames const& class_names);
-  ModelBase(Simulation& sim_in, Teuchos::ParameterList& pl);
+  ModelBase(Simulation& sim_in, Omega_h::InputMap& pl);
   virtual std::uint64_t exec_stages() = 0;
   virtual char const* name() = 0;
   FieldIndex point_define(std::string const& short_name, std::string const& long_name,
@@ -59,7 +59,7 @@ struct ModelBase {
 
 template <class Elem>
 struct Model : public ModelBase {
-  Model(Simulation&, Teuchos::ParameterList&);
+  Model(Simulation&, Omega_h::InputMap&);
   Model(Simulation&, ClassNames const&);
   MappedPointRead<Elem> points_get(FieldIndex fi);
   MappedPointWrite<Elem> points_set(FieldIndex fi);

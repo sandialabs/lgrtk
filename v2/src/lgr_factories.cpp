@@ -28,7 +28,7 @@ bool Factories::empty() {
 
 template <class T>
 static T* get(FactoriesOf<T> const& factories, std::string const& name,
-    Simulation& sim, Teuchos::ParameterList& pl, std::string const& category_name) {
+    Simulation& sim, Omega_h::InputMap& pl, std::string const& category_name) {
   auto type_name = pl.get<std::string>("type");
   auto factory_it = factories.find(type_name);
   if (factory_it == factories.end()) {
@@ -39,10 +39,10 @@ static T* get(FactoriesOf<T> const& factories, std::string const& name,
 }
 
 template <class T>
-void setup(FactoriesOf<T> const& factories, Simulation& sim, Teuchos::ParameterList& pl, VectorOf<T>& out, std::string const& category_name) {
-  for (auto it = pl.begin(), end = pl.end(); it != end; ++it) {
-    auto name = pl.name(it);
-    auto& subpl = pl.sublist(name);
+void setup(FactoriesOf<T> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<T>& out, std::string const& category_name) {
+  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
+    auto& name = it->first;
+    auto& subpl = pl.get_map(name);
     auto ptr = get(factories, name, sim, subpl, category_name);
     std::unique_ptr<T> unique_ptr(ptr);
     out.push_back(std::move(unique_ptr));
@@ -50,10 +50,10 @@ void setup(FactoriesOf<T> const& factories, Simulation& sim, Teuchos::ParameterL
 }
 
 template void
-setup(FactoriesOf<ModelBase> const& factories, Simulation& sim, Teuchos::ParameterList& pl, VectorOf<ModelBase>&, std::string const&);
+setup(FactoriesOf<ModelBase> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<ModelBase>&, std::string const&);
 template void
-setup(FactoriesOf<Scalar> const& factories, Simulation& sim, Teuchos::ParameterList& pl, VectorOf<Scalar>&, std::string const&);
+setup(FactoriesOf<Scalar> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Scalar>&, std::string const&);
 template void
-setup(FactoriesOf<Response> const& factories, Simulation& sim, Teuchos::ParameterList& pl, VectorOf<Response>&, std::string const&);
+setup(FactoriesOf<Response> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Response>&, std::string const&);
 
 }

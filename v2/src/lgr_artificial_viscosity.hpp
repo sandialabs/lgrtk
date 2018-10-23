@@ -10,12 +10,12 @@ namespace lgr {
 template <class Elem>
 ModelBase* artificial_viscosity_factory(
     Simulation& sim, std::string const& name,
-    Teuchos::ParameterList& pl);
+    Omega_h::InputMap& pl);
 
 #define LGR_EXPL_INST(Elem) \
 extern template ModelBase* \
 artificial_viscosity_factory<Elem>( \
-    Simulation&, std::string const&, Teuchos::ParameterList&);
+    Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

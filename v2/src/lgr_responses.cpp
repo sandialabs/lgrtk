@@ -9,7 +9,7 @@ namespace lgr {
 
 Responses::Responses(Simulation& sim_in):sim(sim_in) {}
 
-void Responses::setup(Teuchos::ParameterList& pl) {
+void Responses::setup(Omega_h::InputMap& pl) {
   ::lgr::setup(sim.factories.response_factories, sim, pl, storage, "response");
 }
 
