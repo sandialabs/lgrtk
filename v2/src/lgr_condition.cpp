@@ -5,6 +5,7 @@
 #include <lgr_disc.hpp>
 #include <lgr_supports.hpp>
 #include <lgr_when.hpp>
+#include <lgr_riemann.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_scalar.hpp>
 #include <Omega_h_math_lang.hpp>
@@ -12,6 +13,30 @@
 namespace lgr {
 
 using Omega_h::divide_no_remainder;
+
+// yes, its wasted effort to recompute all three fields
+// and throw away the other two each time one field is
+// asked for
+#define RIEMANN_EXPR(var) \
+static Omega_h::any riemann_expr_##var( \
+    std::vector<Omega_h::any>& args) { \
+  auto left_density = Omega_h::any_cast<double>(args.at(0)); \
+  auto right_density = Omega_h::any_cast<double>(args.at(1)); \
+  auto left_pressure = Omega_h::any_cast<double>(args.at(2)); \
+  auto right_pressure = Omega_h::any_cast<double>(args.at(3)); \
+  auto shock_x = Omega_h::any_cast<double>(args.at(4)); \
+  auto gamma = Omega_h::any_cast<double>(args.at(5)); \
+  auto t = Omega_h::any_cast<double>(args.at(6)); \
+  auto x = Omega_h::any_cast<Omega_h::Reals>(args.at(7)); \
+  auto result = exact_riemann( \
+      left_density, right_density, \
+      left_pressure, right_pressure, \
+      shock_x, gamma, t, x); \
+  return result.var; \
+}
+RIEMANN_EXPR(velocity)
+RIEMANN_EXPR(density)
+RIEMANN_EXPR(pressure)
 
 void Condition::init(Supports& supports) {
   auto vars_used = Omega_h::math_lang::get_symbols_used(str);
@@ -22,6 +47,9 @@ void Condition::init(Supports& supports) {
   op = reader.read_ops(str);
   bridge = supports.subsets.get_bridge(support->subset, field->support->subset);
   learn_disc();
+  env.register_function("riemann_velocity", riemann_expr_velocity);
+  env.register_function("riemann_density", riemann_expr_density);
+  env.register_function("riemann_pressure", riemann_expr_pressure);
 }
 
 Condition::Condition(Field* field_in, Supports& supports,
