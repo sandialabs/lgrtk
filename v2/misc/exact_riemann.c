@@ -32,12 +32,12 @@ int main() {
   FILE* file;
   // define initial conditions
   // state at left of discontinuity
-  rhol = 10.0;
-  pl = 100.0;
+  rhol = 1.0;
+  pl = 1.0;
   ul = 0.0;
   // state at right of discontinuity
-  rhor = 1.0;
-  pr = 1.0;
+  rhor = 0.125;
+  pr = 0.1;
   ur = 0.0;
   if (ul != 0.0 || ur != 0.0) {
     printf("must have ul = ur = 0\n");
@@ -46,9 +46,9 @@ int main() {
   // equation of state
   gamma = 1.4;
   // location of discontinuity at t = 0
-  xi = 2.0;
+  xi = 0.5;
   // time at which solution is desired
-  t = 0.40;
+  t = 0.14;
   // number of points in solution
   npts = 500;
   if (npts > N) {
@@ -57,7 +57,7 @@ int main() {
   }
   // spatial interval over which to compute solution
   xl = 0.0;
-  xr = 5.0;
+  xr = 1.0;
   if (xr < xl) {
     printf("xr must be greater than xl\n");
     return -1;
