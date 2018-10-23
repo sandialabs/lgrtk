@@ -8,8 +8,10 @@
 #include <Omega_h_reduce.hpp>
 #include <Omega_h_int_iterator.hpp>
 #include <Omega_h_metric.hpp>
+#include <Omega_h_adapt.hpp>
 #include <Omega_h_array_ops.hpp>
 #include <fstream>
+#include <sstream>
 #include <limits>
 
 namespace lgr {
@@ -104,26 +106,26 @@ static void change_element_count(Omega_h::Mesh& mesh, double desired_nelems) {
   }
 }
 
-void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
-  if (pl.isType<std::string>("file")) {
+void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
+  if (pl.is<std::string>("file")) {
     mesh = Omega_h::read_mesh_file(pl.get<std::string>("file"), comm);
-  } else if (pl.isSublist("box")) {
-    auto& box_pl = pl.sublist("box");
+  } else if (pl.is_map("box")) {
+    auto& box_pl = pl.get_map("box");
     int x_elements = box_pl.get<int>("x elements");
-    int y_elements = box_pl.get<int>("y elements", (dim_ > 1) ? 1 : 0);
-    int z_elements = box_pl.get<int>("z elements", (dim_ > 2) ? 1 : 0);
-    double x_size = box_pl.get<double>("x size", 1.0);
-    double y_size = box_pl.get<double>("y size", 1.0);
-    double z_size = box_pl.get<double>("z size", 1.0);
-    bool symmetric = box_pl.get<bool>("symmetric", false);
+    int y_elements = box_pl.get<int>("y elements", (dim_ > 1) ? "1" : "0");
+    int z_elements = box_pl.get<int>("z elements", (dim_ > 2) ? "1" : "0");
+    double x_size = box_pl.get<double>("x size", "1.0");
+    double y_size = box_pl.get<double>("y size", "1.0");
+    double z_size = box_pl.get<double>("z size", "1.0");
+    bool symmetric = box_pl.get<bool>("symmetric", "false");
     mesh = Omega_h::build_box(comm, (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE),
         x_size, y_size, z_size, x_elements, y_elements, z_elements, symmetric);
-  } else if (pl.isSublist("CUBIT")) {
+  } else if (pl.is_map("CUBIT")) {
 #ifdef LGR_USE_CUBIT
-    auto& cubit_pl = pl.sublist("CUBIT");
+    auto& cubit_pl = pl.get_map("CUBIT");
     auto cubit_path = LGR_CUBIT;
     std::string journal_path;
-    if (cubit_pl.isType<std::string>("commands")) {
+    if (cubit_pl.is<std::string>("commands")) {
       auto commands = cubit_pl.get<std::string>("commands");
       journal_path = cubit_pl.get<std::string>("journal file", "lgr_temporary.jou");
       if (comm->rank() == 0) {
@@ -138,7 +140,7 @@ void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
     auto default_exodus_path =
       journal_path.substr(0, journal_path.length() - 3) + "exo";
     auto exodus_path =
-      cubit_pl.get<std::string>("Exodus file", default_exodus_path);
+      cubit_pl.get<std::string>("Exodus file", default_exodus_path.c_str());
     std::stringstream system_stream;
     system_stream << cubit_path << ' ';
     system_stream << "-nobanner ";
@@ -162,10 +164,10 @@ void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
   }
   OMEGA_H_CHECK(mesh.dim() == dim_);
   OMEGA_H_CHECK(mesh.family() == (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE));
-  if (pl.isSublist("sets")) {
-    Omega_h::update_class_sets(&mesh.class_sets, pl.sublist("sets"));
+  if (pl.is_map("sets")) {
+    Omega_h::update_class_sets(&mesh.class_sets, pl.get_map("sets"));
   }
-  if (pl.isParameter("transform")) {
+  if (pl.is<std::string>("transform")) {
     Omega_h::ExprReader reader(mesh.nverts(), mesh.dim());
     reader.register_variable("x", Omega_h::any(mesh.coords()));
     auto result = reader.read_string(pl.get<std::string>("transform"), "mesh transform");
@@ -184,16 +186,16 @@ void Disc::setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl) {
       }
     }
   }
-  if (pl.isType<Teuchos::TwoDArray<std::string>>("mark closest nodes")) {
-    auto markings = pl.get<Teuchos::TwoDArray<std::string>>("mark closest nodes");
-    for (Teuchos::TwoDArray<std::string>::size_type i = 0;
-        i < markings.getNumRows(); ++i) {
-      auto set_name = markings[i][0];
-      auto pos_expr = markings[i][1];
+  if (pl.is_list("mark closest nodes")) {
+    auto& markings = pl.get_list("mark closest nodes");
+    for (int i = 0; i < markings.size(); ++i) {
+      auto& marking = markings.get_list(i);
+      auto set_name = marking.get<std::string>(0);
+      auto pos_expr = marking.get<std::string>(1);
       mark_closest_vertex(mesh, set_name, pos_expr);
     }
   }
-  if (pl.isType<double>("element count")) {
+  if (pl.is<double>("element count")) {
     change_element_count(mesh, pl.get<double>("element count"));
   }
 }

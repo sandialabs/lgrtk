@@ -24,10 +24,10 @@ OMEGA_H_INLINE void ideal_gas_update(
 }
 
 template <class Elem>
-ModelBase* ideal_gas_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl);
+ModelBase* ideal_gas_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
 #define LGR_EXPL_INST(Elem) \
-extern template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+extern template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

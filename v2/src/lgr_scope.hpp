@@ -1,7 +1,7 @@
 #ifndef LGR_SCOPE_HPP
 #define LGR_SCOPE_HPP
 
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 
 namespace lgr {
 

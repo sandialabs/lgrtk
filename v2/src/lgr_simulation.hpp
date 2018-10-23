@@ -33,7 +33,7 @@ struct Simulation {
   Simulation(Omega_h::CommPtr comm, Factories&& factories_in);
   template <class Elem>
   void set_elem();
-  void setup(Teuchos::ParameterList& pl);
+  void setup(Omega_h::InputMap& pl);
   int dim();
   int nodes();
   int elems();

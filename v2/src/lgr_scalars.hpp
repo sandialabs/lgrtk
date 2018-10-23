@@ -18,7 +18,7 @@ struct Scalars {
   std::vector<std::unique_ptr<Scalar>> storage;
   Omega_h::rb_tree<std::string, Scalar*, NameOfScalarPtr> by_name;
   Scalars(Simulation& sim_in);
-  void setup(Teuchos::ParameterList& pl);
+  void setup(Omega_h::InputMap& pl);
   double ask_value(std::string const& name);
 };
 

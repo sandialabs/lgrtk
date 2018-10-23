@@ -74,12 +74,12 @@ struct InternalEnergy : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* internal_energy_factory(Simulation& sim, std::string const&, Teuchos::ParameterList&) {
+ModelBase* internal_energy_factory(Simulation& sim, std::string const&, Omega_h::InputMap&) {
   return new InternalEnergy<Elem>(sim);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* internal_energy_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* internal_energy_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

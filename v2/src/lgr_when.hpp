@@ -1,7 +1,7 @@
 #ifndef LGR_WHEN_HPP
 #define LGR_WHEN_HPP
 
-#include <Omega_h_teuchos.hpp>
+#include <Omega_h_input.hpp>
 
 namespace lgr {
 
@@ -18,7 +18,7 @@ When* at_time(double time);
 When* always();
 When* never();
 
-When* setup_when(Teuchos::ParameterList& pl);
+When* setup_when(Omega_h::InputMap& pl);
 
 }
 

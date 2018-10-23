@@ -187,6 +187,7 @@ static void eval_prescribed_motions(
 
 
 
+#if 0
 TEST(HyperEPMaterialModel, ParameterValidation)
 {
   using Teuchos::ParameterList;
@@ -352,6 +353,7 @@ TEST(HyperEPMaterialModel, ParameterValidation)
     }
   }
 }
+#endif
 
 
 TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)

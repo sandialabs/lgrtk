@@ -15,14 +15,20 @@ ModelBase::ModelBase(Simulation& sim_in, ClassNames const& class_names)
   point_support = sim.supports.get_support(ELEMS, true, class_names);
 }
 
-static ClassNames class_names_from_pl(Simulation& sim, Teuchos::ParameterList& pl) {
-  auto class_names_teuchos = pl.get<Teuchos::Array<std::string>>("sets", Teuchos::Array<std::string>());
-  ClassNames class_names(class_names_teuchos.begin(), class_names_teuchos.end());
-  if (class_names.empty()) class_names = sim.disc.covering_class_names();
-  return class_names;
+static ClassNames class_names_from_pl(Simulation& sim, Omega_h::InputMap& pl) {
+  if (pl.is_list("sets")) {
+    ClassNames class_names;
+    auto& class_names_list = pl.get_list("sets");
+    for (int i = 0; i < class_names_list.size(); ++i) {
+      class_names.insert(class_names_list.get<std::string>(i));
+    }
+    return class_names;
+  } else {
+    return sim.disc.covering_class_names();
+  }
 }
 
-ModelBase::ModelBase(Simulation& sim_in, Teuchos::ParameterList& pl):
+ModelBase::ModelBase(Simulation& sim_in, Omega_h::InputMap& pl):
   ModelBase(sim_in, class_names_from_pl(sim_in, pl))
 {
 }
@@ -122,7 +128,7 @@ void ModelBase::after_correction() {
 
 
 template <class Elem>
-Model<Elem>::Model(Simulation& sim_in, Teuchos::ParameterList& pl)
+Model<Elem>::Model(Simulation& sim_in, Omega_h::InputMap& pl)
 :ModelBase(sim_in, pl)
 {
 }

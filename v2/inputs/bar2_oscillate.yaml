@@ -67,3 +67,4 @@ lgr:
       scalar: mass velocity
       expected value: '0.01 * cos(t)'
       tolerance: 5.0e-2
+      floor: 5.0e-2

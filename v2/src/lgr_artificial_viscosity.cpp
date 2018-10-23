@@ -30,7 +30,7 @@ template <class Elem>
 struct ArtificialViscosity : public Model<Elem> {
   FieldIndex linear;
   FieldIndex quadratic;
-  ArtificialViscosity(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
+  ArtificialViscosity(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->linear = this->point_define("nu_l", "linear artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, "");
     this->quadratic = this->point_define("nu_q", "quadratic artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, "");
   }
@@ -73,14 +73,14 @@ struct ArtificialViscosity : public Model<Elem> {
 template <class Elem>
 ModelBase* artificial_viscosity_factory(
     Simulation& sim, std::string const&,
-    Teuchos::ParameterList& pl) {
+    Omega_h::InputMap& pl) {
   return new ArtificialViscosity<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
 template ModelBase* \
 artificial_viscosity_factory<Elem>( \
-    Simulation&, std::string const&, Teuchos::ParameterList&);
+    Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

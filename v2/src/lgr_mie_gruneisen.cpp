@@ -15,7 +15,7 @@ struct MieGruneisen : public Model<Elem> {
   FieldIndex specific_internal_energy;
   FieldIndex specific_internal_energy_rate;
 
-  MieGruneisen(Simulation& sim_in, Teuchos::ParameterList& pl) :
+  MieGruneisen(Simulation& sim_in, Omega_h::InputMap& pl) :
     Model<Elem>(sim_in, pl)
   {
     this->rho0_ = this->point_define(
@@ -72,12 +72,12 @@ struct MieGruneisen : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* mie_gruneisen_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* mie_gruneisen_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new MieGruneisen<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* mie_gruneisen_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* mie_gruneisen_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

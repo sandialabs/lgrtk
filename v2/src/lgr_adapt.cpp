@@ -1,7 +1,7 @@
 #include <lgr_adapt.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 #include <Omega_h_metric.hpp>
 
 namespace lgr {
@@ -10,21 +10,24 @@ Adapter::Adapter(Simulation& sim_in)
   :sim(sim_in) {
 }
 
-void Adapter::setup(Teuchos::ParameterList& pl) {
-  should_adapt = pl.isSublist("adapt");
+void Adapter::setup(Omega_h::InputMap& pl) {
+  should_adapt = pl.is_map("adapt");
   if (should_adapt) {
     opts = decltype(opts)(&sim.disc.mesh);
-    auto& adapt_pl = pl.sublist("adapt");
+    auto& adapt_pl = pl.get_map("adapt");
     opts.min_quality_desired =
       adapt_pl.get<double>("desired quality",
-          sim.dim() == 3 ? 0.3 : 0.4);
+          sim.dim() == 3 ? "0.3" : "0.4");
+    auto default_qual = std::to_string(opts.min_quality_desired - 0.02);
     trigger_quality =
-      adapt_pl.get<double>("trigger quality", opts.min_quality_desired - 0.02);
+      adapt_pl.get<double>("trigger quality", default_qual.c_str());
+    // FIXME!!! This is wrong, should be bigger than max_length_allowed,
+    // but I'm in the middle of refactoring so I wont change everything at once
+    auto default_len = std::to_string(opts.max_length_allowed * 0.9);
     trigger_length_ratio =
-      adapt_pl.get<double>("trigger length ratio",
-          opts.max_length_allowed * 0.9);
+      adapt_pl.get<double>("trigger length ratio", default_len.c_str());
     minimum_length =
-      adapt_pl.get<double>("minimum length", 0.0);
+      adapt_pl.get<double>("minimum length", "0.0");
     auto verbosity = adapt_pl.get<std::string>("verbosity", "each adapt");
     if (verbosity == "each adapt") {
       opts.verbosity = Omega_h::EACH_ADAPT;
@@ -35,8 +38,8 @@ void Adapter::setup(Teuchos::ParameterList& pl) {
     } else if (verbosity == "silent") {
       opts.verbosity = Omega_h::SILENT;
     }
-    this->gradation_rate = adapt_pl.get<double>("gradation rate", 1.0);
-    should_coarsen_with_expansion = adapt_pl.get<bool>("coarsen with expansion", false);
+    this->gradation_rate = adapt_pl.get<double>("gradation rate", "1.0");
+    should_coarsen_with_expansion = adapt_pl.get<bool>("coarsen with expansion", "false");
   }
 #define LGR_EXPL_INST(Elem) \
   if (sim.elem_name == Elem::name()) { \
