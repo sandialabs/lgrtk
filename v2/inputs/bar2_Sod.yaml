@@ -39,6 +39,11 @@ lgr:
         sets: ['x-', 'x+']
         value: 'vector(0.0)'
   scalars:
+    density error:
+      type: L2 error
+      field: density
+      expected value: |
+        riemann_density(1.0, 0.125, 1.0, 0.1, 0.5, 1.4, t, x)
   responses:
     stdout:
       type: command line history
@@ -46,6 +51,7 @@ lgr:
         - step
         - time
         - dt
+        - density error
     viz:
       time period: 0.01
       type: VTK output
@@ -55,3 +61,10 @@ lgr:
         - specific internal energy
         - stress
         - density
+        - expected density
+    density regression:
+      type: comparison
+      scalar: density error
+      expected value: '0.0'
+      tolerance: 0.0
+      floor: 4.0e-2
