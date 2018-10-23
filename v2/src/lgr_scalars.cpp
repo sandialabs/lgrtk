@@ -21,7 +21,7 @@ double Scalars::ask_value(std::string const& name) {
   return (*it)->ask_value();
 }
 
-void Scalars::setup(Teuchos::ParameterList& pl) {
+void Scalars::setup(Omega_h::InputMap& pl) {
   ::lgr::setup(sim.factories.scalar_factories, sim, pl, storage, "scalar");
   for (auto& ptr : storage) {
     by_name.insert(ptr.get());

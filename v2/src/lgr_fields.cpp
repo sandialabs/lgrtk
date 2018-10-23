@@ -7,10 +7,10 @@
 
 namespace lgr {
 
-void Fields::setup(Teuchos::ParameterList& pl)
+void Fields::setup(Omega_h::InputMap& pl)
 {
-  printing_set_fields = pl.get<bool>("print all fields", false);
-  filling_with_nan = pl.get<bool>("initialize with NaN", false);
+  printing_set_fields = pl.get<bool>("print all fields", "false");
+  filling_with_nan = pl.get<bool>("initialize with NaN", "false");
 }
 
 FieldIndex Fields::define(std::string const& short_name,
@@ -103,11 +103,11 @@ void Fields::setup_default_conditions(Supports& supports, double start_time) {
   }
 }
 
-void Fields::setup_conditions(Supports& supports, Teuchos::ParameterList& pl) {
-  for (auto it = pl.begin(), end = pl.end(); it != end; ++it) {
-    auto field_name = pl.name(it);
-    if (pl.isSublist(field_name)) {
-      auto& field_pl = pl.sublist(field_name);
+void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
+  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
+    auto const& field_name = it->first;
+    if (pl.is_map(field_name)) {
+      auto& field_pl = pl.get_map(field_name);
       auto fit = std::find_if(storage.begin(), storage.end(),
           [&](std::unique_ptr<Field> const& f) {
             return f->long_name == field_name;

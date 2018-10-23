@@ -28,19 +28,19 @@ char const* get_error_code_string(ErrorCode code) {
 }
 
 void read_and_validate_elastic_params(
-    Teuchos::ParameterList& params,
+    Omega_h::InputMap& params,
     Properties& props,
     Elastic& elastic)
 {
   // Set the defaults
   elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
-  if (!params.isSublist("elastic")) {
+  if (!params.is_map("elastic")) {
     Omega_h_fail("elastic submodel must be defined");
   }
-  auto pl = params.sublist("elastic");
-  if (pl.isParameter("hyperelastic")) {
-    std::string hyperelastic = pl.get<std::string>("hyperelastic");
+  auto& pl = params.get_map("elastic");
+  if (pl.is<std::string>("hyperelastic")) {
+    auto hyperelastic = pl.get<std::string>("hyperelastic");
     if (hyperelastic == "neo hookean") {
       elastic = hyper_ep::Elastic::NEO_HOOKEAN;
     } else {
@@ -50,14 +50,14 @@ void read_and_validate_elastic_params(
       Omega_h_fail("%s\n", str.c_str());
     }
   }
-  if (!pl.isParameter("E")) {
+  if (!pl.is<double>("E")) {
     Omega_h_fail("Young's modulus \"E\" modulus must be defined");
   }
   double E = pl.get<double>("E");
   if (E <= 0.) {
     Omega_h_fail("Young's modulus \"E\" must be positive");
   }
-  if (!pl.isParameter("Nu")) {
+  if (!pl.is<double>("Nu")) {
     Omega_h_fail("Poisson's ratio \"Nu\" must be defined");
   }
   double Nu = pl.get<double>("Nu");
@@ -69,7 +69,7 @@ void read_and_validate_elastic_params(
 }
 
 void read_and_validate_plastic_params(
-    Teuchos::ParameterList& params,
+    Omega_h::InputMap& params,
     Properties& props,
     Hardening& hardening,
     RateDependence& rate_dep)
@@ -77,22 +77,13 @@ void read_and_validate_plastic_params(
   // Set the defaults
   hardening = Hardening::NONE;
   rate_dep = RateDependence::NONE;
-  double max_double = std::numeric_limits<double>::max();
-  props.yield_strength = max_double; // Yield strength
-  props.hardening_modulus = 0.; // Hardening modulus
-  props.hardening_exponent = 1.; // Power law hardening exponent
-  props.c1 = 298.; // The rest of the properties are model dependent
-  props.c2 = 0.;
-  props.c3 = 0.;
-  props.c4 = 0.;
-  props.ep_dot_0 = 0.;
-  if (!params.isSublist("plastic")) {
+  if (!params.is_map("plastic")) {
     return;
   }
-  auto& pl = params.sublist("plastic");
-  props.yield_strength =
-    pl.get<double>("A", props.yield_strength);
-  if (!pl.isParameter("hardening")) {
+  auto& pl = params.get_map("plastic");
+  auto max_double_str = std::to_string(std::numeric_limits<double>::max());
+  props.yield_strength = pl.get<double>("A", max_double_str.c_str());
+  if (!pl.is<std::string>("hardening")) {
     hardening = Hardening::NONE;
   } else {
     std::string model = pl.get<std::string>("hardening");
@@ -100,34 +91,34 @@ void read_and_validate_plastic_params(
       // Linear isotropic hardening J2 plasticity
       hardening = Hardening::LINEAR_ISOTROPIC;
       props.hardening_modulus =
-        pl.get<double>("B", props.hardening_modulus);
+        pl.get<double>("B", "0.0");
     } else if (model == "power law") {
       // Power law hardening
       hardening = Hardening::POWER_LAW;
       props.hardening_modulus =
-        pl.get<double>("B", props.hardening_modulus);
+        pl.get<double>("B", "0.0");
       props.hardening_exponent =
-        pl.get<double>("N", props.hardening_exponent);
+        pl.get<double>("N", "1.0");
     } else if (model == "zerilli armstrong") {
       // Zerilli Armstrong hardening
       hardening = Hardening::ZERILLI_ARMSTRONG;
       props.hardening_modulus =
-        pl.get<double>("B", props.hardening_modulus);
+        pl.get<double>("B", "0.0");
       props.hardening_exponent =
-        pl.get<double>("N", props.hardening_exponent);
-      props.c1 = pl.get<double>("C1", 0.0);
-      props.c2 = pl.get<double>("C2", 0.0);
-      props.c3 = pl.get<double>("C3", 0.0);
+        pl.get<double>("N", "1.0");
+      props.c1 = pl.get<double>("C1", "0.0");
+      props.c2 = pl.get<double>("C2", "0.0");
+      props.c3 = pl.get<double>("C3", "0.0");
     } else if (model == "johnson cook") {
       // Johnson Cook hardening
       hardening = Hardening::JOHNSON_COOK;
       props.hardening_modulus =
-        pl.get<double>("B", props.hardening_modulus);
+        pl.get<double>("B", "0.0");
       props.hardening_exponent =
-        pl.get<double>("N", props.hardening_exponent);
-      props.c1 = pl.get<double>("T0", props.c1);
-      props.c2 = pl.get<double>("TM", props.c2);
-      props.c3 = pl.get<double>("M", props.c3);
+        pl.get<double>("N", "1.0");
+      props.c1 = pl.get<double>("T0", "298.0");
+      props.c2 = pl.get<double>("TM", "0.0");
+      props.c3 = pl.get<double>("M", "0.0");
     } else {
       std::ostringstream os;
       os << "Unrecognized hardening model \"" << model << "\"";
@@ -135,23 +126,23 @@ void read_and_validate_plastic_params(
       Omega_h_fail("%s\n", str.c_str());
     }
   }
-  if (pl.isSublist("rate dependent")) {
+  if (pl.is_map("rate dependent")) {
     // Rate dependence
-    auto& p = pl.sublist("rate dependent");
+    auto& p = pl.get_map("rate dependent");
     auto const type = p.get<std::string>("type", "None");
     if (type == "johnson cook") {
       if (hardening != Hardening::JOHNSON_COOK) {
         Omega_h_fail("johnson cook rate dependent model requires johnson cook hardening");
       }
       rate_dep = RateDependence::JOHNSON_COOK;
-      props.c4 = p.get<double>("C", props.c4);
-      props.ep_dot_0 = p.get<double>("EPDOT0", props.ep_dot_0);
+      props.c4 = p.get<double>("C", "0.0");
+      props.ep_dot_0 = p.get<double>("EPDOT0", "0.0");
     } else if (type == "zerilli armstrong") {
       if (hardening != Hardening::ZERILLI_ARMSTRONG) {
         Omega_h_fail("zerilli armstrong rate dependent model requires zerilli armstrong hardening");
       }
       rate_dep = RateDependence::ZERILLI_ARMSTRONG;
-      props.c4 = p.get<double>("C4", 0.0);
+      props.c4 = p.get<double>("C4", "0.0");
     } else if (type != "None") {
       std::ostringstream os;
       os << "Unrecognized rate dependent type \"" << type << "\"";
@@ -182,7 +173,7 @@ struct HyperEP : public Model<Elem>
   // Kinematics
   FieldIndex defgrad;
 
-  HyperEP(Simulation& sim_in, Teuchos::ParameterList& params) :
+  HyperEP(Simulation& sim_in, Omega_h::InputMap& params) :
     Model<Elem>(sim_in, params)
   {
     elastic_ = hyper_ep::Elastic::LINEAR_ELASTIC;
@@ -261,12 +252,12 @@ struct HyperEP : public Model<Elem>
 };
 
 template <class Elem>
-ModelBase* hyper_ep_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* hyper_ep_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new HyperEP<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* hyper_ep_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* hyper_ep_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

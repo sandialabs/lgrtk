@@ -64,11 +64,11 @@ using tensor_type = Matrix<3, 3>;
 
 char const* get_error_code_string(ErrorCode code);
 void read_and_validate_elastic_params(
-    Teuchos::ParameterList& params,
+    Omega_h::InputMap& params,
     Properties& props,
     Elastic& elastic);
 void read_and_validate_plastic_params(
-    Teuchos::ParameterList& params,
+    Omega_h::InputMap& params,
     Properties& props,
     Hardening& hardening,
     RateDependence& rate_dep);
@@ -493,10 +493,10 @@ update(
 } // hyper_ep
 
 template <class Elem>
-ModelBase* hyper_ep_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl);
+ModelBase* hyper_ep_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
 #define LGR_EXPL_INST(Elem) \
-extern template ModelBase* hyper_ep_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+extern template ModelBase* hyper_ep_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

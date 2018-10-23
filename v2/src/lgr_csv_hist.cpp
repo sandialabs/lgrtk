@@ -4,17 +4,20 @@
 
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 
 namespace lgr {
 
 struct CsvHist : public Response {
   std::vector<std::string> scalars;
   std::ofstream stream;
-  CsvHist(Simulation& sim_in, Teuchos::ParameterList& pl)
+  CsvHist(Simulation& sim_in, Omega_h::InputMap& pl)
     :Response(sim_in, pl)
   {
-    auto scalars_teuchos = pl.get<Teuchos::Array<std::string>>("scalars");
-    scalars.assign(scalars_teuchos.begin(), scalars_teuchos.end());
+    auto& scalars_in = pl.get_list("scalars");
+    for (int i = 0; i < scalars_in.size(); ++i) {
+      scalars.push_back(scalars_in.get<std::string>(i));
+    }
     auto path = pl.get<std::string>("path", "lgr_out.csv");
     stream.open(path.c_str());
     OMEGA_H_CHECK(stream.is_open());
@@ -45,7 +48,7 @@ struct CsvHist : public Response {
 void CsvHist::out_of_line_virtual_method() {}
 
 Response* csv_hist_factory(Simulation& sim, std::string const&,
-    Teuchos::ParameterList& pl)
+    Omega_h::InputMap& pl)
 {
   return new CsvHist(sim, pl);
 }

@@ -8,13 +8,13 @@ struct NodeScalar : public Scalar {
   FieldIndex fi;
   int comp;
   Subset* subset;
-  NodeScalar(Simulation& sim_in, std::string const& name_in, Teuchos::ParameterList& pl)
+  NodeScalar(Simulation& sim_in, std::string const& name_in, Omega_h::InputMap& pl)
     :Scalar(sim_in, name_in)
   {
     auto set_name = pl.get<std::string>("set");
     auto field_name = pl.get<std::string>("field");
     fi = sim.fields.find(field_name);
-    comp = pl.get<int>("component", 0);
+    comp = pl.get<int>("component", "0");
     if (!(sim.fields[fi].support->subset->mapping.is_identity)) {
       Omega_h_fail("NodeScalar doesn't yet support fields (%s) on a subset of nodes!\n",
           field_name.c_str());
@@ -37,7 +37,7 @@ struct NodeScalar : public Scalar {
 
 void NodeScalar::out_of_line_virtual_method() {}
 
-Scalar* node_scalar_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl) {
+Scalar* node_scalar_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl) {
   return new NodeScalar(sim, name, pl);
 }
 

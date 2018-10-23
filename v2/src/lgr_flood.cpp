@@ -20,12 +20,12 @@ Flooder::Flooder(Simulation& sim_in):
 {
 }
 
-void Flooder::setup(Teuchos::ParameterList& pl)
+void Flooder::setup(Omega_h::InputMap& pl)
 {
-  enabled = pl.isSublist("flood");
+  enabled = pl.is_map("flood");
   if (!enabled) return;
-  auto& flood_pl = pl.sublist("flood");
-  max_depth = flood_pl.get<int>("max depth", 3);
+  auto& flood_pl = pl.get_map("flood");
+  max_depth = flood_pl.get<int>("max depth", "3");
   flood_priority = sim.fields.define("flood priority",
       "flood priority", 1, ELEMS, false,
       sim.disc.covering_class_names());

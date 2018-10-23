@@ -2,7 +2,7 @@
 #define LGR_ADAPT_HPP
 
 #include <lgr_remap.hpp>
-#include <Omega_h_teuchos.hpp>
+#include <Omega_h_input.hpp>
 
 namespace lgr {
 
@@ -19,7 +19,7 @@ struct Adapter {
   double gradation_rate;
   bool should_coarsen_with_expansion;
   Adapter(Simulation& sim);
-  void setup(Teuchos::ParameterList& pl);
+  void setup(Omega_h::InputMap& pl);
   bool adapt();
   void coarsen_metric_with_expansion();
 };

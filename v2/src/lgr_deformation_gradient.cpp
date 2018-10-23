@@ -43,12 +43,12 @@ struct DeformationGradient : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* deformation_gradient_factory(Simulation& sim, std::string const&, Teuchos::ParameterList&) {
+ModelBase* deformation_gradient_factory(Simulation& sim, std::string const&, Omega_h::InputMap&) {
   return new DeformationGradient<Elem>(sim);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* deformation_gradient_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* deformation_gradient_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

@@ -92,14 +92,14 @@ When* at_time(double point) { return new AtTime(point); }
 When* always() { return new Always(); }
 When* never() { return new Never(); }
 
-When* setup_when(Teuchos::ParameterList& pl) {
-  if (pl.isType<double>("time period")) {
+When* setup_when(Omega_h::InputMap& pl) {
+  if (pl.is<double>("time period")) {
     return time_periodic(pl.get<double>("time period"));
   }
-  if (pl.isType<double>("start time") && pl.isType<double>("end time")) {
+  if (pl.is<double>("start time") && pl.is<double>("end time")) {
     return time_range(pl.get<double>("start time"), pl.get<double>("end time"));
   }
-  if (pl.isType<double>("at time")) {
+  if (pl.is<double>("at time")) {
     return at_time(pl.get<double>("at time"));
   }
   return always();

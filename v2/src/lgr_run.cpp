@@ -1,7 +1,7 @@
 #include <lgr_run.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_hydro.hpp>
-#include <Omega_h_stack.hpp>
+#include <Omega_h_profile.hpp>
 #include <lgr_flood.hpp>
 
 namespace lgr {
@@ -68,7 +68,7 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-void run(Omega_h::CommPtr comm, Teuchos::ParameterList& pl,
+void run(Omega_h::CommPtr comm, Omega_h::InputMap& pl,
     Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));

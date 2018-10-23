@@ -12,7 +12,7 @@ struct Fields {
   bool printing_set_fields;
   bool filling_with_nan;
   std::vector<FieldIndex> set_fields;
-  void setup(Teuchos::ParameterList& pl);
+  void setup(Omega_h::InputMap& pl);
   FieldIndex define(std::string const& short_name,
       std::string const& long_name, int ncomps,
       EntityType type, bool on_points,
@@ -28,7 +28,7 @@ struct Fields {
   Omega_h::Write<double> set(FieldIndex fi);
   void del(FieldIndex fi);
   double next_event(double time);
-  void setup_conditions(Supports& supports, Teuchos::ParameterList& pl);
+  void setup_conditions(Supports& supports, Omega_h::InputMap& pl);
   FieldIndex find(std::string const& name);
   void print_and_clear_set_fields();
   void setup_default_conditions(Supports& supports, double start_time);
