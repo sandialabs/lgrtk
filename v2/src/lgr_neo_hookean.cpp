@@ -39,7 +39,7 @@ struct NeoHookean : public Model<Elem> {
   FieldIndex bulk_modulus;
   FieldIndex shear_modulus;
   FieldIndex deformation_gradient;
-  NeoHookean(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
+  NeoHookean(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->bulk_modulus =
       this->point_define("kappa", "bulk modulus", 1,
           RemapType::PER_UNIT_VOLUME, "");
@@ -80,12 +80,12 @@ struct NeoHookean : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* neo_hookean_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* neo_hookean_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new NeoHookean<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* neo_hookean_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* neo_hookean_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

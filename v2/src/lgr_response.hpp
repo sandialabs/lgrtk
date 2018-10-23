@@ -11,7 +11,7 @@ struct Simulation;
 struct Response {
   Simulation& sim;
   std::unique_ptr<When> when;
-  Response(Simulation& sim_in, Teuchos::ParameterList& pl);
+  Response(Simulation& sim_in, Omega_h::InputMap& pl);
   virtual ~Response() = default;
   virtual void out_of_line_virtual_method();
   virtual void respond() = 0;

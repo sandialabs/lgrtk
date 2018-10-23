@@ -68,7 +68,7 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-void run(Omega_h::CommPtr comm, Teuchos::ParameterList& pl,
+void run(Omega_h::CommPtr comm, Omega_h::InputMap& pl,
     Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));

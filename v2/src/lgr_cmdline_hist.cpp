@@ -2,17 +2,24 @@
 #include <lgr_response.hpp>
 #include <lgr_simulation.hpp>
 
+//DEBUG
+#include <iostream>
+
 namespace lgr {
 
 struct CmdLineHist : public Response {
   std::vector<std::string> scalars;
   std::size_t column_width;
-  CmdLineHist(Simulation& sim_in, Teuchos::ParameterList& pl)
+  CmdLineHist(Simulation& sim_in, Omega_h::InputMap& pl)
     :Response(sim_in, pl)
   {
-    auto scalars_teuchos = pl.get<Teuchos::Array<std::string>>("scalars");
-    scalars.assign(scalars_teuchos.begin(), scalars_teuchos.end());
-    column_width = decltype(column_width)(pl.get<int>("minimum column width", 8));
+    auto& scalars_in = pl.get_list("scalars");
+    for (int i = 0; i < scalars_in.size(); ++i) {
+      auto scalar = scalars_in.get<std::string>(i);
+      std::cerr << "CmdLineHist scalar \"" << scalar << "\"\n";
+      scalars.push_back(scalar);
+    }
+    column_width = decltype(column_width)(pl.get<int>("minimum column width", "8"));
     for (auto& name : scalars) {
       column_width = Omega_h::max2(column_width, name.length());
     }
@@ -36,7 +43,7 @@ struct CmdLineHist : public Response {
 void CmdLineHist::out_of_line_virtual_method() {}
 
 Response* cmdline_hist_factory(Simulation& sim, std::string const&,
-    Teuchos::ParameterList& pl)
+    Omega_h::InputMap& pl)
 {
   return new CmdLineHist(sim, pl);
 }

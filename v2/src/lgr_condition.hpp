@@ -28,7 +28,7 @@ struct Condition {
   Omega_h::Read<double> cached_values;
   void init(Supports& supports);
   Condition(Field*, Supports&, std::string const& str_in, Support*, When*);
-  Condition(Field* field_in, Supports& supports, Teuchos::ParameterList& pl);
+  Condition(Field* field_in, Supports& supports, Omega_h::InputMap& pl);
   void forget_disc();
   void learn_disc();
   double next_event(double time);

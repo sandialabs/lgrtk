@@ -11,7 +11,7 @@ struct Models {
   Simulation& sim;
   std::vector<std::unique_ptr<ModelBase>> models;
   Models(Simulation& sim_in);
-  void setup_material_models_and_modifiers(Teuchos::ParameterList& pl);
+  void setup_material_models_and_modifiers(Omega_h::InputMap& pl);
   void setup_field_updates(); 
   void before_position_update();
   void at_field_update();

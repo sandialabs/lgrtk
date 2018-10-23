@@ -7,13 +7,14 @@
 #include <lgr_when.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_scalar.hpp>
+#include <Omega_h_math_lang.hpp>
 
 namespace lgr {
 
 using Omega_h::divide_no_remainder;
 
 void Condition::init(Supports& supports) {
-  auto vars_used = Teuchos::MathExpr::get_symbols_used(str);
+  auto vars_used = Omega_h::math_lang::get_symbols_used(str);
   uses_old_vals = (vars_used.count(field->short_name) != 0);
   needs_coords = vars_used.count("x");
   needs_reeval = (needs_coords || uses_old_vals || vars_used.count("t"));
@@ -33,17 +34,19 @@ Condition::Condition(Field* field_in, Supports& supports,
   init(supports);
 }
 
-Condition::Condition(Field* field_in, Supports& supports, Teuchos::ParameterList& pl)
+Condition::Condition(Field* field_in, Supports& supports, Omega_h::InputMap& pl)
 :field(field_in)
 {
   str = pl.get<std::string>("value");
-  auto class_names_teuchos = pl.get<Teuchos::Array<std::string>>("sets", Teuchos::Array<std::string>());
-  if (class_names_teuchos.empty()) {
-    support = field->support;
-  } else {
+  if (pl.is_list("sets")) {
+    auto& class_names_teuchos = pl.get_list("sets");
     ClassNames class_names;
-    class_names.insert(class_names_teuchos.begin(), class_names_teuchos.end());
+    for (int i = 0; i < class_names_teuchos.size(); ++i) {
+      class_names.insert(class_names_teuchos.get<std::string>(i));
+    }
     support = supports.get_support(field_in->entity_type, field_in->on_points, class_names);
+  } else {
+    support = field->support;
   }
   when.reset(setup_when(pl));
   init(supports);

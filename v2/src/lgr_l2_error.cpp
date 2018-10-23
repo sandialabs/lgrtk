@@ -17,7 +17,7 @@ struct L2Error : public Scalar {
   FieldIndex field_index;
   FieldIndex expected_field_index;
   L2Error(Simulation& sim_in, std::string const& name_in,
-      Teuchos::ParameterList& pl)
+      Omega_h::InputMap& pl)
     :Scalar(sim_in, name_in)
   {
     auto field_name = pl.get<std::string>("field");
@@ -75,7 +75,7 @@ struct L2Error : public Scalar {
 
 void L2Error::out_of_line_virtual_method() {}
 
-Scalar* l2_error_factory(Simulation& sim, std::string const& name, Teuchos::ParameterList& pl) {
+Scalar* l2_error_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl) {
   return new L2Error(sim, name, pl);
 }
 

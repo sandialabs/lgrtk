@@ -106,11 +106,11 @@ double Field::next_event(double time) {
   return out;
 }
 
-void Field::setup_conditions(Supports& supports, Teuchos::ParameterList& pl) {
-  for (auto it = pl.begin(), end = pl.end(); it != end; ++it) {
-    auto condition_name = pl.name(it);
-    if (pl.isSublist(condition_name)) {
-      auto& condition_pl = pl.sublist(condition_name);
+void Field::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
+  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
+    auto const& condition_name = it->first;
+    if (pl.is_map(condition_name)) {
+      auto& condition_pl = pl.get_map(condition_name);
       conditions.push_back(Condition(this, supports, condition_pl));
     }
   }

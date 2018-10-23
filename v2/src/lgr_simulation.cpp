@@ -1,6 +1,7 @@
 #include <lgr_simulation.hpp>
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_profile.hpp>
+#include <iostream>
 
 namespace lgr {
 
@@ -105,25 +106,28 @@ Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
 {
 }
 
-void Simulation::setup(Teuchos::ParameterList& pl)
+void Simulation::setup(Omega_h::InputMap& pl)
 {
+  OMEGA_H_CHECK(pl.used);
   OMEGA_H_TIME_FUNCTION;
   start_cpu_time_point = Omega_h::now();
   // set up constants
-  cpu_time = pl.get<double>("start CPU time", 0.0);
-  time = pl.get<double>("start time", 0);
+  cpu_time = pl.get<double>("start CPU time", "0.0");
+  time = pl.get<double>("start time", "0.0");
   prev_time = time;
-  end_time = pl.get<double>("end time", std::numeric_limits<double>::max());
+  auto const dbl_max = std::to_string(std::numeric_limits<double>::max()); 
+  auto const int_max = std::to_string(std::numeric_limits<int>::max()); 
+  end_time = pl.get<double>("end time", dbl_max.c_str());
   dt = 0.0;
   prev_dt = 0.0;
-  max_dt = pl.get<double>("max dt", std::numeric_limits<double>::max());
-  min_dt = pl.get<double>("min dt", 0.0);
-  cfl = pl.get<double>("CFL", 0.9);
-  step = pl.get<int>("start step", 0);
-  end_step = pl.get<int>("end step", std::numeric_limits<int>::max());
+  max_dt = pl.get<double>("max dt", dbl_max.c_str());
+  min_dt = pl.get<double>("min dt", "0.0");
+  cfl = pl.get<double>("CFL", "0.9");
+  step = pl.get<int>("start step", "0");
+  end_step = pl.get<int>("end step", int_max.c_str());
   // done setting up constants
   // set up mesh
-  disc.setup(comm, pl.sublist("mesh"));
+  disc.setup(comm, pl.get_map("mesh"));
   // done setting up mesh
   // start defining fields
   fields.setup(pl);
@@ -163,7 +167,7 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   models.setup_field_updates();
   finalize_definitions();
   // setup conditions
-  fields.setup_conditions(supports, pl.sublist("conditions"));
+  fields.setup_conditions(supports, pl.get_map("conditions"));
   fields.setup_default_conditions(supports, time);
   // done setting up conditions
   // set coordinates
@@ -172,16 +176,17 @@ void Simulation::setup(Teuchos::ParameterList& pl)
   Omega_h::copy_into(mesh_x, field_x);
   // done setting coordinates
   // set up scalars
-  scalars.setup(pl.sublist("scalars"));
+  scalars.setup(pl.get_map("scalars"));
   // done setting up scalars
   // set up responses
-  responses.setup(pl.sublist("responses"));
+  responses.setup(pl.get_map("responses"));
   // done setting up responses
   adapter.setup(pl);
   // echo parameters
-  if (pl.get<bool>("echo parameters", false)) {
-    Omega_h::echo_parameters(std::cout, pl);
+  if (pl.get<bool>("echo parameters", "false")) {
+    Omega_h::echo_input(std::cout, pl);
   }
+  OMEGA_H_CHECK(pl.used);
   Omega_h::check_unused(pl);
 }
 

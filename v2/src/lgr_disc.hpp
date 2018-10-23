@@ -6,14 +6,14 @@
 #include <lgr_class_names.hpp>
 
 #include <Omega_h_mesh.hpp>
-#include <Omega_h_teuchos.hpp>
+#include <Omega_h_input.hpp>
 
 namespace lgr {
 
 struct Disc {
   int dim();
   int count(EntityType type);
-  void setup(Omega_h::CommPtr comm, Teuchos::ParameterList& pl);
+  void setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl);
   Omega_h::LOs ents_to_nodes(EntityType type);
   Omega_h::Adj nodes_to_ents(EntityType type);
   Omega_h::LOs ents_on_closure(

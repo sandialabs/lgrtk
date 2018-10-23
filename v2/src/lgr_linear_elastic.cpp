@@ -26,7 +26,7 @@ struct LinearElastic : public Model<Elem> {
   FieldIndex bulk_modulus;
   FieldIndex shear_modulus;
   FieldIndex deformation_gradient;
-  LinearElastic(Simulation& sim_in, Teuchos::ParameterList& pl):Model<Elem>(sim_in, pl) {
+  LinearElastic(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->bulk_modulus =
       this->point_define("kappa", "bulk modulus", 1,
           RemapType::PER_UNIT_VOLUME, "");
@@ -65,12 +65,12 @@ struct LinearElastic : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* linear_elastic_factory(Simulation& sim, std::string const&, Teuchos::ParameterList& pl) {
+ModelBase* linear_elastic_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new LinearElastic<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* linear_elastic_factory<Elem>(Simulation&, std::string const&, Teuchos::ParameterList&);
+template ModelBase* linear_elastic_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
