@@ -10,9 +10,11 @@ namespace lgr {
 KOKKOS_INLINE_FUNCTION Scalar dot4(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
+
 KOKKOS_INLINE_FUNCTION Scalar dot3(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 }
+
 template <int NumNodes>
 KOKKOS_INLINE_FUNCTION Scalar dot(const Scalar *a, const Scalar *b);
 
@@ -20,6 +22,7 @@ template <>
 KOKKOS_INLINE_FUNCTION Scalar dot<4>(const Scalar *a, const Scalar *b){
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
+
 template <>
 KOKKOS_INLINE_FUNCTION Scalar dot<3>(const Scalar *a, const Scalar *b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -206,6 +209,42 @@ comp_face_basis( const Scalar *const x,
   }
   
   return returnMe;
+}
+
+KOKKOS_INLINE_FUNCTION
+void
+elementPhysicalFacePolynomial( /*input*/
+			      const Omega_h::Few< Omega_h::Vector<3>, 4> &nodalCoordinates,
+			      const Omega_h::Few<Scalar,4> &faceFlux,
+			      /*output*/
+			      Omega_h::Vector<3> &constantTerm,
+			      Scalar &linearFactor ) 
+{
+  typedef Omega_h::Vector<3> Vector;
+  Scalar x[4], y[4], z[4];
+  for (int node=0; node<4; ++node) {
+    const Vector &coord = nodalCoordinates[node];
+    x[node] = coord[0];
+    y[node] = coord[1];
+    z[node] = coord[2];
+  }
+  const Scalar tetVolume = tet4Volume(x,y,z);
+  const double Jbox = 6.0*tetVolume;
+
+  const Vector x0 = nodalCoordinates[0];
+  const Vector g1 = nodalCoordinates[1] - x0;
+  const Vector g2 = nodalCoordinates[2] - x0;
+  const Vector g3 = nodalCoordinates[3] - x0;
+
+  const double a1 = -2.0*faceFlux[3]/Jbox;
+  const double a2 = -2.0*faceFlux[1]/Jbox;
+  const double a3 = -2.0*faceFlux[0]/Jbox;
+  const double a4 = +2.0*( faceFlux[0] + faceFlux[1] + faceFlux[2] + faceFlux[3] )/Jbox;
+
+  constantTerm = a1*g1 + a2*g2 + a3*g3 - a4*x0;
+  linearFactor = a4;
+
+  return;
 }
 
 
