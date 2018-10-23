@@ -1,6 +1,7 @@
 #include <lgr_responses.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_vtk_output.hpp>
+#include <lgr_osh_output.hpp>
 #include <lgr_cmdline_hist.hpp>
 #include <lgr_csv_hist.hpp>
 #include <lgr_comparison.hpp>
@@ -34,6 +35,8 @@ ResponseFactories get_builtin_response_factories() {
   out["command line history"] = cmdline_hist_factory;
   out["CSV history"] = csv_hist_factory;
   out["comparison"] = comparison_factory;
+  out["osh output"] = osh_output_factory;
+  out["checkpoint"] = osh_output_factory;
   return out;
 }
 
