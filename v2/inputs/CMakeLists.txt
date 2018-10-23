@@ -9,6 +9,7 @@ if(LGR_BAR2)
   lgr_test(bar2_oscillate)
   lgr_test(bar2_elastic_wave)
   lgr_test(bar2_Noh)
+  lgr_test(bar2_Sod)
 endif()
 
 if(LGR_TRI3)
