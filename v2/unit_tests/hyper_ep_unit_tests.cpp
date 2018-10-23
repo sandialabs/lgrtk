@@ -2,7 +2,9 @@
 
 #include <lgr_hyper_ep.hpp>
 #include "lgr_gtest.hpp"
+#if 0
 #include <Teuchos_ParameterList.hpp>
+#endif
 
 namespace {
 
