@@ -6,6 +6,7 @@
 #include <Omega_h_map.hpp>
 #include <Omega_h_element.hpp>
 #include <Omega_h_class.hpp>
+#include <iostream>
 
 namespace lgr {
 
@@ -35,6 +36,7 @@ void Flooder::setup(Omega_h::InputMap& pl)
 
 void Flooder::flood() {
   if (!enabled) return;
+  std::cout << "flooding...\n";
   auto const max_priority = get_max(sim.get(flood_priority));
   for (int depth = 0; depth < max_depth; ++depth) {
     for (double up_to_priority = 1.0; up_to_priority <= max_priority;
@@ -44,6 +46,7 @@ void Flooder::flood() {
       if (status.some_did_flood) return;
     }
   }
+  std::cout << "done flooding\n";
 }
 
 // returns true iff a deeper flooding should be called
@@ -114,12 +117,18 @@ Flooder::FloodStatus Flooder::flood_once(int depth, double up_to_priority) {
     old_class_ids[ent_dim] =
       sim.disc.mesh.get_array<Omega_h::ClassId>(
           ent_dim, "class_id");
-    auto const ents_in_flood_closure =
+    auto ents_should_declass =
       mark_down(&sim.disc.mesh, dim, ent_dim, elems_did_flood);
+    // mae sure not declassify domain boundary sides
+    if (ent_dim == dim - 1) {
+      auto const exposed_sides = mark_exposed_sides(&sim.disc.mesh);
+      ents_should_declass = land_each(ents_should_declass,
+          invert_marks(exposed_sides));
+    }
     auto const class_ids_w = deep_copy(old_class_ids[ent_dim]);
     auto const class_dims_w = deep_copy(old_class_dims[ent_dim]);
     auto const clear_functor = OMEGA_H_LAMBDA(int ent) {
-      if (ents_in_flood_closure[ent]) {
+      if (ents_should_declass[ent]) {
         class_ids_w[ent] = -1;
         class_dims_w[ent] = Omega_h::I8(dim);
       }
