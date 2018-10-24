@@ -22,6 +22,7 @@ struct Adapter {
   void setup(Omega_h::InputMap& pl);
   bool adapt();
   void coarsen_metric_with_expansion();
+  double old_quality;
 };
 
 }
