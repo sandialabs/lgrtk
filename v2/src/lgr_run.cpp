@@ -20,7 +20,18 @@ static void apply_acceleration_conditions(Simulation& sim) {
 template <class Elem>
 static void initialize_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
-  apply_conditions(sim);
+  if (sim.time == 0.0) {
+    apply_conditions(sim);
+  } else {
+    std::vector<FieldIndex> field_indices;
+    for (auto& field_ptr : sim.fields.storage) {
+      if ((field_ptr->remap_type != RemapType::NONE) &&
+          (field_ptr->remap_type != RemapType::SHAPE)) {
+        field_indices.push_back(sim.fields.find(field_ptr->long_name));
+      }
+    }
+    sim.fields.copy_from_omega_h(sim.disc, field_indices);
+  }
   initialize_configuration<Elem>(sim);
   lump_masses<Elem>(sim);
 }
