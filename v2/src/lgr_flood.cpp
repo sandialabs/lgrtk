@@ -42,11 +42,16 @@ void Flooder::flood() {
     for (double up_to_priority = 1.0; up_to_priority <= max_priority;
         up_to_priority += 1.0) {
       auto const status = flood_once(depth, up_to_priority);
-      if (!status.some_were_bad) return;
-      if (status.some_did_flood) return;
+      if (!status.some_were_bad) {
+        std::cout << "done flooding (all fixed)\n";
+        return;
+      }
+      if (status.some_did_flood) {
+        std::cout << "done flooding (out of options)\n";
+        return;
+      }
     }
   }
-  std::cout << "done flooding\n";
 }
 
 // returns true iff a deeper flooding should be called
