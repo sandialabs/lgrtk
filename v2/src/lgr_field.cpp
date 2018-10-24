@@ -2,6 +2,7 @@
 #include <lgr_support.hpp>
 #include <lgr_supports.hpp>
 #include <lgr_subset.hpp>
+#include <limits>
 
 namespace lgr {
 

@@ -1,5 +1,6 @@
 #include <lgr_when.hpp>
 #include <cmath>
+#include <limits>
 
 namespace lgr {
 
