@@ -42,15 +42,16 @@ void Adapter::setup(Omega_h::InputMap& pl) {
     }
     this->gradation_rate = adapt_pl.get<double>("gradation rate", "1.0");
     should_coarsen_with_expansion = adapt_pl.get<bool>("coarsen with expansion", "false");
-  }
 #define LGR_EXPL_INST(Elem) \
-  if (sim.elem_name == Elem::name()) { \
-    remap.reset(remap_factory<Elem>(sim)); \
-    opts.xfer_opts.user_xfer = remap; \
-  }
+    if (sim.elem_name == Elem::name()) { \
+      remap.reset(remap_factory<Elem>(sim)); \
+      opts.xfer_opts.user_xfer = remap; \
+    }
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
-  old_quality = sim.disc.mesh.min_quality();
+    if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
+    old_quality = sim.disc.mesh.min_quality();
+  }
 }
 
 bool Adapter::adapt() {
@@ -58,14 +59,23 @@ bool Adapter::adapt() {
   if (!should_adapt) return false;
   sim.disc.mesh.set_coords(sim.get(sim.position)); //linear specific!
   if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
-  auto minqual = sim.disc.mesh.min_quality();
-  auto maxlen = sim.disc.mesh.max_length();
-  auto const quality_triggered =
-    (minqual < opts.min_quality_desired) &&
-    ((minqual <= old_quality - 0.02) ||
-     (minqual <= 0.22));
-  auto const length_triggered =
-    (maxlen > trigger_length_ratio);
+  auto const minqual = sim.disc.mesh.min_quality();
+  auto const maxlen = sim.disc.mesh.max_length();
+  auto const is_low_qual = minqual < opts.min_quality_desired;
+  auto const is_decreasing = (minqual <= old_quality - 0.02);
+  auto const is_really_low = (minqual <= 0.22);
+  auto const quality_triggered = is_low_qual && (is_decreasing || is_really_low);
+  if (quality_triggered) {
+    if (is_low_qual) std::cout << "minqual " << minqual << " < min_quality_desired " << opts.min_quality_desired << '\n';
+    if (is_decreasing) std::cout << "minqual " << minqual << " < old_qual " << old_quality << '\n';
+    if (is_really_low) std::cout << "minqual " << minqual << " <= 0.22\n";
+    std::cout << "quality triggered\n";
+  }
+  auto const length_triggered = (maxlen > trigger_length_ratio);
+  if (length_triggered) {
+    std::cout << "maxlen " << maxlen << " > trigger_length_ratio " << trigger_length_ratio << '\n';
+    std::cout << "length triggered\n";
+  }
   if ((!quality_triggered) && (!length_triggered)) return false;
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
