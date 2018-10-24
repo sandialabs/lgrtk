@@ -26,9 +26,8 @@ void Adapter::setup(Omega_h::InputMap& pl) {
     auto default_trigger_qual = std::to_string(opts.min_quality_desired - 0.02);
     trigger_quality =
       adapt_pl.get<double>("trigger quality", default_trigger_qual.c_str());
-    auto default_len = std::to_string(opts.max_length_desired * 1.2);
     trigger_length_ratio =
-      adapt_pl.get<double>("trigger length ratio", default_len.c_str());
+      adapt_pl.get<double>("trigger length ratio", "2.1");
     minimum_length =
       adapt_pl.get<double>("minimum length", "0.0");
     auto verbosity = adapt_pl.get<std::string>("verbosity", "each adapt");
