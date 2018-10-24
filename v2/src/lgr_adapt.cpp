@@ -15,15 +15,18 @@ void Adapter::setup(Omega_h::InputMap& pl) {
   if (should_adapt) {
     opts = decltype(opts)(&sim.disc.mesh);
     auto& adapt_pl = pl.get_map("adapt");
+    auto default_desired_qual = sim.dim() == 3 ? "0.3" : "0.4";
     opts.min_quality_desired =
       adapt_pl.get<double>("desired quality",
-          sim.dim() == 3 ? "0.3" : "0.4");
-    auto default_qual = std::to_string(opts.min_quality_desired - 0.02);
+          default_desired_qual);
+    auto default_allowed_qual = std::to_string(opts.min_quality_desired - 0.10);
+    opts.min_quality_allowed =
+      adapt_pl.get<double>("allowed quality",
+          default_allowed_qual.c_str());
+    auto default_trigger_qual = std::to_string(opts.min_quality_desired - 0.02);
     trigger_quality =
-      adapt_pl.get<double>("trigger quality", default_qual.c_str());
-    // FIXME!!! This is wrong, should be bigger than max_length_allowed,
-    // but I'm in the middle of refactoring so I wont change everything at once
-    auto default_len = std::to_string(opts.max_length_allowed * 0.9);
+      adapt_pl.get<double>("trigger quality", default_trigger_qual.c_str());
+    auto default_len = std::to_string(opts.max_length_desired * 1.2);
     trigger_length_ratio =
       adapt_pl.get<double>("trigger length ratio", default_len.c_str());
     minimum_length =
