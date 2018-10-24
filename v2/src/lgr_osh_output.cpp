@@ -14,7 +14,8 @@ struct OshOutput : public Response {
     ,prefix(pl.get<std::string>("prefix", "checkpoint_"))
   {
     for (auto& field_ptr : sim.fields.storage) {
-      if (field_ptr->remap_type != RemapType::NONE) {
+      if ((field_ptr->remap_type != RemapType::NONE) &&
+          (field_ptr->remap_type != RemapType::SHAPE)) {
         field_indices.push_back(sim.fields.find(field_ptr->long_name));
       }
     }
