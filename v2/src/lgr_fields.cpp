@@ -4,6 +4,7 @@
 #include <lgr_support.hpp>
 #include <lgr_disc.hpp>
 #include <Omega_h_map.hpp>
+#include <algorithm>
 
 namespace lgr {
 
