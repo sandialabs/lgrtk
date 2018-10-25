@@ -37,25 +37,23 @@ void Flooder::setup(Omega_h::InputMap& pl)
 void Flooder::flood() {
   if (!enabled) return;
   std::cout << "flooding...\n";
-  auto const status = flood_once();
+  auto const status = schedule();
   if (!status.some_were_bad) {
     std::cout << "done flooding (all fixed)\n";
     return;
   }
   if (status.some_did_flood) {
+    flood_once(status.pull_mapping, status.elems_did_flood);
     std::cout << "done flooding (did flood)\n";
     return;
   }
   std::cout << "done flooding (out of options)\n";
 }
 
-// returns true iff a deeper flooding should be called
-Flooder::FloodStatus Flooder::flood_once() {
+Flooder::FloodStatus Flooder::schedule() {
   OMEGA_H_TIME_FUNCTION;
-  std::cout << "flood_once" << '\n';
   FloodStatus status;
   auto const dim = sim.disc.mesh.dim();
-  auto const old_elem_class_ids = sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id");
   auto const nelems = sim.disc.mesh.nelems();
   auto const qualities = sim.disc.mesh.ask_qualities();
   auto const elems_floodable_priority = Omega_h::Write<double>(nelems);
@@ -111,7 +109,6 @@ Flooder::FloodStatus Flooder::flood_once() {
     parallel_for(nelems, std::move(floodable_up));
   }
   auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
-  auto const elem_class_ids = Omega_h::Write<Omega_h::ClassId>(nelems);
   Omega_h::Write<int> pull_mapping(nelems, 0, 1);
   OMEGA_H_CHECK(sim.disc.points_per_ent(ELEMS) == 1);
   auto const elems_did_flood = Omega_h::Write<Omega_h::Byte>(nelems);
@@ -143,11 +140,20 @@ Flooder::FloodStatus Flooder::flood_once() {
     }
     elems_did_flood[elem] = (best_elem != elem) ? Omega_h::Byte(1) : Omega_h::Byte(0);
     pull_mapping[elem] = best_elem;
-    elem_class_ids[elem] = old_elem_class_ids[best_elem];
   };
   parallel_for("flood pull decision", nelems, std::move(pull_decision_functor));
   status.some_did_flood = (get_max(read(elems_did_flood)) == Omega_h::Byte(1));
-  if (!status.some_did_flood) return status;
+  status.pull_mapping = pull_mapping;
+  status.elems_did_flood = elems_did_flood;
+  return status;
+}
+
+// returns true iff a deeper flooding should be called
+void Flooder::flood_once(Omega_h::LOs pull_mapping, Omega_h::Bytes elems_did_flood) {
+  OMEGA_H_TIME_FUNCTION;
+  std::cout << "flood_once" << '\n';
+  auto const dim = sim.disc.mesh.dim();
+  auto const nelems = sim.disc.mesh.nelems();
   Omega_h::Few<Omega_h::Read<Omega_h::I8>, 3> old_class_dims;
   Omega_h::Few<Omega_h::Read<Omega_h::ClassId>, 3> old_class_ids;
   for (int ent_dim = 0; ent_dim < dim; ++ent_dim) {
@@ -177,7 +183,7 @@ Flooder::FloodStatus Flooder::flood_once() {
     sim.disc.mesh.set_tag(ent_dim, "class_id", Omega_h::read(class_ids_w));
     sim.disc.mesh.set_tag(ent_dim, "class_dim", Omega_h::read(class_dims_w));
   }
-  sim.disc.mesh.add_tag(dim, "class_id", 1, Omega_h::read(elem_class_ids));
+  sim.disc.mesh.add_tag(dim, "class_id", 1, read(unmap(pull_mapping, sim.disc.mesh.get_array<Omega_h::ClassId>(dim, "class_id"), 1)));
   Omega_h::finalize_classification(&sim.disc.mesh);
   std::vector<SavedField> saved_fields;
   for (auto const& field_ptr : sim.fields.storage) {
@@ -240,7 +246,6 @@ Flooder::FloodStatus Flooder::flood_once() {
       Omega_h::map_value_into(-1, new_mapping.things, new_inverse);
     }
   }
-  return status;
 }
 
 }
