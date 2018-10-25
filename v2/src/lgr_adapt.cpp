@@ -3,6 +3,7 @@
 #include <lgr_for.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_metric.hpp>
+#include <iostream>
 
 namespace lgr {
 
