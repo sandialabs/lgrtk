@@ -20,7 +20,7 @@ struct Flooder {
     bool some_did_flood;
     bool some_were_bad;
   };
-  FloodStatus flood_once(int depth, double up_to_priority);
+  FloodStatus flood_once();
 };
 
 }
