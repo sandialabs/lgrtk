@@ -19,8 +19,11 @@ struct Flooder {
   struct FloodStatus {
     bool some_did_flood;
     bool some_were_bad;
+    Omega_h::LOs pull_mapping;
+    Omega_h::Bytes elems_did_flood;
   };
-  FloodStatus flood_once();
+  FloodStatus schedule();
+  void flood_once(Omega_h::LOs pull_mapping, Omega_h::Bytes elems_did_flood);
 };
 
 }
