@@ -34,23 +34,45 @@ void Flooder::setup(Omega_h::InputMap& pl)
     RemapType::PER_UNIT_VOLUME;
 }
 
-void Flooder::flood() {
+void Flooder::flood(double priority_shift) {
   if (!enabled) return;
-  std::cout << "flooding...\n";
-  auto const status = schedule();
+  std::cout << "flooding with shift " << priority_shift << '\n';
+  auto const status = schedule(priority_shift);
   if (!status.some_were_bad) {
-    std::cout << "done flooding (all fixed)\n";
+    std::cout << "done flooding (no need)\n";
     return;
   }
   if (status.some_did_flood) {
-    flood_once(status.pull_mapping, status.elems_did_flood);
+    auto overall_pull_mapping = status.pull_mapping;
+    while (true) {
+      auto const current_priorities = sim.get(flood_priority);
+      auto const expected_priorities = read(unmap(overall_pull_mapping, current_priorities, 1));
+      auto elems_will_flood = eq_each(expected_priorities, status.final_priorities);
+      auto const nelems = overall_pull_mapping.size();
+      auto const identity_mapping = Omega_h::LOs(nelems, 0, 1);
+      auto const pull_mapping_once = ternary_each(elems_will_flood, overall_pull_mapping, identity_mapping);
+      overall_pull_mapping = ternary_each(elems_will_flood, identity_mapping, overall_pull_mapping);
+      elems_will_flood = neq_each(pull_mapping_once, identity_mapping);
+      std::cout << get_sum(elems_will_flood) << " elements will flood this time around\n";
+      for (int i = 0; i < nelems; ++i) {
+        if (elems_will_flood[i]) {
+          std::cout << "element " << i << " will be flooded from element " << pull_mapping_once[i] << '\n';
+        }
+      }
+      if (get_max(elems_will_flood) != Omega_h::Byte(1)) break;
+      flood_once(pull_mapping_once);
+    }
     std::cout << "done flooding (did flood)\n";
     return;
   }
-  std::cout << "done flooding (out of options)\n";
+//if (priority_shift + 1.0 < get_max(sim.get(flood_priority))) {
+//  flood(priority_shift + 1.0);
+//} else {
+    std::cout << "done flooding (out of options)\n";
+//}
 }
 
-Flooder::FloodStatus Flooder::schedule() {
+Flooder::FloodStatus Flooder::schedule(double priority_shift) {
   OMEGA_H_TIME_FUNCTION;
   FloodStatus status;
   auto const dim = sim.disc.mesh.dim();
@@ -58,16 +80,16 @@ Flooder::FloodStatus Flooder::schedule() {
   auto const qualities = sim.disc.mesh.ask_qualities();
   auto const elems_floodable_priority = Omega_h::Write<double>(nelems);
   auto const min_quality_desired = sim.adapter.opts.min_quality_desired;
-  auto const elems_to_priority = sim.get(flood_priority);
+  auto const original_priorities = sim.get(flood_priority);
   auto init_floodable = OMEGA_H_LAMBDA(int elem) {
     if (qualities[elem] < min_quality_desired) {
-      elems_floodable_priority[elem] = elems_to_priority[elem];
+      elems_floodable_priority[elem] = original_priorities[elem] + priority_shift;
     } else {
       elems_floodable_priority[elem] = -1.0;
     }
   };
   parallel_for(nelems, std::move(init_floodable));
-  auto const elems_can_flood = each_neq_to(read(elems_floodable_priority), -1.0);
+  auto elems_can_flood = each_neq_to(read(elems_floodable_priority), -1.0);
   auto nfloodable = get_sum(elems_can_flood);
   std::cout << nfloodable << " bad elements\n";
   status.some_were_bad = (get_max(elems_can_flood) == Omega_h::Byte(1));
@@ -83,7 +105,7 @@ Flooder::FloodStatus Flooder::schedule() {
         auto const elem = verts2elems.ab2b[vert_elem];
         auto const elem_priority = elems_floodable_priority[elem];
         if (elem_priority != -1.0) {
-          if (vert_priority == -1.0 || elem_priority < vert_priority) {
+          if (vert_priority == -1.0 || elem_priority > vert_priority) {
             vert_priority = elem_priority;
           }
         }
@@ -99,7 +121,7 @@ Flooder::FloodStatus Flooder::schedule() {
         auto const vert = elems2verts[elem * verts_per_elem + elem_vert];
         auto const vert_priority = verts_floodable_priority[vert];
         if (vert_priority != -1.0) {
-          if (elem_priority == -1.0 || vert_priority < elem_priority) {
+          if (elem_priority == -1.0 || vert_priority > elem_priority) {
             elem_priority = vert_priority;
           }
         }
@@ -109,17 +131,55 @@ Flooder::FloodStatus Flooder::schedule() {
     parallel_for(nelems, std::move(floodable_up));
   }
   auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
+  elems_can_flood = eq_each(read(elems_floodable_priority), original_priorities);
   Omega_h::Write<int> pull_mapping(nelems, 0, 1);
-  OMEGA_H_CHECK(sim.disc.points_per_ent(ELEMS) == 1);
-  auto const elems_did_flood = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto const elems_will_flood = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto const new_flooded_priorities = Omega_h::Write<double>(nelems);
+  auto old_flooded_priorities = original_priorities;
+  std::cout << "start schedule loop\n";
+//while (true) {
+    std::cout << "schedule_once\n";
+    schedule_once(elems_can_flood, elems_will_flood, pull_mapping, old_flooded_priorities, new_flooded_priorities, original_priorities);
+//  if (old_flooded_priorities == read(new_flooded_priorities)) break;
+    old_flooded_priorities = deep_copy(read(new_flooded_priorities));
+//}
+  for (int i = 0; i < nelems; ++i) {
+    if (pull_mapping[i] != i) {
+      if (old_flooded_priorities[pull_mapping[i]] == original_priorities[i]) {
+        std::cout << "after scheduling, pull_mapping[" << i << "] = " << pull_mapping[i] << '\n';
+        std::cout << "but old_flooded_priorities[" << pull_mapping[i] << "] = " << old_flooded_priorities[pull_mapping[i]];
+        std::cout << " and original_priorities[" << i << "] = " << original_priorities[i];
+      }
+    }
+  }
+  std::cout << "done schedule loop\n";
+  sim.disc.mesh.add_tag(sim.dim(), "can flood", 1, elems_can_flood);
+  sim.disc.mesh.add_tag(sim.dim(), "will flood", 1, read(elems_will_flood));
+  Omega_h::vtk::write_vtu("schedule.vtu", &sim.disc.mesh);
+  status.some_did_flood = (get_max(read(elems_will_flood)) == Omega_h::Byte(1));
+  status.pull_mapping = pull_mapping;
+  status.final_priorities = new_flooded_priorities;
+  return status;
+}
+
+void Flooder::schedule_once(
+    Omega_h::Bytes elems_can_flood,
+    Omega_h::Write<Omega_h::Byte> elems_will_flood,
+    Omega_h::Write<Omega_h::LO> pull_mapping,
+    Omega_h::Reals old_flooded_priorities,
+    Omega_h::Write<double> new_flooded_priorities,
+    Omega_h::Reals original_priorities) {
+  auto const dim = sim.disc.mesh.dim();
+  auto const nelems = sim.disc.mesh.nelems();
   auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
   auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
   auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
   auto pull_decision_functor = OMEGA_H_LAMBDA(int elem) {
-    auto best_elem = elem;
-    auto const self_priority = elems_to_priority[best_elem];
-    if (elems_floodable_priority[elem] == self_priority) {
-      auto best_priority = -1.0;
+    auto best_elem = pull_mapping[elem];
+    auto best_priority = old_flooded_priorities[elem];
+    auto const original_priority = original_priorities[elem];
+    if (elems_can_flood[elem]) {
+      std::cout << elem << " can flood\n";
       for (int elem_side = 0; elem_side < sides_per_elem;
           ++elem_side) {
         auto const side =
@@ -130,40 +190,38 @@ Flooder::FloodStatus Flooder::schedule() {
           auto const other_elem = sides_to_elems.ab2b[side_elem];
           if (other_elem == elem) continue;
           auto const other_priority =
-            elems_to_priority[other_elem];
-          if (other_priority != self_priority && (best_priority == -1.0 || other_priority < best_priority)) {
+            old_flooded_priorities[other_elem];
+          std::cout << "(" << other_elem << ", " << other_priority << ") adj to (" << elem << ", " << original_priority << ")\n";
+          if ((other_priority < original_priority) && ((best_elem == elem) || (other_priority < best_priority))) {
             best_elem = other_elem;
             best_priority = other_priority;
           }
         }
       }
     }
-    elems_did_flood[elem] = (best_elem != elem) ? Omega_h::Byte(1) : Omega_h::Byte(0);
+    elems_will_flood[elem] = (best_elem != elem) ? Omega_h::Byte(1) : Omega_h::Byte(0);
     pull_mapping[elem] = best_elem;
+    new_flooded_priorities[elem] = best_priority;
   };
-  parallel_for("flood pull decision", nelems, std::move(pull_decision_functor));
-  status.some_did_flood = (get_max(read(elems_did_flood)) == Omega_h::Byte(1));
-  status.pull_mapping = pull_mapping;
-  status.elems_did_flood = elems_did_flood;
-  return status;
+  parallel_for(nelems, std::move(pull_decision_functor));
 }
 
 // returns true iff a deeper flooding should be called
-void Flooder::flood_once(Omega_h::LOs pull_mapping, Omega_h::Bytes elems_did_flood) {
+void Flooder::flood_once(Omega_h::LOs pull_mapping) {
   OMEGA_H_TIME_FUNCTION;
   std::cout << "flood_once" << '\n';
   auto const dim = sim.disc.mesh.dim();
   auto const nelems = sim.disc.mesh.nelems();
+  auto const elems_will_flood = neq_each(pull_mapping, Omega_h::LOs(nelems, 0, 1));
   Omega_h::Few<Omega_h::Read<Omega_h::I8>, 3> old_class_dims;
   Omega_h::Few<Omega_h::Read<Omega_h::ClassId>, 3> old_class_ids;
   for (int ent_dim = 0; ent_dim < dim; ++ent_dim) {
     old_class_dims[ent_dim] =
       sim.disc.mesh.get_array<Omega_h::I8>(ent_dim, "class_dim");
     old_class_ids[ent_dim] =
-      sim.disc.mesh.get_array<Omega_h::ClassId>(
-          ent_dim, "class_id");
+      sim.disc.mesh.get_array<Omega_h::ClassId>(ent_dim, "class_id");
     auto ents_should_declass =
-      mark_down(&sim.disc.mesh, dim, ent_dim, elems_did_flood);
+      mark_down(&sim.disc.mesh, dim, ent_dim, elems_will_flood);
     // mae sure not declassify domain boundary sides
     if (ent_dim == dim - 1) {
       auto const exposed_sides = mark_exposed_sides(&sim.disc.mesh);
