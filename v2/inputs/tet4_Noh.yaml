@@ -14,30 +14,18 @@ lgr:
   material models:
     model1:
       type: ideal gas
+      heat capacity ratio: '5.0 / 3.0'
+      specific internal energy: 1.0e-14
   modifiers:
     model2:
       type: artificial viscosity
+      linear artificial viscosity: 0.5
+      quadratic artificial viscosity: 0.2
   conditions:
     density:
       cond1:
         at time: 0.0
         value: '1.0'
-    heat capacity ratio:
-      cond1:
-        at time: 0.0
-        value: '5.0 / 3.0'
-    specific internal energy:
-      cond1:
-        at time: 0.0
-        value: '1.0e-14'
-    linear artificial viscosity:
-      cond1:
-        at time: 0.0
-        value: '0.5'
-    quadratic artificial viscosity:
-      cond1:
-        at time: 0.0
-        value: '0.2'
     velocity:
       cond1:
         at time: 0.0

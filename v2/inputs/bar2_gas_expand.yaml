@@ -9,16 +9,10 @@ lgr:
   material models:
     model1:
       type: ideal gas
+      heat capacity ratio: 1.4
+      specific internal energy: 1.0
   conditions:
     density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    heat capacity ratio:
-      cond1:
-        at time: 0.0
-        value: '1.4'
-    specific internal energy:
       cond1:
         at time: 0.0
         value: '1.0'
