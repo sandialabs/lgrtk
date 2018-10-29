@@ -54,6 +54,7 @@ LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
     if (!sim.disc.mesh.has_tag(0, "metric")) Omega_h::add_implied_isos_tag(&sim.disc.mesh);
     old_quality = sim.disc.mesh.min_quality();
+    old_length = sim.disc.mesh.max_length();
   }
 }
 
@@ -65,10 +66,13 @@ bool Adapter::adapt() {
   auto const minqual = sim.disc.mesh.min_quality();
   auto const maxlen = sim.disc.mesh.max_length();
   auto const is_low_qual = minqual < opts.min_quality_desired;
-  auto const is_decreasing = (minqual <= old_quality - 0.02);
-  auto const is_really_low = (minqual <= 0.22);
-  auto const quality_triggered = is_low_qual && (is_decreasing || is_really_low);
-  auto const length_triggered = (maxlen > trigger_length_ratio);
+  auto const is_decreasing_qual = (minqual <= old_quality - 0.02);
+  auto const is_really_low_qual = (minqual <= opts.min_quality_allowed + 0.02);
+  auto const quality_triggered = is_low_qual && (is_decreasing_qual || is_really_low_qual);
+  auto const is_long_len = maxlen > opts.max_length_desired;
+  auto const is_increasing_len = (maxlen >= old_length + 0.2);
+  auto const is_really_long_len = (maxlen >= opts.max_length_allowed - 0.2);
+  auto const length_triggered = is_long_len && (is_increasing_len || is_really_long_len);
   if ((!quality_triggered) && (!length_triggered)) return false;
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
@@ -84,6 +88,7 @@ bool Adapter::adapt() {
   sim.fields.learn_disc();
   remap->after_adapt();
   old_quality = sim.disc.mesh.min_quality();
+  old_length = sim.disc.mesh.max_length();
   return true;
 }
 
