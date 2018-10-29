@@ -16,14 +16,8 @@ struct Flooder {
   Flooder(Simulation& sim_in);
   void setup(Omega_h::InputMap& pl);
   void flood();
-  struct FloodStatus {
-    bool some_did_flood;
-    bool some_were_bad;
-    Omega_h::LOs pull_mapping;
-    Omega_h::Bytes elems_did_flood;
-  };
-  FloodStatus schedule();
-  void flood_once(Omega_h::LOs pull_mapping, Omega_h::Bytes elems_did_flood);
+  Omega_h::LOs choose();
+  void flood_by_mapping(Omega_h::LOs pull_mapping);
 };
 
 }
