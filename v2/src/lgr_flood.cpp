@@ -34,179 +34,134 @@ void Flooder::setup(Omega_h::InputMap& pl)
     RemapType::PER_UNIT_VOLUME;
 }
 
-void Flooder::flood(double priority_shift) {
-  if (!enabled) return;
-  std::cout << "flooding with shift " << priority_shift << '\n';
-  auto const status = schedule(priority_shift);
-  if (!status.some_were_bad) {
-    std::cout << "done flooding (no need)\n";
-    return;
-  }
-  if (status.some_did_flood) {
-    auto overall_pull_mapping = status.pull_mapping;
-    while (true) {
-      auto const current_priorities = sim.get(flood_priority);
-      auto const expected_priorities = read(unmap(overall_pull_mapping, current_priorities, 1));
-      auto elems_will_flood = eq_each(expected_priorities, status.final_priorities);
-      auto const nelems = overall_pull_mapping.size();
-      auto const identity_mapping = Omega_h::LOs(nelems, 0, 1);
-      auto const pull_mapping_once = ternary_each(elems_will_flood, overall_pull_mapping, identity_mapping);
-      overall_pull_mapping = ternary_each(elems_will_flood, identity_mapping, overall_pull_mapping);
-      elems_will_flood = neq_each(pull_mapping_once, identity_mapping);
-      std::cout << get_sum(elems_will_flood) << " elements will flood this time around\n";
-      for (int i = 0; i < nelems; ++i) {
-        if (elems_will_flood[i]) {
-          std::cout << "element " << i << " will be flooded from element " << pull_mapping_once[i] << '\n';
-        }
-      }
-      if (get_max(elems_will_flood) != Omega_h::Byte(1)) break;
-      flood_once(pull_mapping_once);
-    }
-    std::cout << "done flooding (did flood)\n";
-    return;
-  }
-//if (priority_shift + 1.0 < get_max(sim.get(flood_priority))) {
-//  flood(priority_shift + 1.0);
-//} else {
-    std::cout << "done flooding (out of options)\n";
-//}
-}
-
-Flooder::FloodStatus Flooder::schedule(double priority_shift) {
+Omega_h::LOs Flooder::choose() {
   OMEGA_H_TIME_FUNCTION;
-  FloodStatus status;
-  auto const dim = sim.disc.mesh.dim();
-  auto const nelems = sim.disc.mesh.nelems();
+  OMEGA_H_CHECK(sim.disc.mesh.comm()->size() == 1);
+  // here we go...
+  // this is all based on the principle of "destroy the loneliest material"
+  // harsh as it may sound, this is at least a provably convergent method
+  // (if we repeatedly remove the smallest material volume in a cavity, eventually
+  //  the cavity will be single-material)
+  // Step 1: identify the low-quality elements
   auto const qualities = sim.disc.mesh.ask_qualities();
-  auto const elems_floodable_priority = Omega_h::Write<double>(nelems);
-  auto const min_quality_desired = sim.adapter.opts.min_quality_desired;
-  auto const original_priorities = sim.get(flood_priority);
-  auto init_floodable = OMEGA_H_LAMBDA(int elem) {
-    if (qualities[elem] < min_quality_desired) {
-      elems_floodable_priority[elem] = original_priorities[elem] + priority_shift;
-    } else {
-      elems_floodable_priority[elem] = -1.0;
+  auto const elems_are_low_qual = each_lt(qualities, sim.adapter.opts.min_quality_desired);
+  // Step 2: decide who each vertex is working for, based on worst quality
+  auto const verts2elems = sim.disc.mesh.ask_graph(0, sim.dim());
+  auto const nverts = sim.disc.mesh.nverts();
+  auto const vert_loyalties = Omega_h::Write<int>(nverts);
+  auto vert_loyalty_functor = OMEGA_H_LAMBDA(int vert) {
+    int loyal_to = -1;
+    double lowest_quality;
+    for (auto vert_elem = verts2elems.a2ab[vert]; vert_elem < verts2elems.a2ab[vert + 1]; ++vert_elem) {
+      auto const elem = verts2elems.ab2b[vert_elem];
+      auto const elem_qual = qualities[elem];
+      if (!elems_are_low_qual[elem]) continue;
+      if (loyal_to == -1 || elem_qual < lowest_quality) {
+        loyal_to = elem;
+        lowest_quality = elem_qual;
+      }
     }
+    vert_loyalties[vert] = loyal_to;
   };
-  parallel_for(nelems, std::move(init_floodable));
-  auto elems_can_flood = each_neq_to(read(elems_floodable_priority), -1.0);
-  auto nfloodable = get_sum(elems_can_flood);
-  std::cout << nfloodable << " bad elements\n";
-  status.some_were_bad = (get_max(elems_can_flood) == Omega_h::Byte(1));
-  if (!status.some_were_bad) return status;
-  for (int i = 0; i < max_depth; ++i) {
-    auto const nverts = sim.disc.mesh.nverts();
-    auto const verts_floodable_priority = Omega_h::Write<double>(nverts);
-    auto const verts2elems = sim.disc.mesh.ask_graph(0, sim.dim());
-    auto const floodable_down = OMEGA_H_LAMBDA(int vert) {
-      double vert_priority = -1.0;
-      for (auto vert_elem = verts2elems.a2ab[vert];
-          vert_elem < verts2elems.a2ab[vert + 1]; ++vert_elem) {
-        auto const elem = verts2elems.ab2b[vert_elem];
-        auto const elem_priority = elems_floodable_priority[elem];
-        if (elem_priority != -1.0) {
-          if (vert_priority == -1.0 || elem_priority > vert_priority) {
-            vert_priority = elem_priority;
-          }
+  parallel_for(nverts, std::move(vert_loyalty_functor));
+  // Step 3: for each vertex working for a low-quality element, identify its smallest surrounding
+  // material volume, which we'll call the target material (identified by a priority)
+  auto const vert_target_priorities = Omega_h::Write<double>(nverts);
+  auto const vert_target_volumes = Omega_h::Write<double>(nverts);
+  auto const points_to_weights = sim.get(sim.weight);
+  auto const points_per_elem = sim.disc.points_per_ent(ELEMS);
+  auto const elem_priorities = sim.get(flood_priority);
+  auto vert_target_functor = OMEGA_H_LAMBDA(int vert) {
+    if (vert_loyalties[vert] == -1) return;
+    double target_priority = -1.0;
+    double lowest_volume;
+    for (auto vert_elem = verts2elems.a2ab[vert]; vert_elem < verts2elems.a2ab[vert + 1]; ++vert_elem) {
+      auto const elem = verts2elems.ab2b[vert_elem];
+      auto const elem_priority = elem_priorities[elem];
+      auto const priority_volume = 0.0;
+      for (auto vert_elem2 = verts2elems.a2ab[vert]; vert_elem2 < verts2elems.a2ab[vert + 1]; ++vert_elem2) {
+        auto const elem2 = verts2elems.ab2b[vert_elem2];
+        auto const elem2_priority = elem_priorities[elem2];
+        if (elem2_priority != elem_priority) continue;
+        for (int point = 0; point < points_per_elem; ++point) {
+          priority_volume += points_to_weights[elem2 * points_per_elem + point];
         }
       }
-      verts_floodable_priority[vert] = vert_priority;
-    };
-    parallel_for(nverts, std::move(floodable_down));
-    auto const verts_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), sim.dim(), 0);
-    auto const elems2verts = sim.disc.mesh.ask_elem_verts();
-    auto const floodable_up = OMEGA_H_LAMBDA(int elem) {
-      double elem_priority = -1.0;
-      for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
-        auto const vert = elems2verts[elem * verts_per_elem + elem_vert];
-        auto const vert_priority = verts_floodable_priority[vert];
-        if (vert_priority != -1.0) {
-          if (elem_priority == -1.0 || vert_priority > elem_priority) {
-            elem_priority = vert_priority;
-          }
-        }
-      }
-      elems_floodable_priority[elem] = elem_priority;
-    };
-    parallel_for(nelems, std::move(floodable_up));
-  }
-  auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::I8>(dim - 1, "class_dim");
-  elems_can_flood = eq_each(read(elems_floodable_priority), original_priorities);
-  Omega_h::Write<int> pull_mapping(nelems, 0, 1);
-  auto const elems_will_flood = Omega_h::Write<Omega_h::Byte>(nelems);
-  auto const new_flooded_priorities = Omega_h::Write<double>(nelems);
-  auto old_flooded_priorities = original_priorities;
-  std::cout << "start schedule loop\n";
-//while (true) {
-    std::cout << "schedule_once\n";
-    schedule_once(elems_can_flood, elems_will_flood, pull_mapping, old_flooded_priorities, new_flooded_priorities, original_priorities);
-//  if (old_flooded_priorities == read(new_flooded_priorities)) break;
-    old_flooded_priorities = deep_copy(read(new_flooded_priorities));
-//}
-  for (int i = 0; i < nelems; ++i) {
-    if (pull_mapping[i] != i) {
-      if (old_flooded_priorities[pull_mapping[i]] == original_priorities[i]) {
-        std::cout << "after scheduling, pull_mapping[" << i << "] = " << pull_mapping[i] << '\n';
-        std::cout << "but old_flooded_priorities[" << pull_mapping[i] << "] = " << old_flooded_priorities[pull_mapping[i]];
-        std::cout << " and original_priorities[" << i << "] = " << original_priorities[i];
+      if (target_priority == -1.0 || priority_volume < lowest_volume) {
+        target_priority = elem_priority;
+        lowest_volume = priority_volume;
       }
     }
-  }
-  std::cout << "done schedule loop\n";
-  sim.disc.mesh.add_tag(sim.dim(), "can flood", 1, elems_can_flood);
-  sim.disc.mesh.add_tag(sim.dim(), "will flood", 1, read(elems_will_flood));
-  Omega_h::vtk::write_vtu("schedule.vtu", &sim.disc.mesh);
-  status.some_did_flood = (get_max(read(elems_will_flood)) == Omega_h::Byte(1));
-  status.pull_mapping = pull_mapping;
-  status.final_priorities = new_flooded_priorities;
-  return status;
-}
-
-void Flooder::schedule_once(
-    Omega_h::Bytes elems_can_flood,
-    Omega_h::Write<Omega_h::Byte> elems_will_flood,
-    Omega_h::Write<Omega_h::LO> pull_mapping,
-    Omega_h::Reals old_flooded_priorities,
-    Omega_h::Write<double> new_flooded_priorities,
-    Omega_h::Reals original_priorities) {
-  auto const dim = sim.disc.mesh.dim();
+    vert_target_priorities[vert] = target_priority;
+    vert_target_volumes[vert] = lowest_volume;
+  };
+  parallel_for(nverts, std::move(vert_target_functor));
+  // Step 4: for each low-quality element, all of whose vertices are working for it, choose the lowest-volume
+  // material amongst the per-vertex targets to designate as the overall target
   auto const nelems = sim.disc.mesh.nelems();
-  auto const sides_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), dim, dim - 1);
-  auto const elems_to_sides = sim.disc.mesh.ask_down(dim, dim - 1).ab2b;
-  auto const sides_to_elems = sim.disc.mesh.ask_up(dim - 1, dim);
-  auto pull_decision_functor = OMEGA_H_LAMBDA(int elem) {
-    auto best_elem = pull_mapping[elem];
-    auto best_priority = old_flooded_priorities[elem];
-    auto const original_priority = original_priorities[elem];
-    if (elems_can_flood[elem]) {
-      std::cout << elem << " can flood\n";
-      for (int elem_side = 0; elem_side < sides_per_elem;
-          ++elem_side) {
-        auto const side =
-          elems_to_sides[elem * sides_per_elem + elem_side];
-        for (auto side_elem = sides_to_elems.a2ab[side];
-            side_elem < sides_to_elems.a2ab[side + 1];
-            ++side_elem) {
-          auto const other_elem = sides_to_elems.ab2b[side_elem];
-          if (other_elem == elem) continue;
-          auto const other_priority =
-            old_flooded_priorities[other_elem];
-          std::cout << "(" << other_elem << ", " << other_priority << ") adj to (" << elem << ", " << original_priority << ")\n";
-          if ((other_priority < original_priority) && ((best_elem == elem) || (other_priority < best_priority))) {
-            best_elem = other_elem;
-            best_priority = other_priority;
-          }
-        }
+  auto const elem_has_full_loyalty = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto const verts_per_elem = Omega_h::element_degree(sim.disc.mesh.family(), sim.dim(), 0);
+  auto const elems2verts = sim.disc.mesh.ask_elem_verts();
+  auto const elem_target_priorities = Omega_h::Write<double>(nelems);
+  auto const elem_target_volumes = Omega_h::Write<double>(nelems);
+  auto elem_declare_functor = OMEGA_H_LAMBDA(int elem) {
+    if (!elems_are_low_qual[elem]) return;
+    double target_priority = -1.0;
+    double lowest_volume;
+    for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
+      auto const vert = elems2verts[elem * verts_per_elem + elem_vert];
+      if (vert_loyalties[vert] != elem) {
+        elem_has_full_loyalty[elem] = Omega_h::Byte(0);
+        return;
+      }
+      auto const vert_volume = vert_target_volumes[vert];
+      if (target_priority == -1.0 || vert_volume < lowest_volume) {
+        target_priority = vert_target_priorities[vert];
+        lowest_volume = vert_volume;
       }
     }
-    elems_will_flood[elem] = (best_elem != elem) ? Omega_h::Byte(1) : Omega_h::Byte(0);
-    pull_mapping[elem] = best_elem;
-    new_flooded_priorities[elem] = best_priority;
+    elem_has_full_loyalty[elem] = Omega_h::Byte(0);
+    elem_target_priorities[elem] = target_priority;
+    elem_target_volumes[elem] = lowest_volume;
   };
-  parallel_for(nelems, std::move(pull_decision_functor));
+  parallel_for(nelems, std::move(elem_declare_functor));
+  // Step 5: for each vertex, if it is loyal to an element that commands full loyalty,
+  // then record the quality of that element and set the vertex's target priority to that of the element
+  // otherwise, remove its loyalty
+  auto const vert_loyal_qualities = Omega_h::Write<double>(nverts);
+  auto vert_loyalty_pivot = OMEGA_H_LAMBDA(int vert) {
+    auto const loyal_to = vert_loyalties[vert];
+    if (loyal_to == -1) return;
+    if (!elem_has_full_loyalty[loyal_to]) {
+      vert_loyalties[vert] = -1;
+      return;
+    }
+    vert_loyal_qualities[vert] = qualities[loyal_to];
+    vert_target_priorities[vert] = elem_target_priorities[loyal_to];
+  };
+  parallel_for(nverts, std::move(vert_loyalty_pivot));
+  // Step 6: for each element, find its adjacent vertex which is loyal to the lowest quality element (if any).
+  // if found, and if the element's priority is the vertex's target priority, mark said element for flooding
+  auto const elems_can_flood = Omega_h::Write<Omega_h::Byte>(nelems);
+  auto elem_flood_allow = OMEGA_H_LAMBDA(int elem) {
+    double target_priority = -1.0;
+    double lowest_quality;
+    for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
+      auto const vert = elems2verts[elem * verts_per_elem + elem_vert];
+      if (vert_loyalties[vert] == -1) continue;
+      auto const vert_priority = vert_target_priorities[vert];
+      auto const vert_quality = vert_loyal_qualities[vert];
+      if (target_priority == -1.0 || vert_quality < lowest_quality) {
+        target_priority = vert_priority;
+        lowest_quality = vert_quality;
+      }
+    }
+    elems_can_flood[elem] = (target_priority == elem_priorities[elem]) ? Omega_h::Byte(1) : Omega_h::Byte(0);
+  };
+  parallel_for(nelems, std::move(elem_flood_allow));
+  // Step 7: for each element allowed to flood, find a good nearby candidate to pull material from
 }
 
-// returns true iff a deeper flooding should be called
 void Flooder::flood_once(Omega_h::LOs pull_mapping) {
   OMEGA_H_TIME_FUNCTION;
   std::cout << "flood_once" << '\n';
