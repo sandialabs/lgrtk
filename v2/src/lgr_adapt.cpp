@@ -3,6 +3,8 @@
 #include <lgr_for.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_metric.hpp>
+#include <Omega_h_array_ops.hpp>
+#include <Omega_h_map.hpp>
 #include <iostream>
 
 namespace lgr {
@@ -66,17 +68,7 @@ bool Adapter::adapt() {
   auto const is_decreasing = (minqual <= old_quality - 0.02);
   auto const is_really_low = (minqual <= 0.22);
   auto const quality_triggered = is_low_qual && (is_decreasing || is_really_low);
-  if (quality_triggered) {
-    if (is_low_qual) std::cout << "minqual " << minqual << " < min_quality_desired " << opts.min_quality_desired << '\n';
-    if (is_decreasing) std::cout << "minqual " << minqual << " < old_qual " << old_quality << '\n';
-    if (is_really_low) std::cout << "minqual " << minqual << " <= 0.22\n";
-    std::cout << "quality triggered\n";
-  }
   auto const length_triggered = (maxlen > trigger_length_ratio);
-  if (length_triggered) {
-    std::cout << "maxlen " << maxlen << " > trigger_length_ratio " << trigger_length_ratio << '\n';
-    std::cout << "length triggered\n";
-  }
   if ((!quality_triggered) && (!length_triggered)) return false;
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
@@ -96,20 +88,25 @@ bool Adapter::adapt() {
 }
 
 void Adapter::coarsen_metric_with_expansion() {
+  OMEGA_H_TIME_FUNCTION;
   auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
   auto const implied_metric = get_implied_isos(&sim.disc.mesh);
   auto const nverts = sim.disc.mesh.nverts();
-  auto const class_dims = sim.disc.mesh.get_array<Omega_h::Byte>(0, "class_dim");
-  auto const new_metric = Omega_h::Write<double>(nverts);
   auto const dim = sim.disc.mesh.dim();
+  auto const side_class_dims = sim.disc.mesh.get_array<Omega_h::Byte>(dim - 1, "class_dim");
+  auto const sides_are_boundaries = each_eq_to(side_class_dims, Omega_h::Byte(dim - 1));
+  auto const sides_are_outer_boundaries = mark_exposed_sides(&sim.disc.mesh);
+  auto const sides_are_inner_boundaries = land_each(sides_are_boundaries, invert_marks(sides_are_outer_boundaries));
+  auto const verts_are_inner_boundaries = mark_down(&sim.disc.mesh, dim - 1, 0, sides_are_inner_boundaries);
+  auto const new_metric = Omega_h::Write<double>(nverts);
   auto functor = OMEGA_H_LAMBDA(int vert) {
-    if (class_dims[vert] == Omega_h::Byte(dim)) {
-      new_metric[vert] = Omega_h::min2(implied_metric[vert], old_metric[vert]);
-    } else {
+    if (verts_are_inner_boundaries[vert]) {
       new_metric[vert] = old_metric[vert];
+    } else {
+      new_metric[vert] = Omega_h::min2(implied_metric[vert], old_metric[vert]);
     }
   };
-  parallel_for("metric expansion kernel", nverts, std::move(functor));
+  parallel_for(nverts, std::move(functor));
   sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
 }
 
