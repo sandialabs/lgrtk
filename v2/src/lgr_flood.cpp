@@ -120,7 +120,6 @@ Omega_h::LOs Flooder::choose() {
   if (get_max(verts_are_cands_r) != Omega_h::Byte(1)) {
     return Omega_h::LOs();
   }
-  std::cout << "flooding!\n";
   auto const vert_globals = sim.disc.mesh.globals(0);
   auto compare = OMEGA_H_LAMBDA(int u, int v) -> bool {
     auto const u_priority = cavity_source_priorities[u];
@@ -139,6 +138,8 @@ Omega_h::LOs Flooder::choose() {
   verts_are_cands_r = Omega_h::indset::find(
       &sim.disc.mesh, 0, verts_to_verts.a2ab,
       verts_to_verts.ab2b, verts_are_cands_r, compare);
+  auto const ncavs = get_sum(verts_are_cands_r);
+  std::cout << "flooding " << ncavs << " cavities\n";
   auto const nelems = sim.disc.mesh.nelems();
   auto const pull_mapping = Omega_h::Write<int>(nelems, 0, 1);
   OMEGA_H_CHECK(pull_mapping.exists());
