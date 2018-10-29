@@ -66,17 +66,7 @@ bool Adapter::adapt() {
   auto const is_decreasing = (minqual <= old_quality - 0.02);
   auto const is_really_low = (minqual <= 0.22);
   auto const quality_triggered = is_low_qual && (is_decreasing || is_really_low);
-  if (quality_triggered) {
-    if (is_low_qual) std::cout << "minqual " << minqual << " < min_quality_desired " << opts.min_quality_desired << '\n';
-    if (is_decreasing) std::cout << "minqual " << minqual << " < old_qual " << old_quality << '\n';
-    if (is_really_low) std::cout << "minqual " << minqual << " <= 0.22\n";
-    std::cout << "quality triggered\n";
-  }
   auto const length_triggered = (maxlen > trigger_length_ratio);
-  if (length_triggered) {
-    std::cout << "maxlen " << maxlen << " > trigger_length_ratio " << trigger_length_ratio << '\n';
-    std::cout << "length triggered\n";
-  }
   if ((!quality_triggered) && (!length_triggered)) return false;
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
