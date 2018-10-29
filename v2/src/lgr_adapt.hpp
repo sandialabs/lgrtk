@@ -23,6 +23,7 @@ struct Adapter {
   bool adapt();
   void coarsen_metric_with_expansion();
   double old_quality;
+  double old_length;
 };
 
 }
