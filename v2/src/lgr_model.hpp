@@ -38,6 +38,8 @@ struct ModelBase {
       int ncomps, std::string const& default_value);
   FieldIndex point_define(std::string const& short_name, std::string const& long_name,
       int ncomps, RemapType tt, std::string const& default_value);
+  FieldIndex point_define(std::string const& short_name, std::string const& long_name,
+      int ncomps, RemapType tt, Omega_h::InputMap& pl, std::string const& default_value);
   FieldIndex elem_define(std::string const& short_name, std::string const& long_name,
       int ncomps);
   FieldIndex elem_define(std::string const& short_name, std::string const& long_name,

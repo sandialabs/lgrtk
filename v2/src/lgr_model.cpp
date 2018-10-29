@@ -79,6 +79,15 @@ FieldIndex ModelBase::point_define(
   return fi;
 }
 
+FieldIndex ModelBase::point_define(
+    std::string const& short_name, std::string const& long_name,
+    int ncomps, RemapType tt, Omega_h::InputMap& pl, std::string const& default_value) {
+  auto fi = point_define(short_name, long_name, ncomps);
+  sim.fields[fi].default_value = pl.get<std::string>(long_name, default_value.c_str());
+  sim.fields[fi].remap_type = tt;
+  return fi;
+}
+
 MappedElemsToNodes ModelBase::get_elems_to_nodes() {
   MappedElemsToNodes out;
   out.mapping = elem_support->subset->mapping;
