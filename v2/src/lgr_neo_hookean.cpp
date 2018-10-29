@@ -42,14 +42,14 @@ struct NeoHookean : public Model<Elem> {
   NeoHookean(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->bulk_modulus =
       this->point_define("kappa", "bulk modulus", 1,
-          RemapType::PER_UNIT_VOLUME, "");
+          RemapType::PER_UNIT_VOLUME, pl, "");
     this->shear_modulus =
       this->point_define("mu", "shear modulus", 1,
-        RemapType::PER_UNIT_VOLUME, "");
+        RemapType::PER_UNIT_VOLUME, pl, "");
     constexpr auto dim = Elem::dim;
     this->deformation_gradient =
       this->point_define("F", "deformation gradient",
-          square(dim), RemapType::POSITIVE_DETERMINANT, "I");
+          square(dim), RemapType::POSITIVE_DETERMINANT, pl, "I");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "neo-Hookean"; }

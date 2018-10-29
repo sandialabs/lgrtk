@@ -12,13 +12,13 @@ struct IdealGas : public Model<Elem> {
   IdealGas(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->specific_internal_energy =
       this->point_define("e", "specific internal energy", 1,
-          RemapType::PER_UNIT_MASS, "");
+          RemapType::PER_UNIT_MASS, pl, "");
     this->specific_internal_energy_rate =
       this->point_define("e_dot", "specific internal energy rate", 1,
-          RemapType::PER_UNIT_VOLUME, "");
+          RemapType::PER_UNIT_VOLUME, pl, "");
     this->heat_capacity_ratio =
       this->point_define("gamma", "heat capacity ratio", 1,
-          RemapType::PER_UNIT_VOLUME, "");
+          RemapType::PER_UNIT_VOLUME, pl, "");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "ideal gas"; }

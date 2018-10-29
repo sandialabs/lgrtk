@@ -31,8 +31,8 @@ struct ArtificialViscosity : public Model<Elem> {
   FieldIndex linear;
   FieldIndex quadratic;
   ArtificialViscosity(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
-    this->linear = this->point_define("nu_l", "linear artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, "");
-    this->quadratic = this->point_define("nu_q", "quadratic artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, "");
+    this->linear = this->point_define("nu_l", "linear artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, pl, "");
+    this->quadratic = this->point_define("nu_q", "quadratic artificial viscosity", 1, RemapType::PER_UNIT_VOLUME, pl, "");
   }
   std::uint64_t exec_stages() override final { return AFTER_MATERIAL_MODEL; }
   char const* name() override final { return "artificial viscosity"; }
