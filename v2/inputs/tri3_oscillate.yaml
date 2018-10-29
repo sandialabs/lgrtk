@@ -12,20 +12,13 @@ lgr:
   material models:
     model1:
       type: linear elastic
-#safety check that models don't overlap!
+      bulk modulus: 1.0
+      shear modulus: 0.0
   conditions:
     density:
       cond1:
         at time: 0.0
         value: '2.0'
-    bulk modulus:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    shear modulus:
-      cond1:
-        at time: 0.0
-        value: '0.0'
     deformation gradient:
       cond1:
         at time: 0.0

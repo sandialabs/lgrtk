@@ -13,19 +13,13 @@ lgr:
   material models:
     model1:
       type: linear elastic
+      bulk modulus: 1.0e9
+      shear modulus: 0.0
   conditions:
     density:
       cond1:
         at time: 0.0
         value: '1000.0'
-    bulk modulus:
-      cond1:
-        at time: 0.0
-        value: '1.0e9'
-    shear modulus:
-      cond1:
-        at time: 0.0
-        value: '0.0'
     velocity:
       cond1:
         at time: 0.0

@@ -13,27 +13,15 @@ lgr:
   material models:
     model1:
       type: ideal gas
+      heat capacity ratio: 1.4
+      specific internal energy: 'norm(x) < (2.0 * 25.4e-6) ? (2.066e7 * 1.0e3) : (2.066e7 * 1.0)'
   modifiers:
     model2:
       type: artificial viscosity
+      linear artificial viscosity: 1.0
+      quadratic artificial viscosity: 1.0
   conditions:
     density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    heat capacity ratio:
-      cond1:
-        at time: 0.0
-        value: '1.4'
-    specific internal energy:
-      cond1:
-        at time: 0.0
-        value: 'norm(x) < (2.0 * 25.4e-6) ? (2.066e7 * 1.0e3) : (2.066e7 * 1.0)'
-    linear artificial viscosity:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    quadratic artificial viscosity:
       cond1:
         at time: 0.0
         value: '1.0'
