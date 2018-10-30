@@ -2,9 +2,6 @@
 #include <lgr_response.hpp>
 #include <lgr_simulation.hpp>
 
-//DEBUG
-#include <iostream>
-
 namespace lgr {
 
 struct CmdLineHist : public Response {
@@ -16,7 +13,6 @@ struct CmdLineHist : public Response {
     auto& scalars_in = pl.get_list("scalars");
     for (int i = 0; i < scalars_in.size(); ++i) {
       auto scalar = scalars_in.get<std::string>(i);
-      std::cerr << "CmdLineHist scalar \"" << scalar << "\"\n";
       scalars.push_back(scalar);
     }
     column_width = decltype(column_width)(pl.get<int>("minimum column width", "8"));
