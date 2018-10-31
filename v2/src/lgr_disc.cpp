@@ -174,6 +174,21 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     reader.repeat(result);
     mesh.set_coords(Omega_h::any_cast<Omega_h::Reals>(result));
   }
+  if (pl.is<double>("element count")) {
+    change_element_count(mesh, pl.get<double>("element count"));
+  }
+  if (pl.get<bool>("reorder", "false")) {
+    Omega_h::reorder_by_hilbert(&mesh);
+  }
+  if (pl.is_list("mark closest nodes")) {
+    auto& markings = pl.get_list("mark closest nodes");
+    for (int i = 0; i < markings.size(); ++i) {
+      auto& marking = markings.get_list(i);
+      auto set_name = marking.get<std::string>(0);
+      auto pos_expr = marking.get<std::string>(1);
+      mark_closest_vertex(mesh, set_name, pos_expr);
+    }
+  }
   std::set<int> volume_ids;
   for (auto& s : mesh.class_sets) {
     for (auto& cp : s.second) {
@@ -185,21 +200,6 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
         }
       }
     }
-  }
-  if (pl.is_list("mark closest nodes")) {
-    auto& markings = pl.get_list("mark closest nodes");
-    for (int i = 0; i < markings.size(); ++i) {
-      auto& marking = markings.get_list(i);
-      auto set_name = marking.get<std::string>(0);
-      auto pos_expr = marking.get<std::string>(1);
-      mark_closest_vertex(mesh, set_name, pos_expr);
-    }
-  }
-  if (pl.is<double>("element count")) {
-    change_element_count(mesh, pl.get<double>("element count"));
-  }
-  if (pl.get<bool>("reorder", "false")) {
-    Omega_h::reorder_by_hilbert(&mesh);
   }
 }
 
