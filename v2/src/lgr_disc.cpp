@@ -198,6 +198,9 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   if (pl.is<double>("element count")) {
     change_element_count(mesh, pl.get<double>("element count"));
   }
+  if (pl.get<bool>("reorder", "false")) {
+    Omega_h::reorder_by_hilbert(&mesh);
+  }
 }
 
 int Disc::dim() { return mesh.dim(); }
