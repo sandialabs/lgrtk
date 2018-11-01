@@ -127,6 +127,130 @@ struct Tri3 {
 };
 #endif
 
+#ifdef LGR_TRI6
+struct Tri6Side {
+  static constexpr int dim = 2;
+  static constexpr int nodes = 3;
+  static constexpr int points = 2;
+  static constexpr bool is_simplex = true;
+  static OMEGA_H_INLINE Matrix<nodes, points> basis_values() {
+    Matrix<nodes, points> out;
+    out[0][0] = 1.0 / 6.0 * (1.0 + std::sqrt(3.0));
+    out[0][1] = 1.0 / 6.0 * (1.0 - std::sqrt(3.0));
+    out[0][2] = 2.0 / 3.0;
+    out[1][0] = 1.0 / 6.0 * (1.0 - std::sqrt(3.0));
+    out[1][1] = 1.0 / 6.0 * (1.0 + std::sqrt(3.0));
+    out[1][2] = 2.0 / 3.0;
+    return out;
+  }
+};
+
+struct Tri6 {
+  public:
+    static constexpr int dim = 2;
+    static constexpr int nodes = 6;
+    static constexpr int points = 3;
+    static constexpr bool is_simplex = true;
+  private:
+    static OMEGA_H_INLINE Matrix<dim, points> pts() {
+      Matrix<dim, points> out;
+      out[0][0] = 2.0 / 3.0; out[0][1] = 1.0 / 6.0;
+      out[1][0] = 1.0 / 6.0; out[1][1] = 2.0 / 3.0;
+      out[2][0] = 1.0 / 6.0; out[2][1] = 1.0 / 6.0;
+      return out;
+    }
+    static OMEGA_H_INLINE Matrix<dim, nodes> bgrads(Vector<dim> xi) {
+      Matrix<dim, nodes> out;
+      auto xi2 = 1.0 - xi[0] - xi[1];
+      out[0][0] = -4.0 * xi2   + 1.0;   out[0][1] = -4.0 * xi2   + 1.0;
+      out[1][0] =  4.0 * xi[0] - 1.0;   out[1][1] =  0.0;
+      out[2][0] =  0.0;                 out[2][1] =  4.0 * xi[1] - 1.0;
+      out[3][0] =  4.0 * (xi2 - xi[0]); out[3][1] = -4.0 * xi[0];
+      out[4][0] =  4.0 * xi[1];         out[4][1] =  4.0 * xi[0];
+      out[5][0] = -4.0 * xi[1];         out[5][1] =  4.0 * (xi2 - xi[1]);
+      out[6][0] = 1.0;
+      return out;
+    }
+    static OMEGA_H_INLINE void compute_lengths(
+        Matrix<dim, nodes> node_coords, Shape<Tri6>& shape) {
+      Matrix<2, 3> edge_vectors;
+      edge_vectors[0] = node_coords[1] - node_coords[0];
+      edge_vectors[1] = node_coords[2] - node_coords[0];
+      edge_vectors[2] = node_coords[2] - node_coords[1];
+      Vector<3> squared_edge_lengths;
+      for (int i = 0; i < 3; ++i) {
+        squared_edge_lengths[i] = Omega_h::norm_squared(edge_vectors[i]);
+      }
+      auto max_squared_edge_length =
+        Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
+      auto max_edge_length = std::sqrt(max_squared_edge_length);
+      shape.lengths.viscosity_length = max_edge_length;
+      Matrix<2, 3> raw_gradients;
+      raw_gradients[0] = Omega_h::perp(edge_vectors[2]);
+      raw_gradients[1] = -Omega_h::perp(edge_vectors[1]);
+      raw_gradients[2] = Omega_h::perp(edge_vectors[0]);
+      auto raw_area = edge_vectors[0] * raw_gradients[1];
+      auto min_height = raw_area / max_edge_length;
+      shape.lengths.time_step_length = min_height;
+    }
+    static OMEGA_H_INLINE void compute_gradients(
+        Matrix<dim, nodes> node_coords, Shape<Tri6>& shape) {
+      auto ips = pts();
+      auto x = Omega_h::transpose(node_coords);
+      for (int ip = 0; ip < points; ++ip) {
+        auto xi = ips[ip];
+        auto dNdxi = bgrads(xi);
+        auto J = dNdxi * x;
+        auto Jinv = Omega_h::invert(J);
+        auto dNdx = Jinv * dNdxi;
+        shape.basis_gradients[ip] = dNdx;
+        shape.weights[ip] = Omega_h::determinant(J) * 1.0 / 6.0;
+      }
+    }
+  public:
+    static OMEGA_H_INLINE
+      Shape<Tri6> shape(Matrix<dim, nodes> node_coords) {
+        Shape<Tri6> out;
+        compute_lengths(node_coords, out);
+        compute_gradients(node_coords, out);
+        return out;
+      }
+    static OMEGA_H_INLINE
+      constexpr double lumping_factor(int node) {
+        return ((node == 0) ? 0.0 :
+            (node == 1) ? 0.0 :
+            (node == 2) ? 0.0 :
+            (node == 3) ? 1.0 / 3.0 :
+            (node == 4) ? 1.0 / 3.0 :
+            (node == 5) ? 1.0 / 3.0 : -1.0);
+      }
+    static OMEGA_H_INLINE Matrix<nodes, points> basis_values() {
+      Matrix<nodes, points> out;
+      out[0][0] = -1.0 / 9.0;
+      out[0][1] =  2.0 / 9.0;
+      out[0][2] = -1.0 / 9.0;
+      out[0][3] =  4.0 / 9.0;
+      out[0][4] =  4.0 / 9.0;
+      out[0][5] =  1.0 / 9.0;
+      out[1][0] = -1.0 / 9.0;
+      out[1][1] = -1.0 / 9.0;
+      out[1][2] =  2.0 / 9.0;
+      out[1][3] =  1.0 / 9.0;
+      out[1][4] =  4.0 / 9.0;
+      out[1][5] =  4.0 / 9.0;
+      out[2][0] =  2.0 / 9.0;
+      out[2][1] = -1.0 / 9.0;
+      out[2][2] = -1.0 / 9.0;
+      out[2][3] =  4.0 / 9.0;
+      out[2][4] =  1.0 / 9.0;
+      out[2][5] =  4.0 / 9.0;
+      return out;
+    }
+    static constexpr char const* name() { return "Tri6"; }
+    using side = Tri6Side;
+};
+#endif
+
 #ifdef LGR_QUAD4
 struct Quad4Side {
   static constexpr int dim = 2;
