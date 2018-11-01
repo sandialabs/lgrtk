@@ -395,6 +395,40 @@ class ComputeGradient
 };
 /******************************************************************************/
 
+/******************************************************************************/
+template<Plato::OrdinalType SpaceDim>
+class ComputeVolume
+{
+  private:
+    const NodeCoordinate<SpaceDim> m_nodeCoordinate;
+
+  public:
+    ComputeVolume(
+      NodeCoordinate<SpaceDim> nodeCoordinate) :
+      m_nodeCoordinate(nodeCoordinate) {}
+
+    DEVICE_TYPE
+    inline
+	Scalar
+    operator()(Plato::OrdinalType cellOrdinal) const
+    {
+      // compute jacobian/Det for cell:
+      //
+      Omega_h::Matrix<SpaceDim, SpaceDim> jacobian;
+      for (Plato::OrdinalType d1=0; d1<SpaceDim; d1++)
+      {
+        for (Plato::OrdinalType d2=0; d2<SpaceDim; d2++)
+        {
+          jacobian[d1][d2] = m_nodeCoordinate(cellOrdinal,d2,d1) - m_nodeCoordinate(cellOrdinal,SpaceDim,d1);
+        }
+      }
+      Plato::Scalar jacobianDet = Omega_h::determinant(jacobian);
+      constexpr Plato::Scalar det2Vol = (SpaceDim == 2) ? 0.5 : 1./6.;
+      return det2Vol*fabs(jacobianDet);
+    }
+};
+/******************************************************************************/
+
 
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
