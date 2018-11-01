@@ -93,6 +93,33 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runStructuralDynamicsUnitTests COMMAND ${ES_MPI_TEST})
 #end: Structural dynamics unit test
 
+#begin: Hamilton-Jacobi unit test
+  set(HamiltonJacobi_SOURCES
+    LGRTestHelpers.cpp
+    HamiltonJacobiTest.cpp
+    Teuchos_StandardUnitTestMain.cpp
+  )
+
+  set(HamiltonJacobi_HEADERS
+    LGRTestHelpers.hpp
+  )
+
+  add_executable(HamiltonJacobiUnitTests
+    ${HamiltonJacobi_SOURCES}
+    ${HamiltonJacobi_HEADERS}
+  )
+
+  target_link_libraries(HamiltonJacobiUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(HamiltonJacobiUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/HamiltonJacobiUnitTests)
+  add_test(NAME runHamiltonJacobiUnitTests COMMAND ${ES_MPI_TEST})
+#end: Hamilton-Jacobi unit test
+
 #begin: Elastodynamics unit test
   set(Elastodynamics_SOURCES
     LGRTestHelpers.cpp
