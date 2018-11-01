@@ -201,6 +201,8 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
       }
     }
   }
+  elems2nodes_ = mesh.ask_elem_verts(); // linear specific!
+  nodes2elems_ = mesh.ask_up(0, mesh.dim()); // linear specific!
 }
 
 int Disc::dim() { return mesh.dim(); }
@@ -212,15 +214,13 @@ int Disc::count(EntityType type) {
 }
 
 Omega_h::LOs Disc::ents_to_nodes(EntityType type) {
-  // linear specific!
   OMEGA_H_CHECK(type == ELEMS);
-  return mesh.ask_elem_verts();
+  return elems2nodes_;
 }
 
 Omega_h::Adj Disc::nodes_to_ents(EntityType type) {
-  // linear specific!
   OMEGA_H_CHECK(type == ELEMS);
-  return mesh.ask_up(0, mesh.dim());
+  return nodes2elems_;
 }
 
 Omega_h::LOs Disc::ents_on_closure(
