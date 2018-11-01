@@ -5,6 +5,7 @@
 #include <lgr_cmdline_hist.hpp>
 #include <lgr_csv_hist.hpp>
 #include <lgr_comparison.hpp>
+#include <Omega_h_profile.hpp>
 
 namespace lgr {
 
@@ -15,6 +16,7 @@ void Responses::setup(Omega_h::InputMap& pl) {
 }
 
 void Responses::evaluate() {
+  Omega_h::ScopedTimer timer("Responses::evaluate");
   for (auto& response : storage) {
     if (!response->when->active(sim.prev_time, sim.time)) continue;
     response->respond();
