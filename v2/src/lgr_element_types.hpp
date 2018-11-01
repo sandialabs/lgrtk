@@ -24,6 +24,7 @@ struct Shape {
   Vector<Elem::points> weights;
 };
 
+#ifdef LGR_BAR2
 struct Bar2Side {
   static constexpr int dim = 1;
   static constexpr int nodes = 1;
@@ -67,7 +68,9 @@ struct Bar2 {
   static constexpr char const* name() { return "Bar2"; }
   using side = Bar2Side;
 };
+#endif
 
+#ifdef LGR_TRI3
 struct Tri3Side {
   static constexpr int dim = 2;
   static constexpr int nodes = 2;
@@ -122,7 +125,9 @@ struct Tri3 {
   static constexpr char const* name() { return "Tri3"; }
   using side = Tri3Side;
 };
+#endif
 
+#ifdef LGR_QUAD4
 struct Quad4Side {
   static constexpr int dim = 2;
   static constexpr int nodes = 2;
@@ -226,7 +231,9 @@ struct Quad4 {
     static constexpr char const* name() { return "Quad4"; }
     using side = Quad4Side;
 };
+#endif
 
+#ifdef LGR_TET4
 struct Tet4Side {
   static constexpr int dim = 3;
   static constexpr int nodes = 3;
@@ -296,6 +303,7 @@ struct Tet4 {
   static constexpr char const* name() { return "Tet4"; }
   using side = Tet4Side;
 };
+#endif
 
 struct CompositeTet {
   static constexpr int dim = 3;
