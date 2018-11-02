@@ -20,6 +20,9 @@ foreach(ELEMENT IN LISTS LGR_ELEMENTS)
   if(${ELEMENT} STREQUAL "Tri3")
     set(LGR_TRI3 ON)
   endif()
+  if(${ELEMENT} STREQUAL "Tri6")
+    set(LGR_TRI6 ON)
+  endif()
   if(${ELEMENT} STREQUAL "Quad4")
     set(LGR_QUAD4 ON)
   endif()
@@ -43,6 +46,7 @@ set(LGR_KEY_BOOLS
   LGR_USE_GTest
   LGR_BAR2
   LGR_TRI3
+  LGR_TRI6
   LGR_QUAD4
   LGR_TET4
   )
