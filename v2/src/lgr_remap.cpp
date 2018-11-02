@@ -1,6 +1,7 @@
 #include <lgr_remap.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <Omega_h_profile.hpp>
 
 namespace lgr {
 
@@ -65,6 +66,7 @@ template <class Elem>
 struct Remap : public RemapBase {
   Remap(Simulation& sim_in):RemapBase(sim_in) {}
   void before_adapt() override final {
+    Omega_h::ScopedTimer timer("Remap::before_adapt");
     for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {
       auto fi = sim.fields.find(name);
       auto points_to_F = sim.getset(fi);
@@ -384,6 +386,7 @@ struct Remap : public RemapBase {
     }
   }
   void after_adapt() override final {
+    Omega_h::ScopedTimer timer("Remap::after_adapt");
     sim.fields[sim.position].storage = Omega_h::deep_copy(sim.disc.mesh.coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);

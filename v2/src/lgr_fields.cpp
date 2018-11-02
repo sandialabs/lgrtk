@@ -4,6 +4,7 @@
 #include <lgr_support.hpp>
 #include <lgr_disc.hpp>
 #include <Omega_h_map.hpp>
+#include <Omega_h_profile.hpp>
 #include <algorithm>
 
 namespace lgr {
@@ -153,12 +154,14 @@ void Fields::print_and_clear_set_fields() {
 }
 
 void Fields::forget_disc() {
+  Omega_h::ScopedTimer timer("Fields::forget_disc");
   for (auto& field : storage) {
     field->forget_disc();
   }
 }
 
 void Fields::learn_disc() {
+  Omega_h::ScopedTimer timer("Fields::forget_disc");
   for (auto& field : storage) {
     field->learn_disc();
   }
