@@ -17,7 +17,6 @@ OMEGA_H_INLINE void ideal_gas_update(
   OMEGA_H_CHECK(specific_internal_energy > 0.0);
   pressure =
     (gamma - 1.) * density * specific_internal_energy;
-  auto I = identity_matrix<3, 3>();
   auto bulk_modulus = gamma * pressure;
   wave_speed = std::sqrt(bulk_modulus / density);
   OMEGA_H_CHECK(wave_speed > 0.0);
