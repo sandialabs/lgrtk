@@ -2,6 +2,7 @@
 #include <lgr_subset.hpp>
 #include <lgr_disc.hpp>
 #include <Omega_h_map.hpp>
+#include <Omega_h_profile.hpp>
 
 namespace lgr {
 
@@ -103,12 +104,14 @@ SubsetBridge* Subsets::get_bridge(
 }
 
 void Subsets::forget_disc() {
+  Omega_h::ScopedTimer timer("Subsets::forget_disc");
   for (int i = 0; i < 4; ++i) {
     by_type[i].forget_disc();
   }
 }
 
 void Subsets::learn_disc() {
+  Omega_h::ScopedTimer timer("Subsets::learn_disc");
   for (int i = 0; i < 4; ++i) {
     by_type[i].learn_disc(*this);
   }
