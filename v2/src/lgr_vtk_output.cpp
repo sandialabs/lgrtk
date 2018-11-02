@@ -1,5 +1,6 @@
 #include <lgr_vtk_output.hpp>
 #include <Omega_h_file.hpp>
+#include <Omega_h_profile.hpp>
 #include <lgr_field_index.hpp>
 #include <lgr_response.hpp>
 #include <lgr_simulation.hpp>
@@ -61,6 +62,7 @@ struct VtkOutput : public Response {
   }
   void out_of_line_virtual_method() override;
   void respond() override final {
+    Omega_h::ScopedTimer timer("VtkOutput::respond");
     sim.disc.mesh.set_coords(sim.get(sim.position)); // linear specific!
     sim.fields.copy_to_omega_h(sim.disc, field_indices);
     writer.write(sim.step, sim.time, tags);
