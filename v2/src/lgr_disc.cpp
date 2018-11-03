@@ -1,5 +1,6 @@
 #include <lgr_disc.hpp>
 #include <lgr_config.hpp>
+#include <lgr_quadratic.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_build.hpp>
@@ -10,8 +11,6 @@
 #include <Omega_h_metric.hpp>
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_array_ops.hpp>
-#include <Omega_h_align.hpp>
-#include <Omega_h_int_scan.hpp>
 #include <fstream>
 #include <sstream>
 #include <limits>
@@ -108,46 +107,6 @@ static void change_element_count(Omega_h::Mesh& mesh, double desired_nelems) {
   }
 }
 
-static Omega_h::Read<int> count_nodes_by_vert(Omega_h::Mesh& mesh) {
-  auto verts2edges = mesh.ask_up(0, 1);
-  Omega_h::Write<int> counts(mesh.nverts(), "node_counts_by_vert");
-  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    int count = 1;
-    auto adj_edge_begin = verts2edges.a2ab[v];
-    auto adj_edge_end = verts2edges.a2ab[v + 1];
-    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
-      auto edge_code = verts2edges.codes[e];
-      if (Omega_h::code_which_down(edge_code) == 0) ++count;
-    }
-    counts[v] = count;
-  };
-  Omega_h::parallel_for("count nodes by vert", mesh.nverts(), std::move(functor));
-  return counts;
-}
-
-static Omega_h::Few<Omega_h::LOs, 2> number_p2_nodes(Omega_h::Mesh& mesh) {
-  auto verts2edges = mesh.ask_up(0, 1);
-  Omega_h::Write<Omega_h::LO> vtx_nodes(mesh.nverts(), "vtx_node_nmbr");
-  Omega_h::Write<Omega_h::LO> edge_nodes(mesh.nedges(), "edge_node_nmbr");
-  auto counts = count_nodes_by_vert(mesh);
-  auto offsets = Omega_h::offset_scan(counts, "node_number_by_vert");
-  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    auto node = offsets[v];
-    vtx_nodes[v] = node;
-    auto adj_edge_begin = verts2edges.a2ab[v];
-    auto adj_edge_end = verts2edges.a2ab[v + 1];
-    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
-      auto edge = verts2edges.ab2b[e];
-      auto edge_code = verts2edges.codes[e];
-      if (Omega_h::code_which_down(edge_code) == 0) edge_nodes[edge] = ++node;
-    }
-    OMEGA_H_CHECK(offsets[v + 1] == (node + 1));
-  };
-  Omega_h::parallel_for("number p2 nodes", mesh.nverts(), std::move(functor));
-  Omega_h::Few<Omega_h::LOs, 2> nodes{vtx_nodes, edge_nodes};
-  return nodes;
-}
-
 void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   if (pl.is<std::string>("file")) {
     mesh = Omega_h::read_mesh_file(pl.get<std::string>("file"), comm);
@@ -233,6 +192,8 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   }
   if (pl.get<bool>("add mid edge nodes", "false")) {
     auto nodes = number_p2_nodes(mesh);
+    elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
+    nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
   } else {
     elems2nodes_ = mesh.ask_elem_verts();
     nodes2elems_ = mesh.ask_up(0, mesh.dim());
