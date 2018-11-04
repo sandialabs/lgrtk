@@ -29,6 +29,7 @@ struct Fields {
   void del(FieldIndex fi);
   double next_event(double time);
   void setup_conditions(Supports& supports, Omega_h::InputMap& pl);
+  void setup_common_defaults(Omega_h::InputMap& pl);
   FieldIndex find(std::string const& name);
   void print_and_clear_set_fields();
   void setup_default_conditions(Supports& supports, double start_time);

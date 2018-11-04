@@ -168,6 +168,7 @@ void Simulation::setup(Omega_h::InputMap& pl)
   finalize_definitions();
   // setup conditions
   fields.setup_conditions(supports, pl.get_map("conditions"));
+  fields.setup_common_defaults(pl.get_map("common fields"));
   fields.setup_default_conditions(supports, time);
   // done setting up conditions
   // set coordinates
