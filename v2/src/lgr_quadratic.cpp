@@ -52,8 +52,8 @@ Omega_h::LOs build_p2_elems2nodes(Omega_h::Mesh& mesh,
   auto elem_dim = mesh.dim();
   auto ndown_verts = Omega_h::simplex_degree(elem_dim, 0);
   auto ndown_edges = Omega_h::simplex_degree(elem_dim, 1);
-  auto nnodes = nodes[0].size() + nodes[1].size();
   auto nnodes_per_elem = ndown_verts + ndown_edges;
+  auto nnodes = nodes[0].size() + nodes[1].size();
   OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
   auto elems2verts = mesh.ask_down(elem_dim, 0).ab2b;
   auto elems2edges = mesh.ask_down(elem_dim, 1).ab2b;
@@ -78,10 +78,39 @@ Omega_h::LOs build_p2_elems2nodes(Omega_h::Mesh& mesh,
   return elems2nodes;
 }
 
+static Omega_h::LOs count_nodes2elems(Omega_h::Mesh& mesh,
+    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+  auto elem_dim = mesh.dim();
+  auto nnodes = nodes[0].size() + nodes[1].size();
+  OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
+  auto verts2edges = mesh.ask_up(0, 1);
+  auto verts2elems = mesh.ask_up(0, elem_dim);
+  auto edges2elems = mesh.ask_up(1, elem_dim);
+  Omega_h::Write<Omega_h::LO> node_counts(nnodes, "node_counts");
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
+    auto vtx_node = nodes[0][v];
+    auto nvtx_adj_elems = verts2elems.a2ab[v + 1] - verts2elems.a2ab[v];
+    node_counts[vtx_node] = nvtx_adj_elems;
+    auto adj_edge_begin = verts2edges.a2ab[v];
+    auto adj_edge_end = verts2edges.a2ab[v + 1];
+    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
+      auto edge = verts2edges.ab2b[e];
+      auto edge_code = verts2edges.codes[e];
+      if (Omega_h::code_which_down(edge_code) == 0) {
+        auto edge_node = nodes[1][edge];
+        auto nedge_adj_elems = edges2elems.a2ab[edge + 1] - edges2elems.a2ab[edge];
+        node_counts[edge_node] = nedge_adj_elems;
+      }
+    }
+  };
+  Omega_h::parallel_for("count nodes2elems", mesh.nverts(), std::move(functor));
+  (void)nodes;
+  return Omega_h::LOs{};
+}
+
 Omega_h::Adj build_p2_nodes2elems(Omega_h::Mesh& mesh,
     Omega_h::Few<Omega_h::LOs, 2> nodes) {
-  (void)mesh;
-  (void)nodes;
+  count_nodes2elems(mesh, nodes);
   return Omega_h::Adj{};
 }
 
