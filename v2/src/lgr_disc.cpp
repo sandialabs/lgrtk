@@ -1,5 +1,6 @@
 #include <lgr_disc.hpp>
 #include <lgr_config.hpp>
+#include <lgr_quadratic.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_build.hpp>
@@ -189,6 +190,15 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
       mark_closest_vertex(mesh, set_name, pos_expr);
     }
   }
+  if (pl.get<bool>("add mid edge nodes", "false")) {
+    OMEGA_H_CHECK(is_simplex_);
+    auto nodes = number_p2_nodes(mesh);
+    elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
+    nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
+  } else {
+    elems2nodes_ = mesh.ask_elem_verts();
+    nodes2elems_ = mesh.ask_up(0, mesh.dim());
+  }
   std::set<int> volume_ids;
   for (auto& s : mesh.class_sets) {
     for (auto& cp : s.second) {
@@ -212,15 +222,13 @@ int Disc::count(EntityType type) {
 }
 
 Omega_h::LOs Disc::ents_to_nodes(EntityType type) {
-  // linear specific!
   OMEGA_H_CHECK(type == ELEMS);
-  return mesh.ask_elem_verts();
+  return elems2nodes_;
 }
 
 Omega_h::Adj Disc::nodes_to_ents(EntityType type) {
-  // linear specific!
   OMEGA_H_CHECK(type == ELEMS);
-  return mesh.ask_up(0, mesh.dim());
+  return nodes2elems_;
 }
 
 Omega_h::LOs Disc::ents_on_closure(
