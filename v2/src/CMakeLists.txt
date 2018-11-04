@@ -40,6 +40,7 @@ add_library(lgr_library
     lgr_neo_hookean.cpp
     lgr_riemann.cpp
     lgr_osh_output.cpp
+    lgr_quadratic.cpp
     )
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)

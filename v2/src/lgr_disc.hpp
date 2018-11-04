@@ -31,6 +31,8 @@ struct Disc {
   int points_per_ent_[4];
   int nodes_per_ent_[4];
   ClassNames covering_class_names_;
+  Omega_h::LOs elems2nodes_;
+  Omega_h::Adj nodes2elems_;
 };
 
 #define LGR_EXPL_INST(Elem) \
