@@ -124,6 +124,25 @@ void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
   }
 }
 
+void Fields::setup_common_defaults(Omega_h::InputMap& pl) {
+  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
+    auto const& field_name = it->first;
+    if (pl.is<std::string>(field_name)) {
+      auto value = pl.get<std::string>(field_name);
+      auto fit = std::find_if(storage.begin(), storage.end(),
+          [&](std::unique_ptr<Field> const& f) {
+            return f->long_name == field_name;
+          });
+      if (fit == storage.end()) {
+        Omega_h_fail("trying to apply default condition to field \"%s\" that wasn't defined\n",
+            field_name.c_str());
+      }
+      auto& field = *fit;
+      field->default_value = value;
+    }
+  }
+}
+
 FieldIndex Fields::find(std::string const& name) {
   FieldIndex out;
   auto it = std::find_if(storage.begin(), storage.end(),
