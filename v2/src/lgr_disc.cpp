@@ -191,6 +191,7 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     }
   }
   if (pl.get<bool>("add mid edge nodes", "false")) {
+    OMEGA_H_CHECK(is_simplex_);
     auto nodes = number_p2_nodes(mesh);
     elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
     nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
