@@ -7,6 +7,11 @@
 
 namespace lgr {
 
+// we number edge nodes by which vertex 'owns' the edge
+// (the first downward vertex of the edge is the edge 'owner')
+// this ensures that we can index into edge node arrays without
+// race conditions when we loop over vertices
+
 static Omega_h::LOs count_nodes_by_verts(Omega_h::Mesh& mesh) {
   auto verts2edges = mesh.ask_up(0, 1);
   Omega_h::Write<Omega_h::LO> counts(mesh.nverts(), "node_counts_by_vert");
@@ -104,14 +109,51 @@ static Omega_h::LOs count_nodes2elems(Omega_h::Mesh& mesh,
     }
   };
   Omega_h::parallel_for("count nodes2elems", mesh.nverts(), std::move(functor));
-  (void)nodes;
-  return Omega_h::LOs{};
+  return node_counts;
 }
 
 Omega_h::Adj build_p2_nodes2elems(Omega_h::Mesh& mesh,
     Omega_h::Few<Omega_h::LOs, 2> nodes) {
-  count_nodes2elems(mesh, nodes);
-  return Omega_h::Adj{};
+  auto elem_dim = mesh.dim();
+  auto verts2edges = mesh.ask_up(0, 1);
+  auto verts2elems = mesh.ask_up(0, elem_dim);
+  auto edges2elems = mesh.ask_up(1, elem_dim);
+  auto counts = count_nodes2elems(mesh, nodes);
+  auto a2ab = Omega_h::offset_scan(counts, "nodes2elems_a2ab");
+  Omega_h::Write<Omega_h::LO> ab2b(a2ab.last(), "nodes2elems_ab2b");
+  Omega_h::Write<Omega_h::I8> codes(a2ab.last(), "nodes2elems_codes");
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
+    auto vtx_node = nodes[0][v];
+    auto ab = a2ab[vtx_node];
+    auto vtx_adj_elem_begin = verts2elems.a2ab[v];
+    auto vtx_adj_elem_end = verts2elems.a2ab[v + 1];
+    for (auto elem_idx = vtx_adj_elem_begin; elem_idx < vtx_adj_elem_end; ++elem_idx) {
+      auto elem = verts2elems.ab2b[elem_idx];
+      auto code = verts2elems.codes[elem_idx];
+      ab2b[ab] = elem;
+      codes[ab] = code;
+      ab++;
+    }
+    auto adj_edge_begin = verts2edges.a2ab[v];
+    auto adj_edge_end = verts2edges.a2ab[v + 1];
+    for (auto edge_idx = adj_edge_begin; edge_idx < adj_edge_end; ++edge_idx) {
+      auto edge = verts2edges.ab2b[edge_idx];
+      auto edge_code = verts2edges.codes[edge_idx];
+      if (Omega_h::code_which_down(edge_code) == 0) {
+        auto edge_adj_elem_begin = edges2elems.a2ab[edge];
+        auto edge_adj_elem_end = edges2elems.a2ab[edge + 1];
+        for (auto elem_idx = edge_adj_elem_begin; elem_idx < edge_adj_elem_end; ++elem_idx) {
+          auto elem = edges2elems.ab2b[elem_idx];
+          auto code = edges2elems.codes[elem_idx];
+          ab2b[ab] = elem;
+          codes[ab] = code;
+          ab++;
+        }
+      }
+    }
+  };
+  Omega_h::parallel_for("build p2 nodes2elems", mesh.nverts(), std::move(functor));
+  return Omega_h::Adj{a2ab, ab2b, codes};
 }
 
 }
