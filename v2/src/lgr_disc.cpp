@@ -217,7 +217,7 @@ int Disc::dim() { return mesh.dim(); }
 
 int Disc::count(EntityType type) {
   if (type == ELEMS) return mesh.nelems();
-  if (type == NODES) return mesh.nverts(); // linear specific!
+  if (type == NODES) return nodes2elems_.a2ab.size() - 1;
   OMEGA_H_NORETURN(-1);
 }
 
