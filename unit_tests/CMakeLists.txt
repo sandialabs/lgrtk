@@ -120,6 +120,34 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runHamiltonJacobiUnitTests COMMAND ${ES_MPI_TEST})
 #end: Hamilton-Jacobi unit test
 
+#begin: Algebraic rocket model unit test
+  set(AlgebraicRocket_SOURCES
+    LGRTestHelpers.cpp
+    AlgebraicRocketTest.cpp
+    Teuchos_StandardUnitTestMain.cpp
+  )
+
+  set(AlgebraicRocket_HEADERS
+    LGRTestHelpers.hpp
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(AlgebraicRocketUnitTests
+    ${AlgebraicRocket_SOURCES}
+    ${AlgebraicRocket_HEADERS}
+  )
+
+  target_link_libraries(AlgebraicRocketUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(AlgebraicRocketUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/AlgebraicRocketUnitTests)
+  add_test(NAME runAlgebraicRocketUnitTests COMMAND ${ES_MPI_TEST})
+#end: Algebraic rocket model unit test
+
 #begin: Elastodynamics unit test
   set(Elastodynamics_SOURCES
     LGRTestHelpers.cpp
