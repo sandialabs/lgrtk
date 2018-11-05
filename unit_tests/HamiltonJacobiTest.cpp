@@ -70,7 +70,6 @@ template<int SpatialDim>
   compute_unit_radius_error_norm(Omega_h::Mesh & omega_h_mesh,
       ProblemFields<SpatialDim> & fields)
   {
-    const int currentState = 0;
     auto levelSet = fields.levelSet;
     const Omega_h::Reals coords = omega_h_mesh.coords();
 
@@ -80,7 +79,7 @@ template<int SpatialDim>
       const Plato::Scalar y = coords[n*SpatialDim+1];
       const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
       Plato::Scalar exact = sqrt(x*x+y*y+z*z)-1.;
-      norm += abs(levelSet(n,currentState) - exact);
+      norm += abs(levelSet(n,fields.currentState) - exact);
     };
 
     Plato::Scalar norm = 0.0;
@@ -167,20 +166,19 @@ TEUCHOS_UNIT_TEST(HamiltonJacobi, 3D_CylinderWithFlowerIC_ReinitializationThenEv
   Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer("MyMesh", &omega_h_mesh,
       SpatialDim);
 
-  int currentState = 0;
   Plato::Scalar time = 0.0;
 
-  reinitialize_level_set(omega_h_mesh, fields, time, eps, dtau, currentState);
+  reinitialize_level_set(omega_h_mesh, fields, time, eps, dtau);
 
   for (unsigned n = 0; n < Nt; ++n)
   {
-    evolve_level_set(omega_h_mesh, fields, eps, dt, currentState);
+    evolve_level_set(omega_h_mesh, fields, eps, dt);
     time += dt;
-    write_mesh(tWriter, omega_h_mesh, fields, currentState, time);
-    reinitialize_level_set(omega_h_mesh, fields, time, eps, dtau, currentState);
+    write_mesh(tWriter, omega_h_mesh, fields, time);
+    reinitialize_level_set(omega_h_mesh, fields, time, eps, dtau);
 
     std::cout << "Time, Level set vol = " << time << " "
-        << level_set_volume(omega_h_mesh, fields, currentState, eps)
+        << level_set_volume(omega_h_mesh, fields, eps)
         << std::endl;
   }
 }
