@@ -57,6 +57,7 @@ struct ProblemFields
   typename lgr::Fields<SpatialDim>::array_type RHS;
   typename lgr::Fields<SpatialDim>::array_type RHSNorm;
   typename lgr::Fields<SpatialDim>::array_type speed;
+  int currentState = 0;
 };
 
 template<int SpatialDim>
@@ -93,29 +94,56 @@ Plato::Scalar Heaviside(const Plato::Scalar signedDist, const Plato::Scalar eps)
   return 0.5*(1+ signedDist/eps + sin(pi*signedDist/eps)/pi);
 }
 
-template<int SpatialDim>
-Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, int currentState, double eps)
+KOKKOS_INLINE_FUNCTION
+Plato::Scalar Delta(const Plato::Scalar signedDist, const Plato::Scalar eps)
+{
+  if (signedDist < -eps || signedDist > eps) return 0.;
+
+  constexpr Plato::Scalar pi = 3.1415926535897932385;
+  return 0.5/eps * (1. + cos(pi*signedDist/eps));
+}
+
+template<int SpatialDim, class Lambda>
+Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, const Lambda & levelSetFn, double levelSet)
 {
   constexpr int nodesPerElem = SpatialDim + 1;
   Plato::NodeCoordinate<SpatialDim> nodeCoordinate(&omega_h_mesh);
   Plato::ComputeVolume<SpatialDim> computeElemVolume(nodeCoordinate);
-  auto levelSet = fields.levelSet;
+  auto levelSetField = fields.levelSet;
   auto elems2Verts = omega_h_mesh.ask_elem_verts();
 
-  auto computeVolume = LAMBDA_EXPRESSION(int elem, Plato::Scalar & volume) {
+  auto computeIntegral = LAMBDA_EXPRESSION(int elem, Plato::Scalar & integral) {
     Plato::Scalar elemVolume = computeElemVolume(elem);
 
     Plato::Scalar avgLS = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
-      avgLS += levelSet(elems2Verts[elem * nodesPerElem + n],currentState)/nodesPerElem;
+      avgLS += levelSetField(elems2Verts[elem * nodesPerElem + n],fields.currentState)/nodesPerElem;
     }
 
-    volume += elemVolume * Heaviside(avgLS, eps);
+    integral += elemVolume * levelSetFn(avgLS - levelSet, eps);
   };
-  Plato::Scalar volume = 0.;
-  Kokkos::parallel_reduce(omega_h_mesh.nelems(), computeVolume, volume);
-  return volume;
+  Plato::Scalar integral = 0.;
+  Kokkos::parallel_reduce(omega_h_mesh.nelems(), computeIntegral, integral);
+  return integral;
+}
+
+template<int SpatialDim>
+Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+{
+  auto fn = LAMBDA_EXPRESSION(const Plato::Scalar signedDist, const Plato::Scalar eps) {
+    return Heaviside(signedDist, eps);
+  };
+  return level_set_integral(omega_h_mesh, fields, eps, fn, levelSet);
+}
+
+template<int SpatialDim>
+Plato::Scalar level_set_area(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+{
+  auto fn = LAMBDA_EXPRESSION(const Plato::Scalar signedDist, const Plato::Scalar eps) {
+    return Delta(signedDist, eps);
+  };
+  return level_set_integral(omega_h_mesh, fields, eps, fn, levelSet);
 }
 
 template<int SpatialDim>
@@ -167,11 +195,10 @@ template<int SpatialDim>
 bool domain_contains_interface(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields)
 {
   auto levelSet = fields.levelSet;
-  int currentState = 0;
 
   auto f = LAMBDA_EXPRESSION(int n, SumArray<size_t,2> & numPosNeg) {
-    if (levelSet(n,currentState) < 0) ++numPosNeg[0];
-    if (levelSet(n,currentState) > 0) ++numPosNeg[1];
+    if (levelSet(n,fields.currentState) < 0) ++numPosNeg[0];
+    if (levelSet(n,fields.currentState) > 0) ++numPosNeg[1];
   };
 
   SumArray<size_t,2> numPosNeg;
@@ -187,13 +214,12 @@ void initialize_level_set(Omega_h::Mesh & omega_h_mesh,
     const double multiplier = 1.0)
 {
   auto levelSet = fields.levelSet;
-  int currentState = 0;
   const Omega_h::Reals coords = omega_h_mesh.coords();
   auto f = LAMBDA_EXPRESSION(int n) {
     const Plato::Scalar x = coords[n*SpatialDim+0];
     const Plato::Scalar y = coords[n*SpatialDim+1];
     const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
-    levelSet(n, currentState) = level_set_function(x,y,z) * multiplier;
+    levelSet(n, fields.currentState) = level_set_function(x,y,z) * multiplier;
   };
   Kokkos::parallel_for(omega_h_mesh.nverts(), f);
 }
@@ -208,15 +234,13 @@ private:
   const Plato::ComputeGradient<SpatialDim> mComputeGradient;
   const ProblemFields<SpatialDim> mFields;
   const double mEps;
-  const int mCurrentState;
 public:
-  AssembleElementSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const double eps, const int currentState) :
+  AssembleElementSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const double eps) :
     mElems2Verts(omega_h_mesh.ask_elem_verts()),
     mNodeCoordinate(&omega_h_mesh),
     mComputeGradient(mNodeCoordinate),
     mFields(fields),
-    mEps(eps),
-    mCurrentState(currentState) {}
+    mEps(eps) {}
 
   DEVICE_TYPE inline
   void operator()(int elem) const
@@ -230,7 +254,7 @@ public:
     for (int dim=0; dim<SpatialDim; ++dim) normalDir[dim] = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
-      const Plato::Scalar LSOld = mFields.levelSet(mElems2Verts[elem * nodesPerElem + n], mCurrentState);
+      const Plato::Scalar LSOld = mFields.levelSet(mElems2Verts[elem * nodesPerElem + n], mFields.currentState);
       for (int dim=0; dim<SpatialDim; ++dim) normalDir[dim] += gradients[n][dim] * LSOld;
     }
     unitize(normalDir);
@@ -244,7 +268,7 @@ public:
     for (int n=0; n<nodesPerElem; ++n)
     {
       auto node = mElems2Verts[elem * nodesPerElem + n];
-      const Plato::Scalar LSOld = mFields.levelSet(node, mCurrentState);
+      const Plato::Scalar LSOld = mFields.levelSet(node, mFields.currentState);
       volHamiltonianCoeffs[n] = elemVolume*elementSpeed * dot(normalDir, gradients[n]);
       volHamiltonian += volHamiltonianCoeffs[n] * LSOld;
 
@@ -264,7 +288,7 @@ public:
     for (int n=0; n<nodesPerElem; ++n)
     {
       auto node = mElems2Verts[elem * nodesPerElem + n];
-      const Plato::Scalar LSOld = mFields.levelSet(node, mCurrentState);
+      const Plato::Scalar LSOld = mFields.levelSet(node, mFields.currentState);
       if (volHamiltonianCoeffs[n] > 0.)
       {
         alpha[n] = volHamiltonianCoeffs[n]/sumPosCoeffs*(sumNegContrib-sumNegCoeffs*LSOld)/volHamiltonian;
@@ -275,7 +299,7 @@ public:
     for (int n=0; n<nodesPerElem; ++n)
     {
       auto node = mElems2Verts[elem * nodesPerElem + n];
-      const Plato::Scalar LSOld = mFields.levelSet(node, mCurrentState);
+      const Plato::Scalar LSOld = mFields.levelSet(node, mFields.currentState);
 
       if (alpha[n] > 0.)
       {
@@ -299,15 +323,14 @@ private:
   const Plato::ComputeGradient<SpatialDim> mComputeGradient;
   const ProblemFields<SpatialDim> mFields;
   const double mEps;
-  const int mCurrentState;
   const bool mComputeTimeOfArrival;
 
   DEVICE_TYPE inline
-  Plato::Scalar get_nodal_speed(const ProblemFields<SpatialDim> & fields, int elem, int node, int currentState, double eps) const
+  Plato::Scalar get_nodal_speed(const ProblemFields<SpatialDim> & fields, int elem, int node, double eps) const
   {
     // Note that this could be generalized to support some other type of nodal speed.
     // For now just implement Eikonal-type nodal speed (either redistancing or time-of-arrival).
-    const Plato::Scalar LSOld = fields.levelSet(node, currentState);
+    const Plato::Scalar LSOld = fields.levelSet(node, fields.currentState);
     const Plato::Scalar sign = LSOld/sqrt(LSOld*LSOld + eps*eps);
     return (mComputeTimeOfArrival) ? sign*fields.speed[elem] : sign;
   }
@@ -315,14 +338,12 @@ public:
   AssembleNodalSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh,
       ProblemFields<SpatialDim> & fields,
       const double eps,
-      const int currentState,
       const bool computeTimeOfArrival) :
         mElems2Verts(omega_h_mesh.ask_elem_verts()),
         mNodeCoordinate(&omega_h_mesh),
         mComputeGradient(mNodeCoordinate),
         mFields(fields),
         mEps(eps),
-        mCurrentState(currentState),
         mComputeTimeOfArrival(computeTimeOfArrival) {}
 
   DEVICE_TYPE inline
@@ -337,7 +358,7 @@ public:
     for (int dim=0; dim<SpatialDim; ++dim) normalDir[dim] = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
-      const Plato::Scalar LSOld = mFields.levelSet(mElems2Verts[elem * nodesPerElem + n], mCurrentState);
+      const Plato::Scalar LSOld = mFields.levelSet(mElems2Verts[elem * nodesPerElem + n], mFields.currentState);
       for (int dim=0; dim<SpatialDim; ++dim) normalDir[dim] += gradients[n][dim] * LSOld;
     }
     unitize(normalDir);
@@ -346,19 +367,19 @@ public:
     {
       auto node = mElems2Verts[elem * nodesPerElem + n];
 
-      const Plato::Scalar nodalSpeed = get_nodal_speed(mFields, elem, node, mCurrentState, mEps);
+      const Plato::Scalar nodalSpeed = get_nodal_speed(mFields, elem, node, mEps);
       const Plato::Scalar volHamiltonianCoeffs_n = elemVolume*nodalSpeed * dot(normalDir, gradients[n]);
 
       if (volHamiltonianCoeffs_n > 0.)
       {
-        const Plato::Scalar LSOld = mFields.levelSet(node, mCurrentState);
+        const Plato::Scalar LSOld = mFields.levelSet(node, mFields.currentState);
         Plato::Scalar sumNegCoeffs = 0.;
         Plato::Scalar sumPosCoeffs = 0.;
         Plato::Scalar sumNegContrib = 0.;
         Plato::Scalar volHamiltonian = 0.;
         for (int j=0; j<nodesPerElem; ++j)
         {
-          const Plato::Scalar LSOldj = mFields.levelSet(mElems2Verts[elem * nodesPerElem + j], mCurrentState);
+          const Plato::Scalar LSOldj = mFields.levelSet(mElems2Verts[elem * nodesPerElem + j], mFields.currentState);
           const Plato::Scalar volHamiltonianCoeffs_j = elemVolume*nodalSpeed * dot(normalDir, gradients[j]);
 
           volHamiltonian += volHamiltonianCoeffs_j * LSOldj;
@@ -402,7 +423,6 @@ Plato::Scalar assemble_and_update_Eikonal(
     ProblemFields<SpatialDim> & fields,
     const Plato::Scalar eps,
     const Plato::Scalar dt,
-    int & currentState,
     const bool computeArrivalTime)
 {
   // This is a hybrid between the Barth-Sethian positive coefficient scheme and the Morgan-Waltz scheme for reinitialization.
@@ -416,10 +436,11 @@ Plato::Scalar assemble_and_update_Eikonal(
 
   zero_RHS(omega_h_mesh, fields);
 
-  AssembleNodalSpeedHamiltonian<SpatialDim> assemble(omega_h_mesh, fields, eps, currentState, computeArrivalTime);
+  AssembleNodalSpeedHamiltonian<SpatialDim> assemble(omega_h_mesh, fields, eps, computeArrivalTime);
   Kokkos::parallel_for(omega_h_mesh.nelems(), assemble);
 
   auto levelSet = fields.levelSet;
+  const int currentState = fields.currentState;
   const int nextState = (currentState+1)%2;
   auto updateLevelSetAndReduceResidual = LAMBDA_EXPRESSION(int n, SumArray<Plato::Scalar,2> & residAndCount) {
     const Plato::Scalar Hamiltonian = (fields.RHSNorm(n) > 0.) ? (fields.RHS(n)/fields.RHSNorm(n)) : 0.;
@@ -436,7 +457,7 @@ Plato::Scalar assemble_and_update_Eikonal(
   SumArray<Plato::Scalar,2> residAndCount;
   Kokkos::parallel_reduce(omega_h_mesh.nverts(), updateLevelSetAndReduceResidual, residAndCount);
 
-  currentState = nextState;
+  fields.currentState = nextState;
 
   return std::sqrt(residAndCount[0]/residAndCount[1]);
 }
@@ -446,16 +467,16 @@ void evolve_level_set(
     Omega_h::Mesh & omega_h_mesh,
     ProblemFields<SpatialDim> & fields,
     const Plato::Scalar eps,
-    const Plato::Scalar dt,
-    int & currentState)
+    const Plato::Scalar dt)
 {
   // This is a uses the Barth-Sethian positive coefficient scheme for advection.
 
   zero_RHS(omega_h_mesh, fields);
 
-  AssembleElementSpeedHamiltonian<SpatialDim> assemble(omega_h_mesh, fields, eps, currentState);
+  AssembleElementSpeedHamiltonian<SpatialDim> assemble(omega_h_mesh, fields, eps);
   Kokkos::parallel_for(omega_h_mesh.nelems(), assemble);
 
+  const int currentState = fields.currentState;
   const int nextState = (currentState+1)%2;
   auto levelSet = fields.levelSet;
   auto updateLevelSet = LAMBDA_EXPRESSION(int n) {
@@ -464,14 +485,14 @@ void evolve_level_set(
   };
   Kokkos::parallel_for(omega_h_mesh.nverts(), updateLevelSet);
 
-  currentState = nextState;
+  fields.currentState = nextState;
 }
 
 template<int SpatialDim>
-void write_mesh(Omega_h::vtk::Writer & tWriter, Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const int currentState, const Plato::Scalar time)
+void write_mesh(Omega_h::vtk::Writer & tWriter, Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar time)
 {
   Kokkos::View<Omega_h::Real*> view("into", lgr::Fields<SpatialDim>::getFromSA(fields.levelSet,0).size());
-  Kokkos::deep_copy(view, lgr::Fields<SpatialDim>::getFromSA(fields.levelSet,currentState));
+  Kokkos::deep_copy(view, lgr::Fields<SpatialDim>::getFromSA(fields.levelSet,fields.currentState));
   omega_h_mesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(view)));
 
   auto tTags = Omega_h::vtk::get_all_vtk_tags(&omega_h_mesh,SpatialDim);
@@ -496,15 +517,14 @@ void compute_arrival_time (
   bool converged = false;
   const int maxIters = 5000;
   const int printFreq = 100;
-  int currentState = 0;
   for (int iter = 0; iter<maxIters; ++iter)
   {
-    const Plato::Scalar averageNodalResidual =  assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, currentState, true);
+    const Plato::Scalar averageNodalResidual =  assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, true);
 
     if ((iter+1) % printFreq == 0)
     {
       std::cout << "After " << iter+1 << " iterations in compute_arrival_time, the relative error is " << averageNodalResidual << std::endl;
-      write_mesh(tWriter, omega_h_mesh, fields, currentState, iter*dtau);
+      write_mesh(tWriter, omega_h_mesh, fields, iter*dtau);
     }
 
     if (averageNodalResidual < convergedTol)
@@ -527,7 +547,6 @@ void reinitialize_level_set (
     const Plato::Scalar time,
     const Plato::Scalar eps,
     const Plato::Scalar dtau,
-    int & currentState,
     const Plato::Scalar convergedTol = 0.01)
 {
   if (!domain_contains_interface(omega_h_mesh, fields))
@@ -540,7 +559,7 @@ void reinitialize_level_set (
   const int printFreq = 100;
   for (int iter = 0; iter<maxIters; ++iter)
   {
-    const Plato::Scalar averageNodalResidual = assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, currentState, false);
+    const Plato::Scalar averageNodalResidual = assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, false);
 
     if ((iter+1) % printFreq == 0)
     {
