@@ -58,7 +58,7 @@
 #include <cassert>
 #include <cstddef>
 
-#include "Plato_Cylinder.hpp"
+#include "Plato_GeometryModel.hpp"
 
 namespace Plato
 {
@@ -76,8 +76,6 @@ struct AlgebraicRocketInputs
     ScalarType mRefBurnRate;              // meters/seconds
     ScalarType mRefPressure;              // Pascal
     ScalarType mTotalBurnTime;            // seconds
-    ScalarType mChamberRadius;            // meters
-    ScalarType mChamberLength;            // meters
     ScalarType mThroatDiameter;           // meters
     ScalarType mNewtonTolerance;          // Pascal
     ScalarType mAmbientPressure;          // Pascal
@@ -94,8 +92,6 @@ struct AlgebraicRocketInputs
             mRefBurnRate(0.005),
             mRefPressure(3.5e6),
             mTotalBurnTime(10),
-            mChamberRadius(0.075),
-            mChamberLength(0.65),
             mThroatDiameter(0.04),
             mNewtonTolerance(1.e-8),
             mAmbientPressure(101.325),
@@ -121,33 +117,6 @@ class AlgebraicRocketModel
 {
 public:
     /******************************************************************************//**
-     * @brief Default constructor
-    **********************************************************************************/
-    AlgebraicRocketModel() :
-            mPrint(true),
-            mNumNewtonItr(0),
-            mMaxNumNewtonItr(1000),
-            mChamberLength(0.65), // m
-            mChamberRadius(0.075), // m
-            mRefBurnRate(0.005), // m/sec
-            mRefPressure(3.5e6), // Pa
-            mAlpha(0.38),
-            mThroatDiameter(0.04), // m
-            mCharacteristicVelocity(1554.5), // m/sec
-            mPropellantDensity(1744), // kg/m^3
-            mAmbientPressure(101.325), // Pa
-            mDeltaTime(0.1), // sec
-            mTotalBurnTime(10), // sec
-            mNewtonTolerance(1.e-8), // Pa
-            mInvPrefAlpha(),
-            mTimes(),
-            mThrustProfile(),
-            mPressureProfile(),
-            mChamberGeomModel(std::make_shared<Plato::Cylinder<ScalarType>>(mChamberRadius, mChamberLength))
-    {
-    }
-
-    /******************************************************************************//**
      * @brief Constructor
      * @param aInputs input parameters for simulation
      * @param aGeomModel geometry model used for the rocket chamber
@@ -157,8 +126,6 @@ public:
             mPrint(true),
             mNumNewtonItr(0),
             mMaxNumNewtonItr(aInputs.mMaxNumNewtonItr),
-            mChamberLength(aInputs.mChamberLength), // m
-            mChamberRadius(aInputs.mChamberRadius), // m
             mRefBurnRate(aInputs.mRefBurnRate), // m/sec
             mRefPressure(aInputs.mRefPressure), // Pa
             mAlpha(aInputs.mAlpha),
@@ -199,15 +166,6 @@ public:
     void setMaxNumIterations(const size_t& aInput)
     {
         mMaxNumNewtonItr = aInput;
-    }
-
-    /******************************************************************************//**
-     * @brief set chamber's length.
-     * @param aInput chamber's length
-     **********************************************************************************/
-    void setChamberLength(const ScalarType& aInput)
-    {
-        mChamberLength = aInput;
     }
 
     /******************************************************************************//**
@@ -449,8 +407,6 @@ private:
     size_t mNumNewtonItr;
     size_t mMaxNumNewtonItr;
 
-    ScalarType mChamberLength; // m
-    ScalarType mChamberRadius; // m
     ScalarType mRefBurnRate; // m/sec
     ScalarType mRefPressure; // Pa
     ScalarType mAlpha;
