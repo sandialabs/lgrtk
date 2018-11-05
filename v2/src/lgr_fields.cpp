@@ -108,8 +108,8 @@ void Fields::setup_default_conditions(Supports& supports, double start_time) {
 void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
   for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
     auto const& field_name = it->first;
-    if (pl.is_map(field_name)) {
-      auto& field_pl = pl.get_map(field_name);
+    if (pl.is_list(field_name)) {
+      auto& field_pl = pl.get_list(field_name);
       auto fit = std::find_if(storage.begin(), storage.end(),
           [&](std::unique_ptr<Field> const& f) {
             return f->long_name == field_name;

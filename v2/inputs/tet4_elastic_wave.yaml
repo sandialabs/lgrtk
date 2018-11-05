@@ -20,13 +20,13 @@ lgr:
       shear modulus: 0.0
   conditions:
     acceleration:
-      cond1:
+      - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1), a(2))'
-      cond2:
+      - 
         sets: ['y-', 'y+']
         value: 'vector(a(0), 0.0, a(2))'
-      cond3:
+      - 
         sets: ['z-', 'z+']
         value: 'vector(a(0), a(1), 0.0)'
   scalars:

@@ -45,7 +45,7 @@ struct Field {
       Omega_h::Read<double> node_coords);
   bool is_covered_by_conditions(double prev_time, double time);
   double next_event(double time);
-  void setup_conditions(Supports& supports, Omega_h::InputMap& pl);
+  void setup_conditions(Supports& supports, Omega_h::InputList& pl);
   void setup_default_condition(Supports& supports, double start_time);
 };
 

@@ -24,10 +24,10 @@ lgr:
       quadratic artificial viscosity: 1.0
   conditions:
     acceleration:
-      cond2:
+      - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'
-      cond3:
+      - 
         sets: ['y-', 'y+']
         value: 'vector(a(0), 0.0)'
   responses:

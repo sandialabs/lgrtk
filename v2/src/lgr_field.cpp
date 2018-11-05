@@ -107,11 +107,10 @@ double Field::next_event(double time) {
   return out;
 }
 
-void Field::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
-  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
-    auto const& condition_name = it->first;
-    if (pl.is_map(condition_name)) {
-      auto& condition_pl = pl.get_map(condition_name);
+void Field::setup_conditions(Supports& supports, Omega_h::InputList& pl) {
+  for (int i = 0; i < pl.size(); ++i) {
+    if (pl.is_map(i)) {
+      auto& condition_pl = pl.get_map(i);
       conditions.push_back(Condition(this, supports, condition_pl));
     }
   }
