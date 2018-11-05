@@ -9,9 +9,16 @@
 #include "Teuchos_UnitTestHarness.hpp"
 
 #include "plato/Plato_AlgebraicRocketModel.hpp"
+#include "plato/Plato_Cylinder.hpp"
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocket)
 {
-    Plato::AlgebraicRocketModel<double> tDriver;
-    tDriver.solve();
+  const Plato::Scalar ChamberRadius = 0.075; // m
+  const Plato::Scalar ChamberLength = 0.65; // m
+  auto cylinder = std::make_shared<Plato::Cylinder<Plato::Scalar>>(ChamberRadius, ChamberLength);
+
+  const Plato::AlgebraicRocketInputs<Plato::Scalar> rocketInputs;
+
+  Plato::AlgebraicRocketModel<double> tDriver(rocketInputs, cylinder);
+  tDriver.solve();
 }
