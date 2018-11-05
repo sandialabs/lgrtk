@@ -46,6 +46,8 @@ lgr:
   modifiers:
     model2:
       type: artificial viscosity
+      linear artificial viscosity: 0.3
+      quadratic artificial viscosity: 0.0
   conditions:
     density:
       cond1:
@@ -86,14 +88,6 @@ lgr:
         sets: ['left']
         at time: 0.0
         value: '2.0'
-    linear artificial viscosity:
-      cond1:
-        at time: 0.0
-        value: '0.3'
-    quadratic artificial viscosity:
-      cond1:
-        at time: 0.0
-        value: '0.0'
     acceleration:
       cond1:
         sets: ['x-', 'x+']

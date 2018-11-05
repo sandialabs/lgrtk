@@ -5,24 +5,14 @@ lgr:
   mesh:
     box:
       x elements: 2
+  common fields:
+    density: 1.0
+    velocity: 'vector(1.0)'
   material models:
     model1:
       type: linear elastic
       bulk modulus: 1.0
       shear modulus: 0.0
-  conditions:
-    density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    deformation gradient:
-      cond1:
-        at time: 0.0
-        value: 'I'
-    velocity:
-      cond1:
-        at time: 0.0
-        value: 'vector(1.0)'
   scalars:
     velocity error:
       type: L2 error
