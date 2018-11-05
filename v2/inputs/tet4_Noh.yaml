@@ -1,7 +1,6 @@
 lgr:
   CFL: 0.9
   end time: 0.6
-# end step: 30
   element type: Tet4
   mesh:
     box:
@@ -11,6 +10,9 @@ lgr:
       y size: 1.1
       z elements: 22
       z size: 1.1
+  common fields:
+    density: 1.0
+    velocity: 'norm(x) > 1.0e-10 ? -x / norm(x) : vector(0.0)'
   material models:
     model1:
       type: ideal gas
@@ -22,14 +24,6 @@ lgr:
       linear artificial viscosity: 0.5
       quadratic artificial viscosity: 0.2
   conditions:
-    density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    velocity:
-      cond1:
-        at time: 0.0
-        value: 'norm(x) > 1.0e-10 ? -x / norm(x) : vector(0.0)'
     acceleration:
       cond2:
         sets: ['x-']

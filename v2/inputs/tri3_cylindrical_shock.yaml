@@ -10,6 +10,8 @@ lgr:
       y size: 80.0
       symmetric: false
     transform: 'x * 25.4e-6'
+  common fields:
+    density: 1.0
   material models:
     model1:
       type: ideal gas
@@ -21,10 +23,6 @@ lgr:
       linear artificial viscosity: 1.0
       quadratic artificial viscosity: 1.0
   conditions:
-    density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
     acceleration:
       cond2:
         sets: ['x-', 'x+']

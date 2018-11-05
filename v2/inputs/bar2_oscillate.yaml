@@ -6,24 +6,15 @@ lgr:
     box:
       x elements: 1
       x size: 1.0
+  common fields:
+    density: 2.0
+    velocity: 'vector((x > 0.5) ? 0.01 : 0.0)'
   material models:
     model1:
       type: linear elastic
       bulk modulus: 1.0
       shear modulus: 0.0
   conditions:
-    density:
-      cond1:
-        at time: 0.0
-        value: '2.0'
-    deformation gradient:
-      cond1:
-        at time: 0.0
-        value: 'I'
-    velocity:
-      cond1:
-        at time: 0.0
-        value: 'vector((x > 0.5) ? 0.01 : 0.0)'
     acceleration:
       cond1:
         sets: ['x-']

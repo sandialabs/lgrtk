@@ -6,20 +6,15 @@ lgr:
     box:
       x elements: 1
       x size: 1.0
+  common fields:
+    density: 1.0
+    velocity: x
   material models:
     model1:
       type: ideal gas
       heat capacity ratio: 1.4
       specific internal energy: 1.0
   conditions:
-    density:
-      cond1:
-        at time: 0.0
-        value: '1.0'
-    velocity:
-      cond1:
-        at time: 0.0
-        value: 'x'
     acceleration:
       cond1:
         sets: ['x-', 'x+']
