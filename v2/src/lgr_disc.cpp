@@ -190,15 +190,7 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
       mark_closest_vertex(mesh, set_name, pos_expr);
     }
   }
-  if (pl.get<bool>("add mid edge nodes", "false")) {
-    OMEGA_H_CHECK(is_simplex_);
-    auto nodes = number_p2_nodes(mesh);
-    elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
-    nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
-  } else {
-    elems2nodes_ = mesh.ask_elem_verts();
-    nodes2elems_ = mesh.ask_up(0, mesh.dim());
-  }
+  this->is_second_order_ = pl.get<bool>("add mid edge nodes", "false");
   std::set<int> volume_ids;
   for (auto& s : mesh.class_sets) {
     for (auto& cp : s.second) {
@@ -210,6 +202,19 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
         }
       }
     }
+  }
+  this->update_from_mesh();
+}
+
+void Disc::update_from_mesh() {
+  if (is_second_order_) {
+    OMEGA_H_CHECK(is_simplex_);
+    auto nodes = number_p2_nodes(mesh);
+    elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
+    nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
+  } else {
+    elems2nodes_ = mesh.ask_elem_verts();
+    nodes2elems_ = mesh.ask_up(0, mesh.dim());
   }
 }
 

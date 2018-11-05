@@ -84,6 +84,7 @@ bool Adapter::adapt() {
   sim.fields.forget_disc();
   sim.subsets.forget_disc();
   Omega_h::adapt(&sim.disc.mesh, opts);
+  sim.disc.update_from_mesh();
   sim.subsets.learn_disc();
   sim.fields.learn_disc();
   remap->after_adapt();

@@ -25,9 +25,11 @@ struct Disc {
   template <class Elem>
   void set_elem();
   Omega_h::Reals node_coords();
+  void update_from_mesh();
   Omega_h::Mesh mesh;
   int dim_;
   bool is_simplex_;
+  bool is_second_order_;
   int points_per_ent_[4];
   int nodes_per_ent_[4];
   ClassNames covering_class_names_;
