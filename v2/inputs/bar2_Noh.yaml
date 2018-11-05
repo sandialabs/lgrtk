@@ -22,7 +22,7 @@ lgr:
       quadratic artificial viscosity: 0.25
   conditions:
     acceleration:
-      cond2:
+      - 
         sets: ['x-']
         value: 'vector(0.0)'
   scalars:

@@ -50,49 +50,49 @@ lgr:
       quadratic artificial viscosity: 0.0
   conditions:
     density:
-      cond1:
+      - 
         sets: ['right_bottom']
         at time: 0.0
         value: '0.1'
-      cond2:
+      - 
         sets: ['right_top']
         at time: 0.0
         value: '1.0'
-      cond3:
+      - 
         sets: ['left']
         at time: 0.0
         value: '1.0'
     heat capacity ratio:
-      cond2:
+      - 
         sets: ['right_bottom']
         at time: 0.0
         value: '1.5'
-      cond1:
+      - 
         sets: ['left']
         at time: 0.0
         value: '1.5'
-      cond3:
+      - 
         sets: ['right_top']
         at time: 0.0
         value: '1.4'
     specific internal energy:
-      cond3:
+      - 
         sets: ['right_bottom']
         at time: 0.0
         value: '2.5'
-      cond2:
+      - 
         sets: ['right_top']
         at time: 0.0
         value: '0.3125'
-      cond1:
+      - 
         sets: ['left']
         at time: 0.0
         value: '2.0'
     acceleration:
-      cond1:
+      - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'
-      cond2:
+      - 
         sets: ['y-', 'y+']
         value: 'vector(a(0), 0.0)'
   responses:
