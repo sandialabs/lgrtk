@@ -56,7 +56,7 @@ struct AtTime : public When {
     return std::numeric_limits<double>::max();
   }
   bool active(double prev_time, double time) override final {
-    if (prev_time == time) return point <= time;
+    if (prev_time == time) return point == time;
     return (prev_time < point) && (point <= time);
   }
 };
