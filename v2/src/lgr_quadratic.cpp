@@ -156,4 +156,37 @@ Omega_h::Adj build_p2_nodes2elems(Omega_h::Mesh& mesh,
   return Omega_h::Adj{a2ab, ab2b, codes};
 }
 
+Omega_h::Reals build_p2_node_coords(Omega_h::Mesh& mesh,
+    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+  auto elem_dim = mesh.dim();
+  auto vtx_coords = mesh.coords();
+  auto verts2edges = mesh.ask_up(0, 1);
+  auto edge_coords = Omega_h::average_field(&mesh, 1, elem_dim, vtx_coords);
+  auto nnodes = nodes[0].size() + nodes[1].size();
+  OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
+  Omega_h::Write<Omega_h::Real> node_coords(nnodes * elem_dim, "node_coords");
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
+    auto vtx_node = nodes[0][v];
+    for (int dim = 0; dim < elem_dim; ++dim) {
+      auto coord = vtx_coords[v * elem_dim + dim];
+      node_coords[vtx_node * elem_dim + dim] = coord;
+    }
+    auto adj_edge_begin = verts2edges.a2ab[v];
+    auto adj_edge_end = verts2edges.a2ab[v + 1];
+    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
+      auto edge = verts2edges.ab2b[e];
+      auto code = verts2edges.codes[e];
+      if (Omega_h::code_which_down(code) == 0) {
+        auto edge_node = nodes[1][edge];
+        for (int dim = 0; dim < elem_dim; ++dim) {
+          auto coord = edge_coords[edge * elem_dim + dim];
+          node_coords[edge_node * elem_dim + dim] = coord;
+        }
+      }
+    }
+  };
+  Omega_h::parallel_for("build p2 node_coords", mesh.nverts(), std::move(functor));
+  return node_coords;
+}
+
 }

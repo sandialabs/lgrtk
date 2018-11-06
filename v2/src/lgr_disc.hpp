@@ -35,6 +35,7 @@ struct Disc {
   ClassNames covering_class_names_;
   Omega_h::LOs elems2nodes_;
   Omega_h::Adj nodes2elems_;
+  Omega_h::Reals node_coords_;
 };
 
 #define LGR_EXPL_INST(Elem) \
