@@ -212,9 +212,11 @@ void Disc::update_from_mesh() {
     auto nodes = number_p2_nodes(mesh);
     elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
     nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
+    node_coords_ = build_p2_node_coords(mesh, nodes);
   } else {
     elems2nodes_ = mesh.ask_elem_verts();
     nodes2elems_ = mesh.ask_up(0, mesh.dim());
+    node_coords_ = mesh.coords();
   }
 }
 
@@ -272,8 +274,7 @@ void Disc::set_elem() {
 }
 
 Omega_h::Reals Disc::node_coords() {
-  //linear specific!
-  return mesh.coords();
+  return node_coords_;
 }
 
 #define LGR_EXPL_INST(Elem) \
