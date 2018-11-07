@@ -83,107 +83,85 @@ Omega_h::LOs build_p2_ents2nodes(Omega_h::Mesh& mesh, int ent_dim,
   return ents2nodes;
 }
 
+static void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim,
+    int ent_dim, Omega_h::LOs nodes, Omega_h::Write<Omega_h::LO> counts) {
+  auto node_ents2ents = mesh.ask_up(node_dim, ent_dim);
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
+    auto node = nodes[ent];
+    auto nadj_ents = node_ents2ents.a2ab[ent + 1] - node_ents2ents.a2ab[ent];
+    counts[node] = nadj_ents;
+  };
+  Omega_h::parallel_for("count ent_nodes 2 ents",
+      mesh.nents(node_dim), std::move(functor));
+}
+
 static Omega_h::LOs count_nodes2ents(Omega_h::Mesh& mesh, int ent_dim,
     Omega_h::Few<Omega_h::LOs, 2> nodes) {
   auto nnodes = nodes[0].size() + nodes[1].size();
   OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
-  auto verts2edges = mesh.ask_up(0, 1);
-  auto verts2ents = mesh.ask_up(0, ent_dim);
-  auto edges2ents = mesh.ask_up(1, ent_dim);
   Omega_h::Write<Omega_h::LO> node_counts(nnodes, "node_counts");
-  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    auto vtx_node = nodes[0][v];
-    auto nvtx_adj_ents = verts2ents.a2ab[v + 1] - verts2ents.a2ab[v];
-    node_counts[vtx_node] = nvtx_adj_ents;
-    auto adj_edge_begin = verts2edges.a2ab[v];
-    auto adj_edge_end = verts2edges.a2ab[v + 1];
-    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
-      auto edge = verts2edges.ab2b[e];
-      auto edge_code = verts2edges.codes[e];
-      if (Omega_h::code_which_down(edge_code) == 0) {
-        auto edge_node = nodes[1][edge];
-        auto nedge_adj_ents = edges2ents.a2ab[edge + 1] - edges2ents.a2ab[edge];
-        node_counts[edge_node] = nedge_adj_ents;
-      }
+  count_ent_nodes2ents(mesh, 0, ent_dim, nodes[0], node_counts);
+  count_ent_nodes2ents(mesh, 1, ent_dim, nodes[1], node_counts);
+  return node_counts;
+}
+
+static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim,
+    int ent_dim, Omega_h::LOs nodes, Omega_h::LOs a2ab,
+    Omega_h::Write<Omega_h::LO> ab2b, Omega_h::Write<Omega_h::I8> codes) {
+  auto node_ents2ents = mesh.ask_up(node_dim, ent_dim);
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
+    auto node = nodes[ent];
+    auto ab = a2ab[node];
+    auto adj_ent_begin = node_ents2ents.a2ab[ent];
+    auto adj_ent_end = node_ents2ents.a2ab[ent + 1];
+    for (int idx = adj_ent_begin; idx < adj_ent_end; ++idx) {
+      auto adj_ent = node_ents2ents.ab2b[idx];
+      auto adj_code = node_ents2ents.codes[idx];
+      ab2b[ab] = adj_ent;
+      codes[ab] = adj_code;
+      ab++;
     }
   };
-  Omega_h::parallel_for("count nodes2ents", mesh.nverts(), std::move(functor));
-  return node_counts;
+  Omega_h::parallel_for("build ent_nodes 2 ents",
+      mesh.nents(node_dim), std::move(functor));
 }
 
 Omega_h::Adj build_p2_nodes2ents(Omega_h::Mesh& mesh, int ent_dim,
     Omega_h::Few<Omega_h::LOs, 2> nodes) {
-  auto verts2edges = mesh.ask_up(0, 1);
-  auto verts2ents = mesh.ask_up(0, ent_dim);
-  auto edges2ents = mesh.ask_up(1, ent_dim);
   auto counts = count_nodes2ents(mesh, ent_dim, nodes);
   auto a2ab = Omega_h::offset_scan(counts, "nodes2ents_a2ab");
   Omega_h::Write<Omega_h::LO> ab2b(a2ab.last(), "nodes2ents_ab2b");
   Omega_h::Write<Omega_h::I8> codes(a2ab.last(), "nodes2ents_codes");
-  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    auto vtx_node = nodes[0][v];
-    auto ab = a2ab[vtx_node];
-    auto vtx_adj_ent_begin = verts2ents.a2ab[v];
-    auto vtx_adj_ent_end = verts2ents.a2ab[v + 1];
-    for (auto ent_idx = vtx_adj_ent_begin; ent_idx < vtx_adj_ent_end; ++ent_idx) {
-      auto ent = verts2ents.ab2b[ent_idx];
-      auto code = verts2ents.codes[ent_idx];
-      ab2b[ab] = ent;
-      codes[ab] = code;
-      ab++;
-    }
-    auto adj_edge_begin = verts2edges.a2ab[v];
-    auto adj_edge_end = verts2edges.a2ab[v + 1];
-    for (auto edge_idx = adj_edge_begin; edge_idx < adj_edge_end; ++edge_idx) {
-      auto edge = verts2edges.ab2b[edge_idx];
-      auto edge_code = verts2edges.codes[edge_idx];
-      if (Omega_h::code_which_down(edge_code) == 0) {
-        auto edge_adj_ent_begin = edges2ents.a2ab[edge];
-        auto edge_adj_ent_end = edges2ents.a2ab[edge + 1];
-        for (auto ent_idx = edge_adj_ent_begin; ent_idx < edge_adj_ent_end; ++ent_idx) {
-          auto ent = edges2ents.ab2b[ent_idx];
-          auto code = edges2ents.codes[ent_idx];
-          ab2b[ab] = ent;
-          codes[ab] = code;
-          ab++;
-        }
-      }
+  build_ent_nodes2ents(mesh, 0, ent_dim, nodes[0], a2ab, ab2b, codes);
+  build_ent_nodes2ents(mesh, 1, ent_dim, nodes[1], a2ab, ab2b, codes);
+  return Omega_h::Adj{a2ab, ab2b, codes};
+}
+
+static void build_ent_node_coords(Omega_h::Mesh& mesh, int node_dim,
+    Omega_h::LOs nodes, Omega_h::Reals ent_coords,
+    Omega_h::Write<Omega_h::Real> coords) {
+  auto elem_dim = mesh.dim();
+  auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
+    auto node = nodes[ent];
+    for (int dim = 0; dim < elem_dim; ++dim) {
+      auto c = ent_coords[ent * elem_dim + dim];
+      coords[node * elem_dim + dim] = c;
     }
   };
-  Omega_h::parallel_for("build p2 nodes2ents", mesh.nverts(), std::move(functor));
-  return Omega_h::Adj{a2ab, ab2b, codes};
+  Omega_h::parallel_for("build ent_node coords",
+      mesh.nents(node_dim), std::move(functor));
 }
 
 Omega_h::Reals build_p2_node_coords(Omega_h::Mesh& mesh,
     Omega_h::Few<Omega_h::LOs, 2> nodes) {
   auto elem_dim = mesh.dim();
   auto vtx_coords = mesh.coords();
-  auto verts2edges = mesh.ask_up(0, 1);
   auto edge_coords = Omega_h::average_field(&mesh, 1, elem_dim, vtx_coords);
   auto nnodes = nodes[0].size() + nodes[1].size();
   OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
   Omega_h::Write<Omega_h::Real> node_coords(nnodes * elem_dim, "node_coords");
-  auto functor = OMEGA_H_LAMBDA(Omega_h::LO v) {
-    auto vtx_node = nodes[0][v];
-    for (int dim = 0; dim < elem_dim; ++dim) {
-      auto coord = vtx_coords[v * elem_dim + dim];
-      node_coords[vtx_node * elem_dim + dim] = coord;
-    }
-    auto adj_edge_begin = verts2edges.a2ab[v];
-    auto adj_edge_end = verts2edges.a2ab[v + 1];
-    for (auto e = adj_edge_begin; e < adj_edge_end; ++e) {
-      auto edge = verts2edges.ab2b[e];
-      auto code = verts2edges.codes[e];
-      if (Omega_h::code_which_down(code) == 0) {
-        auto edge_node = nodes[1][edge];
-        for (int dim = 0; dim < elem_dim; ++dim) {
-          auto coord = edge_coords[edge * elem_dim + dim];
-          node_coords[edge_node * elem_dim + dim] = coord;
-        }
-      }
-    }
-  };
-  Omega_h::parallel_for("build p2 node_coords", mesh.nverts(), std::move(functor));
+  build_ent_node_coords(mesh, 0, nodes[0], vtx_coords, node_coords);
+  build_ent_node_coords(mesh, 1, nodes[1], edge_coords, node_coords);
   return node_coords;
 }
 
