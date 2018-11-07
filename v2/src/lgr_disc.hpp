@@ -32,10 +32,10 @@ struct Disc {
   bool is_second_order_;
   int points_per_ent_[4];
   int nodes_per_ent_[4];
-  ClassNames covering_class_names_;
-  Omega_h::LOs elems2nodes_;
-  Omega_h::Adj nodes2elems_;
+  Omega_h::LOs ents2nodes_[4];
+  Omega_h::Adj nodes2ents_[4];
   Omega_h::Reals node_coords_;
+  ClassNames covering_class_names_;
 };
 
 #define LGR_EXPL_INST(Elem) \
