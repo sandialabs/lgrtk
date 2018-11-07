@@ -6,25 +6,19 @@ lgr:
     add mid edge nodes: true
     box:
       x elements: 3
-      x size: 1.0
+      x size: 3.0
       y elements: 1
-      y size: 1.0e-2
+      y size: 1.0
   common fields:
     density: 1000.0
-    velocity: 'vector(1e-4 * exp(-(x(0) - 0.5)^2 / (2 * (0.05)^2)), 0.0)'
+#    velocity: 'vector(1e-4 * exp(-(x(0) - 0.5)^2 / (2 * (0.05)^2)), 0.0)'
+    velocity: 'vector(1, 0)'
   material models:
     model1:
       type: linear elastic
       bulk modulus: 1.0e9
       shear modulus: 0.0
   conditions:
-    acceleration:
-      - 
-        sets: ['x-', 'x+']
-        value: 'vector(0.0, a(1))'
-      - 
-        sets: ['y-', 'y+']
-        value: 'vector(a(0), 0.0)'
   scalars:
 #    velocity error:
 #      type: L2 error
@@ -46,12 +40,12 @@ lgr:
 #     fields:
 #       - velocity
 #       - density
-#   stdout:
-#     type: command line history
-#     scalars:
-#       - step
-#       - time
-#       - dt
+   stdout:
+     type: command line history
+     scalars:
+       - step
+       - time
+       - dt
 #       - velocity error
 #    regression:
 #      type: comparison
