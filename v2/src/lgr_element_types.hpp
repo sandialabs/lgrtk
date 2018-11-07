@@ -217,12 +217,14 @@ struct Tri6 {
       }
     static OMEGA_H_INLINE
       constexpr double lumping_factor(int node) {
-        return ((node == 0) ? 0.0 :
-            (node == 1) ? 0.0 :
-            (node == 2) ? 0.0 :
-            (node == 3) ? 1.0 / 3.0 :
-            (node == 4) ? 1.0 / 3.0 :
-            (node == 5) ? 1.0 / 3.0 : -1.0);
+        // clang-format off
+        return ((node == 0) ? 3.0 / 57.0 :
+                (node == 1) ? 3.0 / 57.0 :
+                (node == 2) ? 3.0 / 57.0 :
+                (node == 3) ? 16.0 / 57.0 :
+                (node == 4) ? 16.0 / 57.0 :
+                (node == 5) ? 16.0 / 57.0 : -1.0);
+        // clang-format on
       }
     static OMEGA_H_INLINE Matrix<nodes, points> basis_values() {
       Matrix<nodes, points> out;

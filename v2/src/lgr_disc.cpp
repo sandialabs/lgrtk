@@ -210,12 +210,12 @@ void Disc::update_from_mesh() {
   if (is_second_order_) {
     OMEGA_H_CHECK(is_simplex_);
     auto nodes = number_p2_nodes(mesh);
-    elems2nodes_ = build_p2_elems2nodes(mesh, nodes);
-    nodes2elems_ = build_p2_nodes2elems(mesh, nodes);
+    ents2nodes_[dim_] = build_p2_ents2nodes(mesh, dim_, nodes);
+    nodes2ents_[dim_] = build_p2_nodes2ents(mesh, dim_, nodes);
     node_coords_ = build_p2_node_coords(mesh, nodes);
   } else {
-    elems2nodes_ = mesh.ask_elem_verts();
-    nodes2elems_ = mesh.ask_up(0, mesh.dim());
+    ents2nodes_[dim_] = mesh.ask_elem_verts();
+    nodes2ents_[dim_] = mesh.ask_up(0, mesh.dim());
     node_coords_ = mesh.coords();
   }
 }
@@ -224,25 +224,31 @@ int Disc::dim() { return mesh.dim(); }
 
 int Disc::count(EntityType type) {
   if (type == ELEMS) return mesh.nelems();
-  if (type == NODES) return nodes2elems_.a2ab.size() - 1;
+  if (type == NODES) return nodes2ents_[dim_].a2ab.size() - 1;
   OMEGA_H_NORETURN(-1);
 }
 
 Omega_h::LOs Disc::ents_to_nodes(EntityType type) {
   OMEGA_H_CHECK(type == ELEMS);
-  return elems2nodes_;
+  return ents2nodes_[dim_];
 }
 
 Omega_h::Adj Disc::nodes_to_ents(EntityType type) {
   OMEGA_H_CHECK(type == ELEMS);
-  return nodes2elems_;
+  return nodes2ents_[dim_];
 }
 
 Omega_h::LOs Disc::ents_on_closure(
     std::set<std::string> const& class_names,
     EntityType type) {
   int ent_dim = -1;
-  if (type == NODES) ent_dim = 0; // linear specific!
+  if (type == NODES) {
+    if (is_second_order_) {
+      return Omega_h::LOs{};
+    } else {
+      ent_dim = 0;
+    }
+  }
   else if (type == ELEMS) ent_dim = dim();
   return Omega_h::ents_on_closure(&mesh, class_names, ent_dim);
 }
