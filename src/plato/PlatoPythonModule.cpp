@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
-#include "plato/lgr_App.hpp"
+#include "plato/LGR_App.hpp"
 
 std::vector<double> double_vector_from_list(PyObject* list);
 PyObject* list_from_double_vector(std::vector<double> inVector);
