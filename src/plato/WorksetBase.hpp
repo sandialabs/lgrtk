@@ -8,10 +8,6 @@
 #include "ImplicitFunctors.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
-#ifdef NDEBUG
-#error "We need debug on"
-#endif
-
 namespace Plato
 {
 
