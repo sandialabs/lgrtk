@@ -144,6 +144,9 @@ add_executable(
   lgr
   src/LGR.cpp
 )
+if( CMAKE_INSTALL_PREFIX )
+  install( TARGETS lgr DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
+endif()
 target_include_directories(lgr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 IF (DEFINED AMGX_PREFIX)
@@ -229,6 +232,9 @@ if (LGR_ENABLE_PLATO_MPMD)
     src/plato/LGR_App.cpp
     src/plato/LGR_MPMD.cpp
   )
+  if( CMAKE_INSTALL_PREFIX )
+    install( TARGETS LGR_MPMD DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
+  endif()
   target_include_directories(LGR_MPMD PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
   target_include_directories(LGR_MPMD PRIVATE "${PLATO_PREFIX}/include")
   set(PLATO_LIBS
@@ -260,6 +266,9 @@ if (LGR_ENABLE_PLATO_MPMD)
       target_link_libraries( Plato lgrtk ${PLATO_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${PYTHON_LIBRARIES} )
       set_target_properties( Plato PROPERTIES PREFIX "" )
       target_compile_options( Plato PRIVATE "-lmpi" )
+      if( CMAKE_INSTALL_PREFIX )
+        install( TARGETS Plato DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
+      endif()
   endif()
 endif()
 
