@@ -106,8 +106,8 @@ public:
       build_mesh();
       compute_arrival_time_for_assumed_burn_rate();
 
-      Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
-      write_mesh(tWriter, mMesh, mHamiltonJacobiFields, 0.0);
+      mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
+      write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
     }
 
     /******************************************************************************//**
@@ -122,7 +122,7 @@ public:
     **********************************************************************************/
     ScalarType area()
     {
-        const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth, mPseudoTime);
+        const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return (tArea);
     }
 
@@ -194,7 +194,15 @@ private:
         assert(aParam.find("DeltaTime") != aParam.end());
         const ScalarType tDeltaTime = aParam.find("DeltaTime")->second;
 
-        mPseudoTime += tBurnRate/mAssumedBurnRate * tDeltaTime;
+        const Plato::Scalar deltaPseudoTime = tBurnRate/mAssumedBurnRate * tDeltaTime;
+        offset_level_set(mMesh, mHamiltonJacobiFields, -deltaPseudoTime);
+
+        mTime += tDeltaTime;
+        ++mStep;
+
+        const size_t printInterval = 1000; // How often do you want to output mesh?
+        if (mStep % printInterval == 0)
+          write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
     }
 
     void build_mesh()
@@ -227,12 +235,14 @@ private:
 private:
     ProblemFields<SpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
+    Omega_h::vtk::Writer mWriter;
     size_t mNumCellsPerSide = 64;
     ScalarType mRadius;
     ScalarType mLength;
     ScalarType mInterfaceWidth;
     ScalarType mAssumedBurnRate = 1.0;
-    ScalarType mPseudoTime = 0.0;
+    ScalarType mTime = 0.0;
+    size_t mStep = 0;
 };
 // class LevelSetCylinderInBox
 

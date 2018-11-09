@@ -225,6 +225,18 @@ void initialize_level_set(Omega_h::Mesh & omega_h_mesh,
 }
 
 template<int SpatialDim>
+void offset_level_set(Omega_h::Mesh & omega_h_mesh,
+    ProblemFields<SpatialDim> & fields,
+    const double offset)
+{
+  auto levelSet = fields.levelSet;
+  auto f = LAMBDA_EXPRESSION(int n) {
+    levelSet(n, fields.currentState) += offset;
+  };
+  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
+}
+
+template<int SpatialDim>
 class AssembleElementSpeedHamiltonian
 {
   // Implementation of Barth-Sethian positive coefficient scheme for element speed fields.
