@@ -123,37 +123,36 @@ void correct_velocity(Simulation& sim) {
     auto v_np1 = v_np12 + (dt / 2.0) * a_np1;
     setvec<Elem>(nodes_to_v, node, v_np1);
   };
-  parallel_for("velocity correction kernel", sim.nodes(), std::move(functor));
+  parallel_for(sim.nodes(), std::move(functor));
 }
 
 template <class Elem>
 void compute_stress_divergence(Simulation& sim) {
   LGR_SCOPE(sim);
-  auto points_to_sigma = sim.get(sim.stress);
-  auto points_to_grads = sim.get(sim.gradient);
-  auto points_to_weights = sim.set(sim.weight);
-  auto nodes_to_f = sim.set(sim.force);
-  auto nodes_to_elems = sim.nodes_to_elems();
-  auto functor = OMEGA_H_LAMBDA(int node) {
-    auto node_f = zero_vector<Elem::dim>();
+  auto const points_to_sigma = sim.get(sim.stress);
+  auto const points_to_grads = sim.get(sim.gradient);
+  auto const points_to_weights = sim.set(sim.weight);
+  auto const nodes_to_f = sim.set(sim.force);
+  auto const nodes_to_elems = sim.nodes_to_elems();
+  auto functor = OMEGA_H_LAMBDA(int const node) {
+    auto const node_f = zero_vector<Elem::dim>();
     for (auto node_elem = nodes_to_elems.a2ab[node];
         node_elem < nodes_to_elems.a2ab[node + 1]; ++node_elem) {
-      auto elem = nodes_to_elems.ab2b[node_elem];
-      auto code = nodes_to_elems.codes[node_elem];
-      auto elem_node = Omega_h::code_which_down(code);
+      auto const elem = nodes_to_elems.ab2b[node_elem];
+      auto const code = nodes_to_elems.codes[node_elem];
+      auto const elem_node = Omega_h::code_which_down(code);
       for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
-        auto point = elem * Elem::points + elem_pt;
-        auto grad = getvec<Elem>(points_to_grads, point * Elem::nodes + elem_node);
-        auto sigma = getsymm<Elem>(points_to_sigma, point);
-        auto weight = points_to_weights[point];
-        auto cell_f = - (sigma * grad) * weight;
+        auto const point = elem * Elem::points + elem_pt;
+        auto const grad = getvec<Elem>(points_to_grads, point * Elem::nodes + elem_node);
+        auto const sigma = getsymm<Elem>(points_to_sigma, point);
+        auto const weight = points_to_weights[point];
+        auto const cell_f = - (sigma * grad) * weight;
         node_f += cell_f;
       }
-      setvec<Elem>(nodes_to_f, node, node_f);
     }
     setvec<Elem>(nodes_to_f, node, node_f);
   };
-  parallel_for("stress divergence kernel", sim.nodes(), std::move(functor));
+  parallel_for(sim.nodes(), std::move(functor));
 }
 
 template <class Elem>
