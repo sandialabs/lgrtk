@@ -112,7 +112,7 @@ extract_tet(const Omega_h::Reals &coords, const Omega_h::LOs &elem_verts, const 
   r3d::Few<r3d::Vector<dim>,vert> tet;
   for (int v=0; v<vert; ++v) 
     for (int d=0; d<dim; ++d) 
-      tet[v][d] = coords[dim*elem_verts[vert*e+v]+d];
+      tet[v][d] = coords.get(dim*elem_verts.get(vert*e+v)+d);
   return tet;
 }
 double dot (const double *moments,const double *quad_poly) {
