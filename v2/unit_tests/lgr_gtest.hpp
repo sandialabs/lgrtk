@@ -1,5 +1,5 @@
-#ifndef ALEXA_GTEST_HPP
-#define ALEXA_GTEST_HPP
+#ifndef LGR_GTEST_HPP
+#define LGR_GTEST_HPP
 
 #include <gtest/gtest.h>
 
@@ -9,10 +9,10 @@
 #endif
 
 #ifdef __clang__
-#define ALEXA_END_TESTS \
+#define LGR_END_TESTS \
   _Pragma("clang diagnostic pop")
 #else
-#define ALEXA_END_TESTS
+#define LGR_END_TESTS
 #endif
 
 #endif
