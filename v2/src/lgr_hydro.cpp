@@ -135,7 +135,7 @@ void compute_stress_divergence(Simulation& sim) {
   auto const nodes_to_f = sim.set(sim.force);
   auto const nodes_to_elems = sim.nodes_to_elems();
   auto functor = OMEGA_H_LAMBDA(int const node) {
-    auto const node_f = zero_vector<Elem::dim>();
+    auto node_f = zero_vector<Elem::dim>();
     for (auto node_elem = nodes_to_elems.a2ab[node];
         node_elem < nodes_to_elems.a2ab[node + 1]; ++node_elem) {
       auto const elem = nodes_to_elems.ab2b[node_elem];
