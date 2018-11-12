@@ -3,6 +3,7 @@
 #include <lgr_scope.hpp>
 #include <Omega_h_align.hpp>
 #include <lgr_for.hpp>
+#include <lgr_element_functions.hpp>
 
 namespace lgr {
 
