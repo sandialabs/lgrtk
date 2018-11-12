@@ -1,6 +1,7 @@
 #include <lgr_remap.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <lgr_element_functions.hpp>
 #include <Omega_h_profile.hpp>
 
 namespace lgr {
