@@ -2,6 +2,7 @@
 #include <lgr_subset.hpp>
 #include <lgr_disc.hpp>
 #include <lgr_for.hpp>
+#include <lgr_element_functions.hpp>
 #include <Omega_h_map.hpp>
 
 namespace lgr {
