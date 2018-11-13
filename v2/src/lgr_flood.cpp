@@ -73,13 +73,15 @@ Omega_h::LOs Flooder::choose() {
     if (!verts_are_cands[vert]) return;
     double min_volume = -1.0;
     double min_volume_priority = -1.0;
-    for (auto vert_elem = verts_to_elems.a2ab[vert];
-        vert_elem < verts_to_elems.a2ab[vert + 1]; ++vert_elem) {
+    auto const begin = verts_to_elems.a2ab[vert];
+    auto const end = verts_to_elems.a2ab[vert + 1];
+    for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
       auto const elem = verts_to_elems.ab2b[vert_elem];
       auto const elem_priority = elem_priorities[elem];
       double priority_volume = 0.0;
-      for (auto vert_elem2 = verts_to_elems.a2ab[vert];
-          vert_elem2 < verts_to_elems.a2ab[vert + 1]; ++vert_elem2) {
+      auto const begin2 = verts_to_elems.a2ab[vert];
+      auto const end2 = verts_to_elems.a2ab[vert + 1];
+      for (auto vert_elem2 = begin2; vert_elem2 < end2; ++vert_elem2) {
         auto const elem2 = verts_to_elems.ab2b[vert_elem2];
         auto const elem2_priority = elem_priorities[elem2];
         if (elem2_priority == elem_priority) {
@@ -98,8 +100,7 @@ Omega_h::LOs Flooder::choose() {
       }
     }
     double min_other_priority = -1.0;
-    for (auto vert_elem = verts_to_elems.a2ab[vert];
-        vert_elem < verts_to_elems.a2ab[vert + 1]; ++vert_elem) {
+    for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
       auto const elem = verts_to_elems.ab2b[vert_elem];
       auto const elem_priority = elem_priorities[elem];
       if ((elem_priority != min_volume_priority) &&
@@ -148,8 +149,9 @@ Omega_h::LOs Flooder::choose() {
     auto const source_priority = cavity_source_priorities[vert];
     int max_volume_source = -1;
     double max_volume = -1.0;
-    for (auto vert_elem = verts_to_elems.a2ab[vert];
-        vert_elem < verts_to_elems.a2ab[vert + 1]; ++vert_elem) {
+    auto const begin = verts_to_elems.a2ab[vert];
+    auto const end = verts_to_elems.a2ab[vert + 1];
+    for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
       auto const elem = verts_to_elems.ab2b[vert_elem];
       auto const elem_priority = elem_priorities[elem];
       if (elem_priority != source_priority) continue;
@@ -166,8 +168,7 @@ Omega_h::LOs Flooder::choose() {
     }
     OMEGA_H_CHECK(max_volume_source != -1);
     auto const target_priority = cavity_target_priorities[vert];
-    for (auto vert_elem = verts_to_elems.a2ab[vert];
-        vert_elem < verts_to_elems.a2ab[vert + 1]; ++vert_elem) {
+    for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
       auto const elem = verts_to_elems.ab2b[vert_elem];
       auto const elem_priority = elem_priorities[elem];
       if (target_priority == elem_priority) {
