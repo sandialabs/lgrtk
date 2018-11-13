@@ -1,7 +1,7 @@
 #include <lgr_linear_algebra.hpp>
 #include <Omega_h_profile.hpp>
 #include <lgr_for.hpp>
-#include <Omega_h_reduce.hpp>
+#include <Omega_h_array_ops.hpp>
 
 namespace lgr {
 
@@ -23,15 +23,8 @@ void matvec(GlobalMatrix mat, GlobalVector vec, GlobalVector result) {
 
 double dot(GlobalVector a, GlobalVector b) {
   OMEGA_H_TIME_FUNCTION;
-  auto const n = a.size();
-  auto const first = Omega_h::IntIterator(0);
-  auto const last = Omega_h::IntIterator(n);
-  double const init = 0.0;
-  auto const op = Omega_h::plus<double>();
-  auto transform = OMEGA_H_LAMBDA(int const row) -> double {
-    return a[row] * b[row];
-  };
-  return Omega_h::transform_reduce(first, last, init, op, std::move(transform));
+  auto const tmp = multiply_each(read(a), read(b), "dot tmp");
+  return repro_sum(read(tmp));
 }
 
 void axpy(double a, GlobalVector x, GlobalVector y, GlobalVector result) {
