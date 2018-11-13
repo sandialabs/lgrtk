@@ -2,6 +2,7 @@ add_executable(unit_tests
   hyper_ep_unit_tests.cpp
   ideal_gas_unit_tests.cpp
   mie_gruneisen_unit_tests.cpp
+  linear_algebra_unit_tests.cpp
   )
 target_link_libraries(unit_tests
     PUBLIC
