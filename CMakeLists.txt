@@ -226,7 +226,6 @@ if (LGR_ENABLE_PLATO_MPMD)
   find_package(Shards REQUIRED)
   find_package(Intrepid REQUIRED)
   find_package(TeuchosCore REQUIRED)
-  find_package(STKMesh REQUIRED)
   add_executable(
     LGR_MPMD
     src/plato/LGR_App.cpp
@@ -243,7 +242,6 @@ if (LGR_ENABLE_PLATO_MPMD)
       ${PLATO_ANALYZE_LIB}
       ${PLATO_PARSER_LIB}
       ${PLATO_EXCEPTIONS_LIB}
-      stk_mesh_base
       aztecoo
       epetra
       intrepid
