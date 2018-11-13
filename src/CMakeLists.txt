@@ -49,6 +49,9 @@ add_library(
   lgrtk
   ${SOURCES}
 )
+if( CMAKE_INSTALL_PREFIX )
+  install( TARGETS lgrtk DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
+endif()
 # for LGRConfig.hpp
 target_include_directories(lgrtk PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
