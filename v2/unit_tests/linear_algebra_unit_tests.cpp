@@ -13,14 +13,15 @@ TEST(linear_algebra, wikipedia_cg) {
   A.rows_to_columns = rows_to_columns;
   A.entries = entries;
   Omega_h::Write<double> b({1.0, 2.0});
-  Omega_h::Write<double> x({2.0, 1.0});
-  double const tol = 1e-8;
-  conjugate_gradient(A, b, x, tol);
+  Omega_h::Write<double> computed_x({2.0, 1.0});
+  double const tol = 1e-10;
+  conjugate_gradient(A, b, computed_x, tol);
+  Omega_h::Read<double> known_x({1.0 / 11.0, 7.0 / 11.0});
+  OMEGA_H_CHECK(are_close(read(computed_x), known_x, tol, tol));
 }
 
-#if 0
 TEST(linear_algebra, conjugate_gradient) {
-  int const ndofs = 2;
+  int const ndofs = 8;
   Omega_h::Write<int> counts(ndofs);
   auto f0 = OMEGA_H_LAMBDA(int const i) {
     if (i == 0 || i == ndofs - 1) counts[i] = 2;
@@ -66,6 +67,5 @@ TEST(linear_algebra, conjugate_gradient) {
   OMEGA_H_CHECK(niter <= ndofs);
   OMEGA_H_CHECK(Omega_h::are_close(read(known_answer), read(computed_answer), tol, tol));
 }
-#endif
 
 LGR_END_TESTS
