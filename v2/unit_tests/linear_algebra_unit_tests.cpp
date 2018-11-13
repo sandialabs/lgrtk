@@ -20,7 +20,7 @@ TEST(linear_algebra, wikipedia_cg) {
   OMEGA_H_CHECK(are_close(read(computed_x), known_x, tol, tol));
 }
 
-TEST(linear_algebra, finite_difference_cg) {
+static void run_fd_cg() {
   int const ndofs = 8;
   Omega_h::Write<int> counts(ndofs);
   auto f0 = OMEGA_H_LAMBDA(int const i) {
@@ -66,6 +66,10 @@ TEST(linear_algebra, finite_difference_cg) {
   int const niter = conjugate_gradient(A, rhs, computed_answer, tol);
   OMEGA_H_CHECK(niter <= ndofs);
   OMEGA_H_CHECK(Omega_h::are_close(read(known_answer), read(computed_answer), tol, tol));
+}
+
+TEST(linear_algebra, finite_difference_cg) {
+  run_fd_cg();
 }
 
 LGR_END_TESTS
