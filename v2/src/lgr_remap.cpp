@@ -141,24 +141,22 @@ struct Remap : public RemapBase {
       Omega_h::LOs keys2kds, Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
       Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
       Omega_h::Tag<double> const* tag) {
-    OMEGA_H_TIME_FUNCTION;
-    auto const old_data = tag->array();
-    auto const new_data = allocate_and_fill_with_same(
+    auto old_data = tag->array();
+    auto new_data = allocate_and_fill_with_same(
         new_mesh, new_mesh.dim(), tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
-    auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
+    auto kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
     Weighter weighter(old_mesh);
-    auto new_functor = OMEGA_H_LAMBDA(int const key) {
-      auto const kd = keys2kds[key];
+    auto new_functor = OMEGA_H_LAMBDA(int key) {
+      auto kd = keys2kds[key];
       auto prod = keys2prods[key];
-      auto const begin = kds2doms.a2ab[kd];
-      auto const end = kds2doms.a2ab[kd + 1];
-      for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
-        auto const dom = kds2doms.ab2b[kd_dom];
+      for (auto kd_dom = kds2doms.a2ab[kd];
+           kd_dom < kds2doms.a2ab[kd + 1]; ++kd_dom) {
+        auto dom = kds2doms.ab2b[kd_dom];
         auto value = zero_vector<ncomps>();
         auto weight_sum = 0.0;
         for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
-          auto const old_point = dom * Elem::points + dom_pt;
-          auto const old_weight = weighter.get_weight(old_point);
+          auto old_point = dom * Elem::points + dom_pt;
+          auto old_weight = weighter.get_weight(old_point);
           weight_sum += old_weight;
           for (int comp = 0; comp < ncomps; ++comp) {
             value[comp] += old_weight * old_data[old_point * ncomps + comp];
@@ -168,9 +166,9 @@ struct Remap : public RemapBase {
           value[comp] /= weight_sum;
         }
         for (int child = 0; child < 2; ++child) {
-          auto const new_elem = prods2new_ents[prod];
+          auto new_elem = prods2new_ents[prod];
           for (int child_pt = 0; child_pt < Elem::points; ++child_pt) {
-            auto const new_point = new_elem * Elem::points + child_pt;
+            auto new_point = new_elem * Elem::points + child_pt;
             for (int comp = 0; comp < ncomps; ++comp) {
               new_data[new_point * ncomps + comp] = value[comp];
             }
@@ -179,7 +177,7 @@ struct Remap : public RemapBase {
         }
       }
     };
-    parallel_for(keys2kds.size(), std::move(new_functor));
+    parallel_for("refine point remap", keys2kds.size(), std::move(new_functor));
     new_mesh.add_tag(new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
   }
   void coarsen_point_remap(Omega_h::Mesh& old_mesh,
@@ -219,23 +217,21 @@ struct Remap : public RemapBase {
       Omega_h::LOs keys2kds, Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
       Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
       Omega_h::Tag<double> const* tag) {
-    OMEGA_H_TIME_FUNCTION;
-    auto const old_data = tag->array();
-    auto const new_data = allocate_and_fill_with_same(
+    auto old_data = tag->array();
+    auto new_data = allocate_and_fill_with_same(
         new_mesh, new_mesh.dim(), tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
-    auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
+    auto kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
     Weighter weighter(old_mesh);
     auto new_functor = OMEGA_H_LAMBDA(int key) {
-      auto const kd = keys2kds[key];
+      auto kd = keys2kds[key];
       auto value = zero_vector<ncomps>();
       auto weight_sum = 0.0;
-      auto const begin = kds2doms.a2ab[kd];
-      auto const end = kds2doms.a2ab[kd + 1];
-      for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
-        auto const dom = kds2doms.ab2b[kd_dom];
+      for (auto kd_dom = kds2doms.a2ab[kd];
+           kd_dom < kds2doms.a2ab[kd + 1]; ++kd_dom) {
+        auto dom = kds2doms.ab2b[kd_dom];
         for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
-          auto const old_point = dom * Elem::points + dom_pt;
-          auto const old_weight = weighter.get_weight(old_point);
+          auto old_point = dom * Elem::points + dom_pt;
+          auto old_weight = weighter.get_weight(old_point);
           weight_sum += old_weight;
           for (int comp = 0; comp < ncomps; ++comp) {
             value[comp] += old_weight * old_data[old_point * ncomps + comp];
@@ -245,19 +241,17 @@ struct Remap : public RemapBase {
       for (int comp = 0; comp < ncomps; ++comp) {
         value[comp] /= weight_sum;
       }
-      auto const begin2 = keys2prods[key];
-      auto const end2 = keys2prods[key + 1];
-      for (auto prod = begin; prod < end; ++prod) {
-        auto const new_elem = prods2new_ents[prod];
+      for (auto prod = keys2prods[key]; prod < keys2prods[key + 1]; ++prod) {
+        auto new_elem = prods2new_ents[prod];
         for (int prod_pt = 0; prod_pt < Elem::points; ++prod_pt) {
-          auto const new_point = new_elem * Elem::points + prod_pt;
+          auto new_point = new_elem * Elem::points + prod_pt;
           for (int comp = 0; comp < ncomps; ++comp) {
             new_data[new_point * ncomps + comp] = value[comp];
           }
         }
       }
     };
-    parallel_for(keys2kds.size(), std::move(new_functor));
+    parallel_for("weighted remap", keys2kds.size(), std::move(new_functor));
     new_mesh.add_tag(new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
   }
   template <class Weighter>
