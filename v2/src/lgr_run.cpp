@@ -45,7 +45,6 @@ static void close_state(Simulation& sim) {
   sim.models.after_material_model();
   compute_point_time_steps<Elem>(sim);
   compute_stress_divergence<Elem>(sim);
-  // tractions will go here
   apply_force_conditions(sim);
   compute_nodal_acceleration<Elem>(sim);
   apply_acceleration_conditions(sim);

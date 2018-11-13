@@ -14,4 +14,4 @@ TEST(mie_gruneisen, zero_energy) {
   EXPECT_TRUE(Omega_h::are_close(c, c0));
 }
 
-ALEXA_END_TESTS
+LGR_END_TESTS
