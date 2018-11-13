@@ -20,7 +20,7 @@ TEST(linear_algebra, wikipedia_cg) {
   OMEGA_H_CHECK(are_close(read(computed_x), known_x, tol, tol));
 }
 
-TEST(linear_algebra, conjugate_gradient) {
+TEST(linear_algebra, finite_difference_cg) {
   int const ndofs = 8;
   Omega_h::Write<int> counts(ndofs);
   auto f0 = OMEGA_H_LAMBDA(int const i) {
