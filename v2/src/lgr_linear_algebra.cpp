@@ -3,9 +3,6 @@
 #include <lgr_for.hpp>
 #include <Omega_h_reduce.hpp>
 
-// DEBUG
-#include <Omega_h_print.hpp>
-
 namespace lgr {
 
 void matvec(GlobalMatrix mat, GlobalVector vec, GlobalVector result) {
@@ -51,18 +48,13 @@ int conjugate_gradient(
     GlobalVector x,
     double max_residual_magnitude) {
   OMEGA_H_TIME_FUNCTION;
-  std::cout << "A = " << read(A.entries) << '\n';
-  std::cout << "b = " << read(b) << '\n';
-  std::cout << "x_0 = " << read(x) << '\n';
   auto const n = x.size();
   GlobalVector r(n, "CG/r");
   matvec(A, x, r); // r = A * x
   axpy(-1.0, r, b, r); // r = -r + b, r = b - A * x
-  std::cout << "r_0 = " << read(r) << '\n';
   GlobalVector p(n, "CG/p");
   Omega_h::copy_into(read(r), p); // p = r
   auto rsold = dot(r, r);
-  std::cout << "|r|_0 = " << rsold << '\n';
   if (std::sqrt(rsold) < max_residual_magnitude) {
     return 0;
   }
@@ -71,17 +63,13 @@ int conjugate_gradient(
     matvec(A, p, Ap);
     auto const alpha = rsold / dot(p, Ap);
     axpy(alpha, p, x, x); // x = x + alpha * p
-    std::cout << "x = " << read(x) << '\n';
-    axpy(alpha, Ap, r, r); // r = r + alpha * Ap
-    std::cout << "r = " << read(r) << '\n';
+    axpy(-alpha, Ap, r, r); // r = r - alpha * Ap
     auto const rsnew = dot(r, r);
-    std::cout << "rsnew = " << rsnew << '\n';
     if (std::sqrt(rsnew) < max_residual_magnitude) {
       return i + 1;
     }
     auto const beta = rsnew / rsold;
     axpy(beta, p, r, p); // p = r + (rsnew / rsold) * p
-    std::cout << "p = " << read(p) << '\n';
     rsold = rsnew;
   }
   return b.size() + 1;
