@@ -41,9 +41,9 @@ void lump_masses(Simulation& sim) {
   auto const nodes_to_mass = sim.set(sim.nodal_mass);
   auto functor = OMEGA_H_LAMBDA(int node) {
     double node_mass = 0.0;
-    for (auto node_elem = nodes_to_elems.a2ab[node];
-        node_elem < nodes_to_elems.a2ab[node + 1];
-        ++node_elem) {
+    auto const begin = nodes_to_elems.a2ab[node];
+    auto const end = nodes_to_elems.a2ab[node + 1];
+    for (auto node_elem = begin; node_elem < end; ++node_elem) {
       auto const elem = nodes_to_elems.ab2b[node_elem];
       auto const code = nodes_to_elems.codes[node_elem];
       auto const elem_node = Omega_h::code_which_down(code);
