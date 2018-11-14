@@ -149,8 +149,9 @@ struct Remap : public RemapBase {
     auto new_functor = OMEGA_H_LAMBDA(int key) {
       auto kd = keys2kds[key];
       auto prod = keys2prods[key];
-      for (auto kd_dom = kds2doms.a2ab[kd];
-           kd_dom < kds2doms.a2ab[kd + 1]; ++kd_dom) {
+      auto const begin = kds2doms.a2ab[kd];
+      auto const end = kds2doms.a2ab[kd + 1];
+      for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
         auto dom = kds2doms.ab2b[kd_dom];
         auto value = zero_vector<ncomps>();
         auto weight_sum = 0.0;
@@ -226,8 +227,9 @@ struct Remap : public RemapBase {
       auto kd = keys2kds[key];
       auto value = zero_vector<ncomps>();
       auto weight_sum = 0.0;
-      for (auto kd_dom = kds2doms.a2ab[kd];
-           kd_dom < kds2doms.a2ab[kd + 1]; ++kd_dom) {
+      auto const begin = kds2doms.a2ab[kd];
+      auto const end = kds2doms.a2ab[kd + 1];
+      for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
         auto dom = kds2doms.ab2b[kd_dom];
         for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
           auto old_point = dom * Elem::points + dom_pt;
