@@ -64,7 +64,7 @@ static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_
       class_dims[vertex] = std::int8_t(0);
     }
   };
-  Omega_h::parallel_for("set", mesh.nverts(), std::move(set_functor));
+  Omega_h::parallel_for(mesh.nverts(), std::move(set_functor));
   mesh.set_tag(Omega_h::VERT, "class_id", Omega_h::read(class_ids));
   mesh.set_tag(Omega_h::VERT, "class_dim", Omega_h::read(class_dims));
   mesh.class_sets[set_name].push_back({std::int8_t(0), new_class_id});
