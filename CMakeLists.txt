@@ -268,6 +268,11 @@ if (LGR_ENABLE_PLATO_MPMD)
         install( TARGETS Plato DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
       endif()
   endif()
+  option(LGR_ENABLE_PLATO_GEOMETRY "Enable Plato Geometry" OFF)
+  if (LGR_ENABLE_PLATO_GEOMETRY)
+    add_definitions(-DPLATO_GEOMETRY)
+  endif()
+
 endif()
 
 list(REVERSE Trilinos_TPL_LIBRARIES)
