@@ -40,7 +40,7 @@ struct InternalEnergy : public Model<Elem> {
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const e_dot_n = points_to_e_dot[point];
       auto const e_n = points_to_e[point];
-      auto const e_np1_tilde = e_n + e_dot_n * dt;
+      auto const e_np1_tilde = e_n + dt * e_dot_n;
       points_to_e[point] = e_np1_tilde;
     };
     parallel_for(this->points(), std::move(functor));
@@ -54,14 +54,14 @@ struct InternalEnergy : public Model<Elem> {
       auto const e_dot_n = points_to_e_dot[point];
       auto const e_np1_tilde = points_to_e[point];
       auto const e_np12 = e_np1_tilde - 0.5 * dt * e_dot_n;
-      points_to_e[point] = e_np1_tilde;
+      points_to_e[point] = e_np12;
     };
     parallel_for(this->points(), std::move(functor));
   }
   // zero the rate before other models contribute to it
   void zero_internal_energy_rate() {
     OMEGA_H_TIME_FUNCTION;
-    auto const points_to_e_dot = this->points_set(this->specific_internal_energy_rate);
+    auto const points_to_e_dot = this->sim.set(this->specific_internal_energy_rate);
     Omega_h::fill(points_to_e_dot, 0.0);
   }
   void contribute_stress_power() {
@@ -88,7 +88,7 @@ struct InternalEnergy : public Model<Elem> {
   }
   // using the previous midpoint energy and the current energy rate,
   // compute the current energy
-  void correct_internal_energy() override final {
+  void correct_internal_energy() {
     OMEGA_H_TIME_FUNCTION;
     auto const points_to_e = this->points_getset(this->specific_internal_energy);
     auto const points_to_e_dot = this->points_get(this->specific_internal_energy_rate);
