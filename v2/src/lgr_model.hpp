@@ -17,9 +17,13 @@ enum ExecStage : std::uint64_t {
   BEFORE_POSITION_UPDATE = std::uint64_t(1) << 0,
   AT_FIELD_UPDATE        = std::uint64_t(1) << 1,
   AFTER_FIELD_UPDATE     = std::uint64_t(1) << 2,
-  AT_MATERIAL_MODEL      = std::uint64_t(1) << 3,
-  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 4,
-  AFTER_CORRECTION       = std::uint64_t(1) << 5,
+  BEFORE_MATERIAL_MODEL  = std::uint64_t(1) << 3;
+  AT_MATERIAL_MODEL      = std::uint64_t(1) << 4,
+  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 5,
+  BEFORE_SECONDARIES     = std::uint64_t(1) << 6;
+  AT_SECONDARIES         = std::uint64_t(1) << 7,
+  AFTER_SECONDARIES      = std::uint64_t(1) << 8,
+  AFTER_CORRECTION       = std::uint64_t(1) << 9,
 };
 
 struct ModelBase {
