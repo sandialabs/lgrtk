@@ -48,6 +48,7 @@ struct ModelBase {
       int ncomps, RemapType tt, std::string const& default_value);
   MappedElemsToNodes get_elems_to_nodes();
   int points();
+  int elems();
   MappedRead elems_get(FieldIndex fi);
   MappedWrite elems_set(FieldIndex fi);
   MappedWrite elems_getset(FieldIndex fi);

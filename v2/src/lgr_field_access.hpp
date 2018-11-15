@@ -61,6 +61,11 @@ OMEGA_H_DEVICE Omega_h::Few<int, Elem::nodes> getnodes(Omega_h::LOs const& elems
 }
 
 template <class Elem>
+OMEGA_H_DEVICE Vector<Elem::nodes> getscals(Omega_h::Read<double> const& data, Omega_h::Few<int, Elem::nodes> cell_nodes) {
+  return Omega_h::gather_scalars<Elem::nodes>(data, cell_nodes);
+}
+
+template <class Elem>
 OMEGA_H_DEVICE Matrix<Elem::dim, Elem::nodes> getvecs(Omega_h::Read<double> const& data, Omega_h::Few<int, Elem::nodes> cell_nodes) {
   return Omega_h::gather_vectors<Elem::nodes, Elem::dim>(data, cell_nodes);
 }

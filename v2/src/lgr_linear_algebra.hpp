@@ -20,6 +20,11 @@ int conjugate_gradient(
     GlobalVector b,
     GlobalVector x,
     double max_residual_magnitude);
+void set_boundary_conditions(
+    GlobalMatrix A,
+    GlobalVector x,
+    GlobalVector b,
+    Omega_h::LOs rows_to_bc_rows);
 
 }
 

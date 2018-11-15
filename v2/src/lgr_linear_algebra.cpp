@@ -68,4 +68,36 @@ int conjugate_gradient(
   return b.size() + 1;
 }
 
+void set_boundary_conditions(
+    GlobalMatrix A,
+    GlobalVector x,
+    GlobalVector b,
+    Omega_h::LOs rows_to_bc_rows) {
+  auto functor = OMEGA_H_LAMBDA(int row) {
+    auto const begin = A.rows_to_columns.a2ab[row];
+    auto const end = A.rows_to_columns.a2ab[row + 1];
+    if (rows_to_bc_rows[row] == -1) {
+      auto row_b = b[row];
+      for (auto row_col = begin; row_col < end; ++row_col) {
+        auto const col = A.rows_to_columns.ab2b[row_col];
+        if (rows_to_bc_rows[col] != -1) {
+          row_b -= A.entries[row_col] * x[col];
+          A.entries[row_col] = 0.0;
+        }
+      }
+      b[row] = row_b;
+    } else {
+      for (auto row_col = begin; row_col < end; ++row_col) {
+        auto const col = A.rows_to_columns.ab2b[row_col];
+        if (col == row) {
+          b[row] = A.entries[row_col] * x[row];
+        } else {
+          A.entries[row_col] = 0.0;
+        }
+      }
+    }
+  };
+  parallel_for(x.size(), std::move(functor));
+}
+
 }
