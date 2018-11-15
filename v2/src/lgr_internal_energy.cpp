@@ -7,6 +7,7 @@ namespace lgr {
 
 template <class Elem>
 struct InternalEnergy : public Model<Elem> {
+  using Model<Elem>::sim;
   FieldIndex specific_internal_energy;
   FieldIndex specific_internal_energy_rate;
   InternalEnergy(Simulation& sim_in)
@@ -20,6 +21,9 @@ struct InternalEnergy : public Model<Elem> {
   std::uint64_t exec_stages() override final { return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES | AFTER_CORRECTION; }
   char const* name() override final { return "internal energy"; }
   void before_material_model() override final {
+    if (sim.dt == 0.0 && (!sim.fields[specific_internal_energy_rate].storage.exists())) {
+      zero_internal_energy_rate();
+    }
     compute_internal_energy_predictor();
   }
   void before_secondaries() override final {
