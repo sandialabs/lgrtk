@@ -22,7 +22,7 @@ struct DeformationGradient : public Model<Elem> {
     auto const elems_to_nodes = this->get_elems_to_nodes();
     auto const nodes_to_v = this->sim.get(this->sim.velocity);
     auto const dt = this->sim.dt;
-    auto functor = OMEGA_H_LAMBDA(int point) {
+    auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const elem = point / Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
