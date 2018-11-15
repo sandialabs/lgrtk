@@ -99,6 +99,10 @@ int ModelBase::points() {
   return point_support->count();
 }
 
+int ModelBase::elems() {
+  return elem_support->count();
+}
+
 MappedRead ModelBase::elems_get(FieldIndex fi) {
   return sim.get(fi, elem_support->subset);
 }
