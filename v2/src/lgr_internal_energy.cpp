@@ -53,7 +53,7 @@ struct InternalEnergy : public Model<Elem> {
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const e_dot_n = points_to_e_dot[point];
       auto const e_np1_tilde = points_to_e[point];
-      auto const e_np12 = e_np1_tilde - 0.5 * dt * e_dot_n;
+      auto const e_np12 = e_np1_tilde - (0.5 * dt) * e_dot_n;
       points_to_e[point] = e_np12;
     };
     parallel_for(this->points(), std::move(functor));
@@ -96,7 +96,7 @@ struct InternalEnergy : public Model<Elem> {
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const e_dot_np1 = points_to_e_dot[point];
       auto const e_np12 = points_to_e[point];
-      auto const e_np1 = e_np12 + e_dot_np1 * (0.5 * dt);
+      auto const e_np1 = e_np12 + (0.5 * dt) * e_dot_np1;
       points_to_e[point] = e_np1;
     };
     parallel_for(this->points(), std::move(functor));
