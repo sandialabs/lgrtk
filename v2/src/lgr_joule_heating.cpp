@@ -10,12 +10,14 @@ template <class Elem>
 struct JouleHeating : public Model<Elem> {
   FieldIndex conductivity;
   FieldIndex normalized_voltage;
+  FieldIndex conductance;
   GlobalMatrix matrix;
   GlobalVector rhs;
   Subset* anode_subset;
   Subset* cathode_subset;
   double normalized_anode_voltage;
   double normalized_cathode_voltage;
+  double conductance_multiplier;
   double tolerance;
   double anode_voltage;
   double cathode_voltage;
@@ -23,9 +25,13 @@ struct JouleHeating : public Model<Elem> {
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->conductivity =
       this->point_define("sigma", "conductivity", 1,
-          RemapType::PER_UNIT_VOLUME, pl, "0.0");
+          RemapType::NONE, pl, "");
     this->normalized_voltage =
       sim.fields.define("phi", "normalized voltage",
+          1, NODES, false, sim.disc.covering_class_names());
+    sim.fields[this->normalized].remap_type = RemapType::NODAL;
+    this->conductance =
+      sim.fields.define("G", "conductance",
           1, NODES, false, sim.disc.covering_class_names());
     auto& anode_pl = pl.get_list("anode");
     ClassNames anode_class_names;
@@ -42,6 +48,7 @@ struct JouleHeating : public Model<Elem> {
     normalized_anode_voltage = pl.get<double>("normalized anode voltage", "1.0");
     normalized_cathode_voltage = pl.get<double>("normalized cathode voltage", "0.0");
     tolerance = pl.get<double>("tolerance", "1.0e-6");
+    conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
   }
   void learn_disc() override final {
     // linear specific!
@@ -130,7 +137,7 @@ struct JouleHeating : public Model<Elem> {
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
     auto const nnodes = sim.disc.mesh.nverts();
-    auto const nodes_to_phi = sim.set(this->normalized_voltage);
+    auto const nodes_to_phi = sim.getset(this->normalized_voltage);
     rhs = Omega_h::Write<double>(nnodes, 0.0);
     {
     auto const anode_nodes_to_nodes = anode_subset->mapping.things;
@@ -151,44 +158,55 @@ struct JouleHeating : public Model<Elem> {
   }
   void solve_normalized_voltage_system() {
     OMEGA_H_TIME_FUNCTION;
-    auto const nodes_to_phi = sim.set(this->normalized_voltage);
+    auto const nodes_to_phi = sim.getset(this->normalized_voltage);
     auto const niter = conjugate_gradient(matrix, rhs, nodes_to_phi, tolerance);
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
     std::cout << "phi solve took " << niter << " iterations\n";
   }
-  void integrate_conductance() {
+  void compute_conductance() {
     OMEGA_H_TIME_FUNCTION;
-    auto const nodes_to_phi = sim.set(this->normalized_voltage);
+    auto const nodes_to_phi = sim.get(this->normalized_voltage);
     auto const points_to_grad = this->points_get(this->sim.gradient);
     auto const points_to_conductivity = this->points_get(this->conductivity);
     auto const points_to_weight = sim.set(sim.weight);
-    Omega_h::Write<double> elems_to_conductance(nelems());
-    auto functor = OMEGA_H_LAMBDA(int const elem) {
+    auto const points_to_G = this->points_set(this->conductance);
+    auto functor = OMEGA_H_LAMBDA(int const point) {
+      auto const elem = point / Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const phi = getscals<Elem>(nodes_to_phi, elem_nodes);
-      double integral = 0.0;
-      for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
-        auto const point = elem * Elem::points + elem_pt;
-        auto const weight = points_to_weight[point];
-        auto const conductivity = points_to_conductivity[point];
-        auto const grads = getgrads<Elem>(points_to_grad, point);
-        auto const grad_phi = grad<Elem>(grads, phi);
-        auto const integral += weight * conductivity * (grad_phi * grad_phi);
-      }
-      elems_to_conductance[elem] = integral;
+      auto const weight = points_to_weight[point];
+      auto const conductivity = points_to_conductivity[point];
+      auto const grads = getgrads<Elem>(points_to_grad, point);
+      auto const grad_phi = grad<Elem>(grads, phi);
+      auto const integral += weight * conductivity * (grad_phi * grad_phi);
+      points_to_conductance[point] = integral;
     };
-    parallel_for(nelems(), std::move(functor));
-    integrated_conductance = repro_sum(read(elems_to_conductance));
+    parallel_for(points(), std::move(functor));
+  }
+  void integrate_conductance() {
+    OMEGA_H_TIME_FUNCTION;
+    auto const points_to_G = this->points_get(this->conductance);
+    integrated_conductance = repro_sum(read(points_to_G));
+  }
+  void compute_electrode_voltages() {
+    OMEGA_H_TIME_FUNCTION;
+    // TODO: put a circuit here!
+    anode_voltage = 1.0;
+    cathode_voltage = 0.0;
+  }
+  void compute_joule_heating() {
+    OMEGA_H_TIME_FUNCTION;
+    auto const voltage_difference = anode_voltage - cathode_voltage;
   }
 };
 
 template <class Elem>
-ModelBase* linear_elastic_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new LinearElastic<Elem>(sim, pl);
+ModelBase* joule_heating_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+  return new JouleHeating<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* linear_elastic_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+template ModelBase* joule_heating_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
