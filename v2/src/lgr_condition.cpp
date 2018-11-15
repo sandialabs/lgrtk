@@ -17,7 +17,7 @@ using Omega_h::divide_no_remainder;
 // yes, its wasted effort to recompute all three fields
 // and throw away the other two each time one field is
 // asked for
-#define RIEMANN_EXPR(var) \
+#define LGR_RIEMANN_EXPR(var) \
 static Omega_h::any riemann_expr_##var( \
     std::vector<Omega_h::any>& args) { \
   auto left_density = Omega_h::any_cast<double>(args.at(0)); \
@@ -34,9 +34,10 @@ static Omega_h::any riemann_expr_##var( \
       shock_x, gamma, t, x); \
   return result.var; \
 }
-RIEMANN_EXPR(velocity)
-RIEMANN_EXPR(density)
-RIEMANN_EXPR(pressure)
+LGR_RIEMANN_EXPR(velocity)
+LGR_RIEMANN_EXPR(density)
+LGR_RIEMANN_EXPR(pressure)
+#undef LGR_RIEMANN_EXPR
 
 void Condition::init(Supports& supports) {
   auto vars_used = Omega_h::math_lang::get_symbols_used(str);
