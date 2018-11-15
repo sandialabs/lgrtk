@@ -41,65 +41,27 @@ void Models::setup_field_updates() {
   }
 }
 
-void Models::before_position_update() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & BEFORE_POSITION_UPDATE) != 0) {
-      Scope scope{sim, model->name()};
-      model->before_position_update();
-    }
-  }
+#define LGR_STAGE_DEF(lowercase, uppercase) \
+void Models::lowercase() { \
+  OMEGA_H_TIME_FUNCTION; \
+  for (auto& model : models) { \
+    if ((model->exec_stages() & uppercase) != 0) { \
+      Scope scope{sim, model->name()}; \
+      model->lowercase(); \
+    } \
+  } \
 }
-
-void Models::at_field_update() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & AT_FIELD_UPDATE) != 0) {
-      Scope scope{sim, model->name()};
-      model->at_field_update();
-    }
-  }
-}
-
-void Models::after_field_update() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & AFTER_FIELD_UPDATE) != 0) {
-      Scope scope{sim, model->name()};
-      model->after_field_update();
-    }
-  }
-}
-
-void Models::at_material_model() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & AT_MATERIAL_MODEL) != 0) {
-      Scope scope{sim, model->name()};
-      model->at_material_model();
-    }
-  }
-}
-
-void Models::after_material_model() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & AFTER_MATERIAL_MODEL) != 0) {
-      Scope scope{sim, model->name()};
-      model->after_material_model();
-    }
-  }
-}
-
-void Models::after_correction() {
-  OMEGA_H_TIME_FUNCTION;
-  for (auto& model : models) {
-    if ((model->exec_stages() & AFTER_CORRECTION) != 0) {
-      Scope scope{sim, model->name()};
-      model->after_correction();
-    }
-  }
-}
+LGR_STAGE_DEF(before_field_update, BEFORE_FIELD_UPDATE)
+LGR_STAGE_DEF(at_field_update, AT_FIELD_UPDATE)
+LGR_STAGE_DEF(after_field_update, AFTER_FIELD_UPDATE)
+LGR_STAGE_DEF(before_material_model, BEFORE_MATERIAL_MODEL)
+LGR_STAGE_DEF(at_material_model, AT_MATERIAL_MODEL)
+LGR_STAGE_DEF(after_material_model, AFTER_MATERIAL_MODEL)
+LGR_STAGE_DEF(before_secondaries, BEFORE_SECONDARIES)
+LGR_STAGE_DEF(at_secondaries, AT_SECONDARIES)
+LGR_STAGE_DEF(after_secondaries, AFTER_SECONDARIES)
+LGR_STAGE_DEF(after_correction, AFTER_CORRECTION)
+#undef LGR_STAGE_DEF
 
 template <class Elem>
 ModelFactories get_builtin_material_model_factories() {
