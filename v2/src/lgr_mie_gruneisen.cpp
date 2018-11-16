@@ -13,7 +13,6 @@ struct MieGruneisen : public Model<Elem> {
   FieldIndex cs_;
   FieldIndex s1_;
   FieldIndex specific_internal_energy;
-  FieldIndex specific_internal_energy_rate;
 
   MieGruneisen(Simulation& sim_in, Omega_h::InputMap& pl) :
     Model<Elem>(sim_in, pl)
@@ -29,20 +28,16 @@ struct MieGruneisen : public Model<Elem> {
     this->specific_internal_energy =
       this->point_define("e", "specific internal energy", 1,
           RemapType::PER_UNIT_MASS, "");
-    this->specific_internal_energy_rate =
-      this->point_define("e_dot", "specific internal energy rate", 1,
-          RemapType::PER_UNIT_VOLUME, "");
   }
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
 
-  char const* name() override final { return "linear elastic"; }
+  char const* name() override final { return "Mie-Gruniesen"; }
 
   void at_material_model() override final {
     auto points_to_rho = this->points_get(this->sim.density);
 
     auto points_to_e = this->points_get(this->specific_internal_energy);
-    auto points_to_e_dot = this->points_get(this->specific_internal_energy);
     auto points_to_rho0 = this->points_get(this->rho0_);
     auto points_to_gamma0 = this->points_get(this->gamma0_);
     auto points_to_cs = this->points_get(this->cs_);
@@ -50,12 +45,9 @@ struct MieGruneisen : public Model<Elem> {
 
     auto points_to_sigma = this->points_set(this->sim.stress);
     auto points_to_c = this->points_set(this->sim.wave_speed);
-    auto dt = this->sim.dt;
     auto functor = OMEGA_H_LAMBDA(int point) {
       auto const rho_np1 = points_to_rho[point];
-      auto const e_dot_n = points_to_e_dot[point];
-      auto const e_np12 = points_to_e[point];
-      auto const e_np1_est = e_np12 + e_dot_n * (1.0 / 2.0) * dt;
+      auto const e_np1_est = points_to_e[point];
       auto const rho0 = points_to_rho0[point];
       auto const gamma0 = points_to_gamma0[point];
       auto const c0 = points_to_cs[point];
@@ -67,7 +59,7 @@ struct MieGruneisen : public Model<Elem> {
       setsymm<Elem>(points_to_sigma, point, sigma);
       points_to_c[point] = c;
     };
-    parallel_for("Mie-Gruniesen kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 

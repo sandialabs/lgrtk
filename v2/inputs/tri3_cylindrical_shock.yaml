@@ -1,13 +1,13 @@
 lgr:
   CFL: 0.9
-  end time: 1.2e-7
+  end time: 0.3e-7
   element type: Tri3
   mesh:
     box:
-      x elements: 160
-      x size: 80.0
-      y elements: 160
-      y size: 80.0
+      x elements: 40
+      x size: 20.0
+      y elements: 40
+      y size: 20.0
       symmetric: false
     transform: 'x * 25.4e-6'
   common fields:
