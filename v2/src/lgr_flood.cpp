@@ -88,7 +88,7 @@ Omega_h::LOs Flooder::choose() {
           double elem_volume = 0.0;
           for (int elem_pt = 0; elem_pt < points_per_elem; ++elem_pt) {
             auto const pt_weight =
-              point_weights[elem * points_per_elem + elem_pt];
+              point_weights[elem2 * points_per_elem + elem_pt];
             elem_volume += pt_weight;
           }
           priority_volume += elem_volume;
