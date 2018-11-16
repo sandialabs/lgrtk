@@ -1,6 +1,6 @@
 lgr:
   CFL: 0.9
-  end time: 12.0
+  end time: 6.0
   element type: Tri3
   mesh:
     CUBIT:
@@ -39,7 +39,7 @@ lgr:
         sideset 4 name "y+"
         export genesis "triple_point.exo"
       Exodus file: triple_point.exo
-    element count: 4000.0
+    element count: 1000.0
   material models:
     model1:
       type: ideal gas

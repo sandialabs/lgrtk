@@ -13,11 +13,16 @@ struct Models {
   Models(Simulation& sim_in);
   void setup_material_models_and_modifiers(Omega_h::InputMap& pl);
   void setup_field_updates(); 
-  void before_position_update();
+
+  void before_field_update();
   void at_field_update();
   void after_field_update();
+  void before_material_model();
   void at_material_model();
   void after_material_model();
+  void before_secondaries();
+  void at_secondaries();
+  void after_secondaries();
   void after_correction();
 };
 

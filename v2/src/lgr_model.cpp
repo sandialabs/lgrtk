@@ -115,30 +115,21 @@ MappedWrite ModelBase::elems_getset(FieldIndex fi) {
   return sim.getset(fi, elem_support->subset);
 }
 
-void ModelBase::before_position_update() {
-  Omega_h_fail("before_position_update called on a Model that didn't define it!\n");
+#define LGR_STAGE_DEF(name) \
+void ModelBase::name() { \
+  Omega_h_fail(#name " called on a Model that didn't define it!\n"); \
 }
-
-void ModelBase::at_field_update() {
-  Omega_h_fail("at_field_update called on a Model that didn't define it!\n");
-}
-
-void ModelBase::after_field_update() {
-  Omega_h_fail("after_field_update called on a Model that didn't define it!\n");
-}
-
-void ModelBase::at_material_model() {
-  Omega_h_fail("at_material_model called on a Model that didn't define it!\n");
-}
-
-void ModelBase::after_material_model() {
-  Omega_h_fail("after_material_model called on a Model that didn't define it!\n");
-}
-
-void ModelBase::after_correction() {
-  Omega_h_fail("after_correction called on a Model that didn't define it!\n");
-}
-
+LGR_STAGE_DEF(before_field_update)
+LGR_STAGE_DEF(at_field_update)
+LGR_STAGE_DEF(after_field_update)
+LGR_STAGE_DEF(before_material_model)
+LGR_STAGE_DEF(at_material_model)
+LGR_STAGE_DEF(after_material_model)
+LGR_STAGE_DEF(before_secondaries)
+LGR_STAGE_DEF(at_secondaries)
+LGR_STAGE_DEF(after_secondaries)
+LGR_STAGE_DEF(after_correction)
+#undef LGR_STAGE_DEF
 
 template <class Elem>
 Model<Elem>::Model(Simulation& sim_in, Omega_h::InputMap& pl)

@@ -39,8 +39,10 @@ static void initialize_state(Simulation& sim) {
 template <class Elem>
 static void close_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
+  sim.models.before_field_update();
   sim.models.at_field_update();
   sim.models.after_field_update();
+  sim.models.before_material_model();
   sim.models.at_material_model();
   sim.models.after_material_model();
   compute_point_time_steps<Elem>(sim);
@@ -48,6 +50,9 @@ static void close_state(Simulation& sim) {
   apply_force_conditions(sim);
   compute_nodal_acceleration<Elem>(sim);
   apply_acceleration_conditions(sim);
+  sim.models.before_secondaries();
+  sim.models.at_secondaries();
+  sim.models.after_secondaries();
   update_cpu_time(sim);
   sim.responses.evaluate();
 }
@@ -68,7 +73,6 @@ static void run_simulation(Simulation& sim) {
       close_state<Elem>(sim);
     }
     update_time(sim);
-    sim.models.before_position_update();
     update_position<Elem>(sim);
     update_configuration<Elem>(sim);
     ++sim.step;
