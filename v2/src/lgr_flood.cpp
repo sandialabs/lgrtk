@@ -35,6 +35,7 @@ void Flooder::setup(Omega_h::InputMap& pl) {
 }
 
 void Flooder::flood() {
+  OMEGA_H_TIME_FUNCTION;
   auto const pull_mapping = choose();
   if (pull_mapping.exists()) {
     flood_by_mapping(pull_mapping);
@@ -42,7 +43,7 @@ void Flooder::flood() {
 }
 
 Omega_h::LOs Flooder::choose() {
-  OMEGA_H_TIME_FUNCTION;
+  Omega_h::ScopedTimer timer("Flooder::choose");
   // step 1: mark candidate vertices (cavity centers)
   auto const qualities = sim.disc.mesh.ask_qualities();
   auto const elems_are_low_qual = each_lt(qualities, sim.adapter.opts.min_quality_desired);
