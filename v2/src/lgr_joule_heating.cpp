@@ -1,16 +1,22 @@
-#include <lgr_electrostatic.hpp>
+#include <lgr_joule_heating.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
-#include <Omega_h_array_ops.hpp>
 #include <lgr_linear_algebra.hpp>
+#include <Omega_h_array_ops.hpp>
+#include <Omega_h_simplex.hpp>
+#include <Omega_h_align.hpp>
+#include <Omega_h_map.hpp>
+#include <iostream>
 
 namespace lgr {
 
 template <class Elem>
 struct JouleHeating : public Model<Elem> {
+  using Model<Elem>::sim;
   FieldIndex conductivity;
   FieldIndex normalized_voltage;
   FieldIndex conductance;
+  FieldIndex specific_internal_energy_rate;
   GlobalMatrix matrix;
   GlobalVector rhs;
   Subset* anode_subset;
@@ -29,10 +35,13 @@ struct JouleHeating : public Model<Elem> {
     this->normalized_voltage =
       sim.fields.define("phi", "normalized voltage",
           1, NODES, false, sim.disc.covering_class_names());
-    sim.fields[this->normalized].remap_type = RemapType::NODAL;
+    sim.fields[this->normalized_voltage].remap_type = RemapType::NODAL;
     this->conductance =
       sim.fields.define("G", "conductance",
           1, NODES, false, sim.disc.covering_class_names());
+    specific_internal_energy_rate =
+      this->point_define("e_dot", "specific internal energy rate", 1,
+          RemapType::NONE, "0.0");
     auto& anode_pl = pl.get_list("anode");
     ClassNames anode_class_names;
     for (int i = 0; i < anode_pl.size(); ++i) {
@@ -59,8 +68,19 @@ struct JouleHeating : public Model<Elem> {
     auto const nnz = verts_to_verts.a2ab.last();
     matrix.entries = Omega_h::Write<double>(nnz, "conductance matrix entries");
   }
-  std::uint64_t exec_stages() override final { return BEFORE_POSITION_UPDATE | AFTER_CORRECTION; }
+  std::uint64_t exec_stages() override final {
+    return AT_SECONDARIES;
+  }
   char const* name() override final { return "electrostatic"; }
+  void at_secondaries() override final {
+    Omega_h::ScopedTimer timer("JouleHeating::at_secondaries");
+    assemble_normalized_voltage_system();
+    solve_normalized_voltage_system();
+    compute_conductance();
+    integrate_conductance();
+    compute_electrode_voltages();
+    contribute_joule_heating();
+  }
   void assemble_normalized_voltage_system() {
     OMEGA_H_TIME_FUNCTION;
     constexpr int edges_per_elem = Omega_h::simplex_degree(Elem::dim, 1);
@@ -74,16 +94,16 @@ struct JouleHeating : public Model<Elem> {
       for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
         auto const point = elem * Elem::points + elem_pt;
         auto const weight = points_to_weight[point];
-        auto const conductivity = points_to_conductivity[point];
+        auto const G = points_to_conductivity[point];
         auto const grads = getgrads<Elem>(points_to_grad, point);
         for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
-          auto const contrib = weight * conductivity * (grads[elem_vert] * grads[elem_vert]);
+          auto const contrib = weight * G * (grads[elem_vert] * grads[elem_vert]);
           elems_to_vert_contribs[elem * verts_per_elem + elem_vert] = contrib;
         }
         for (int elem_edge = 0; elem_edge < verts_per_elem; ++elem_edge) {
           auto const elem_vert0 = Omega_h::simplex_down_template(Elem::dim, 1, elem_edge, 0);
           auto const elem_vert1 = Omega_h::simplex_down_template(Elem::dim, 1, elem_edge, 1);
-          auto const contrib = weight * conductivity * (grads[elem_vert0] * grads[elem_vert1]);
+          auto const contrib = weight * G * (grads[elem_vert0] * grads[elem_vert1]);
           elems_to_edge_contribs[elem * edges_per_elem + elem_edge] = contrib;
         }
       }
@@ -125,14 +145,13 @@ struct JouleHeating : public Model<Elem> {
     auto const verts_to_edges = sim.disc.mesh.ask_up(0, 1);
     auto row_functor = OMEGA_H_LAMBDA(int const row) {
       auto const row_begin = A.rows_to_columns.a2ab[row];
-      auto const row_col = row_begin;
-      A.entries[row_col] = verts_to_value[row];
-      ++row_col;
+      auto row_col = row_begin;
+      A.entries[row_col++] = verts_to_value[row];
       auto const edge_begin = verts_to_edges.a2ab[row];
       auto const edge_end = verts_to_edges.a2ab[row + 1];
-      for (auto const vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge, ++row_col) {
+      for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
         auto const edge = verts_to_edges.ab2b[vert_edge];
-        A.entries[row_col] = edges_to_value[edge];
+        A.entries[row_col++] = edges_to_value[edge];
       }
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
@@ -170,23 +189,24 @@ struct JouleHeating : public Model<Elem> {
     auto const points_to_conductivity = this->points_get(this->conductivity);
     auto const points_to_weight = sim.set(sim.weight);
     auto const points_to_G = this->points_set(this->conductance);
+    auto const elems_to_nodes = this->get_elems_to_nodes();
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const elem = point / Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const phi = getscals<Elem>(nodes_to_phi, elem_nodes);
       auto const weight = points_to_weight[point];
-      auto const conductivity = points_to_conductivity[point];
+      auto const G = points_to_conductivity[point];
       auto const grads = getgrads<Elem>(points_to_grad, point);
       auto const grad_phi = grad<Elem>(grads, phi);
-      auto const integral += weight * conductivity * (grad_phi * grad_phi);
-      points_to_conductance[point] = integral;
+      auto const integral = weight * G * (grad_phi * grad_phi);
+      points_to_G[point] = integral;
     };
-    parallel_for(points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
   void integrate_conductance() {
     OMEGA_H_TIME_FUNCTION;
-    auto const points_to_G = this->points_get(this->conductance);
-    integrated_conductance = repro_sum(read(points_to_G));
+    auto const points_to_G = sim.get(this->conductance);
+    integrated_conductance = repro_sum(points_to_G);
   }
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
@@ -194,9 +214,25 @@ struct JouleHeating : public Model<Elem> {
     anode_voltage = 1.0;
     cathode_voltage = 0.0;
   }
-  void compute_joule_heating() {
+  void contribute_joule_heating() {
     OMEGA_H_TIME_FUNCTION;
-    auto const voltage_difference = anode_voltage - cathode_voltage;
+    auto const V = anode_voltage - cathode_voltage;
+    auto const Vsq = square(V);
+    auto const points_to_G = this->points_get(this->conductance);
+    auto const points_to_rho = this->points_get(sim.density);
+    auto const points_to_volume = this->points_get(sim.weight);
+    auto const points_to_e_dot = this->points_getset(
+        this->specific_internal_energy_rate);
+    auto functor = OMEGA_H_LAMBDA(int const point) {
+      auto const G = points_to_G[point];
+      auto const P = Vsq * G;
+      auto const rho = points_to_rho[point];
+      auto const volume = points_to_volume[point];
+      auto const mass = rho * volume;
+      auto const e_dot = P / mass;
+      points_to_e_dot[point] += e_dot;
+    };
+    parallel_for(this->points(), std::move(functor));
   }
 };
 
