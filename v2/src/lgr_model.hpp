@@ -66,6 +66,7 @@ struct ModelBase {
   virtual void at_secondaries();
   virtual void after_secondaries();
   virtual void after_correction();
+  virtual void learn_disc();
 };
 
 template <class Elem>

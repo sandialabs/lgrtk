@@ -115,6 +115,8 @@ MappedWrite ModelBase::elems_getset(FieldIndex fi) {
   return sim.getset(fi, elem_support->subset);
 }
 
+void ModelBase::learn_disc() {}
+
 #define LGR_STAGE_DEF(name) \
 void ModelBase::name() { \
   Omega_h_fail(#name " called on a Model that didn't define it!\n"); \

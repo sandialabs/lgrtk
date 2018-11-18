@@ -42,6 +42,7 @@ add_library(lgr_library
     lgr_osh_output.cpp
     lgr_quadratic.cpp
     lgr_linear_algebra.cpp
+    lgr_joule_heating.cpp
     )
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)

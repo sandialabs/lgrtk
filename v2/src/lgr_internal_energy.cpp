@@ -18,7 +18,10 @@ struct InternalEnergy : public Model<Elem> {
       this->point_define("e_dot", "specific internal energy rate", 1,
           RemapType::NONE, "0.0");
   }
-  std::uint64_t exec_stages() override final { return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES | AFTER_CORRECTION; }
+  std::uint64_t exec_stages() override final {
+    return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES |
+      AFTER_CORRECTION;
+  }
   char const* name() override final { return "internal energy"; }
   void before_material_model() override final {
     if (sim.dt == 0.0 && (!sim.fields[specific_internal_energy_rate].storage.exists())) {
