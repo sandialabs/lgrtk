@@ -36,7 +36,7 @@ struct JouleHeating : public Model<Elem> {
       sim.fields.define("phi", "normalized voltage",
           1, NODES, false, sim.disc.covering_class_names());
     sim.fields[this->normalized_voltage].remap_type = RemapType::NODAL;
-    sim.fields[this->normalized_voltage].default_value = "0.0";
+    sim.fields[this->normalized_voltage].default_value = pl.get<std::string>("normalized voltage", "0.0");
     this->conductance =
       this->point_define("G", "conductance", 1,
           RemapType::NONE, "");
