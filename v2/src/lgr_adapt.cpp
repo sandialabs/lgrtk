@@ -87,6 +87,7 @@ bool Adapter::adapt() {
   sim.disc.update_from_mesh();
   sim.subsets.learn_disc();
   sim.fields.learn_disc();
+  sim.models.learn_disc();
   remap->after_adapt();
   old_quality = sim.disc.mesh.min_quality();
   old_length = sim.disc.mesh.max_length();

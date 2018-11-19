@@ -229,6 +229,7 @@ void Flooder::flood_by_mapping(Omega_h::LOs pull_mapping) {
   sim.subsets.forget_disc();
   sim.subsets.learn_disc();
   sim.fields.learn_disc();
+  sim.models.learn_disc();
   Omega_h::Write<int> old_inverse(nelems, -1);
   Omega_h::Write<int> new_inverse(nelems, -1);
   for (auto& saved_field : saved_fields) {

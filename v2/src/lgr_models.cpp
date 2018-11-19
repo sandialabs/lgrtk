@@ -8,6 +8,7 @@
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_deformation_gradient.hpp>
+#include <lgr_joule_heating.hpp>
 #include <lgr_scope.hpp>
 #include <Omega_h_profile.hpp>
 
@@ -38,6 +39,13 @@ void Models::setup_field_updates() {
     auto ptr = factory(sim, name, dummy_pl);
     std::unique_ptr<ModelBase> unique_ptr(ptr);
     models.push_back(std::move(unique_ptr));
+  }
+}
+
+void Models::learn_disc() {
+  OMEGA_H_TIME_FUNCTION;
+  for (auto& model : models) {
+    model->learn_disc();
   }
 }
 
@@ -78,6 +86,7 @@ template <class Elem>
 ModelFactories get_builtin_modifier_factories() {
   ModelFactories out;
   out["artificial viscosity"] = artificial_viscosity_factory<Elem>;
+  out["Joule heating"] = joule_heating_factory<Elem>;
   return out;
 }
 

@@ -56,6 +56,7 @@ struct ModelBase {
   MappedRead elems_get(FieldIndex fi);
   MappedWrite elems_set(FieldIndex fi);
   MappedWrite elems_getset(FieldIndex fi);
+  virtual void learn_disc();
   virtual void before_field_update();
   virtual void at_field_update();
   virtual void after_field_update();
@@ -66,7 +67,6 @@ struct ModelBase {
   virtual void at_secondaries();
   virtual void after_secondaries();
   virtual void after_correction();
-  virtual void learn_disc();
 };
 
 template <class Elem>
