@@ -238,6 +238,12 @@ struct CompTet {
     Vector<4> compute_DOL(Vector<nsub_tets> O_det,
         Matrix<nsub_tets, 4> sub_tet_int);
 
+    static OMEGA_H_INLINE
+    Matrix<dim, points> get_ref_points();
+
+    static OMEGA_H_INLINE
+    Vector<4> get_barycentric_coord(Vector<dim> x);
+
 };
 #endif
 
