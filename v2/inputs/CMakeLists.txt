@@ -21,6 +21,7 @@ if(LGR_TRI3)
   if (LGR_CUBIT)
     lgr_test(tri3_triple_point)
   endif()
+  lgr_test(tri3_joule_heating)
 endif()
 
 if(LGR_TET4)
