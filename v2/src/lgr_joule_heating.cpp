@@ -36,10 +36,11 @@ struct JouleHeating : public Model<Elem> {
       sim.fields.define("phi", "normalized voltage",
           1, NODES, false, sim.disc.covering_class_names());
     sim.fields[this->normalized_voltage].remap_type = RemapType::NODAL;
+    sim.fields[this->normalized_voltage].default_value = "0.0";
     this->conductance =
-      sim.fields.define("G", "conductance",
-          1, NODES, false, sim.disc.covering_class_names());
-    specific_internal_energy_rate =
+      this->point_define("G", "conductance", 1,
+          RemapType::NONE, "");
+    this->specific_internal_energy_rate =
       this->point_define("e_dot", "specific internal energy rate", 1,
           RemapType::NONE, "0.0");
     auto& anode_pl = pl.get_list("anode");
@@ -58,6 +59,7 @@ struct JouleHeating : public Model<Elem> {
     normalized_cathode_voltage = pl.get<double>("normalized cathode voltage", "0.0");
     tolerance = pl.get<double>("tolerance", "1.0e-6");
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
+    JouleHeating::learn_disc();
   }
   void learn_disc() override final {
     // linear specific!
@@ -82,6 +84,7 @@ struct JouleHeating : public Model<Elem> {
     contribute_joule_heating();
   }
   void assemble_normalized_voltage_system() {
+    std::cerr << "assembling normalized voltage system\n";
     OMEGA_H_TIME_FUNCTION;
     constexpr int edges_per_elem = Omega_h::simplex_degree(Elem::dim, 1);
     constexpr int verts_per_elem = Omega_h::simplex_degree(Elem::dim, 0);
@@ -113,7 +116,7 @@ struct JouleHeating : public Model<Elem> {
     auto const edges_to_elems = sim.disc.mesh.ask_up(1, Elem::dim);
     auto edge_functor = OMEGA_H_LAMBDA(int const edge) {
       auto const begin = edges_to_elems.a2ab[edge];
-      auto const end = edges_to_elems.a2ab[edge];
+      auto const end = edges_to_elems.a2ab[edge + 1];
       double edge_value = 0.0;
       for (auto edge_elem = begin; edge_elem < end; ++edge_elem) {
         auto const elem = edges_to_elems.ab2b[edge_elem];
@@ -129,7 +132,7 @@ struct JouleHeating : public Model<Elem> {
     auto const verts_to_elems = sim.disc.mesh.ask_up(0, Elem::dim);
     auto vert_functor = OMEGA_H_LAMBDA(int const vert) {
       auto const begin = verts_to_elems.a2ab[vert];
-      auto const end = verts_to_elems.a2ab[vert];
+      auto const end = verts_to_elems.a2ab[vert + 1];
       double vert_value = 0.0;
       for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
         auto const elem = verts_to_elems.ab2b[vert_elem];

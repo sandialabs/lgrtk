@@ -14,6 +14,7 @@ struct Models {
   void setup_material_models_and_modifiers(Omega_h::InputMap& pl);
   void setup_field_updates(); 
 
+  void learn_disc();
   void before_field_update();
   void at_field_update();
   void after_field_update();

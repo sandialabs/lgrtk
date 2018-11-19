@@ -3,6 +3,9 @@
 #include <lgr_for.hpp>
 #include <Omega_h_array_ops.hpp>
 
+//DEBUG!
+#include <iostream>
+
 namespace lgr {
 
 void matvec(GlobalMatrix mat, GlobalVector vec, GlobalVector result) {
@@ -48,6 +51,7 @@ int conjugate_gradient(
   GlobalVector p(n, "CG/p");
   Omega_h::copy_into(read(r), p); // p = r
   auto rsold = dot(r, r);
+  std::cout << "rsold = " << rsold << '\n';
   if (std::sqrt(rsold) < max_residual_magnitude) {
     return 0;
   }
@@ -58,6 +62,7 @@ int conjugate_gradient(
     axpy(alpha, p, x, x); // x = x + alpha * p
     axpy(-alpha, Ap, r, r); // r = r - alpha * Ap
     auto const rsnew = dot(r, r);
+    std::cout << "rsnew[" << i <<"] = " << rsnew << '\n';
     if (std::sqrt(rsnew) < max_residual_magnitude) {
       return i + 1;
     }
