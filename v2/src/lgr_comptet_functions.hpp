@@ -547,9 +547,39 @@ Vector<4> CompTet::compute_DOL(Vector<nsub_tets> O_det,
 }
 
 OMEGA_H_INLINE
+Matrix<CompTet::dim, CompTet::points> CompTet::get_ref_points() {
+  Matrix<dim, points> pts;
+  pts[0][0] = 0.1381966011250105151795413165634361882280;
+  pts[0][1] = 0.1381966011250105151795413165634361882280;
+  pts[0][2] = 0.1381966011250105151795413165634361882280;
+  pts[1][0] = 0.5854101966249684544613760503096914353161;
+  pts[1][1] = 0.1381966011250105151795413165634361882280;
+  pts[1][2] = 0.1381966011250105151795413165634361882280;
+  pts[2][0] = 0.1381966011250105151795413165634361882280;
+  pts[2][1] = 0.5854101966249684544613760503096914353161;
+  pts[2][2] = 0.1381966011250105151795413165634361882280;
+  pts[3][0] = 0.1381966011250105151795413165634361882280;
+  pts[3][1] = 0.1381966011250105151795413165634361882280;
+  pts[3][2] = 0.5854101966249684544613760503096914353161;
+  return pts;
+}
+
+OMEGA_H_INLINE
+Vector<4> CompTet::get_barycentric_coord(Vector<dim> x) {
+  Vector<4> xi;
+  xi[0] = 1.0 - x[0] - x[1] - x[2];
+  xi[1] = x[0];
+  xi[2] = x[1];
+  xi[3] = x[2];
+  return xi;
+}
+
+OMEGA_H_INLINE
 Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
-  using Omega_h::Few;
-  double lambda[nbarycentric_coords];
+
+  Shape<CompTet> out;
+
+  // grab + compute necessary information
   auto S_opt = compute_S_opt();
   auto parent_M_inv = compute_parent_M_inv();
   auto sub_tet_int = compute_sub_tet_int();
@@ -559,19 +589,41 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   auto M_inv = compute_M_inv(O_det);
   auto SOL = compute_SOL(O_det, O_inv, sub_tet_int, S_opt);
   auto DOL = compute_DOL(O_det, sub_tet_int);
-  Shape<CompTet> out;
-  // need referecnce integration points to compute the gradient and |J| * w
-  // gotta dig through intrepid to find this
-  (void)lambda;
-  (void)O_det;
-  (void)O_inv;
-  (void)parent_M_inv;
-  (void)sub_tet_int;
-  (void)M_inv;
-  (void)SOL;
-  (void)DOL;
+  auto ref_points = get_ref_points();
+
+  // compute the basis gradients
+  zero(out.basis_gradients);
+  for (int node = 0; node < nodes; ++node) {
+    for (int pt = 0; pt < points; ++pt) {
+      auto lambda = get_barycentric_coord(ref_points[pt]);
+      for (int d = 0; d < dim; ++d) {
+        for (int l1 = 0; l1 < nbarycentric_coords; ++l1) {
+          for (int l2 = 0; l2 < nbarycentric_coords; ++l2) {
+            out.basis_gradients[pt](d, node) +=
+              lambda[l1] * M_inv(l1, l2) * SOL[4](node, d);
+          }
+        }
+      }
+    }
+  }
+
+  // compute the projected |J| times integration weights
+  double ip_weight = 1.0 / 24.0;
+  out.weights = Omega_h::zero_vector<points>();
+  for (int pt = 0; pt < points; ++pt) {
+    auto lambda = get_barycentric_coord(ref_points[pt]);
+    for (int l1 = 0; l1 < nbarycentric_coords; ++l1) {
+      for (int l2 = 0; l2 < nbarycentric_coords; ++l2) {
+        out.weights[pt] += lambda[l1] * parent_M_inv(l1, l2) * DOL[l2];
+      }
+    }
+    out.weights[pt] *= ip_weight;
+  }
+
+  // compute the time step lengths
   out.lengths.time_step_length = 0.0; // this needs to change
   out.lengths.viscosity_length = 0.0; // this needs to change
+
   return out;
 }
 
