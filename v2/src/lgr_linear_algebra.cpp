@@ -105,4 +105,12 @@ void set_boundary_conditions(
   parallel_for(x.size(), std::move(functor));
 }
 
+MediumMatrix::MediumMatrix(int const size_in) {
+  entries.resize(std::size_t(size_in * size_in), 0.0);
+}
+
+MediumVector::MediumVector(int const size_in) {
+  entries.resize(std::size_t(size_in), 0.0);
+}
+
 }

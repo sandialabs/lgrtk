@@ -26,6 +26,19 @@ void set_boundary_conditions(
     GlobalVector b,
     Omega_h::LOs rows_to_bc_rows);
 
+struct MediumMatrix {
+  int size;
+  std::vector<double> entries;
+  inline double& operator()(int const i, int const j) noexcept { return entries[std::size_t(i * size + j)]; }
+  MediumMatrix(int const size_in);
+};
+
+struct MediumVector {
+  std::vector<double> entries;
+  inline double& operator()(int const i) noexcept { return entries[std::size_t(i)]; }
+  MediumVector(int const size_in);
+};
+
 }
 
 #endif
