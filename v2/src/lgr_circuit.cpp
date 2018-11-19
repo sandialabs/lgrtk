@@ -11,8 +11,7 @@ void assemble_circuit(
     std::vector<double> const& inductances,
     std::vector<double> const& capacitances,
     MediumMatrix& M,
-    MediumMatrix& K,
-    MediumVector& b
+    MediumMatrix& K
     ) {
   auto const nresistors = int(resistances.size());
   auto const ninductors = int(resistances.size());
@@ -28,7 +27,6 @@ void assemble_circuit(
   int n = max_dof + 1;
   M = MediumMatrix(n);
   K = MediumMatrix(n);
-  b = MediumVector(n);
   for (int c = 0; c < nresistors; ++c) {
     auto const i = resistor_dofs[std::size_t(c * 2 + 0)];
     auto const j = resistor_dofs[std::size_t(c * 2 + 1)];
@@ -58,6 +56,26 @@ void assemble_circuit(
     M(j, j) += C * 1.0;
     M(i, j) += C * -1.0;
     M(j, i) += C * -1.0;
+  }
+}
+
+void form_backward_euler_circuit_system(
+    MediumMatrix const& M,
+    MediumMatrix const& K,
+    MediumVector const& last_x,
+    double const dt,
+    MediumMatrix& A,
+    MediumVector& b)
+{
+  auto const n = M.size;
+  A = MediumMatrix(n);
+  b = MediumVector(n);
+  auto const inv_dt = 1.0 / dt;
+  for (int i = 0; i < n; ++i) {
+    for (int j = 0; j < n; ++j) {
+      A(i, j) = inv_dt * M(i, j) + K(i, j);
+      b(i) += inv_dt * M(i, j) * last_x(j);
+    }
   }
 }
 
