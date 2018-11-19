@@ -30,14 +30,18 @@ struct MediumMatrix {
   int size;
   std::vector<double> entries;
   inline double& operator()(int const i, int const j) noexcept { return entries[std::size_t(i * size + j)]; }
+  inline double const& operator()(int const i, int const j) const noexcept { return entries[std::size_t(i * size + j)]; }
   MediumMatrix(int const size_in);
 };
 
 struct MediumVector {
   std::vector<double> entries;
   inline double& operator()(int const i) noexcept { return entries[std::size_t(i)]; }
+  inline double const& operator()(int const i) const noexcept { return entries[std::size_t(i)]; }
   MediumVector(int const size_in);
 };
+
+void gaussian_elimination(MediumMatrix& A, MediumVector& b);
 
 }
 

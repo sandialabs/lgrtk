@@ -14,9 +14,15 @@ void assemble_circuit(
     std::vector<double> const& inductances,
     std::vector<double> const& capacitances,
     MediumMatrix& M,
-    MediumMatrix& K,
-    MediumVector& b
-    );
+    MediumMatrix& K);
+
+void form_backward_euler_circuit_system(
+    MediumMatrix const& M,
+    MediumMatrix const& K,
+    MediumVector const& last_x,
+    double const dt,
+    MediumMatrix& A,
+    MediumVector& b);
 
 }
 

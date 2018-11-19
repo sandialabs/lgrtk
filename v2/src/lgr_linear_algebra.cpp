@@ -113,4 +113,46 @@ MediumVector::MediumVector(int const size_in) {
   entries.resize(std::size_t(size_in), 0.0);
 }
 
+void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
+  int h = 0; /* Initialization of the pivot row */
+  int k = 0; /* Initialization of the pivot column */
+  auto const m = A.size;
+  while (h < m && k < m) {
+    int i_max = -1;
+    double i_max_value = 0.0;
+    /* Find the k-th pivot: */
+    for (int i = h; i < m; ++i) {
+      double const i_value = std::abs(A(i, k));
+      if (i_max == -1 || i_value > i_max_value) {
+        i_max_value = i_value;
+        i_max = i;
+      }
+    }
+    if (A(i_max, k) == 0.0) {
+      /* No pivot in this column, pass to next column */
+      ++k;
+    } else {
+      /* swap rows */
+      for (int j = 0; j < m; ++j) {
+        std::swap(A(h, j), A(i_max, j));
+      }
+      std::swap(b(h), b(i_max));
+      /* Do for all rows below pivot: */
+      for (int i = h + 1; i < m; ++i) {
+        auto const f = A(i, k) / A(h, k);
+        /* Fill with zeros the lower part of pivot column: */
+        A(i, k) = 0.0;
+        /* Do for all remaining elements in current row: */
+        for (int j = k + 1; j < m; ++j) {
+          A(i, j) -= A(h, j) * f;
+        }
+        b(i) -= b(h) * f;
+      }
+      /* Increase pivot row and column */
+      ++h;
+      ++k;
+    }
+  }
+}
+
 }
