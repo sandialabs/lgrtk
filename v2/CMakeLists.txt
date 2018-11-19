@@ -29,6 +29,9 @@ foreach(ELEMENT IN LISTS LGR_ELEMENTS)
   if(${ELEMENT} STREQUAL "Tet4")
     set(LGR_TET4 ON)
   endif()
+  if(${ELEMENT} STREQUAL "CompTet")
+    set(LGR_COMPTET ON)
+  endif()
 endforeach()
 
 set(CMAKE_CXX_FLAGS "${Omega_h_CXX_FLAGS}")
@@ -49,6 +52,7 @@ set(LGR_KEY_BOOLS
   LGR_TRI6
   LGR_QUAD4
   LGR_TET4
+  LGR_COMPTET
   )
 
 set(LGR_KEY_STRINGS
