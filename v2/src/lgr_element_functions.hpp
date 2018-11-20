@@ -354,6 +354,10 @@ OMEGA_H_INLINE Matrix<Tet4::nodes, Tet4::points> Tet4::basis_values() {
 }
 #endif
 
+#ifdef LGR_COMPTET
+#include "lgr_comptet_functions.hpp"
+#endif
+
 }
 
 #endif
