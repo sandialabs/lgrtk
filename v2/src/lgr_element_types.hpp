@@ -198,7 +198,7 @@ struct CompTet {
 
     template <int NI, int NJ, int NK>
     static OMEGA_H_INLINE
-    void zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI> in);
+    void zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI>& in);
 
     static OMEGA_H_INLINE
     double det_44(Matrix<4, 4> a);
