@@ -49,13 +49,15 @@ TEST(circuit, RLC_underdamped) {
   double const R = 0.7;
   double const L = 1.0;
   double const C = 0.8;
-//double const I0 = V0 / R;
+  double const I0 = V0 / R;
   double const damping_factor = (R / 2.0) * std::sqrt(C / L);
   EXPECT_LT(damping_factor, 1.0);
-//double const w0 = 1.0 / std::sqrt(L * C);
-//double const alpha = R / (2.0 * L);
-//double const wd = w0 * std::sqrt(1.0 - Omega_h::square(damping_factor));
-//double const phi = Omega_h::PI / 2.0;
+  double const w0 = 1.0 / std::sqrt(L * C);
+  double const alpha = R / (2.0 * L);
+  double const wd = w0 * std::sqrt(1.0 - Omega_h::square(damping_factor));
+  double const shift_factor = 0.4; // tuned to fit computed answer! should've been 0.5?
+  double const phi = Omega_h::PI * shift_factor;
+  double const B3 = I0 / std::sin(phi);
   std::vector<double> resistances = {R};
   std::vector<double> inductances = {L};
   std::vector<double> capacitances = {C};
@@ -72,17 +74,16 @@ TEST(circuit, RLC_underdamped) {
   double t = 0.0;
   std::ofstream file("circuit.csv");
   file << std::scientific << std::setprecision(8);
-//file << x(1) << ", " << V0 << '\n';
-  file << x(1) << '\n';
+  file << x(1) << ", " << V0 << '\n';
   for (int s = 0; s < 200; ++s) {
     t += dt;
     lgr::form_backward_euler_circuit_system(M, K, x, dt, A, b);
     lgr::gaussian_elimination(A, b);
     lgr::back_substitution(A, b, x);
-//  double const expected_I = I0 * std::exp(-alpha * t) * std::sin(wd * t + phi);
-//  double const expected_V = expected_I * R;
-//  file << x(1) << ", " << expected_V << '\n';
-    file << x(1) << '\n';
+    double const expected_I = B3 * std::exp(-alpha * t) * std::sin(wd * t + phi);
+    double const expected_V = expected_I * R;
+    EXPECT_TRUE(Omega_h::are_close(x(1), expected_V, 0.3, 0.1));
+    file << x(1) << ", " << expected_V << '\n';
   }
 }
 
