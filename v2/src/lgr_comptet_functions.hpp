@@ -60,19 +60,16 @@ Matrix<4, 4> CompTet::invert_44(Matrix<4, 4> a) {
 
 template <int NI, int NJ, int NK>
 OMEGA_H_INLINE
-void CompTet::zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI> in) {
+void CompTet::zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI>& in) {
   for (int i = 0; i < NI; ++i) {
-    for (int j = 0; j < NJ; ++j) {
-      for (int k = 0; k < NK; ++k) {
-        in[i](j, k) = 0.0;
-      }
-    }
+    in[i] = Omega_h::zero_matrix<NJ, NK>();
   }
 }
 
 OMEGA_H_INLINE
 CompTet::SOptType CompTet::compute_S_opt() {
   SOptType S_opt;
+  zero(S_opt);
   S_opt[0](0, 0) = -2;
   S_opt[0](0, 1) = -2;
   S_opt[0](0, 2) = -2;
@@ -509,7 +506,8 @@ Matrix<4, 4> CompTet::compute_M_inv(Vector<nsub_tets> O_det) {
       }
     }
   }
-  return invert_44(M);
+  auto M_inv = invert_44(M);
+  return M_inv;
 }
 
 OMEGA_H_INLINE
