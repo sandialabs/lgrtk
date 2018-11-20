@@ -36,6 +36,7 @@ struct MediumMatrix {
     return entries[std::size_t(i * size + j)];
   }
   MediumMatrix(int const size_in);
+  MediumMatrix() = default;
 };
 
 struct MediumVector {

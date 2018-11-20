@@ -10,16 +10,16 @@ void assemble_circuit(
     std::vector<double> const& resistances,
     std::vector<double> const& inductances,
     std::vector<double> const& capacitances,
+    int const ground_dof,
     MediumMatrix& M,
     MediumMatrix& K
     ) {
   auto const nresistors = int(resistances.size());
-  auto const ninductors = int(resistances.size());
+  auto const ninductors = int(inductances.size());
   auto const ncapacitors = int(capacitances.size());
   OMEGA_H_CHECK(int(resistor_dofs.size()) == nresistors * 2);
   OMEGA_H_CHECK(int(inductor_dofs.size()) == ninductors * 3);
   OMEGA_H_CHECK(int(capacitor_dofs.size()) == ncapacitors * 2);
-  // determine system size
   int max_dof = -1;
   if (!resistor_dofs.empty()) max_dof = std::max(max_dof, *std::max_element(resistor_dofs.begin(), resistor_dofs.end()));
   if (!inductor_dofs.empty()) max_dof = std::max(max_dof, *std::max_element(inductor_dofs.begin(), inductor_dofs.end()));
@@ -56,6 +56,10 @@ void assemble_circuit(
     M(j, j) += C * 1.0;
     M(i, j) += C * -1.0;
     M(j, i) += C * -1.0;
+  }
+  for (int j = 0; j < n; ++j) {
+    M(ground_dof, j) = (ground_dof == j) ? 1.0 : 0.0;
+    K(ground_dof, j) = (ground_dof == j) ? 1.0 : 0.0;
   }
 }
 
