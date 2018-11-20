@@ -29,8 +29,20 @@ void set_boundary_conditions(
 struct MediumMatrix {
   int size;
   std::vector<double> entries;
-  inline double& operator()(int const i, int const j) noexcept { return entries[std::size_t(i * size + j)]; }
-  inline double const& operator()(int const i, int const j) const noexcept { return entries[std::size_t(i * size + j)]; }
+  inline double& operator()(int const i, int const j) noexcept {
+    if (i < 0) Omega_h_fail("i=%d < 0\n", i);
+    if (i >= size) Omega_h_fail("i=%d >= %d\n", i, size);
+    if (j < 0) Omega_h_fail("j=%d < 0\n", j);
+    if (j >= size) Omega_h_fail("j=%d >= %d\n", j, size);
+    return entries[std::size_t(i * size + j)];
+  }
+  inline double const& operator()(int const i, int const j) const noexcept {
+    if (i < 0) Omega_h_fail("i=%d < 0\n", i);
+    if (i >= size) Omega_h_fail("i=%d >= %d\n", i, size);
+    if (j < 0) Omega_h_fail("j=%d < 0\n", j);
+    if (j >= size) Omega_h_fail("j=%d >= %d\n", j, size);
+    return entries[std::size_t(i * size + j)];
+  }
   MediumMatrix(int const size_in);
 };
 
@@ -39,9 +51,11 @@ struct MediumVector {
   inline double& operator()(int const i) noexcept { return entries[std::size_t(i)]; }
   inline double const& operator()(int const i) const noexcept { return entries[std::size_t(i)]; }
   MediumVector(int const size_in);
+  MediumVector() = default;
 };
 
 void gaussian_elimination(MediumMatrix& A, MediumVector& b);
+void back_substitution(MediumMatrix const& A, MediumVector const& b, MediumVector& x);
 
 }
 

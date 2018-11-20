@@ -106,6 +106,7 @@ void set_boundary_conditions(
 }
 
 MediumMatrix::MediumMatrix(int const size_in) {
+  size = size_in;
   entries.resize(std::size_t(size_in * size_in), 0.0);
 }
 
@@ -114,6 +115,7 @@ MediumVector::MediumVector(int const size_in) {
 }
 
 void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
+//if ((1)) return;
   int h = 0; /* Initialization of the pivot row */
   int k = 0; /* Initialization of the pivot column */
   auto const m = A.size;
@@ -152,6 +154,20 @@ void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
       ++h;
       ++k;
     }
+  }
+}
+
+void back_substitution(MediumMatrix const& A, MediumVector const& b, MediumVector& x) {
+  auto const n = A.size;
+  x = MediumVector(n);
+  for (int ri = 0; ri < n; ++ri) {
+    int const i = n - ri - 1;
+    double xi = b(i);
+    for (int j = i + 1; j < n; ++j) {
+      xi -= A(i, j) * x(j);
+    }
+    xi /= A(i, i);
+    x(i) = xi;
   }
 }
 
