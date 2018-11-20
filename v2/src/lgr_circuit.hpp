@@ -13,6 +13,7 @@ void assemble_circuit(
     std::vector<double> const& resistances,
     std::vector<double> const& inductances,
     std::vector<double> const& capacitances,
+    int const ground_dof,
     MediumMatrix& M,
     MediumMatrix& K);
 
