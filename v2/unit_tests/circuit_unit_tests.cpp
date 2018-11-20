@@ -1,7 +1,6 @@
 #include <lgr_circuit.hpp>
 #include <Omega_h_scalar.hpp>
 #include "lgr_gtest.hpp"
-#include <fstream>
 #include <cmath>
 
 TEST(circuit, RC) {
@@ -72,9 +71,6 @@ TEST(circuit, RLC_underdamped) {
   lgr::MediumVector b;
   double const dt = 0.05;
   double t = 0.0;
-  std::ofstream file("circuit.csv");
-  file << std::scientific << std::setprecision(8);
-  file << x(1) << ", " << V0 << '\n';
   for (int s = 0; s < 200; ++s) {
     t += dt;
     lgr::form_backward_euler_circuit_system(M, K, x, dt, A, b);
@@ -83,7 +79,6 @@ TEST(circuit, RLC_underdamped) {
     double const expected_I = B3 * std::exp(-alpha * t) * std::sin(wd * t + phi);
     double const expected_V = expected_I * R;
     EXPECT_TRUE(Omega_h::are_close(x(1), expected_V, 0.3, 0.1));
-    file << x(1) << ", " << expected_V << '\n';
   }
 }
 
