@@ -39,7 +39,7 @@ TEST(circuit, RC) {
 }
 
 TEST(circuit, RLC_underdamped) {
-  int const n = 2;
+  int const n = 4;
   std::vector<int> resistor_dofs = {1, 2};
   std::vector<int> inductor_dofs = {2, 0, 3};
   std::vector<int> capacitor_dofs = {0, 1};
