@@ -30,17 +30,9 @@ struct MediumMatrix {
   int size;
   std::vector<double> entries;
   inline double& operator()(int const i, int const j) noexcept {
-    if (i < 0) Omega_h_fail("i=%d < 0\n", i);
-    if (i >= size) Omega_h_fail("i=%d >= %d\n", i, size);
-    if (j < 0) Omega_h_fail("j=%d < 0\n", j);
-    if (j >= size) Omega_h_fail("j=%d >= %d\n", j, size);
     return entries[std::size_t(i * size + j)];
   }
   inline double const& operator()(int const i, int const j) const noexcept {
-    if (i < 0) Omega_h_fail("i=%d < 0\n", i);
-    if (i >= size) Omega_h_fail("i=%d >= %d\n", i, size);
-    if (j < 0) Omega_h_fail("j=%d < 0\n", j);
-    if (j >= size) Omega_h_fail("j=%d >= %d\n", j, size);
     return entries[std::size_t(i * size + j)];
   }
   MediumMatrix(int const size_in);
