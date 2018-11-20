@@ -115,7 +115,7 @@ MediumVector::MediumVector(int const size_in) {
 }
 
 void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
-//if ((1)) return;
+  OMEGA_H_TIME_FUNCTION;
   int h = 0; /* Initialization of the pivot row */
   int k = 0; /* Initialization of the pivot column */
   auto const m = A.size;
@@ -158,6 +158,7 @@ void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
 }
 
 void back_substitution(MediumMatrix const& A, MediumVector const& b, MediumVector& x) {
+  OMEGA_H_TIME_FUNCTION;
   auto const n = A.size;
   x = MediumVector(n);
   for (int ri = 0; ri < n; ++ri) {
