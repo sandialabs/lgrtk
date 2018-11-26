@@ -37,7 +37,11 @@ static void run_fd_cg() {
     if (i > 0) indices[nz++] = i - 1;
     indices[nz++] = i;
     if (i < ndofs - 1) indices[nz++] = i + 1;
+#ifdef OMEGA_H_USE_CUDA
+    OMEGA_H_CHECK(offsets[i + 1] == nz);
+#else
     EXPECT_TRUE(offsets[i + 1] == nz);
+#endif
   };
   lgr::parallel_for(ndofs, std::move(f1));
   Omega_h::Write<double> values(nnz);
@@ -46,7 +50,11 @@ static void run_fd_cg() {
     if (i > 0) values[nz++] = -1.0;
     values[nz++] = 2.0;
     if (i < ndofs - 1) values[nz++] = -1.0;
+#ifdef OMEGA_H_USE_CUDA
+    OMEGA_H_CHECK(offsets[i + 1] == nz);
+#else
     EXPECT_TRUE(offsets[i + 1] == nz);
+#endif
   };
   lgr::parallel_for(ndofs, std::move(f2));
   Omega_h::Graph rows_to_columns(offsets, indices);
