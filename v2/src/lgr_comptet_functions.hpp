@@ -517,6 +517,7 @@ CompTet::SOLType CompTet::compute_SOL(
     Matrix<nsub_tets, 4> sub_tet_int,
     SType S) {
   SOLType SOL;
+  zero(SOL);
   for (int tet = 0; tet < nsub_tets; ++tet) {
     for (int node = 0; node < nodes; ++node) {
       for (int dim1 = 0; dim1 < dim; ++dim1) {
@@ -598,7 +599,7 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
         for (int l1 = 0; l1 < nbarycentric_coords; ++l1) {
           for (int l2 = 0; l2 < nbarycentric_coords; ++l2) {
             out.basis_gradients[pt](d, node) +=
-              lambda[l1] * M_inv(l1, l2) * SOL[4](node, d);
+              lambda[l1] * M_inv(l1, l2) * SOL[l2](node, d);
           }
         }
       }
