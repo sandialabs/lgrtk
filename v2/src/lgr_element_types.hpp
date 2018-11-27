@@ -170,79 +170,76 @@ struct Tet4 {
     #error Composite Tet requires LGR_TET4 ON
   #endif
 struct CompTet {
-  public:
 
-    static constexpr int dim = 3;
-    static constexpr int nodes = 10;
-    static constexpr int points = 4;
-    static constexpr bool is_simplex = true;
-    static constexpr int nsub_tets = 12;
-    static constexpr int nbarycentric_coords = 4;
+  static constexpr int dim = 3;
+  static constexpr int nodes = 10;
+  static constexpr int points = 4;
+  static constexpr bool is_simplex = true;
+  static constexpr int nsub_tets = 12;
+  static constexpr int nbarycentric_coords = 4;
 
-    static OMEGA_H_INLINE
-    Shape<CompTet> shape(Matrix<dim, nodes> node_coords);
+  static OMEGA_H_INLINE
+  Shape<CompTet> shape(Matrix<dim, nodes> node_coords);
 
-    static OMEGA_H_INLINE
-    constexpr double lumping_factor(int /* node */);
+  static OMEGA_H_INLINE
+  constexpr double lumping_factor(int /* node */);
 
-    static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
-    static constexpr char const* name() { return "CompTet"; }
+  static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static constexpr char const* name() { return "CompTet"; }
 
-    using side = Tet4Side; // this is wrong!
-    using SOptType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, nsub_tets>;
-    using OType = Omega_h::Few<Omega_h::Matrix<dim, dim>, nsub_tets>;
-    using STIPMType = Omega_h::Few<Omega_h::Matrix<4, 4>, nsub_tets>;
-    using SOLType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, 4>;
+  using side = Tet4Side; // this is wrong!
+  using SType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, nsub_tets>;
+  using OType = Omega_h::Few<Omega_h::Matrix<dim, dim>, nsub_tets>;
+  using STIPMType = Omega_h::Few<Omega_h::Matrix<4, 4>, nsub_tets>;
+  using SOLType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, 4>;
 
-  private:
+  template <int NI, int NJ, int NK>
+  static OMEGA_H_INLINE
+  void zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI>& in);
 
-    template <int NI, int NJ, int NK>
-    static OMEGA_H_INLINE
-    void zero(Omega_h::Few<Omega_h::Matrix<NJ, NK>, NI>& in);
+  static OMEGA_H_INLINE
+  double det_44(Matrix<4, 4> a);
 
-    static OMEGA_H_INLINE
-    double det_44(Matrix<4, 4> a);
+  static OMEGA_H_INLINE
+  Matrix<4, 4> invert_44(Matrix<4, 4> a);
 
-    static OMEGA_H_INLINE
-    Matrix<4, 4> invert_44(Matrix<4, 4> a);
+  static OMEGA_H_INLINE
+  SType compute_S();
 
-    static OMEGA_H_INLINE
-    SOptType compute_S_opt();
+  static OMEGA_H_INLINE
+  STIPMType compute_sub_tet_int_proj_M();
 
-    static OMEGA_H_INLINE
-    STIPMType compute_sub_tet_int_proj_M();
+  static OMEGA_H_INLINE
+  Matrix<nsub_tets, 4> compute_sub_tet_int();
 
-    static OMEGA_H_INLINE
-    Matrix<nsub_tets, 4> compute_sub_tet_int();
+  static OMEGA_H_INLINE
+  Matrix<4, 4> compute_parent_M_inv();
 
-    static OMEGA_H_INLINE
-    Matrix<4, 4> compute_parent_M_inv();
+  static OMEGA_H_INLINE
+  OType compute_O(Matrix<dim, nodes> x, SType S);
 
-    static OMEGA_H_INLINE
-    OType compute_O(Matrix<dim, nodes> x, SOptType S_opt);
+  static OMEGA_H_INLINE
+  OType compute_O_inv(OType O);
 
-    static OMEGA_H_INLINE
-    OType compute_O_inv(OType O);
+  static OMEGA_H_INLINE
+  Vector<nsub_tets> compute_O_det(OType O);
 
-    static OMEGA_H_INLINE
-    Vector<nsub_tets> compute_O_det(OType O);
+  static OMEGA_H_INLINE
+  Matrix<4, 4> compute_M_inv(Vector<nsub_tets> O_det);
 
-    static OMEGA_H_INLINE
-    Matrix<4, 4> compute_M_inv(Vector<nsub_tets> O_det);
+  static OMEGA_H_INLINE
+  SOLType compute_SOL(Vector<nsub_tets> O_det, OType O_inv,
+      Matrix<nsub_tets, 4> sub_tet_int, SType S);
 
-    static OMEGA_H_INLINE
-    SOLType compute_SOL(Vector<nsub_tets> O_det, OType O_inv,
-        Matrix<nsub_tets, 4> sub_tet_int, SOptType S_Opt);
+  static OMEGA_H_INLINE
+  Vector<4> compute_DOL(Vector<nsub_tets> O_det,
+      Matrix<nsub_tets, 4> sub_tet_int);
 
-    static OMEGA_H_INLINE
-    Vector<4> compute_DOL(Vector<nsub_tets> O_det,
-        Matrix<nsub_tets, 4> sub_tet_int);
+  static OMEGA_H_INLINE
+  Matrix<dim, points> get_ref_points();
 
-    static OMEGA_H_INLINE
-    Matrix<dim, points> get_ref_points();
-
-    static OMEGA_H_INLINE
-    Vector<4> get_barycentric_coord(Vector<dim> x);
+  static OMEGA_H_INLINE
+  Vector<4> get_barycentric_coord(Vector<dim> x);
 
 };
 #endif
