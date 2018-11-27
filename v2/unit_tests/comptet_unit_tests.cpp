@@ -3,6 +3,19 @@
 
 using Omega_h::are_close;
 
+template <int M, int N>
+static bool is_close(Omega_h::Matrix<M, N> a, Omega_h::Matrix<M, N> b) {
+  bool close = true;
+  for (int i = 0; i < M; ++i) {
+    for (int j = 0; j < N; ++j) {
+      if (! are_close(a(i, j), b(i, j))) {
+        close = false;
+      }
+    }
+  }
+  return close;
+}
+
 static Omega_h::Matrix<3, 3> I3x3() {
   Omega_h::Matrix<3, 3> I = Omega_h::zero_matrix<3, 3>();
   for (int i = 0; i < 3; ++i) {
@@ -102,23 +115,17 @@ static Omega_h::Matrix<4, 4> gold_M_inv_reference() {
 
 
 TEST(composite_tet, O_parametric) {
-  auto dim = lgr::CompTet::dim;
   auto I = I3x3();
   auto X = get_parametric_coords();
   auto S = lgr::CompTet::compute_S();
   auto O = lgr::CompTet::compute_O(X, S);
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
     auto O_subtet = O[tet];
-    for (int i = 0; i < dim; ++i) {
-      for (int j = 0; j < dim; ++j) {
-        OMEGA_H_CHECK(are_close(O_subtet(i, j), I(i, j)));
-      }
-    }
+    EXPECT_TRUE(is_close(O_subtet, I));
   }
 }
 
 TEST(composite_tet, O_reference) {
-  auto dim = lgr::CompTet::dim;
   auto X = get_reference_coords();
   auto S = lgr::CompTet::compute_S();
   auto O = lgr::CompTet::compute_O(X, S);
@@ -126,11 +133,7 @@ TEST(composite_tet, O_reference) {
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
     auto O_subtet = O[tet];
     auto O_gold_subtet = O_gold[tet];
-    for (int i = 0; i < dim; ++i) {
-      for (int j = 0; j < dim; ++j) {
-        OMEGA_H_CHECK(are_close(O_subtet(i, j), O_gold_subtet(i, j)));
-      }
-    }
+    EXPECT_TRUE(is_close(O_subtet, O_gold_subtet));
   }
 }
 
@@ -141,11 +144,7 @@ TEST(composite_tet, M_inv_parametric) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_parametric();
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      OMEGA_H_CHECK(are_close(M_inv(i, j), M_inv_gold(i, j)));
-    }
-  }
+  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
 }
 
 TEST(composite_tet, M_inv_reference) {
@@ -155,9 +154,29 @@ TEST(composite_tet, M_inv_reference) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_reference();
-  for (int i = 0; i < 4; ++i) {
-    for (int j = 0; j < 4; ++j) {
-      OMEGA_H_CHECK(are_close(M_inv(i, j), M_inv_gold(i, j)));
-    }
+  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
+}
+
+TEST(composite_tet, B_parametric) {
+  auto I = I3x3();
+  auto X = get_parametric_coords();
+  auto shape = lgr::CompTet::shape(X);
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    auto result = X * B;
+    EXPECT_TRUE(is_close(result, I));
+  }
+}
+
+TEST(composite_tet, B_reference) {
+  auto I = I3x3();
+  auto X = get_reference_coords();
+  auto shape = lgr::CompTet::shape(X);
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    auto result = X * B;
+    EXPECT_TRUE(is_close(result, I));
   }
 }
