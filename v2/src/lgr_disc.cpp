@@ -241,6 +241,7 @@ Omega_h::Adj Disc::nodes_to_ents(EntityType type) {
 Omega_h::LOs Disc::ents_on_closure(
     std::set<std::string> const& class_names,
     EntityType type) {
+  if (class_names.empty()) return Omega_h::LOs({});
   int ent_dim = -1;
   if (type == NODES) {
     if (is_second_order_) {
@@ -250,6 +251,8 @@ Omega_h::LOs Disc::ents_on_closure(
     }
   }
   else if (type == ELEMS) ent_dim = dim();
+  else if (type == ELEMS) ent_dim = dim() - 1;
+  else Omega_h_fail("unsupported EntityType in Disc::ents_on_closure\n");
   return Omega_h::ents_on_closure(&mesh, class_names, ent_dim);
 }
 
