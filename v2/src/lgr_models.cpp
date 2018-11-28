@@ -31,7 +31,12 @@ void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
 void Models::setup_field_updates() {
   auto const& factories = sim.factories.field_update_factories;
   Omega_h::InputMap dummy_pl;
-  for (auto& f_ptr : sim.fields.storage) {
+  // this can't be a range-based for loop because some field update
+  // models create fields which alters the sim.fields.storage vector
+  // which invalidates most iterators to it including the one used by
+  // the range based for loop
+  for (std::size_t i = 0; i < sim.fields.storage.size(); ++i) {
+    auto& f_ptr = sim.fields.storage[i];
     auto& name = f_ptr->long_name;
     auto it = factories.find(name);
     if (it == factories.end()) continue;

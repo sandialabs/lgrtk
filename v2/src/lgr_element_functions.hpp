@@ -2,6 +2,7 @@
 #define LGR_ELEMENT_FUNCTIONS_HPP
 
 #include <lgr_element_types.hpp>
+#include <Omega_h_shape.hpp>
 
 namespace lgr {
 
@@ -12,15 +13,21 @@ OMEGA_H_INLINE Matrix<Bar2Side::nodes, Bar2Side::points> Bar2Side::basis_values(
   return out;
 }
 
+OMEGA_H_INLINE Vector<Bar2Side::points> Bar2Side::weights(Matrix<Bar2Side::dim, Bar2Side::points>) {
+  return Omega_h::fill_vector<1>(1.0);
+}
+
+OMEGA_H_INLINE constexpr double Bar2Side::lumping(int const) { return 1.0; }
+
 // given the reference positions of the nodes of one element,
 // return the ReferenceShape information
 OMEGA_H_INLINE
 Shape<Bar2> Bar2::shape(
     Matrix<dim, nodes> node_coords) {
   Shape<Bar2> out;
-  auto len = node_coords[1][0] - node_coords[0][0];
+  auto const len = node_coords[1][0] - node_coords[0][0];
   out.weights[0] = len;
-  auto inv_len = 1.0 / len;
+  auto const inv_len = 1.0 / len;
   out.basis_gradients[0][0][0] = -inv_len;
   out.basis_gradients[0][1][0] = inv_len;
   out.lengths.time_step_length = len;
@@ -48,6 +55,17 @@ OMEGA_H_INLINE Matrix<Tri3Side::nodes, Tri3Side::points> Tri3Side::basis_values(
 }
 
 OMEGA_H_INLINE
+Vector<Tri3Side::points> Tri3Side::weights(Matrix<dim, nodes> node_coords) {
+  Vector<points> weights;
+  auto const len = node_coords[1][0] - node_coords[0][0];
+  weights[0] = len;
+  return weights;
+}
+
+OMEGA_H_INLINE
+constexpr double Tri3Side::lumping(int const /*node*/) { return 1.0 / 2.0; }
+
+OMEGA_H_INLINE
 Shape<Tri3> Tri3::shape(Matrix<dim, nodes> node_coords) {
   Matrix<2, 3> edge_vectors;
   edge_vectors[0] = node_coords[1] - node_coords[0];
@@ -56,24 +74,24 @@ Shape<Tri3> Tri3::shape(Matrix<dim, nodes> node_coords) {
   Vector<3> squared_edge_lengths;
   for (int i = 0; i < 3; ++i) squared_edge_lengths[i] = Omega_h::norm_squared(edge_vectors[i]);
   Shape<Tri3> out;
-  auto max_squared_edge_length = Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
-  auto max_edge_length = std::sqrt(max_squared_edge_length);
+  auto const max_squared_edge_length = Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
+  auto const max_edge_length = std::sqrt(max_squared_edge_length);
   out.lengths.viscosity_length = max_edge_length;
   Matrix<2, 3> raw_gradients;
   raw_gradients[0] = Omega_h::perp(edge_vectors[2]);
   raw_gradients[1] = -Omega_h::perp(edge_vectors[1]);
   raw_gradients[2] = Omega_h::perp(edge_vectors[0]);
-  auto raw_area = edge_vectors[0] * raw_gradients[1];
+  auto const raw_area = edge_vectors[0] * raw_gradients[1];
   out.weights[0] = raw_area * (1.0 / 2.0);
-  auto inv_raw_area = 1.0 / raw_area;
+  auto const inv_raw_area = 1.0 / raw_area;
   out.basis_gradients[0] = raw_gradients * inv_raw_area;
-  auto min_height = raw_area / max_edge_length;
+  auto const min_height = raw_area / max_edge_length;
   out.lengths.time_step_length = min_height;
   return out;
 }
 
 OMEGA_H_INLINE
-constexpr double Tri3::lumping_factor(int /*node*/) { return 1.0 / 3.0; }
+constexpr double Tri3::lumping_factor(int const /*node*/) { return 1.0 / 3.0; }
 
 OMEGA_H_INLINE Matrix<Tri3::nodes, Tri3::points> Tri3::basis_values() {
   Matrix<nodes, points> out;
@@ -164,7 +182,7 @@ Shape<Tri6> Tri6::shape(Matrix<dim, nodes> node_coords) {
 }
 
 OMEGA_H_INLINE
-constexpr double Tri6::lumping_factor(int node) {
+constexpr double Tri6::lumping_factor(int const node) {
   // clang-format off
   return ((node == 0) ? 3.0 / 57.0 :
           (node == 1) ? 3.0 / 57.0 :
@@ -270,7 +288,7 @@ Shape<Quad4> Quad4::shape(Matrix<dim, nodes> node_coords) {
 }
 
 OMEGA_H_INLINE
-constexpr double Quad4::lumping_factor(int /* node */) { return 1.0 / 4.0; }
+constexpr double Quad4::lumping_factor(int const /* node */) { return 1.0 / 4.0; }
 
 OMEGA_H_INLINE Matrix<Quad4::nodes, Quad4::points> Quad4::basis_values() {
   Matrix<nodes, points> out;
@@ -302,6 +320,17 @@ OMEGA_H_INLINE Matrix<Tet4Side::nodes, Tet4Side::points> Tet4Side::basis_values(
   out[0][1] = 1.0 / 3.0;
   return out;
 }
+
+OMEGA_H_INLINE
+Vector<Tet4Side::points> Tet4Side::weights(Matrix<dim, nodes> node_coords) {
+  auto const basis = Omega_h::simplex_basis<3, 2>(node_coords);
+  Vector<points> weights;
+  weights[0] = Omega_h::triangle_area_from_basis(basis);
+  return weights;
+}
+
+OMEGA_H_INLINE
+constexpr double Tet4Side::lumping(int const) { return 1.0 / 3.0; }
 
 OMEGA_H_INLINE
 Shape<Tet4> Tet4::shape(Matrix<dim, nodes> node_coords) {
@@ -342,7 +371,7 @@ Shape<Tet4> Tet4::shape(Matrix<dim, nodes> node_coords) {
 }
 
 OMEGA_H_INLINE
-constexpr double Tet4::lumping_factor(int /*node*/) { return 1.0 / 4.0; }
+constexpr double Tet4::lumping_factor(int const /*node*/) { return 1.0 / 4.0; }
 
 OMEGA_H_INLINE Matrix<Tet4::nodes, Tet4::points> Tet4::basis_values() {
   Matrix<nodes, points> out;
