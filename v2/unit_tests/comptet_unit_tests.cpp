@@ -25,33 +25,52 @@ static Omega_h::Matrix<3, 3> I3x3() {
 }
 
 static Omega_h::Matrix<3, 10> get_parametric_coords() {
-  Omega_h::Matrix<3, 10> xi;
-  xi[0][0] = 0.0; xi[0][1] = 0.0; xi[0][2] = 0.0;
-  xi[1][0] = 1.0; xi[1][1] = 0.0; xi[1][2] = 0.0;
-  xi[2][0] = 0.0; xi[2][1] = 1.0; xi[2][2] = 0.0;
-  xi[3][0] = 0.0; xi[3][1] = 0.0; xi[3][2] = 1.0;
-  xi[4][0] = 0.5; xi[4][1] = 0.0; xi[4][2] = 0.0;
-  xi[5][0] = 0.5; xi[5][1] = 0.5; xi[5][2] = 0.0;
-  xi[6][0] = 0.0; xi[6][1] = 0.5; xi[6][2] = 0.0;
-  xi[7][0] = 0.0; xi[7][1] = 0.0; xi[7][2] = 0.5;
-  xi[8][0] = 0.5; xi[8][1] = 0.0; xi[8][2] = 0.5;
-  xi[9][0] = 0.0; xi[9][1] = 0.5; xi[9][2] = 0.5;
-  return xi;
+  Omega_h::Matrix<10, 3> xi;
+  xi = {
+    0.0, 0.0, 0.0,
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    0.0, 0.0, 1.0,
+    0.5, 0.0, 0.0,
+    0.5, 0.5, 0.0,
+    0.0, 0.5, 0.0,
+    0.0, 0.0, 0.5,
+    0.5, 0.0, 0.5,
+    0.0, 0.5, 0.5 };
+  return Omega_h::transpose(xi);
 }
 
 static Omega_h::Matrix<3, 10> get_reference_coords() {
-  Omega_h::Matrix<3, 10> X;
-  X[0][0] = -0.05;    X[0][1] = -0.1;     X[0][2] = 0.125;
-  X[1][0] = 0.9;      X[1][1] = 0.025;    X[1][2] = -0.075;
-  X[2][0] = -0.1;     X[2][1] = 1.025;    X[2][2] = -0.075;
-  X[3][0] = 0.125;    X[3][1] = 0.1;      X[3][2] = 1.025;
-  X[4][0] = 0.525;    X[4][1] = 0.025;    X[4][2] = -0.05;
-  X[5][0] = 0.5;      X[5][1] = 0.525;    X[5][2] = 0.05;
-  X[6][0] = 0.125;    X[6][1] = 0.45;     X[6][2] = -0.075;
-  X[7][0] = 0.1;      X[7][1] = 0.075;    X[7][2] = 0.575;
-  X[8][0] = 0.475;    X[8][1] = -0.075;   X[8][2] = 0.55;
-  X[9][0] = -0.075;   X[9][1] = 0.6;      X[9][2] = 0.45;
-  return X;
+  Omega_h::Matrix<10, 3> X;
+  X = {
+    -0.05,  -0.1,   0.125,
+    0.9,    0.025,  -0.075,
+    -0.1,   1.025,  -0.075,
+    0.125,  0.1,    1.025,
+    0.525,  0.025,  -0.05,
+    0.5,    0.525,  0.05,
+    0.125,  0.45,   -0.075,
+    0.1,    0.075,  0.575,
+    0.475,  -0.075, 0.55,
+    -0.075, 0.6,    0.45 };
+  return Omega_h::transpose(X);
+}
+
+static Omega_h::Matrix<3, 10> get_current_coords() {
+  Omega_h::Matrix<10, 3> x;
+  x = {
+    -0.05015, -0.10022500000000001, 0.122625,
+    0.9729, 0.02979375, -0.09766875,
+    -0.1101, 1.1907937499999999, -0.10066875,
+    0.1485625, 0.13255, 1.4250062499999998,
+    0.5499375, 0.02780625, -0.058925000000000005,
+    0.5605, 0.6475875, 0.06973750000000001,
+    0.1318125, 0.494325, -0.08975625,
+    0.1111, 0.08949375, 0.71113125,
+    0.5350874999999999, -0.09320624999999999, 0.7161000000000001,
+    -0.0852375, 0.73455, 0.6042375,
+  };
+  return Omega_h::transpose(x);
 }
 
 static lgr::CompTet::OType gold_O_reference() {
@@ -211,6 +230,37 @@ static Omega_h::Few<Omega_h::Matrix<10, 3>, 4> gold_B_reference() {
   return B;
 }
 
+Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_F() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F;
+  F[0] = {
+    1.0728825078630875, 0.018292305243103095, 0.02169379108735753,
+    0.027588238952382906, 1.1406706675894112, 0.030034273856605998,
+    0.06559558024841416, 0.06587508507237835, 1.279007866780825 };
+  F[1] = {
+    1.142308386101098, 0.06234376636852145, 0.07528694102066706,
+    0.030775625400816256, 1.238550149839732, 0.016402667380209877,
+    0.004173266751211203, 0.010255522860204667, 1.2954752276290087 };
+  F[2] = {
+    1.132699791580191, 0.02659930111638392, 0.01706718193717734,
+    0.11247111175831231, 1.2665601355454923, 0.12820339271728204,
+    -0.00319003423285983, 0.00684797021170469, 1.316744081195716 };
+  F[3] = {
+    1.1398198659509842, 0.017647722722288418, 0.032210780190121864,
+    0.026483416170151354, 1.2480683558047545, 0.040620195033729184,
+    0.15834784353277337, 0.17919629838676054, 1.4507376580123266 };
+  return F;
+}
+
+Omega_h::Vector<4> gold_J() {
+  Omega_h::Vector<4> J;
+  J = {
+    1.0401993083640124,
+    0.9375381665845295,
+    1.0209015758706936,
+    0.6857359491807643 };
+  return J;
+}
+
 TEST(composite_tet, O_parametric) {
   auto I = I3x3();
   auto X = get_parametric_coords();
@@ -277,4 +327,39 @@ TEST(composite_tet, B_reference) {
     EXPECT_TRUE(is_close(result, I));
     EXPECT_TRUE(is_close(B, B_gold[pt]));
   }
+}
+
+TEST(composite_tet, def_grad) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  auto F_gold = gold_F();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    auto result = x * B;
+    EXPECT_TRUE(is_close(result, F_gold[pt]));
+  }
+}
+
+TEST(composite_tet, det_def_grad) {
+  auto X = get_reference_coords();
+  auto shape = lgr::CompTet::shape(X);
+  auto J_gold = gold_J();
+  auto ip_weight = 1.0 / 24.0;
+  auto w_gold = J_gold * ip_weight;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    EXPECT_TRUE(are_close(shape.weights[pt], w_gold[pt]));
+  }
+}
+
+TEST(composite_tet, volume) {
+  double volume = 0.0;
+  double volume_gold = 0.153515625;
+  auto X = get_reference_coords();
+  auto shape = lgr::CompTet::shape(X);
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    volume += shape.weights[pt];
+  }
+  EXPECT_TRUE(are_close(volume, volume_gold));
 }
