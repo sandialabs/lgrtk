@@ -251,7 +251,7 @@ Omega_h::LOs Disc::ents_on_closure(
     }
   }
   else if (type == ELEMS) ent_dim = dim();
-  else if (type == ELEMS) ent_dim = dim() - 1;
+  else if (type == SIDES) ent_dim = dim() - 1;
   else Omega_h_fail("unsupported EntityType in Disc::ents_on_closure\n");
   return Omega_h::ents_on_closure(&mesh, class_names, ent_dim);
 }
