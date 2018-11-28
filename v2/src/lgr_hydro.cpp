@@ -172,11 +172,6 @@ void compute_nodal_acceleration(Simulation& sim) {
   parallel_for(sim.nodes(), std::move(functor));
 }
 
-void apply_tractions(Simulation& /*sim*/) {
-//if (!sim.has(sim.traction)) return;
-//apply_conditions(sim, sim.traction);
-}
-
 template <class Elem>
 void compute_point_time_steps(Simulation& sim) {
   LGR_SCOPE(sim);

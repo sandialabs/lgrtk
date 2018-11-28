@@ -24,8 +24,6 @@ void compute_nodal_acceleration(Simulation& sim);
 template <class Elem>
 void compute_point_time_steps(Simulation& sim);
 
-void apply_tractions(Simulation& sim);
-
 #define LGR_EXPL_INST(Elem) \
 extern template void initialize_configuration<Elem>(Simulation& sim); \
 extern template void lump_masses<Elem>(Simulation& sim); \
