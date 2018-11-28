@@ -3,6 +3,7 @@
 #include <lgr_hydro.hpp>
 #include <Omega_h_profile.hpp>
 #include <lgr_flood.hpp>
+#include <lgr_traction.hpp>
 
 namespace lgr {
 
