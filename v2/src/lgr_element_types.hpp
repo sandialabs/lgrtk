@@ -31,6 +31,7 @@ struct Bar2Side {
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
 };
 
 struct Bar2 {
@@ -57,6 +58,7 @@ struct Tri3Side {
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
 };
 
 struct Tri3 {
@@ -81,6 +83,7 @@ struct Tri6Side {
   static constexpr int points = 2;
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
 };
 
 struct Tri6 {
@@ -114,6 +117,7 @@ struct Quad4Side {
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
 };
 
 struct Quad4 {
@@ -147,6 +151,7 @@ struct Tet4Side {
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+  static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
 };
 
 struct Tet4 {

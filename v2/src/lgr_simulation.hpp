@@ -77,8 +77,9 @@ struct Simulation {
   FieldIndex density;
   FieldIndex lumping;
   FieldIndex nodal_mass;
-  FieldIndex traction;
   FieldIndex point_time_step;
+  FieldIndex traction;
+  FieldIndex traction_weight;
   Omega_h::Now start_cpu_time_point;
   double prev_cpu_time;
   double cpu_time;
