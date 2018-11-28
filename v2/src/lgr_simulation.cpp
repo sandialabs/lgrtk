@@ -132,6 +132,7 @@ void Simulation::setup(Omega_h::InputMap& pl)
   // start defining fields
   fields.setup(pl);
   auto& everywhere = disc.covering_class_names();
+  ClassNames nowhere;
   position = fields.define("x", "position", dim(), NODES, false, everywhere);
   //fields[position].remap_type = RemapType::NODAL; // position is special
   velocity = fields.define("v", "velocity", dim(), NODES, false, everywhere);
@@ -161,6 +162,8 @@ void Simulation::setup(Omega_h::InputMap& pl)
       1, NODES, false, everywhere);
   point_time_step = fields.define("dt", "time step",
       1, ELEMS, true, everywhere);
+  traction = fields.define("tau", "traction",
+      1, SIDES, true, nowhere);
   // done defining fields
   models.setup_material_models_and_modifiers(pl);
   flooder.setup(pl);

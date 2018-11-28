@@ -32,6 +32,7 @@ struct Bar2Side {
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
   static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
+  static OMEGA_H_INLINE constexpr double lumping(int const node);
 };
 
 struct Bar2 {
@@ -59,6 +60,7 @@ struct Tri3Side {
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
   static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
+  static OMEGA_H_INLINE constexpr double lumping(int const node);
 };
 
 struct Tri3 {
@@ -84,6 +86,7 @@ struct Tri6Side {
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
   static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
+  static OMEGA_H_INLINE constexpr double lumping(int const node);
 };
 
 struct Tri6 {
@@ -103,7 +106,7 @@ struct Tri6 {
     static OMEGA_H_INLINE
       Shape<Tri6> shape(Matrix<dim, nodes> node_coords);
     static OMEGA_H_INLINE
-      constexpr double lumping_factor(int node);
+      constexpr double lumping_factor(int const node);
     static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
     static constexpr char const* name() { return "Tri6"; }
     using side = Tri6Side;
@@ -118,6 +121,7 @@ struct Quad4Side {
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
   static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
+  static OMEGA_H_INLINE constexpr double lumping(int const node);
 };
 
 struct Quad4 {
@@ -152,6 +156,7 @@ struct Tet4Side {
   static constexpr bool is_simplex = true;
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
   static OMEGA_H_INLINE Vector<points> weights(Matrix<dim, nodes>);
+  static OMEGA_H_INLINE constexpr double lumping(int const node);
 };
 
 struct Tet4 {
