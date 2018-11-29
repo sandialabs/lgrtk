@@ -11,7 +11,7 @@ struct NodalPressure : public Model<Elem> {
   FieldIndex nodal_pressure;
   FieldIndex nodal_pressure_rate;
   NodalPressure(Simulation& sim_in)
-    :Model<Elem>(sim_in,this->sim.disc.covering_class_names())
+    :Model<Elem>(sim_in, sim_in.disc.covering_class_names())
   {  
     auto& everywhere = this->sim.disc.covering_class_names();
     nodal_pressure =
