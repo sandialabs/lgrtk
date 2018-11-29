@@ -1,7 +1,6 @@
 lgr:
   CFL: 0.9
-  end time: 1.0e-3
-  end step: 1
+  end time: 10.0
   element type: Tri3
   mesh:
     box:
@@ -25,11 +24,11 @@ lgr:
         value: 'vector(0.0, 0.0)'
   responses:
     viz:
-      time period: 1.0e-5
       type: VTK output
       fields:
         - velocity
         - density
+        - stress
     stdout:
       type: command line history
       scalars:
