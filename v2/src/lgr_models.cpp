@@ -10,6 +10,8 @@
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_scope.hpp>
+#include <lgr_nodal_pressure.hpp>
+#include <lgr_stabilization.hpp>
 #include <Omega_h_profile.hpp>
 
 namespace lgr {
@@ -92,6 +94,7 @@ ModelFactories get_builtin_modifier_factories() {
   ModelFactories out;
   out["artificial viscosity"] = artificial_viscosity_factory<Elem>;
   out["Joule heating"] = joule_heating_factory<Elem>;
+  out["nodal pressure"] = nodal_pressure_factory<Elem>;
   return out;
 }
 
@@ -100,6 +103,7 @@ ModelFactories get_builtin_field_update_factories() {
   ModelFactories out;
   out["specific internal energy"] = internal_energy_factory<Elem>;
   out["deformation gradient"] = deformation_gradient_factory<Elem>;
+  out["velocity stabilization"] = stabilization_factory<Elem>;
   return out;
 }
 
