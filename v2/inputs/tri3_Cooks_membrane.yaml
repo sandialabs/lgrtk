@@ -1,0 +1,38 @@
+lgr:
+  CFL: 0.9
+  end time: 1.0e-3
+  end step: 1
+  element type: Tri3
+  mesh:
+    box:
+      x elements: 8
+      x size: 1.0
+      y elements: 8
+      y size: 1.0
+    transform: 'vector(x(0) * 48, x(1) * 44 + x(0) * 16 * x(1) + x(0) * 44 * ( 1 - x(1) ))'
+  common fields:
+    density: 1.0
+    velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
+  material models:
+    model1:
+      type: linear elastic
+      bulk modulus: 1.0
+      shear modulus: 1.0
+  conditions:
+    acceleration:
+      - 
+        sets: ['x-']
+        value: 'vector(0.0, 0.0)'
+  responses:
+    viz:
+      time period: 1.0e-5
+      type: VTK output
+      fields:
+        - velocity
+        - density
+    stdout:
+      type: command line history
+      scalars:
+        - step
+        - time
+        - dt
