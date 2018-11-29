@@ -2,6 +2,8 @@
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <Omega_h_align.hpp>
+#include <lgr_element_functions.hpp>
 
 namespace lgr {
 
@@ -12,6 +14,7 @@ struct NodalPressure : public Model<Elem> {
   FieldIndex nodal_pressure_rate;
   FieldIndex effective_bulk_modulus;
   FieldIndex velocity_stabilization;
+  FieldIndex pressure_stabilization;
   NodalPressure(Simulation& sim_in)
     :Model<Elem>(sim_in, sim_in.disc.covering_class_names())
   {  
@@ -24,6 +27,8 @@ struct NodalPressure : public Model<Elem> {
     this->sim.fields.define("kappa", "effective bulk modulus", 1, ELEMS, true, everywhere);
     velocity_stabilization =
     this->sim.fields.define("tau_v", "velocity stabilizaiton", 1, ELEMS, true, everywhere);
+    pressure_stabilization =
+    this->sim.fields.define("tau_p", "pressure stabilizaiton", 1, ELEMS, true, everywhere);
   }
 
   void compute_pressure_rate(){
@@ -38,6 +43,7 @@ struct NodalPressure : public Model<Elem> {
   auto const points_to_kappa = sim.get(this->effective_bulk_modulus);
   auto const points_to_tau_v = sim.get(this->velocity_stabilization);
   auto const nodes_to_elems = sim.nodes_to_elems();
+  auto const elems_to_nodes = this->get_elems_to_nodes();
   auto functor = OMEGA_H_LAMBDA(int const node) {
     auto node_p_dot = 0.0;
     auto const begin = nodes_to_elems.a2ab[node];
@@ -54,7 +60,7 @@ struct NodalPressure : public Model<Elem> {
       for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
         auto const point = elem * Elem::points + elem_pt;
         auto const weight = points_to_weights[point];
-	auto const grads = getgrads<Elem>(points_to_grad, point);
+	auto const grads = getgrads<Elem>(points_to_grads, point);
 	auto const grad_v = grad<Elem>(grads, v);
 	auto const div_v = trace(grad_v);
 	auto const kappa = points_to_kappa[point];
@@ -90,20 +96,22 @@ struct NodalPressure : public Model<Elem> {
     auto const nodes_to_v = sim.get(sim.velocity);
     auto const nodes_to_p_dot = sim.get(nodal_pressure_rate);
     auto const points_to_kappa = this->points_get(effective_bulk_modulus);
-    auto const points_to_grad = this->points_get(sim.gradient);
+    auto const points_to_grads = this->points_get(sim.gradient);
     auto const elems_to_nodes = this->get_elems_to_nodes();
+    auto const points_to_tau_p = this->points_get(pressure_stabilization);
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const elem = point/Elem::points;
       auto const elem_point = point%Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto const grads = getgrads<Elem>(points_to_grad, point);
+      auto const grads = getgrads<Elem>(points_to_grads, point);
       auto const grad_v = grad<Elem>(grads, v);
       auto const div_v = trace(grad_v);
       auto const kappa = points_to_kappa[point];
       auto const p_dot = getscals<Elem>(nodes_to_p_dot, elem_nodes);
       auto const basis_values = Elem::basis_values()[elem_point];
       auto const point_p_dot = p_dot * basis_values;
+      auto const tau_p = points_to_tau_p[point];
       auto const p_prime = -tau_p * (point_p_dot - kappa * div_v);
       auto const p = getscals<Elem>(nodes_to_p, elem_nodes);
       auto const point_p = p * basis_values;
