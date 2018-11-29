@@ -38,6 +38,7 @@ add_library(lgr_library
     lgr_internal_energy.cpp
     lgr_deformation_gradient.cpp
     lgr_neo_hookean.cpp
+    lgr_stvenant_kirchhoff.cpp
     lgr_riemann.cpp
     lgr_osh_output.cpp
     lgr_quadratic.cpp

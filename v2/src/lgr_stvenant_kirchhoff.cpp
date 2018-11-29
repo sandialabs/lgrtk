@@ -1,10 +1,10 @@
-#include <lgr_neo_hookean.hpp>
+#include <lgr_stvenant_kirchhoff.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
 
 namespace lgr {
 
-OMEGA_H_INLINE void neo_hookean_update(
+OMEGA_H_INLINE void stvenant_kirchhoff_update(
     double bulk_modulus,
     double shear_modulus,
     double density,
@@ -15,31 +15,23 @@ OMEGA_H_INLINE void neo_hookean_update(
   auto const J = Omega_h::determinant(F);
   OMEGA_H_CHECK(J > 0.0);
   auto const Jinv = 1.0 / J;
-  auto const half_bulk_modulus = (1.0 / 2.0) * bulk_modulus;
-  auto const volumetric_stress = half_bulk_modulus * (J - Jinv);
   auto const I = Omega_h::identity_matrix<3, 3>();
-  auto const isotropic_stress = volumetric_stress * I;
-  auto const Jm13 = 1.0 / std::cbrt(J);
-  auto const Jm23 = Jm13 * Jm13;
-  auto const Jm53 = Jm23 * Jm23 * Jm13;
-  auto const B = F * transpose(F);
-  auto const devB = Omega_h::deviator(B);
-  auto const deviatoric_stress = shear_modulus * Jm53 * devB;
-  stress = isotropic_stress + deviatoric_stress;
-  auto const tangent_bulk_modulus = half_bulk_modulus * (J + Jinv);
-  auto const plane_wave_modulus =
-    tangent_bulk_modulus + (4.0 / 3.0) * shear_modulus;
-  OMEGA_H_CHECK(plane_wave_modulus > 0.0);
-  wave_speed = std::sqrt(plane_wave_modulus / density);
+  auto const C = transpose(F) * F;
+  auto const E = 0.5 * (C - I);
+  auto const mu = shear_modulus;
+  auto const lambda = bulk_modulus - 2.0 * mu / 3.0;
+  auto const S = lambda * trace(E) * I + 2.0 * mu * E;
+  stress = Jinv * F * S * transpose(F);
+  wave_speed = std::sqrt(bulk_modulus / density);
   OMEGA_H_CHECK(wave_speed > 0.0);
 }
 
 template <class Elem>
-struct NeoHookean : public Model<Elem> {
+struct StVenantKirchhoff : public Model<Elem> {
   FieldIndex bulk_modulus;
   FieldIndex shear_modulus;
   FieldIndex deformation_gradient;
-  NeoHookean(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
+  StVenantKirchhoff(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->bulk_modulus =
       this->point_define("kappa", "bulk modulus", 1,
           RemapType::PER_UNIT_VOLUME, pl, "");
@@ -52,7 +44,7 @@ struct NeoHookean : public Model<Elem> {
           square(dim), RemapType::POSITIVE_DETERMINANT, pl, "I");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
-  char const* name() override final { return "neo-Hookean"; }
+  char const* name() override final { return "StVenant-Kirchhoff"; }
   void at_material_model() override final {
     auto points_to_kappa = this->points_get(this->bulk_modulus);
     auto points_to_nu = this->points_get(this->shear_modulus);
@@ -71,21 +63,21 @@ struct NeoHookean : public Model<Elem> {
         F(i,j) = F_small(i,j);
       Matrix<3, 3> sigma;
       double c;
-      neo_hookean_update(kappa, nu, rho, F, sigma, c);
+      stvenant_kirchhoff_update(kappa, nu, rho, F, sigma, c);
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(sigma));
       points_to_wave_speed[point] = c;
     };
-    parallel_for("neo-Hookean kernel", this->points(), std::move(functor));
+    parallel_for("StVenant-Kirchhoff kernel", this->points(), std::move(functor));
   }
 };
 
 template <class Elem>
-ModelBase* neo_hookean_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new NeoHookean<Elem>(sim, pl);
+ModelBase* stvenant_kirchhoff_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+  return new StVenantKirchhoff<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \
-template ModelBase* neo_hookean_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+template ModelBase* stvenant_kirchhoff_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

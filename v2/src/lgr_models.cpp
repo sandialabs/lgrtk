@@ -5,6 +5,7 @@
 #include <lgr_ideal_gas.hpp>
 #include <lgr_mie_gruneisen.hpp>
 #include <lgr_neo_hookean.hpp>
+#include <lgr_stvenant_kirchhoff.hpp>
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_deformation_gradient.hpp>
@@ -84,6 +85,7 @@ ModelFactories get_builtin_material_model_factories() {
   out["ideal gas"] = ideal_gas_factory<Elem>;
   out["Mie-Gruneisen"] = mie_gruneisen_factory<Elem>;
   out["neo-Hookean"] = neo_hookean_factory<Elem>;
+  out["StVenant-Kirchhoff"] = stvenant_kirchhoff_factory<Elem>;
   return out;
 }
 
