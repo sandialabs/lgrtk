@@ -13,7 +13,7 @@ struct NodalPressure : public Model<Elem> {
   FieldIndex effective_bulk_modulus;
   FieldIndex velocity_stabilization;
   NodalPressure(Simulation& sim_in)
-    :Model<Elem>(sim_in,this->sim.disc.covering_class_names())
+    :Model<Elem>(sim_in, sim_in.disc.covering_class_names())
   {  
     auto& everywhere = this->sim.disc.covering_class_names();
     nodal_pressure =
@@ -75,7 +75,7 @@ struct NodalPressure : public Model<Elem> {
   }
   std::uint64_t exec_stages() override final {
     return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES |
-      AFTER_CORRECTION;
+      AFTER_CORRECTION | AFTER_MATERIAL_MODEL;
   }
   char const* name() override final { return "nodal pressure"; }
   void before_material_model() override final {
@@ -83,6 +83,37 @@ struct NodalPressure : public Model<Elem> {
       zero_nodal_pressure_rate();
     }
     compute_nodal_pressure_predictor();
+  }
+  void after_material_model() override final {
+    auto const points_to_sigma = this->points_getset(sim.stress);
+    auto const nodes_to_p = sim.get(nodal_pressure);
+    auto const nodes_to_v = sim.get(sim.velocity);
+    auto const nodes_to_p_dot = sim.get(nodal_pressure_rate);
+    auto const points_to_kappa = this->points_get(effective_bulk_modulus);
+    auto const points_to_grad = this->points_get(sim.gradient);
+    auto const elems_to_nodes = this->get_elems_to_nodes();
+    auto functor = OMEGA_H_LAMBDA(int const point) {
+      auto const elem = point/Elem::points;
+      auto const elem_point = point%Elem::points;
+      auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
+      auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
+      auto const grads = getgrads<Elem>(points_to_grad, point);
+      auto const grad_v = grad<Elem>(grads, v);
+      auto const div_v = trace(grad_v);
+      auto const kappa = points_to_kappa[point];
+      auto const p_dot = getscals<Elem>(nodes_to_p_dot, elem_nodes);
+      auto const basis_values = Elem::basis_values()[elem_point];
+      auto const point_p_dot = p_dot * basis_values;
+      auto const p_prime = -tau_p * (point_p_dot - kappa * div_v);
+      auto const p = getscals<Elem>(nodes_to_p, elem_nodes);
+      auto const point_p = p * basis_values;
+      auto const sigma = getsymm<Elem>(points_to_sigma, point);
+      auto const dev_sigma = deviator(sigma);
+      auto const I = identity_matrix<Elem::dim,Elem::dim>();
+      auto const sigma_tilde = dev_sigma + I * (point_p + p_prime);
+      setsymm<Elem>(points_to_sigma, point, sigma_tilde);
+    };
+    parallel_for(this->points(), std::move(functor));
   }
   void before_secondaries() override final {
     backtrack_to_midpoint_nodal_pressure();
