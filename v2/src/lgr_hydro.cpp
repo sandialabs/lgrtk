@@ -132,7 +132,7 @@ void compute_stress_divergence(Simulation& sim) {
   LGR_SCOPE(sim);
   auto const points_to_sigma = sim.get(sim.stress);
   auto const points_to_grads = sim.get(sim.gradient);
-  auto const points_to_weights = sim.set(sim.weight);
+  auto const points_to_weights = sim.get(sim.weight);
   auto const nodes_to_f = sim.set(sim.force);
   auto const nodes_to_elems = sim.nodes_to_elems();
   auto functor = OMEGA_H_LAMBDA(int const node) {
