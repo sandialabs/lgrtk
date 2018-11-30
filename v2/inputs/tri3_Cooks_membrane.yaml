@@ -1,0 +1,46 @@
+lgr:
+  CFL: 0.1
+  end time: 6.0
+  element type: Tri3
+  mesh:
+    box:
+      x elements: 8
+      x size: 1.0
+      y elements: 8
+      y size: 1.0
+    transform: 'vector(x(0) * 48, x(1) * 44 + x(0) * 16 * x(1) + x(0) * 44 * ( 1 - x(1) ))'
+  common fields:
+    density: 1.0
+    velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
+  material models:
+    model1:
+      type: linear elastic
+      bulk modulus: 833333
+      shear modulus: 83
+  modifiers:
+    mod1:
+      type: nodal pressure
+  conditions:
+    acceleration:
+      - 
+        sets: ['x-']
+        value: 'vector(0.0, 0.0)'
+  responses:
+    viz:
+      type: VTK output
+      time period: 0.05
+      fields:
+        - velocity
+        - density
+        - stress
+        - velocity stabilization
+        - pressure stabilization
+        - nodal pressure
+        - nodal pressure rate
+    stdout:
+      type: command line history
+      minimum column width: 20
+      scalars:
+        - step
+        - time
+        - dt
