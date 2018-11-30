@@ -1,6 +1,6 @@
 lgr:
-  CFL: 0.3
-  end time: 6.0
+  CFL: 0.4
+  end time: 100.0
   element type: Tri3
   mesh:
     box:
@@ -23,6 +23,8 @@ lgr:
   modifiers:
     mod1:
       type: nodal pressure
+      velocity constant: 0.5
+      pressure constant: 0.5
   conditions:
     acceleration:
       - 
@@ -31,7 +33,7 @@ lgr:
   responses:
     viz:
       type: VTK output
-      time period: 0.05
+      time period: 0.5
       fields:
         - velocity
         - density
