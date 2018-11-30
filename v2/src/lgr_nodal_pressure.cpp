@@ -4,6 +4,7 @@
 #include <lgr_for.hpp>
 #include <Omega_h_align.hpp>
 #include <lgr_element_functions.hpp>
+#include <iostream> // DEBUG
 
 namespace lgr {
 
@@ -21,63 +22,85 @@ struct NodalPressure : public Model<Elem> {
     auto& everywhere = this->sim.disc.covering_class_names();
     nodal_pressure =
     this->sim.fields.define("p", "nodal pressure", 1, NODES, false, everywhere);
+    this->sim.fields[nodal_pressure].default_value = "0.0";
     nodal_pressure_rate =
     this->sim.fields.define("p_dot", "nodal pressure rate", 1, NODES, false, everywhere);
+    this->sim.fields[nodal_pressure_rate].default_value = "0.0";
     effective_bulk_modulus =
-    this->sim.fields.define("kappa", "effective bulk modulus", 1, ELEMS, true, everywhere);
+    this->sim.fields.define("kappa_tilde", "effective bulk modulus", 1, ELEMS, true, everywhere);
     velocity_stabilization =
-    this->sim.fields.define("tau_v", "velocity stabilizaiton", 1, ELEMS, true, everywhere);
+    this->sim.fields.define("tau_v", "velocity stabilization", 1, ELEMS, true, everywhere);
     pressure_stabilization =
-    this->sim.fields.define("tau_p", "pressure stabilizaiton", 1, ELEMS, true, everywhere);
+    this->sim.fields.define("tau_p", "pressure stabilization", 1, ELEMS, true, everywhere);
   }
 
   void compute_pressure_rate(){
     OMEGA_H_TIME_FUNCTION;
-  auto const nodes_to_pressure = sim.get(this->nodal_pressure);
-  auto const nodes_to_pressure_rate = sim.set(this->nodal_pressure_rate);
-  auto const points_to_grads = sim.get(sim.gradient);
-  auto const points_to_weights = sim.get(sim.weight);
-  auto const nodes_to_a = sim.get(sim.acceleration);
-  auto const nodes_to_v = sim.get(sim.velocity);
-  auto const points_to_rho = sim.get(sim.density);
-  auto const points_to_kappa = sim.get(this->effective_bulk_modulus);
-  auto const points_to_tau_v = sim.get(this->velocity_stabilization);
-  auto const nodes_to_elems = sim.nodes_to_elems();
-  auto const elems_to_nodes = this->get_elems_to_nodes();
-  auto functor = OMEGA_H_LAMBDA(int const node) {
-    auto node_p_dot = 0.0;
-    auto const begin = nodes_to_elems.a2ab[node];
-    auto const end = nodes_to_elems.a2ab[node + 1];
-    for (auto node_elem = begin; node_elem < end; ++node_elem) {
-      auto const elem = nodes_to_elems.ab2b[node_elem];
-      auto const code = nodes_to_elems.codes[node_elem];
-      auto const elem_node = Omega_h::code_which_down(code);
-      auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
-      auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto const nodes_a = getvecs<Elem>(nodes_to_a, elem_nodes);
-      auto const p = getscals<Elem>(nodes_to_pressure, elem_nodes);
+    auto const nodes_to_pressure = sim.get(this->nodal_pressure);
+    auto const nodes_to_pressure_rate = sim.set(this->nodal_pressure_rate);
+    auto const points_to_grads = sim.get(sim.gradient);
+    auto const points_to_weights = sim.get(sim.weight);
+    auto const nodes_to_a = sim.get(sim.acceleration);
+    auto const nodes_to_v = sim.get(sim.velocity);
+    auto const points_to_rho = sim.get(sim.density);
+    auto const points_to_kappa = sim.get(this->effective_bulk_modulus);
+    auto const points_to_tau_v = sim.get(this->velocity_stabilization);
+    auto const nodes_to_elems = sim.nodes_to_elems();
+    auto const elems_to_nodes = this->get_elems_to_nodes();
+    auto const c_tau_v = 1.0;
+    auto const dt = sim.dt;
+    auto const cfl = sim.cfl;
+    auto functor = OMEGA_H_LAMBDA(int const node) {
+      auto node_p_dot = 0.0;
+      auto node_volume = 0.0;
       auto const phis = Elem::basis_values();
-      for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
-        auto const point = elem * Elem::points + elem_pt;
-        auto const weight = points_to_weights[point];
-	auto const grads = getgrads<Elem>(points_to_grads, point);
-	auto const grad_v = grad<Elem>(grads, v);
-	auto const div_v = trace(grad_v);
-	auto const kappa = points_to_kappa[point];
-	auto const phi = phis[elem_pt][elem_node];
-	node_p_dot += phi*kappa*div_v*weight;
-        auto const grad_phi = grads[elem_node];
-	auto const rho = points_to_rho[point];
-	auto const point_a = nodes_a*phis[elem_pt];
-	auto const grad_p = grad<Elem>(grads, p);
-	auto const tau_v = points_to_tau_v[point];
-	auto const v_prime = -(tau_v/rho)*(rho*point_a-grad_p);
-	node_p_dot += (grad_phi*(kappa*v_prime))*weight;
+      auto const begin = nodes_to_elems.a2ab[node];
+      auto const end = nodes_to_elems.a2ab[node + 1];
+      for (auto node_elem = begin; node_elem < end; ++node_elem) {
+        auto const elem = nodes_to_elems.ab2b[node_elem];
+        auto const code = nodes_to_elems.codes[node_elem];
+        auto const elem_node = Omega_h::code_which_down(code);
+        for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
+          auto const point = elem * Elem::points + elem_pt;
+          auto const phi = phis[elem_pt][elem_node];
+          auto const weight = points_to_weights[point];
+          node_volume += phi * weight;
+        }
       }
-    }
-    nodes_to_pressure_rate[node] = node_p_dot;
-  };
-  parallel_for(this->sim.disc.counts(NODES), std::move(functor));
+      for (auto node_elem = begin; node_elem < end; ++node_elem) {
+        auto const elem = nodes_to_elems.ab2b[node_elem];
+        auto const code = nodes_to_elems.codes[node_elem];
+        auto const elem_node = Omega_h::code_which_down(code);
+        auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
+        auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
+        auto const nodes_a = getvecs<Elem>(nodes_to_a, elem_nodes);
+        auto const p = getscals<Elem>(nodes_to_pressure, elem_nodes);
+        for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
+          auto const point = elem * Elem::points + elem_pt;
+          auto const weight = points_to_weights[point];
+          auto const grads = getgrads<Elem>(points_to_grads, point);
+          auto const grad_v = grad<Elem>(grads, v);
+          auto const div_v = trace(grad_v);
+          auto const kappa = points_to_kappa[point];
+          auto const phi = phis[elem_pt][elem_node];
+          node_p_dot += phi * kappa * div_v * weight;
+          auto const grad_phi = grads[elem_node];
+          auto const rho = points_to_rho[point];
+          auto const point_a = nodes_a * phis[elem_pt];
+          (void)point_a;
+          auto const grad_p = grad<Elem>(grads, p);
+//        auto const tau_v = points_to_tau_v[point];
+          auto const tau_v = c_tau_v * dt / cfl;
+          auto const v_prime = -(tau_v / rho) * (rho * point_a - grad_p);
+          (void)v_prime;
+          (void)grad_phi;
+          node_p_dot += -(grad_phi * (kappa * v_prime)) * weight;
+        }
+      }
+      node_p_dot /= node_volume;
+      nodes_to_pressure_rate[node] = node_p_dot;
+    };
+    parallel_for(this->sim.disc.count(NODES), std::move(functor));
   }
   std::uint64_t exec_stages() override final {
     return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES |
@@ -118,14 +141,15 @@ struct NodalPressure : public Model<Elem> {
       auto const sigma = getsymm<Elem>(points_to_sigma, point);
       auto const dev_sigma = deviator(sigma);
       auto const I = identity_matrix<Elem::dim,Elem::dim>();
-      auto const sigma_tilde = dev_sigma + I * (point_p + p_prime);
+      (void)p_prime;
+      auto const sigma_tilde = dev_sigma + I * (point_p /*+ p_prime*/);
       setsymm<Elem>(points_to_sigma, point, sigma_tilde);
     };
     parallel_for(this->points(), std::move(functor));
   }
   void before_secondaries() override final {
     backtrack_to_midpoint_nodal_pressure();
-    zero_nodal_pressure_rate();
+    compute_pressure_rate();
   }
   void after_correction() override final {
     correct_nodal_pressure();

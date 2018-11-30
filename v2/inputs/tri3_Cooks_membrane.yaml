@@ -1,6 +1,6 @@
 lgr:
-  CFL: 0.9
-  end time: 10.0
+  CFL: 0.1
+  end time: 6.0
   element type: Tri3
   mesh:
     box:
@@ -15,8 +15,11 @@ lgr:
   material models:
     model1:
       type: linear elastic
-      bulk modulus: 1.0
-      shear modulus: 1.0
+      bulk modulus: 833333
+      shear modulus: 83
+  modifiers:
+    mod1:
+      type: nodal pressure
   conditions:
     acceleration:
       - 
@@ -25,12 +28,18 @@ lgr:
   responses:
     viz:
       type: VTK output
+      time period: 0.05
       fields:
         - velocity
         - density
         - stress
+        - velocity stabilization
+        - pressure stabilization
+        - nodal pressure
+        - nodal pressure rate
     stdout:
       type: command line history
+      minimum column width: 20
       scalars:
         - step
         - time
