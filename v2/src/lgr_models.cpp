@@ -12,7 +12,6 @@
 #include <lgr_joule_heating.hpp>
 #include <lgr_scope.hpp>
 #include <lgr_nodal_pressure.hpp>
-#include <lgr_stabilization.hpp>
 #include <Omega_h_profile.hpp>
 
 namespace lgr {
@@ -105,7 +104,6 @@ ModelFactories get_builtin_field_update_factories() {
   ModelFactories out;
   out["specific internal energy"] = internal_energy_factory<Elem>;
   out["deformation gradient"] = deformation_gradient_factory<Elem>;
-  out["velocity stabilization"] = stabilization_factory<Elem>;
   return out;
 }
 

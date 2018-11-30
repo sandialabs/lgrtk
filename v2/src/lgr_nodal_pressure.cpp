@@ -4,7 +4,6 @@
 #include <lgr_for.hpp>
 #include <Omega_h_align.hpp>
 #include <lgr_element_functions.hpp>
-#include <iostream> // DEBUG
 
 namespace lgr {
 
@@ -14,9 +13,9 @@ struct NodalPressure : public Model<Elem> {
   FieldIndex nodal_pressure;
   FieldIndex nodal_pressure_rate;
   FieldIndex effective_bulk_modulus;
-  FieldIndex velocity_stabilization;
-  FieldIndex pressure_stabilization;
-  NodalPressure(Simulation& sim_in)
+  double velocity_constant;
+  double pressure_constant;
+  NodalPressure(Simulation& sim_in, Omega_h::InputMap& pl)
     :Model<Elem>(sim_in, sim_in.disc.covering_class_names())
   {  
     auto& everywhere = this->sim.disc.covering_class_names();
@@ -28,10 +27,8 @@ struct NodalPressure : public Model<Elem> {
     this->sim.fields[nodal_pressure_rate].default_value = "0.0";
     effective_bulk_modulus =
     this->sim.fields.define("kappa_tilde", "effective bulk modulus", 1, ELEMS, true, everywhere);
-    velocity_stabilization =
-    this->sim.fields.define("tau_v", "velocity stabilization", 1, ELEMS, true, everywhere);
-    pressure_stabilization =
-    this->sim.fields.define("tau_p", "pressure stabilization", 1, ELEMS, true, everywhere);
+    velocity_constant = pl.get<double>("velocity constant", "1.0");
+    pressure_constant = pl.get<double>("pressure constant", "1.0");
   }
 
   void compute_pressure_rate(){
@@ -44,10 +41,9 @@ struct NodalPressure : public Model<Elem> {
     auto const nodes_to_v = sim.get(sim.velocity);
     auto const points_to_rho = sim.get(sim.density);
     auto const points_to_kappa = sim.get(this->effective_bulk_modulus);
-    auto const points_to_tau_v = sim.get(this->velocity_stabilization);
     auto const nodes_to_elems = sim.nodes_to_elems();
     auto const elems_to_nodes = this->get_elems_to_nodes();
-    auto const c_tau_v = 1.0;
+    auto const c_tau_v = velocity_constant;
     auto const dt = sim.dt;
     auto const cfl = sim.cfl;
     auto functor = OMEGA_H_LAMBDA(int const node) {
@@ -87,13 +83,9 @@ struct NodalPressure : public Model<Elem> {
           auto const grad_phi = grads[elem_node];
           auto const rho = points_to_rho[point];
           auto const point_a = nodes_a * phis[elem_pt];
-          (void)point_a;
           auto const grad_p = grad<Elem>(grads, p);
-//        auto const tau_v = points_to_tau_v[point];
           auto const tau_v = c_tau_v * dt / cfl;
           auto const v_prime = -(tau_v / rho) * (rho * point_a - grad_p);
-          (void)v_prime;
-          (void)grad_phi;
           node_p_dot += -(grad_phi * (kappa * v_prime)) * weight;
         }
       }
@@ -121,7 +113,9 @@ struct NodalPressure : public Model<Elem> {
     auto const points_to_kappa = this->points_get(effective_bulk_modulus);
     auto const points_to_grads = this->points_get(sim.gradient);
     auto const elems_to_nodes = this->get_elems_to_nodes();
-    auto const points_to_tau_p = this->points_get(pressure_stabilization);
+    auto const c_tau_p = pressure_constant;
+    auto const cfl = sim.cfl;
+    auto const dt = sim.dt;
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const elem = point/Elem::points;
       auto const elem_point = point%Elem::points;
@@ -134,7 +128,7 @@ struct NodalPressure : public Model<Elem> {
       auto const p_dot = getscals<Elem>(nodes_to_p_dot, elem_nodes);
       auto const basis_values = Elem::basis_values()[elem_point];
       auto const point_p_dot = p_dot * basis_values;
-      auto const tau_p = points_to_tau_p[point];
+      auto const tau_p = c_tau_p * dt / cfl;
       auto const p_prime = -tau_p * (point_p_dot - kappa * div_v);
       auto const p = getscals<Elem>(nodes_to_p, elem_nodes);
       auto const point_p = p * basis_values;
@@ -207,8 +201,8 @@ struct NodalPressure : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* nodal_pressure_factory(Simulation& sim, std::string const&, Omega_h::InputMap&) {
-  return new NodalPressure<Elem>(sim);
+ModelBase* nodal_pressure_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+  return new NodalPressure<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem) \

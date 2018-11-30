@@ -33,8 +33,6 @@ lgr:
         - velocity
         - density
         - stress
-        - velocity stabilization
-        - pressure stabilization
         - nodal pressure
         - nodal pressure rate
     stdout:
