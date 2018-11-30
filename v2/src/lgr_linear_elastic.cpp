@@ -26,6 +26,7 @@ struct LinearElastic : public Model<Elem> {
   FieldIndex bulk_modulus;
   FieldIndex shear_modulus;
   FieldIndex deformation_gradient;
+  FieldIndex effective_bulk_modulus;
   LinearElastic(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
     this->bulk_modulus =
       this->point_define("kappa", "bulk modulus", 1,
@@ -37,11 +38,15 @@ struct LinearElastic : public Model<Elem> {
     this->deformation_gradient =
       this->point_define("F", "deformation gradient",
           square(dim), RemapType::NONE, pl, "I");
+    this->effective_bulk_modulus =
+      this->point_define("kappa_tilde", "effective bulk modulus", 1,
+          RemapType::PER_UNIT_VOLUME, pl, "");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "linear elastic"; }
   void at_material_model() override final {
     auto points_to_kappa = this->points_get(this->bulk_modulus);
+    auto points_to_kappa_tilde = this->points_set(this->effective_bulk_modulus);
     auto points_to_nu = this->points_get(this->shear_modulus);
     auto points_to_rho = this->points_get(this->sim.density);
     auto points_to_F = this->points_get(this->deformation_gradient);
@@ -59,8 +64,9 @@ struct LinearElastic : public Model<Elem> {
       linear_elastic_update(kappa, nu, rho, grad_u, sigma, c);
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(sigma));
       points_to_wave_speed[point] = c;
+      points_to_kappa_tilde[point] = kappa;
     };
-    parallel_for("linear elastic kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 
