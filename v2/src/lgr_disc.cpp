@@ -72,11 +72,11 @@ static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_
 
 static void mark_closest_vertex(Omega_h::Mesh& mesh, std::string const& set_name, std::string const& pos_expr) {
   Omega_h::ExprOpsReader reader;
-  auto pos_op = reader.read_ops(pos_expr);
+  auto const pos_op = reader.read_ops(pos_expr);
   Omega_h::ExprEnv pos_env(1, mesh.dim());
   if (mesh.dim() == 1) mark_closest_vertex_dim<1>(mesh, set_name, pos_op->eval(pos_env));
-  if (mesh.dim() == 2) mark_closest_vertex_dim<2>(mesh, set_name, pos_op->eval(pos_env));
-  return mark_closest_vertex_dim<3>(mesh, set_name, pos_op->eval(pos_env));
+  else if (mesh.dim() == 2) mark_closest_vertex_dim<2>(mesh, set_name, pos_op->eval(pos_env));
+  else mark_closest_vertex_dim<3>(mesh, set_name, pos_op->eval(pos_env));
 }
 
 static void change_element_count(Omega_h::Mesh& mesh, double desired_nelems) {
