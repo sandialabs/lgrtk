@@ -22,6 +22,7 @@ if(LGR_TRI3)
     lgr_test(tri3_triple_point)
   endif()
   lgr_test(tri3_joule_heating)
+  lgr_test(tri3_Cooks_membrane)
 endif()
 
 if(LGR_TET4)
