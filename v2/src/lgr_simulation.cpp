@@ -183,7 +183,7 @@ void Simulation::setup(Omega_h::InputMap& pl)
   scalars.setup(pl.get_map("scalars"));
   // done setting up scalars
   // set up responses
-  responses.setup(pl.get_map("responses"));
+  responses.setup(pl.get_list("responses"));
   // done setting up responses
   adapter.setup(pl);
   // echo parameters

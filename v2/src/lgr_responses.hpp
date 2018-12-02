@@ -12,7 +12,7 @@ struct Responses {
   Simulation& sim;
   std::vector<std::unique_ptr<Response>> storage;
   Responses(Simulation& sim_in);
-  void setup(Omega_h::InputMap& pl);
+  void setup(Omega_h::InputList& pl);
   void evaluate();
   double next_event(double time);
 };

@@ -22,12 +22,12 @@ Models::Models(Simulation& sim_in)
 }
 
 void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
-  ::lgr::setup(sim.factories.material_model_factories, sim, pl.get_map("material models"), models, "material model");
+  ::lgr::setup(sim.factories.material_model_factories, sim, pl.get_list("material models"), models, "material model");
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
   if (models.empty()) Omega_h_fail("no material models defined!\n");
-  ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_map("modifiers"), models, "modifier");
+  ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"), models, "modifier");
 }
 
 void Models::setup_field_updates() {

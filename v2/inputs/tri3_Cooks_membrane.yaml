@@ -17,7 +17,7 @@ lgr:
     density: 1.0
     velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
   material models:
-    model1:
+    - 
       type: linear elastic
       bulk modulus: 833333
       shear modulus: 83
@@ -38,7 +38,7 @@ lgr:
       set: 'tip'
       component: 1
   responses:
-#   viz:
+#   - 
 #     type: VTK output
 #     time period: 0.5
 #     fields:
@@ -47,7 +47,7 @@ lgr:
 #       - stress
 #       - nodal pressure
 #       - nodal pressure rate
-#   stdout:
+#   - 
 #     type: command line history
 #     minimum column width: 20
 #     scalars:
@@ -55,7 +55,7 @@ lgr:
 #       - time
 #       - dt
 #       - tip position
-    tip position regression:
+    - 
       type: comparison
       scalar: tip position
       at time: '8.4'

@@ -13,12 +13,12 @@ lgr:
   common fields:
     density: 1.0
   material models:
-    model1:
+    - 
       type: ideal gas
       heat capacity ratio: 1.4
       specific internal energy: 'norm(x) < (2.0 * 25.4e-6) ? (2.066e7 * 1.0e3) : (2.066e7 * 1.0)'
   modifiers:
-    model2:
+    - 
       type: artificial viscosity
       linear artificial viscosity: 1.0
       quadratic artificial viscosity: 1.0
@@ -31,13 +31,13 @@ lgr:
         sets: ['y-', 'y+']
         value: 'vector(a(0), 0.0)'
   responses:
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
         - time
         - dt
-    viz:
+    - 
       time period: 2.4e-9
       type: VTK output
       path: tri3_cylindrical_shock

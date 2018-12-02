@@ -39,7 +39,26 @@ static T* get(FactoriesOf<T> const& factories, std::string const& name,
 }
 
 template <class T>
-void setup(FactoriesOf<T> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<T>& out, std::string const& category_name) {
+void setup(FactoriesOf<T> const& factories, Simulation& sim,
+    Omega_h::InputList& pl, VectorOf<T>& out, std::string const& category_name) {
+  for (int i = 0; i < pl.size(); ++i) {
+    auto& subpl = pl.get_map(i);
+    auto const ptr = get(factories, "", sim, subpl, category_name);
+    std::unique_ptr<T> unique_ptr(ptr);
+    out.push_back(std::move(unique_ptr));
+  }
+}
+
+template void
+setup(FactoriesOf<ModelBase> const& factories, Simulation& sim,
+    Omega_h::InputList& pl, VectorOf<ModelBase>&, std::string const&);
+template void
+setup(FactoriesOf<Response> const& factories, Simulation& sim,
+    Omega_h::InputList& pl, VectorOf<Response>&, std::string const&);
+
+template <class T>
+void setup(FactoriesOf<T> const& factories, Simulation& sim,
+    Omega_h::InputMap& pl, VectorOf<T>& out, std::string const& category_name) {
   for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
     auto& name = it->first;
     auto& subpl = pl.get_map(name);
@@ -48,12 +67,8 @@ void setup(FactoriesOf<T> const& factories, Simulation& sim, Omega_h::InputMap& 
     out.push_back(std::move(unique_ptr));
   }
 }
-
 template void
-setup(FactoriesOf<ModelBase> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<ModelBase>&, std::string const&);
-template void
-setup(FactoriesOf<Scalar> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Scalar>&, std::string const&);
-template void
-setup(FactoriesOf<Response> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Response>&, std::string const&);
+setup(FactoriesOf<Scalar> const& factories, Simulation& sim,
+    Omega_h::InputMap& pl, VectorOf<Scalar>&, std::string const&);
 
 }

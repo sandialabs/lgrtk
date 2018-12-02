@@ -14,7 +14,7 @@ lgr:
     density: 1000.0
     velocity: 'vector(1e-4 * exp(-(x(0) - 0.5)^2 / (2 * (0.05)^2)), 0.0, 0.0)'
   material models:
-    model1:
+    - 
       type: linear elastic
       bulk modulus: 1.0e9
       shear modulus: 0.0
@@ -44,20 +44,20 @@ lgr:
         val4 = -0.5e-4 * exp(-(x(0) - mid4)^2 / (2 * (0.05)^2));
         vector(val1 + val2 + val3 + val4, 0.0, 0.0)
   responses:
-#   viz:
+#   - 
 #     time period: 1.0e-5
 #     type: VTK output
 #     fields:
 #       - velocity
 #       - density
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
         - time
         - dt
         - velocity error
-    regression:
+    - 
       type: comparison
       scalar: velocity error
       expected value: '0.0'
