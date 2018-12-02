@@ -11,7 +11,7 @@ namespace lgr {
 
 Responses::Responses(Simulation& sim_in):sim(sim_in) {}
 
-void Responses::setup(Omega_h::InputMap& pl) {
+void Responses::setup(Omega_h::InputList& pl) {
   ::lgr::setup(sim.factories.response_factories, sim, pl, storage, "response");
 }
 

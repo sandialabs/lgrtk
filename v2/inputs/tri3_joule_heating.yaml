@@ -10,12 +10,12 @@ lgr:
   common fields:
     density: 1.0
   material models:
-    model1:
+    - 
       type: linear elastic
       bulk modulus: 1.0
       shear modulus: 0.0
   modifiers:
-    modifier1:
+    - 
       type: Joule heating
       conductivity: 'x(0) < 5.0 ? 1.0 : 2.0'
       anode: ['x-']
@@ -24,7 +24,7 @@ lgr:
       normalized voltage: '1.0 - (x(0) / 10.0)'
       tolerance: 5.0e-2
   responses:
-    viz:
+    - 
       type: VTK output
       path: joule_heating
       fields:
@@ -32,7 +32,7 @@ lgr:
         - normalized voltage
         - conductance
         - specific internal energy rate
-    stdout:
+    - 
       type: command line history
       scalars:
         - step

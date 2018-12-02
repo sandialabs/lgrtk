@@ -10,7 +10,7 @@ lgr:
     density: 2.0
     velocity: 'vector((x > 0.5) ? 0.01 : 0.0)'
   material models:
-    model1:
+    - 
       type: linear elastic
       bulk modulus: 1.0
       shear modulus: 0.0
@@ -31,7 +31,7 @@ lgr:
       set: 'x+'
       component: 0
   responses:
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
@@ -39,12 +39,12 @@ lgr:
         - dt
         - mass position
         - mass velocity
-    position regression:
+    - 
       type: comparison
       scalar: mass position
       expected value: '1.0 + 0.01003 * sin(t)'
       tolerance: 1.0e-4
-    velocity regression:
+    - 
       start time: 1.0
       end time: 6.28
       type: comparison
