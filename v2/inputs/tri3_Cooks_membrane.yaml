@@ -22,7 +22,7 @@ lgr:
       bulk modulus: 833333
       shear modulus: 83
   modifiers:
-    mod1:
+    - 
       type: nodal pressure
       velocity constant: 0.5
       pressure constant: 0.5
