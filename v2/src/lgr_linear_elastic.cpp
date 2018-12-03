@@ -37,7 +37,7 @@ struct LinearElastic : public Model<Elem> {
     constexpr auto dim = Elem::dim;
     this->deformation_gradient =
       this->point_define("F", "deformation gradient",
-          square(dim), RemapType::NONE, pl, "I");
+          square(dim), RemapType::POSITIVE_DETERMINANT, pl, "I");
     this->effective_bulk_modulus =
       this->point_define("kappa_tilde", "effective bulk modulus", 1,
           RemapType::PER_UNIT_VOLUME, pl, "");
