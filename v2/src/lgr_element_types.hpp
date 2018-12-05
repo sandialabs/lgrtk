@@ -255,47 +255,47 @@ struct CompTet {
 #endif
 
 #ifdef LGR_BAR2
-#define LGR_EXPL_INST_BAR2 LGR_EXPL_INST(Bar2)
-#define LGR_EXPL_INST_BAR2_SIDE LGR_EXPL_INST(Bar2::side)
+#define LGR_EXPL_INST_BAR2 LGR_EXPL_INST(::lgr::Bar2)
+#define LGR_EXPL_INST_BAR2_SIDE LGR_EXPL_INST(::lgr::Bar2::side)
 #else
 #define LGR_EXPL_INST_BAR2
 #define LGR_EXPL_INST_BAR2_SIDE
 #endif
 
 #ifdef LGR_TRI3
-#define LGR_EXPL_INST_TRI3 LGR_EXPL_INST(Tri3)
-#define LGR_EXPL_INST_TRI3_SIDE LGR_EXPL_INST(Tri3::side)
+#define LGR_EXPL_INST_TRI3 LGR_EXPL_INST(::lgr::Tri3)
+#define LGR_EXPL_INST_TRI3_SIDE LGR_EXPL_INST(::lgr::Tri3::side)
 #else
 #define LGR_EXPL_INST_TRI3
 #define LGR_EXPL_INST_TRI3_SIDE
 #endif
 
 #ifdef LGR_TRI6
-#define LGR_EXPL_INST_TRI6 LGR_EXPL_INST(Tri6)
-#define LGR_EXPL_INST_TRI6_SIDE LGR_EXPL_INST(Tri6::side)
+#define LGR_EXPL_INST_TRI6 LGR_EXPL_INST(::lgr::Tri6)
+#define LGR_EXPL_INST_TRI6_SIDE LGR_EXPL_INST(::lgr::Tri6::side)
 #else
 #define LGR_EXPL_INST_TRI6
 #define LGR_EXPL_INST_TRI6_SIDE
 #endif
 
 #ifdef LGR_QUAD4
-#define LGR_EXPL_INST_QUAD4 LGR_EXPL_INST(Quad4)
-#define LGR_EXPL_INST_QUAD4_SIDE LGR_EXPL_INST(Quad4::side)
+#define LGR_EXPL_INST_QUAD4 LGR_EXPL_INST(::lgr::Quad4)
+#define LGR_EXPL_INST_QUAD4_SIDE LGR_EXPL_INST(::lgr::Quad4::side)
 #else
 #define LGR_EXPL_INST_QUAD4
 #define LGR_EXPL_INST_QUAD4_SIDE
 #endif
 
 #ifdef LGR_TET4
-#define LGR_EXPL_INST_TET4 LGR_EXPL_INST(Tet4)
-#define LGR_EXPL_INST_TET4_SIDE LGR_EXPL_INST(Tet4::side)
+#define LGR_EXPL_INST_TET4 LGR_EXPL_INST(::lgr::Tet4)
+#define LGR_EXPL_INST_TET4_SIDE LGR_EXPL_INST(::lgr::Tet4::side)
 #else
 #define LGR_EXPL_INST_TET4
 #define LGR_EXPL_INST_TET4_SIDE
 #endif
 
 #ifdef LGR_COMPTET
-#define LGR_EXPL_INST_COMPTET LGR_EXPL_INST(CompTet)
+#define LGR_EXPL_INST_COMPTET LGR_EXPL_INST(::lgr::CompTet)
 #else
 #define LGR_EXPL_INST_COMPTET
 #define LGR_EXPL_INST_COMPTET_SIDE
