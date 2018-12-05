@@ -1,16 +1,34 @@
 #include <lgr_element_functions.hpp>
+#include <lgr_stvenant_kirchhoff.hpp>
 #include "lgr_gtest.hpp"
 
 using Omega_h::are_close;
 
 template <int M, int N>
-static bool is_close(Omega_h::Matrix<M, N> a, Omega_h::Matrix<M, N> b) {
+static bool is_close(
+    Omega_h::Matrix<M, N> a,
+    Omega_h::Matrix<M, N> b,
+    double eps = 1e-12) {
   bool close = true;
   for (int i = 0; i < M; ++i) {
     for (int j = 0; j < N; ++j) {
-      if (! are_close(a(i, j), b(i, j))) {
+      if (! are_close(a(i, j), b(i, j), eps)) {
         close = false;
       }
+    }
+  }
+  return close;
+}
+
+template <int N>
+static bool is_close(
+    Omega_h::Vector<N> a,
+    Omega_h::Vector<N> b,
+    double eps = 1e-12) {
+  bool close = true;
+  for (int i = 0; i < N; ++i) {
+    if (! are_close(a[i], b[i], eps)) {
+      close = false;
     }
   }
   return close;
@@ -22,6 +40,28 @@ static Omega_h::Matrix<3, 3> I3x3() {
     I(i, i) = 1.0;
   }
   return I;
+}
+
+static Omega_h::Matrix<3, 3> to_sierra_full(Omega_h::Matrix<3, 3> A) {
+  Omega_h::Matrix<3, 3> B;
+  B(0, 0) = A(0, 0); B(0, 1) = A(1, 1); B(0, 2) = A(2, 2);
+  B(1, 0) = A(0, 1); B(1, 1) = A(1, 2); B(1, 2) = A(2, 0);
+  B(2, 0) = A(1, 0); B(2, 1) = A(2, 1); B(2, 2) = A(0, 2);
+  return B;
+}
+
+static Omega_h::Vector<6> to_sierra_symm(Omega_h::Matrix<3, 3> A) {
+  Omega_h::Vector<6> B;
+  OMEGA_H_CHECK(are_close(A(0, 1), A(1, 0)));
+  OMEGA_H_CHECK(are_close(A(0, 2), A(2, 0)));
+  OMEGA_H_CHECK(are_close(A(1, 2), A(2, 1)));
+  B[0] = A(0, 0);
+  B[1] = A(1, 1);
+  B[2] = A(2, 2);
+  B[3] = A(0, 1);
+  B[4] = A(1, 2);
+  B[5] = A(2, 0);
+  return B;
 }
 
 static Omega_h::Matrix<3, 10> get_parametric_coords() {
@@ -230,28 +270,49 @@ static Omega_h::Few<Omega_h::Matrix<10, 3>, 4> gold_B_reference() {
   return B;
 }
 
-Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_F() {
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_F() {
   Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F;
   F[0] = {
-    1.0728825078630875, 0.018292305243103095, 0.02169379108735753,
-    0.027588238952382906, 1.1406706675894112, 0.030034273856605998,
-    0.06559558024841416, 0.06587508507237835, 1.279007866780825 };
+    1.0728825078630875, 1.1406706675894112, 1.279007866780825,
+    0.018292305243103095, 0.030034273856605998, 0.06559558024841416,
+    0.027588238952382906, 0.06587508507237835, 0.02169379108735753 };
   F[1] = {
-    1.142308386101098, 0.06234376636852145, 0.07528694102066706,
-    0.030775625400816256, 1.238550149839732, 0.016402667380209877,
-    0.004173266751211203, 0.010255522860204667, 1.2954752276290087 };
+    1.142308386101098, 1.238550149839732, 1.2954752276290087,
+    0.06234376636852145, 0.016402667380209877, 0.004173266751211203,
+    0.030775625400816256, 0.010255522860204667, 0.07528694102066706 };
   F[2] = {
-    1.132699791580191, 0.02659930111638392, 0.01706718193717734,
-    0.11247111175831231, 1.2665601355454923, 0.12820339271728204,
-    -0.00319003423285983, 0.00684797021170469, 1.316744081195716 };
+    1.132699791580191, 1.2665601355454923, 1.316744081195716,
+    0.02659930111638392, 0.12820339271728204, -0.00319003423285983,
+    0.11247111175831231, 0.00684797021170469, 0.01706718193717734 };
   F[3] = {
-    1.1398198659509842, 0.017647722722288418, 0.032210780190121864,
-    0.026483416170151354, 1.2480683558047545, 0.040620195033729184,
-    0.15834784353277337, 0.17919629838676054, 1.4507376580123266 };
+    1.1398198659509842, 1.2480683558047545, 1.4507376580123266,
+    0.017647722722288418, 0.040620195033729184, 0.15834784353277337,
+    0.026483416170151354, 0.17919629838676054, 0.032210780190121864 };
   return F;
 }
 
-Omega_h::Vector<4> gold_J() {
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_F_vol_avg() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F;
+  F[0] = {
+    1.1270921320202323, 1.1983054297594666, 1.343632404178044,
+    0.019216562079176835, 0.03155181812232642, 0.06890993361476634,
+    0.028982192208033372, 0.0692035610023348, 0.022789915083014423 };
+  F[1] = {
+    1.1381102081571532, 1.2339982670165006, 1.2907141354460807,
+    0.06211464240506697, 0.016342384782922385, 0.004157929284864714,
+    0.030662519733957054, 0.010217832066370712, 0.07501024868512461 };
+  F[2] = {
+    1.1175750189621239, 1.2496479455727993, 1.2991617924266083,
+    0.026244124586666754, 0.12649151179514598, -0.003147438178040642,
+    0.11096930165461966, 0.006756530279326104, 0.016839286383607155 };
+  F[3] = {
+    1.0936518381941975, 1.1975157586668845, 1.3919760076290466,
+    0.016932907533656037, 0.038974887430462735, 0.1519340163537314,
+    0.025410714132432476, 0.17193801141969592, 0.030906093161663584 };
+  return F;
+}
+
+static Omega_h::Vector<4> gold_J() {
   Omega_h::Vector<4> J;
   J = {
     1.0401993083640124,
@@ -259,6 +320,23 @@ Omega_h::Vector<4> gold_J() {
     1.0209015758706936,
     0.6857359491807643 };
   return J;
+}
+
+static Omega_h::Few<Omega_h::Vector<6>, 4> gold_cauchy_stress() {
+  Omega_h::Few<Omega_h::Vector<6>, 4> sigma;
+  sigma[0] = {
+    1.8499367316971824e9, 2.2629279309463353e9, 3.3423666918205996e9,
+    1.4873843529485816e8, 3.666915013019802e8, 3.041371142825582e8 };
+  sigma[1] = {
+    1.903761446358733e9, 2.4500891276475005e9, 2.8432014691660953e9,
+    2.869156905812986e8, 1.0210315830999057e8, 2.7071030547170925e8 };
+  sigma[2] = {
+    1.8117087402900019e9, 2.7020007963490562e9, 2.965185931206969e9,
+    4.087629090300652e8, 4.9638992732985586e8, 6.804146491430771e7 };
+  sigma[3] = {
+    1.8017847912199237e9, 2.414307850515131e9, 4.134615467152106e9,
+    1.6227216144218203e8, 8.128290771293167e8, 6.204725659982855e8 };
+  return sigma;
 }
 
 TEST(composite_tet, O_parametric) {
@@ -329,20 +407,7 @@ TEST(composite_tet, B_reference) {
   }
 }
 
-TEST(composite_tet, def_grad) {
-  auto X = get_reference_coords();
-  auto x = get_current_coords();
-  auto shape = lgr::CompTet::shape(X);
-  auto F_gold = gold_F();
-  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
-    auto BT = shape.basis_gradients[pt];
-    auto B = Omega_h::transpose(BT);
-    auto result = x * B;
-    EXPECT_TRUE(is_close(result, F_gold[pt]));
-  }
-}
-
-TEST(composite_tet, det_def_grad) {
+TEST(composite_tet, composite_J) {
   auto X = get_reference_coords();
   auto shape = lgr::CompTet::shape(X);
   auto J_gold = gold_J();
@@ -362,4 +427,78 @@ TEST(composite_tet, volume) {
     volume += shape.weights[pt];
   }
   EXPECT_TRUE(are_close(volume, volume_gold));
+}
+
+TEST(composite_tet, def_grad) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  auto F_gold = gold_F();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    auto F = x * B;
+    auto F_sierra = to_sierra_full(F);
+    EXPECT_TRUE(is_close(F_sierra, F_gold[pt]));
+  }
+}
+
+static void do_vol_avg_F(
+    Omega_h::Vector<4> weights,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& F) {
+  double vol = 0.0;
+  double J_bar = 0.0;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    vol += weights[pt];
+    J_bar += weights[pt] * Omega_h::determinant(F[pt]);
+  }
+  J_bar /= vol;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    double fac = std::cbrt(J_bar / Omega_h::determinant(F[pt]));
+    F[pt] *= fac;
+  }
+}
+
+TEST(composite_tet, def_grad_vol_avg) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  do_vol_avg_F(shape.weights, F_ips);
+  auto F_gold_vol_avg = gold_F_vol_avg();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto F_sierra = to_sierra_full(F_ips[pt]);
+    EXPECT_TRUE(is_close(F_sierra, F_gold_vol_avg[pt]));
+  }
+}
+
+TEST(composite_tet, cauchy_stress_vol_avg) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  do_vol_avg_F(shape.weights, F_ips);
+  double E = 3.45e+9;
+  double nu = 0.35;
+  double K = E / (3.0 * (1.0 - 2.0 * nu));
+  double mu = E / (2.0 * (1.0 + nu));
+  double unused = 0.0;
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> cauchy_stress;
+  auto cauchy_stress_gold = gold_cauchy_stress();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    lgr::stvenant_kirchhoff_update(
+        K, mu, 1.0, F_ips[pt], cauchy_stress[pt], unused);
+    auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress[pt]);
+    EXPECT_TRUE(is_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
+  }
 }
