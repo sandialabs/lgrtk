@@ -166,7 +166,7 @@ Plato::Scalar mesh_minimum_length_scale(Omega_h::Mesh & omega_h_mesh)
   };
 
   Plato::Scalar maxGradSqrMag ;
-  Kokkos::Max<Plato::Scalar, Kokkos::DefaultExecutionSpace> xreducer(maxGradSqrMag);
+  Kokkos::Max<Plato::Scalar> xreducer(maxGradSqrMag);
   Kokkos::parallel_reduce(omega_h_mesh.nelems(), findMaxGradSqrMagnitude, xreducer);
 
   return 1./sqrt(maxGradSqrMag);
