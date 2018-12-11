@@ -69,7 +69,7 @@ lgr:
         at time: 0.0
         value: '40.0'
     acceleration:
-      # "gravity" term, g=1
+      # "gravity" term, g=0.1
       - 
         value: 'vector(a(0), a(1) - 0.1)'
       - 
