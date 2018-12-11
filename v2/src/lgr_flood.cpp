@@ -35,6 +35,7 @@ void Flooder::setup(Omega_h::InputMap& pl) {
 }
 
 void Flooder::flood() {
+  if (!enabled) return;
   OMEGA_H_TIME_FUNCTION;
   auto const pull_mapping = choose();
   if (pull_mapping.exists()) {
