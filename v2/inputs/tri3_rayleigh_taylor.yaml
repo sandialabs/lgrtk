@@ -1,6 +1,6 @@
 lgr:
   CFL: 0.9
-  end time: 4.0
+  end time: 3.0
   element type: Tri3
   mesh:
     CUBIT:
@@ -26,7 +26,7 @@ lgr:
         mesh surface 1 7
         export genesis "2D_Rayleigh_Taylor.exo"
       Exodus file: 2D_Rayleigh_Taylor.exo
-    element count: 16000
+    element count: 4000
   material models:
     - 
       type: ideal gas
@@ -41,11 +41,20 @@ lgr:
       - 
         sets: ['heavy_fluid']
         at time: 0.0
-        value: '20.0'
+        value: '10.0'
       - 
         sets: ['light_fluid']
         at time: 0.0
         value: '1.0'
+    flood priority:
+      - 
+        sets: ['heavy_fluid']
+        at time: 0.0
+        value: '1.0'
+      - 
+        sets: ['light_fluid']
+        at time: 0.0
+        value: '0.0'
     specific internal energy:
       - 
         sets: ['heavy_fluid']
@@ -54,7 +63,7 @@ lgr:
       - 
         sets: ['light_fluid']
         at time: 0.0
-        value: '20.0'
+        value: '10.0'
     velocity:
       - 
         at time: 0.0
@@ -64,7 +73,7 @@ lgr:
     acceleration:
       # "gravity" term, g=1
       - 
-        value: 'vector(a(0), a(1) - 0.7)'
+        value: 'vector(a(0), a(1) - 1.0)'
       - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'
@@ -89,3 +98,4 @@ lgr:
         - density
         - element class_id
   adapt:
+  flood:
