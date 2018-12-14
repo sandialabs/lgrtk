@@ -95,6 +95,7 @@ void Simulation::del(FieldIndex fi) {
 Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
  :comm(comm_in)
  ,factories(std::move(factories_in))
+ ,input_variables(*this)
  ,disc()
  ,subsets(disc)
  ,supports(subsets)
@@ -111,18 +112,19 @@ void Simulation::setup(Omega_h::InputMap& pl)
   OMEGA_H_CHECK(pl.used);
   OMEGA_H_TIME_FUNCTION;
   start_cpu_time_point = Omega_h::now();
+  input_variables.setup(pl.get_map("input variables"));
   // set up constants
-  cpu_time = pl.get<double>("start CPU time", "0.0");
-  time = pl.get<double>("start time", "0.0");
+  cpu_time = get_double(pl, "start CPU time", "0.0");
+  time = get_double(pl, "start time", "0.0");
   prev_time = time;
   auto const dbl_max = std::to_string(std::numeric_limits<double>::max()); 
   auto const int_max = std::to_string(std::numeric_limits<int>::max()); 
-  end_time = pl.get<double>("end time", dbl_max.c_str());
+  end_time = get_double(pl, "end time", dbl_max.c_str());
   dt = 0.0;
   prev_dt = 0.0;
-  max_dt = pl.get<double>("max dt", dbl_max.c_str());
-  min_dt = pl.get<double>("min dt", "0.0");
-  cfl = pl.get<double>("CFL", "0.9");
+  max_dt = get_double(pl, "max dt", dbl_max.c_str());
+  min_dt = get_double(pl, "min dt", "0.0");
+  cfl = get_double(pl, "CFL", "0.9");
   step = pl.get<int>("start step", "0");
   end_step = pl.get<int>("end step", int_max.c_str());
   // done setting up constants
@@ -233,6 +235,14 @@ void update_cpu_time(Simulation& sim) {
   sim.prev_cpu_time = sim.cpu_time;
   auto now = Omega_h::now();
   sim.cpu_time = now - sim.start_cpu_time_point;
+}
+
+double Simulation::get_double(Omega_h::InputMap& pl, const char* name, const char* default_expr) {
+  return input_variables.get_double(pl, name, default_expr);
+}
+
+int Simulation::get_int(Omega_h::InputMap& pl, const char* name, const char* default_expr) {
+  return input_variables.get_int(pl, name, default_expr);
 }
 
 template <class Elem>

@@ -3,6 +3,7 @@ bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp")
 add_library(lgr_library
     lgr_scope.cpp
     lgr_condition.cpp
+    lgr_input_variables.cpp
     lgr_disc.cpp
     lgr_field.cpp
     lgr_fields.cpp
@@ -59,6 +60,7 @@ install(FILES
     lgr_math.hpp
     lgr_element_types.hpp
     lgr_factories.hpp
+    lgr_input_variables.hpp
     lgr_run.hpp
     lgr_for.hpp
     lgr_model.hpp
