@@ -58,6 +58,7 @@
 #include <string>
 #include <math.h>
 #include <vector>
+#include <memory>
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
@@ -207,7 +208,7 @@ private:
 
     void build_mesh()
     {
-      auto libOmegaH = lgr::getLibraryOmegaH();
+      auto libOmegaH = std::make_shared<Omega_h::Library>();
       const Plato::Scalar Lx = mLength;
       const Plato::Scalar Ly = mLength;
       const Plato::Scalar Lz = mLength;
@@ -224,7 +225,6 @@ private:
       initialize_level_set(mMesh, mHamiltonJacobiFields, initialCondition);
 
       const Plato::Scalar maxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, mAssumedBurnRate);
-
       const Plato::Scalar dx = mesh_minimum_length_scale<SpatialDim>(mMesh);
       const Plato::Scalar dtau = 0.2*dx / maxSpeed; // Units of time
       mInterfaceWidth = 1.5*dx / maxSpeed; // Should have same units as level set
