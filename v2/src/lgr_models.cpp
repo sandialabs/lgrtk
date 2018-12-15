@@ -12,6 +12,7 @@
 #include <lgr_joule_heating.hpp>
 #include <lgr_scope.hpp>
 #include <lgr_nodal_pressure.hpp>
+#include <lgr_circular_symmetry.hpp>
 #include <Omega_h_profile.hpp>
 
 namespace lgr {
@@ -66,6 +67,7 @@ void Models::lowercase() { \
     } \
   } \
 }
+LGR_STAGE_DEF(after_configuration, AFTER_CONFIGURATION)
 LGR_STAGE_DEF(before_field_update, BEFORE_FIELD_UPDATE)
 LGR_STAGE_DEF(at_field_update, AT_FIELD_UPDATE)
 LGR_STAGE_DEF(after_field_update, AFTER_FIELD_UPDATE)
@@ -96,6 +98,7 @@ ModelFactories get_builtin_modifier_factories() {
   out["artificial viscosity"] = artificial_viscosity_factory<Elem>;
   out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
+  out["circular symmetry"] = circular_symmetry_factory<Elem>;
   return out;
 }
 

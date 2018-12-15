@@ -200,13 +200,13 @@ void apply_conditions(Simulation& sim,
     FieldIndex fi) {
   auto& f = sim.fields[fi];
   f.apply_conditions(sim.prev_time, sim.time,
-      sim.get(sim.position));
+      sim.get(sim.position), sim.fields);
 }
 
 void apply_conditions(Simulation& sim) {
   for (auto& f : sim.fields.storage) {
     f->apply_conditions(
-        sim.prev_time, sim.time, sim.get(sim.position));
+        sim.prev_time, sim.time, sim.get(sim.position), sim.fields);
   }
 }
 

@@ -15,6 +15,7 @@ struct Models {
   void setup_field_updates(); 
 
   void learn_disc();
+  void after_configuration();
   void before_field_update();
   void at_field_update();
   void after_field_update();

@@ -6,6 +6,7 @@
 #include <lgr_supports.hpp>
 #include <lgr_when.hpp>
 #include <lgr_riemann.hpp>
+#include <lgr_fields.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_scalar.hpp>
 #include <Omega_h_math_lang.hpp>
@@ -93,12 +94,12 @@ void Condition::learn_disc() {
 double Condition::next_event(double time) { return when->next_event(time); }
 
 void Condition::apply(double prev_time, double time,
-    Omega_h::Read<double> node_coords) {
+    Omega_h::Read<double> node_coords, Fields& fields) {
   if (!when->active(prev_time, time)) return;
-  apply(time, node_coords);
+  apply(time, node_coords, fields);
 }
 
-void Condition::apply(double time, Omega_h::Read<double> node_coords) {
+void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fields) {
   OMEGA_H_CHECK(field->storage.exists());
   if (needs_reeval || (!cached_values.exists())) {
     if (needs_coords) {
@@ -120,22 +121,25 @@ void Condition::apply(double time, Omega_h::Read<double> node_coords) {
     cached_values = Omega_h::any_cast<Omega_h::Reals>(result);
   }
   OMEGA_H_CHECK(cached_values.exists());
-  OMEGA_H_CHECK(field->storage.exists());
+  Omega_h::Write<double> storage;
+  if (uses_old_vals) storage = fields.getset(fields.find(field->long_name));
+  else storage = fields.set(fields.find(field->long_name));
   if (bridge->mapping.is_identity) {
-    if (cached_values.size() != field->storage.size()) {
+    if (cached_values.size() != storage.size()) {
       Omega_h_fail("Value of condition \"%s\" on field \"%s\" was of the wrong size\n",
           str.c_str(), field->long_name.c_str());
     }
-    Omega_h::copy_into(cached_values, field->storage);
+    Omega_h::copy_into(cached_values, storage);
   } else {
     auto ncomps = divide_no_remainder(cached_values.size(), bridge->mapping.things.size());
-    if (field->storage.size() != ncomps * field->support->count()) {
+    if (storage.size() != ncomps * field->support->count()) {
       Omega_h_fail("Value of condition \"%s\" on subset of field \"%s\" was of the wrong size\n",
           str.c_str(), field->long_name.c_str());
     }
     Omega_h::map_into(cached_values, bridge->mapping.things,
-        field->storage, ncomps);
+        storage, ncomps);
   }
+  fields.print_and_clear_set_fields();
 }
 
 }

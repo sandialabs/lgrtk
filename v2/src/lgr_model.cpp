@@ -121,6 +121,7 @@ void ModelBase::learn_disc() {}
 void ModelBase::name() { \
   Omega_h_fail(#name " called on a Model that didn't define it!\n"); \
 }
+LGR_STAGE_DEF(after_configuration)
 LGR_STAGE_DEF(before_field_update)
 LGR_STAGE_DEF(at_field_update)
 LGR_STAGE_DEF(after_field_update)
