@@ -35,7 +35,7 @@ struct L2Error : public Scalar {
   double compute_value() override {
     auto& expected_field = sim.fields[expected_field_index];
     auto node_coords = sim.get(sim.position);
-    expected_field.conditions[0].apply(sim.time, node_coords);
+    expected_field.conditions[0].apply(sim.time, node_coords, sim.fields);
     auto support = expected_field.support;
     auto& field = sim.fields[field_index];
     auto computed_data = Omega_h::read(field.storage);

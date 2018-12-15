@@ -34,6 +34,7 @@ static void initialize_state(Simulation& sim) {
     sim.fields.copy_from_omega_h(sim.disc, field_indices);
   }
   initialize_configuration<Elem>(sim);
+  sim.models.after_configuration();
   lump_masses<Elem>(sim);
 }
 
@@ -76,6 +77,7 @@ static void run_simulation(Simulation& sim) {
     update_time(sim);
     update_position<Elem>(sim);
     update_configuration<Elem>(sim);
+    sim.models.after_configuration();
     ++sim.step;
     close_state<Elem>(sim);
     correct_velocity<Elem>(sim);

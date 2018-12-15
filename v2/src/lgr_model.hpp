@@ -14,16 +14,17 @@ struct Simulation;
 struct Support;
 
 enum ExecStage : std::uint64_t {
-  BEFORE_FIELD_UPDATE    = std::uint64_t(1) << 0,
-  AT_FIELD_UPDATE        = std::uint64_t(1) << 1,
-  AFTER_FIELD_UPDATE     = std::uint64_t(1) << 2,
-  BEFORE_MATERIAL_MODEL  = std::uint64_t(1) << 3,
-  AT_MATERIAL_MODEL      = std::uint64_t(1) << 4,
-  AFTER_MATERIAL_MODEL   = std::uint64_t(1) << 5,
-  BEFORE_SECONDARIES     = std::uint64_t(1) << 6,
-  AT_SECONDARIES         = std::uint64_t(1) << 7,
-  AFTER_SECONDARIES      = std::uint64_t(1) << 8,
-  AFTER_CORRECTION       = std::uint64_t(1) << 9,
+  AFTER_CONFIGURATION    = std::uint64_t(1) <<  0,
+  BEFORE_FIELD_UPDATE    = std::uint64_t(1) <<  1,
+  AT_FIELD_UPDATE        = std::uint64_t(1) <<  2,
+  AFTER_FIELD_UPDATE     = std::uint64_t(1) <<  3,
+  BEFORE_MATERIAL_MODEL  = std::uint64_t(1) <<  4,
+  AT_MATERIAL_MODEL      = std::uint64_t(1) <<  5,
+  AFTER_MATERIAL_MODEL   = std::uint64_t(1) <<  6,
+  BEFORE_SECONDARIES     = std::uint64_t(1) <<  7,
+  AT_SECONDARIES         = std::uint64_t(1) <<  8,
+  AFTER_SECONDARIES      = std::uint64_t(1) <<  9,
+  AFTER_CORRECTION       = std::uint64_t(1) << 10,
 };
 
 struct ModelBase {
@@ -57,6 +58,7 @@ struct ModelBase {
   MappedWrite elems_set(FieldIndex fi);
   MappedWrite elems_getset(FieldIndex fi);
   virtual void learn_disc();
+  virtual void after_configuration();
   virtual void before_field_update();
   virtual void at_field_update();
   virtual void after_field_update();

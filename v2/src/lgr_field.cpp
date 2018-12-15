@@ -90,12 +90,12 @@ bool Field::is_covered_by_conditions(double prev_time, double time) {
 }
 
 void Field::apply_conditions(double prev_time, double time,
-    Omega_h::Read<double> node_coords) {
+    Omega_h::Read<double> node_coords, Fields& fields) {
   if (!conditions.empty()) {
     ensure_allocated();
   }
   for (auto& c : conditions) {
-    c.apply(prev_time, time, node_coords);
+    c.apply(prev_time, time, node_coords, fields);
   }
 }
 

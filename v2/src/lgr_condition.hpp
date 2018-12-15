@@ -8,6 +8,7 @@
 namespace lgr {
 
 struct Field;
+struct Fields;
 struct Support;
 struct Supports;
 struct Subsets;
@@ -33,8 +34,8 @@ struct Condition {
   void learn_disc();
   double next_event(double time);
   void apply(double prev_time, double time,
-      Omega_h::Read<double> node_coords);
-  void apply(double time, Omega_h::Read<double> node_coords);
+      Omega_h::Read<double> node_coords, Fields& fields);
+  void apply(double time, Omega_h::Read<double> node_coords, Fields& fields);
 };
 
 }
