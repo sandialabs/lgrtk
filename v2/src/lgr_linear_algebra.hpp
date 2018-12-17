@@ -19,7 +19,10 @@ int conjugate_gradient(
     GlobalMatrix A,
     GlobalVector b,
     GlobalVector x,
-    double max_residual_magnitude);
+    double tolerance);
+
+void extract_inverse_diagonal(GlobalMatrix mat, GlobalVector diagonal);
+
 void set_boundary_conditions(
     GlobalMatrix A,
     GlobalVector x,
