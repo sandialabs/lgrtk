@@ -172,9 +172,9 @@ void Simulation::setup(Omega_h::InputMap& pl)
   models.setup_field_updates();
   finalize_definitions();
   // setup conditions
-  fields.setup_conditions(supports, pl.get_map("conditions"));
+  fields.setup_conditions(*this, pl.get_map("conditions"));
   fields.setup_common_defaults(pl.get_map("common fields"));
-  fields.setup_default_conditions(supports, time);
+  fields.setup_default_conditions(*this, time);
   // done setting up conditions
   // set coordinates
   auto field_x = fields.set(position);

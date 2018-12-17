@@ -10,10 +10,10 @@ namespace lgr {
 struct Field;
 struct Fields;
 struct Support;
-struct Supports;
 struct Subsets;
 struct SubsetBridge;
 struct Disc;
+struct Simulation;
 
 struct Condition {
   Field* field;
@@ -27,9 +27,9 @@ struct Condition {
   bool uses_old_vals;
   SubsetBridge* bridge;
   Omega_h::Read<double> cached_values;
-  void init(Supports& supports);
-  Condition(Field*, Supports&, std::string const& str_in, Support*, When*);
-  Condition(Field* field_in, Supports& supports, Omega_h::InputMap& pl);
+  void init(Simulation& sim);
+  Condition(Field*, Simulation&, std::string const& str_in, Support*, When*);
+  Condition(Field* field_in, Simulation&, Omega_h::InputMap& pl);
   void forget_disc();
   void learn_disc();
   double next_event(double time);

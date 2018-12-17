@@ -30,7 +30,7 @@ struct L2Error : public Scalar {
     expected_field.finalize_definition(sim.supports);
     auto expr = pl.get<std::string>("expected value");
     expected_field.conditions.push_back(Condition(
-          &expected_field, sim.supports, expr, expected_field.support, never()));
+          &expected_field, sim, expr, expected_field.support, never()));
   }
   double compute_value() override {
     auto& expected_field = sim.fields[expected_field_index];

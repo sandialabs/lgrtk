@@ -99,13 +99,13 @@ double Fields::next_event(double time) {
   return out;
 }
 
-void Fields::setup_default_conditions(Supports& supports, double start_time) {
+void Fields::setup_default_conditions(Simulation& sim, double start_time) {
   for (auto& field : storage) {
-    field->setup_default_condition(supports, start_time);
+    field->setup_default_condition(sim, start_time);
   }
 }
 
-void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
+void Fields::setup_conditions(Simulation& sim, Omega_h::InputMap& pl) {
   for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
     auto const& field_name = it->first;
     if (pl.is_list(field_name)) {
@@ -119,7 +119,7 @@ void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
             field_name.c_str());
       }
       auto& field = *fit;
-      field->setup_conditions(supports, field_pl);
+      field->setup_conditions(sim, field_pl);
     }
   }
 }

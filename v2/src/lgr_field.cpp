@@ -107,22 +107,22 @@ double Field::next_event(double time) {
   return out;
 }
 
-void Field::setup_conditions(Supports& supports, Omega_h::InputList& pl) {
+void Field::setup_conditions(Simulation& sim, Omega_h::InputList& pl) {
   for (int i = 0; i < pl.size(); ++i) {
     if (pl.is_map(i)) {
       auto& condition_pl = pl.get_map(i);
-      conditions.push_back(Condition(this, supports, condition_pl));
+      conditions.push_back(Condition(this, sim, condition_pl));
     }
   }
 }
 
-void Field::setup_default_condition(Supports& supports, double start_time) {
+void Field::setup_default_condition(Simulation& sim, double start_time) {
   if (default_value.empty()) return;
   // if users have set some other non-default conditions that fully specify
   // this field at the simulation start time, then don't bother creating
   // a default condition since it'll just be overwritten
   if (this->is_covered_by_conditions(start_time, start_time)) return;
-  conditions.insert(conditions.begin(), Condition(this, supports, default_value, support,
+  conditions.insert(conditions.begin(), Condition(this, sim, default_value, support,
         at_time(start_time)));
 }
 
