@@ -53,6 +53,10 @@ enum class StateFlag {
 };
 
 struct Properties {
+  bool allow_no_tension;
+  bool allow_no_shear;
+  bool set_stress_to_zero;
+
   double youngs_modulus;
   double poissons_ratio;
   double yield_strength;
@@ -72,9 +76,6 @@ struct Properties {
   double D5;
   double D0;
   double Dc;
-  bool allow_no_tension;
-  bool allow_no_shear;
-  bool set_stress_to_zero;
 };
 
 using tensor_type = Matrix<3, 3>;
@@ -583,8 +584,7 @@ update(
         } else {
           T = -p * I;
         }
-      }
-      if (props.allow_no_shear) {
+      } else if (props.allow_no_shear) {
         T = -p * I;
       } else if (props.set_stress_to_zero) {
         T = 0.0 * I;
@@ -604,6 +604,7 @@ update(
     // If the localized material point fails again, set the stress to zero
     if (localized) {
       dp = 0.0;
+      T = 0.0 * I;
     } else {
       // set the particle localization flag to true
       localized = 1.0;

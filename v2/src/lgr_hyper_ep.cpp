@@ -110,7 +110,7 @@ void read_and_validate_plastic_params(
       props.hardening_modulus = pl.get<double>("B", "0.0");
       props.hardening_exponent = pl.get<double>("N", "1.0");
       props.c1 = pl.get<double>("T0", "298.0");
-      props.c2 = pl.get<double>("TM", "0.0");
+      props.c2 = pl.get<double>("TM", max_double_str.c_str());
       props.c3 = pl.get<double>("M", "0.0");
     } else {
       std::ostringstream os;
@@ -171,6 +171,20 @@ void read_and_validate_damage_params(
       props.D5 = pl.get<double>("D5", "0.0");
       props.D0 = pl.get<double>("D0", "0.0");  // Initial scalar damage
       props.Dc = pl.get<double>("Dc", "0.7"); // Critical scalar damage
+      bool no_shear = static_cast<bool>(pl.get<double>("allow no shear", "0.0"));
+      bool no_tension = static_cast<bool>(pl.get<double>("allow no tension", "0.0"));
+      bool zero_stress = static_cast<bool>(pl.get<double>("set stress to zero", "0.0"));
+      if (!(no_shear && no_tension && zero_stress)) {
+        // by default, allow no tension
+        no_tension = true;
+      }
+      props.allow_no_shear = no_shear;
+      props.allow_no_tension = no_tension;
+      props.set_stress_to_zero = zero_stress;
+
+      // Same as JC hardening.
+      props.c1 = pl.get<double>("T0", "298.0");
+      props.c2 = pl.get<double>("TM", max_double_str.c_str());
     } else {
       std::ostringstream os;
       os << "Unrecognized damage model \"" << model << "\"";
