@@ -1,12 +1,5 @@
-#include <lgr_condition.hpp>
-#include <lgr_field.hpp>
-#include <lgr_support.hpp>
-#include <lgr_subsets.hpp>
-#include <lgr_disc.hpp>
-#include <lgr_supports.hpp>
-#include <lgr_when.hpp>
+#include <lgr_simulation.hpp>
 #include <lgr_riemann.hpp>
-#include <lgr_fields.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_scalar.hpp>
 #include <Omega_h_math_lang.hpp>
@@ -40,31 +33,40 @@ LGR_RIEMANN_EXPR(density)
 LGR_RIEMANN_EXPR(pressure)
 #undef LGR_RIEMANN_EXPR
 
-void Condition::init(Supports& supports) {
+void Condition::init(Simulation& sim) {
   auto vars_used = Omega_h::math_lang::get_symbols_used(str);
   uses_old_vals = (vars_used.count(field->short_name) != 0);
   needs_coords = vars_used.count("x");
   needs_reeval = (needs_coords || uses_old_vals || vars_used.count("t"));
   Omega_h::ExprOpsReader reader;
   op = reader.read_ops(str);
-  bridge = supports.subsets.get_bridge(support->subset, field->support->subset);
+  bridge = sim.supports.subsets.get_bridge(support->subset, field->support->subset);
   learn_disc();
   env.register_function("riemann_velocity", riemann_expr_velocity);
   env.register_function("riemann_density", riemann_expr_density);
   env.register_function("riemann_pressure", riemann_expr_pressure);
+  // copy in all the variables defined in "input variables"
+  auto& user_env = sim.input_variables.env;
+  for (auto& pair : user_env.variables) {
+    auto& name = pair.first;
+    if (!env.variables.count(name)) {
+      auto& value = pair.second;
+      env.register_variable(name, value);
+    }
+  }
 }
 
-Condition::Condition(Field* field_in, Supports& supports,
+Condition::Condition(Field* field_in, Simulation& sim,
     std::string const& str_in, Support* support_in, When* when_in)
 :field(field_in)
 ,str(str_in)
 ,support(support_in)
 ,when(when_in)
 {
-  init(supports);
+  init(sim);
 }
 
-Condition::Condition(Field* field_in, Supports& supports, Omega_h::InputMap& pl)
+Condition::Condition(Field* field_in, Simulation& sim, Omega_h::InputMap& pl)
 :field(field_in)
 {
   str = pl.get<std::string>("value");
@@ -74,12 +76,12 @@ Condition::Condition(Field* field_in, Supports& supports, Omega_h::InputMap& pl)
     for (int i = 0; i < class_names_teuchos.size(); ++i) {
       class_names.insert(class_names_teuchos.get<std::string>(i));
     }
-    support = supports.get_support(field_in->entity_type, field_in->on_points, class_names);
+    support = sim.supports.get_support(field_in->entity_type, field_in->on_points, class_names);
   } else {
     support = field->support;
   }
   when.reset(setup_when(pl));
-  init(supports);
+  init(sim);
 }
 
 void Condition::forget_disc() {
