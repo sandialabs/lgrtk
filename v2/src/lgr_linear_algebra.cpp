@@ -5,6 +5,7 @@
 
 //DEBUG!
 #include <iostream>
+#include <cmath>
 
 namespace lgr {
 
@@ -38,38 +39,89 @@ void axpy(double a, GlobalVector x, GlobalVector y, GlobalVector result) {
   parallel_for(result.size(), std::move(f));
 }
 
+void extract_inverse_diagonal(GlobalMatrix mat, GlobalVector diagonal) {
+   OMEGA_H_TIME_FUNCTION;
+
+   auto f = OMEGA_H_LAMBDA(int const row) {
+      auto const begin = mat.rows_to_columns.a2ab[row];
+      auto const end = mat.rows_to_columns.a2ab[row + 1];
+      for(auto nonzero = begin; nonzero < end; ++nonzero) {
+         auto const column = mat.rows_to_columns.ab2b[nonzero];
+         if (column == row) {
+            diagonal[row] = 1.0/mat.entries[nonzero];
+            break;
+         }
+      }
+   };
+
+   parallel_for(diagonal.size(), std::move(f));
+
+}
+
+
+
+
 int conjugate_gradient(
     GlobalMatrix A,
     GlobalVector b,
     GlobalVector x,
-    double max_residual_magnitude) {
+    double tolerance) {
+
   OMEGA_H_TIME_FUNCTION;
+
+  std::cout.precision(10);
+  std::cout << std::scientific ;
+  std::cout << "tolerance = " << tolerance << '\n';
+
   auto const n = x.size();
   GlobalVector r(n, "CG/r");
+
   matvec(A, x, r); // r = A * x
   axpy(-1.0, r, b, r); // r = -r + b, r = b - A * x
+
+  GlobalVector MInv(n, 1, "CG/inverse(diag(A))"); //diagonal preconditioning
+  extract_inverse_diagonal(A, MInv);
+
+  auto z = multiply_each(read(MInv), read(r), "MInv r_0");
+
+
   GlobalVector p(n, "CG/p");
-  Omega_h::copy_into(read(r), p); // p = r
-  auto rsold = dot(r, r);
-  std::cout << "rsold = " << rsold << '\n';
-  if (std::sqrt(rsold) < max_residual_magnitude) {
+  Omega_h::copy_into(read(z), p); // p = z
+  auto rDotzOld = dot(r, z);
+
+
+  std::cout << "r0norm = " <<  rDotzOld <<'\n';
+  if (std::sqrt(rDotzOld) < tolerance) {
     return 0;
   }
+
   GlobalVector Ap(n, "CG/Ap");
-  for (int i = 0; i < b.size(); ++i) {
-    matvec(A, p, Ap);
-    auto const alpha = rsold / dot(p, Ap);
-    axpy(alpha, p, x, x); // x = x + alpha * p
-    axpy(-alpha, Ap, r, r); // r = r - alpha * Ap
-    auto const rsnew = dot(r, r);
-    std::cout << "rsnew[" << i <<"] = " << rsnew << '\n';
-    if (std::sqrt(rsnew) < max_residual_magnitude) {
-      return i + 1;
-    }
-    auto const beta = rsnew / rsold;
-    axpy(beta, p, r, p); // p = r + (rsnew / rsold) * p
-    rsold = rsnew;
+  for (int k = 0; k < b.size(); ++k) {
+
+     const auto cc = std::sqrt(dot(z,z)/dot(x,x));
+     std::cout << "  rnorm[" << k <<"] = " << cc << '\n';
+
+     const bool converged = cc < tolerance ||
+           std::sqrt(rDotzOld) < tolerance;
+     if (converged) {
+        return k + 1;
+     }
+
+     matvec(A, p, Ap);
+     auto const alpha = rDotzOld / dot(p, Ap);
+     axpy(alpha, p, x, x); // x = x + alpha * p
+     axpy(-alpha, Ap, r, r); // r = r - alpha * Ap
+
+     z = multiply_each(read(MInv), read(r), "MInv r_k+1");
+
+     auto const rDotzNew = dot(r, z);
+
+     auto const beta = rDotzNew / rDotzOld;
+     axpy(beta, p, z, p); // p = z + (rDotzNew / rDotzOld) * p
+
+     rDotzOld = rDotzNew;
   }
+
   return b.size() + 1;
 }
 
