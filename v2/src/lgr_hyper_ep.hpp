@@ -39,6 +39,11 @@ enum class RateDependence {
   JOHNSON_COOK
 };
 
+enum class Damage {
+  NONE,
+  JOHNSON_COOK
+};
+
 enum class StateFlag {
   NONE,
   TRIAL,
@@ -58,6 +63,18 @@ struct Properties {
   double c3;
   double c4;
   double ep_dot_0;
+
+  // Damage parameters
+  double D1;
+  double D2;
+  double D3;
+  double D4;
+  double D5;
+  double D0;
+  double Dc;
+  bool allow_no_tension;
+  bool allow_no_shear;
+  bool set_stress_to_zero;
 };
 
 using tensor_type = Matrix<3, 3>;
@@ -72,6 +89,10 @@ void read_and_validate_plastic_params(
     Properties& props,
     Hardening& hardening,
     RateDependence& rate_dep);
+void read_and_validate_damage_params(
+    Omega_h::InputMap& params,
+    Properties& props,
+    Damage& damage);
 
 /** \brief Determine the square of the left stretch B=V.V
 
@@ -275,6 +296,62 @@ double dflow_stress(
   return sq23 * deriv;
 }
 
+
+OMEGA_H_INLINE
+double scalar_damage(
+    Damage const damage,
+    Properties const props,
+    tensor_type& T,
+    double const dp,
+    double const temp,
+    double const /* ep */,
+    double const epdot,
+    double const dtime)
+{
+  if (damage == Damage::NONE) {
+    return 0.0;
+  }
+  else if (damage == Damage::JOHNSON_COOK) {
+    double tolerance = 1e-10;
+    auto const I = identity_matrix<3,3>();
+    auto const T_mean = (trace(T) / 3.0);
+    auto const S = T - I * T_mean;
+    auto const norm_S = norm(S);
+    auto const S_eq = std::sqrt(norm_S * norm_S * 1.5);
+
+    // Stress contribution to damage
+    auto const sig_star = std::max(std::min((std::abs(S_eq)>1e-16) ? T_mean/S_eq : 0.0, 1.5), -1.5);
+    double stress_contrib = props.D1 + props.D2 * exp(props.D3 * sig_star);
+
+    // Strain rate contribution to damage
+    double dep_contrib = 1.0;
+    if (epdot < 1.0) {
+      dep_contrib = std::pow((1.0 + epdot), props.D4);
+    } else {
+      dep_contrib = 1.0 + props.D4 * std::log(epdot);
+    }
+
+    double temp_contrib = 1.0;
+    auto const temp_ref = props.c1;
+    auto const temp_melt = props.c2;
+    if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 != 1.0) {
+      auto const tstar = (temp > temp_melt) ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
+      temp_contrib += props.D5 * tstar;
+    }
+
+    // Calculate the updated scalar damage parameter
+    auto const eps_frac = stress_contrib * dep_contrib * temp_contrib;
+    if (eps_frac < tolerance)
+      return dp;
+
+    // Calculate plastic strain increment
+    auto const dep = epdot * dtime;
+    auto const ddp = dep / eps_frac;
+    return (dp+ddp < tolerance) ? 0.0 : dp + ddp;
+  }
+  return 0.0;
+}
+
 /* Computes the radial return
  *
  * Yield function:
@@ -375,6 +452,7 @@ radial_return(Hardening const hardening,
       // print warning about weaker convergence
     }
   }
+
   if (flag != StateFlag::ELASTIC) {
     // determine elastic deformation
     auto const jac = determinant(F);
@@ -449,6 +527,7 @@ update(
     Elastic const elastic,
     Hardening const hardening,
     RateDependence const rate_dep,
+    Damage const damage,
     Properties const props,
     double const rho,
     tensor_type const F,
@@ -458,7 +537,9 @@ update(
     double& wave_speed,
     tensor_type& Fp,
     double& ep,
-    double& epdot)
+    double& epdot,
+    double& dp,
+    double& localized)
 {
   auto const jac = determinant(F);
   {
@@ -470,6 +551,7 @@ update(
     auto const plane_wave_modulus = K + (4.0 / 3.0) * G;
     wave_speed = std::sqrt(plane_wave_modulus / rho);
   }
+
   // Determine the stress predictor.
   tensor_type Te;
   auto const Fe = F * invert(Fp);
@@ -479,13 +561,66 @@ update(
   } else if (elastic == Elastic::NEO_HOOKEAN) {
     Te = hyper_elastic_stress(props, Fe, jac);
   }
-  // check yield
+
+  // check yield and perform radial return (if applicable)
   auto flag = StateFlag::TRIAL;
   err_c = radial_return(
       hardening, rate_dep, props, Te, F, temp,
       dtime, T, Fp, ep, epdot, flag);
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
+  }
+
+  bool is_localized = false;
+  auto p = -trace(T) / 3.;
+  auto const I = identity_matrix<3,3>();
+  if (damage != Damage::NONE) {
+    // If the particle has already failed, apply various erosion algorithms
+    if (localized) {
+      if (props.allow_no_tension) {
+        if (p < 0.0) {
+          T = 0.0 * I;
+        } else {
+          T = -p * I;
+        }
+      }
+      if (props.allow_no_shear) {
+        T = -p * I;
+      } else if (props.set_stress_to_zero) {
+        T = 0.0 * I;
+      }
+    }
+
+    // Update damage and check modified TEPLA rule
+    dp = scalar_damage(damage, props, T, dp, temp, ep, epdot, dtime);
+    double por=0.0, por_crit = 1.0;
+    auto const tepla = std::pow(por / por_crit, 2.0) + std::pow(dp, 2.0);
+    if (tepla > 1.0) {
+      is_localized = true;
+    }
+  }
+
+  if (is_localized) {
+    // If the localized material point fails again, set the stress to zero
+    if (localized) {
+      dp = 0.0;
+    } else {
+      // set the particle localization flag to true
+      localized = 1.0;
+      dp = 0.0;
+      // Apply various erosion algorithms
+      if (props.allow_no_tension) {
+        if (p < 0.0) {
+          T = 0.0 * I;
+        } else {
+          T = -p * I;
+        }
+      } else if (props.allow_no_shear) {
+        T = -p * I;
+      } else if (props.set_stress_to_zero) {
+        T = 0.0 * I;
+      }
+    }
   }
   return ErrorCode::SUCCESS;
 }
