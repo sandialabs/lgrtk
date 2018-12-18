@@ -33,20 +33,59 @@ LGR_RIEMANN_EXPR(density)
 LGR_RIEMANN_EXPR(pressure)
 #undef LGR_RIEMANN_EXPR
 
-void Condition::init(Simulation& sim) {
+void Condition::init() {
   auto vars_used = Omega_h::math_lang::get_symbols_used(str);
   uses_old_vals = (vars_used.count(field->short_name) != 0);
   needs_coords = vars_used.count("x");
   needs_reeval = (needs_coords || uses_old_vals || vars_used.count("t"));
   Omega_h::ExprOpsReader reader;
   op = reader.read_ops(str);
-  bridge = sim.supports.subsets.get_bridge(support->subset, field->support->subset);
+  bridge = sim_ptr->supports.subsets.get_bridge(support->subset, field->support->subset);
   learn_disc();
+}
+
+Condition::Condition(Field* field_in, Simulation& sim_in,
+    std::string const& str_in, Support* support_in, When* when_in)
+:field(field_in)
+,str(str_in)
+,support(support_in)
+,when(when_in)
+,sim_ptr(&sim_in)
+{
+  init();
+}
+
+Condition::Condition(Field* field_in, Simulation& sim_in, Omega_h::InputMap& pl)
+:field(field_in)
+,sim_ptr(&sim_in)
+{
+  str = pl.get<std::string>("value");
+  if (pl.is_list("sets")) {
+    auto& class_names_teuchos = pl.get_list("sets");
+    ClassNames class_names;
+    for (int i = 0; i < class_names_teuchos.size(); ++i) {
+      class_names.insert(class_names_teuchos.get<std::string>(i));
+    }
+    support = sim_ptr->supports.get_support(field_in->entity_type, field_in->on_points, class_names);
+  } else {
+    support = field->support;
+  }
+  when.reset(setup_when(pl));
+  init();
+}
+
+void Condition::forget_disc() {
+  env = decltype(env)();
+  cached_values = decltype(cached_values)();
+}
+
+void Condition::learn_disc() {
+  env = decltype(env)(support->count(), support->subset->disc.dim());
   env.register_function("riemann_velocity", riemann_expr_velocity);
   env.register_function("riemann_density", riemann_expr_density);
   env.register_function("riemann_pressure", riemann_expr_pressure);
   // copy in all the variables defined in "input variables"
-  auto& user_env = sim.input_variables.env;
+  auto& user_env = sim_ptr->input_variables.env;
   for (auto& pair : user_env.variables) {
     auto& name = pair.first;
     if (!env.variables.count(name)) {
@@ -57,43 +96,6 @@ void Condition::init(Simulation& sim) {
   if (uses_old_vals && env.variables.count(field->short_name)) {
     Omega_h_fail("expr for field \"%s\" contains \"%s\", which is also a previously-defined variable.\n", field->long_name.c_str(), field->short_name.c_str());
   }
-}
-
-Condition::Condition(Field* field_in, Simulation& sim,
-    std::string const& str_in, Support* support_in, When* when_in)
-:field(field_in)
-,str(str_in)
-,support(support_in)
-,when(when_in)
-{
-  init(sim);
-}
-
-Condition::Condition(Field* field_in, Simulation& sim, Omega_h::InputMap& pl)
-:field(field_in)
-{
-  str = pl.get<std::string>("value");
-  if (pl.is_list("sets")) {
-    auto& class_names_teuchos = pl.get_list("sets");
-    ClassNames class_names;
-    for (int i = 0; i < class_names_teuchos.size(); ++i) {
-      class_names.insert(class_names_teuchos.get<std::string>(i));
-    }
-    support = sim.supports.get_support(field_in->entity_type, field_in->on_points, class_names);
-  } else {
-    support = field->support;
-  }
-  when.reset(setup_when(pl));
-  init(sim);
-}
-
-void Condition::forget_disc() {
-  env = decltype(env)();
-  cached_values = decltype(cached_values)();
-}
-
-void Condition::learn_disc() {
-  env = decltype(env)(support->count(), support->subset->disc.dim());
 }
 
 double Condition::next_event(double time) { return when->next_event(time); }

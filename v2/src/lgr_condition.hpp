@@ -27,7 +27,8 @@ struct Condition {
   bool uses_old_vals;
   SubsetBridge* bridge;
   Omega_h::Read<double> cached_values;
-  void init(Simulation& sim);
+  Simulation* sim_ptr;
+  void init();
   Condition(Field*, Simulation&, std::string const& str_in, Support*, When*);
   Condition(Field* field_in, Simulation&, Omega_h::InputMap& pl);
   void forget_disc();
