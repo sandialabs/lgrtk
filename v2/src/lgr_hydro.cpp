@@ -1,9 +1,9 @@
-#include <lgr_hydro.hpp>
-#include <lgr_simulation.hpp>
-#include <lgr_scope.hpp>
 #include <Omega_h_align.hpp>
-#include <lgr_for.hpp>
 #include <lgr_element_functions.hpp>
+#include <lgr_for.hpp>
+#include <lgr_hydro.hpp>
+#include <lgr_scope.hpp>
+#include <lgr_simulation.hpp>
 
 namespace lgr {
 
@@ -24,8 +24,7 @@ void initialize_configuration(Simulation& sim) {
     elems_to_visc_len[elem] = shape.lengths.viscosity_length;
     for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
       auto const pt = elem * Elem::points + elem_pt;
-      setgrads<Elem>(points_to_gradients, pt,
-          shape.basis_gradients[elem_pt]);
+      setgrads<Elem>(points_to_gradients, pt, shape.basis_gradients[elem_pt]);
       points_to_weights[pt] = shape.weights[elem_pt];
     }
   };
@@ -98,8 +97,7 @@ void update_configuration(Simulation& sim) {
     elems_to_visc_len[elem] = shape.lengths.viscosity_length;
     for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
       auto const pt = elem * Elem::points + elem_pt;
-      setgrads<Elem>(points_to_gradients, pt,
-          shape.basis_gradients[elem_pt]);
+      setgrads<Elem>(points_to_gradients, pt, shape.basis_gradients[elem_pt]);
       auto const w_n = points_to_weights[pt];
       auto const rho_n = points_to_rho[pt];
       auto const m = w_n * rho_n;
@@ -145,10 +143,11 @@ void compute_stress_divergence(Simulation& sim) {
       auto const elem_node = Omega_h::code_which_down(code);
       for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
         auto const point = elem * Elem::points + elem_pt;
-        auto const grad = getvec<Elem>(points_to_grads, point * Elem::nodes + elem_node);
+        auto const grad =
+            getvec<Elem>(points_to_grads, point * Elem::nodes + elem_node);
         auto const sigma = getsymm<Elem>(points_to_sigma, point);
         auto const weight = points_to_weights[point];
-        auto const cell_f = - (sigma * grad) * weight;
+        auto const cell_f = -(sigma * grad) * weight;
         node_f += cell_f;
       }
     }
@@ -192,16 +191,16 @@ void compute_point_time_steps(Simulation& sim) {
   parallel_for(sim.points(), std::move(functor));
 }
 
-#define LGR_EXPL_INST(Elem) \
-template void initialize_configuration<Elem>(Simulation& sim); \
-template void lump_masses<Elem>(Simulation& sim); \
-template void update_position<Elem>(Simulation& sim); \
-template void update_configuration<Elem>(Simulation& sim); \
-template void correct_velocity<Elem>(Simulation& sim); \
-template void compute_stress_divergence<Elem>(Simulation& sim); \
-template void compute_nodal_acceleration<Elem>(Simulation& sim); \
-template void compute_point_time_steps<Elem>(Simulation& sim);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template void initialize_configuration<Elem>(Simulation & sim);              \
+  template void lump_masses<Elem>(Simulation & sim);                           \
+  template void update_position<Elem>(Simulation & sim);                       \
+  template void update_configuration<Elem>(Simulation & sim);                  \
+  template void correct_velocity<Elem>(Simulation & sim);                      \
+  template void compute_stress_divergence<Elem>(Simulation & sim);             \
+  template void compute_nodal_acceleration<Elem>(Simulation & sim);            \
+  template void compute_point_time_steps<Elem>(Simulation & sim);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

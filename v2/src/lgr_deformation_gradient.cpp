@@ -1,8 +1,8 @@
+#include <Omega_h_print.hpp>
 #include <lgr_deformation_gradient.hpp>
+#include <lgr_for.hpp>
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
-#include <lgr_for.hpp>
-#include <Omega_h_print.hpp>
 
 namespace lgr {
 
@@ -10,10 +10,10 @@ template <class Elem>
 struct DeformationGradient : public Model<Elem> {
   FieldIndex deformation_gradient;
   DeformationGradient(Simulation& sim_in)
-    :Model<Elem>(sim_in, sim_in.fields[sim_in.fields.find("deformation gradient")].class_names)
-    ,deformation_gradient(sim_in.fields.find("deformation gradient"))
-  {
-  }
+      : Model<Elem>(
+            sim_in, sim_in.fields[sim_in.fields.find("deformation gradient")]
+                        .class_names),
+        deformation_gradient(sim_in.fields.find("deformation gradient")) {}
   std::uint64_t exec_stages() override final { return AT_FIELD_UPDATE; }
   char const* name() override final { return "deformation gradient"; }
   void at_field_update() override final {
@@ -44,13 +44,15 @@ struct DeformationGradient : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* deformation_gradient_factory(Simulation& sim, std::string const&, Omega_h::InputMap&) {
+ModelBase* deformation_gradient_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap&) {
   return new DeformationGradient<Elem>(sim);
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelBase* deformation_gradient_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* deformation_gradient_factory<Elem>(                      \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

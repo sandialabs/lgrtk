@@ -8,8 +8,9 @@ namespace lgr {
 struct Simulation;
 struct Scalar;
 
-Scalar* node_scalar_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl);
+Scalar* node_scalar_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif

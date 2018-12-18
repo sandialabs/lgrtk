@@ -77,17 +77,9 @@ namespace lgr {
 // (12)  p = ph(rho) + Gamma * rho * (e - eh(rho))
 //
 
-
-OMEGA_H_INLINE void mie_gruneisen_update(
-    double const rho0,
-    double const gamma0,
-    double const c0,
-    double const s1,
-    double const rho,
-    double const internal_energy,
-    double& pressure,
-    double& wave_speed)
-{
+OMEGA_H_INLINE void mie_gruneisen_update(double const rho0, double const gamma0,
+    double const c0, double const s1, double const rho,
+    double const internal_energy, double& pressure, double& wave_speed) {
   auto const mu = 1.0 - (rho0 / rho);
   auto const dmu = rho0 / rho / rho; /* = \frac{\partial \mu}{\partial \rho} */
   // For expansion (mu <= 0):
@@ -101,7 +93,7 @@ OMEGA_H_INLINE void mie_gruneisen_update(
   auto const dph = 2.0 * rho0 * us * dus * mu + rho0 * us * us * dmu;
   auto const deh = 0.5 * (mu * dph + ph * dmu) / rho0;
   auto const dpdrho = dph - gamma0 * rho0 * deh;
-  //derivative of pressure with repect to energy
+  // derivative of pressure with repect to energy
   auto const dpde = gamma0 * rho0;
   // Pressure
   pressure = ph + gamma0 * rho0 * (internal_energy - eh);
@@ -111,13 +103,15 @@ OMEGA_H_INLINE void mie_gruneisen_update(
 }
 
 template <class Elem>
-ModelBase* mie_gruneisen_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
+ModelBase* mie_gruneisen_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
-#define LGR_EXPL_INST(Elem) \
-extern template ModelBase* mie_gruneisen_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* mie_gruneisen_factory<Elem>(                      \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

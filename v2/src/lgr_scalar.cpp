@@ -4,11 +4,10 @@
 namespace lgr {
 
 Scalar::Scalar(Simulation& sim_in, std::string const& name_in)
-  :name(name_in)
-  ,sim(sim_in)
-  ,value_(std::numeric_limits<double>::quiet_NaN())
-  ,cached_time_(std::numeric_limits<double>::quiet_NaN())
-{}
+    : name(name_in),
+      sim(sim_in),
+      value_(std::numeric_limits<double>::quiet_NaN()),
+      cached_time_(std::numeric_limits<double>::quiet_NaN()) {}
 
 void Scalar::out_of_line_virtual_method() {}
 
@@ -19,4 +18,4 @@ double Scalar::ask_value() {
   return value_;
 }
 
-}
+}  // namespace lgr

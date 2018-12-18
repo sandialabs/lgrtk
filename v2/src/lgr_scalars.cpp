@@ -1,7 +1,7 @@
+#include <lgr_l2_error.hpp>
+#include <lgr_node_scalar.hpp>
 #include <lgr_scalars.hpp>
 #include <lgr_simulation.hpp>
-#include <lgr_node_scalar.hpp>
-#include <lgr_l2_error.hpp>
 
 namespace lgr {
 
@@ -9,7 +9,7 @@ std::string const& NameOfScalarPtr::operator()(Scalar* ptr) {
   return ptr->name;
 }
 
-Scalars::Scalars(Simulation& sim_in):sim(sim_in) {}
+Scalars::Scalars(Simulation& sim_in) : sim(sim_in) {}
 
 double Scalars::ask_value(std::string const& name) {
   if (name == "CPU time") return sim.cpu_time;
@@ -17,7 +17,8 @@ double Scalars::ask_value(std::string const& name) {
   if (name == "dt") return sim.dt;
   if (name == "step") return double(sim.step);
   auto it = by_name.find(name);
-  if (it == by_name.end()) Omega_h_fail("Request for undefined scalar \"%s\"\n", name.c_str());
+  if (it == by_name.end())
+    Omega_h_fail("Request for undefined scalar \"%s\"\n", name.c_str());
   return (*it)->ask_value();
 }
 
@@ -35,4 +36,4 @@ ScalarFactories get_builtin_scalar_factories() {
   return out;
 }
 
-}
+}  // namespace lgr

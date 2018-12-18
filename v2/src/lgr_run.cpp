@@ -1,8 +1,8 @@
-#include <lgr_run.hpp>
-#include <lgr_simulation.hpp>
-#include <lgr_hydro.hpp>
 #include <Omega_h_profile.hpp>
 #include <lgr_flood.hpp>
+#include <lgr_hydro.hpp>
+#include <lgr_run.hpp>
+#include <lgr_simulation.hpp>
 #include <lgr_traction.hpp>
 
 namespace lgr {
@@ -85,23 +85,23 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-void run(Omega_h::CommPtr comm, Omega_h::InputMap& pl,
-    Factories&& factories_in) {
+void run(
+    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));
   auto elem = pl.get<std::string>("element type");
   if (factories.empty()) factories = Factories(elem);
   Simulation sim(comm, std::move(factories));
-#define LGR_EXPL_INST(Elem) \
-  if (elem == Elem::name()) { \
-    sim.set_elem<Elem>(); \
-    sim.setup(pl); \
-    run_simulation<Elem>(sim); \
-    return; \
+#define LGR_EXPL_INST(Elem)                                                    \
+  if (elem == Elem::name()) {                                                  \
+    sim.set_elem<Elem>();                                                      \
+    sim.setup(pl);                                                             \
+    run_simulation<Elem>(sim);                                                 \
+    return;                                                                    \
   }
   LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
   Omega_h_fail("Unknown element type \"%s\"\n", elem.c_str());
 }
 
-}
+}  // namespace lgr

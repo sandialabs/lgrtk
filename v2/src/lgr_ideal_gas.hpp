@@ -7,29 +7,27 @@
 
 namespace lgr {
 
-OMEGA_H_INLINE void ideal_gas_update(
-    double const gamma,
-    double const density,
-    double const specific_internal_energy,
-    double& pressure,
+OMEGA_H_INLINE void ideal_gas_update(double const gamma, double const density,
+    double const specific_internal_energy, double& pressure,
     double& wave_speed) {
   OMEGA_H_CHECK(density > 0.0);
   OMEGA_H_CHECK(specific_internal_energy > 0.0);
-  pressure =
-    (gamma - 1.) * density * specific_internal_energy;
+  pressure = (gamma - 1.) * density * specific_internal_energy;
   auto const bulk_modulus = gamma * pressure;
   wave_speed = std::sqrt(bulk_modulus / density);
   OMEGA_H_CHECK(wave_speed > 0.0);
 }
 
 template <class Elem>
-ModelBase* ideal_gas_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
+ModelBase* ideal_gas_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
-#define LGR_EXPL_INST(Elem) \
-extern template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* ideal_gas_factory<Elem>(                          \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

@@ -1,34 +1,33 @@
-#include <lgr_models.hpp>
-#include <lgr_simulation.hpp>
-#include <lgr_linear_elastic.hpp>
+#include <Omega_h_profile.hpp>
+#include <lgr_artificial_viscosity.hpp>
+#include <lgr_circular_symmetry.hpp>
+#include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
 #include <lgr_ideal_gas.hpp>
-#include <lgr_mie_gruneisen.hpp>
-#include <lgr_neo_hookean.hpp>
-#include <lgr_stvenant_kirchhoff.hpp>
-#include <lgr_artificial_viscosity.hpp>
 #include <lgr_internal_energy.hpp>
-#include <lgr_deformation_gradient.hpp>
 #include <lgr_joule_heating.hpp>
-#include <lgr_scope.hpp>
+#include <lgr_linear_elastic.hpp>
+#include <lgr_mie_gruneisen.hpp>
+#include <lgr_models.hpp>
+#include <lgr_neo_hookean.hpp>
 #include <lgr_nodal_pressure.hpp>
-#include <lgr_circular_symmetry.hpp>
-#include <Omega_h_profile.hpp>
+#include <lgr_scope.hpp>
+#include <lgr_simulation.hpp>
+#include <lgr_stvenant_kirchhoff.hpp>
 
 namespace lgr {
 
-Models::Models(Simulation& sim_in)
-  :sim(sim_in)
-{
-}
+Models::Models(Simulation& sim_in) : sim(sim_in) {}
 
 void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
-  ::lgr::setup(sim.factories.material_model_factories, sim, pl.get_list("material models"), models, "material model");
+  ::lgr::setup(sim.factories.material_model_factories, sim,
+      pl.get_list("material models"), models, "material model");
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
   if (models.empty()) Omega_h_fail("no material models defined!\n");
-  ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"), models, "modifier");
+  ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"),
+      models, "modifier");
 }
 
 void Models::setup_field_updates() {
@@ -57,16 +56,16 @@ void Models::learn_disc() {
   }
 }
 
-#define LGR_STAGE_DEF(lowercase, uppercase) \
-void Models::lowercase() { \
-  OMEGA_H_TIME_FUNCTION; \
-  for (auto& model : models) { \
-    if ((model->exec_stages() & uppercase) != 0) { \
-      Scope scope{sim, model->name()}; \
-      model->lowercase(); \
-    } \
-  } \
-}
+#define LGR_STAGE_DEF(lowercase, uppercase)                                    \
+  void Models::lowercase() {                                                   \
+    OMEGA_H_TIME_FUNCTION;                                                     \
+    for (auto& model : models) {                                               \
+      if ((model->exec_stages() & uppercase) != 0) {                           \
+        Scope scope{sim, model->name()};                                       \
+        model->lowercase();                                                    \
+      }                                                                        \
+    }                                                                          \
+  }
 LGR_STAGE_DEF(after_configuration, AFTER_CONFIGURATION)
 LGR_STAGE_DEF(before_field_update, BEFORE_FIELD_UPDATE)
 LGR_STAGE_DEF(at_field_update, AT_FIELD_UPDATE)
@@ -110,11 +109,11 @@ ModelFactories get_builtin_field_update_factories() {
   return out;
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelFactories get_builtin_material_model_factories<Elem>(); \
-template ModelFactories get_builtin_modifier_factories<Elem>(); \
-template ModelFactories get_builtin_field_update_factories<Elem>();
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelFactories get_builtin_material_model_factories<Elem>();        \
+  template ModelFactories get_builtin_modifier_factories<Elem>();              \
+  template ModelFactories get_builtin_field_update_factories<Elem>();
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

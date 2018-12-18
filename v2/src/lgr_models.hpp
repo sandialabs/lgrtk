@@ -1,9 +1,9 @@
 #ifndef LGR_MODELS_HPP
 #define LGR_MODELS_HPP
 
+#include <lgr_element_types.hpp>
 #include <lgr_factories.hpp>
 #include <lgr_model.hpp>
-#include <lgr_element_types.hpp>
 
 namespace lgr {
 
@@ -35,13 +35,13 @@ ModelFactories get_builtin_modifier_factories();
 template <class Elem>
 ModelFactories get_builtin_field_update_factories();
 
-#define LGR_EXPL_INST(Elem) \
-extern template ModelFactories get_builtin_material_model_factories<Elem>(); \
-extern template ModelFactories get_builtin_modifier_factories<Elem>(); \
-extern template ModelFactories get_builtin_field_update_factories<Elem>();
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelFactories get_builtin_material_model_factories<Elem>(); \
+  extern template ModelFactories get_builtin_modifier_factories<Elem>();       \
+  extern template ModelFactories get_builtin_field_update_factories<Elem>();
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

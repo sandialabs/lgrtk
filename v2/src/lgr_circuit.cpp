@@ -1,19 +1,15 @@
-#include <lgr_circuit.hpp>
 #include <algorithm>
+#include <lgr_circuit.hpp>
 
 namespace lgr {
 
-void assemble_circuit(
-    std::vector<int> const& resistor_dofs,
+void assemble_circuit(std::vector<int> const& resistor_dofs,
     std::vector<int> const& inductor_dofs,
     std::vector<int> const& capacitor_dofs,
     std::vector<double> const& resistances,
     std::vector<double> const& inductances,
-    std::vector<double> const& capacitances,
-    int const ground_dof,
-    MediumMatrix& M,
-    MediumMatrix& K
-    ) {
+    std::vector<double> const& capacitances, int const ground_dof,
+    MediumMatrix& M, MediumMatrix& K) {
   auto const nresistors = int(resistances.size());
   auto const ninductors = int(inductances.size());
   auto const ncapacitors = int(capacitances.size());
@@ -21,9 +17,15 @@ void assemble_circuit(
   OMEGA_H_CHECK(int(inductor_dofs.size()) == ninductors * 3);
   OMEGA_H_CHECK(int(capacitor_dofs.size()) == ncapacitors * 2);
   int max_dof = -1;
-  if (!resistor_dofs.empty()) max_dof = std::max(max_dof, *std::max_element(resistor_dofs.begin(), resistor_dofs.end()));
-  if (!inductor_dofs.empty()) max_dof = std::max(max_dof, *std::max_element(inductor_dofs.begin(), inductor_dofs.end()));
-  if (!capacitor_dofs.empty()) max_dof = std::max(max_dof, *std::max_element(capacitor_dofs.begin(), capacitor_dofs.end()));
+  if (!resistor_dofs.empty())
+    max_dof = std::max(
+        max_dof, *std::max_element(resistor_dofs.begin(), resistor_dofs.end()));
+  if (!inductor_dofs.empty())
+    max_dof = std::max(
+        max_dof, *std::max_element(inductor_dofs.begin(), inductor_dofs.end()));
+  if (!capacitor_dofs.empty())
+    max_dof = std::max(max_dof,
+        *std::max_element(capacitor_dofs.begin(), capacitor_dofs.end()));
   int n = max_dof + 1;
   M = MediumMatrix(n);
   K = MediumMatrix(n);
@@ -63,14 +65,9 @@ void assemble_circuit(
   }
 }
 
-void form_backward_euler_circuit_system(
-    MediumMatrix const& M,
-    MediumMatrix const& K,
-    MediumVector const& last_x,
-    double const dt,
-    MediumMatrix& A,
-    MediumVector& b)
-{
+void form_backward_euler_circuit_system(MediumMatrix const& M,
+    MediumMatrix const& K, MediumVector const& last_x, double const dt,
+    MediumMatrix& A, MediumVector& b) {
   auto const n = M.size;
   A = MediumMatrix(n);
   b = MediumVector(n);
@@ -83,4 +80,4 @@ void form_backward_euler_circuit_system(
   }
 }
 
-}
+}  // namespace lgr

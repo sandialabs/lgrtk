@@ -8,9 +8,9 @@ namespace lgr {
 struct Response;
 struct Simulation;
 
-Response* comparison_factory(Simulation& sim, std::string const& name,
-    Omega_h::InputMap& pl);
+Response* comparison_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif

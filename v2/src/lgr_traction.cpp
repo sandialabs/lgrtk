@@ -1,9 +1,9 @@
-#include <lgr_traction.hpp>
-#include <lgr_simulation.hpp>
-#include <lgr_for.hpp>
-#include <lgr_element_functions.hpp>
-#include <Omega_h_profile.hpp>
 #include <Omega_h_align.hpp>
+#include <Omega_h_profile.hpp>
+#include <lgr_element_functions.hpp>
+#include <lgr_for.hpp>
+#include <lgr_simulation.hpp>
+#include <lgr_traction.hpp>
 
 namespace lgr {
 
@@ -41,7 +41,8 @@ static void integrate_nodal_tractions(Simulation& sim) {
   using Side = typename Elem::side;
   auto const subset = sim.fields[sim.traction].support->subset;
   auto const traction_sides_to_sides = subset->mapping.things;
-  auto const sides_to_traction_sides = sim.subsets.acquire_inverse(traction_sides_to_sides, sim.disc.count(SIDES));
+  auto const sides_to_traction_sides = sim.subsets.acquire_inverse(
+      traction_sides_to_sides, sim.disc.count(SIDES));
   auto const nodes_to_sides = sim.disc.nodes_to_ents(SIDES);
   auto const traction_points_to_traction = sim.get(sim.traction);
   auto const traction_points_to_weights = sim.get(sim.traction_weight);
@@ -59,8 +60,11 @@ static void integrate_nodal_tractions(Simulation& sim) {
       auto const lumping = Side::lumping(side_node);
       for (int side_point = 0; side_point < Side::points; ++side_point) {
         auto const traction_point = traction_side * Side::points + side_point;
-        auto const traction = getvec<Elem>(traction_points_to_traction, traction_point);
-        auto const weight = traction_points_to_weights[traction_point * Side::nodes + side_node];
+        auto const traction =
+            getvec<Elem>(traction_points_to_traction, traction_point);
+        auto const weight =
+            traction_points_to_weights[traction_point * Side::nodes +
+                                       side_node];
         node_force += traction * weight * lumping;
       }
     }
@@ -80,12 +84,12 @@ static void apply_tractions_tmpl(Simulation& sim) {
 void apply_tractions(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
   if (!has_traction(sim)) return;
-#define LGR_EXPL_INST(Elem) \
-  if (sim.elem_name == Elem::name()) { \
-    apply_tractions_tmpl<Elem>(sim); \
+#define LGR_EXPL_INST(Elem)                                                    \
+  if (sim.elem_name == Elem::name()) {                                         \
+    apply_tractions_tmpl<Elem>(sim);                                           \
   }
-LGR_EXPL_INST_ELEMS
+  LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 }
 
-}
+}  // namespace lgr

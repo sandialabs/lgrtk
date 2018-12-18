@@ -1,15 +1,15 @@
+#include <Omega_h_profile.hpp>
+#include <lgr_cmdline_hist.hpp>
+#include <lgr_comparison.hpp>
+#include <lgr_csv_hist.hpp>
+#include <lgr_osh_output.hpp>
 #include <lgr_responses.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_vtk_output.hpp>
-#include <lgr_osh_output.hpp>
-#include <lgr_cmdline_hist.hpp>
-#include <lgr_csv_hist.hpp>
-#include <lgr_comparison.hpp>
-#include <Omega_h_profile.hpp>
 
 namespace lgr {
 
-Responses::Responses(Simulation& sim_in):sim(sim_in) {}
+Responses::Responses(Simulation& sim_in) : sim(sim_in) {}
 
 void Responses::setup(Omega_h::InputList& pl) {
   ::lgr::setup(sim.factories.response_factories, sim, pl, storage, "response");
@@ -42,4 +42,4 @@ ResponseFactories get_builtin_response_factories() {
   return out;
 }
 
-}
+}  // namespace lgr

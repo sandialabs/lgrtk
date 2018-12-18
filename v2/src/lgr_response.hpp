@@ -17,6 +17,6 @@ struct Response {
   virtual void respond() = 0;
 };
 
-}
+}  // namespace lgr
 
 #endif

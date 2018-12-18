@@ -1,9 +1,9 @@
+#include <Omega_h_align.hpp>
+#include <lgr_element_functions.hpp>
+#include <lgr_for.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
-#include <lgr_for.hpp>
-#include <Omega_h_align.hpp>
-#include <lgr_element_functions.hpp>
 
 namespace lgr {
 
@@ -16,22 +16,21 @@ struct NodalPressure : public Model<Elem> {
   double velocity_constant;
   double pressure_constant;
   NodalPressure(Simulation& sim_in, Omega_h::InputMap& pl)
-    :Model<Elem>(sim_in, sim_in.disc.covering_class_names())
-  {  
+      : Model<Elem>(sim_in, sim_in.disc.covering_class_names()) {
     auto& everywhere = this->sim.disc.covering_class_names();
-    nodal_pressure =
-    this->sim.fields.define("p", "nodal pressure", 1, NODES, false, everywhere);
+    nodal_pressure = this->sim.fields.define(
+        "p", "nodal pressure", 1, NODES, false, everywhere);
     this->sim.fields[nodal_pressure].default_value = "0.0";
-    nodal_pressure_rate =
-    this->sim.fields.define("p_dot", "nodal pressure rate", 1, NODES, false, everywhere);
+    nodal_pressure_rate = this->sim.fields.define(
+        "p_dot", "nodal pressure rate", 1, NODES, false, everywhere);
     this->sim.fields[nodal_pressure_rate].default_value = "0.0";
-    effective_bulk_modulus =
-    this->sim.fields.define("kappa_tilde", "effective bulk modulus", 1, ELEMS, true, everywhere);
+    effective_bulk_modulus = this->sim.fields.define(
+        "kappa_tilde", "effective bulk modulus", 1, ELEMS, true, everywhere);
     velocity_constant = pl.get<double>("velocity constant", "1.0");
     pressure_constant = pl.get<double>("pressure constant", "1.0");
   }
 
-  void compute_pressure_rate(){
+  void compute_pressure_rate() {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_pressure = sim.get(this->nodal_pressure);
     auto const nodes_to_pressure_rate = sim.set(this->nodal_pressure_rate);
@@ -95,8 +94,8 @@ struct NodalPressure : public Model<Elem> {
     parallel_for(this->sim.disc.count(NODES), std::move(functor));
   }
   std::uint64_t exec_stages() override final {
-    return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES |
-      AFTER_CORRECTION | AFTER_MATERIAL_MODEL;
+    return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES | AFTER_CORRECTION |
+           AFTER_MATERIAL_MODEL;
   }
   char const* name() override final { return "nodal pressure"; }
   void before_material_model() override final {
@@ -117,8 +116,8 @@ struct NodalPressure : public Model<Elem> {
     auto const cfl = sim.cfl;
     auto const dt = sim.dt;
     auto functor = OMEGA_H_LAMBDA(int const point) {
-      auto const elem = point/Elem::points;
-      auto const elem_point = point%Elem::points;
+      auto const elem = point / Elem::points;
+      auto const elem_point = point % Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
       auto const grads = getgrads<Elem>(points_to_grads, point);
@@ -134,7 +133,7 @@ struct NodalPressure : public Model<Elem> {
       auto const point_p = p * basis_values;
       auto const sigma = getsymm<Elem>(points_to_sigma, point);
       auto const dev_sigma = deviator(sigma);
-      auto const I = identity_matrix<Elem::dim,Elem::dim>();
+      auto const I = identity_matrix<Elem::dim, Elem::dim>();
       auto const sigma_tilde = dev_sigma + I * (point_p + p_prime);
       setsymm<Elem>(points_to_sigma, point, sigma_tilde);
     };
@@ -144,11 +143,10 @@ struct NodalPressure : public Model<Elem> {
     backtrack_to_midpoint_nodal_pressure();
     compute_pressure_rate();
   }
-  void after_correction() override final {
-    correct_nodal_pressure();
-  }
+  void after_correction() override final { correct_nodal_pressure(); }
   // based on the previous pressure and pressure rate, compute a predicted
-  // energy using forward Euler. this predicted pressure is what material models use
+  // energy using forward Euler. this predicted pressure is what material models
+  // use
   void compute_nodal_pressure_predictor() {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_p = this->sim.getset(this->nodal_pressure);
@@ -181,7 +179,7 @@ struct NodalPressure : public Model<Elem> {
     auto const nodes_to_p_dot = this->sim.set(this->nodal_pressure_rate);
     Omega_h::fill(nodes_to_p_dot, 0.0);
   }
- 
+
   // using the previous midpoint nodal pressure and the current pressure rate,
   // compute the current pressure
   void correct_nodal_pressure() {
@@ -200,13 +198,15 @@ struct NodalPressure : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* nodal_pressure_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+ModelBase* nodal_pressure_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new NodalPressure<Elem>(sim, pl);
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelBase* nodal_pressure_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* nodal_pressure_factory<Elem>(                            \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

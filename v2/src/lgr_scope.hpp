@@ -12,14 +12,11 @@ struct Scope {
   char const* name;
   Omega_h::ScopedTimer timer;
   Scope(Simulation& sim_in, char const* name_in)
-    :sim(sim_in)
-    ,name(name_in)
-    ,timer(name)
-  {}
+      : sim(sim_in), name(name_in), timer(name) {}
   ~Scope();
 };
 
-}
+}  // namespace lgr
 
 #define LGR_SCOPE(sim) ::lgr::Scope scope(sim, __FUNCTION__)
 

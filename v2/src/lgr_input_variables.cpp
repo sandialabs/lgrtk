@@ -13,7 +13,8 @@ void InputVariables::setup(Omega_h::InputMap& pl) {
   }
 }
 
-double InputVariables::get_double(Omega_h::InputMap& pl, const char* name, const char* default_expr) {
+double InputVariables::get_double(
+    Omega_h::InputMap& pl, const char* name, const char* default_expr) {
   auto const expr = pl.get<std::string>(name, default_expr);
   Omega_h::ExprOpsReader reader;
   auto op = reader.read_ops(expr);
@@ -21,8 +22,9 @@ double InputVariables::get_double(Omega_h::InputMap& pl, const char* name, const
   return Omega_h::any_cast<double>(value_any);
 }
 
-int InputVariables::get_int(Omega_h::InputMap& pl, const char* name, const char* default_expr) {
+int InputVariables::get_int(
+    Omega_h::InputMap& pl, const char* name, const char* default_expr) {
   return static_cast<int>(get_double(pl, name, default_expr));
 }
 
-}
+}  // namespace lgr
