@@ -22,7 +22,7 @@ lgr:
       cathode: ['x+']
       # this becomes an initial guess, it is not required
       normalized voltage: '1.0 - (x(0) / 10.0)'
-      tolerance: 5.0e-2
+      relative tolerance: 1.0e-6
   responses:
     - 
       type: VTK output

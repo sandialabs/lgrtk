@@ -24,7 +24,8 @@ struct JouleHeating : public Model<Elem> {
   double normalized_anode_voltage;
   double normalized_cathode_voltage;
   double conductance_multiplier;
-  double tolerance;
+  double relative_tolerance;
+  double absolute_tolerance;
   double anode_voltage;
   double cathode_voltage;
   double integrated_conductance;
@@ -57,7 +58,8 @@ struct JouleHeating : public Model<Elem> {
     cathode_subset = sim.subsets.get_subset(NODES, cathode_class_names);
     normalized_anode_voltage = pl.get<double>("normalized anode voltage", "1.0");
     normalized_cathode_voltage = pl.get<double>("normalized cathode voltage", "0.0");
-    tolerance = pl.get<double>("tolerance", "1.0e-6");
+    relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
+    absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     JouleHeating::learn_disc();
   }
@@ -181,7 +183,8 @@ struct JouleHeating : public Model<Elem> {
   void solve_normalized_voltage_system() {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_phi = sim.getset(this->normalized_voltage);
-    auto const niter = conjugate_gradient(matrix, rhs, nodes_to_phi, tolerance);
+    auto const niter = diagonal_preconditioned_conjugate_gradient(
+        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance);
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
     std::cout << "phi solve took " << niter << " iterations\n";
   }

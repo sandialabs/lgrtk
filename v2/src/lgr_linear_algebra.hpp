@@ -15,11 +15,12 @@ struct GlobalMatrix {
 void matvec(GlobalMatrix mat, GlobalVector vec, GlobalVector result);
 double dot(GlobalVector a, GlobalVector b);
 void axpy(double a, GlobalVector x, GlobalVector y, GlobalVector result);
-int conjugate_gradient(
+int diagonal_preconditioned_conjugate_gradient(
     GlobalMatrix A,
     GlobalVector b,
     GlobalVector x,
-    double tolerance);
+    double relative_tolerance,
+    double absolute_tolerance);
 
 void extract_inverse_diagonal(GlobalMatrix mat, GlobalVector diagonal);
 
