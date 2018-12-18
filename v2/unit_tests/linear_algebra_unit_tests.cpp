@@ -4,6 +4,7 @@
 #include <Omega_h_int_scan.hpp>
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_map.hpp>
+#include <Omega_h_print.hpp>
 
 TEST(linear_algebra, wikipedia_cg) {
   Omega_h::Write<int> offsets = {0, 2, 4};
@@ -75,7 +76,8 @@ static void run_fd_cg() {
   EXPECT_TRUE(0 == lgr::conjugate_gradient(A, rhs, known_answer, tol));
   int const niter = conjugate_gradient(A, rhs, computed_answer, tol);
   EXPECT_TRUE(niter <= ndofs);
-  EXPECT_TRUE(Omega_h::are_close(read(known_answer), read(computed_answer), tol, tol));
+
+  EXPECT_TRUE(Omega_h::are_close(read(known_answer), read(computed_answer), tol, tol) );
 }
 
 TEST(linear_algebra, finite_difference_cg) {
