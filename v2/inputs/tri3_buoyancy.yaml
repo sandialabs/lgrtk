@@ -1,13 +1,18 @@
 lgr:
+  input variables:
+    gamma0: '5.0 / 3.0'
+    rho0: 1.0
+    p0: 5.0
+    g: 1.0
   CFL: 0.9
-  end time: 5.0
+  end time: 2.0
   element type: Tri3
   mesh:
     CUBIT:
       commands: |
         brick x 0.8 y 2.8 z 1
-        webcut volume 1 with cylinder radius 0.2 axis z center 0 0.5 0
-        webcut volume 1 with cylinder radius 0.2 axis z center 0 -0.5 0
+        webcut volume 1 with cylinder radius 0.21 axis z center 0 0.5 0
+        webcut volume 1 with cylinder radius 0.21 axis z center 0 -0.5 0
         merge all
         surface 14 11 17 scheme trimesh
         mesh surface 14 11 17
@@ -40,11 +45,11 @@ lgr:
       - 
         sets: ['fluid']
         at time: 0.0
-        value: '1.0'
+        value: rho0
       - 
         sets: ['high_ball']
         at time: 0.0
-        value: '0.25'
+        value: '0.1'
       - 
         sets: ['low_ball']
         at time: 0.0
@@ -52,26 +57,29 @@ lgr:
     heat capacity ratio:
       - 
         sets: ['fluid']
-        value: '5.0 / 3.0'
+        value: gamma0
     specific internal energy:
       - 
         sets: ['fluid']
         at time: 0.0
-        value: '1.0'
+        # pre-equilibrate the fluid pressure to be in balance
+        # with the force of gravity
+        value: |
+          y = x(1);
+          (-rho0 * g * y + p0) / ((gamma0 - 1) * rho0)
     bulk modulus:
       - 
         sets: ['high_ball', 'low_ball']
         at time: 0.0
-        value: '40.0'
+        value: '50.0'
     shear modulus:
       - 
         sets: ['high_ball', 'low_ball']
         at time: 0.0
-        value: '40.0'
+        value: '50.0'
     acceleration:
-      # "gravity" term, g=0.1
       - 
-        value: 'vector(a(0), a(1) - 0.1)'
+        value: 'vector(a(0), a(1) - g)'
       - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'
@@ -96,4 +104,5 @@ lgr:
         - density
         - weight
         - element class_id
+        - acceleration
   adapt:
