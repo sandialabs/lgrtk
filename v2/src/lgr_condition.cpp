@@ -54,6 +54,9 @@ void Condition::init(Simulation& sim) {
       env.register_variable(name, value);
     }
   }
+  if (uses_old_vals && env.variables.count(field->short_name)) {
+    Omega_h_fail("expr for field \"%s\" contains \"%s\", which is also a previously-defined variable.\n", field->long_name.c_str(), field->short_name.c_str());
+  }
 }
 
 Condition::Condition(Field* field_in, Simulation& sim,
