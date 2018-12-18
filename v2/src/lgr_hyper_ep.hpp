@@ -577,7 +577,7 @@ update(
   auto const I = identity_matrix<3,3>();
   if (damage != Damage::NONE) {
     // If the particle has already failed, apply various erosion algorithms
-    if (localized) {
+    if (localized > 0.0) {
       if (props.allow_no_tension) {
         if (p < 0.0) {
           T = 0.0 * I;
@@ -602,7 +602,7 @@ update(
 
   if (is_localized) {
     // If the localized material point fails again, set the stress to zero
-    if (localized) {
+    if (localized > 0.0) {
       dp = 0.0;
       T = 0.0 * I;
     } else {
