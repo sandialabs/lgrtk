@@ -39,7 +39,12 @@ void Condition::init() {
   needs_coords = vars_used.count("x");
   needs_reeval = (needs_coords || uses_old_vals || vars_used.count("t"));
   Omega_h::ExprOpsReader reader;
-  op = reader.read_ops(str);
+  try {
+    op = reader.read_ops(str);
+  } catch (Omega_h::ParserFail& e) {
+    Omega_h_fail("Caught exception while parsing condition \"%s\" for field \"%s\":\n%s\n",
+        str.c_str(), field->long_name.c_str(), e.what());
+  }
   bridge = sim_ptr->supports.subsets.get_bridge(support->subset, field->support->subset);
   learn_disc();
 }
@@ -123,7 +128,13 @@ void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fi
       }
       env.register_variable(field->short_name, Omega_h::any(old_field_vals));
     }
-    auto result = op->eval(env);
+    Omega_h::any result;
+    try {
+      result = op->eval(env);
+    } catch (Omega_h::ParserFail& e) {
+      Omega_h_fail("Caught exception while evaluating condition \"%s\" for field \"%s\":\n%s\n",
+          str.c_str(), field->long_name.c_str(), e.what());
+    }
     env.repeat(result);
     cached_values = Omega_h::any_cast<Omega_h::Reals>(result);
   }
