@@ -1,79 +1,48 @@
 lgr:
+  input variables:
+    rho_down: 1.0
+    rho_up: 0.2
+    p_0: 1.0
+    g: 1.0
+    A: 0.1
+    sigma: 0.4
+    y_center: 1.5
+    L_x: 1.0
+    gamma0: '5.0 / 3.0'
   CFL: 0.9
-  end time: 3.0
+  end time: 8.0
   element type: Tri3
   mesh:
-    CUBIT:
-      commands: |
-        brick x 0.8 y 1.0 z 1
-        brick x 0.8 y 1.8 z 1
-        volume 1 move y 0.9
-        volume 2 move y -0.5
-        merge all
-        block 1 surface 1
-        block 1 name "heavy_fluid"
-        block 2 surface 7
-        block 2 name "light_fluid"
-        sideset 1 curve 3 15
-        sideset 1 name "x-"
-        sideset 2 curve 1 13
-        sideset 2 name "x+"
-        sideset 3 curve 2
-        sideset 3 name "y+"
-        sideset 4 curve 16
-        sideset 4 name "y-"
-        surface 1 7 scheme trimesh
-        mesh surface 1 7
-        export genesis "2D_Rayleigh_Taylor.exo"
-      Exodus file: 2D_Rayleigh_Taylor.exo
-    element count: 4000
+    box:
+      x size: 1.0
+      x elements: 40
+      y size: 3.0
+      y elements: 120
   material models:
     - 
       type: ideal gas
-      heat capacity ratio: '5.0 / 3.0'
+      heat capacity ratio: gamma0
+      specific internal energy: |
+        y = x(1);
+        p = (y < y_center) ? p_0 + rho_down * g * y :
+            p_0 + rho_down * g * y_center + rho_up * g * (y - y_center);
+        rho_tmp = (y < y_center) ? rho_down : rho_up;
+        p / ((gamma0 - 1) * rho_tmp)
+  common fields:
+    density: |
+      y = x(1);
+      (y < y_center) ? rho_down : rho_up
+    velocity: |
+      vector(0.0, -A * cos(2 * pi * x(0) / L_x) * exp(-(x(1) - y_center)^2 / sigma^2))
   modifiers:
     - 
       type: artificial viscosity
       linear artificial viscosity: 1.0
       quadratic artificial viscosity: 0.0
   conditions:
-    density:
-      - 
-        sets: ['heavy_fluid']
-        at time: 0.0
-        value: '10.0'
-      - 
-        sets: ['light_fluid']
-        at time: 0.0
-        value: '1.0'
-    flood priority:
-      - 
-        sets: ['heavy_fluid']
-        at time: 0.0
-        value: '1.0'
-      - 
-        sets: ['light_fluid']
-        at time: 0.0
-        value: '0.0'
-    specific internal energy:
-      - 
-        sets: ['heavy_fluid']
-        at time: 0.0
-        value: '1.0'
-      - 
-        sets: ['light_fluid']
-        at time: 0.0
-        value: '10.0'
-    velocity:
-      - 
-        at time: 0.0
-        value: |
-          ay = (x(1) < 0) ? -x(1) : x(1);
-          vector(0.0, -1.0 * cos(x(0) / 0.4 * pi) * (1.0 - (ay / 1.4)))
     acceleration:
-      # "gravity" term, g=1
       - 
-        value: 'vector(a(0), a(1) - 1.0)'
+        value: 'vector(a(0), a(1) + g)'
       - 
         sets: ['x-', 'x+']
         value: 'vector(0.0, a(1))'
@@ -96,6 +65,5 @@ lgr:
         - specific internal energy
         - stress
         - density
-        - element class_id
+        - acceleration
   adapt:
-  flood:
