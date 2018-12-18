@@ -1,6 +1,6 @@
+#include <lgr_for.hpp>
 #include <lgr_ideal_gas.hpp>
 #include <lgr_simulation.hpp>
-#include <lgr_for.hpp>
 
 namespace lgr {
 
@@ -8,13 +8,12 @@ template <class Elem>
 struct IdealGas : public Model<Elem> {
   FieldIndex heat_capacity_ratio;
   FieldIndex specific_internal_energy;
-  IdealGas(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
-    this->specific_internal_energy =
-      this->point_define("e", "specific internal energy", 1,
-          RemapType::PER_UNIT_MASS, pl, "");
-    this->heat_capacity_ratio =
-      this->point_define("gamma", "heat capacity ratio", 1,
-          RemapType::PER_UNIT_VOLUME, pl, "");
+  IdealGas(Simulation& sim_in, Omega_h::InputMap& pl)
+      : Model<Elem>(sim_in, pl) {
+    this->specific_internal_energy = this->point_define(
+        "e", "specific internal energy", 1, RemapType::PER_UNIT_MASS, pl, "");
+    this->heat_capacity_ratio = this->point_define(
+        "gamma", "heat capacity ratio", 1, RemapType::PER_UNIT_VOLUME, pl, "");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "ideal gas"; }
@@ -40,13 +39,15 @@ struct IdealGas : public Model<Elem> {
 };
 
 template <class Elem>
-ModelBase* ideal_gas_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+ModelBase* ideal_gas_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new IdealGas<Elem>(sim, pl);
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelBase* ideal_gas_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* ideal_gas_factory<Elem>(                                 \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

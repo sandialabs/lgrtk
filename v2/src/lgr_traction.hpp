@@ -8,6 +8,6 @@ struct Simulation;
 bool has_traction(Simulation& sim);
 void apply_tractions(Simulation& sim);
 
-}
+}  // namespace lgr
 
 #endif

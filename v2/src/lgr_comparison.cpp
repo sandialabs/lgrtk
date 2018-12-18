@@ -11,11 +11,9 @@ struct Comparison : public Response {
   std::shared_ptr<Omega_h::ExprOp> op;
   double tolerance;
   double floor;
-  Comparison(Simulation& sim_in, std::string const& name_in, Omega_h::InputMap& pl)
-    :Response(sim_in, pl)
-    ,name(name_in)
-    ,env(1, 1)
-  {
+  Comparison(
+      Simulation& sim_in, std::string const& name_in, Omega_h::InputMap& pl)
+      : Response(sim_in, pl), name(name_in), env(1, 1) {
     scalar = pl.get<std::string>("scalar");
     tolerance = pl.get<double>("tolerance", "1e-10");
     floor = pl.get<double>("floor", "1e-10");
@@ -28,8 +26,11 @@ struct Comparison : public Response {
     env.register_variable("t", Omega_h::any(sim.time));
     auto expected_value = Omega_h::any_cast<double>(op->eval(env));
     if (!Omega_h::are_close(value, expected_value, tolerance, floor)) {
-      Omega_h_fail("Comparison %s of %s value %.17e to %.17e with tolerance %.1e and floor %.1e failed!\n",
-          name.c_str(), scalar.c_str(), value, expected_value, tolerance, floor);
+      Omega_h_fail(
+          "Comparison %s of %s value %.17e to %.17e with tolerance %.1e and "
+          "floor %.1e failed!\n",
+          name.c_str(), scalar.c_str(), value, expected_value, tolerance,
+          floor);
     }
   }
   void out_of_line_virtual_method() override;
@@ -37,10 +38,9 @@ struct Comparison : public Response {
 
 void Comparison::out_of_line_virtual_method() {}
 
-Response* comparison_factory(Simulation& sim, std::string const& name,
-    Omega_h::InputMap& pl)
-{
+Response* comparison_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl) {
   return new Comparison(sim, name, pl);
 }
 
-}
+}  // namespace lgr

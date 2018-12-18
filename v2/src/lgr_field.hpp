@@ -13,14 +13,9 @@ struct Simulation;
 struct Fields;
 
 struct Field {
-  Field(
-      std::string const& short_name_in,
-      std::string const& long_name_in,
-      int ncomps_in,
-      EntityType entity_type_in,
-      bool on_points_in,
-      ClassNames const& class_names_in,
-      bool filling_with_nan_in);
+  Field(std::string const& short_name_in, std::string const& long_name_in,
+      int ncomps_in, EntityType entity_type_in, bool on_points_in,
+      ClassNames const& class_names_in, bool filling_with_nan_in);
   ~Field() = default;
   std::string short_name;
   std::string long_name;
@@ -51,6 +46,6 @@ struct Field {
   void setup_default_condition(Simulation& sim, double start_time);
 };
 
-}
+}  // namespace lgr
 
 #endif

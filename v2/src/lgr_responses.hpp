@@ -1,8 +1,8 @@
 #ifndef LGR_RESPONSES_HPP
 #define LGR_RESPONSES_HPP
 
-#include <lgr_response.hpp>
 #include <lgr_factories.hpp>
+#include <lgr_response.hpp>
 
 namespace lgr {
 
@@ -19,7 +19,6 @@ struct Responses {
 
 ResponseFactories get_builtin_response_factories();
 
-}
+}  // namespace lgr
 
 #endif
-

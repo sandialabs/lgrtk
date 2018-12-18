@@ -8,9 +8,9 @@ namespace lgr {
 struct Response;
 struct Simulation;
 
-Response* cmdline_hist_factory(Simulation& sim, std::string const&,
-    Omega_h::InputMap& pl);
+Response* cmdline_hist_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif

@@ -1,8 +1,8 @@
 #ifndef LGR_RUN_HPP
 #define LGR_RUN_HPP
 
-#include <lgr_factories.hpp>
 #include <Omega_h_input.hpp>
+#include <lgr_factories.hpp>
 
 namespace lgr {
 

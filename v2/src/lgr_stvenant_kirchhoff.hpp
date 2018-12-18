@@ -7,12 +7,8 @@
 
 namespace lgr {
 
-OMEGA_H_INLINE void stvenant_kirchhoff_update(
-    double bulk_modulus,
-    double shear_modulus,
-    double density,
-    Matrix<3, 3> F,
-    Matrix<3, 3>& stress,
+OMEGA_H_INLINE void stvenant_kirchhoff_update(double bulk_modulus,
+    double shear_modulus, double density, Matrix<3, 3> F, Matrix<3, 3>& stress,
     double& wave_speed) {
   OMEGA_H_CHECK(density > 0.0);
   auto const J = Omega_h::determinant(F);
@@ -30,13 +26,15 @@ OMEGA_H_INLINE void stvenant_kirchhoff_update(
 }
 
 template <class Elem>
-ModelBase* stvenant_kirchhoff_factory(Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
+ModelBase* stvenant_kirchhoff_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
-#define LGR_EXPL_INST(Elem) \
-extern template ModelBase* stvenant_kirchhoff_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* stvenant_kirchhoff_factory<Elem>(                 \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

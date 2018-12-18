@@ -1,8 +1,8 @@
 #ifndef LGR_ADAPT_HPP
 #define LGR_ADAPT_HPP
 
-#include <lgr_remap.hpp>
 #include <Omega_h_input.hpp>
+#include <lgr_remap.hpp>
 
 namespace lgr {
 
@@ -26,6 +26,6 @@ struct Adapter {
   double old_length;
 };
 
-}
+}  // namespace lgr
 
 #endif

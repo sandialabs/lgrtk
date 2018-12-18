@@ -1,8 +1,8 @@
 #ifndef LGR_CONDITION_HPP
 #define LGR_CONDITION_HPP
 
-#include <lgr_class_names.hpp>
 #include <Omega_h_expr.hpp>
+#include <lgr_class_names.hpp>
 #include <lgr_when.hpp>
 
 namespace lgr {
@@ -34,11 +34,11 @@ struct Condition {
   void forget_disc();
   void learn_disc();
   double next_event(double time);
-  void apply(double prev_time, double time,
-      Omega_h::Read<double> node_coords, Fields& fields);
+  void apply(double prev_time, double time, Omega_h::Read<double> node_coords,
+      Fields& fields);
   void apply(double time, Omega_h::Read<double> node_coords, Fields& fields);
 };
 
-}
+}  // namespace lgr
 
 #endif

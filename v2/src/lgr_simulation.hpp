@@ -1,20 +1,20 @@
 #ifndef LGR_SIMULATION_HPP
 #define LGR_SIMULATION_HPP
 
+#include <Omega_h_timer.hpp>
+#include <lgr_adapt.hpp>
 #include <lgr_disc.hpp>
-#include <lgr_subsets.hpp>
-#include <lgr_supports.hpp>
-#include <lgr_fields.hpp>
+#include <lgr_element_types.hpp>
 #include <lgr_factories.hpp>
+#include <lgr_field_access.hpp>
+#include <lgr_fields.hpp>
+#include <lgr_flood.hpp>
 #include <lgr_input_variables.hpp>
 #include <lgr_models.hpp>
-#include <lgr_field_access.hpp>
-#include <lgr_element_types.hpp>
-#include <lgr_scalars.hpp>
 #include <lgr_responses.hpp>
-#include <lgr_adapt.hpp>
-#include <lgr_flood.hpp>
-#include <Omega_h_timer.hpp>
+#include <lgr_scalars.hpp>
+#include <lgr_subsets.hpp>
+#include <lgr_supports.hpp>
 
 namespace lgr {
 
@@ -33,8 +33,10 @@ struct Simulation {
   Adapter adapter;
   Flooder flooder;
   Simulation(Omega_h::CommPtr comm, Factories&& factories_in);
-  double get_double(Omega_h::InputMap& pl, const char* name, const char* default_expr);
-  int get_int(Omega_h::InputMap& pl, const char* name, const char* default_expr);
+  double get_double(
+      Omega_h::InputMap& pl, const char* name, const char* default_expr);
+  int get_int(
+      Omega_h::InputMap& pl, const char* name, const char* default_expr);
   template <class Elem>
   void set_elem();
   void setup(Omega_h::InputMap& pl);
@@ -90,25 +92,26 @@ struct Simulation {
   double min_dt;
 };
 
-void apply_conditions(Simulation& sim,
-    FieldIndex fi);
+void apply_conditions(Simulation& sim, FieldIndex fi);
 void apply_conditions(Simulation& sim);
 
 void update_time(Simulation& sim);
 void update_cpu_time(Simulation& sim);
 
-#define LGR_EXPL_INST(Elem) \
-extern template void Simulation::set_elem<Elem>();
+#define LGR_EXPL_INST(Elem) extern template void Simulation::set_elem<Elem>();
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-#define LGR_EXPL_INST(Elem) \
-extern template MappedPointRead<Elem> Simulation::points_get<Elem>(FieldIndex, Subset*); \
-extern template MappedPointWrite<Elem> Simulation::points_set<Elem>(FieldIndex, Subset*); \
-extern template MappedPointWrite<Elem> Simulation::points_getset<Elem>(FieldIndex, Subset*);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template MappedPointRead<Elem> Simulation::points_get<Elem>(          \
+      FieldIndex, Subset*);                                                    \
+  extern template MappedPointWrite<Elem> Simulation::points_set<Elem>(         \
+      FieldIndex, Subset*);                                                    \
+  extern template MappedPointWrite<Elem> Simulation::points_getset<Elem>(      \
+      FieldIndex, Subset*);
 LGR_EXPL_INST_ELEMS_AND_SIDES
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

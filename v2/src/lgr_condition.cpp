@@ -1,8 +1,8 @@
-#include <lgr_simulation.hpp>
-#include <lgr_riemann.hpp>
 #include <Omega_h_map.hpp>
-#include <Omega_h_scalar.hpp>
 #include <Omega_h_math_lang.hpp>
+#include <Omega_h_scalar.hpp>
+#include <lgr_riemann.hpp>
+#include <lgr_simulation.hpp>
 
 namespace lgr {
 
@@ -11,23 +11,20 @@ using Omega_h::divide_no_remainder;
 // yes, its wasted effort to recompute all three fields
 // and throw away the other two each time one field is
 // asked for
-#define LGR_RIEMANN_EXPR(var) \
-static Omega_h::any riemann_expr_##var( \
-    std::vector<Omega_h::any>& args) { \
-  auto left_density = Omega_h::any_cast<double>(args.at(0)); \
-  auto right_density = Omega_h::any_cast<double>(args.at(1)); \
-  auto left_pressure = Omega_h::any_cast<double>(args.at(2)); \
-  auto right_pressure = Omega_h::any_cast<double>(args.at(3)); \
-  auto shock_x = Omega_h::any_cast<double>(args.at(4)); \
-  auto gamma = Omega_h::any_cast<double>(args.at(5)); \
-  auto t = Omega_h::any_cast<double>(args.at(6)); \
-  auto x = Omega_h::any_cast<Omega_h::Reals>(args.at(7)); \
-  auto result = exact_riemann( \
-      left_density, right_density, \
-      left_pressure, right_pressure, \
-      shock_x, gamma, t, x); \
-  return result.var; \
-}
+#define LGR_RIEMANN_EXPR(var)                                                  \
+  static Omega_h::any riemann_expr_##var(std::vector<Omega_h::any>& args) {    \
+    auto left_density = Omega_h::any_cast<double>(args.at(0));                 \
+    auto right_density = Omega_h::any_cast<double>(args.at(1));                \
+    auto left_pressure = Omega_h::any_cast<double>(args.at(2));                \
+    auto right_pressure = Omega_h::any_cast<double>(args.at(3));               \
+    auto shock_x = Omega_h::any_cast<double>(args.at(4));                      \
+    auto gamma = Omega_h::any_cast<double>(args.at(5));                        \
+    auto t = Omega_h::any_cast<double>(args.at(6));                            \
+    auto x = Omega_h::any_cast<Omega_h::Reals>(args.at(7));                    \
+    auto result = exact_riemann(left_density, right_density, left_pressure,    \
+        right_pressure, shock_x, gamma, t, x);                                 \
+    return result.var;                                                         \
+  }
 LGR_RIEMANN_EXPR(velocity)
 LGR_RIEMANN_EXPR(density)
 LGR_RIEMANN_EXPR(pressure)
@@ -42,28 +39,28 @@ void Condition::init() {
   try {
     op = reader.read_ops(str);
   } catch (Omega_h::ParserFail& e) {
-    Omega_h_fail("Caught exception while parsing condition \"%s\" for field \"%s\":\n%s\n",
+    Omega_h_fail(
+        "Caught exception while parsing condition \"%s\" for field "
+        "\"%s\":\n%s\n",
         str.c_str(), field->long_name.c_str(), e.what());
   }
-  bridge = sim_ptr->supports.subsets.get_bridge(support->subset, field->support->subset);
+  bridge = sim_ptr->supports.subsets.get_bridge(
+      support->subset, field->support->subset);
   learn_disc();
 }
 
 Condition::Condition(Field* field_in, Simulation& sim_in,
     std::string const& str_in, Support* support_in, When* when_in)
-:field(field_in)
-,str(str_in)
-,support(support_in)
-,when(when_in)
-,sim_ptr(&sim_in)
-{
+    : field(field_in),
+      str(str_in),
+      support(support_in),
+      when(when_in),
+      sim_ptr(&sim_in) {
   init();
 }
 
 Condition::Condition(Field* field_in, Simulation& sim_in, Omega_h::InputMap& pl)
-:field(field_in)
-,sim_ptr(&sim_in)
-{
+    : field(field_in), sim_ptr(&sim_in) {
   str = pl.get<std::string>("value");
   if (pl.is_list("sets")) {
     auto& class_names_teuchos = pl.get_list("sets");
@@ -71,7 +68,8 @@ Condition::Condition(Field* field_in, Simulation& sim_in, Omega_h::InputMap& pl)
     for (int i = 0; i < class_names_teuchos.size(); ++i) {
       class_names.insert(class_names_teuchos.get<std::string>(i));
     }
-    support = sim_ptr->supports.get_support(field_in->entity_type, field_in->on_points, class_names);
+    support = sim_ptr->supports.get_support(
+        field_in->entity_type, field_in->on_points, class_names);
   } else {
     support = field->support;
   }
@@ -99,7 +97,10 @@ void Condition::learn_disc() {
     }
   }
   if (uses_old_vals && env.variables.count(field->short_name)) {
-    Omega_h_fail("expr for field \"%s\" contains \"%s\", which is also a previously-defined variable.\n", field->long_name.c_str(), field->short_name.c_str());
+    Omega_h_fail(
+        "expr for field \"%s\" contains \"%s\", which is also a "
+        "previously-defined variable.\n",
+        field->long_name.c_str(), field->short_name.c_str());
   }
 }
 
@@ -111,7 +112,8 @@ void Condition::apply(double prev_time, double time,
   apply(time, node_coords, fields);
 }
 
-void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fields) {
+void Condition::apply(
+    double time, Omega_h::Read<double> node_coords, Fields& fields) {
   OMEGA_H_CHECK(field->storage.exists());
   if (needs_reeval || (!cached_values.exists())) {
     if (needs_coords) {
@@ -123,8 +125,7 @@ void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fi
       Omega_h::Reals old_field_vals(field->storage);
       if (!(bridge->mapping.is_identity)) {
         old_field_vals = Omega_h::unmap(
-            bridge->mapping.things, old_field_vals,
-            field->ncomps);
+            bridge->mapping.things, old_field_vals, field->ncomps);
       }
       env.register_variable(field->short_name, Omega_h::any(old_field_vals));
     }
@@ -132,7 +133,9 @@ void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fi
     try {
       result = op->eval(env);
     } catch (Omega_h::ParserFail& e) {
-      Omega_h_fail("Caught exception while evaluating condition \"%s\" for field \"%s\":\n%s\n",
+      Omega_h_fail(
+          "Caught exception while evaluating condition \"%s\" for field "
+          "\"%s\":\n%s\n",
           str.c_str(), field->long_name.c_str(), e.what());
     }
     env.repeat(result);
@@ -140,24 +143,29 @@ void Condition::apply(double time, Omega_h::Read<double> node_coords, Fields& fi
   }
   OMEGA_H_CHECK(cached_values.exists());
   Omega_h::Write<double> storage;
-  if (uses_old_vals) storage = fields.getset(fields.find(field->long_name));
-  else storage = fields.set(fields.find(field->long_name));
+  if (uses_old_vals)
+    storage = fields.getset(fields.find(field->long_name));
+  else
+    storage = fields.set(fields.find(field->long_name));
   if (bridge->mapping.is_identity) {
     if (cached_values.size() != storage.size()) {
-      Omega_h_fail("Value of condition \"%s\" on field \"%s\" was of the wrong size\n",
+      Omega_h_fail(
+          "Value of condition \"%s\" on field \"%s\" was of the wrong size\n",
           str.c_str(), field->long_name.c_str());
     }
     Omega_h::copy_into(cached_values, storage);
   } else {
-    auto ncomps = divide_no_remainder(cached_values.size(), bridge->mapping.things.size());
+    auto ncomps = divide_no_remainder(
+        cached_values.size(), bridge->mapping.things.size());
     if (storage.size() != ncomps * field->support->count()) {
-      Omega_h_fail("Value of condition \"%s\" on subset of field \"%s\" was of the wrong size\n",
+      Omega_h_fail(
+          "Value of condition \"%s\" on subset of field \"%s\" was of the "
+          "wrong size\n",
           str.c_str(), field->long_name.c_str());
     }
-    Omega_h::map_into(cached_values, bridge->mapping.things,
-        storage, ncomps);
+    Omega_h::map_into(cached_values, bridge->mapping.things, storage, ncomps);
   }
   fields.print_and_clear_set_fields();
 }
 
-}
+}  // namespace lgr

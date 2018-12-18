@@ -1,10 +1,10 @@
-#include <lgr_linear_algebra.hpp>
-#include <Omega_h_profile.hpp>
-#include <lgr_for.hpp>
 #include <Omega_h_array_ops.hpp>
+#include <Omega_h_profile.hpp>
 #include <cmath>
+#include <lgr_for.hpp>
+#include <lgr_linear_algebra.hpp>
 
-//DEBUG!
+// DEBUG!
 #include <iostream>
 
 namespace lgr {
@@ -33,9 +33,7 @@ double dot(GlobalVector a, GlobalVector b) {
 
 void axpy(double a, GlobalVector x, GlobalVector y, GlobalVector result) {
   OMEGA_H_TIME_FUNCTION;
-  auto f = OMEGA_H_LAMBDA(int const i) {
-    result[i] = a * x[i] + y[i];
-  };
+  auto f = OMEGA_H_LAMBDA(int const i) { result[i] = a * x[i] + y[i]; };
   parallel_for(result.size(), std::move(f));
 }
 
@@ -44,7 +42,7 @@ void extract_inverse_diagonal(GlobalMatrix mat, GlobalVector diagonal) {
   auto f = OMEGA_H_LAMBDA(int const row) {
     auto const begin = mat.rows_to_columns.a2ab[row];
     auto const end = mat.rows_to_columns.a2ab[row + 1];
-    for(auto nonzero = begin; nonzero < end; ++nonzero) {
+    for (auto nonzero = begin; nonzero < end; ++nonzero) {
       auto const column = mat.rows_to_columns.ab2b[nonzero];
       if (column == row) {
         diagonal[row] = 1.0 / mat.entries[nonzero];
@@ -55,57 +53,51 @@ void extract_inverse_diagonal(GlobalMatrix mat, GlobalVector diagonal) {
   parallel_for(diagonal.size(), std::move(f));
 }
 
-static bool did_converge(GlobalVector z, GlobalVector x, double relative_tolerance, double absolute_tolerance) {
+static bool did_converge(GlobalVector z, GlobalVector x,
+    double relative_tolerance, double absolute_tolerance) {
   auto const znorm = std::sqrt(dot(z, z));
   auto const xnorm = std::sqrt(dot(x, x));
-  std::cout << "z norms: absolute " << znorm << " relative " << (znorm / xnorm) << '\n';
+  std::cout << "z norms: absolute " << znorm << " relative " << (znorm / xnorm)
+            << '\n';
   if (znorm < absolute_tolerance) return true;
   return (znorm / xnorm) < relative_tolerance;
 }
 
-int diagonal_preconditioned_conjugate_gradient(
-    GlobalMatrix A,
-    GlobalVector b,
-    GlobalVector x,
-    double relative_tolerance,
-    double absolute_tolerance)
-{
+int diagonal_preconditioned_conjugate_gradient(GlobalMatrix A, GlobalVector b,
+    GlobalVector x, double relative_tolerance, double absolute_tolerance) {
   OMEGA_H_TIME_FUNCTION;
   auto const n = x.size();
   GlobalVector r(n, "CG/r");
-  matvec(A, x, r); // r = A * x
-  axpy(-1.0, r, b, r); // r = -r + b, r = b - A * x
-  GlobalVector M_inv(n, 1, "CG/M_inv"); //diagonal preconditioning
+  matvec(A, x, r);                       // r = A * x
+  axpy(-1.0, r, b, r);                   // r = -r + b, r = b - A * x
+  GlobalVector M_inv(n, 1, "CG/M_inv");  // diagonal preconditioning
   extract_inverse_diagonal(A, M_inv);
   auto z = multiply_each(read(M_inv), read(r), "CG/z");
   if (did_converge(z, x, relative_tolerance, absolute_tolerance)) {
     return 0;
   }
   GlobalVector p(n, "CG/p");
-  Omega_h::copy_into(read(z), p); // p = z
+  Omega_h::copy_into(read(z), p);  // p = z
   auto r_dot_z_old = dot(r, z);
   GlobalVector Ap(n, "CG/Ap");
   for (int k = 0; k < b.size(); ++k) {
-     matvec(A, p, Ap);
-     auto const alpha = r_dot_z_old / dot(p, Ap);
-     axpy(alpha, p, x, x); // x = x + alpha * p
-     axpy(-alpha, Ap, r, r); // r = r - alpha * Ap
-     z = multiply_each(read(M_inv), read(r), "CG/z");
-     if (did_converge(z, x, relative_tolerance, absolute_tolerance)) {
-       return k + 1;
-     }
-     auto const r_dot_z_new = dot(r, z);
-     auto const beta = r_dot_z_new / r_dot_z_old;
-     axpy(beta, p, z, p); // p = z + (r_dot_z_new / r_dot_z_old) * p
-     r_dot_z_old = r_dot_z_new;
+    matvec(A, p, Ap);
+    auto const alpha = r_dot_z_old / dot(p, Ap);
+    axpy(alpha, p, x, x);    // x = x + alpha * p
+    axpy(-alpha, Ap, r, r);  // r = r - alpha * Ap
+    z = multiply_each(read(M_inv), read(r), "CG/z");
+    if (did_converge(z, x, relative_tolerance, absolute_tolerance)) {
+      return k + 1;
+    }
+    auto const r_dot_z_new = dot(r, z);
+    auto const beta = r_dot_z_new / r_dot_z_old;
+    axpy(beta, p, z, p);  // p = z + (r_dot_z_new / r_dot_z_old) * p
+    r_dot_z_old = r_dot_z_new;
   }
   return b.size() + 1;
 }
 
-void set_boundary_conditions(
-    GlobalMatrix A,
-    GlobalVector x,
-    GlobalVector b,
+void set_boundary_conditions(GlobalMatrix A, GlobalVector x, GlobalVector b,
     Omega_h::LOs rows_to_bc_rows) {
   auto functor = OMEGA_H_LAMBDA(int row) {
     auto const begin = A.rows_to_columns.a2ab[row];
@@ -186,7 +178,8 @@ void gaussian_elimination(MediumMatrix& A, MediumVector& b) {
   }
 }
 
-void back_substitution(MediumMatrix const& A, MediumVector const& b, MediumVector& x) {
+void back_substitution(
+    MediumMatrix const& A, MediumVector const& b, MediumVector& x) {
   OMEGA_H_TIME_FUNCTION;
   auto const n = A.size;
   x = MediumVector(n);
@@ -201,4 +194,4 @@ void back_substitution(MediumMatrix const& A, MediumVector const& b, MediumVecto
   }
 }
 
-}
+}  // namespace lgr

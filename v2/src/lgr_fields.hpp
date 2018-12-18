@@ -13,13 +13,11 @@ struct Fields {
   bool filling_with_nan;
   std::vector<FieldIndex> set_fields;
   void setup(Omega_h::InputMap& pl);
-  FieldIndex define(std::string const& short_name,
-      std::string const& long_name, int ncomps,
-      EntityType type, bool on_points,
+  FieldIndex define(std::string const& short_name, std::string const& long_name,
+      int ncomps, EntityType type, bool on_points,
       ClassNames const& class_names);
-  FieldIndex define(std::string const& short_name,
-      std::string const& long_name, int ncomps,
-      Support* support);
+  FieldIndex define(std::string const& short_name, std::string const& long_name,
+      int ncomps, Support* support);
   void finalize_definitions(Supports& s);
   Field& operator[](FieldIndex fi);
   bool has(FieldIndex fi);
@@ -40,6 +38,6 @@ struct Fields {
   void remove_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
 };
 
-}
+}  // namespace lgr
 
 #endif

@@ -1,7 +1,7 @@
 #include <lgr_circular_symmetry.hpp>
 #include <lgr_element_functions.hpp>
-#include <lgr_simulation.hpp>
 #include <lgr_for.hpp>
+#include <lgr_simulation.hpp>
 
 namespace lgr {
 
@@ -9,7 +9,8 @@ template <class Elem>
 struct CircularSymmetry : public Model<Elem> {
   int radius_coordinate;
   double angle;
-  CircularSymmetry(Simulation& sim_in, Omega_h::InputMap& pl):Model<Elem>(sim_in, pl) {
+  CircularSymmetry(Simulation& sim_in, Omega_h::InputMap& pl)
+      : Model<Elem>(sim_in, pl) {
     this->radius_coordinate = sim_in.get_int(pl, "radius coordinate", "0");
     this->angle = sim_in.get_double(pl, "angle", "2.0 * pi");
   }
@@ -45,16 +46,14 @@ struct CircularSymmetry : public Model<Elem> {
 
 template <class Elem>
 ModelBase* circular_symmetry_factory(
-    Simulation& sim, std::string const&,
-    Omega_h::InputMap& pl) {
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new CircularSymmetry<Elem>(sim, pl);
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelBase* \
-circular_symmetry_factory<Elem>( \
-    Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* circular_symmetry_factory<Elem>(                         \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

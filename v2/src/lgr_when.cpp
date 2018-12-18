@@ -1,5 +1,5 @@
-#include <lgr_when.hpp>
 #include <cmath>
+#include <lgr_when.hpp>
 #include <limits>
 
 namespace lgr {
@@ -8,7 +8,7 @@ void When::out_of_line_virtual_method() {}
 
 struct TimePeriodic : public When {
   double period;
-  TimePeriodic(double period_in):period(period_in) {}
+  TimePeriodic(double period_in) : period(period_in) {}
   void out_of_line_virtual_method() override;
   double next_event(double time) override final {
     using LL = long long;
@@ -33,7 +33,7 @@ void TimePeriodic::out_of_line_virtual_method() {}
 struct TimeRange : public When {
   double start;
   double end;
-  TimeRange(double start_in, double end_in):start(start_in),end(end_in) {}
+  TimeRange(double start_in, double end_in) : start(start_in), end(end_in) {}
   void out_of_line_virtual_method() override;
   double next_event(double time) override final {
     if (time < start) return start;
@@ -49,7 +49,7 @@ void TimeRange::out_of_line_virtual_method() {}
 
 struct AtTime : public When {
   double point;
-  AtTime(double point_in):point(point_in) {}
+  AtTime(double point_in) : point(point_in) {}
   void out_of_line_virtual_method() override;
   double next_event(double time) override final {
     if (time < point) return point;
@@ -68,9 +68,7 @@ struct Always : public When {
   double next_event(double) override final {
     return std::numeric_limits<double>::max();
   }
-  bool active(double, double) override final {
-    return true;
-  }
+  bool active(double, double) override final { return true; }
 };
 
 void Always::out_of_line_virtual_method() {}
@@ -80,9 +78,7 @@ struct Never : public When {
   double next_event(double) override final {
     return std::numeric_limits<double>::max();
   }
-  bool active(double, double) override final {
-    return false;
-  }
+  bool active(double, double) override final { return false; }
 };
 
 void Never::out_of_line_virtual_method() {}
@@ -106,4 +102,4 @@ When* setup_when(Omega_h::InputMap& pl) {
   return always();
 }
 
-}
+}  // namespace lgr

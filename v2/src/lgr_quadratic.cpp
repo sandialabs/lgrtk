@@ -1,9 +1,9 @@
-#include <lgr_quadratic.hpp>
 #include <Omega_h_align.hpp>
 #include <Omega_h_for.hpp>
 #include <Omega_h_int_scan.hpp>
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_simplex.hpp>
+#include <lgr_quadratic.hpp>
 
 namespace lgr {
 
@@ -54,8 +54,8 @@ Omega_h::Few<Omega_h::LOs, 2> number_p2_nodes(Omega_h::Mesh& mesh) {
   return nodes;
 }
 
-Omega_h::LOs build_p2_ents2nodes(Omega_h::Mesh& mesh, int ent_dim,
-    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+Omega_h::LOs build_p2_ents2nodes(
+    Omega_h::Mesh& mesh, int ent_dim, Omega_h::Few<Omega_h::LOs, 2> nodes) {
   OMEGA_H_TIME_FUNCTION;
   auto const ndown_verts = Omega_h::simplex_degree(ent_dim, 0);
   auto const ndown_edges = Omega_h::simplex_degree(ent_dim, 1);
@@ -85,20 +85,21 @@ Omega_h::LOs build_p2_ents2nodes(Omega_h::Mesh& mesh, int ent_dim,
   return ents2nodes;
 }
 
-static void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim,
-    int ent_dim, Omega_h::LOs nodes, Omega_h::Write<Omega_h::LO> counts) {
+static void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
+    Omega_h::LOs nodes, Omega_h::Write<Omega_h::LO> counts) {
   OMEGA_H_TIME_FUNCTION;
   auto node_ents2ents = mesh.ask_up(node_dim, ent_dim);
   auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
     auto const node = nodes[ent];
-    auto const nadj_ents = node_ents2ents.a2ab[ent + 1] - node_ents2ents.a2ab[ent];
+    auto const nadj_ents =
+        node_ents2ents.a2ab[ent + 1] - node_ents2ents.a2ab[ent];
     counts[node] = nadj_ents;
   };
   Omega_h::parallel_for(mesh.nents(node_dim), std::move(functor));
 }
 
-static Omega_h::LOs count_nodes2ents(Omega_h::Mesh& mesh, int ent_dim,
-    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+static Omega_h::LOs count_nodes2ents(
+    Omega_h::Mesh& mesh, int ent_dim, Omega_h::Few<Omega_h::LOs, 2> nodes) {
   OMEGA_H_TIME_FUNCTION;
   auto const nnodes = nodes[0].size() + nodes[1].size();
   OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
@@ -108,9 +109,9 @@ static Omega_h::LOs count_nodes2ents(Omega_h::Mesh& mesh, int ent_dim,
   return node_counts;
 }
 
-static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim,
-    int ent_dim, Omega_h::LOs nodes, Omega_h::LOs a2ab,
-    Omega_h::Write<Omega_h::LO> ab2b, Omega_h::Write<Omega_h::I8> codes) {
+static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
+    Omega_h::LOs nodes, Omega_h::LOs a2ab, Omega_h::Write<Omega_h::LO> ab2b,
+    Omega_h::Write<Omega_h::I8> codes) {
   OMEGA_H_TIME_FUNCTION;
   auto const node_ents2ents = mesh.ask_up(node_dim, ent_dim);
   auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
@@ -129,8 +130,8 @@ static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim,
   Omega_h::parallel_for(mesh.nents(node_dim), std::move(functor));
 }
 
-Omega_h::Adj build_p2_nodes2ents(Omega_h::Mesh& mesh, int ent_dim,
-    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+Omega_h::Adj build_p2_nodes2ents(
+    Omega_h::Mesh& mesh, int ent_dim, Omega_h::Few<Omega_h::LOs, 2> nodes) {
   OMEGA_H_TIME_FUNCTION;
   auto const counts = count_nodes2ents(mesh, ent_dim, nodes);
   auto const a2ab = Omega_h::offset_scan(counts, "nodes2ents_a2ab");
@@ -154,16 +155,17 @@ static void build_ent_node_coords(Omega_h::Mesh& mesh, int node_dim,
       coords[node * elem_dim + dim] = c;
     }
   };
-  Omega_h::parallel_for("build ent_node coords",
-      mesh.nents(node_dim), std::move(functor));
+  Omega_h::parallel_for(
+      "build ent_node coords", mesh.nents(node_dim), std::move(functor));
 }
 
-Omega_h::Reals build_p2_node_coords(Omega_h::Mesh& mesh,
-    Omega_h::Few<Omega_h::LOs, 2> nodes) {
+Omega_h::Reals build_p2_node_coords(
+    Omega_h::Mesh& mesh, Omega_h::Few<Omega_h::LOs, 2> nodes) {
   OMEGA_H_TIME_FUNCTION;
   auto const elem_dim = mesh.dim();
   auto const vtx_coords = mesh.coords();
-  auto const edge_coords = Omega_h::average_field(&mesh, 1, elem_dim, vtx_coords);
+  auto const edge_coords =
+      Omega_h::average_field(&mesh, 1, elem_dim, vtx_coords);
   auto const nnodes = nodes[0].size() + nodes[1].size();
   OMEGA_H_CHECK(nnodes == (mesh.nverts() + mesh.nedges()));
   Omega_h::Write<Omega_h::Real> node_coords(nnodes * elem_dim, "node_coords");
@@ -172,4 +174,4 @@ Omega_h::Reals build_p2_node_coords(Omega_h::Mesh& mesh,
   return node_coords;
 }
 
-}
+}  // namespace lgr

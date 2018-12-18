@@ -1,6 +1,6 @@
+#include <lgr_for.hpp>
 #include <lgr_hyper_ep.hpp>
 #include <lgr_simulation.hpp>
-#include <lgr_for.hpp>
 #include <sstream>
 
 namespace lgr {
@@ -28,10 +28,7 @@ char const* get_error_code_string(ErrorCode code) {
 }
 
 void read_and_validate_elastic_params(
-    Omega_h::InputMap& params,
-    Properties& props,
-    Elastic& elastic)
-{
+    Omega_h::InputMap& params, Properties& props, Elastic& elastic) {
   // Set the defaults
   elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
@@ -45,7 +42,7 @@ void read_and_validate_elastic_params(
       elastic = hyper_ep::Elastic::NEO_HOOKEAN;
     } else {
       std::ostringstream os;
-      os << "Hyper elastic model \""<< hyperelastic << "\" not recognized";
+      os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
       auto str = os.str();
       Omega_h_fail("%s\n", str.c_str());
     }
@@ -68,12 +65,8 @@ void read_and_validate_elastic_params(
   props.poissons_ratio = Nu;
 }
 
-void read_and_validate_plastic_params(
-    Omega_h::InputMap& params,
-    Properties& props,
-    Hardening& hardening,
-    RateDependence& rate_dep)
-{
+void read_and_validate_plastic_params(Omega_h::InputMap& params,
+    Properties& props, Hardening& hardening, RateDependence& rate_dep) {
   // Set the defaults
   hardening = Hardening::NONE;
   rate_dep = RateDependence::NONE;
@@ -125,14 +118,18 @@ void read_and_validate_plastic_params(
     auto const type = p.get<std::string>("type", "None");
     if (type == "johnson cook") {
       if (hardening != Hardening::JOHNSON_COOK) {
-        Omega_h_fail("johnson cook rate dependent model requires johnson cook hardening");
+        Omega_h_fail(
+            "johnson cook rate dependent model requires johnson cook "
+            "hardening");
       }
       rate_dep = RateDependence::JOHNSON_COOK;
       props.c4 = p.get<double>("C", "0.0");
       props.ep_dot_0 = p.get<double>("EPDOT0", "0.0");
     } else if (type == "zerilli armstrong") {
       if (hardening != Hardening::ZERILLI_ARMSTRONG) {
-        Omega_h_fail("zerilli armstrong rate dependent model requires zerilli armstrong hardening");
+        Omega_h_fail(
+            "zerilli armstrong rate dependent model requires zerilli armstrong "
+            "hardening");
       }
       rate_dep = RateDependence::ZERILLI_ARMSTRONG;
       props.c4 = p.get<double>("C4", "0.0");
@@ -146,10 +143,7 @@ void read_and_validate_plastic_params(
 }
 
 void read_and_validate_damage_params(
-    Omega_h::InputMap& params,
-    Properties& props,
-    Damage& damage)
-{
+    Omega_h::InputMap& params, Properties& props, Damage& damage) {
   // Set the defaults
   damage = Damage::NONE;
   if (!params.is_map("plastic")) {
@@ -170,10 +164,13 @@ void read_and_validate_damage_params(
       props.D4 = pl.get<double>("D4", "0.0");
       props.D5 = pl.get<double>("D5", "0.0");
       props.D0 = pl.get<double>("D0", "0.0");  // Initial scalar damage
-      props.Dc = pl.get<double>("Dc", "0.7"); // Critical scalar damage
-      bool no_shear = static_cast<bool>(pl.get<double>("allow no shear", "0.0"));
-      bool no_tension = static_cast<bool>(pl.get<double>("allow no tension", "0.0"));
-      bool zero_stress = static_cast<bool>(pl.get<double>("set stress to zero", "0.0"));
+      props.Dc = pl.get<double>("Dc", "0.7");  // Critical scalar damage
+      bool no_shear =
+          static_cast<bool>(pl.get<double>("allow no shear", "0.0"));
+      bool no_tension =
+          static_cast<bool>(pl.get<double>("allow no tension", "0.0"));
+      bool zero_stress =
+          static_cast<bool>(pl.get<double>("set stress to zero", "0.0"));
       if (!(no_shear && no_tension && zero_stress)) {
         // by default, allow no tension
         no_tension = true;
@@ -194,12 +191,10 @@ void read_and_validate_damage_params(
   }
 }
 
-} // hyper_ep
-
+}  // namespace hyper_ep
 
 template <class Elem>
-struct HyperEP : public Model<Elem>
-{
+struct HyperEP : public Model<Elem> {
   // Constant model parameters
   hyper_ep::Elastic elastic_;
   hyper_ep::Hardening hardening_;
@@ -218,9 +213,8 @@ struct HyperEP : public Model<Elem>
   // Kinematics
   FieldIndex defgrad;
 
-  HyperEP(Simulation& sim_in, Omega_h::InputMap& params) :
-    Model<Elem>(sim_in, params)
-  {
+  HyperEP(Simulation& sim_in, Omega_h::InputMap& params)
+      : Model<Elem>(sim_in, params) {
     elastic_ = hyper_ep::Elastic::LINEAR_ELASTIC;
     hardening_ = hyper_ep::Hardening::NONE;
     rate_dep_ = hyper_ep::RateDependence::NONE;
@@ -239,17 +233,17 @@ struct HyperEP : public Model<Elem>
     constexpr auto dim = Elem::dim;
     // Define state dependent variables
     this->equivalent_plastic_strain =
-      this->point_define("ep", "equivalent plastic strain", 1, "0");
+        this->point_define("ep", "equivalent plastic strain", 1, "0");
     this->equivalent_plastic_strain_rate =
-      this->point_define("ep_dot", "equivalent plastic strain rate", 1, "0");
-    this->scalar_damage =
-      this->point_define("dp", "scalar damage", 1, "0");
+        this->point_define("ep_dot", "equivalent plastic strain rate", 1, "0");
+    this->scalar_damage = this->point_define("dp", "scalar damage", 1, "0");
     this->localized_ =
-      this->point_define("localized", "localization has occurred", 1, "0");
-    this->defgrad_p =
-      this->point_define("Fp", "plastic deformation gradient", square(dim), "I");
+        this->point_define("localized", "localization has occurred", 1, "0");
+    this->defgrad_p = this->point_define(
+        "Fp", "plastic deformation gradient", square(dim), "I");
     // Define kinematic quantities
-    this->defgrad = this->point_define("F", "deformation gradient", square(dim), "I");
+    this->defgrad =
+        this->point_define("F", "deformation gradient", square(dim), "I");
   }
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
@@ -266,7 +260,8 @@ struct HyperEP : public Model<Elem>
     auto points_to_rho = this->points_get(this->sim.density);
     // State dependent variables
     auto points_to_ep = this->points_getset(this->equivalent_plastic_strain);
-    auto points_to_epdot = this->points_getset(this->equivalent_plastic_strain_rate);
+    auto points_to_epdot =
+        this->points_getset(this->equivalent_plastic_strain_rate);
     auto points_to_dp = this->points_getset(this->scalar_damage);
     auto points_to_localized = this->points_getset(this->localized_);
     auto points_to_fp = this->points_getset(this->defgrad_p);
@@ -294,8 +289,8 @@ struct HyperEP : public Model<Elem>
       // Update the material response
       tensor_type T;  // stress tensor
       double c;
-      auto err_c = hyper_ep::update(elastic, hardening, rate_dep, damage,
-          props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
+      auto err_c = hyper_ep::update(elastic, hardening, rate_dep, damage, props,
+          rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
       OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(T));
@@ -312,13 +307,15 @@ struct HyperEP : public Model<Elem>
 };
 
 template <class Elem>
-ModelBase* hyper_ep_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+ModelBase* hyper_ep_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new HyperEP<Elem>(sim, pl);
 }
 
-#define LGR_EXPL_INST(Elem) \
-template ModelBase* hyper_ep_factory<Elem>(Simulation&, std::string const&, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* hyper_ep_factory<Elem>(                                  \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr

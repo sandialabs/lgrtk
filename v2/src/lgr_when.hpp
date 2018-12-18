@@ -20,6 +20,6 @@ When* never();
 
 When* setup_when(Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif
