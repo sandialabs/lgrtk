@@ -17,32 +17,43 @@ struct VtkOutput : public Response {
   public:
     std::string path;
     std::streampos pvd_pos;
-    std::vector<FieldIndex> lgr_fields;
-    std::vector<std::pair<int, std::string>> osh_fields;
+    std::vector<FieldIndex> lgr_fields[4];
+    std::vector<std::string> osh_fields[4];
 };
 
 void VtkOutput::set_fields(Omega_h::InputMap& pl) {
-  auto dim = sim.dim();
-  std::map<std::string, int> omega_h_adapt_tags = {
-        {"quality", dim}, {"metric", 0}};
-  std::map<std::string, std::pair<int, std::string>>
-    omega_h_multi_dim_tags = {{"element class_id", {dim, "class_id"}},
+  auto stdim = static_cast<std::size_t>(sim.dim());
+  std::map<std::string, std::size_t> omega_h_adapt_tags = {
+        {"quality", stdim}, {"metric", 0}};
+  std::map<std::string, std::pair<std::size_t, std::string>>
+    omega_h_multi_dim_tags = {{"element class_id", {stdim, "class_id"}},
       {"node class_dim", {0, "class_dim"}}, {"node local", {0, "local"}},
-      {"node global", {0, "global"}}, {"element local", {dim, "local"}},
-      {"element global", {dim, "global"}}};
+      {"node global", {0, "global"}}, {"element local", {stdim, "local"}},
+      {"element global", {stdim, "global"}}};
   auto& field_names_in = pl.get_list("fields");
   for (int i = 0; i < field_names_in.size(); ++i) {
     auto field_name = field_names_in.get<std::string>(i);
     if (omega_h_adapt_tags.count(field_name)) {
-      if (!sim.disc.mesh.has_tag(0, "metric"))
+      if (!sim.disc.mesh.has_tag(0, "metric")) {
+        if (sim.disc.is_second_order_) {
+          Omega_h::fail(
+              "Cannot output field \"metric\""
+              "to VTK for 2nd order meshes\n");
+        }
         Omega_h::add_implied_isos_tag(&sim.disc.mesh);
-      osh_fields.push_back({omega_h_adapt_tags[field_name], field_name});
+      }
+      osh_fields[omega_h_adapt_tags[field_name]].push_back(field_name);
       continue;
     }
     if (omega_h_multi_dim_tags.count(field_name)) {
-      osh_fields.push_back({omega_h_multi_dim_tags[field_name].first,
-          omega_h_multi_dim_tags[field_name].second});
-        continue;
+      if (omega_h_multi_dim_tags[field_name].first == 0) {
+        Omega_h::fail(
+            "Cannot output field \"%s\" "
+            "to VTK for 2nd order meshes\n", field_name.c_str());
+      }
+      osh_fields[omega_h_multi_dim_tags[field_name].first].push_back(
+          omega_h_multi_dim_tags[field_name].second);
+      continue;
     }
     auto fi = sim.fields.find(field_name);
     if (!fi.is_valid()) {
@@ -67,7 +78,8 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
             field_name.c_str());
       }
     }
-    lgr_fields.push_back(fi);
+    if (ent_type == NODES) lgr_fields[0].push_back(fi);
+    if (ent_type == ELEMS) lgr_fields[stdim].push_back(fi);
   }
 }
 
