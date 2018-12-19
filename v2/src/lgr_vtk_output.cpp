@@ -6,6 +6,8 @@
 #include <lgr_simulation.hpp>
 #include <lgr_vtk_output.hpp>
 
+#include <Omega_h_print.hpp>
+
 namespace lgr {
 
 struct VtkOutput : public Response {
@@ -101,6 +103,12 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
 
 void VtkOutput::respond() {
   Omega_h::ScopedTimer timer("VtkOutput::respond");
+  auto step = sim.step;
+  auto time = sim.time;
+  auto step_path = path + "/steps/step_" + std::to_string(step);
+  if (this->sim.comm->rank() == 0) {
+    Omega_h::vtk::update_pvd(path, &pvd_pos, step, time);
+  }
 }
 
 void VtkOutput::out_of_line_virtual_method() {
