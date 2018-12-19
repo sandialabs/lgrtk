@@ -1,3 +1,4 @@
+#include <fstream>
 #include <Omega_h_file.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_vtk.hpp>
@@ -10,8 +11,8 @@
 
 namespace lgr {
 
-using LgrFields = std::vector<FieldIndex>;
-using OshFields = std::vector<std::string>;
+using LgrFields = std::set<std::size_t>;
+using OshFields = std::set<std::string>;
 
 struct VtkOutput : public Response {
   public:
@@ -47,16 +48,17 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
         }
         Omega_h::add_implied_isos_tag(&sim.disc.mesh);
       }
-      osh_fields[omega_h_adapt_tags[field_name]].push_back(field_name);
+      osh_fields[omega_h_adapt_tags[field_name]].insert(field_name);
       continue;
     }
     if (omega_h_multi_dim_tags.count(field_name)) {
-      if (omega_h_multi_dim_tags[field_name].first == 0) {
+      if (omega_h_multi_dim_tags[field_name].first == 0 &&
+          sim.disc.is_second_order_) {
         Omega_h::fail(
             "Cannot output field \"%s\" "
             "to VTK for 2nd order meshes\n", field_name.c_str());
       }
-      osh_fields[omega_h_multi_dim_tags[field_name].first].push_back(
+      osh_fields[omega_h_multi_dim_tags[field_name].first].insert(
           omega_h_multi_dim_tags[field_name].second);
       continue;
     }
@@ -83,8 +85,8 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
             field_name.c_str());
       }
     }
-    if (ent_type == NODES) lgr_fields[0].push_back(fi);
-    if (ent_type == ELEMS) lgr_fields[stdim].push_back(fi);
+    if (ent_type == NODES) lgr_fields[0].insert(fi.storage_index);
+    if (ent_type == ELEMS) lgr_fields[stdim].insert(fi.storage_index);
   }
 }
 
@@ -113,12 +115,60 @@ static void write_step_dirs(std::string const& step_path,
   comm->barrier();
 }
 
+static void describe_fields(std::ostream& file, Simulation& sim,
+    LgrFields lgr_fields[4], OshFields osh_fields[4], int ent_dim) {
+  auto mesh = sim.disc.mesh;
+  for (int i = 0; i < mesh.ntags(ent_dim); ++i) {
+    auto tag = mesh.get_tag(ent_dim, i);
+    if (osh_fields[ent_dim].count(tag->name())) {
+      Omega_h::vtk::write_p_tag(file, tag, mesh.dim());
+    }
+  }
+  for (auto it : lgr_fields[ent_dim]) {
+    FieldIndex fi;
+    fi.storage_index = it;
+    auto& field = sim.fields[fi];
+    Omega_h::vtk::write_p_data_array<double>(
+        file, field.long_name, field.ncomps);
+  }
+}
+
+static std::string piece_filename(int rank) {
+  return "pieces/piece_" + Omega_h::to_string(rank) + ".vtu";
+}
+
+static void write_pvtu(std::string const& step_path, Simulation& sim,
+    LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+  if (sim.comm->rank() != 0) return;
+  auto dim = sim.disc.mesh.dim();
+  auto pvtu_name = step_path + "/pieces.pvtu";
+  std::ofstream file(pvtu_name.c_str());
+  OMEGA_H_CHECK(file.is_open());
+  file << "<VTKFile type=\"PUnstructuredGrid\">\n";
+  file << "<PUnstructuredGrid>\n";
+  file << "<PPoints>\n";
+  Omega_h::vtk::write_p_data_array<Omega_h::Real>(file, "coordinates", 3);
+  file << "</PPoints>\n";
+  file << "<PPointData>\n";
+  describe_fields(file, sim, lgr_fields, osh_fields, 0);
+  file << "</PPointData>\n";
+  file << "<PCellData>\n";
+  describe_fields(file, sim, lgr_fields, osh_fields, dim);
+  file << "</PCellData>\n";
+  for (int i = 0; i < sim.comm->size(); ++i) {
+    file << "<Piece Source=\"" << piece_filename(i) << "\"/>\n";
+  }
+  file << "</PUnstructuredGrid>\n";
+  file << "</VTKFile>\n";
+  (void)lgr_fields;
+  (void)osh_fields;
+}
+
 static void write_parallel(std::string const& step_path, Simulation& sim,
     LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
   write_step_dirs(step_path, sim.comm);
-  (void)lgr_fields;
-  (void)osh_fields;
+  write_pvtu(step_path, sim, lgr_fields, osh_fields);
 }
 
 void VtkOutput::respond() {
