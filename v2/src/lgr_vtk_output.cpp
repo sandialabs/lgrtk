@@ -10,6 +10,9 @@
 
 namespace lgr {
 
+using LgrFields = std::vector<FieldIndex>;
+using OshFields = std::vector<std::string>;
+
 struct VtkOutput : public Response {
   public:
     VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl);
@@ -19,8 +22,8 @@ struct VtkOutput : public Response {
   public:
     std::string path;
     std::streampos pvd_pos;
-    std::vector<FieldIndex> lgr_fields[4];
-    std::vector<std::string> osh_fields[4];
+    LgrFields lgr_fields[4];
+    OshFields osh_fields[4];
 };
 
 void VtkOutput::set_fields(Omega_h::InputMap& pl) {
@@ -101,11 +104,29 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   set_fields(pl);
 }
 
+static void write_step_dirs(std::string const& step_path,
+    Omega_h::CommPtr comm) {
+  if (comm->rank() == 0) Omega_h::safe_mkdir(step_path.c_str());
+  comm->barrier();
+  auto pieces_dir = step_path + "/pieces";
+  if (comm->rank() == 0) Omega_h::safe_mkdir(pieces_dir.c_str());
+  comm->barrier();
+}
+
+static void write_parallel(std::string const& step_path, Simulation& sim,
+    LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+  OMEGA_H_TIME_FUNCTION;
+  write_step_dirs(step_path, sim.comm);
+  (void)lgr_fields;
+  (void)osh_fields;
+}
+
 void VtkOutput::respond() {
   Omega_h::ScopedTimer timer("VtkOutput::respond");
   auto step = sim.step;
   auto time = sim.time;
   auto step_path = path + "/steps/step_" + std::to_string(step);
+  write_parallel(step_path, sim, lgr_fields, osh_fields);
   if (this->sim.comm->rank() == 0) {
     Omega_h::vtk::update_pvd(path, &pvd_pos, step, time);
   }
