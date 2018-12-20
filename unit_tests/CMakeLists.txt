@@ -15,6 +15,7 @@ set(SOURCES
   TwoDMesh.cpp
   ElementHelpersReplacements.cpp
   mhdTests.cpp
+  mhdPolynomialTests.cpp
   R3D.cpp
 )
 
