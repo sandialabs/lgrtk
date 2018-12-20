@@ -1,4 +1,5 @@
 #include <fstream>
+#include <Omega_h_for.hpp>
 #include <Omega_h_file.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_vtk.hpp>
@@ -76,15 +77,6 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
       Omega_h_fail(
           "\"%s\" is not on nodes or elements, VTK can't visualize it!\n",
           field_name.c_str());
-    }
-    if (ent_type == ELEMS) {
-      if (support->on_points() && (sim.disc.points_per_ent(ELEMS) > 1)) {
-        Omega_h_fail(
-            "\"%s\" is on integration points, and there is more than one per "
-            "element, "
-            "and Dan hasn't coded support for visualizing that yet!\n",
-            field_name.c_str());
-      }
     }
     if (ent_type == NODES) lgr_fields[0].insert(fi.storage_index);
     if (ent_type == ELEMS) lgr_fields[stdim].insert(fi.storage_index);
@@ -235,20 +227,53 @@ static void write_osh_tags(std::ostream& file, Simulation& sim,
   }
 }
 
-static void write_lgr_node_fields(std::ostream& file, Simulation& sim,
-    LgrFields lgr_fields, bool compress) {
+template <typename T>
+Omega_h::Read<T> gather_pt(Omega_h::Read<T> data, int nents, int npoints,
+    int ncomps, int pt) {
+  Omega_h::Write<T> pt_data(nents * ncomps);
+  auto functor = OMEGA_H_LAMBDA(int ent) {
+    for (int c = 0; c < ncomps; ++c) {
+      pt_data[ent * ncomps + c] = data[(ent * npoints + pt) * ncomps + c];
+    }
+  };
+  Omega_h::parallel_for("gather point", nents, std::move(functor));
+  return pt_data;
+}
+
+static void write_multi_point_lgr_field(std::ostream& file,
+    Simulation& sim, Field& field, int ent_dim, bool compress) {
+  OMEGA_H_CHECK(ent_dim = sim.disc.dim());
+  auto data = field.get();
+  auto ncomps = field.ncomps;
+  auto nents = sim.disc.count(ELEMS);
+  auto npoints = sim.disc.points_per_ent(ELEMS);
+  for (int pt = 0; pt < npoints; ++pt) {
+    auto pt_data = gather_pt(data, nents, npoints, ncomps, pt);
+    auto pt_name = field.long_name + "_" + std::to_string(pt);
+    Omega_h::vtk::write_array(file, pt_name, ncomps, pt_data, compress);
+  }
+}
+
+static void write_lgr_fields(std::ostream& file, Simulation& sim,
+    LgrFields lgr_fields, int ent_dim, bool compress) {
   for (auto it : lgr_fields) {
     FieldIndex fi;
     fi.storage_index = it;
     auto& field = sim.fields[fi];
-    Omega_h::vtk::write_array(file, field.long_name, field.ncomps,
-        field.get(), compress);
+    auto support = field.support;
+    if (support->on_points() && (sim.disc.points_per_ent(ELEMS) > 1)) {
+      write_multi_point_lgr_field(file, sim, field, ent_dim, compress);
+    } else {
+      Omega_h::vtk::write_array(file, field.long_name, field.ncomps,
+          field.get(), compress);
+    }
   }
 }
 
 static void write_vtu(std::string const& step_path, Simulation& sim,
     bool compress, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
+  auto dim = sim.disc.dim();
   auto vtu_name = step_path + "/" + piece_filename(sim.comm->rank());
   std::ofstream file(vtu_name.c_str());
   Omega_h::vtk::write_vtkfile_vtu_start_tag(file, compress);
@@ -262,8 +287,12 @@ static void write_vtu(std::string const& step_path, Simulation& sim,
   file << "</Points>\n";
   file << "<PointData>\n";
   write_osh_tags(file, sim, osh_fields[0], 0, compress);
-  write_lgr_node_fields(file, sim, lgr_fields[0], compress);
+  write_lgr_fields(file, sim, lgr_fields[0], 0, compress);
   file << "</PointData>\n";
+  file << "<CellData>\n";
+  write_osh_tags(file, sim, osh_fields[dim], dim, compress);
+  write_lgr_fields(file, sim, lgr_fields[dim], dim, compress);
+  file << "</CellData>\n";
   file << "</Piece>\n";
   file << "</UnstructuredGrid>\n";
   file << "</VTKFile>\n";
