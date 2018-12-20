@@ -169,6 +169,54 @@ static void write_piece_start_tag(std::ostream& file, Simulation& sim) {
   file << " NumberOfCells=\"" << sim.disc.count(ELEMS) << "\">\n";
 }
 
+enum {
+  VTK_VERTEX = 1,
+  VTK_LINE = 3,
+  VTK_TRIANGLE = 5,
+  VTK_QUAD = 9,
+  VTK_TETRA = 10,
+  VTK_HEXAHEDRON = 12,
+  VTK_QUADRATIC_EDGE = 21,
+  VTK_QUADRATIC_TRIANGLE = 22,
+  VTK_QUADRATIC_QUAD = 23,
+  VTK_QUADRATIC_TETRA = 24,
+  VTK_QUADRATIC_HEXAHEDRON = 25
+};
+
+static Omega_h::I8 vtk_type(Disc& disc) {
+  auto dim = disc.dim();
+  auto family = disc.mesh.family();
+  int orderm1 = (disc.is_simplex_ == 0) ? 0 : 1;
+  if (family == OMEGA_H_SIMPLEX) {
+    Omega_h::I8 simplex_table[4][2] = {
+      {VTK_VERTEX, VTK_VERTEX},
+      {VTK_LINE, VTK_QUADRATIC_EDGE},
+      {VTK_TRIANGLE, VTK_QUADRATIC_TRIANGLE},
+      {VTK_TETRA, VTK_QUADRATIC_TETRA}};
+    return simplex_table[dim][orderm1];
+  } else if (family == OMEGA_H_HYPERCUBE) {
+    Omega_h::I8 hypercube_table[4][2] = {
+      {VTK_VERTEX, VTK_VERTEX},
+      {VTK_LINE, VTK_QUADRATIC_EDGE},
+      {VTK_QUAD, VTK_QUADRATIC_QUAD},
+      {VTK_HEXAHEDRON, VTK_QUADRATIC_HEXAHEDRON}};
+    return hypercube_table[dim][orderm1];
+  }
+  return 0;
+}
+
+static void write_connectivity(std::ostream& file, Simulation& sim,
+    bool compress) {
+  auto disc = sim.disc;
+  Omega_h::Read<Omega_h::I8> types(disc.count(ELEMS), vtk_type(disc));
+  Omega_h::vtk::write_array(file, "types", 1, types, compress);
+  auto elems2nodes = disc.ents_to_nodes(ELEMS);
+  auto deg = disc.nodes_per_ent(ELEMS);
+  Omega_h::LOs ends(disc.count(ELEMS), deg, deg);
+  Omega_h::vtk::write_array(file, "connectivity", 1, elems2nodes, compress);
+  Omega_h::vtk::write_array(file, "offsets", 1, ends, compress);
+}
+
 static void write_coords(std::ostream& file, Simulation& sim, bool compress) {
   auto dim = sim.disc.dim();
   auto coords = sim.disc.node_coords();
@@ -185,7 +233,7 @@ static void write_vtu(std::string const& step_path, Simulation& sim,
   file << "<UnstructuredGrid>\n";
   write_piece_start_tag(file, sim);
   file << "<Cells>\n";
-  // write connectivity here
+  write_connectivity(file, sim, compress);
   file << "</Cells>\n";
   file << "<Points>\n";
   write_coords(file, sim, compress);
