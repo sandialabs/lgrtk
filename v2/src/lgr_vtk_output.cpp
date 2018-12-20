@@ -8,8 +8,6 @@
 #include <lgr_simulation.hpp>
 #include <lgr_vtk_output.hpp>
 
-#include <Omega_h_print.hpp>
-
 namespace lgr {
 
 using LgrFields = std::set<std::size_t>;
