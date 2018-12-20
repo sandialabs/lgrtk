@@ -1,6 +1,6 @@
-#include <lgr_run.hpp>
-#include <Omega_h_library.hpp>
 #include <Omega_h_cmdline.hpp>
+#include <Omega_h_library.hpp>
+#include <lgr_run.hpp>
 
 int main(int argc, char** argv) {
   Omega_h::Library lib(&argc, &argv);

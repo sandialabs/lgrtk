@@ -8,7 +8,7 @@ lgr:
     density: 1.0
     velocity: 'vector(1.0)'
   material models:
-    model1:
+    - 
       type: ideal gas
       heat capacity ratio: 1.4
       specific internal energy: 1.0
@@ -23,13 +23,13 @@ lgr:
       field: stress
       expected value: '-0.4'
   responses:
-#   viz:
+#   - 
 #     type: VTK output
 #     fields:
 #       - velocity
 #       - specific internal energy
 #       - stress
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
@@ -37,7 +37,7 @@ lgr:
         - time
         - dt
         - stress error
-    stress regression:
+    - 
       type: comparison
       scalar: stress error
       expected value: '0.0'

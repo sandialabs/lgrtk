@@ -1,8 +1,8 @@
 #ifndef LGR_SUBSETS_HPP
 #define LGR_SUBSETS_HPP
 
-#include <lgr_subset.hpp>
 #include <Omega_h_rbtree.hpp>
+#include <lgr_subset.hpp>
 #include <memory>
 #include <vector>
 
@@ -29,10 +29,8 @@ struct SubsetPairOfSubsetBridge {
 };
 
 struct TypeSubsets {
-  Omega_h::rb_tree<ClassNames, Subset, ClassNamesOfSubset>
-    by_class_names;
-  Omega_h::rb_tree<SubsetPair, SubsetBridge, SubsetPairOfSubsetBridge>
-    bridges;
+  Omega_h::rb_tree<ClassNames, Subset, ClassNamesOfSubset> by_class_names;
+  Omega_h::rb_tree<SubsetPair, SubsetBridge, SubsetPairOfSubsetBridge> bridges;
   void forget_disc();
   void learn_disc(Subsets&);
 };
@@ -41,11 +39,8 @@ struct Subsets {
   Disc& disc;
   TypeSubsets by_type[4];
   Subsets(Disc& disc_in);
-  Subset* get_subset(EntityType type,
-      ClassNames const& class_names);
-  SubsetBridge* get_bridge(
-      Subset* from,
-      Subset* to);
+  Subset* get_subset(EntityType type, ClassNames const& class_names);
+  SubsetBridge* get_bridge(Subset* from, Subset* to);
   void forget_disc();
   void learn_disc();
   Omega_h::LOs acquire_inverse(Omega_h::LOs a2b, int nb);
@@ -53,6 +48,6 @@ struct Subsets {
   Omega_h::Write<int> inverse_buffer;
 };
 
-}
+}  // namespace lgr
 
 #endif

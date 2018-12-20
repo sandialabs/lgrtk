@@ -11,7 +11,7 @@ bob_add_dependency(PUBLIC NAME Omega_h TARGETS Omega_h::omega_h)
 set(LGR_USE_GTest_DEFAULT ${BUILD_TESTING})
 bob_add_dependency(PUBLIC NAME GTest TARGETS GTest::gtest_main)
 
-bob_input(LGR_ELEMENTS "Bar2;Tri3;Quad4;Tet4" STRING "Element types to instantiate")
+bob_input(LGR_ELEMENTS "Bar2;Tri3;Tet4" STRING "Element types to instantiate")
 
 foreach(ELEMENT IN LISTS LGR_ELEMENTS)
   if(${ELEMENT} STREQUAL "Bar2")
@@ -28,6 +28,9 @@ foreach(ELEMENT IN LISTS LGR_ELEMENTS)
   endif()
   if(${ELEMENT} STREQUAL "Tet4")
     set(LGR_TET4 ON)
+  endif()
+  if(${ELEMENT} STREQUAL "CompTet")
+    set(LGR_COMPTET ON)
   endif()
 endforeach()
 
@@ -49,6 +52,7 @@ set(LGR_KEY_BOOLS
   LGR_TRI6
   LGR_QUAD4
   LGR_TET4
+  LGR_COMPTET
   )
 
 set(LGR_KEY_STRINGS

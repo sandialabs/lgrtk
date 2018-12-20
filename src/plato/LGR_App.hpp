@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <math.h>
 
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
@@ -26,6 +27,10 @@
 #include "ParseInput.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
+
+#ifdef PLATO_GEOMETRY
+  #include "Plato_MLS.hpp"
+#endif
 
 Plato::ScalarVector
 getVectorComponent(Plato::ScalarVector aFrom, int aComponent, int aStride);
@@ -60,11 +65,11 @@ public:
     void createProblem(ProblemDefinition& problemSpec);
 
     struct Parameter {
-      Parameter(std::string name, std::string target, Plato::Scalar initVal) :
-        m_name(name), m_target(target), m_initVal(initVal){}
+      Parameter(std::string name, std::string target, Plato::Scalar value) :
+        m_name(name), m_target(target), m_value(value){}
       std::string m_name;
       std::string m_target;
-      Plato::Scalar m_initVal;
+      Plato::Scalar m_value;
     };
 
     class LocalOp {
@@ -92,19 +97,20 @@ public:
 
     /******************************************************************************/
     template<typename SharedDataT>
-    void importDataT(const std::string& aName, const SharedDataT& aSharedField)
+    void importDataT(const std::string& aName, const SharedDataT& aSharedData)
     /******************************************************************************/
     {
-        if(aSharedField.myLayout() == Plato::data::layout_t::SCALAR_FIELD)
+        if(aSharedData.myLayout() == Plato::data::layout_t::SCALAR_FIELD)
         {
-          this->importScalarField(aName, aSharedField);
+          this->importScalarField(aName, aSharedData);
         } 
-        else if(aSharedField.myLayout() == Plato::data::layout_t::SCALAR_PARAMETER)
+        else if(aSharedData.myLayout() == Plato::data::layout_t::SCALAR_PARAMETER)
         {
-          this->importScalarParameter(aName, aSharedField);
+          this->importScalarParameter(aName, aSharedData);
         } 
-        else if(aSharedField.myLayout() == Plato::data::layout_t::SCALAR)
+        else if(aSharedData.myLayout() == Plato::data::layout_t::SCALAR)
         {
+          this->importScalarValue(aName, aSharedData);
         }
     }
     /******************************************************************************/
@@ -125,18 +131,34 @@ public:
     }
     /******************************************************************************/
     template <typename SharedDataT>
-    void importScalarParameter(const std::string& aName, SharedDataT& aSharedField)
+    void importScalarParameter(const std::string& aName, SharedDataT& aSharedData)
     /******************************************************************************/
     {
-      std::string strOperation = aSharedField.myContext();
-
-      // update problem definition for the operation
-      LocalOp *op = getOperation(strOperation);
-      std::vector<Plato::Scalar> value(aSharedField.size());
-      aSharedField.getData(value);
-      op->updateParameters(aName, value[0]);
-
-      // Note: The problem isn't recreated until the operation is called.
+        std::string strOperation = aSharedData.myContext();
+  
+        // update problem definition for the operation
+        LocalOp *op = getOperation(strOperation);
+        std::vector<Plato::Scalar> value(aSharedData.size());
+        aSharedData.getData(value);
+        op->updateParameters(aName, value[0]);
+  
+        // Note: The problem isn't recreated until the operation is called.
+    }
+    /******************************************************************************/
+    template <typename SharedDataT>
+    void importScalarValue(const std::string& aName, SharedDataT& aSharedData)
+    /******************************************************************************/
+    {
+        auto tIterator = mValuesMap.find(aName);
+        if(tIterator == mValuesMap.end())
+        { 
+            std::stringstream ss;
+            ss << "Attempted to import SharedValue ('" << aName << "') that doesn't exist.";
+            throw Plato::ParsingException(ss.str());
+        }
+        std::vector<Plato::Scalar>& tValues = tIterator->second;
+        tValues.resize(aSharedData.size());
+        aSharedData.getData(tValues);
     }
     /******************************************************************************/
     template <typename SharedDataT>
@@ -193,6 +215,18 @@ public:
       if( aName == "Constraint Value" ){
         std::vector<double> tValue(1,m_constraint_value);
         aSharedField.setData(tValue);
+      } else
+      {
+          auto tIterator = mValuesMap.find(aName);
+          if(tIterator == mValuesMap.end())
+          { 
+              std::stringstream ss;
+              ss << "Attempted to import SharedValue ('" << aName << "') that doesn't exist.";
+              throw Plato::ParsingException(ss.str());
+          }
+          std::vector<Plato::Scalar>& tValues = tIterator->second;
+          tValues.resize(aSharedField.size());
+          aSharedField.setData(tValues);
       }
     }
     /******************************************************************************/
@@ -288,6 +322,8 @@ public:
     }
     }
 
+    Plato::ScalarMultiVector getCoords();
+
 private:
     // functions
     //
@@ -365,6 +401,7 @@ private:
     Plato::ScalarVector m_control;
     Plato::ScalarVector m_adjoint;
     Plato::ScalarMultiVector m_state;
+    Plato::ScalarMultiVector m_coords;
 
     Plato::Scalar m_objective_value;
     Plato::ScalarVector m_objective_gradient_z;
@@ -375,6 +412,14 @@ private:
     Plato::ScalarVector m_constraint_gradient_x;
 
     Plato::OrdinalType m_numSpatialDims;
+
+  #ifdef PLATO_GEOMETRY
+    struct MLSstruct { Plato::any mls; int dimension; };
+    std::map<std::string,std::shared_ptr<MLSstruct>> mMLS;
+  #endif
+
+  std::map<std::string,std::vector<Plato::Scalar>> mValuesMap;
+
 
 
     /******************************************************************************/
@@ -504,6 +549,120 @@ private:
     };
     friend class WriteOutput;
     /******************************************************************************/
+
+    // FD sub-classes
+    //
+    /******************************************************************************/
+    class ComputeFiniteDifference : public LocalOp
+    { public:
+        ComputeFiniteDifference(MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef);
+        void operator()();
+      private:
+        Plato::Scalar m_delta;
+        std::string m_strInitialValue, m_strPerturbedValue, m_strGradient;
+    };
+    friend class ComputeFiniteDifference;
+    /******************************************************************************/
+
+
+#ifdef PLATO_GEOMETRY
+    // MLS sub-class
+    //
+    /******************************************************************************/
+    template<int SpaceDim, typename ScalarType=double>
+    class ComputeMLSField : public LocalOp
+    {
+    public:
+        ComputeMLSField( MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef) : 
+          LocalOp(aMyApp, aNode, aOpDef), m_strMLSValues("MLS Values")
+        { 
+            auto tName = Plato::Get::String(aNode,"MLSName");
+            auto& tMLS = mMyApp->mMLS;
+            if( tMLS.count(tName) == 0 )
+            {
+                throw Plato::ParsingException("Requested PointArray that doesn't exist.");
+            }
+            m_MLS = mMyApp->mMLS[tName];
+
+            mMyApp->mValuesMap[m_strMLSValues] = std::vector<Plato::Scalar>();
+        }
+
+        ~ComputeMLSField() { }
+
+        void operator()()
+        { 
+            // pull MLS point values into device
+            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+            Kokkos::View<ScalarType*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> t_pointsHost(tLocalData.data(),tLocalData.size());
+            Kokkos::View<ScalarType*, Kokkos::DefaultExecutionSpace::memory_space> t_pointValues("point values",tLocalData.size());
+            Kokkos::deep_copy(t_pointValues, t_pointsHost);
+
+            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->m_coords, mMyApp->m_control);
+        }
+
+    private:
+        std::shared_ptr<MLSstruct> m_MLS;
+        typedef typename Plato::Geometry::MovingLeastSquares<SpaceDim, ScalarType> MLS_Type;
+        std::string m_strMLSValues;
+    };
+    template<int SpaceDim, typename ScalarType> friend class ComputeMLSField;
+
+    // MLS sub-class
+    //
+    /******************************************************************************/
+    template<int SpaceDim, typename ScalarType=double>
+    class ComputePerturbedMLSField : public LocalOp
+    {
+    public:
+        ComputePerturbedMLSField( MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef) : 
+          LocalOp(aMyApp, aNode, aOpDef), m_strMLSValues("MLS Values")
+        { 
+            auto tName = Plato::Get::String(aNode,"MLSName");
+            auto& tMLS = mMyApp->mMLS;
+            if( tMLS.count(tName) == 0 )
+            {
+                throw Plato::ParsingException("Requested PointArray that doesn't exist.");
+            }
+            m_MLS = mMyApp->mMLS[tName];
+
+            m_delta = Plato::Get::Double(aNode,"Delta");
+        }
+
+        ~ComputePerturbedMLSField() { }
+
+        void operator()()
+        { 
+            
+            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+
+            int tIndex=0;
+            ScalarType tDelta=0.0;
+            if( m_parameters.count("Perturbed Index") )
+            {
+                tIndex = std::round(m_parameters["Perturbed Index"]->m_value);
+                tDelta = m_delta;
+            }
+            tLocalData[tIndex] += tDelta;
+
+            // pull MLS point values into device
+            Kokkos::View<ScalarType*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> t_pointsHost(tLocalData.data(),tLocalData.size());
+            Kokkos::View<ScalarType*, Kokkos::DefaultExecutionSpace::memory_space> t_pointValues("point values",tLocalData.size());
+            Kokkos::deep_copy(t_pointValues, t_pointsHost);
+
+            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->m_coords, mMyApp->m_control);
+
+            tLocalData[tIndex] -= tDelta;
+        }
+
+    private:
+        std::shared_ptr<MLSstruct> m_MLS;
+        typedef typename Plato::Geometry::MovingLeastSquares<SpaceDim, ScalarType> MLS_Type;
+        std::string m_strMLSValues;
+        ScalarType m_delta;
+    };
+    template<int SpaceDim, typename ScalarType> friend class ComputeMLSField;
+
+#endif
 
     std::map<std::string, LocalOp*> m_operationMap;
 

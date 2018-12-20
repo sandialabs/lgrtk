@@ -8,10 +8,9 @@ namespace lgr {
 struct Response;
 struct Simulation;
 
-Response* csv_hist_factory(Simulation& sim, std::string const&,
-    Omega_h::InputMap& pl);
+Response* csv_hist_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif
-

@@ -1,8 +1,9 @@
-#include <lgr_run.hpp>
-#include <lgr_simulation.hpp>
-#include <lgr_hydro.hpp>
 #include <Omega_h_profile.hpp>
 #include <lgr_flood.hpp>
+#include <lgr_hydro.hpp>
+#include <lgr_run.hpp>
+#include <lgr_simulation.hpp>
+#include <lgr_traction.hpp>
 
 namespace lgr {
 
@@ -33,22 +34,27 @@ static void initialize_state(Simulation& sim) {
     sim.fields.copy_from_omega_h(sim.disc, field_indices);
   }
   initialize_configuration<Elem>(sim);
+  sim.models.after_configuration();
   lump_masses<Elem>(sim);
 }
 
 template <class Elem>
 static void close_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
+  sim.models.before_field_update();
   sim.models.at_field_update();
   sim.models.after_field_update();
+  sim.models.before_material_model();
   sim.models.at_material_model();
   sim.models.after_material_model();
   compute_point_time_steps<Elem>(sim);
   compute_stress_divergence<Elem>(sim);
-  // tractions will go here
   apply_force_conditions(sim);
   compute_nodal_acceleration<Elem>(sim);
   apply_acceleration_conditions(sim);
+  sim.models.before_secondaries();
+  sim.models.at_secondaries();
+  sim.models.after_secondaries();
   update_cpu_time(sim);
   sim.responses.evaluate();
 }
@@ -69,9 +75,9 @@ static void run_simulation(Simulation& sim) {
       close_state<Elem>(sim);
     }
     update_time(sim);
-    sim.models.before_position_update();
     update_position<Elem>(sim);
     update_configuration<Elem>(sim);
+    sim.models.after_configuration();
     ++sim.step;
     close_state<Elem>(sim);
     correct_velocity<Elem>(sim);
@@ -79,23 +85,23 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-void run(Omega_h::CommPtr comm, Omega_h::InputMap& pl,
-    Factories&& factories_in) {
+void run(
+    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));
   auto elem = pl.get<std::string>("element type");
   if (factories.empty()) factories = Factories(elem);
   Simulation sim(comm, std::move(factories));
-#define LGR_EXPL_INST(Elem) \
-  if (elem == Elem::name()) { \
-    sim.set_elem<Elem>(); \
-    sim.setup(pl); \
-    run_simulation<Elem>(sim); \
-    return; \
+#define LGR_EXPL_INST(Elem)                                                    \
+  if (elem == Elem::name()) {                                                  \
+    sim.set_elem<Elem>();                                                      \
+    sim.setup(pl);                                                             \
+    run_simulation<Elem>(sim);                                                 \
+    return;                                                                    \
   }
   LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
   Omega_h_fail("Unknown element type \"%s\"\n", elem.c_str());
 }
 
-}
+}  // namespace lgr

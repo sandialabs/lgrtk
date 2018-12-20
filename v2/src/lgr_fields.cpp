@@ -1,28 +1,29 @@
+#include <Omega_h_map.hpp>
+#include <Omega_h_profile.hpp>
+#include <algorithm>
+#include <lgr_disc.hpp>
 #include <lgr_fields.hpp>
 #include <lgr_subset.hpp>
 #include <lgr_subsets.hpp>
 #include <lgr_support.hpp>
-#include <lgr_disc.hpp>
-#include <Omega_h_map.hpp>
-#include <Omega_h_profile.hpp>
-#include <algorithm>
 
 namespace lgr {
 
-void Fields::setup(Omega_h::InputMap& pl)
-{
+void Fields::setup(Omega_h::InputMap& pl) {
   printing_set_fields = pl.get<bool>("print all fields", "false");
   filling_with_nan = pl.get<bool>("initialize with NaN", "false");
 }
 
 FieldIndex Fields::define(std::string const& short_name,
-    std::string const& long_name, int ncomps,
-    EntityType type, bool on_points, ClassNames const& class_names) {
-  auto it = std::find_if(storage.begin(), storage.end(),
-      [&](std::unique_ptr<Field> const& f) { return f->long_name == long_name; });
+    std::string const& long_name, int ncomps, EntityType type, bool on_points,
+    ClassNames const& class_names) {
+  auto it = std::find_if(
+      storage.begin(), storage.end(), [&](std::unique_ptr<Field> const& f) {
+        return f->long_name == long_name;
+      });
   if (it == storage.end()) {
-    auto ptr = new Field(short_name, long_name, ncomps, type,
-        on_points, class_names, filling_with_nan);
+    auto ptr = new Field(short_name, long_name, ncomps, type, on_points,
+        class_names, filling_with_nan);
     std::unique_ptr<Field> uptr(ptr);
     it = storage.insert(it, std::move(uptr));
   } else {
@@ -32,8 +33,7 @@ FieldIndex Fields::define(std::string const& short_name,
     OMEGA_H_CHECK(ptr->ncomps == ncomps);
     OMEGA_H_CHECK(ptr->entity_type == type);
     OMEGA_H_CHECK(ptr->on_points == on_points);
-    ptr->class_names.insert(
-        class_names.begin(), class_names.end());
+    ptr->class_names.insert(class_names.begin(), class_names.end());
   }
   FieldIndex fi;
   fi.storage_index = decltype(fi.storage_index)(it - storage.begin());
@@ -41,8 +41,7 @@ FieldIndex Fields::define(std::string const& short_name,
 }
 
 FieldIndex Fields::define(std::string const& short_name,
-    std::string const& long_name, int ncomps,
-    Support* support) {
+    std::string const& long_name, int ncomps, Support* support) {
   return define(short_name, long_name, ncomps, support->subset->entity_type,
       support->on_points(), support->subset->class_names);
 }
@@ -99,27 +98,28 @@ double Fields::next_event(double time) {
   return out;
 }
 
-void Fields::setup_default_conditions(Supports& supports, double start_time) {
+void Fields::setup_default_conditions(Simulation& sim, double start_time) {
   for (auto& field : storage) {
-    field->setup_default_condition(supports, start_time);
+    field->setup_default_condition(sim, start_time);
   }
 }
 
-void Fields::setup_conditions(Supports& supports, Omega_h::InputMap& pl) {
+void Fields::setup_conditions(Simulation& sim, Omega_h::InputMap& pl) {
   for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
     auto const& field_name = it->first;
     if (pl.is_list(field_name)) {
       auto& field_pl = pl.get_list(field_name);
-      auto fit = std::find_if(storage.begin(), storage.end(),
-          [&](std::unique_ptr<Field> const& f) {
+      auto fit = std::find_if(
+          storage.begin(), storage.end(), [&](std::unique_ptr<Field> const& f) {
             return f->long_name == field_name;
           });
       if (fit == storage.end()) {
-        Omega_h_fail("trying to apply conditions to field \"%s\" that wasn't defined\n",
+        Omega_h_fail(
+            "trying to apply conditions to field \"%s\" that wasn't defined\n",
             field_name.c_str());
       }
       auto& field = *fit;
-      field->setup_conditions(supports, field_pl);
+      field->setup_conditions(sim, field_pl);
     }
   }
 }
@@ -129,12 +129,14 @@ void Fields::setup_common_defaults(Omega_h::InputMap& pl) {
     auto const& field_name = it->first;
     if (pl.is<std::string>(field_name)) {
       auto value = pl.get<std::string>(field_name);
-      auto fit = std::find_if(storage.begin(), storage.end(),
-          [&](std::unique_ptr<Field> const& f) {
+      auto fit = std::find_if(
+          storage.begin(), storage.end(), [&](std::unique_ptr<Field> const& f) {
             return f->long_name == field_name;
           });
       if (fit == storage.end()) {
-        Omega_h_fail("trying to apply default condition to field \"%s\" that wasn't defined\n",
+        Omega_h_fail(
+            "trying to apply default condition to field \"%s\" that wasn't "
+            "defined\n",
             field_name.c_str());
       }
       auto& field = *fit;
@@ -146,12 +148,9 @@ void Fields::setup_common_defaults(Omega_h::InputMap& pl) {
 FieldIndex Fields::find(std::string const& name) {
   FieldIndex out;
   auto it = std::find_if(storage.begin(), storage.end(),
-      [&](std::unique_ptr<Field> const& f) {
-        return f->long_name == name;
-      });
+      [&](std::unique_ptr<Field> const& f) { return f->long_name == name; });
   if (it != storage.end()) {
-    out.storage_index =
-      decltype(out.storage_index)(it - storage.begin());
+    out.storage_index = decltype(out.storage_index)(it - storage.begin());
   }
   return out;
 }
@@ -186,7 +185,8 @@ void Fields::learn_disc() {
   }
 }
 
-void Fields::copy_to_omega_h(Disc& disc, std::vector<FieldIndex> field_indices) {
+void Fields::copy_to_omega_h(
+    Disc& disc, std::vector<FieldIndex> field_indices) {
   // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
@@ -194,23 +194,25 @@ void Fields::copy_to_omega_h(Disc& disc, std::vector<FieldIndex> field_indices) 
     if (field.entity_type == NODES) {
       entity_dim = 0;
     } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim(); 
+      entity_dim = disc.dim();
     }
     auto& mapping = field.support->subset->mapping;
     auto const data = field.get();
     if (field.support->subset->mapping.is_identity) {
-      auto ncomps = divide_no_remainder(data.size(), disc.mesh.nents(entity_dim));
+      auto ncomps =
+          divide_no_remainder(data.size(), disc.mesh.nents(entity_dim));
       disc.mesh.add_tag(entity_dim, field.long_name, ncomps, data);
     } else {
       auto ncomps = divide_no_remainder(data.size(), mapping.things.size());
-      auto full_data = Omega_h::map_onto(data, mapping.things,
-          disc.mesh.nents(entity_dim), 0.0, ncomps);
+      auto full_data = Omega_h::map_onto(
+          data, mapping.things, disc.mesh.nents(entity_dim), 0.0, ncomps);
       disc.mesh.add_tag(entity_dim, field.long_name, ncomps, full_data);
     }
   }
 }
 
-void Fields::copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices) {
+void Fields::copy_from_omega_h(
+    Disc& disc, std::vector<FieldIndex> field_indices) {
   // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
@@ -218,12 +220,13 @@ void Fields::copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices
     if (field.entity_type == NODES) {
       entity_dim = 0;
     } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim(); 
+      entity_dim = disc.dim();
     }
     auto& mapping = field.support->subset->mapping;
     if (field.support->subset->mapping.is_identity) {
       field.storage = Omega_h::deep_copy(
-          disc.mesh.get_array<double>(entity_dim, field.long_name), field.long_name);
+          disc.mesh.get_array<double>(entity_dim, field.long_name),
+          field.long_name);
     } else {
       auto tag = disc.mesh.get_tag<double>(entity_dim, field.long_name);
       auto full_data = tag->array();
@@ -234,7 +237,8 @@ void Fields::copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices
   }
 }
 
-void Fields::remove_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices) {
+void Fields::remove_from_omega_h(
+    Disc& disc, std::vector<FieldIndex> field_indices) {
   // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
@@ -242,10 +246,10 @@ void Fields::remove_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indic
     if (field.entity_type == NODES) {
       entity_dim = 0;
     } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim(); 
+      entity_dim = disc.dim();
     }
     disc.mesh.remove_tag(entity_dim, field.long_name);
   }
 }
 
-}
+}  // namespace lgr

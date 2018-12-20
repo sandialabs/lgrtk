@@ -11,16 +11,10 @@ struct ExactRiemann {
   Omega_h::Reals pressure;
 };
 
-ExactRiemann exact_riemann(
-    double left_density,
-    double right_density,
-    double left_pressure,
-    double right_pressure,
-    double shock_x,
-    double gamma,
-    double t,
-    Omega_h::Reals x);
+ExactRiemann exact_riemann(double left_density, double right_density,
+    double left_pressure, double right_pressure, double shock_x, double gamma,
+    double t, Omega_h::Reals x);
 
-}
+}  // namespace lgr
 
 #endif

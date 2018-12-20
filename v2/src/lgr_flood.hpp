@@ -20,6 +20,6 @@ struct Flooder {
   void flood_by_mapping(Omega_h::LOs pull_mapping);
 };
 
-}
+}  // namespace lgr
 
 #endif

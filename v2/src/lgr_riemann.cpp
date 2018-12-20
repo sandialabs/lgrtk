@@ -1,10 +1,11 @@
-#include <lgr_riemann.hpp>
-#include <lgr_for.hpp>
 #include <cmath>
+#include <lgr_for.hpp>
+#include <lgr_riemann.hpp>
 
 namespace lgr {
 
-static double riemann_helper(double p4, double p1, double p5, double rho1, double rho5, double gamma) {
+static double riemann_helper(
+    double p4, double p1, double p5, double rho1, double rho5, double gamma) {
   double z, c1, c5, gm1, gp1, g2, fact;
   z = (p4 / p5 - 1.);
   c1 = std::sqrt(gamma * p1 / rho1);
@@ -19,15 +20,9 @@ static double riemann_helper(double p4, double p1, double p5, double rho1, doubl
 
 // solves the exact Riemann problem
 // original code from Bruce Fryxell (in Fortran!)
-ExactRiemann exact_riemann(
-    double left_density,
-    double right_density,
-    double left_pressure,
-    double right_pressure,
-    double shock_x,
-    double gamma,
-    double t,
-    Omega_h::Reals x) {
+ExactRiemann exact_riemann(double left_density, double right_density,
+    double left_pressure, double right_pressure, double shock_x, double gamma,
+    double t, Omega_h::Reals x) {
   // declare
   int npts, itmax, iter;
   double rhol, pl, ul, rhor, pr, ur, xi;
@@ -81,8 +76,7 @@ ExactRiemann exact_riemann(
     f0 = f1;
   }
   Omega_h_fail("Riemann iteration failed to converge\n");
-converged:
-  ;
+converged:;
   // compute post-shock density and velocity
   z = (p4 / p5 - 1.);
   c5 = std::sqrt(gamma * p5 / rho5);
@@ -178,4 +172,4 @@ converged:
   return {u, rho, p};
 }
 
-}
+}  // namespace lgr

@@ -1,11 +1,11 @@
 #ifndef LGR_SCALARS_HPP
 #define LGR_SCALARS_HPP
 
-#include <lgr_scalar.hpp>
-#include <lgr_factories.hpp>
-#include <vector>
-#include <memory>
 #include <Omega_h_rbtree.hpp>
+#include <lgr_factories.hpp>
+#include <lgr_scalar.hpp>
+#include <memory>
+#include <vector>
 
 namespace lgr {
 
@@ -24,6 +24,6 @@ struct Scalars {
 
 ScalarFactories get_builtin_scalar_factories();
 
-}
+}  // namespace lgr
 
 #endif

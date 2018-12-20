@@ -3,17 +3,15 @@
 #include <lgr_simulation.hpp>
 
 #include <fstream>
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 namespace lgr {
 
 struct CsvHist : public Response {
   std::vector<std::string> scalars;
   std::ofstream stream;
-  CsvHist(Simulation& sim_in, Omega_h::InputMap& pl)
-    :Response(sim_in, pl)
-  {
+  CsvHist(Simulation& sim_in, Omega_h::InputMap& pl) : Response(sim_in, pl) {
     auto& scalars_in = pl.get_list("scalars");
     for (int i = 0; i < scalars_in.size(); ++i) {
       scalars.push_back(scalars_in.get<std::string>(i));
@@ -47,11 +45,9 @@ struct CsvHist : public Response {
 
 void CsvHist::out_of_line_virtual_method() {}
 
-Response* csv_hist_factory(Simulation& sim, std::string const&,
-    Omega_h::InputMap& pl)
-{
+Response* csv_hist_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
   return new CsvHist(sim, pl);
 }
 
-}
-
+}  // namespace lgr

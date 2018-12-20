@@ -11,12 +11,12 @@ lgr:
     density: 1.0
     velocity: 'norm(x) > 1.0e-10 ? -x / norm(x) : vector(0.0)'
   material models:
-    model1:
+    - 
       type: ideal gas
       heat capacity ratio: '5.0 / 3.0'
       specific internal energy: '1.0e-14'
   modifiers:
-    model2:
+    - 
       type: artificial viscosity
       linear artificial viscosity: 1.5
       quadratic artificial viscosity: 0.25
@@ -35,7 +35,7 @@ lgr:
       field: specific internal energy
       expected value: 'x < ((1/3)*t) ? (1/2) : 1e-14'
   responses:
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
@@ -43,7 +43,7 @@ lgr:
         - dt
         - density error
         - energy error
-    viz:
+    - 
       time period: 0.01
       type: VTK output
       path: bar2_Noh
@@ -54,13 +54,13 @@ lgr:
         - density
         - expected density
         - expected specific internal energy
-    density regression:
+    - 
       type: comparison
       scalar: density error
       expected value: '0.0'
       tolerance: 0.0
       floor: 3.0e-1
-    energy regression:
+    - 
       type: comparison
       scalar: energy error
       expected value: '0.0'
