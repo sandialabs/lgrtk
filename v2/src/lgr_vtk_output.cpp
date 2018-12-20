@@ -118,15 +118,15 @@ static void write_step_dirs(std::string const& step_path,
 }
 
 static void describe_fields(std::ostream& file, Simulation& sim,
-    LgrFields lgr_fields[4], OshFields osh_fields[4], int ent_dim) {
+    LgrFields lgr_fields, OshFields osh_fields, int ent_dim) {
   auto mesh = sim.disc.mesh;
   for (int i = 0; i < mesh.ntags(ent_dim); ++i) {
     auto tag = mesh.get_tag(ent_dim, i);
-    if (osh_fields[ent_dim].count(tag->name())) {
+    if (osh_fields.count(tag->name())) {
       Omega_h::vtk::write_p_tag(file, tag, mesh.dim());
     }
   }
-  for (auto it : lgr_fields[ent_dim]) {
+  for (auto it : lgr_fields) {
     FieldIndex fi;
     fi.storage_index = it;
     auto& field = sim.fields[fi];
@@ -152,10 +152,10 @@ static void write_pvtu(std::string const& step_path, Simulation& sim,
   Omega_h::vtk::write_p_data_array<Omega_h::Real>(file, "coordinates", 3);
   file << "</PPoints>\n";
   file << "<PPointData>\n";
-  describe_fields(file, sim, lgr_fields, osh_fields, 0);
+  describe_fields(file, sim, lgr_fields[0], osh_fields[0], 0);
   file << "</PPointData>\n";
   file << "<PCellData>\n";
-  describe_fields(file, sim, lgr_fields, osh_fields, dim);
+  describe_fields(file, sim, lgr_fields[dim], osh_fields[dim], dim);
   file << "</PCellData>\n";
   for (int i = 0; i < sim.comm->size(); ++i) {
     file << "<Piece Source=\"" << piece_filename(i) << "\"/>\n";
@@ -224,6 +224,28 @@ static void write_coords(std::ostream& file, Simulation& sim, bool compress) {
   Omega_h::vtk::write_array(file, "coordinates", 3, coords3, compress);
 }
 
+static void write_osh_tags(std::ostream& file, Simulation& sim,
+    OshFields osh_fields, int ent_dim, bool compress) {
+  auto mesh = sim.disc.mesh;
+  for (int i = 0; i < mesh.ntags(ent_dim); ++i) {
+    auto tag = mesh.get_tag(ent_dim, i);
+    if (osh_fields.count(tag->name())) {
+      Omega_h::vtk::write_tag(file, tag, mesh.dim(), compress);
+    }
+  }
+}
+
+static void write_lgr_node_fields(std::ostream& file, Simulation& sim,
+    LgrFields lgr_fields, bool compress) {
+  for (auto it : lgr_fields) {
+    FieldIndex fi;
+    fi.storage_index = it;
+    auto& field = sim.fields[fi];
+    Omega_h::vtk::write_array(file, field.long_name, field.ncomps,
+        field.get(), compress);
+  }
+}
+
 static void write_vtu(std::string const& step_path, Simulation& sim,
     bool compress, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
@@ -238,6 +260,10 @@ static void write_vtu(std::string const& step_path, Simulation& sim,
   file << "<Points>\n";
   write_coords(file, sim, compress);
   file << "</Points>\n";
+  file << "<PointData>\n";
+  write_osh_tags(file, sim, osh_fields[0], 0, compress);
+  write_lgr_node_fields(file, sim, lgr_fields[0], compress);
+  file << "</PointData>\n";
   file << "</Piece>\n";
   file << "</UnstructuredGrid>\n";
   file << "</VTKFile>\n";
