@@ -186,7 +186,7 @@ enum {
 static Omega_h::I8 vtk_type(Disc& disc) {
   auto dim = disc.dim();
   auto family = disc.mesh.family();
-  int orderm1 = (disc.is_simplex_ == 0) ? 0 : 1;
+  int orderm1 = (disc.is_second_order_ == true) ? 1 : 0;
   if (family == OMEGA_H_SIMPLEX) {
     Omega_h::I8 simplex_table[4][2] = {
       {VTK_VERTEX, VTK_VERTEX},
