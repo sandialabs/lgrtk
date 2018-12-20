@@ -9,16 +9,13 @@ namespace lgr {
 
 struct Support;
 struct Supports;
+struct Simulation;
+struct Fields;
 
 struct Field {
-  Field(
-      std::string const& short_name_in,
-      std::string const& long_name_in,
-      int ncomps_in,
-      EntityType entity_type_in,
-      bool on_points_in,
-      ClassNames const& class_names_in,
-      bool filling_with_nan_in);
+  Field(std::string const& short_name_in, std::string const& long_name_in,
+      int ncomps_in, EntityType entity_type_in, bool on_points_in,
+      ClassNames const& class_names_in, bool filling_with_nan_in);
   ~Field() = default;
   std::string short_name;
   std::string long_name;
@@ -42,13 +39,13 @@ struct Field {
   void forget_disc();
   void learn_disc();
   void apply_conditions(double prev_time, double time,
-      Omega_h::Read<double> node_coords);
+      Omega_h::Read<double> node_coords, Fields& fields);
   bool is_covered_by_conditions(double prev_time, double time);
   double next_event(double time);
-  void setup_conditions(Supports& supports, Omega_h::InputList& pl);
-  void setup_default_condition(Supports& supports, double start_time);
+  void setup_conditions(Simulation& sim, Omega_h::InputList& pl);
+  void setup_default_condition(Simulation& sim, double start_time);
 };
 
-}
+}  // namespace lgr
 
 #endif

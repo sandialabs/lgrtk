@@ -1,8 +1,8 @@
 #ifndef LGR_FACTORIES_HPP
 #define LGR_FACTORIES_HPP
 
-#include <functional>
 #include <Omega_h_input.hpp>
+#include <functional>
 #include <lgr_element_types.hpp>
 
 namespace lgr {
@@ -15,7 +15,8 @@ struct Response;
 template <class T>
 using PtrOf = T*;
 template <class T>
-using FactoryOf = std::function<PtrOf<T>(Simulation&, std::string const&, Omega_h::InputMap&)>;
+using FactoryOf = std::function<PtrOf<T>(
+    Simulation&, std::string const&, Omega_h::InputMap&)>;
 template <class T>
 using FactoriesOf = std::map<std::string, FactoryOf<T>>;
 template <class T>
@@ -44,15 +45,25 @@ struct Factories {
   bool empty();
 };
 
+// setup from a YAML sequence, no name
 template <class T>
-void setup(FactoriesOf<T> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<T>&, std::string const&);
-extern template void
-setup(FactoriesOf<ModelBase> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<ModelBase>&, std::string const&);
-extern template void
-setup(FactoriesOf<Scalar> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Scalar>&, std::string const&);
-extern template void
-setup(FactoriesOf<Response> const& factories, Simulation& sim, Omega_h::InputMap& pl, VectorOf<Response>&, std::string const&);
+void setup(FactoriesOf<T> const& factories, Simulation& sim,
+    Omega_h::InputList& pl, VectorOf<T>&, std::string const&);
+extern template void setup(FactoriesOf<ModelBase> const& factories,
+    Simulation& sim, Omega_h::InputList& pl, VectorOf<ModelBase>&,
+    std::string const&);
+extern template void setup(FactoriesOf<Response> const& factories,
+    Simulation& sim, Omega_h::InputList& pl, VectorOf<Response>&,
+    std::string const&);
 
-}
+// setup from a YAML map, named
+template <class T>
+void setup(FactoriesOf<T> const& factories, Simulation& sim,
+    Omega_h::InputMap& pl, VectorOf<T>&, std::string const&);
+extern template void setup(FactoriesOf<Scalar> const& factories,
+    Simulation& sim, Omega_h::InputMap& pl, VectorOf<Scalar>&,
+    std::string const&);
+
+}  // namespace lgr
 
 #endif

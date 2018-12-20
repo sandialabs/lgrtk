@@ -166,7 +166,7 @@ Plato::Scalar mesh_minimum_length_scale(Omega_h::Mesh & omega_h_mesh)
   };
 
   Plato::Scalar maxGradSqrMag ;
-  Kokkos::Max<Plato::Scalar, Kokkos::DefaultExecutionSpace> xreducer(maxGradSqrMag);
+  Kokkos::Max<Plato::Scalar> xreducer(maxGradSqrMag);
   Kokkos::parallel_reduce(omega_h_mesh.nelems(), findMaxGradSqrMagnitude, xreducer);
 
   return 1./sqrt(maxGradSqrMag);
@@ -220,6 +220,18 @@ void initialize_level_set(Omega_h::Mesh & omega_h_mesh,
     const Plato::Scalar y = coords[n*SpatialDim+1];
     const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
     levelSet(n, fields.currentState) = level_set_function(x,y,z) * multiplier;
+  };
+  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
+}
+
+template<int SpatialDim>
+void offset_level_set(Omega_h::Mesh & omega_h_mesh,
+    ProblemFields<SpatialDim> & fields,
+    const double offset)
+{
+  auto levelSet = fields.levelSet;
+  auto f = LAMBDA_EXPRESSION(int n) {
+    levelSet(n, fields.currentState) += offset;
   };
   Kokkos::parallel_for(omega_h_mesh.nverts(), f);
 }

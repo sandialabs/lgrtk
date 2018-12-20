@@ -67,6 +67,7 @@ static void eval_prescribed_motions(
     const Details::Elastic& elastic,
     const Details::Hardening& hardening,
     const Details::RateDependence& rate_dep,
+    const Details::Damage& damage,
     Details::Properties const props,
     const scalar_type& rho)
 {
@@ -88,6 +89,8 @@ static void eval_prescribed_motions(
   scalar_type wave_speed = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
+  scalar_type dp = 0.;
+  scalar_type localized = 0.;
 
   Details::ErrorCode err;
 
@@ -95,8 +98,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "UNIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -108,8 +111,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "UNIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -118,8 +121,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "SIMPLE SHEAR, 2D EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -128,8 +131,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. - eps;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "HYDROSTATIC COMPRESSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -138,8 +141,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. + eps;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "HYDROSTATIC TENSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -148,8 +151,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = eps;
   F(2,0) = eps;      F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "SIMPLE SHEAR, 3D EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -158,8 +161,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "BIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -168,8 +171,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "BIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -178,8 +181,8 @@ static void eval_prescribed_motions(
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(elastic, hardening, rate_dep, props, rho,
-                      F, dtime, temp, T, wave_speed, Fp, ep, epdot);
+  err = Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                      F, dtime, temp, T, wave_speed, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
     << "PURE SHEAR, 2D EVAL FAILED WITH ERROR "
     << "'" << Details::get_error_code_string(err) << "'";
@@ -248,6 +251,7 @@ TEST(HyperEPMaterialModel, ParameterValidation)
       EXPECT_TRUE(std::abs(props.yield_strength - 10.) < tol);
       EXPECT_TRUE(hardening == Details::Hardening::NONE);
       EXPECT_TRUE(rate_dep == Details::RateDependence::NONE);
+      EXPECT_TRUE(damage == Details::Damage::NONE);
     }
 
     {
@@ -382,6 +386,7 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::NONE;
   auto rate_dep = Details::RateDependence::NONE;
+  auto damage = Details::Damage::NONE;
 
   // Uniaxial strain
   scalar_type f1 = 1.1;
@@ -389,8 +394,10 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   scalar_type c = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
-  Details::update(elastic, hardening, rate_dep, props, rho,
-                F, dtime, temp, T, c, Fp, ep, epdot);
+  scalar_type dp = 0.;
+  scalar_type localized = 0.;
+  Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                F, dtime, temp, T, c, Fp, ep, epdot, dp, localized);
 
   scalar_type fac = 1.66666666666667;  // 10/6
   scalar_type sxx = (2.0/3.0)*std::pow(f1,-fac)*(-2.*C10*D1*(-f1*f1+1)+3*std::pow(f1,fac)*(f1-1))/D1;
@@ -425,6 +432,7 @@ TEST(HyperEPMaterialModel, LinearElastic)
   auto elastic = Details::Elastic::LINEAR_ELASTIC;
   auto hardening = Details::Hardening::NONE;
   auto rate_dep = Details::RateDependence::NONE;
+  auto damage = Details::Damage::NONE;
 
   // Uniaxial strain
   scalar_type eps = .1;
@@ -432,8 +440,10 @@ TEST(HyperEPMaterialModel, LinearElastic)
   scalar_type c = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
-  Details::update(elastic, hardening, rate_dep, props, rho,
-                F, dtime, temp, T, c, Fp, ep, epdot);
+  scalar_type dp = 0.;
+  scalar_type localized = 0.;
+  Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                F, dtime, temp, T, c, Fp, ep, epdot, dp, localized);
 
   scalar_type K = E / 3. / (1. - 2. * Nu);
   scalar_type G = E / 2. / (1. + Nu);
@@ -468,20 +478,23 @@ TEST(HyperEPMaterialModel, SimpleJ2)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::NONE;
   auto rate_dep = Details::RateDependence::NONE;
+  auto damage = Details::Damage::NONE;
 
   scalar_type c = 0.;
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
+  scalar_type dp = 0.;
+  scalar_type localized = 0.;
   // Uniaxial strain
   F(0,0) = 1.004;
-  Details::update(elastic, hardening, rate_dep, props, rho,
-                  F, dtime, temp, T, c, Fp, ep, epdot);
+  Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                  F, dtime, temp, T, c, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(Omega_h::are_close(ep, 0.));
 
   c = 0.;
   F(0,0) = 1.005;
-  Details::update(elastic, hardening, rate_dep, props, rho,
-                        F, dtime, temp, T, c, Fp, ep, epdot);
+  Details::update(elastic, hardening, rate_dep, damage, props, rho,
+                        F, dtime, temp, T, c, Fp, ep, epdot, dp, localized);
   EXPECT_TRUE(Omega_h::are_close(T(0,0), 47500.));
   EXPECT_TRUE(Omega_h::are_close(T(1,1), 7500.));
   EXPECT_TRUE(Omega_h::are_close(T(1,1), T(2,2)));
@@ -555,7 +568,8 @@ TEST(HyperEPMaterialModel, ElasticPerfectlyPlastic)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::NONE;
   auto rate_dep = Details::RateDependence::NONE;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 
@@ -567,7 +581,8 @@ TEST(HyperEPMaterialModel, LinearIsotropicHardening)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::LINEAR_ISOTROPIC;
   auto rate_dep = Details::RateDependence::NONE;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 
@@ -579,7 +594,8 @@ TEST(HyperEPMaterialModel, PowerLawHardening)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::POWER_LAW;
   auto rate_dep = Details::RateDependence::NONE;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 
@@ -591,7 +607,8 @@ TEST(HyperEPMaterialModel, JohnsonCookHardening)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::JOHNSON_COOK;
   auto rate_dep = Details::RateDependence::NONE;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 
@@ -603,7 +620,8 @@ TEST(HyperEPMaterialModel, JohnsonCookRateDependent)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::JOHNSON_COOK;
   auto rate_dep = Details::RateDependence::JOHNSON_COOK;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::JOHNSON_COOK;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 TEST(HyperEPMaterialModel, ZerilliArmstrongHardening)
@@ -614,7 +632,8 @@ TEST(HyperEPMaterialModel, ZerilliArmstrongHardening)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::ZERILLI_ARMSTRONG;
   auto rate_dep = Details::RateDependence::NONE;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 
@@ -626,7 +645,8 @@ TEST(HyperEPMaterialModel, ZerilliArmstrongRateDependent)
   auto elastic = Details::Elastic::NEO_HOOKEAN;
   auto hardening = Details::Hardening::ZERILLI_ARMSTRONG;
   auto rate_dep = Details::RateDependence::ZERILLI_ARMSTRONG;
-  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, props, rho);
+  auto damage = Details::Damage::NONE;
+  hyper_ep_utils::eval_prescribed_motions(eps, elastic, hardening, rate_dep, damage, props, rho);
 }
 
 } // namespace

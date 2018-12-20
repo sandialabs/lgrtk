@@ -3,8 +3,6 @@
 
 namespace lgr {
 
-Scope::~Scope() {
-  sim.fields.print_and_clear_set_fields();
-}
+Scope::~Scope() { sim.fields.print_and_clear_set_fields(); }
 
-}
+}  // namespace lgr

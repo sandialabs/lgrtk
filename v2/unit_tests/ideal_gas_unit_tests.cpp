@@ -11,4 +11,4 @@ TEST(ideal_gas, unit_inputs) {
   EXPECT_TRUE(Omega_h::are_close(c, std::sqrt(1.4 * 0.4)));
 }
 
-ALEXA_END_TESTS
+LGR_END_TESTS

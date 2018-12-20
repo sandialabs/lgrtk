@@ -1,0 +1,41 @@
+lgr:
+  end step: 1
+  element type: Tri3
+  mesh:
+    box:
+      x size: 10.0
+      x elements: 10
+      y size: 1.0
+      y elements: 1
+  common fields:
+    density: 1.0
+  material models:
+    - 
+      type: linear elastic
+      bulk modulus: 1.0
+      shear modulus: 0.0
+  modifiers:
+    - 
+      type: Joule heating
+      conductivity: 'x(0) < 5.0 ? 1.0 : 2.0'
+      anode: ['x-']
+      cathode: ['x+']
+      # this becomes an initial guess, it is not required
+      normalized voltage: '1.0 - (x(0) / 10.0)'
+      relative tolerance: 1.0e-6
+  responses:
+    - 
+      type: VTK output
+      path: joule_heating
+      fields:
+        - conductivity
+        - normalized voltage
+        - conductance
+        - specific internal energy rate
+    - 
+      type: command line history
+      scalars:
+        - step
+        - CPU time
+        - time
+        - dt

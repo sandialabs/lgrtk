@@ -26,6 +26,34 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
   m_defaultProblem->params = tInputParams;
 
   createProblem(*m_defaultProblem);
+
+
+  // parse/create the MLS PointArrays
+  auto tPointArrayInputs = m_inputData.getByName<Plato::InputData>("PointArray");
+  for(auto tPointArrayInput=tPointArrayInputs.begin(); tPointArrayInput!=tPointArrayInputs.end(); ++tPointArrayInput)
+  {
+#ifdef PLATO_GEOMETRY
+      auto tPointArrayName = Plato::Get::String(*tPointArrayInput,"Name");
+      auto tPointArrayDims = Plato::Get::Int(*tPointArrayInput,"Dimensions");
+      if( mMLS.count(tPointArrayName) != 0 )
+      {
+          throw Plato::ParsingException("PointArray names must be unique.");
+      }
+      else
+      {
+          if( tPointArrayDims == 1 )
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<1,double>(*tPointArrayInput)),1}));
+          else
+          if( tPointArrayDims == 2 )
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<2,double>(*tPointArrayInput)),2}));
+          else 
+          if( tPointArrayDims == 3 )
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<3,double>(*tPointArrayInput)),3}));
+      }
+#else
+      throw Plato::ParsingException("PlatoApp was not compiled with PointArray support.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
+#endif // PLATO_GEOMETRY
+  }
 }
  
 /******************************************************************************/
@@ -152,6 +180,51 @@ void MPMD_App::initialize()
     } else 
     if(tStrFunction == "WriteOutput"){
       m_operationMap[tStrName] = new WriteOutput(this, tOperationNode, opDef);
+    } else 
+    if(tStrFunction == "ComputeFiniteDifference"){
+      m_operationMap[tStrName] = new ComputeFiniteDifference(this, tOperationNode, opDef);
+    } else 
+    if(tStrFunction == "ComputeMLSField"){
+  #ifdef PLATO_GEOMETRY
+      auto tMLSName = Plato::Get::String(tOperationNode,"MLSName");
+      if( mMLS.count(tMLSName) == 0 )
+      { throw Plato::ParsingException("MPMD_App::ComputeMLSField: Requested a PointArray that isn't defined."); }
+
+      if( m_coords.extent(0) == 0 )
+      {
+        m_coords = getCoords();
+      }
+
+      auto tMLS = mMLS[tMLSName];
+      if( tMLS->dimension == 3 ) { m_operationMap[tStrName] = new ComputeMLSField<3>(this, tOperationNode, opDef); }
+      else
+      if( tMLS->dimension == 2 ) { m_operationMap[tStrName] = new ComputeMLSField<2>(this, tOperationNode, opDef); }
+      else
+      if( tMLS->dimension == 1 ) { m_operationMap[tStrName] = new ComputeMLSField<1>(this, tOperationNode, opDef); }
+  #else
+      throw Plato::ParsingException("MPMD_App was not compiled with ComputeMLSField enabled.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
+  #endif // PLATO_GEOMETRY
+    } else 
+    if(tStrFunction == "ComputePerturbedMLSField"){
+  #ifdef PLATO_GEOMETRY
+      auto tMLSName = Plato::Get::String(tOperationNode,"MLSName");
+      if( mMLS.count(tMLSName) == 0 )
+      { throw Plato::ParsingException("MPMD_App::ComputePerturbedMLSField: Requested a PointArray that isn't defined."); }
+
+      if( m_coords.extent(0) == 0 )
+      {
+        m_coords = getCoords();
+      }
+
+      auto tMLS = mMLS[tMLSName];
+      if( tMLS->dimension == 3 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<3>(this, tOperationNode, opDef); }
+      else
+      if( tMLS->dimension == 2 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<2>(this, tOperationNode, opDef); }
+      else
+      if( tMLS->dimension == 1 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<1>(this, tOperationNode, opDef); }
+  #else
+      throw Plato::ParsingException("MPMD_App was not compiled with ComputePerturbedMLSField enabled.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
+  #endif // PLATO_GEOMETRY
     }
   }
 }
@@ -230,8 +303,14 @@ updateParameters(std::string aName, Plato::Scalar aValue)
   {
     auto it = m_parameters.find(aName);
     auto pm = it->second;
-    parseInline(m_def->params, pm->m_target, aValue);
-    m_def->modified = true;
+    pm->m_value = aValue;
+
+    // if a target is given, update the problem definition
+    if ( pm->m_target.empty() == false )
+    {
+        parseInline(m_def->params, pm->m_target, pm->m_value);
+        m_def->modified = true;
+    }
   }
 }
 
@@ -422,6 +501,45 @@ void MPMD_App::WriteOutput::operator()() { }
 /******************************************************************************/
 
 /******************************************************************************/
+MPMD_App::ComputeFiniteDifference::
+ComputeFiniteDifference(
+  MPMD_App* aMyApp, 
+  Plato::InputData& aOpNode, 
+  Teuchos::RCP<ProblemDefinition> aOpDef) : 
+    LocalOp(aMyApp, aOpNode, aOpDef) ,
+    m_strInitialValue("Initial Value"),
+    m_strPerturbedValue("Perturbed Value"),
+    m_strGradient("Gradient")
+/******************************************************************************/
+{ 
+    aMyApp->mValuesMap[m_strInitialValue] = std::vector<Plato::Scalar>();
+    aMyApp->mValuesMap[m_strPerturbedValue] = std::vector<Plato::Scalar>();
+
+    int tNumTerms = std::round(m_parameters["Vector Length"]->m_value);
+    aMyApp->mValuesMap[m_strGradient] = std::vector<Plato::Scalar>(tNumTerms);
+
+    m_delta = Plato::Get::Double(aOpNode,"Delta");
+}
+
+/******************************************************************************/
+void MPMD_App::ComputeFiniteDifference::operator()() 
+/******************************************************************************/
+{ 
+    int tIndex=0;
+    Plato::Scalar tDelta=0.0;
+    if( m_parameters.count("Perturbed Index") )
+    {
+        tIndex = std::round(m_parameters["Perturbed Index"]->m_value);
+        tDelta = m_delta;
+    }
+
+    auto& outVector = mMyApp->mValuesMap[m_strGradient];
+    auto tPerturbedValue = mMyApp->mValuesMap[m_strPerturbedValue][0];
+    auto tInitialValue = mMyApp->mValuesMap[m_strInitialValue][0];
+    outVector[tIndex] = (tPerturbedValue - tInitialValue) / tDelta;
+}
+
+/******************************************************************************/
 void MPMD_App::finalize() { }
 /******************************************************************************/
 
@@ -580,3 +698,21 @@ setParameterValue( Teuchos::ParameterList& params,
       params.set<double>(token,value);
   }
 }
+
+/******************************************************************************/
+Plato::ScalarMultiVector MPMD_App::getCoords()
+/******************************************************************************/
+{
+    auto tCoords = mMesh.coords();
+    auto tNumVerts = mMesh.nverts();
+    auto tNumDims = mMesh.dim();
+    Plato::ScalarMultiVector retval("coords", tNumVerts, tNumDims);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumVerts), LAMBDA_EXPRESSION(const Plato::OrdinalType & tVertOrdinal){
+        for (int iDim=0; iDim<tNumDims; iDim++){
+            retval(tVertOrdinal,iDim) = tCoords[tVertOrdinal*tNumDims+iDim];
+        }
+    }, "get coordinates");
+
+    return retval;
+}
+

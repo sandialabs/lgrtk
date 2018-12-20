@@ -1,10 +1,10 @@
 #ifndef LGR_remap_HPP
 #define LGR_remap_HPP
 
-#include <lgr_element_types.hpp>
-#include <lgr_remap_type.hpp>
-#include <lgr_field_index.hpp>
 #include <Omega_h_adapt.hpp>
+#include <lgr_element_types.hpp>
+#include <lgr_field_index.hpp>
+#include <lgr_remap_type.hpp>
 
 namespace lgr {
 
@@ -23,11 +23,11 @@ struct RemapBase : public Omega_h::UserTransfer {
 template <class Elem>
 RemapBase* remap_factory(Simulation& sim);
 
-#define LGR_EXPL_INST(Elem) \
-extern template RemapBase* remap_factory<Elem>(Simulation&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template RemapBase* remap_factory<Elem>(Simulation&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
 
 #endif

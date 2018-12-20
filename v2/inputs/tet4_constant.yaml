@@ -11,7 +11,7 @@ lgr:
     density: 1.0
     velocity: 'vector(1.0)'
   material models:
-    model1:
+    - 
       type: linear elastic
       bulk modulus: 1.0
       shear modulus: 0.0
@@ -21,11 +21,11 @@ lgr:
       field: velocity
       expected value: 'vector(1.0)'
   responses:
-#   viz:
+#   - 
 #     type: VTK output
 #     fields:
 #       - velocity
-    stdout:
+    - 
       type: command line history
       scalars:
         - step
@@ -33,7 +33,7 @@ lgr:
         - time
         - dt
         - velocity error
-    regression:
+    - 
       type: comparison
       scalar: velocity error
       expected value: '0.0'

@@ -8,8 +8,9 @@ namespace lgr {
 struct Response;
 struct Simulation;
 
-Response* vtk_output_factory(Simulation& sim, std::string const&, Omega_h::InputMap& pl);
+Response* vtk_output_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif

@@ -1,62 +1,61 @@
-#include <lgr_disc.hpp>
-#include <lgr_config.hpp>
-#include <lgr_quadratic.hpp>
-#include <Omega_h_map.hpp>
-#include <Omega_h_file.hpp>
-#include <Omega_h_build.hpp>
-#include <Omega_h_expr.hpp>
-#include <Omega_h_for.hpp>
-#include <Omega_h_reduce.hpp>
-#include <Omega_h_int_iterator.hpp>
-#include <Omega_h_metric.hpp>
 #include <Omega_h_adapt.hpp>
 #include <Omega_h_array_ops.hpp>
+#include <Omega_h_build.hpp>
+#include <Omega_h_expr.hpp>
+#include <Omega_h_file.hpp>
+#include <Omega_h_for.hpp>
+#include <Omega_h_int_iterator.hpp>
+#include <Omega_h_map.hpp>
+#include <Omega_h_metric.hpp>
+#include <Omega_h_reduce.hpp>
 #include <fstream>
-#include <sstream>
+#include <lgr_config.hpp>
+#include <lgr_disc.hpp>
+#include <lgr_quadratic.hpp>
 #include <limits>
+#include <sstream>
 
 namespace lgr {
 
 template <int dim>
-static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_name, Omega_h::any const& pos_any) {
+static void mark_closest_vertex_dim(Omega_h::Mesh& mesh,
+    std::string const& set_name, Omega_h::any const& pos_any) {
   auto const pos = Omega_h::any_cast<Vector<dim>>(pos_any);
   auto const coords = mesh.coords();
-  auto min_dist_functor = OMEGA_H_LAMBDA(int vertex) -> double {
+  auto min_dist_functor = OMEGA_H_LAMBDA(int vertex)->double {
     auto vertex_pos = Omega_h::get_vector<dim>(coords, vertex);
     return Omega_h::norm(vertex_pos - pos);
   };
-  double const min_dist = Omega_h::transform_reduce(
-      Omega_h::IntIterator(0),
-      Omega_h::IntIterator(mesh.nverts()),
-      std::numeric_limits<double>::max(),
-      Omega_h::minimum<double>(),
-      std::move(min_dist_functor));
+  double const min_dist = Omega_h::transform_reduce(Omega_h::IntIterator(0),
+      Omega_h::IntIterator(mesh.nverts()), std::numeric_limits<double>::max(),
+      Omega_h::minimum<double>(), std::move(min_dist_functor));
   auto globals = mesh.globals(Omega_h::VERT);
   // tiebreaker pass
-  auto min_global_functor = OMEGA_H_LAMBDA(int vertex) -> std::int64_t {
+  auto min_global_functor = OMEGA_H_LAMBDA(int vertex)->std::int64_t {
     auto vertex_pos = Omega_h::get_vector<dim>(coords, vertex);
     auto dist = Omega_h::norm(vertex_pos - pos);
-    if (dist == min_dist) return globals[vertex];
-    else return Omega_h::ArithTraits<std::int64_t>::max();
+    if (dist == min_dist)
+      return globals[vertex];
+    else
+      return Omega_h::ArithTraits<std::int64_t>::max();
   };
-  auto const min_global = Omega_h::transform_reduce(
-      Omega_h::IntIterator(0),
+  auto const min_global = Omega_h::transform_reduce(Omega_h::IntIterator(0),
       Omega_h::IntIterator(mesh.nverts()),
       std::numeric_limits<std::int64_t>::max(),
-      Omega_h::minimum<std::int64_t>(),
-      std::move(min_global_functor));
-  auto class_ids = Omega_h::deep_copy(mesh.get_array<Omega_h::ClassId>(Omega_h::VERT, "class_id"));
-  auto class_dims = Omega_h::deep_copy(mesh.get_array<std::int8_t>(Omega_h::VERT, "class_dim"));
-  auto max_class_id_functor = OMEGA_H_LAMBDA(int vertex) -> Omega_h::ClassId {
-    if (class_dims[vertex] == std::int8_t(0)) return class_ids[vertex];
-    else return Omega_h::ClassId(-1);
+      Omega_h::minimum<std::int64_t>(), std::move(min_global_functor));
+  auto class_ids = Omega_h::deep_copy(
+      mesh.get_array<Omega_h::ClassId>(Omega_h::VERT, "class_id"));
+  auto class_dims = Omega_h::deep_copy(
+      mesh.get_array<std::int8_t>(Omega_h::VERT, "class_dim"));
+  auto max_class_id_functor = OMEGA_H_LAMBDA(int vertex)->Omega_h::ClassId {
+    if (class_dims[vertex] == std::int8_t(0))
+      return class_ids[vertex];
+    else
+      return Omega_h::ClassId(-1);
   };
-  auto const max_class_id = Omega_h::transform_reduce(
-      Omega_h::IntIterator(0),
-      Omega_h::IntIterator(mesh.nverts()),
-      Omega_h::ClassId(-1),
-      Omega_h::maximum<Omega_h::ClassId>(),
-      std::move(max_class_id_functor));
+  auto const max_class_id = Omega_h::transform_reduce(Omega_h::IntIterator(0),
+      Omega_h::IntIterator(mesh.nverts()), Omega_h::ClassId(-1),
+      Omega_h::maximum<Omega_h::ClassId>(), std::move(max_class_id_functor));
   auto const new_class_id = max_class_id + 1;
   auto set_functor = OMEGA_H_LAMBDA(int vertex) {
     if (globals[vertex] == min_global) {
@@ -64,19 +63,23 @@ static void mark_closest_vertex_dim(Omega_h::Mesh& mesh, std::string const& set_
       class_dims[vertex] = std::int8_t(0);
     }
   };
-  Omega_h::parallel_for("set", mesh.nverts(), std::move(set_functor));
+  Omega_h::parallel_for(mesh.nverts(), std::move(set_functor));
   mesh.set_tag(Omega_h::VERT, "class_id", Omega_h::read(class_ids));
   mesh.set_tag(Omega_h::VERT, "class_dim", Omega_h::read(class_dims));
   mesh.class_sets[set_name].push_back({std::int8_t(0), new_class_id});
 }
 
-static void mark_closest_vertex(Omega_h::Mesh& mesh, std::string const& set_name, std::string const& pos_expr) {
+static void mark_closest_vertex(Omega_h::Mesh& mesh,
+    std::string const& set_name, std::string const& pos_expr) {
   Omega_h::ExprOpsReader reader;
-  auto pos_op = reader.read_ops(pos_expr);
+  auto const pos_op = reader.read_ops(pos_expr);
   Omega_h::ExprEnv pos_env(1, mesh.dim());
-  if (mesh.dim() == 1) mark_closest_vertex_dim<1>(mesh, set_name, pos_op->eval(pos_env));
-  if (mesh.dim() == 2) mark_closest_vertex_dim<2>(mesh, set_name, pos_op->eval(pos_env));
-  return mark_closest_vertex_dim<3>(mesh, set_name, pos_op->eval(pos_env));
+  if (mesh.dim() == 1)
+    mark_closest_vertex_dim<1>(mesh, set_name, pos_op->eval(pos_env));
+  else if (mesh.dim() == 2)
+    mark_closest_vertex_dim<2>(mesh, set_name, pos_op->eval(pos_env));
+  else
+    mark_closest_vertex_dim<3>(mesh, set_name, pos_op->eval(pos_env));
 }
 
 static void change_element_count(Omega_h::Mesh& mesh, double desired_nelems) {
@@ -119,8 +122,9 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     double y_size = box_pl.get<double>("y size", "1.0");
     double z_size = box_pl.get<double>("z size", "1.0");
     bool symmetric = box_pl.get<bool>("symmetric", "false");
-    mesh = Omega_h::build_box(comm, (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE),
-        x_size, y_size, z_size, x_elements, y_elements, z_elements, symmetric);
+    mesh = Omega_h::build_box(comm,
+        (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE), x_size, y_size,
+        z_size, x_elements, y_elements, z_elements, symmetric);
   } else if (pl.is_map("CUBIT")) {
 #ifdef LGR_USE_CUBIT
     auto& cubit_pl = pl.get_map("CUBIT");
@@ -128,7 +132,8 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     std::string journal_path;
     if (cubit_pl.is<std::string>("commands")) {
       auto commands = cubit_pl.get<std::string>("commands");
-      journal_path = cubit_pl.get<std::string>("journal file", "lgr_temporary.jou");
+      journal_path =
+          cubit_pl.get<std::string>("journal file", "lgr_temporary.jou");
       if (comm->rank() == 0) {
         std::ofstream journal_stream(journal_path.c_str());
         journal_stream << commands << '\n';
@@ -139,9 +144,9 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     }
     OMEGA_H_CHECK(Omega_h::ends_with(journal_path, ".jou"));
     auto default_exodus_path =
-      journal_path.substr(0, journal_path.length() - 3) + "exo";
+        journal_path.substr(0, journal_path.length() - 3) + "exo";
     auto exodus_path =
-      cubit_pl.get<std::string>("Exodus file", default_exodus_path.c_str());
+        cubit_pl.get<std::string>("Exodus file", default_exodus_path.c_str());
     std::stringstream system_stream;
     system_stream << cubit_path << ' ';
     system_stream << "-nobanner ";
@@ -158,20 +163,23 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     }
     mesh = Omega_h::read_mesh_file(exodus_path, comm);
 #else
-    Omega_h_fail("CUBIT mesh requested but LGRTK not compiled with CUBIT support!\n");
+    Omega_h_fail(
+        "CUBIT mesh requested but LGRTK not compiled with CUBIT support!\n");
 #endif
   } else {
     Omega_h_fail("no input mesh!\n");
   }
   OMEGA_H_CHECK(mesh.dim() == dim_);
-  OMEGA_H_CHECK(mesh.family() == (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE));
+  OMEGA_H_CHECK(
+      mesh.family() == (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE));
   if (pl.is_map("sets")) {
     Omega_h::update_class_sets(&mesh.class_sets, pl.get_map("sets"));
   }
   if (pl.is<std::string>("transform")) {
     Omega_h::ExprReader reader(mesh.nverts(), mesh.dim());
     reader.register_variable("x", Omega_h::any(mesh.coords()));
-    auto result = reader.read_string(pl.get<std::string>("transform"), "mesh transform");
+    auto result =
+        reader.read_string(pl.get<std::string>("transform"), "mesh transform");
     reader.repeat(result);
     mesh.set_coords(Omega_h::any_cast<Omega_h::Reals>(result));
   }
@@ -239,8 +247,8 @@ Omega_h::Adj Disc::nodes_to_ents(EntityType type) {
 }
 
 Omega_h::LOs Disc::ents_on_closure(
-    std::set<std::string> const& class_names,
-    EntityType type) {
+    std::set<std::string> const& class_names, EntityType type) {
+  if (class_names.empty()) return Omega_h::LOs({});
   int ent_dim = -1;
   if (type == NODES) {
     if (is_second_order_) {
@@ -248,22 +256,20 @@ Omega_h::LOs Disc::ents_on_closure(
     } else {
       ent_dim = 0;
     }
-  }
-  else if (type == ELEMS) ent_dim = dim();
+  } else if (type == ELEMS)
+    ent_dim = dim();
+  else if (type == SIDES)
+    ent_dim = dim() - 1;
+  else
+    Omega_h_fail("unsupported EntityType in Disc::ents_on_closure\n");
   return Omega_h::ents_on_closure(&mesh, class_names, ent_dim);
 }
 
-ClassNames const& Disc::covering_class_names() {
-  return covering_class_names_;
-}
+ClassNames const& Disc::covering_class_names() { return covering_class_names_; }
 
-int Disc::points_per_ent(EntityType type) {
-  return points_per_ent_[type];
-}
+int Disc::points_per_ent(EntityType type) { return points_per_ent_[type]; }
 
-int Disc::nodes_per_ent(EntityType type) {
-  return nodes_per_ent_[type];
-}
+int Disc::nodes_per_ent(EntityType type) { return nodes_per_ent_[type]; }
 
 template <class Elem>
 void Disc::set_elem() {
@@ -279,13 +285,10 @@ void Disc::set_elem() {
   nodes_per_ent_[NODES] = 1;
 }
 
-Omega_h::Reals Disc::node_coords() {
-  return node_coords_;
-}
+Omega_h::Reals Disc::node_coords() { return node_coords_; }
 
-#define LGR_EXPL_INST(Elem) \
-template void Disc::set_elem<Elem>();
+#define LGR_EXPL_INST(Elem) template void Disc::set_elem<Elem>();
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-}
+}  // namespace lgr
