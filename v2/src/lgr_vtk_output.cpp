@@ -109,8 +109,8 @@ static void write_step_dirs(std::string const& step_path,
   comm->barrier();
 }
 
-static void describe_fields(std::ostream& file, Simulation& sim,
-    LgrFields lgr_fields, OshFields osh_fields, int ent_dim) {
+static void describe_osh_tags(std::ostream& file, Simulation& sim,
+    OshFields& osh_fields, int ent_dim) {
   auto mesh = sim.disc.mesh;
   for (int i = 0; i < mesh.ntags(ent_dim); ++i) {
     auto tag = mesh.get_tag(ent_dim, i);
@@ -118,12 +118,31 @@ static void describe_fields(std::ostream& file, Simulation& sim,
       Omega_h::vtk::write_p_tag(file, tag, mesh.dim());
     }
   }
+}
+
+static void describe_multi_point_lgr_field(std::ostream& file,
+    Simulation& sim, Field& field, int ent_dim) {
+  OMEGA_H_CHECK(ent_dim = sim.disc.dim());
+  auto npoints = sim.disc.points_per_ent(ELEMS);
+  for (int pt = 0; pt < npoints; ++pt) {
+    auto pt_name = field.long_name + "_" + std::to_string(pt);
+    Omega_h::vtk::write_p_data_array<double>(file, pt_name, field.ncomps);
+  }
+}
+
+static void describe_lgr_fields(std::ostream& file, Simulation& sim,
+    LgrFields lgr_fields, int ent_dim) {
   for (auto it : lgr_fields) {
     FieldIndex fi;
     fi.storage_index = it;
     auto& field = sim.fields[fi];
-    Omega_h::vtk::write_p_data_array<double>(
-        file, field.long_name, field.ncomps);
+    auto support = field.support;
+    if (support->on_points() && (sim.disc.points_per_ent(ELEMS) > 1)) {
+      describe_multi_point_lgr_field(file, sim, field, ent_dim);
+    } else {
+      Omega_h::vtk::write_p_data_array<double>(
+          file, field.long_name, field.ncomps);
+    }
   }
 }
 
@@ -144,10 +163,12 @@ static void write_pvtu(std::string const& step_path, Simulation& sim,
   Omega_h::vtk::write_p_data_array<Omega_h::Real>(file, "coordinates", 3);
   file << "</PPoints>\n";
   file << "<PPointData>\n";
-  describe_fields(file, sim, lgr_fields[0], osh_fields[0], 0);
+  describe_osh_tags(file, sim, osh_fields[0], 0);
+  describe_lgr_fields(file, sim, lgr_fields[0], 0);
   file << "</PPointData>\n";
   file << "<PCellData>\n";
-  describe_fields(file, sim, lgr_fields[dim], osh_fields[dim], dim);
+  describe_osh_tags(file, sim, osh_fields[dim], dim);
+  describe_lgr_fields(file, sim, lgr_fields[dim], dim);
   file << "</PCellData>\n";
   for (int i = 0; i < sim.comm->size(); ++i) {
     file << "<Piece Source=\"" << piece_filename(i) << "\"/>\n";
