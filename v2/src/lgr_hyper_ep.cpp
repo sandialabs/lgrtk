@@ -27,10 +27,11 @@ char const* get_error_code_string(ErrorCode code) {
   return "UNKNOWN";
 }
 
-void read_and_validate_elastic_params(
-    Omega_h::InputMap& params, Properties& props, Elastic& elastic) {
+void read_and_validate_elastic_params(Omega_h::InputMap& params,
+    Properties& props)
+{
   // Set the defaults
-  elastic = Elastic::LINEAR_ELASTIC;
+  props.elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
   if (!params.is_map("elastic")) {
     Omega_h_fail("elastic submodel must be defined");
@@ -39,7 +40,7 @@ void read_and_validate_elastic_params(
   if (pl.is<std::string>("hyperelastic")) {
     auto hyperelastic = pl.get<std::string>("hyperelastic");
     if (hyperelastic == "neo hookean") {
-      elastic = hyper_ep::Elastic::NEO_HOOKEAN;
+      props.elastic = hyper_ep::Elastic::NEO_HOOKEAN;
     } else {
       std::ostringstream os;
       os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
@@ -61,50 +62,51 @@ void read_and_validate_elastic_params(
   if (Nu <= -1. || Nu >= .5) {
     Omega_h_fail("Invalid value for Poisson's ratio \"Nu\"");
   }
-  props.youngs_modulus = E;
-  props.poissons_ratio = Nu;
+  props.E = E;
+  props.Nu = Nu;
 }
 
 void read_and_validate_plastic_params(Omega_h::InputMap& params,
-    Properties& props, Hardening& hardening, RateDependence& rate_dep) {
+    Properties& props)
+{
   // Set the defaults
-  hardening = Hardening::NONE;
-  rate_dep = RateDependence::NONE;
+  props.hardening = Hardening::NONE;
+  props.rate_dep = RateDependence::NONE;
   if (!params.is_map("plastic")) {
     return;
   }
   auto& pl = params.get_map("plastic");
   auto max_double_str = std::to_string(std::numeric_limits<double>::max());
-  props.yield_strength = pl.get<double>("A", max_double_str.c_str());
+  props.A = pl.get<double>("A", max_double_str.c_str());
   if (!pl.is<std::string>("hardening")) {
-    hardening = Hardening::NONE;
+    props.hardening = Hardening::NONE;
   } else {
     std::string model = pl.get<std::string>("hardening");
     if (model == "linear isotropic") {
       // Linear isotropic hardening J2 plasticity
-      hardening = Hardening::LINEAR_ISOTROPIC;
-      props.hardening_modulus = pl.get<double>("B", "0.0");
+      props.hardening = Hardening::LINEAR_ISOTROPIC;
+      props.B = pl.get<double>("B", "0.0");
     } else if (model == "power law") {
       // Power law hardening
-      hardening = Hardening::POWER_LAW;
-      props.hardening_modulus = pl.get<double>("B", "0.0");
-      props.hardening_exponent = pl.get<double>("N", "1.0");
+      props.hardening = Hardening::POWER_LAW;
+      props.B = pl.get<double>("B", "0.0");
+      props.n = pl.get<double>("N", "1.0");
     } else if (model == "zerilli armstrong") {
       // Zerilli Armstrong hardening
-      hardening = Hardening::ZERILLI_ARMSTRONG;
-      props.hardening_modulus = pl.get<double>("B", "0.0");
-      props.hardening_exponent = pl.get<double>("N", "1.0");
-      props.c1 = pl.get<double>("C1", "0.0");
-      props.c2 = pl.get<double>("C2", "0.0");
-      props.c3 = pl.get<double>("C3", "0.0");
+      props.hardening = Hardening::ZERILLI_ARMSTRONG;
+      props.B = pl.get<double>("B", "0.0");
+      props.n = pl.get<double>("N", "1.0");
+      props.C1 = pl.get<double>("C1", "0.0");
+      props.C2 = pl.get<double>("C2", "0.0");
+      props.C3 = pl.get<double>("C3", "0.0");
     } else if (model == "johnson cook") {
       // Johnson Cook hardening
-      hardening = Hardening::JOHNSON_COOK;
-      props.hardening_modulus = pl.get<double>("B", "0.0");
-      props.hardening_exponent = pl.get<double>("N", "1.0");
-      props.c1 = pl.get<double>("T0", "298.0");
-      props.c2 = pl.get<double>("TM", max_double_str.c_str());
-      props.c3 = pl.get<double>("M", "0.0");
+      props.hardening = Hardening::JOHNSON_COOK;
+      props.B = pl.get<double>("B", "0.0");
+      props.n = pl.get<double>("N", "1.0");
+      props.C1 = pl.get<double>("T0", "298.0");
+      props.C2 = pl.get<double>("TM", max_double_str.c_str());
+      props.C3 = pl.get<double>("M", "0.0");
     } else {
       std::ostringstream os;
       os << "Unrecognized hardening model \"" << model << "\"";
@@ -117,22 +119,22 @@ void read_and_validate_plastic_params(Omega_h::InputMap& params,
     auto& p = pl.get_map("rate dependent");
     auto const type = p.get<std::string>("type", "None");
     if (type == "johnson cook") {
-      if (hardening != Hardening::JOHNSON_COOK) {
+      if (props.hardening != Hardening::JOHNSON_COOK) {
         Omega_h_fail(
-            "johnson cook rate dependent model requires johnson cook "
+            "johnson cook rate dependent model requires johnson cook"
             "hardening");
       }
-      rate_dep = RateDependence::JOHNSON_COOK;
-      props.c4 = p.get<double>("C", "0.0");
+      props.rate_dep = RateDependence::JOHNSON_COOK;
+      props.C4 = p.get<double>("C", "0.0");
       props.ep_dot_0 = p.get<double>("EPDOT0", "0.0");
     } else if (type == "zerilli armstrong") {
-      if (hardening != Hardening::ZERILLI_ARMSTRONG) {
+      if (props.hardening != Hardening::ZERILLI_ARMSTRONG) {
         Omega_h_fail(
-            "zerilli armstrong rate dependent model requires zerilli armstrong "
+            "zerilli armstrong rate dependent model requires zerilli armstrong"
             "hardening");
       }
-      rate_dep = RateDependence::ZERILLI_ARMSTRONG;
-      props.c4 = p.get<double>("C4", "0.0");
+      props.rate_dep = RateDependence::ZERILLI_ARMSTRONG;
+      props.C4 = p.get<double>("C4", "0.0");
     } else if (type != "None") {
       std::ostringstream os;
       os << "Unrecognized rate dependent type \"" << type << "\"";
@@ -142,29 +144,32 @@ void read_and_validate_plastic_params(Omega_h::InputMap& params,
   }
 }
 
-void read_and_validate_damage_params(
-    Omega_h::InputMap& params, Properties& props, Damage& damage) {
+void read_and_validate_damage_params(Omega_h::InputMap& params,
+    Properties& props)
+{
   // Set the defaults
-  damage = Damage::NONE;
+  props.damage = Damage::NONE;
   if (!params.is_map("plastic")) {
     return;
   }
   auto& pl = params.get_map("plastic");
   auto max_double_str = std::to_string(std::numeric_limits<double>::max());
   if (!pl.is<std::string>("damage")) {
-    damage = Damage::NONE;
+    props.damage = Damage::NONE;
   } else {
     std::string model = pl.get<std::string>("damage");
     if (model == "johnson cook") {
       // Johnson Cook hardening
-      damage = Damage::JOHNSON_COOK;
+      props.damage = Damage::JOHNSON_COOK;
       props.D1 = pl.get<double>("D1", "0.0");
       props.D2 = pl.get<double>("D2", "0.0");
       props.D3 = pl.get<double>("D3", "0.0");
       props.D4 = pl.get<double>("D4", "0.0");
       props.D5 = pl.get<double>("D5", "0.0");
       props.D0 = pl.get<double>("D0", "0.0");  // Initial scalar damage
-      props.Dc = pl.get<double>("Dc", "0.7");  // Critical scalar damage
+      props.DC = pl.get<double>("DC", "0.7"); // Critical scalar damage
+      props.eps_f_min =
+          pl.get<double>("spall failure strain", "0.6");
       bool no_shear =
           static_cast<bool>(pl.get<double>("allow no shear", "0.0"));
       bool no_tension =
@@ -180,8 +185,8 @@ void read_and_validate_damage_params(
       props.set_stress_to_zero = zero_stress;
 
       // Same as JC hardening.
-      props.c1 = pl.get<double>("T0", "298.0");
-      props.c2 = pl.get<double>("TM", max_double_str.c_str());
+      props.C1 = pl.get<double>("T0", "298.0");
+      props.C2 = pl.get<double>("TM", max_double_str.c_str());
     } else {
       std::ostringstream os;
       os << "Unrecognized damage model \"" << model << "\"";
@@ -196,11 +201,6 @@ void read_and_validate_damage_params(
 template <class Elem>
 struct HyperEP : public Model<Elem> {
   // Constant model parameters
-  hyper_ep::Elastic elastic_;
-  hyper_ep::Hardening hardening_;
-  hyper_ep::RateDependence rate_dep_;
-  hyper_ep::Damage damage_;
-
   hyper_ep::Properties properties;
 
   // State dependent variables
@@ -213,22 +213,16 @@ struct HyperEP : public Model<Elem> {
   // Kinematics
   FieldIndex defgrad;
 
-  HyperEP(Simulation& sim_in, Omega_h::InputMap& params)
-      : Model<Elem>(sim_in, params) {
-    elastic_ = hyper_ep::Elastic::LINEAR_ELASTIC;
-    hardening_ = hyper_ep::Hardening::NONE;
-    rate_dep_ = hyper_ep::RateDependence::NONE;
-    damage_ = hyper_ep::Damage::NONE;
+  HyperEP(Simulation& sim_in, Omega_h::InputMap& params) :
+    Model<Elem>(sim_in, params)
+  {
     // Read input parameters
     // Elastic model
-    hyper_ep::read_and_validate_elastic_params(
-        params, this->properties, elastic_);
+    hyper_ep::read_and_validate_elastic_params(params, this->properties);
     // Plastic model
-    hyper_ep::read_and_validate_plastic_params(
-        params, this->properties, hardening_, rate_dep_);
+    hyper_ep::read_and_validate_plastic_params(params, this->properties);
     // Damage model
-    hyper_ep::read_and_validate_damage_params(
-        params, this->properties, damage_);
+    hyper_ep::read_and_validate_damage_params(params, this->properties);
     // Problem dimension
     constexpr auto dim = Elem::dim;
     // Define state dependent variables
@@ -252,10 +246,6 @@ struct HyperEP : public Model<Elem> {
 
   void at_material_model() override final {
     using hyper_ep::tensor_type;
-    auto elastic = this->elastic_;
-    auto hardening = this->hardening_;
-    auto rate_dep = this->rate_dep_;
-    auto damage = this->damage_;
     //  properties
     auto points_to_rho = this->points_get(this->sim.density);
     // State dependent variables
@@ -289,8 +279,8 @@ struct HyperEP : public Model<Elem> {
       // Update the material response
       tensor_type T;  // stress tensor
       double c;
-      auto err_c = hyper_ep::update(elastic, hardening, rate_dep, damage, props,
-          rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
+      auto err_c = hyper_ep::update(props, rho, F, dt, temp, T, c, Fp, ep,
+          epdot, dp, localized);
       OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
       setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(T));
