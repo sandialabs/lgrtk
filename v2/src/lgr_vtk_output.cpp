@@ -21,6 +21,7 @@ struct VtkOutput : public Response {
     void out_of_line_virtual_method() override final;
     void respond() override final;
   public:
+    bool compress;
     std::string path;
     std::streampos pvd_pos;
     LgrFields lgr_fields[4];
@@ -92,6 +93,7 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
 
 VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   Response(sim_in, pl),
+  compress(false),
   path(pl.get<std::string>("path", "lgr_viz")),
   pvd_pos(0)
 {
@@ -160,15 +162,47 @@ static void write_pvtu(std::string const& step_path, Simulation& sim,
   }
   file << "</PUnstructuredGrid>\n";
   file << "</VTKFile>\n";
+}
+
+static void write_piece_start_tag(std::ostream& file, Simulation& sim) {
+  file << "<Piece NumberOfPoints=\"" << sim.disc.count(NODES) << "\"";
+  file << " NumberOfCells=\"" << sim.disc.count(ELEMS) << "\">\n";
+}
+
+static void write_coords(std::ostream& file, Simulation& sim, bool compress) {
+  auto dim = sim.disc.dim();
+  auto coords = sim.disc.node_coords();
+  auto coords3 = Omega_h::resize_vectors(coords, dim, 3);
+  Omega_h::vtk::write_array(file, "coordinates", 3, coords3, compress);
+}
+
+static void write_vtu(std::string const& step_path, Simulation& sim,
+    bool compress, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+  OMEGA_H_TIME_FUNCTION;
+  auto vtu_name = step_path + "/" + piece_filename(sim.comm->rank());
+  std::ofstream file(vtu_name.c_str());
+  Omega_h::vtk::write_vtkfile_vtu_start_tag(file, compress);
+  file << "<UnstructuredGrid>\n";
+  write_piece_start_tag(file, sim);
+  file << "<Cells>\n";
+  // write connectivity here
+  file << "</Cells>\n";
+  file << "<Points>\n";
+  write_coords(file, sim, compress);
+  file << "</Points>\n";
+  file << "</Piece>\n";
+  file << "</UnstructuredGrid>\n";
+  file << "</VTKFile>\n";
   (void)lgr_fields;
   (void)osh_fields;
 }
 
 static void write_parallel(std::string const& step_path, Simulation& sim,
-    LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+    bool compress,  LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
   write_step_dirs(step_path, sim.comm);
   write_pvtu(step_path, sim, lgr_fields, osh_fields);
+  write_vtu(step_path, sim, compress, lgr_fields, osh_fields);
 }
 
 void VtkOutput::respond() {
@@ -176,7 +210,7 @@ void VtkOutput::respond() {
   auto step = sim.step;
   auto time = sim.time;
   auto step_path = path + "/steps/step_" + std::to_string(step);
-  write_parallel(step_path, sim, lgr_fields, osh_fields);
+  write_parallel(step_path, sim, compress, lgr_fields, osh_fields);
   if (this->sim.comm->rank() == 0) {
     Omega_h::vtk::update_pvd(path, &pvd_pos, step, time);
   }
