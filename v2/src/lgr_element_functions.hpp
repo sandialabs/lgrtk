@@ -119,6 +119,24 @@ Tri6Side::basis_values() {
   return out;
 }
 
+OMEGA_H_INLINE Vector<Tri6Side::points>
+Tri6Side::weights(Matrix<dim, nodes> node_coords) {
+  Vector<points> out;
+  auto x0 = node_coords[0][0];
+  auto x1 = node_coords[1][0];
+  auto x2 = node_coords[2][0];
+  out[0] =  1.0 / std::sqrt(3.0) * (x0 + x1 - 2.0 * x2) + 0.5 * (x1 - x0);
+  out[1] = -1.0 / std::sqrt(3.0) * (x0 + x1 - 2.0 * x2) + 0.5 * (x1 - x0);
+  return out;
+}
+
+OMEGA_H_INLINE constexpr double Tri6Side::lumping(int const node) {
+  return (
+      (node == 0) ? 1.0 / 6.0 :
+      (node == 1) ? 1.0 / 6.0 :
+      (node == 2) ? 1.0 / 3.0 : -1.0);
+}
+
 OMEGA_H_INLINE Matrix<Tri6::dim, Tri6::points> Tri6::pts() {
   Matrix<dim, points> out;
   out[0][0] = 2.0 / 3.0;
