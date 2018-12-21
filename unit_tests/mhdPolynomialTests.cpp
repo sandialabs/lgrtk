@@ -91,9 +91,9 @@ ANONYMOUS:
 
   constexpr int spaceDim  = 3;
   constexpr int vert      = spaceDim+1;
-  constexpr int moment    = 1;
+  constexpr int moment    = 2;
   constexpr int meshWidth = 2;
-  typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tet;
+  typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tet4;
   typedef r3d::Polytope<spaceDim>              Polytope;
   typedef r3d::Polynomial<spaceDim,moment>     Polynomial;
   constexpr Scalar aX_scaling = 1.0;
@@ -158,49 +158,42 @@ ANONYMOUS:
 
   const auto magneticFaceFlux = MagneticFaceFlux<Fields>();
 
-  Kokkos::TeamPolicy<DeviceSpace> team_exec(elemLids_trg.size(), Kokkos::AUTO);
+  Kokkos::TeamPolicy<DeviceSpace> target_team_exec(elemLids_trg.size(), Kokkos::AUTO);
 
-  Kokkos::parallel_for(team_exec, LAMBDA_EXPRESSION(const DeviceTeamHandleType& team) {
+  //outer loop over target elements
+  Kokkos::parallel_for(target_team_exec, LAMBDA_EXPRESSION(const DeviceTeamHandleType& team) {
 
       const int e_trg = team.league_rank(); 
-      lgr::Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
-      Tet nodalCoordinates_trg;
+      Tet4 nodalCoordinates_trg;
       const size_t ielem_trg = elemLids_trg[e_trg];
-
+ 
       for (int i = 0; i < ElemNodeCount; ++i) {
         const int n = elem_node_ids_trg(ielem_trg, i);
-        x[i] = node_coords_trg(n, 0);
-        y[i] = node_coords_trg(n, 1);
-        z[i] = node_coords_trg(n, 2);
         r3d::Vector<spaceDim> &coord = nodalCoordinates_trg[i];
-        coord[0] = x[i];
-        coord[1] = y[i];
-        coord[2] = z[i];
+        coord[0] = node_coords_trg(n, 0);
+        coord[1] = node_coords_trg(n, 1);
+        coord[2] = node_coords_trg(n, 2);
       } 
-      Omega_h::Vector<3> B; 
-      B(0) = B(1) = B(2) = 0;
-      auto L =  LAMBDA_EXPRESSION(int e_src, Omega_h::Vector<3> &B) {
 
-          Tet nodalCoordinates_src;
+      //integral of source B over a single target/source intersection
+      auto L =  LAMBDA_EXPRESSION(int e_src, Omega_h::Vector<3> &integralB) {
+
+          Tet4 nodalCoordinates_src;
           const size_t ielem_src = elemLids_src[e_src];
 
           for (int i = 0; i < ElemNodeCount; ++i) {
-            lgr::Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
             const int n = elem_node_ids_src(ielem_src, i);
-            x[i] = node_coords_src(n, 0);
-            y[i] = node_coords_src(n, 1);
-            z[i] = node_coords_src(n, 2);
             r3d::Vector<spaceDim> &coord = nodalCoordinates_src[i];
-            coord[0] = x[i];
-            coord[1] = y[i];
-            coord[2] = z[i];
+            coord[0] = node_coords_src(n, 0); 
+            coord[1] = node_coords_src(n, 1); 
+            coord[2] = node_coords_src(n, 2);
           } 
- 
-          Omega_h::Vector<ElemFaceCount> faceFlux;
+
+          Omega_h::Vector<ElemFaceCount> faceFluxSource;
           for (int face = 0; face < ElemFaceCount; ++face) {
             const int sign = elemFaceOrientations_src(ielem_src,face);
             const size_t faceID = elemFaceIDs_src(ielem_src,face);
-            faceFlux[face] = sign * magneticFaceFlux(faceID);  
+            faceFluxSource[face] = sign * magneticFaceFlux(faceID);  
           }       
        
           Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
@@ -210,13 +203,13 @@ ANONYMOUS:
           Omega_h::Vector<3> constantTerm;
           lgr::Scalar linearFactor;
           lgr::elementPhysicalFacePolynomial( /*input*/
-       			   nodalCoordinates,
-       			   faceFlux,
-       			   /*output*/
-       			   constantTerm,
-       			   linearFactor );
+					     nodalCoordinates,
+					     faceFluxSource,
+					     /*output*/
+					     constantTerm,
+					     linearFactor );
  
-          double src_poly[3][Polynomial::nterms]={{0}};
+          double src_poly[3][Polynomial::nterms]={{0.}};
           src_poly[0][0] = constantTerm[0];
           src_poly[0][1] = linearFactor;
           src_poly[1][0] = constantTerm[1];
@@ -226,28 +219,38 @@ ANONYMOUS:
       
           Polytope intersection;
           r3d::intersect_simplices(intersection, nodalCoordinates_src, nodalCoordinates_trg);
-          double moments[Polynomial::nterms] = {}; 
+          double moments[Polynomial::nterms] = {0.}; 
           r3d::reduce<moment>(intersection, moments);
 
           for (int j=0; j<3; ++j) {
              for (int i=0; i<Polynomial::nterms; ++i) {
-                B(j) += moments[i]*src_poly[j][i];
+                integralB(j) += moments[i]*src_poly[j][i];
              }    
           }
-      };
-      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, elemLids_src.size()), L, B);
-      double target_volume;
+      };//end lambda L
+
+      //magnetic data to be computed for one target element
+      Omega_h::Vector<3> integralMagneticFluxDensity; 
+      integralMagneticFluxDensity(0) = integralMagneticFluxDensity(1) = integralMagneticFluxDensity(2) = 0.;
+
+      //for each target element, loop over source elements
+      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, elemLids_src.size()), L, integralMagneticFluxDensity);
+
+      //exact solution for a single target element
+      double target_volume(0.);
       Polytope poly_trg;
       r3d::init(poly_trg, nodalCoordinates_trg);
       r3d::reduce<0>(poly_trg, &target_volume);
       Omega_h::Vector<3> Bexact;
-      Bexact(0) = 1; Bexact(1) = 2; Bexact(2) = 5; Bexact*=target_volume;
-      errorPlusOneCell[e_trg] = Omega_h::norm(Bexact-B) + 1;
+      Bexact(0) = 1.; Bexact(1) = 2.; Bexact(2) = 5.; 
+      Bexact*=target_volume;
+      errorPlusOneCell[e_trg] = 1.0 + Omega_h::norm(Bexact-integralMagneticFluxDensity)/Omega_h::norm(Bexact);
 
-  }, "element face polynomial check");
+  }, "element face polynomial check"); //end Kokkos::parallel_for outer loop over target elements 
+
   Omega_h::HostWrite<Scalar> errorPlusOne(errorPlusOneCell);
   for (int i=0; i<elemLids_trg.size(); ++i) 
-    TEST_FLOATING_EQUALITY(errorPlusOne[i], 1.0, 1.0e-14);
+    TEST_FLOATING_EQUALITY(errorPlusOne[i], 1.0, 2.0e-14);
 
 }
 
