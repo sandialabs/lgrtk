@@ -90,7 +90,6 @@ void run(
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));
   auto elem = pl.get<std::string>("element type");
-  if (factories.empty()) factories = Factories(elem);
   Simulation sim(comm, std::move(factories));
 #define LGR_EXPL_INST(Elem)                                                    \
   if (elem == Elem::name()) {                                                  \
@@ -102,6 +101,24 @@ void run(
   LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
   Omega_h_fail("Unknown element type \"%s\"\n", elem.c_str());
+}
+
+int run_cmdline(int argc, char** argv,
+    std::function<void(lgr::Factories&, std::string const&)> add_factories) {
+  Omega_h::Library lib(&argc, &argv);
+  auto const world = lib.world();
+  Omega_h::CmdLine cmdline;
+  cmdline.add_arg<std::string>("input.yaml");
+  if (!cmdline.parse_final(world, &argc, argv)) {
+    return -1;
+  }
+  auto const config_path = cmdline.get<std::string>("input.yaml");
+  auto params = Omega_h::read_input(config_path);
+  auto const elem = params.get<std::string>("element type");
+  lgr::Factories factories(elem);
+  if (add_factories) add_factories(factories, elem);
+  lgr::run(world, params, std::move(factories));
+  return 0;
 }
 
 }  // namespace lgr
