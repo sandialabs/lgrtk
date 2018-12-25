@@ -1,6 +1,6 @@
 set(L ${CMAKE_CURRENT_SOURCE_DIR})
 function(lgr_test file_name)
-  add_test(NAME ${file_name} COMMAND lgr_executable ${L}/${file_name}.yaml)
+  add_test(NAME ${file_name} COMMAND lgr_executable --no-output ${L}/${file_name}.yaml)
 endfunction(lgr_test)
 
 if(LGR_BAR2)

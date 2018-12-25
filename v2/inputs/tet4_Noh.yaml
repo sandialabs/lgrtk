@@ -44,26 +44,26 @@ lgr:
       field: specific internal energy
       expected value: 'norm(x) < ((1/3)*t) ? (1/2) : 1e-14'
   responses:
-#   - 
-#     type: command line history
-#     scalars:
-#       - step
-#       - time
-#       - dt
-#       - density error
-#       - energy error
-#   - 
-#     time period: 0.01
-#     type: VTK output
-#     path: tet4_Noh
-#     fields:
-#       - velocity
-#       - specific internal energy
-#       - stress
-#       - density
-#       - weight
-#       - expected density
-#       - expected specific internal energy
+    - 
+      type: command line history
+      scalars:
+        - step
+        - time
+        - dt
+        - density error
+        - energy error
+    - 
+      time period: 0.01
+      type: VTK output
+      path: tet4_Noh
+      fields:
+        - velocity
+        - specific internal energy
+        - stress
+        - density
+        - weight
+        - expected density
+        - expected specific internal energy
     - 
       type: comparison
       scalar: density error
