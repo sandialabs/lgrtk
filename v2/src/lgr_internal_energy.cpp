@@ -90,14 +90,14 @@ struct InternalEnergy : public Model<Elem> {
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const elem = point / Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
-      auto const v_n = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto const dN_dxn = getgrads<Elem>(points_to_grad, point);
-      auto const dvn_dxn = grad<Elem>(dN_dxn, v_n);
-      auto const sigma_n = getsymm<Elem>(points_to_sigma, point);
-      auto const e_rho_dot_n = inner_product(dvn_dxn, sigma_n);
-      auto const rho_n = points_to_rho[point];
-      auto const e_dot_n = e_rho_dot_n / rho_n;
-      points_to_e_dot[point] += e_dot_n;
+      auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
+      auto const grads = getgrads<Elem>(points_to_grad, point);
+      auto const grad_v = grad<Elem>(grads, v);
+      auto const sigma = getsymm<Elem>(points_to_sigma, point);
+      auto const e_rho_dot = inner_product(grad_v, sigma);
+      auto const rho = points_to_rho[point];
+      auto const e_dot = e_rho_dot / rho;
+      points_to_e_dot[point] += e_dot;
     };
     parallel_for(this->points(), std::move(functor));
   }
