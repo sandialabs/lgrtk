@@ -4,6 +4,7 @@
 #include <lgr_run.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_traction.hpp>
+#include <Omega_h_malloc.hpp>
 
 namespace lgr {
 
@@ -110,8 +111,12 @@ int run_cmdline(int argc, char** argv,
   Omega_h::CmdLine cmdline;
   cmdline.add_arg<std::string>("input.yaml");
   cmdline.add_flag("--no-output", "silence all output (files and command line)");
+  cmdline.add_flag("--lgr-no-pool", "Disable memory pooling, helps debug or profile");
   if (!cmdline.parse_final(world, &argc, argv)) {
     return -1;
+  }
+  if (!cmdline.parsed("--lgr-no-pool")) {
+    Omega_h::enable_pooling();
   }
   auto const config_path = cmdline.get<std::string>("input.yaml");
   auto params = Omega_h::read_input(config_path);
