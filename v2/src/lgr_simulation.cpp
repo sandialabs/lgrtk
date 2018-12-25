@@ -167,8 +167,8 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields.setup_default_conditions(*this, time);
   // done setting up conditions
   // set coordinates
-  auto field_x = fields.set(position);
-  auto mesh_x = disc.node_coords();
+  auto const field_x = fields.set(position);
+  auto const mesh_x = disc.get_node_coords();
   Omega_h::copy_into(mesh_x, field_x);
   // done setting coordinates
   // set up scalars
