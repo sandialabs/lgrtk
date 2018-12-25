@@ -96,6 +96,8 @@ OMEGA_H_DEVICE void setgrads(Omega_h::Write<double> const& gradients, int point,
       gradients, point, transpose(point_grads));
 }
 
+/* \frac{\partial u}{\partial X_i} =
+   \sum_j \frac{\partial u}{\partial \xi_j}\frac{\partial \xi_j}{\partial x_i} */
 template <class Elem>
 OMEGA_H_INLINE Vector<Elem::dim> grad(
     Matrix<Elem::dim, Elem::nodes> basis_grads,
@@ -103,11 +105,13 @@ OMEGA_H_INLINE Vector<Elem::dim> grad(
   return basis_grads * node_scals;
 }
 
+/* \frac{\partial u_i}{\partial X_j} =
+   \sum_k \frac{\partial u_i}{\partial \xi_k}\frac{\partial \xi_k}{\partial x_j} */
 template <class Elem>
 OMEGA_H_INLINE Matrix<Elem::dim, Elem::dim> grad(
     Matrix<Elem::dim, Elem::nodes> basis_grads,
     Matrix<Elem::dim, Elem::nodes> node_vecs) {
-  return basis_grads * transpose(node_vecs);
+  return node_vecs * transpose(basis_grads);
 }
 
 template <class Elem>

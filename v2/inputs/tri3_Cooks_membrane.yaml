@@ -40,13 +40,14 @@ lgr:
   responses:
 #   - 
 #     type: VTK output
-#     time period: 0.5
+#     time period: 0.1
 #     fields:
 #       - velocity
 #       - density
 #       - stress
 #       - nodal pressure
 #       - nodal pressure rate
+#       - position
 #   - 
 #     type: command line history
 #     minimum column width: 20
@@ -59,4 +60,5 @@ lgr:
       type: comparison
       scalar: tip position
       at time: '8.4'
-      expected value: '62.840636351625'
+      expected value: '62.882557170697'
+      tolerance: 1.0e-5
