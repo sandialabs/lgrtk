@@ -26,18 +26,18 @@ struct DeformationGradient : public Model<Elem> {
       auto const elem = point / Elem::points;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto const dN_dxnp1 = getgrads<Elem>(points_to_grad, point);
-      auto const dv_dxnp1 = grad<Elem>(dN_dxnp1, v);
+      auto const grads = getgrads<Elem>(points_to_grad, point);
+      auto const grad_v = grad<Elem>(grads, v);
       auto const I = identity_matrix<Elem::dim, Elem::dim>();
-      auto const dxn_dxnp1 = I - dt * dv_dxnp1;
-      auto const dxnp1_dxn = invert(dxn_dxnp1);
-      auto const dxn_dX = getfull<Elem>(points_to_F, point);
-      OMEGA_H_CHECK(determinant(dxn_dX) > 0.0);
-      auto const det_dxnp1_dxn = determinant(dxnp1_dxn);
+      auto const incr_F_inv = I - dt * grad_v;
+      auto const incr_F = invert(incr_F_inv);
+      auto const old_F = getfull<Elem>(points_to_F, point);
+      OMEGA_H_CHECK(determinant(old_F) > 0.0);
+      auto const det_dxnp1_dxn = determinant(incr_F);
       OMEGA_H_CHECK(det_dxnp1_dxn > 0.0);
-      auto const dxnp1_dX = dxn_dX * dxnp1_dxn;
-      OMEGA_H_CHECK(determinant(dxnp1_dX) > 0.0);
-      setfull<Elem>(points_to_F, point, dxnp1_dX);
+      auto const new_F = old_F * incr_F;
+      OMEGA_H_CHECK(determinant(new_F) > 0.0);
+      setfull<Elem>(points_to_F, point, new_F);
     };
     parallel_for(this->points(), std::move(functor));
   }
