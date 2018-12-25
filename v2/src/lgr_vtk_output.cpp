@@ -230,7 +230,7 @@ static void write_connectivity(std::ostream& file, Simulation& sim,
 
 static void write_coords(std::ostream& file, Simulation& sim, bool compress) {
   auto dim = sim.disc.dim();
-  auto coords = sim.disc.node_coords();
+  auto coords = sim.disc.get_node_coords();
   auto coords3 = Omega_h::resize_vectors(coords, dim, 3);
   Omega_h::vtk::write_array(file, "coordinates", 3, coords3, compress);
 }
@@ -329,9 +329,10 @@ static void write_parallel(std::string const& step_path, Simulation& sim,
 
 void VtkOutput::respond() {
   Omega_h::ScopedTimer timer("VtkOutput::respond");
-  auto step = sim.step;
-  auto time = sim.time;
-  auto step_path = path + "/steps/step_" + std::to_string(step);
+  sim.disc.set_node_coords(sim.get(sim.position));
+  auto const step = sim.step;
+  auto const time = sim.time;
+  auto const step_path = path + "/steps/step_" + std::to_string(step);
   write_parallel(step_path, sim, compress, lgr_fields, osh_fields);
   if (this->sim.comm->rank() == 0) {
     Omega_h::vtk::update_pvd(path, &pvd_pos, step, time);

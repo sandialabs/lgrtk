@@ -427,7 +427,7 @@ struct Remap : public RemapBase {
   void after_adapt() override final {
     Omega_h::ScopedTimer timer("Remap::after_adapt");
     sim.fields[sim.position].storage =
-        Omega_h::deep_copy(sim.disc.mesh.coords());
+        Omega_h::deep_copy(sim.disc.get_node_coords());
     sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
     sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
     for (auto& name : fields_to_remap[RemapType::POSITIVE_DETERMINANT]) {

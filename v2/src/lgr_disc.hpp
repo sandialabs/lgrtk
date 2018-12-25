@@ -22,7 +22,8 @@ struct Disc {
   int points_per_ent(EntityType type);
   template <class Elem>
   void set_elem();
-  Omega_h::Reals node_coords();
+  Omega_h::Reals get_node_coords();
+  void set_node_coords(Omega_h::Reals);
   void update_from_mesh();
   Omega_h::Mesh mesh;
   int dim_;

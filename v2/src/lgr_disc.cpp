@@ -285,7 +285,8 @@ void Disc::set_elem() {
   nodes_per_ent_[NODES] = 1;
 }
 
-Omega_h::Reals Disc::node_coords() { return node_coords_; }
+Omega_h::Reals Disc::get_node_coords() { return node_coords_; }
+void Disc::set_node_coords(Omega_h::Reals input) { node_coords_ = input; }
 
 #define LGR_EXPL_INST(Elem) template void Disc::set_elem<Elem>();
 LGR_EXPL_INST_ELEMS
