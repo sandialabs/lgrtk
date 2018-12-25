@@ -329,6 +329,7 @@ static void write_parallel(std::string const& step_path, Simulation& sim,
 
 void VtkOutput::respond() {
   Omega_h::ScopedTimer timer("VtkOutput::respond");
+  if (sim.no_output) return;
   sim.disc.set_node_coords(sim.get(sim.position));
   auto const step = sim.step;
   auto const time = sim.time;

@@ -171,12 +171,9 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   auto const mesh_x = disc.get_node_coords();
   Omega_h::copy_into(mesh_x, field_x);
   // done setting coordinates
-  // set up scalars
   scalars.setup(pl.get_map("scalars"));
-  // done setting up scalars
-  // set up responses
+  no_output = pl.get<bool>("no output", "false");
   responses.setup(pl.get_list("responses"));
-  // done setting up responses
   adapter.setup(pl);
   // echo parameters
   if (pl.get<bool>("echo parameters", "false")) {
