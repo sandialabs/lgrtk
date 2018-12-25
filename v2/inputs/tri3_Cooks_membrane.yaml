@@ -38,24 +38,24 @@ lgr:
       set: 'tip'
       component: 1
   responses:
-#   - 
-#     type: VTK output
-#     time period: 0.1
-#     fields:
-#       - velocity
-#       - density
-#       - stress
-#       - nodal pressure
-#       - nodal pressure rate
-#       - position
-#   - 
-#     type: command line history
-#     minimum column width: 20
-#     scalars:
-#       - step
-#       - time
-#       - dt
-#       - tip position
+    - 
+      type: VTK output
+      time period: 0.1
+      fields:
+        - velocity
+        - density
+        - stress
+        - nodal pressure
+        - nodal pressure rate
+        - position
+    - 
+      type: command line history
+      minimum column width: 20
+      scalars:
+        - step
+        - time
+        - dt
+        - tip position
     - 
       type: comparison
       scalar: tip position

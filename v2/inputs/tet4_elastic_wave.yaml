@@ -44,12 +44,12 @@ lgr:
         val4 = -0.5e-4 * exp(-(x(0) - mid4)^2 / (2 * (0.05)^2));
         vector(val1 + val2 + val3 + val4, 0.0, 0.0)
   responses:
-#   - 
-#     time period: 1.0e-5
-#     type: VTK output
-#     fields:
-#       - velocity
-#       - density
+    - 
+      time period: 1.0e-5
+      type: VTK output
+      fields:
+        - velocity
+        - density
     - 
       type: command line history
       scalars:

@@ -20,18 +20,18 @@ lgr:
       field: velocity
       expected value: 'vector(1.0)'
   responses:
-#   - 
-#     type: VTK output
-#     fields:
-#       - velocity
-#   - 
-#     type: command line history
-#     scalars:
-#       - step
-#       - CPU time
-#       - time
-#       - dt
-#       - velocity error
+    - 
+      type: VTK output
+      fields:
+        - velocity
+    - 
+      type: command line history
+      scalars:
+        - step
+        - CPU time
+        - time
+        - dt
+        - velocity error
     - 
       type: comparison
       scalar: velocity error

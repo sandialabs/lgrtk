@@ -23,12 +23,12 @@ lgr:
       field: stress
       expected value: '-0.4'
   responses:
-#   - 
-#     type: VTK output
-#     fields:
-#       - velocity
-#       - specific internal energy
-#       - stress
+    - 
+      type: VTK output
+      fields:
+        - velocity
+        - specific internal energy
+        - stress
     - 
       type: command line history
       scalars:
