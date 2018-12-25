@@ -7,7 +7,9 @@
 namespace lgr {
 
 void run(Omega_h::CommPtr comm, Omega_h::InputMap& pl,
-    Factories&& model_factories = Factories());
+    Factories&& model_factories);
+int run_cmdline(int argc, char** argv,
+    std::function<void(lgr::Factories&, std::string const&)> add_factories);
 
 }
 
