@@ -26,6 +26,7 @@ struct CmdLineHist : public Response {
     std::printf("\n");
   }
   void respond() override final {
+    if (sim.no_output) return;
     for (auto& name : scalars) {
       auto val = sim.scalars.ask_value(name);
       if (val < 0.0)

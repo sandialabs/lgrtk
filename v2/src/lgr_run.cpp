@@ -109,11 +109,15 @@ int run_cmdline(int argc, char** argv,
   auto const world = lib.world();
   Omega_h::CmdLine cmdline;
   cmdline.add_arg<std::string>("input.yaml");
+  cmdline.add_flag("--no-output", "silence all output (files and command line)");
   if (!cmdline.parse_final(world, &argc, argv)) {
     return -1;
   }
   auto const config_path = cmdline.get<std::string>("input.yaml");
   auto params = Omega_h::read_input(config_path);
+  if (cmdline.parsed("--no-output")) {
+    params.set("no output", "true");
+  }
   auto const elem = params.get<std::string>("element type");
   lgr::Factories factories(elem);
   if (add_factories) add_factories(factories, elem);

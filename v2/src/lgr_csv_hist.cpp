@@ -29,6 +29,7 @@ struct CsvHist : public Response {
     stream.write(header_string.data(), std::streamsize(header_string.length()));
   }
   void respond() override final {
+    if (sim.no_output) return;
     std::stringstream step_stream;
     step_stream << std::scientific << std::setprecision(17);
     for (std::size_t i = 0; i < scalars.size(); ++i) {
