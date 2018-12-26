@@ -1,57 +1,56 @@
-lgr:
-  end time: 1.0
-  input variables:
-    gamma0: '5.0 / 3.0'
-    rho0: 1.0
-    p0: 10.0
-    g: 1.0
-  element type: Tri3
-  mesh:
-    box:
-      x size: 0.8
-      x elements: 8
-      y size: 2.8
-      y elements: 28
-  common fields:
-    density: rho0
-  material models:
+end time: 1.0
+input variables:
+  gamma0: '5.0 / 3.0'
+  rho0: 1.0
+  p0: 10.0
+  g: 1.0
+element type: Tri3
+mesh:
+  box:
+    x size: 0.8
+    x elements: 8
+    y size: 2.8
+    y elements: 28
+common fields:
+  density: rho0
+material models:
+  - 
+    type: ideal gas
+    heat capacity ratio: gamma0
+    specific internal energy: |
+      y = x(1);
+      (-rho0 * g * y + p0) / ((gamma0 - 1) * rho0)
+modifiers:
+  - 
+    type: artificial viscosity
+    linear artificial viscosity: 1.0
+    quadratic artificial viscosity: 0.0
+conditions:
+  acceleration:
+    # "gravity" term, g=1.0
     - 
-      type: ideal gas
-      heat capacity ratio: gamma0
-      specific internal energy: |
-        y = x(1);
-        (-rho0 * g * y + p0) / ((gamma0 - 1) * rho0)
-  modifiers:
+      value: 'vector(a(0), a(1) - g)'
     - 
-      type: artificial viscosity
-      linear artificial viscosity: 1.0
-      quadratic artificial viscosity: 0.0
-  conditions:
-    acceleration:
-      # "gravity" term, g=1.0
-      - 
-        value: 'vector(a(0), a(1) - g)'
-      - 
-        sets: ['x-', 'x+']
-        value: 'vector(0.0, a(1))'
-      - 
-        sets: ['y-', 'y+']
-        value: 'vector(a(0), 0.0)'
-  responses:
+      sets: ['x-', 'x+']
+      value: 'vector(0.0, a(1))'
     - 
-      type: command line history
-      scalars:
-        - step
-        - time
-        - dt
-    - 
-      time period: 0.05
-      type: VTK output
-      path: gravity
-      fields:
-        - velocity
-        - specific internal energy
-        - stress
-        - density
-        - force
-        - acceleration
+      sets: ['y-', 'y+']
+      value: 'vector(a(0), 0.0)'
+responses:
+  - 
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt
+  - 
+    time period: 0.05
+    type: VTK output
+    path: gravity
+    fields:
+      - velocity
+      - specific internal energy
+      - stress
+      - density
+      - force
+      - acceleration

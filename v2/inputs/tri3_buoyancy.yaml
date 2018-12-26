@@ -1,108 +1,107 @@
-lgr:
-  input variables:
-    gamma0: '5.0 / 3.0'
-    rho0: 1.0
-    p0: 5.0
-    g: 1.0
-  CFL: 0.9
-  end time: 2.0
-  element type: Tri3
-  mesh:
-    CUBIT:
-      commands: |
-        brick x 0.8 y 2.8 z 1
-        webcut volume 1 with cylinder radius 0.21 axis z center 0 0.5 0
-        webcut volume 1 with cylinder radius 0.21 axis z center 0 -0.5 0
-        merge all
-        surface 14 11 17 scheme trimesh
-        mesh surface 14 11 17
-        block 1 surface 14
-        block 1 name "fluid"
-        block 2 surface 11
-        block 2 name "high_ball"
-        block 3 surface 17
-        block 3 name "low_ball"
-        sideset 1 curve 3
-        sideset 1 name "x-"
-        sideset 2 curve 1
-        sideset 2 name "x+"
-        sideset 3 curve 4
-        sideset 3 name "y-"
-        sideset 4 curve 2
-        sideset 4 name "y+"
-        export genesis "tri3_buoyancy.exo"
-      Exodus file: tri3_buoyancy.exo
-    element count: 500
-  material models:
-    -
-      sets: ['high_ball', 'low_ball']
-      type: linear elastic
-    -
+input variables:
+  gamma0: '5.0 / 3.0'
+  rho0: 1.0
+  p0: 5.0
+  g: 1.0
+CFL: 0.9
+end time: 2.0
+element type: Tri3
+mesh:
+  CUBIT:
+    commands: |
+      brick x 0.8 y 2.8 z 1
+      webcut volume 1 with cylinder radius 0.21 axis z center 0 0.5 0
+      webcut volume 1 with cylinder radius 0.21 axis z center 0 -0.5 0
+      merge all
+      surface 14 11 17 scheme trimesh
+      mesh surface 14 11 17
+      block 1 surface 14
+      block 1 name "fluid"
+      block 2 surface 11
+      block 2 name "high_ball"
+      block 3 surface 17
+      block 3 name "low_ball"
+      sideset 1 curve 3
+      sideset 1 name "x-"
+      sideset 2 curve 1
+      sideset 2 name "x+"
+      sideset 3 curve 4
+      sideset 3 name "y-"
+      sideset 4 curve 2
+      sideset 4 name "y+"
+      export genesis "tri3_buoyancy.exo"
+    Exodus file: tri3_buoyancy.exo
+  element count: 500
+material models:
+  -
+    sets: ['high_ball', 'low_ball']
+    type: linear elastic
+  -
+    sets: ['fluid']
+    type: ideal gas
+conditions:
+  density:
+    - 
       sets: ['fluid']
-      type: ideal gas
-  conditions:
-    density:
-      - 
-        sets: ['fluid']
-        at time: 0.0
-        value: rho0
-      - 
-        sets: ['high_ball']
-        at time: 0.0
-        value: '0.1'
-      - 
-        sets: ['low_ball']
-        at time: 0.0
-        value: '4.0'
-    heat capacity ratio:
-      - 
-        sets: ['fluid']
-        value: gamma0
-    specific internal energy:
-      - 
-        sets: ['fluid']
-        at time: 0.0
-        # pre-equilibrate the fluid pressure to be in balance
-        # with the force of gravity
-        value: |
-          y = x(1);
-          (-rho0 * g * y + p0) / ((gamma0 - 1) * rho0)
-    bulk modulus:
-      - 
-        sets: ['high_ball', 'low_ball']
-        at time: 0.0
-        value: '50.0'
-    shear modulus:
-      - 
-        sets: ['high_ball', 'low_ball']
-        at time: 0.0
-        value: '50.0'
-    acceleration:
-      - 
-        value: 'vector(a(0), a(1) - g)'
-      - 
-        sets: ['x-', 'x+']
-        value: 'vector(0.0, a(1))'
-      - 
-        sets: ['y-', 'y+']
-        value: 'vector(a(0), 0.0)'
-  responses:
+      at time: 0.0
+      value: rho0
     - 
-      type: command line history
-      scalars:
-        - step
-        - time
-        - dt
+      sets: ['high_ball']
+      at time: 0.0
+      value: '0.1'
     - 
-      time period: 0.1
-      type: VTK output
-      path: buoyancy
-      fields:
-        - velocity
-        - specific internal energy
-        - stress
-        - density
-        - weight
-        - element class_id
-        - acceleration
-  adapt:
+      sets: ['low_ball']
+      at time: 0.0
+      value: '4.0'
+  heat capacity ratio:
+    - 
+      sets: ['fluid']
+      value: gamma0
+  specific internal energy:
+    - 
+      sets: ['fluid']
+      at time: 0.0
+      # pre-equilibrate the fluid pressure to be in balance
+      # with the force of gravity
+      value: |
+        y = x(1);
+        (-rho0 * g * y + p0) / ((gamma0 - 1) * rho0)
+  bulk modulus:
+    - 
+      sets: ['high_ball', 'low_ball']
+      at time: 0.0
+      value: '100.0'
+  shear modulus:
+    - 
+      sets: ['high_ball', 'low_ball']
+      at time: 0.0
+      value: '100.0'
+  acceleration:
+    - 
+      value: 'vector(a(0), a(1) - g)'
+    - 
+      sets: ['x-', 'x+']
+      value: 'vector(0.0, a(1))'
+    - 
+      sets: ['y-', 'y+']
+      value: 'vector(a(0), 0.0)'
+responses:
+  - 
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt
+  - 
+    time period: 0.1
+    type: VTK output
+    path: buoyancy
+    fields:
+      - velocity
+      - specific internal energy
+      - stress
+      - density
+      - weight
+      - element class_id
+      - acceleration
+adapt:

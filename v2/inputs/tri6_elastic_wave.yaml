@@ -1,25 +1,24 @@
-lgr:
-  CFL: 0.9
-  end time: 1.0e-3
-  element type: Tri6
-  mesh:
-    add mid edge nodes: true
-    box:
-      x elements: 3
-      x size: 3.0
-      y elements: 1
-      y size: 1.0
-  common fields:
-    density: 1000.0
+CFL: 0.9
+end time: 1.0e-3
+element type: Tri6
+mesh:
+  add mid edge nodes: true
+  box:
+    x elements: 3
+    x size: 3.0
+    y elements: 1
+    y size: 1.0
+common fields:
+  density: 1000.0
 #    velocity: 'vector(1e-4 * exp(-(x(0) - 0.5)^2 / (2 * (0.05)^2)), 0.0)'
-    velocity: 'vector(1, 0)'
-  material models:
-    - 
-      type: linear elastic
-      bulk modulus: 1.0e9
-      shear modulus: 0.0
-  conditions:
-  scalars:
+  velocity: 'vector(1, 0)'
+material models:
+  - 
+    type: linear elastic
+    bulk modulus: 1.0e9
+    shear modulus: 0.0
+conditions:
+scalars:
 #    velocity error:
 #      type: L2 error
 #      field: velocity
@@ -33,19 +32,19 @@ lgr:
 #        val3 = -0.5e-4 * exp(-(x(0) - mid3)^2 / (2 * (0.05)^2));
 #        val4 = -0.5e-4 * exp(-(x(0) - mid4)^2 / (2 * (0.05)^2));
 #        vector(val1 + val2 + val3 + val4, 0.0)
-  responses:
-    - 
-      time period: 1.0e-5
-      type: VTK output
-      fields:
-        - velocity
-        - density
-   - 
-     type: command line history
-     scalars:
-       - step
-       - time
-       - dt
+responses:
+  - 
+    time period: 1.0e-5
+    type: VTK output
+    fields:
+      - velocity
+      - density
+ - 
+   type: command line history
+   scalars:
+     - step
+     - time
+     - dt
 #      - velocity error
 #  - 
 #    type: comparison
