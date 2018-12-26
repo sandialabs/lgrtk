@@ -3,6 +3,7 @@
 #include <Omega_h_file.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_vtk.hpp>
+#include <Omega_h_map.hpp>
 #include <lgr_field_index.hpp>
 #include <lgr_response.hpp>
 #include <lgr_simulation.hpp>
@@ -259,9 +260,19 @@ Omega_h::Read<T> gather_pt(Omega_h::Read<T> data, int nents, int npoints,
   return pt_data;
 }
 
+static void write_subset_array(std::ostream& file,
+    std::string const& name, int const ncomps, Omega_h::Reals subset_data, bool compress,
+    Mapping const& mapping, int const nents) {
+  if (mapping.is_identity) {
+    Omega_h::vtk::write_array(file, name, ncomps, subset_data, compress);
+  } else {
+    auto full_data = Omega_h::map_onto(subset_data, mapping.things, nents, 0.0, 1);
+    Omega_h::vtk::write_array(file, name, ncomps, full_data, compress);
+  }
+}
+
 static void write_multi_point_lgr_field(std::ostream& file,
-    Simulation& sim, Field& field, int ent_dim, bool compress) {
-  OMEGA_H_CHECK(ent_dim = sim.disc.dim());
+    Simulation& sim, Field& field, bool compress) {
   auto data = field.get();
   auto ncomps = field.ncomps;
   auto nents = sim.disc.count(ELEMS);
@@ -269,7 +280,7 @@ static void write_multi_point_lgr_field(std::ostream& file,
   for (int pt = 0; pt < npoints; ++pt) {
     auto pt_data = gather_pt(data, nents, npoints, ncomps, pt);
     auto pt_name = field.long_name + "_" + std::to_string(pt);
-    Omega_h::vtk::write_array(file, pt_name, ncomps, pt_data, compress);
+    write_subset_array(file, pt_name, ncomps, pt_data, compress, field.support->subset->mapping, nents);
   }
 }
 
@@ -281,10 +292,12 @@ static void write_lgr_fields(std::ostream& file, Simulation& sim,
     auto& field = sim.fields[fi];
     auto support = field.support;
     if (support->on_points() && (sim.disc.points_per_ent(ELEMS) > 1)) {
-      write_multi_point_lgr_field(file, sim, field, ent_dim, compress);
+      write_multi_point_lgr_field(file, sim, field, compress);
     } else {
-      Omega_h::vtk::write_array(file, field.long_name, field.ncomps,
-          field.get(), compress);
+      auto const array = field.get();
+      auto const ent_type = (ent_dim == 0) ? NODES : ELEMS;
+      auto const nents = sim.disc.count(ent_type);
+      write_subset_array(file, field.long_name, field.ncomps, field.get(), compress, field.support->subset->mapping, nents);
     }
   }
 }
@@ -315,8 +328,6 @@ static void write_vtu(std::string const& step_path, Simulation& sim,
   file << "</Piece>\n";
   file << "</UnstructuredGrid>\n";
   file << "</VTKFile>\n";
-  (void)lgr_fields;
-  (void)osh_fields;
 }
 
 static void write_parallel(std::string const& step_path, Simulation& sim,
