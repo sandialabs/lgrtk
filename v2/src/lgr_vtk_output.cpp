@@ -121,7 +121,7 @@ static void describe_osh_tags(std::ostream& file, Simulation& sim,
 
 static void describe_multi_point_lgr_field(std::ostream& file,
     Simulation& sim, Field& field, int ent_dim) {
-  OMEGA_H_CHECK(ent_dim = sim.disc.dim());
+  OMEGA_H_CHECK(ent_dim == sim.disc.dim());
   auto npoints = sim.disc.points_per_ent(ELEMS);
   for (int pt = 0; pt < npoints; ++pt) {
     auto pt_name = field.long_name + "_" + std::to_string(pt);
