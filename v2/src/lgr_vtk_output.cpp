@@ -266,7 +266,7 @@ static void write_subset_array(std::ostream& file,
   if (mapping.is_identity) {
     Omega_h::vtk::write_array(file, name, ncomps, subset_data, compress);
   } else {
-    auto full_data = Omega_h::map_onto(subset_data, mapping.things, nents, 0.0, 1);
+    auto full_data = Omega_h::map_onto(subset_data, mapping.things, nents, 0.0, ncomps);
     Omega_h::vtk::write_array(file, name, ncomps, full_data, compress);
   }
 }
