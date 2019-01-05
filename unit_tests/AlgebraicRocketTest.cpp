@@ -29,8 +29,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   const Plato::Scalar tChamberRadius = 0.075; // m
   const Plato::Scalar tChamberLength = 0.65; // m
   auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(tChamberRadius, tChamberLength);
+  tCylinder->compute_arrival_time_for_assumed_burn_rate();
   const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
 
-  Plato::AlgebraicRocketModel<double> tDriver(tRocketInputs, tCylinder);
+  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }

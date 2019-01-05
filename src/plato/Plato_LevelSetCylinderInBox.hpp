@@ -99,16 +99,15 @@ public:
 
     /******************************************************************************//**
      * @brief Default constructor
-    **********************************************************************************/
-    explicit LevelSetCylinderInBox(const ScalarType aRadius, const ScalarType aLength) :
+     **********************************************************************************/
+    explicit LevelSetCylinderInBox(const ScalarType aRadius, const ScalarType aLength, MPI_Comm aComm = MPI_COMM_WORLD) :
+            mComm(aComm),
             mRadius(aRadius),
             mLength(aLength)
     {
-      build_mesh();
-      compute_arrival_time_for_assumed_burn_rate();
-
-      mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
-      write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+        this->build_mesh();
+        mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
+        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
     }
 
     /******************************************************************************//**
@@ -133,9 +132,7 @@ public:
     **********************************************************************************/
     void gradient(std::vector<ScalarType>& aOutput)
     {
-        assert(aOutput.size() == static_cast<size_t>(2));
-        aOutput[0] = static_cast<ScalarType>(2) * M_PI * mLength;
-        aOutput[1] = static_cast<ScalarType>(2) * M_PI * mRadius;
+        return;
     }
 
     /******************************************************************************//**
@@ -167,6 +164,19 @@ public:
         }
     }
 
+    void compute_arrival_time_for_assumed_burn_rate()
+    {
+      LevelSetInitialCondition initialCondition(mRadius, mLength);
+      initialize_level_set(mMesh, mHamiltonJacobiFields, initialCondition);
+
+      const Plato::Scalar maxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, mAssumedBurnRate);
+      const Plato::Scalar dx = mesh_minimum_length_scale<SpatialDim>(mMesh);
+      const Plato::Scalar dtau = 0.2*dx / maxSpeed; // Units of time
+      mInterfaceWidth = 1.5*dx / maxSpeed; // Should have same units as level set
+
+      compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, dtau);
+    }
+
 private:
     /******************************************************************************//**
      * @brief update initial configuration
@@ -176,11 +186,12 @@ private:
     {
         assert(aParam.find("Radius") != aParam.end());
         mRadius = aParam.find("Radius")->second;
-
         if(aParam.find("Length") != aParam.end())
         {
             mLength = aParam.find("Length")->second;
         }
+
+        this->compute_arrival_time_for_assumed_burn_rate();
     }
 
     /******************************************************************************//**
@@ -202,13 +213,15 @@ private:
         ++mStep;
 
         const size_t printInterval = 1000; // How often do you want to output mesh?
-        if (mStep % printInterval == 0)
-          write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+        if(mStep % printInterval == 0)
+        {
+            write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+        }
     }
 
     void build_mesh()
     {
-      auto libOmegaH = std::make_shared<Omega_h::Library>();
+      auto libOmegaH = std::make_shared<Omega_h::Library>(nullptr, nullptr, mComm);
       const Plato::Scalar Lx = mLength;
       const Plato::Scalar Ly = mLength;
       const Plato::Scalar Lz = mLength;
@@ -219,20 +232,8 @@ private:
       declare_fields(mMesh, mHamiltonJacobiFields);
     }
 
-    void compute_arrival_time_for_assumed_burn_rate()
-    {
-      LevelSetInitialCondition initialCondition(mRadius, mLength);
-      initialize_level_set(mMesh, mHamiltonJacobiFields, initialCondition);
-
-      const Plato::Scalar maxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, mAssumedBurnRate);
-      const Plato::Scalar dx = mesh_minimum_length_scale<SpatialDim>(mMesh);
-      const Plato::Scalar dtau = 0.2*dx / maxSpeed; // Units of time
-      mInterfaceWidth = 1.5*dx / maxSpeed; // Should have same units as level set
-
-      compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, dtau);
-    }
-
 private:
+    MPI_Comm mComm;
     ProblemFields<SpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;

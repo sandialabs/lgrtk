@@ -36,10 +36,13 @@ int main(int aArgc, char **aArgv)
       MPI_Finalize();
     }
 
+    MPI_Comm tLocalComm;
+    tPlatoInterface->getLocalComm(tLocalComm);
+
     Plato::RocketApp* tMyApp = nullptr;
     try
     {
-      tMyApp = new Plato::RocketApp(aArgc, aArgv);
+      tMyApp = new Plato::RocketApp(aArgc, aArgv, tLocalComm);
     }
     catch(...)
     {
@@ -58,6 +61,7 @@ int main(int aArgc, char **aArgv)
     }
 
     tPlatoInterface->perform();
+    tMyApp->printSolution();
 
     delete tMyApp;
 

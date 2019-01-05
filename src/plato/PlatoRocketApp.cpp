@@ -5,6 +5,7 @@
  */
 
 #include <numeric>
+#include <fstream>
 
 #include "plato/PlatoRocketApp.hpp"
 #include "plato/Plato_LevelSetCylinderInBox.hpp"
@@ -16,6 +17,7 @@ namespace Plato
  * @brief Default constructor
 **********************************************************************************/
 RocketApp::RocketApp() :
+        mComm(MPI_COMM_NULL),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -26,7 +28,8 @@ RocketApp::RocketApp() :
 /******************************************************************************//**
  * @brief Constructor
 **********************************************************************************/
-RocketApp::RocketApp(int aArgc, char **aArgv) :
+RocketApp::RocketApp(int aArgc, char **aArgv, MPI_Comm & aComm) :
+        mComm(aComm),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -41,12 +44,39 @@ RocketApp::~RocketApp()
 {
 }
 
+void RocketApp::printSolution()
+{
+    Plato::OrdinalType tMyProcID = 0;
+    MPI_Comm_rank(mComm, &tMyProcID);
+    if(tMyProcID == static_cast<Plato::OrdinalType>(0))
+    {
+        std::string tArgumentName = "DesignVariables";
+        auto tIterator = mSharedDataMap.find(tArgumentName);
+        assert(tIterator != mSharedDataMap.end());
+        std::vector<Plato::Scalar> & tControl = tIterator->second;
+
+        tArgumentName = "NormalizationConstants";
+        tIterator = mSharedDataMap.find(tArgumentName);
+        assert(tIterator != mSharedDataMap.end());
+        std::vector<Plato::Scalar> & tNormalizationConstants = tIterator->second;
+
+        const Plato::Scalar tRadius = tControl[0] * tNormalizationConstants[0];
+        const Plato::Scalar tRefBurnRate = tControl[1] * tNormalizationConstants[1];
+
+        std::ofstream tMyFile;
+        tMyFile.open ("solution.txt");
+        tMyFile << "Radius = " << tRadius << "\n";
+        tMyFile << "RefBurnRate = " << tRefBurnRate << "\n";
+        tMyFile.close();
+    }
+}
+
 /******************************************************************************//**
  * @brief Deallocate memory
 **********************************************************************************/
 void RocketApp::finalize()
 {
-    // MEMORY MANAGEMENT AUTOMATED, NO NEED TO EXPLICITLY DEALLOCATE MEMORY
+    // MEMORY MANAGEMENT AUTOMATED, NO NEED TO DEALLOCATE MEMORY
     return;
 }
 
@@ -183,10 +213,11 @@ void RocketApp::setRocketDriver()
     const Plato::Scalar tChamberRadius = 0.075; // m
     const Plato::Scalar tChamberLength = 0.65; // m
     std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeomModel =
-            std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(tChamberRadius, tChamberLength);
+            std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(tChamberRadius, tChamberLength, mComm);
 
     Plato::AlgebraicRocketInputs<Plato::Scalar> tDefaultInputs;
     mRocketDriver = std::make_shared<Plato::AlgebraicRocketModel<Plato::Scalar>>(tDefaultInputs, tGeomModel);
+    mRocketDriver->disableOutput();
 }
 
 /******************************************************************************//**
@@ -204,26 +235,40 @@ void RocketApp::defineOperations()
 void RocketApp::setDefaultTargetThrustProfile()
 {
     std::vector<Plato::Scalar> tThrustProfile =
-    {   0, 1656714.377766964, 1684717.520617273, 1713123.001583093, 1741935.586049868, 1771160.083875437,
-        1800801.349693849, 1830864.28322051, 1861353.829558637, 1892274.979507048, 1923632.769869272,
-        1955432.283763989, 1987678.650936801, 2020377.048073344, 2053532.699113719, 2087150.875568287,
-        2121236.896834771, 2155796.130516737, 2190833.992743404, 2226355.948490792, 2262367.511904243,
-        2298874.246622283, 2335881.766101836, 2373395.733944806, 2411421.864226017, 2449965.921822503,
-        2489033.722744186, 2528631.134465915, 2568764.076260844, 2609438.519535244, 2650660.488164633,
-        2692436.058831303, 2734771.361363255, 2777672.579074459, 2821145.949106557, 2865197.762771913,
-        2909834.365898075, 2955062.159173611, 3000887.598495364, 3047317.195317072, 3094357.516999425,
-        3142015.18716148, 3190296.886033527, 3239209.350811319, 3288759.376011737, 3338953.813829865,
-        3389799.574497465, 3441303.626642879, 3493472.997652346, 3546314.774032734, 3599836.101775718,
-        3654044.186723352, 3708946.294935087, 3764549.753056224, 3820861.948687783, 3877890.330757833,
-        3935642.409894215, 3994125.758798767, 4053348.012622938, 4113316.869344868, 4174040.090147917,
-        4235525.499800648, 4297780.987038235, 4360814.504945371, 4424634.071340578, 4489247.76916203,
-        4554663.746854796, 4620890.218759571, 4687935.465502855, 4755807.834388626, 4824515.739791448,
-        4894067.663551098, 4964472.155368621, 5035737.83320389, 5107873.383674653, 5180887.562457044,
-        5254789.194687578, 5329587.175366664, 5405290.469763565, 5481908.11382287, 5559449.214572486,
-        5637922.950533082, 5717338.572129052, 5797705.402100981, 5879032.835919643, 5961330.342201422,
-        6044607.46312535, 6128873.814851565, 6214139.087941348, 6300413.047778608, 6387705.534992979,
-        6476026.465884338, 6565385.832848894, 6655793.704806847, 6747260.227631442, 6839795.624579719,
-        6933410.196724654, 7028114.32338894, 7123918.462580209, 7220833.151427887};
+    {0, 1658225.96301779104, 1684599.35308251064, 1710191.72929578833,
+     1735516.51746973093, 1761319.78971856111, 1788474.32299472415,
+     1817051.74281903892, 1848053.60778497672, 1880941.49518394633,
+     1916101.49896604964, 1952274.23182648909, 1988247.08371756272,
+     2025364.49255605415, 2062680.45754474145, 2098144.24305555876,
+     2133059.58457374899, 2168280.54717646865, 2202359.06706217164,
+     2235786.63485889323, 2269362.61600903422, 2303606.27047893312,
+     2335968.55831982987, 2366124.24693903141, 2398322.21222466091,
+     2434967.60986522399, 2474766.42476609442, 2515758.39447587077,
+     2555562.94606091594, 2598351.59772849502, 2643361.82917793794,
+     2689612.44766329601, 2736886.53526937729, 2784774.40230861725,
+     2833698.64203229547, 2882691.37882861448, 2930314.53433794295,
+     2973845.2476535202, 3014411.95485122781, 3053344.35515435785,
+     3093609.95011549396, 3136012.24460697407, 3179548.32224763138,
+     3224104.45371416444, 3272727.42383094644, 3325044.09918975038,
+     3375921.5864060251, 3426710.62721839268, 3478150.53201142279,
+     3535954.48766951077, 3600047.85890252888, 3666681.63734701369,
+     3731431.69178802939, 3790535.23900091508, 3845553.0628477498,
+     3897589.02069075312, 3944554.81866455032, 3994468.19636945101,
+     4050443.68018117454, 4106261.75979240146, 4161161.0958835152,
+     4220500.30987357534, 4281020.20508432388, 4338719.01243665628,
+     4398616.88256580941, 4467635.24324372411, 4546787.37910916004,
+     4626455.44047849253, 4707397.23780253809, 4783792.29538778123,
+     4854935.16257551499, 4919399.44213557336, 4977671.61547120474,
+     5041505.24270366877, 5113173.07470646407, 5182463.6731977351,
+     5246042.58420176338, 5308069.2641470544, 5378333.32595723867,
+     5452794.42908227444, 5530334.15620550793, 5614074.4806811465,
+     5709559.24524913542, 5807675.62193106115, 5901984.70578025375,
+     5987027.20662646182, 6072012.90696318354, 6156511.17011062615,
+     6237224.14467318635, 6314341.17838649545, 6394109.84751804452,
+     6472279.52941741887, 6541642.18780869804, 6620624.62667534687,
+     6714259.09761043079, 6809373.66328622587, 6909013.93939755578,
+     7016550.60471259616, 7124790.91800781339, 7230958.52803643327};
+
     std::string tArgumentName = "TargetThrustProfile";
     mSharedDataMap[tArgumentName] = tThrustProfile;
     mDefinedDataLayout[tArgumentName] = Plato::data::SCALAR;
@@ -250,7 +295,7 @@ void RocketApp::defineSharedDataMaps()
     mSharedDataMap[tName] = std::vector<Plato::Scalar>(mNumDesigVariables);
     mDefinedDataLayout[tName] = Plato::data::SCALAR;
 
-    tName = "ThrustMisfitObjectiveGradient";
+    tName = "ObjFuncGrad";
     mSharedDataMap[tName] = std::vector<Plato::Scalar>(mNumDesigVariables);
     mDefinedDataLayout[tName] = Plato::data::SCALAR;
 
@@ -323,7 +368,7 @@ void RocketApp::evaluateObjFuncGrad()
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tTargetThrustProfile = tIterator->second;
 
-    tArgumentName = "ThrustMisfitObjectiveGradient";
+    tArgumentName = "ObjFuncGrad";
     tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tGradient = tIterator->second;
@@ -340,8 +385,8 @@ void RocketApp::computeObjFuncGrad(const std::vector<Plato::Scalar> & aControl,
                                    std::vector<Plato::Scalar> & aOutput)
 {
     Plato::Scalar tEpsilon = 1e-4;
+    std::vector<Plato::Scalar> tControlCopy(aControl);
     const Plato::OrdinalType tNumControls = aControl.size();
-    std::vector<Plato::Scalar> tControlCopy(tNumControls);
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumControls; tIndex++)
     {
         // modify base value - forward

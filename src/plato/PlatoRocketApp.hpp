@@ -8,6 +8,8 @@
 
 #include <memory>
 
+#include <mpi.h>
+
 #include <Plato_Application.hpp>
 
 #include "plato/PlatoTypes.hpp"
@@ -27,7 +29,7 @@ public:
     /******************************************************************************//**
      * @brief Constructor
     **********************************************************************************/
-    RocketApp(int aArgc, char **aArgv);
+    RocketApp(int aArgc, char **aArgv, MPI_Comm & aComm);
 
     /******************************************************************************//**
      * @brief Destructor
@@ -71,6 +73,11 @@ public:
      * @param [out] aMyOwnedGlobalIDs my processor's global IDs
     **********************************************************************************/
     void exportDataMap(const Plato::data::layout_t & aDataLayout, std::vector<int> & aMyOwnedGlobalIDs);
+
+    /******************************************************************************//**
+     * @brief Print solution to file
+    **********************************************************************************/
+    void printSolution();
 
 private:
     /******************************************************************************//**
@@ -152,6 +159,7 @@ private:
                             std::vector<Plato::Scalar> & aOutput);
 
 private:
+    MPI_Comm mComm; /*!< local mpi communicator */
     size_t mNumDesigVariables; /*!< import/export parameter map */
 
     std::shared_ptr<Plato::AlgebraicRocketModel<Plato::Scalar>> mRocketDriver; /*!< rocket driver */
