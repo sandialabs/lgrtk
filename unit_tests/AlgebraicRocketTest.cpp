@@ -14,24 +14,24 @@
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketAnalyticalCylinder)
 {
-  const Plato::Scalar ChamberRadius = 0.075; // m
-  const Plato::Scalar ChamberLength = 0.65; // m
-  auto cylinder = std::make_shared<Plato::Cylinder<Plato::Scalar>>(ChamberRadius, ChamberLength);
+  const Plato::Scalar tChamberRadius = 0.075; // m
+  const Plato::Scalar tChamberLength = 0.65; // m
+  auto tCylinder = std::make_shared<Plato::Cylinder<Plato::Scalar>>(tChamberRadius, tChamberLength);
 
-  const Plato::AlgebraicRocketInputs<Plato::Scalar> rocketInputs;
+  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
 
-  Plato::AlgebraicRocketModel<double> tDriver(rocketInputs, cylinder);
+  Plato::AlgebraicRocketModel<double> tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
 {
-  const Plato::Scalar ChamberRadius = 0.075; // m
-  const Plato::Scalar ChamberLength = 0.65; // m
-  auto cylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(ChamberRadius, ChamberLength);
+  const Plato::Scalar tChamberRadius = 0.075; // m
+  const Plato::Scalar tChamberLength = 0.65; // m
+  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(tChamberRadius, tChamberLength);
+  tCylinder->compute_arrival_time_for_assumed_burn_rate();
+  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
 
-  const Plato::AlgebraicRocketInputs<Plato::Scalar> rocketInputs;
-
-  Plato::AlgebraicRocketModel<double> tDriver(rocketInputs, cylinder);
+  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }
