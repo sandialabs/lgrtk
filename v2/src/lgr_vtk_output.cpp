@@ -88,6 +88,8 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   path(pl.get<std::string>("path", "lgr_viz")),
   pvd_pos(0)
 {
+  set_fields(pl);
+  if (sim.no_output) return;
   auto const comm = sim.comm;
   auto const rank = comm->rank();
   if (rank == 0) Omega_h::filesystem::create_directory(path);
@@ -96,7 +98,6 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   if (rank == 0) Omega_h::filesystem::create_directory(steps_dir);
   comm->barrier();
   if (rank == 0) pvd_pos = Omega_h::vtk::write_initial_pvd(path, sim.time);
-  set_fields(pl);
 }
 
 static void write_step_dirs(Omega_h::filesystem::path const& step_path,
