@@ -163,6 +163,12 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
       if (ret != 0) Omega_h_fail("Running CUBIT failed!\n");
     }
     mesh = Omega_h::read_mesh_file(exodus_path, comm);
+    if (!cubit_pl.get<bool>("keep files", "false")) {
+      if (comm->rank() == 0) {
+        Omega_h::filesystem::remove(journal_path);
+        Omega_h::filesystem::remove(exodus_path);
+      }
+    }
 #else
     Omega_h_fail(
         "CUBIT mesh requested but LGRTK not compiled with CUBIT support!\n");
