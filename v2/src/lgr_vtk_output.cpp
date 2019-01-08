@@ -22,7 +22,7 @@ struct VtkOutput : public Response {
     void respond() override final;
   public:
     bool compress;
-    std::string path;
+    Omega_h::filesystem::path path;
     std::streampos pvd_pos;
     LgrFields lgr_fields[4];
     OshFields osh_fields[4];
@@ -88,23 +88,23 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   path(pl.get<std::string>("path", "lgr_viz")),
   pvd_pos(0)
 {
-  auto comm = sim.comm;
-  auto rank = comm->rank();
-  if (rank == 0) Omega_h::safe_mkdir(path.c_str());
+  auto const comm = sim.comm;
+  auto const rank = comm->rank();
+  if (rank == 0) Omega_h::filesystem::create_directory(path);
   comm->barrier();
-  auto steps_dir = path + "/steps";
-  if (rank == 0) Omega_h::safe_mkdir(steps_dir.c_str());
+  auto const steps_dir = path / "steps";
+  if (rank == 0) Omega_h::filesystem::create_directory(steps_dir);
   comm->barrier();
   if (rank == 0) pvd_pos = Omega_h::vtk::write_initial_pvd(path, sim.time);
   set_fields(pl);
 }
 
-static void write_step_dirs(std::string const& step_path,
+static void write_step_dirs(Omega_h::filesystem::path const& step_path,
     Omega_h::CommPtr comm) {
-  if (comm->rank() == 0) Omega_h::safe_mkdir(step_path.c_str());
+  if (comm->rank() == 0) Omega_h::filesystem::create_directory(step_path);
   comm->barrier();
-  auto pieces_dir = step_path + "/pieces";
-  if (comm->rank() == 0) Omega_h::safe_mkdir(pieces_dir.c_str());
+  auto const pieces_dir = step_path / "pieces";
+  if (comm->rank() == 0) Omega_h::filesystem::create_directory(pieces_dir);
   comm->barrier();
 }
 
@@ -145,15 +145,19 @@ static void describe_lgr_fields(std::ostream& file, Simulation& sim,
   }
 }
 
-static std::string piece_filename(int rank) {
-  return "pieces/piece_" + Omega_h::to_string(rank) + ".vtu";
+static Omega_h::filesystem::path piece_filename(int rank) {
+  Omega_h::filesystem::path result("pieces");
+  result /= "piece_";
+  result += std::to_string(rank);
+  result += ".vtu";
+  return result;
 }
 
-static void write_pvtu(std::string const& step_path, Simulation& sim,
+static void write_pvtu(Omega_h::filesystem::path const& step_path, Simulation& sim,
     LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   if (sim.comm->rank() != 0) return;
-  auto dim = sim.disc.mesh.dim();
-  auto pvtu_name = step_path + "/pieces.pvtu";
+  auto const dim = sim.disc.mesh.dim();
+  auto const pvtu_name = step_path / "pieces.pvtu";
   std::ofstream file(pvtu_name.c_str());
   OMEGA_H_CHECK(file.is_open());
   file << "<VTKFile type=\"PUnstructuredGrid\">\n";
@@ -302,11 +306,11 @@ static void write_lgr_fields(std::ostream& file, Simulation& sim,
   }
 }
 
-static void write_vtu(std::string const& step_path, Simulation& sim,
+static void write_vtu(Omega_h::filesystem::path const& step_path, Simulation& sim,
     bool compress, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
-  auto dim = sim.disc.dim();
-  auto vtu_name = step_path + "/" + piece_filename(sim.comm->rank());
+  auto const dim = sim.disc.dim();
+  auto const vtu_name = step_path / piece_filename(sim.comm->rank());
   std::ofstream file(vtu_name.c_str());
   Omega_h::vtk::write_vtkfile_vtu_start_tag(file, compress);
   file << "<UnstructuredGrid>\n";
@@ -330,7 +334,7 @@ static void write_vtu(std::string const& step_path, Simulation& sim,
   file << "</VTKFile>\n";
 }
 
-static void write_parallel(std::string const& step_path, Simulation& sim,
+static void write_parallel(Omega_h::filesystem::path const& step_path, Simulation& sim,
     bool compress,  LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
   write_step_dirs(step_path, sim.comm);
@@ -344,7 +348,10 @@ void VtkOutput::respond() {
   sim.disc.set_node_coords(sim.get(sim.position));
   auto const step = sim.step;
   auto const time = sim.time;
-  auto const step_path = path + "/steps/step_" + std::to_string(step);
+  auto step_path = path;
+  step_path /= "steps";
+  step_path /= "step_";
+  step_path += std::to_string(step);
   write_parallel(step_path, sim, compress, lgr_fields, osh_fields);
   if (this->sim.comm->rank() == 0) {
     Omega_h::vtk::update_pvd(path, &pvd_pos, step, time);

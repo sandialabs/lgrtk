@@ -129,7 +129,7 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
 #ifdef LGR_USE_CUBIT
     auto& cubit_pl = pl.get_map("CUBIT");
     auto cubit_path = LGR_CUBIT;
-    std::string journal_path;
+    Omega_h::filesystem::path journal_path;
     if (cubit_pl.is<std::string>("commands")) {
       auto commands = cubit_pl.get<std::string>("commands");
       journal_path =
@@ -142,10 +142,11 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     } else {
       journal_path = cubit_pl.get<std::string>("journal file");
     }
-    OMEGA_H_CHECK(Omega_h::ends_with(journal_path, ".jou"));
-    auto default_exodus_path =
-        journal_path.substr(0, journal_path.length() - 3) + "exo";
-    auto exodus_path =
+    OMEGA_H_CHECK(journal_path.extension().string() == ".jou");
+    auto default_exodus_path = journal_path.parent_path();
+    default_exodus_path /= journal_path.stem();
+    default_exodus_path += ".exo";
+    Omega_h::filesystem::path exodus_path =
         cubit_pl.get<std::string>("Exodus file", default_exodus_path.c_str());
     std::stringstream system_stream;
     system_stream << cubit_path << ' ';
