@@ -2,7 +2,8 @@
 #include <Omega_h_for.hpp>
 #include <Omega_h_int_scan.hpp>
 #include <Omega_h_mesh.hpp>
-#include <Omega_h_simplex.hpp>
+#include <Omega_h_element.hpp>
+#include <lgr_for.hpp>
 #include <lgr_quadratic.hpp>
 
 namespace lgr {
@@ -89,8 +90,8 @@ static Omega_h::Adj get_adj(Omega_h::Mesh& mesh, int const holder_dim, int const
   if (holder_dim < ent_dim) {
     return mesh.ask_up(holder_dim, ent_dim);
   }
-  auto const nholders = mesh.count(holder_dim);
-  Omega_h::Adj adj = identity_graph(nholders);
+  auto const nholders = mesh.nents(holder_dim);
+  Omega_h::Adj adj = Omega_h::identity_graph(nholders);
   adj.codes = decltype(adj.codes)(nholders, Omega_h::I8(0), "fake codes");
   return adj;
 }
