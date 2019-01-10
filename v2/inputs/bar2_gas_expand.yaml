@@ -26,10 +26,12 @@ scalars:
 responses:
   - 
     type: VTK output
+    path: bar2_gas_expand
     fields:
       - velocity
       - specific internal energy
       - stress
+      - wave speed
   - 
     type: command line history
     scalars:
@@ -44,4 +46,4 @@ responses:
     scalar: stress error
     expected value: '0.0'
     tolerance: 0.0
-    floor: 5.0e-7
+    floor: 5.0e-4
