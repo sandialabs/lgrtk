@@ -9,7 +9,7 @@ enum class RemapType {
   SHAPE,
   PER_UNIT_VOLUME,
   PER_UNIT_MASS,
-  POSITIVE_DETERMINANT,
+  POLAR_REMAP,
 };
 
 }
