@@ -11,7 +11,7 @@ RemapBase::RemapBase(Simulation& sim_in) : sim(sim_in) {
     if (field_ptr->remap_type != RemapType::NONE) {
       fields_to_remap[field_ptr->remap_type].push_back(field_ptr->long_name);
       field_indices_to_remap.push_back(sim.fields.find(field_ptr->long_name));
-      if (field_ptr->remap_type == RemapType::POLAR_REMAP) {
+      if (field_ptr->remap_type == RemapType::POLAR) {
         fields_to_remap[RemapType::PER_UNIT_VOLUME].push_back(
             field_ptr->long_name);
       }
@@ -126,7 +126,7 @@ struct Remap : public RemapBase {
 template <class Elem>
 void Remap<Elem>::before_adapt() {
   Omega_h::ScopedTimer timer("Remap::before_adapt");
-  for (auto& name : fields_to_remap[RemapType::POLAR_REMAP]) {
+  for (auto& name : fields_to_remap[RemapType::POLAR]) {
     auto const fi = sim.fields.find(name);
     auto const points_to_F = sim.getset(fi);
     auto const npoints = sim.fields[fi].support->count();
@@ -505,7 +505,7 @@ void Remap<Elem>::after_adapt() {
       Omega_h::deep_copy(sim.disc.get_node_coords());
   sim.fields.copy_from_omega_h(sim.disc, field_indices_to_remap);
   sim.fields.remove_from_omega_h(sim.disc, field_indices_to_remap);
-  for (auto& name : fields_to_remap[RemapType::POLAR_REMAP]) {
+  for (auto& name : fields_to_remap[RemapType::POLAR]) {
     auto const fi = sim.fields.find(name);
     auto const points_to_F = sim.getset(fi);
     auto const npoints = sim.fields[fi].support->count();
