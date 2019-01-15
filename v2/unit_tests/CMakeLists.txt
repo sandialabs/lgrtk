@@ -4,6 +4,7 @@ set(unit_test_exes
   mie_gruneisen_unit_tests.cpp
   linear_algebra_unit_tests.cpp
   circuit_unit_tests.cpp
+  tri6_unit_tests.cpp
   )
 
 if(LGR_COMPTET)
