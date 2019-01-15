@@ -17,6 +17,7 @@ using Omega_h::trace;
 using Omega_h::transpose;
 using Omega_h::Vector;
 using Omega_h::zero_vector;
+using Omega_h::zero_matrix;
 
 }  // namespace lgr
 

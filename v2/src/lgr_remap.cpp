@@ -6,7 +6,7 @@
 
 namespace lgr {
 
-RemapBase::RemapBase(Simulation& sim_in) : sim(sim_in) {
+RemapBase::RemapBase(Simulation& sim_in, Omega_h::InputMap& pl) : sim(sim_in) {
   for (auto& field_ptr : sim.fields.storage) {
     if (field_ptr->remap_type != RemapType::NONE) {
       fields_to_remap[field_ptr->remap_type].push_back(field_ptr->long_name);
@@ -17,6 +17,7 @@ RemapBase::RemapBase(Simulation& sim_in) : sim(sim_in) {
       }
     }
   }
+  axis_angle_tolerance = pl.get<double>("axis angle tolerance", "1.0e-6");
 }
 
 void RemapBase::out_of_line_virtual_method() {}
@@ -69,7 +70,7 @@ static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
 
 template <class Elem>
 struct Remap : public RemapBase {
-  Remap(Simulation& sim_in) : RemapBase(sim_in) {}
+  Remap(Simulation& sim_in, Omega_h::InputMap& pl) : RemapBase(sim_in, pl) {}
   void before_adapt() override final;
   Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh,
       int ent_dim, int ncomps, Omega_h::LOs same_ents2old_ents,
@@ -87,9 +88,9 @@ struct Remap : public RemapBase {
       Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
       Omega_h::Tag<double> const* tag);
   void refine_point_remap_polar(Omega_h::Mesh& old_mesh,
-      Omega_h::Mesh& new_mesh, int key_dim, int prod_dim, Omega_h::LOs keys2kds,
-      Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
-      Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+      Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds,
+      Omega_h::LOs const keys2prods, Omega_h::LOs const prods2new_ents,
+      Omega_h::LOs const same_ents2old_ents, Omega_h::LOs const same_ents2new_ents,
       Omega_h::Tag<double> const* tag);
   void coarsen_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
       int prod_dim, Omega_h::LOs keys2prods, Omega_h::LOs key_doms2doms,
@@ -269,7 +270,6 @@ void Remap<Elem>::refine_point_remap_ncomps(Omega_h::Mesh& old_mesh,
 }
 
 template <class Elem>
-template <class Weighter>
 void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
     Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds,
     Omega_h::LOs const keys2prods, Omega_h::LOs const prods2new_ents,
@@ -279,29 +279,36 @@ void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
   auto const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
       tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
   auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
-  Weighter weighter(old_mesh);
+  MassWeighter weighter(old_mesh);
+  auto const local_tolerance = this->axis_angle_tolerance;
   auto new_functor = OMEGA_H_LAMBDA(int const key) {
     auto const kd = keys2kds[key];
-    auto const prod = keys2prods[key];
+    auto prod = keys2prods[key];
     auto const begin = kds2doms.a2ab[kd];
     auto const end = kds2doms.a2ab[kd + 1];
     for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
       auto const dom = kds2doms.ab2b[kd_dom];
-      auto value = zero_matrix<Elem::dim, Elem::dim>();
+      Omega_h::Few<Matrix<Elem::dim, Elem::dim>, Elem::points> values;
+      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
+        auto const old_point = dom * Elem::points + dom_pt;
+        auto const old_value = getfull<Elem>(old_data, old_point);
+        values[dom_pt] = old_value;
+      }
+      Omega_h::align_packed_axis_angles(values.data(), values.size(), local_tolerance);
+      auto avg_value = zero_matrix<Elem::dim, Elem::dim>();
       auto weight_sum = 0.0;
       for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
         auto const old_point = dom * Elem::points + dom_pt;
         auto const old_weight = weighter.get_weight(old_point);
         weight_sum += old_weight;
-        auto const old_value = getfull<Elem>(old_data, old_point);
-        value += old_weight * old_value;
+        avg_value += old_weight * values[dom_pt];
       }
-      value /= weight_sum;
+      avg_value /= weight_sum;
       for (int child = 0; child < 2; ++child) {
         auto const new_elem = prods2new_ents[prod];
         for (int child_pt = 0; child_pt < Elem::points; ++child_pt) {
           auto const new_point = new_elem * Elem::points + child_pt;
-          setfull<Elem>(new_data, new_point, value);
+          setfull<Elem>(new_data, new_point, avg_value);
         }
         ++prod;
       }
@@ -396,29 +403,44 @@ void Remap<Elem>::swap_point_remap_polar(Omega_h::Mesh& old_mesh, Omega_h::Mesh&
   auto const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
       tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
   auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
-  VolumeWeighter weighter;
+  auto const local_tolerance = this->axis_angle_tolerance;
+  MassWeighter weighter(old_mesh);
   auto new_functor = OMEGA_H_LAMBDA(int const key) {
     auto const kd = keys2kds[key];
-    auto value = zero_matrix<Elem::dim, Elem::dim>();
-    auto weight_sum = 0.0;
     auto const begin = kds2doms.a2ab[kd];
     auto const end = kds2doms.a2ab[kd + 1];
+    constexpr auto max_elems = Omega_h::SimplexAvgDegree<Elem::dim, 0, Elem::dim>::value * 3;
+    constexpr auto max_points = max_elems * Elem::points;
+    Omega_h::Few<Matrix<Elem::dim, Elem::dim>, max_points> values;
+    OMEGA_H_CHECK(end - begin <= max_elems);
+    int point_i = 0;
+    for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
+      auto const dom = kds2doms.ab2b[kd_dom];
+      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
+        auto const old_point = dom * Elem::points + dom_pt;
+        auto const old_value = getfull<Elem>(old_data, old_point);
+        values[point_i++] = old_value;
+      }
+    }
+    Omega_h::align_packed_axis_angles(values.data(), values.size(), local_tolerance);
+    auto avg_value = zero_matrix<Elem::dim, Elem::dim>();
+    auto weight_sum = 0.0;
+    point_i = 0;
     for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
       auto const dom = kds2doms.ab2b[kd_dom];
       for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
         auto const old_point = dom * Elem::points + dom_pt;
         auto const old_weight = weighter.get_weight(old_point);
         weight_sum += old_weight;
-        auto const old_value = getfull<Elem>(old_data, old_point);
-        value += old_weight * old_value;
+        avg_value += old_weight * values[point_i++];
       }
     }
-    value /= weight_sum;
+    avg_value /= weight_sum;
     for (auto prod = keys2prods[key]; prod < keys2prods[key + 1]; ++prod) {
       auto const new_elem = prods2new_ents[prod];
       for (int prod_pt = 0; prod_pt < Elem::points; ++prod_pt) {
         auto const new_point = new_elem * Elem::points + prod_pt;
-        setfull<Elem>(new_data, new_point, value);
+        setfull<Elem>(new_data, new_point, avg_value);
       }
     }
   };
@@ -522,7 +544,7 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     for (auto& name : fields_to_remap[RemapType::POLAR]) {
       refine_point_remap_polar(old_mesh, new_mesh, 1, prod_dim,
           keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,
-          same_ents2new_ents, name);
+          same_ents2new_ents, old_mesh.get_tag<double>(prod_dim, name));
     }
     remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents);
@@ -594,7 +616,7 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh, int pro
     for (auto& name : fields_to_remap[RemapType::POLAR]) {
       swap_point_remap_polar(old_mesh, new_mesh, 1, prod_dim,
           keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,
-          same_ents2new_ents, name);
+          same_ents2new_ents, old_mesh.get_tag<double>(prod_dim, name));
     }
     remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents);
@@ -623,12 +645,12 @@ void Remap<Elem>::after_adapt() {
 }
 
 template <class Elem>
-RemapBase* remap_factory(Simulation& sim) {
-  return new Remap<Elem>(sim);
+RemapBase* remap_factory(Simulation& sim, Omega_h::InputMap& pl) {
+  return new Remap<Elem>(sim, pl);
 }
 
 #define LGR_EXPL_INST(Elem)                                                    \
-  template RemapBase* remap_factory<Elem>(Simulation&);
+  template RemapBase* remap_factory<Elem>(Simulation&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
