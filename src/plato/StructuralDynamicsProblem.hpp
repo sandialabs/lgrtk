@@ -50,7 +50,7 @@ private:
 
     Plato::ScalarVector mBcValues;
     Plato::ScalarVector mResidual;
-    Plato::ScalarVector mMyAdjoint;
+    Plato::ScalarMultiVector mMyAdjoint;
     Plato::ScalarVector mGradState;
     Plato::ScalarVector mGradConfig;
     Plato::ScalarVector mGradControl;
@@ -220,7 +220,7 @@ public:
      * @brief Get adjoint vector for last time step
      *
     **********************************************************************************/
-    Plato::ScalarVector getAdjoint()
+    Plato::ScalarMultiVector getAdjoint()
     {
         return mMyAdjoint; /* Returns adjoint solution for last time step. */
     }
@@ -668,7 +668,7 @@ private:
             mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tObjectiveName);
 
             auto tLength = mEquality->size();
-            mMyAdjoint = Plato::ScalarVector("MyAdjoint", tLength);
+            mMyAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
 
             std::string tAdjointName = "StructuralDynamics Adjoint";
             mAdjointProb = std::make_shared<VectorFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tAdjointName);
@@ -755,11 +755,13 @@ private:
             this->applyConstraints(mJacobian, mGradState);
 
             // adjoint problem \lambda = (dg/du)-*(df/du) uses transpose of global stiffness,
-            Plato::fill(static_cast<Plato::Scalar>(0.0), mMyAdjoint);
+            const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+            Plato::ScalarVector tAdjoint = Kokkos::subview(mMyAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            Plato::fill(static_cast<Plato::Scalar>(0.0), tAdjoint);
 #ifdef HAVE_AMGX
             using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, mNumDofsPerNode>;
             auto tConfigString = AmgXLinearProblem::getConfigString();
-            auto tSolver = std::make_shared<AmgXLinearProblem>(*mJacobian, mMyAdjoint, mGradState, tConfigString);
+            auto tSolver = std::make_shared<AmgXLinearProblem>(*mJacobian, tAdjoint, mGradState, tConfigString);
             tSolver->solve();
 #endif
 
@@ -768,7 +770,7 @@ private:
                     this->computePartialResidualWrtDesignVar(aWhichPartial, tMyStatesSubView, aControl, tMyFrequency);
 
             // compute dfdz + dgdz . adjoint
-            Plato::MatrixTimesVectorPlusVector(tPartialWrtDesignVar, mMyAdjoint, aOutput);
+            Plato::MatrixTimesVectorPlusVector(tPartialWrtDesignVar, tAdjoint, aOutput);
         }
     }
 };

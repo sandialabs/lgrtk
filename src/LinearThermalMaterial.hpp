@@ -17,22 +17,27 @@ namespace lgr {
 /******************************************************************************/
 {
   protected:
+    Plato::Scalar m_cellDensity;
+    Plato::Scalar m_cellSpecificHeat;
     Omega_h::Matrix<SpatialDim,SpatialDim> m_cellConductivity;
   
   public:
     LinearThermalMaterial();
     Omega_h::Matrix<SpatialDim,SpatialDim> getConductivityMatrix() const {return m_cellConductivity;}
+    Plato::Scalar getMassDensity()  const {return m_cellDensity;}
+    Plato::Scalar getSpecificHeat() const {return m_cellSpecificHeat;}
 };
 
 /******************************************************************************/
 template<int SpatialDim>
 LinearThermalMaterial<SpatialDim>::
-LinearThermalMaterial()
+LinearThermalMaterial() : m_cellDensity(0.0), m_cellSpecificHeat(0.0)
 /******************************************************************************/
 {
   for(int i=0; i<SpatialDim; i++)
     for(int j=0; j<SpatialDim; j++)
       m_cellConductivity(i,j) = 0.0;
+  
 }
 
 /******************************************************************************/
@@ -44,16 +49,19 @@ LinearThermalMaterial()
 /******************************************************************************/
 {
     using LinearThermalMaterial<SpatialDim>::m_cellConductivity;
+    using LinearThermalMaterial<SpatialDim>::m_cellDensity;
+    using LinearThermalMaterial<SpatialDim>::m_cellSpecificHeat;
   public:
     IsotropicLinearThermalMaterial(const Teuchos::ParameterList& paramList) :
     LinearThermalMaterial<SpatialDim>()
     {
-      m_conductivityCoef = paramList.get<double>("Conductivity Coefficient");
+      auto t_conductivityCoef = paramList.get<double>("Conductivity Coefficient");
       for(int i=0; i<SpatialDim; i++)
-        m_cellConductivity(i,i)=m_conductivityCoef;
+        m_cellConductivity(i,i)=t_conductivityCoef;
+
+      m_cellDensity = paramList.get<double>("Mass Density");
+      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
     }
-  private:
-    Scalar m_conductivityCoef;
 };
 
 

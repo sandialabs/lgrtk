@@ -15,6 +15,7 @@
 #include <Teuchos_ParameterList.hpp>
 
 #include "PlatoProblem.hpp"
+#include "plato/HeatEquationProblem.hpp"
 
 #include "plato/Mechanics.hpp"
 //#include "plato/StructuralDynamics.hpp"
@@ -29,11 +30,13 @@ class ProblemFactory
 {
 /**********************************************************************************/
 public:
-    std::shared_ptr<Plato::AbstractProblem> create(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams)
+    std::shared_ptr<Plato::AbstractProblem> 
+    create(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams)
     {
 
         auto tProblemSpecs = aInputParams.sublist("Plato Problem");
         auto tProblemPhysics = tProblemSpecs.get<std::string>("Physics");
+        auto tProblemPDE = tProblemSpecs.get<std::string>("PDE Constraint");
 
         if(tProblemPhysics == "Mechanical")
         {
@@ -41,7 +44,11 @@ public:
         }
         else if(tProblemPhysics == "Thermal")
         {
-            return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            if(tProblemPDE == "Heat Equation") {
+              return std::make_shared<HeatEquationProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         else if(tProblemPhysics == "StructuralDynamics")
         {

@@ -244,22 +244,30 @@ public:
     }
     else if( aName == "Adjoint" )
     {
-        auto tScalarField = getVectorComponent(m_adjoint,/*component=*/0, /*stride=*/1);
+        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+        Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+        auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/1);
         this->copyFieldFromlgr(tScalarField, aSharedField);
     } 
     else if( aName == "Adjoint X" )
     {
-        auto tScalarField = getVectorComponent(m_adjoint,/*component=*/0, /*stride=*/m_numSpatialDims);
+        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+        Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+        auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/m_numSpatialDims);
         this->copyFieldFromlgr(tScalarField, aSharedField);
     } 
     else if( aName == "Adjoint Y" )
     {
-        auto tScalarField = getVectorComponent(m_adjoint,/*component=*/1, /*stride=*/m_numSpatialDims);
+        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+        Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+        auto tScalarField = getVectorComponent(tAdjoint,/*component=*/1, /*stride=*/m_numSpatialDims);
         this->copyFieldFromlgr(tScalarField, aSharedField);
     } 
     else if( aName == "Adjoint Z" )
     {
-        auto tScalarField = getVectorComponent(m_adjoint,/*component=*/2, /*stride=*/m_numSpatialDims);
+        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+        Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+        auto tScalarField = getVectorComponent(tAdjoint,/*component=*/2, /*stride=*/m_numSpatialDims);
         this->copyFieldFromlgr(tScalarField, aSharedField);
     } 
     else if( aName == "Solution" )
@@ -399,7 +407,7 @@ private:
     std::shared_ptr<Plato::AbstractProblem> m_problem;
 
     Plato::ScalarVector m_control;
-    Plato::ScalarVector m_adjoint;
+    Plato::ScalarMultiVector m_adjoint;
     Plato::ScalarMultiVector m_state;
     Plato::ScalarMultiVector m_coords;
 

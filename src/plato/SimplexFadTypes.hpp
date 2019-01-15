@@ -115,10 +115,11 @@ struct EvaluationTypes
 template <typename SimplexPhysicsT>
 struct ResidualTypes : EvaluationTypes<SimplexPhysicsT>
 {
-  using StateScalarType   = Plato::Scalar;
-  using ControlScalarType = Plato::Scalar;
-  using ConfigScalarType  = Plato::Scalar;
-  using ResultScalarType  = Plato::Scalar;
+  using StateScalarType     = Plato::Scalar;
+  using PrevStateScalarType = Plato::Scalar;
+  using ControlScalarType   = Plato::Scalar;
+  using ConfigScalarType    = Plato::Scalar;
+  using ResultScalarType    = Plato::Scalar;
 };
 
 template <typename SimplexPhysicsT>
@@ -126,10 +127,23 @@ struct JacobianTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::StateFad;
 
-  using StateScalarType   = SFadType;
-  using ControlScalarType = Plato::Scalar;
-  using ConfigScalarType  = Plato::Scalar;
-  using ResultScalarType  = SFadType;
+  using StateScalarType     = SFadType;
+  using PrevStateScalarType = Plato::Scalar;
+  using ControlScalarType   = Plato::Scalar;
+  using ConfigScalarType    = Plato::Scalar;
+  using ResultScalarType    = SFadType;
+};
+
+template <typename SimplexPhysicsT>
+struct JacobianPTypes : EvaluationTypes<SimplexPhysicsT>
+{
+  using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::StateFad;
+
+  using StateScalarType     = Plato::Scalar;
+  using PrevStateScalarType = SFadType;
+  using ControlScalarType   = Plato::Scalar;
+  using ConfigScalarType    = Plato::Scalar;
+  using ResultScalarType    = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -137,10 +151,11 @@ struct GradientXTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::ConfigFad;
 
-  using StateScalarType   = Plato::Scalar;
-  using ControlScalarType = Plato::Scalar;
-  using ConfigScalarType  = SFadType;
-  using ResultScalarType  = SFadType;
+  using StateScalarType     = Plato::Scalar;
+  using PrevStateScalarType = Plato::Scalar;
+  using ControlScalarType   = Plato::Scalar;
+  using ConfigScalarType    = SFadType;
+  using ResultScalarType    = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -148,10 +163,11 @@ struct GradientZTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::ControlFad;
 
-  using StateScalarType   = Plato::Scalar;
-  using ControlScalarType = SFadType;
-  using ConfigScalarType  = Plato::Scalar;
-  using ResultScalarType  = SFadType;
+  using StateScalarType     = Plato::Scalar;
+  using PrevStateScalarType = Plato::Scalar;
+  using ControlScalarType   = SFadType;
+  using ConfigScalarType    = Plato::Scalar;
+  using ResultScalarType    = SFadType;
 };
 
 
@@ -159,6 +175,7 @@ template <typename SimplexPhysicsT>
 struct Evaluation {
    using Residual  = ResidualTypes<SimplexPhysicsT>;
    using Jacobian  = JacobianTypes<SimplexPhysicsT>;
+   using JacobianP = JacobianPTypes<SimplexPhysicsT>;
    using GradientZ = GradientZTypes<SimplexPhysicsT>;
    using GradientX = GradientXTypes<SimplexPhysicsT>;
 };
