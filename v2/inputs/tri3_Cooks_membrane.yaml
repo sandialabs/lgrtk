@@ -40,6 +40,7 @@ responses:
   - 
     type: VTK output
     time period: 0.1
+    path: Cooks_membrane
     fields:
       - velocity
       - density
@@ -59,5 +60,5 @@ responses:
     type: comparison
     scalar: tip position
     at time: '8.4'
-    expected value: '62.882557170697'
+    expected value: '62.84058245'
     tolerance: 1.0e-5

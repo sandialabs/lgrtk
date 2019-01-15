@@ -12,12 +12,12 @@ using Omega_h::identity_matrix;
 using Omega_h::log_spd;
 using Omega_h::Matrix;
 using Omega_h::resize;
-using Omega_h::sqrt_spd;
 using Omega_h::square;
 using Omega_h::trace;
 using Omega_h::transpose;
 using Omega_h::Vector;
 using Omega_h::zero_vector;
+using Omega_h::zero_matrix;
 
 }  // namespace lgr
 
