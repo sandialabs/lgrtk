@@ -29,13 +29,13 @@ struct DeformationGradient : public Model<Elem> {
       auto const grads = getgrads<Elem>(points_to_grad, point);
       auto const grad_v = grad<Elem>(grads, v);
       auto const I = identity_matrix<Elem::dim, Elem::dim>();
-      auto const incr_F_inv = I - dt * grad_v;
+      auto const grad_u = dt * grad_v;
+      auto const incr_F_inv = I - grad_u;
       auto const incr_F = invert(incr_F_inv);
+      OMEGA_H_CHECK(determinant(incr_F) > 0.0);
       auto const old_F = getfull<Elem>(points_to_F, point);
       OMEGA_H_CHECK(determinant(old_F) > 0.0);
-      auto const det_dxnp1_dxn = determinant(incr_F);
-      OMEGA_H_CHECK(det_dxnp1_dxn > 0.0);
-      auto const new_F = old_F * incr_F;
+      auto const new_F = incr_F * old_F;
       OMEGA_H_CHECK(determinant(new_F) > 0.0);
       setfull<Elem>(points_to_F, point, new_F);
     };
