@@ -39,6 +39,11 @@ material models:
   -
     sets: ['fluid']
     type: ideal gas
+modifiers:
+  -
+    type: artificial viscosity
+    linear artificial viscosity: 1.0
+    quadratic artificial viscosity: 0.0
 conditions:
   density:
     - 
