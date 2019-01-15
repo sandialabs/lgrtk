@@ -64,7 +64,8 @@ namespace Plato {
               const Omega_h::MeshSets& aMeshSets,
               Plato::ScalarMultiVectorT<  StateScalarType>,
               Plato::ScalarMultiVectorT<ControlScalarType>,
-              Plato::ScalarMultiVectorT< ResultScalarType> result) const;
+              Plato::ScalarMultiVectorT< ResultScalarType> result,
+              Plato::Scalar scale) const;
 
     // ! Get sideset name
     decltype(ss_name) const& get_ss_name() const { return ss_name; }
@@ -111,7 +112,8 @@ namespace Plato {
               const Omega_h::MeshSets& aMeshSets,
               Plato::ScalarMultiVectorT<  StateScalarType>,
               Plato::ScalarMultiVectorT<ControlScalarType>,
-              Plato::ScalarMultiVectorT< ResultScalarType> result) const;
+              Plato::ScalarMultiVectorT< ResultScalarType> result,
+              Plato::Scalar scale = 1.0) const;
   };
 
   /**************************************************************************/
@@ -123,7 +125,8 @@ namespace Plato {
                                                const Omega_h::MeshSets& aMeshSets,
                                                Plato::ScalarMultiVectorT<  StateScalarType>,
                                                Plato::ScalarMultiVectorT<ControlScalarType>,
-                                               Plato::ScalarMultiVectorT< ResultScalarType> result) const
+                                               Plato::ScalarMultiVectorT< ResultScalarType> result,
+                                               Plato::Scalar scale) const
   /**************************************************************************/
   {
     // get sideset faces
@@ -339,11 +342,12 @@ namespace Plato {
        const Omega_h::MeshSets& aMeshSets, 
        Kokkos::View<   StateScalarType**, Kokkos::LayoutRight, Plato::MemSpace > state,
        Kokkos::View< ControlScalarType**, Kokkos::LayoutRight, Plato::MemSpace > control,
-       Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > result) const
+       Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > result,
+       Plato::Scalar scale) const
   /**************************************************************************/
   {
     for (const std::shared_ptr<NaturalBC<SpatialDim,DofsPerNode>> &bc : BCs){
-      bc->get(aMesh, aMeshSets, state, control, result);
+      bc->get(aMesh, aMeshSets, state, control, result, scale);
     }
   }
 

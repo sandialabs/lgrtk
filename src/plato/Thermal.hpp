@@ -3,7 +3,10 @@
 
 #include "plato/Simplex.hpp"
 #include "plato/AbstractVectorFunction.hpp"
+#include "plato/AbstractVectorFunctionInc.hpp"
+#include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/ThermostaticResidual.hpp"
+#include "plato/HeatEquationResidual.hpp"
 #include "plato/InternalThermalEnergy.hpp"
 #include "plato/FluxPNorm.hpp"
 #include "plato/Volume.hpp"
@@ -40,6 +43,33 @@ struct FunctionFactory{
       } else
       if( penaltyType == "Heaviside" ){
         return std::make_shared<ThermostaticResidual<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,paramList,penaltyParams);
+      } else {
+        throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+      }
+    } else {
+      throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+    }
+  }
+  template <typename EvaluationType>
+  std::shared_ptr<AbstractVectorFunctionInc<EvaluationType>>
+  createVectorFunctionInc(
+    Omega_h::Mesh& aMesh,
+    Omega_h::MeshSets& aMeshSets, 
+    Plato::DataMap& aDataMap,
+    Teuchos::ParameterList& paramList,
+    std::string strVectorFunctionType )
+  {
+    if( strVectorFunctionType == "Heat Equation" ){
+      auto penaltyParams = paramList.sublist(strVectorFunctionType).sublist("Penalty Function");
+      std::string penaltyType = penaltyParams.get<std::string>("Type");
+      if( penaltyType == "SIMP" ){
+        return std::make_shared<HeatEquationResidual<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,paramList,penaltyParams);
+      } else
+      if( penaltyType == "RAMP" ){
+        return std::make_shared<HeatEquationResidual<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,paramList,penaltyParams);
+      } else
+      if( penaltyType == "Heaviside" ){
+        return std::make_shared<HeatEquationResidual<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,paramList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -104,6 +134,17 @@ struct FunctionFactory{
     } else {
       throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
     }
+  }
+  template <typename EvaluationType>
+  std::shared_ptr<AbstractScalarFunctionInc<EvaluationType>>
+  createScalarFunctionInc( 
+    Omega_h::Mesh& aMesh,
+    Omega_h::MeshSets& aMeshSets,
+    Plato::DataMap& aDataMap,
+    Teuchos::ParameterList& paramList,
+    std::string strScalarFunctionType )
+  {
+    throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
   }
 };
 }

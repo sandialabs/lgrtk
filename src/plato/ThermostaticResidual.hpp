@@ -7,6 +7,7 @@
 #include "plato/ThermalFlux.hpp"
 #include "plato/FluxDivergence.hpp"
 #include "plato/SimplexFadTypes.hpp"
+#include "plato/PlatoMathHelpers.hpp"
 
 #include "LinearThermalMaterial.hpp"
 #include "ImplicitFunctors.hpp"
@@ -91,6 +92,8 @@ class ThermostaticResidual :
               Plato::Scalar aTimeStep = 0.0) const
     /**************************************************************************/
     {
+      Kokkos::deep_copy(result, 0.0);
+
       auto numCells = mMesh.nelems();
 
       using GradScalarType =
