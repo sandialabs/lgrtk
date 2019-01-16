@@ -1,0 +1,43 @@
+end time: 1.0
+max dt: 1.0e-2
+element type: Tri6
+mesh:
+  add mid edge nodes: true
+  box:
+    x elements: 1
+    y elements: 1
+    x size: 1.0
+    y size: 1.0
+common fields:
+  density: 1.0
+  velocity: x
+material models:
+  -
+    type: ideal gas
+    heat capacity ratio: 1.4
+    specific internal energy: 1.0
+conditions:
+  acceleration:
+    -
+      sets: ['x-', 'x+']
+      value: 'vector(0.0, a(1))'
+    -
+      sets: ['y-', 'y+']
+      value: 'vector(a(0), 0.0)'
+scalars:
+responses:
+  -
+    type: VTK output
+    path: tri6_gas_expand
+    fields:
+      - velocity
+      - specific internal energy
+      - stress
+      - wave speed
+  -
+    type: command line history
+    scalars:
+      - step
+      - CPU time
+      - time
+      - dt
