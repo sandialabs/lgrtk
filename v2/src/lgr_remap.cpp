@@ -70,9 +70,61 @@ static Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mes
 
 template <class Elem>
 static void swap_point_remap_polar(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int key_dim, int prod_dim, Omega_h::LOs keys2kds, Omega_h::LOs keys2prods,
-    Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, Omega_h::Tag<double> const* tag);
+    int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds_in, Omega_h::LOs const keys2prods,
+    Omega_h::LOs const prods2new_ents, Omega_h::LOs const same_ents2old_ents,
+    Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag, double const tolerance) {
+  auto const old_data = tag->array();
+  Omega_h::Write<double> const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
+      tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
+  auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
+  MassWeighter weighter(old_mesh);
+  constexpr auto max_elems = Omega_h::SimplexAvgDegree<Elem::dim, 0, Elem::dim>::value * 3;
+  constexpr auto max_points = max_elems * Elem::points;
+  (void)keys2prods;
+  (void)prods2new_ents;
+  auto const keys2kds = keys2kds_in; // CUDA bug workaround
+  auto new_functor = OMEGA_H_LAMBDA(int const key) {
+    auto const kd = keys2kds[key];
+    auto const begin = kds2doms.a2ab[kd];
+    auto const end = kds2doms.a2ab[kd + 1];
+    Omega_h::Few<Matrix<Elem::dim, Elem::dim>, max_points> values;
+    OMEGA_H_CHECK(end - begin <= max_elems);
+    int point_i = 0;
+    for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
+      auto const dom = kds2doms.ab2b[kd_dom];
+      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
+        auto const old_point = dom * Elem::points + dom_pt;
+        auto const old_value = getfull<Elem>(old_data, old_point);
+        values[point_i++] = old_value;
+      }
+    }
+    Omega_h::align_packed_axis_angles(values.data(), values.size(), tolerance);
+    auto avg_value = zero_matrix<Elem::dim, Elem::dim>();
+    auto weight_sum = 0.0;
+    point_i = 0;
+    for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
+      auto const dom = kds2doms.ab2b[kd_dom];
+      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
+        auto const old_point = dom * Elem::points + dom_pt;
+        auto const old_weight = weighter.get_weight(old_point);
+        weight_sum += old_weight;
+        avg_value += old_weight * values[point_i++];
+      }
+    }
+    avg_value /= weight_sum;
+    for (auto prod = keys2prods[key]; prod < keys2prods[key + 1]; ++prod) {
+      auto const new_elem = prods2new_ents[prod];
+      for (int prod_pt = 0; prod_pt < Elem::points; ++prod_pt) {
+        auto const new_point = new_elem * Elem::points + prod_pt;
+        setfull<Elem>(new_data, new_point, avg_value);
+      }
+    }
+  };
+  parallel_for(keys2kds.size(), std::move(new_functor));
+  Omega_h::Reals new_data_r = Omega_h::read(new_data);
+  new_mesh.add_tag(
+      new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
+}
 
 template <class Elem>
 struct Remap : public RemapBase {
@@ -388,64 +440,6 @@ void Remap<Elem>::swap_point_remap_ncomps(Omega_h::Mesh& old_mesh, Omega_h::Mesh
     }
   };
   parallel_for(keys2kds.size(), std::move(new_functor));
-  new_mesh.add_tag(
-      new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
-}
-
-template <class Elem>
-static void swap_point_remap_polar(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds_in, Omega_h::LOs const keys2prods,
-    Omega_h::LOs const prods2new_ents, Omega_h::LOs const same_ents2old_ents,
-    Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag, double const tolerance) {
-  auto const old_data = tag->array();
-  Omega_h::Write<double> const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
-      tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
-  auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
-  MassWeighter weighter(old_mesh);
-  constexpr auto max_elems = Omega_h::SimplexAvgDegree<Elem::dim, 0, Elem::dim>::value * 3;
-  constexpr auto max_points = max_elems * Elem::points;
-  (void)keys2prods;
-  (void)prods2new_ents;
-  auto const keys2kds = keys2kds_in; // CUDA bug workaround
-  auto new_functor = OMEGA_H_LAMBDA(int const key) {
-    auto const kd = keys2kds[key];
-    auto const begin = kds2doms.a2ab[kd];
-    auto const end = kds2doms.a2ab[kd + 1];
-    Omega_h::Few<Matrix<Elem::dim, Elem::dim>, max_points> values;
-    OMEGA_H_CHECK(end - begin <= max_elems);
-    int point_i = 0;
-    for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
-      auto const dom = kds2doms.ab2b[kd_dom];
-      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
-        auto const old_point = dom * Elem::points + dom_pt;
-        auto const old_value = getfull<Elem>(old_data, old_point);
-        values[point_i++] = old_value;
-      }
-    }
-    Omega_h::align_packed_axis_angles(values.data(), values.size(), tolerance);
-    auto avg_value = zero_matrix<Elem::dim, Elem::dim>();
-    auto weight_sum = 0.0;
-    point_i = 0;
-    for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
-      auto const dom = kds2doms.ab2b[kd_dom];
-      for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
-        auto const old_point = dom * Elem::points + dom_pt;
-        auto const old_weight = weighter.get_weight(old_point);
-        weight_sum += old_weight;
-        avg_value += old_weight * values[point_i++];
-      }
-    }
-    avg_value /= weight_sum;
-    for (auto prod = keys2prods[key]; prod < keys2prods[key + 1]; ++prod) {
-      auto const new_elem = prods2new_ents[prod];
-      for (int prod_pt = 0; prod_pt < Elem::points; ++prod_pt) {
-        auto const new_point = new_elem * Elem::points + prod_pt;
-        setfull<Elem>(new_data, new_point, avg_value);
-      }
-    }
-  };
-  parallel_for(keys2kds.size(), std::move(new_functor));
-  Omega_h::Reals new_data_r = Omega_h::read(new_data);
   new_mesh.add_tag(
       new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
 }
