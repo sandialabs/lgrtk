@@ -30,7 +30,8 @@ struct DeformationGradient : public Model<Elem> {
       auto const grad_v = grad<Elem>(grads, v);
       auto const I = identity_matrix<Elem::dim, Elem::dim>();
       auto const grad_u = dt * grad_v;
-      auto const incr_F = I + grad_u;
+      auto const incr_F_inv = I - grad_u;
+      auto const incr_F = invert(incr_F_inv);
       OMEGA_H_CHECK(determinant(incr_F) > 0.0);
       auto const old_F = getfull<Elem>(points_to_F, point);
       OMEGA_H_CHECK(determinant(old_F) > 0.0);
