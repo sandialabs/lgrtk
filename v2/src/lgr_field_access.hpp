@@ -45,22 +45,20 @@ OMEGA_H_DEVICE void setfull(
   Omega_h::set_matrix<Elem::dim, Elem::dim>(a, i, v);
 }
 
-template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getsymm(
+OMEGA_H_DEVICE Matrix<3, 3> getstress(
     Omega_h::Read<double> const& a, int i) {
-  return Omega_h::get_symm<Elem::dim>(a, i);
+  return Omega_h::get_symm<3>(a, i);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getsymm(
+OMEGA_H_DEVICE Matrix<3, 3> getstress(
     Omega_h::Write<double> const& a, int i) {
-  return Omega_h::get_symm<Elem::dim>(a, i);
+  return Omega_h::get_symm<3>(a, i);
 }
 
-template <class Elem>
-OMEGA_H_DEVICE void setsymm(
-    Omega_h::Write<double> const& a, int i, Matrix<Elem::dim, Elem::dim> v) {
-  Omega_h::set_symm<Elem::dim>(a, i, v);
+OMEGA_H_DEVICE void setstress(
+    Omega_h::Write<double> const& a, int i, Matrix<3, 3> v) {
+  Omega_h::set_symm<3>(a, i, v);
 }
 
 template <class Elem>
