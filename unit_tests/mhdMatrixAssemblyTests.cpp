@@ -190,7 +190,7 @@ ANONYMOUS:
   const auto elemFaceOrientations_trg = femesh_trg.elem_face_orientations;
 
   Kokkos::parallel_for("Tweek Coordinates", Kokkos::RangePolicy<Kokkos::Serial>(0, 1), [&] (const int) {
-      for (int n = 0; n < node_coords_src.extent(0); ++n) {
+      for (unsigned n = 0; n < node_coords_src.extent(0); ++n) {
          if (std::abs(node_coords_src(n, 0)-.5)<.00001 &&
              std::abs(node_coords_src(n, 1)-.5)<.00001 &&
              std::abs(node_coords_src(n, 2)-.5)<.00001) {
@@ -505,7 +505,7 @@ ANONYMOUS:
   auto flux_src = Kokkos::create_mirror_view(magneticFaceFlux_src);
   Kokkos::deep_copy(flux_trg, magneticFaceFlux_trg);
   Kokkos::deep_copy(flux_src, magneticFaceFlux_src);
-  for (int i=0; i<magneticFaceFlux_trg.size(); ++i) {
+  for (unsigned i=0; i<magneticFaceFlux_trg.size(); ++i) {
     const bool check = std::abs(flux_trg(i)-flux_src(i))<tol;
     if (!check) std::cout<<" Failed check. Target flux:"<<flux_trg(i)
       <<" Source Flux:"<<flux_src(i)
