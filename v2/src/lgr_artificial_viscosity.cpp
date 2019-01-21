@@ -4,11 +4,10 @@
 
 namespace lgr {
 
-template <int dim>
 OMEGA_H_INLINE void artificial_viscosity_update(double const linear,
     double const quadratic, double const h_min, double const h_max,
-    double const density, Matrix<dim, dim> const grad_v,
-    Matrix<dim, dim>& stress, double& wave_speed) {
+    double const density, Matrix<3, 3> const grad_v,
+    Matrix<3, 3>& stress, double& wave_speed) {
   auto const V_dot = trace(grad_v);
   auto const kinematic = quadratic * std::abs(V_dot) * square(h_max) +
                          linear * wave_speed * h_max;
@@ -49,17 +48,17 @@ struct ArtificialViscosity : public Model<Elem> {
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
       auto const dN_dxnp1 = getgrads<Elem>(points_to_grad, point);
-      auto const grad_v = grad<Elem>(dN_dxnp1, v);
+      auto const grad_v = resize<3, 3>(grad<Elem>(dN_dxnp1, v));
       auto const nu_l = points_to_nu_l[point];
       auto const nu_q = points_to_nu_q[point];
       auto const h_min = elems_to_h_min[elem];
       auto const h_max = elems_to_h_max[elem];
       auto const rho = points_to_rho[point];
-      auto sigma = getsymm<Elem>(points_to_sigma, point);
+      auto sigma = getstress(points_to_sigma, point);
       auto c = points_to_c[point];
       artificial_viscosity_update(
           nu_l, nu_q, h_min, h_max, rho, grad_v, sigma, c);
-      setsymm<Elem>(points_to_sigma, point, sigma);
+      setstress(points_to_sigma, point, sigma);
       points_to_c[point] = c;
     };
     parallel_for(this->points(), std::move(functor));

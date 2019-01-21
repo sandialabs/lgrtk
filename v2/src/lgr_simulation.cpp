@@ -137,7 +137,7 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields[acceleration].remap_type = RemapType::NODAL;
   force = fields.define("f", "force", dim(), NODES, false, everywhere);
   stress = fields.define(
-      "sigma", "stress", Omega_h::symm_ncomps(dim()), ELEMS, true, everywhere);
+      "sigma", "stress", Omega_h::symm_ncomps(3), ELEMS, true, everywhere);
   gradient = fields.define("grad", "gradient",
       disc.nodes_per_ent(ELEMS) * dim(), ELEMS, true, everywhere);
   fields[gradient].remap_type = RemapType::SHAPE;
