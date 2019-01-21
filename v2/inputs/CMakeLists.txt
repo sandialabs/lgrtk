@@ -1,11 +1,12 @@
 set(L ${CMAKE_CURRENT_SOURCE_DIR})
 function(lgr_test file_name)
-  add_test(NAME ${file_name} COMMAND lgr_executable ${L}/${file_name}.yaml)
+  add_test(NAME ${file_name} COMMAND lgr_executable --no-output ${L}/${file_name}.yaml)
 endfunction(lgr_test)
 
 if(LGR_BAR2)
   lgr_test(bar2_constant)
   lgr_test(bar2_gas_constant)
+  lgr_test(bar2_gas_expand)
   lgr_test(bar2_oscillate)
   lgr_test(bar2_elastic_wave)
   lgr_test(bar2_Noh)

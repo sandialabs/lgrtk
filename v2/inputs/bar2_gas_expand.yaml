@@ -1,48 +1,49 @@
-lgr:
-  end time: 1.0
-  max dt: 1.0e-2
-  element type: Bar2
-  mesh:
-    box:
-      x elements: 1
-      x size: 1.0
-  common fields:
-    density: 1.0
-    velocity: x
-  material models:
+end time: 1.0
+max dt: 1.0e-2
+element type: Bar2
+mesh:
+  box:
+    x elements: 1
+    x size: 1.0
+common fields:
+  density: 1.0
+  velocity: x
+material models:
+  - 
+    type: ideal gas
+    heat capacity ratio: 1.4
+    specific internal energy: 1.0
+conditions:
+  acceleration:
     - 
-      type: ideal gas
-      heat capacity ratio: 1.4
-      specific internal energy: 1.0
-  conditions:
-    acceleration:
-      - 
-        sets: ['x-', 'x+']
-        value: 'vector(0.0)'
-  scalars:
-    stress error:
-      type: L2 error
-      field: stress
-      expected value: '(-0.4) / (1.0 + t)^1.4'
-  responses:
-    - 
-      type: VTK output
-      fields:
-        - velocity
-        - specific internal energy
-        - stress
-    - 
-      type: command line history
-      scalars:
-        - step
-        - CPU time
-        - time
-        - dt
-        - stress error
-    - 
-      type: comparison
-      at time: 1.0
-      scalar: stress error
-      expected value: '0.0'
-      tolerance: 0.0
-      floor: 5.0e-7
+      sets: ['x-', 'x+']
+      value: 'vector(0.0)'
+scalars:
+  stress error:
+    type: L2 error
+    field: stress
+    expected value: '(-0.4) / (1.0 + t)^1.4'
+responses:
+  - 
+    type: VTK output
+    path: bar2_gas_expand
+    fields:
+      - velocity
+      - specific internal energy
+      - stress
+      - wave speed
+  - 
+    type: command line history
+    scalars:
+      - step
+      - CPU time
+      - time
+      - dt
+      - stress error
+  - 
+    type: comparison
+    at time: 1.0
+    scalar: stress error
+    expected value: '0.0'
+    tolerance: 0.0
+    floor: 5.0e-4

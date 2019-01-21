@@ -314,7 +314,7 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
       // NOT SPALL
       // sig_star < 1.5 indicates spall conditions are *not* met and the failure
       // strain must be calculated.
-      sig_star = std::max(std::min(sig_star, 1.5), -1.5);
+      sig_star = Omega_h::max2(Omega_h::min2(sig_star, 1.5), -1.5);
 
       // Stress contribution to damage
       double stress_contrib = props.D1 + props.D2 * exp(props.D3 * sig_star);

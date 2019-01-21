@@ -1,54 +1,53 @@
-lgr:
-  CFL: 0.1
-  end time: 6.28
-  element type: Bar2
-  mesh:
-    box:
-      x elements: 1
-      x size: 1.0
-  common fields:
-    density: 2.0
-    velocity: 'vector((x > 0.5) ? 0.01 : 0.0)'
-  material models:
+CFL: 0.1
+end time: 6.28
+element type: Bar2
+mesh:
+  box:
+    x elements: 1
+    x size: 1.0
+common fields:
+  density: 2.0
+  velocity: 'vector((x > 0.5) ? 0.01 : 0.0)'
+material models:
+  - 
+    type: linear elastic
+    bulk modulus: 1.0
+    shear modulus: 0.0
+conditions:
+  acceleration:
     - 
-      type: linear elastic
-      bulk modulus: 1.0
-      shear modulus: 0.0
-  conditions:
-    acceleration:
-      - 
-        sets: ['x-']
-        value: 'vector(0.0)'
-  scalars:
-    mass position:
-      type: node
-      field: position
-      set: 'x+'
-      component: 0
-    mass velocity:
-      type: node
-      field: velocity
-      set: 'x+'
-      component: 0
-  responses:
-    - 
-      type: command line history
-      scalars:
-        - step
-        - time
-        - dt
-        - mass position
-        - mass velocity
-    - 
-      type: comparison
-      scalar: mass position
-      expected value: '1.0 + 0.01003 * sin(t)'
-      tolerance: 1.0e-4
-    - 
-      start time: 1.0
-      end time: 6.28
-      type: comparison
-      scalar: mass velocity
-      expected value: '0.01 * cos(t)'
-      tolerance: 5.0e-2
-      floor: 5.0e-2
+      sets: ['x-']
+      value: 'vector(0.0)'
+scalars:
+  mass position:
+    type: node
+    field: position
+    set: 'x+'
+    component: 0
+  mass velocity:
+    type: node
+    field: velocity
+    set: 'x+'
+    component: 0
+responses:
+  - 
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt
+      - mass position
+      - mass velocity
+  - 
+    type: comparison
+    scalar: mass position
+    expected value: '1.0 + 0.01003 * sin(t)'
+    tolerance: 1.0e-4
+  - 
+    start time: 1.0
+    end time: 6.28
+    type: comparison
+    scalar: mass velocity
+    expected value: '0.01 * cos(t)'
+    tolerance: 5.0e-2
+    floor: 5.0e-2

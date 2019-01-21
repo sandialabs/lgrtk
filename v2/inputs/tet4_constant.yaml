@@ -1,39 +1,38 @@
-lgr:
-  end time: 1.0
-  print all fields: false
-  element type: Tet4
-  mesh:
-    box:
-      x elements: 2
-      y elements: 2
-      z elements: 2
-  common fields:
-    density: 1.0
-    velocity: 'vector(1.0)'
-  material models:
-    - 
-      type: linear elastic
-      bulk modulus: 1.0
-      shear modulus: 0.0
-  scalars:
-    velocity error:
-      type: L2 error
-      field: velocity
-      expected value: 'vector(1.0)'
-  responses:
-#   - 
-#     type: VTK output
-#     fields:
-#       - velocity
-    - 
-      type: command line history
-      scalars:
-        - step
-        - CPU time
-        - time
-        - dt
-        - velocity error
-    - 
-      type: comparison
-      scalar: velocity error
-      expected value: '0.0'
+end time: 1.0
+print all fields: false
+element type: Tet4
+mesh:
+  box:
+    x elements: 2
+    y elements: 2
+    z elements: 2
+common fields:
+  density: 1.0
+  velocity: 'vector(1.0)'
+material models:
+  - 
+    type: linear elastic
+    bulk modulus: 1.0
+    shear modulus: 0.0
+scalars:
+  velocity error:
+    type: L2 error
+    field: velocity
+    expected value: 'vector(1.0)'
+responses:
+  - 
+    type: VTK output
+    fields:
+      - velocity
+  - 
+    type: command line history
+    scalars:
+      - step
+      - CPU time
+      - time
+      - dt
+      - velocity error
+  - 
+    type: comparison
+    scalar: velocity error
+    expected value: '0.0'
