@@ -90,6 +90,7 @@ struct Simulation {
   double prev_cpu_time;
   double cpu_time;
   double min_dt;
+  bool no_output;
 };
 
 void apply_conditions(Simulation& sim, FieldIndex fi);

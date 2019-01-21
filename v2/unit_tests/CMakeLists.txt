@@ -10,6 +10,10 @@ if(LGR_COMPTET)
   list(APPEND unit_test_exes comptet_unit_tests.cpp)
 endif()
 
+if(LGR_TRI6)
+  list(APPEND unit_test_exes tri6_unit_tests.cpp)
+endif()
+
 add_executable(unit_tests ${unit_test_exes})
 target_link_libraries(unit_tests
     PUBLIC

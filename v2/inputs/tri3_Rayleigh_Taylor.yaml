@@ -1,69 +1,68 @@
-lgr:
-  input variables:
-    rho_down: 1.0
-    rho_up: 0.2
-    p_0: 1.0
-    g: 1.0
-    A: 0.1
-    sigma: 0.4
-    y_center: 1.5
-    L_x: 1.0
-    gamma0: '5.0 / 3.0'
-  CFL: 0.9
-  end time: 8.0
-  element type: Tri3
-  mesh:
-    box:
-      x size: 1.0
-      x elements: 40
-      y size: 3.0
-      y elements: 120
-  material models:
-    - 
-      type: ideal gas
-      heat capacity ratio: gamma0
-      specific internal energy: |
-        y = x(1);
-        p = (y < y_center) ? p_0 + rho_down * g * y :
-            p_0 + rho_down * g * y_center + rho_up * g * (y - y_center);
-        rho_tmp = (y < y_center) ? rho_down : rho_up;
-        p / ((gamma0 - 1) * rho_tmp)
-  common fields:
-    density: |
+input variables:
+  rho_down: 1.0
+  rho_up: 0.2
+  p_0: 1.0
+  g: 1.0
+  A: 0.1
+  sigma: 0.4
+  y_center: 1.5
+  L_x: 1.0
+  gamma0: '5.0 / 3.0'
+CFL: 0.9
+end time: 8.0
+element type: Tri3
+mesh:
+  box:
+    x size: 1.0
+    x elements: 40
+    y size: 3.0
+    y elements: 120
+material models:
+  - 
+    type: ideal gas
+    heat capacity ratio: gamma0
+    specific internal energy: |
       y = x(1);
-      (y < y_center) ? rho_down : rho_up
-    velocity: |
-      vector(0.0, -A * cos(2 * pi * x(0) / L_x) * exp(-(x(1) - y_center)^2 / sigma^2))
-  modifiers:
+      p = (y < y_center) ? p_0 + rho_down * g * y :
+          p_0 + rho_down * g * y_center + rho_up * g * (y - y_center);
+      rho_tmp = (y < y_center) ? rho_down : rho_up;
+      p / ((gamma0 - 1) * rho_tmp)
+common fields:
+  density: |
+    y = x(1);
+    (y < y_center) ? rho_down : rho_up
+  velocity: |
+    vector(0.0, -A * cos(2 * pi * x(0) / L_x) * exp(-(x(1) - y_center)^2 / sigma^2))
+modifiers:
+  - 
+    type: artificial viscosity
+    linear artificial viscosity: 1.0
+    quadratic artificial viscosity: 0.0
+conditions:
+  acceleration:
     - 
-      type: artificial viscosity
-      linear artificial viscosity: 1.0
-      quadratic artificial viscosity: 0.0
-  conditions:
-    acceleration:
-      - 
-        value: 'vector(a(0), a(1) + g)'
-      - 
-        sets: ['x-', 'x+']
-        value: 'vector(0.0, a(1))'
-      - 
-        sets: ['y-', 'y+']
-        value: 'vector(a(0), 0.0)'
-  responses:
+      value: 'vector(a(0), a(1) + g)'
     - 
-      type: command line history
-      scalars:
-        - step
-        - time
-        - dt
+      sets: ['x-', 'x+']
+      value: 'vector(0.0, a(1))'
     - 
-      time period: 0.1
-      type: VTK output
-      path: Rayleigh-Taylor
-      fields:
-        - velocity
-        - specific internal energy
-        - stress
-        - density
-        - acceleration
-  adapt:
+      sets: ['y-', 'y+']
+      value: 'vector(a(0), 0.0)'
+responses:
+  - 
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt
+  - 
+    time period: 0.1
+    type: VTK output
+    path: Rayleigh-Taylor
+    fields:
+      - velocity
+      - specific internal energy
+      - stress
+      - density
+      - acceleration
+adapt:

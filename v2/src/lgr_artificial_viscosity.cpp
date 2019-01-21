@@ -7,14 +7,14 @@ namespace lgr {
 template <int dim>
 OMEGA_H_INLINE void artificial_viscosity_update(double const linear,
     double const quadratic, double const h_min, double const h_max,
-    double const density, Matrix<dim, dim> const velocity_gradient,
+    double const density, Matrix<dim, dim> const grad_v,
     Matrix<dim, dim>& stress, double& wave_speed) {
-  auto const volume_rate = trace(velocity_gradient);
-  auto const kinematic = quadratic * std::abs(volume_rate) * square(h_max) +
+  auto const V_dot = trace(grad_v);
+  auto const kinematic = quadratic * std::abs(V_dot) * square(h_max) +
                          linear * wave_speed * h_max;
-  auto const symm_vel_grad =
-      (1. / 2.) * (velocity_gradient + transpose(velocity_gradient));
-  stress += density * kinematic * symm_vel_grad;
+  auto const symm_grad_v =
+      (1. / 2.) * (grad_v + transpose(grad_v));
+  stress += density * kinematic * symm_grad_v;
   auto const squiggle = kinematic / (wave_speed * h_min);
   wave_speed *= (std::sqrt(1.0 + square(squiggle)) + squiggle);
 }

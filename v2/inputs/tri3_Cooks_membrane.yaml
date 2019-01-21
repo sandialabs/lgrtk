@@ -1,62 +1,64 @@
-lgr:
-  CFL: 0.4
-  end time: 8.4
-  element type: Tri3
-  mesh:
-    box:
-      x elements: 8
-      x size: 1.0
-      y elements: 8
-      y size: 1.0
-    transform: |
-      u = 1 - x(1);
-      v = x(0);
-      vector(u * 48, v * 44 + u * 16 * v + u * 44 * (1 - v))
-    mark closest nodes: [['tip', 'vector(48, 60)']]
-  common fields:
-    density: 1.0
-    velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
-  material models:
+CFL: 0.4
+end time: 8.4
+element type: Tri3
+mesh:
+  box:
+    x elements: 8
+    x size: 1.0
+    y elements: 8
+    y size: 1.0
+  transform: |
+    u = 1 - x(1);
+    v = x(0);
+    vector(u * 48, v * 44 + u * 16 * v + u * 44 * (1 - v))
+  mark closest nodes: [['tip', 'vector(48, 60)']]
+common fields:
+  density: 1.0
+  velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
+material models:
+  - 
+    type: linear elastic
+    bulk modulus: 833333
+    shear modulus: 83
+modifiers:
+  - 
+    type: nodal pressure
+    velocity constant: 0.5
+    pressure constant: 0.5
+conditions:
+  acceleration:
     - 
-      type: linear elastic
-      bulk modulus: 833333
-      shear modulus: 83
-  modifiers:
-    - 
-      type: nodal pressure
-      velocity constant: 0.5
-      pressure constant: 0.5
-  conditions:
-    acceleration:
-      - 
-        sets: ['y+']
-        value: 'vector(0.0, 0.0)'
-  scalars:
-    tip position:
-      type: node
-      field: position
-      set: 'tip'
-      component: 1
-  responses:
-#   - 
-#     type: VTK output
-#     time period: 0.5
-#     fields:
-#       - velocity
-#       - density
-#       - stress
-#       - nodal pressure
-#       - nodal pressure rate
-#   - 
-#     type: command line history
-#     minimum column width: 20
-#     scalars:
-#       - step
-#       - time
-#       - dt
-#       - tip position
-    - 
-      type: comparison
-      scalar: tip position
-      at time: '8.4'
-      expected value: '62.840636351625'
+      sets: ['y+']
+      value: 'vector(0.0, 0.0)'
+scalars:
+  tip position:
+    type: node
+    field: position
+    set: 'tip'
+    component: 1
+responses:
+  - 
+    type: VTK output
+    time period: 0.1
+    path: Cooks_membrane
+    fields:
+      - velocity
+      - density
+      - stress
+      - nodal pressure
+      - nodal pressure rate
+      - position
+  - 
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt
+      - tip position
+  - 
+    type: comparison
+    scalar: tip position
+    at time: '8.4'
+    expected value: '62.84058245'
+    tolerance: 1.0e-5

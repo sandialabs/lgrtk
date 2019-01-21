@@ -37,12 +37,13 @@ void Adapter::setup(Omega_h::InputMap& pl) {
     } else if (verbosity == "silent") {
       opts.verbosity = Omega_h::SILENT;
     }
+    if (sim.no_output) opts.verbosity = Omega_h::SILENT;
     this->gradation_rate = adapt_pl.get<double>("gradation rate", "1.0");
     should_coarsen_with_expansion =
         adapt_pl.get<bool>("coarsen with expansion", "false");
 #define LGR_EXPL_INST(Elem)                                                    \
   if (sim.elem_name == Elem::name()) {                                         \
-    remap.reset(remap_factory<Elem>(sim));                                     \
+    remap.reset(remap_factory<Elem>(sim, pl.get_map("remap")));                                     \
     opts.xfer_opts.user_xfer = remap;                                          \
   }
     LGR_EXPL_INST_ELEMS
@@ -77,7 +78,7 @@ bool Adapter::adapt() {
   {
     auto metric = sim.disc.mesh.get_array<double>(0, "metric");
     metric = Omega_h::limit_metric_gradation(
-        &sim.disc.mesh, metric, this->gradation_rate);
+        &sim.disc.mesh, metric, this->gradation_rate, 1e-2, !sim.no_output);
     sim.disc.mesh.add_tag(0, "metric", 1, metric);
   }
   remap->before_adapt();

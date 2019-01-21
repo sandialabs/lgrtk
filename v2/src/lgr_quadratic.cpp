@@ -2,7 +2,8 @@
 #include <Omega_h_for.hpp>
 #include <Omega_h_int_scan.hpp>
 #include <Omega_h_mesh.hpp>
-#include <Omega_h_simplex.hpp>
+#include <Omega_h_element.hpp>
+#include <lgr_for.hpp>
 #include <lgr_quadratic.hpp>
 
 namespace lgr {
@@ -26,7 +27,7 @@ static Omega_h::LOs count_nodes_by_verts(Omega_h::Mesh& mesh) {
     }
     counts[v] = count;
   };
-  Omega_h::parallel_for(mesh.nverts(), std::move(functor));
+  parallel_for(mesh.nverts(), std::move(functor));
   return counts;
 }
 
@@ -49,7 +50,7 @@ Omega_h::Few<Omega_h::LOs, 2> number_p2_nodes(Omega_h::Mesh& mesh) {
     }
     OMEGA_H_CHECK(offsets[v + 1] == (node + 1));
   };
-  Omega_h::parallel_for(mesh.nverts(), std::move(functor));
+  parallel_for(mesh.nverts(), std::move(functor));
   Omega_h::Few<Omega_h::LOs, 2> nodes{vtx_nodes, edge_nodes};
   return nodes;
 }
@@ -81,21 +82,31 @@ Omega_h::LOs build_p2_ents2nodes(
       ++node_ctr;
     }
   };
-  Omega_h::parallel_for(mesh.nents(ent_dim), std::move(functor));
+  parallel_for(mesh.nents(ent_dim), std::move(functor));
   return ents2nodes;
+}
+
+static Omega_h::Adj get_adj(Omega_h::Mesh& mesh, int const holder_dim, int const ent_dim) {
+  if (holder_dim < ent_dim) {
+    return mesh.ask_up(holder_dim, ent_dim);
+  }
+  auto const nholders = mesh.nents(holder_dim);
+  Omega_h::Adj adj = Omega_h::identity_graph(nholders);
+  adj.codes = decltype(adj.codes)(nholders, Omega_h::I8(0), "fake codes");
+  return adj;
 }
 
 static void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
     Omega_h::LOs nodes, Omega_h::Write<Omega_h::LO> counts) {
   OMEGA_H_TIME_FUNCTION;
-  auto node_ents2ents = mesh.ask_up(node_dim, ent_dim);
+  auto const node_ents2ents = get_adj(mesh, node_dim, ent_dim);
   auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
     auto const node = nodes[ent];
     auto const nadj_ents =
         node_ents2ents.a2ab[ent + 1] - node_ents2ents.a2ab[ent];
     counts[node] = nadj_ents;
   };
-  Omega_h::parallel_for(mesh.nents(node_dim), std::move(functor));
+  parallel_for(mesh.nents(node_dim), std::move(functor));
 }
 
 static Omega_h::LOs count_nodes2ents(
@@ -111,9 +122,9 @@ static Omega_h::LOs count_nodes2ents(
 
 static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
     Omega_h::LOs nodes, Omega_h::LOs a2ab, Omega_h::Write<Omega_h::LO> ab2b,
-    Omega_h::Write<Omega_h::I8> codes) {
+    Omega_h::Write<Omega_h::I8> codes, int const which_down_offset) {
   OMEGA_H_TIME_FUNCTION;
-  auto const node_ents2ents = mesh.ask_up(node_dim, ent_dim);
+  auto const node_ents2ents = get_adj(mesh, node_dim, ent_dim);
   auto functor = OMEGA_H_LAMBDA(Omega_h::LO ent) {
     auto const node = nodes[ent];
     auto ab = a2ab[node];
@@ -122,12 +133,14 @@ static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
     for (auto idx = adj_ent_begin; idx < adj_ent_end; ++idx) {
       auto const adj_ent = node_ents2ents.ab2b[idx];
       auto const adj_code = node_ents2ents.codes[idx];
+      auto const ent_which_down = Omega_h::code_which_down(adj_code);
+      auto const node_which_down = ent_which_down + which_down_offset;
       ab2b[ab] = adj_ent;
-      codes[ab] = adj_code;
+      codes[ab] = Omega_h::make_code(false, 0, node_which_down);
       ab++;
     }
   };
-  Omega_h::parallel_for(mesh.nents(node_dim), std::move(functor));
+  parallel_for(mesh.nents(node_dim), std::move(functor));
 }
 
 Omega_h::Adj build_p2_nodes2ents(
@@ -138,8 +151,9 @@ Omega_h::Adj build_p2_nodes2ents(
   auto const nab = a2ab.last();
   Omega_h::Write<Omega_h::LO> ab2b(nab, "nodes2ents_ab2b");
   Omega_h::Write<Omega_h::I8> codes(nab, "nodes2ents_codes");
-  build_ent_nodes2ents(mesh, 0, ent_dim, nodes[0], a2ab, ab2b, codes);
-  build_ent_nodes2ents(mesh, 1, ent_dim, nodes[1], a2ab, ab2b, codes);
+  build_ent_nodes2ents(mesh, 0, ent_dim, nodes[0], a2ab, ab2b, codes, 0);
+  auto const verts_per_ent = Omega_h::element_degree(mesh.family(), ent_dim, 0);
+  build_ent_nodes2ents(mesh, 1, ent_dim, nodes[1], a2ab, ab2b, codes, verts_per_ent);
   return Omega_h::Adj{a2ab, ab2b, codes};
 }
 
@@ -155,8 +169,7 @@ static void build_ent_node_coords(Omega_h::Mesh& mesh, int node_dim,
       coords[node * elem_dim + dim] = c;
     }
   };
-  Omega_h::parallel_for(
-      "build ent_node coords", mesh.nents(node_dim), std::move(functor));
+  parallel_for(mesh.nents(node_dim), std::move(functor));
 }
 
 Omega_h::Reals build_p2_node_coords(
