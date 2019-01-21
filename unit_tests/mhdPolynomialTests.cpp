@@ -156,8 +156,6 @@ ANONYMOUS:
   const auto elemFaceIDs_trg = femesh_trg.elem_face_ids;
   const auto elemFaceOrientations_trg = femesh_trg.elem_face_orientations;
 
-  const auto magneticFaceFlux = MagneticFaceFlux<Fields>();
-
   Kokkos::TeamPolicy<DeviceSpace> target_team_exec(elemLids_trg.size(), Kokkos::AUTO);
 
   //outer loop over target elements
@@ -193,7 +191,7 @@ ANONYMOUS:
           for (int face = 0; face < ElemFaceCount; ++face) {
             const int sign = elemFaceOrientations_src(ielem_src,face);
             const size_t faceID = elemFaceIDs_src(ielem_src,face);
-            faceFluxSource[face] = sign * magneticFaceFlux(faceID);  
+            faceFluxSource[face] = sign * magneticFaceFlux_src(faceID);  
           }       
        
           Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
