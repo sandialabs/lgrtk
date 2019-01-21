@@ -8,8 +8,10 @@
 #include "Omega_h_matrix.hpp"
 #include "Omega_h_file.hpp"
 #include "Omega_h_teuchos.hpp"
+#include "Omega_h_qr.hpp"
 
 #include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_TestingHelpers.hpp"
 #include <Teuchos_YamlParameterListCoreHelpers.hpp>
 
 #include "CrsMatrix.hpp"
@@ -21,6 +23,7 @@
 #include <sstream>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 #ifdef KOKKOS_HAVE_CUDA
 #define R3D_USE_CUDA
@@ -51,10 +54,29 @@ struct reduction_identity<Omega_h::Vector<3>> {
 }
 
 
+bool run_the_test(const std::array<Scalar,3> &perturbation);
 /******************************************************************************/
 TEUCHOS_UNIT_TEST( MHD, MatrixAssembly )
 {
+  if (1) {
+    std::srand(0);
+    const std::array<Scalar,3> perterb = {0,0,0};
+    bool pass = run_the_test(perterb);
+    TEST_ASSERT(pass);
+  }
 
+  if (1) {
+    std::array<Scalar,3> perterb;
+    perterb[0] = double(std::rand()%100)/1000.;
+    perterb[1] = double(std::rand()%100)/1000.;
+    perterb[2] = double(std::rand()%100)/1000.;
+    printf ("Perterb mesh by:(%f, %f, %f)\n",perterb[0],perterb[1],perterb[2]);
+    bool pass = run_the_test(perterb);
+    TEST_ASSERT(pass);
+  }
+}
+
+bool run_the_test(const std::array<Scalar,3> &perturbation) {
 
 const char *yaml = R"Love(
 %YAML 1.1
@@ -94,14 +116,15 @@ ANONYMOUS:
   //using DeviceTeamHandleType = Kokkos::TeamPolicy<DeviceSpace, DynamicScheduleType>::member_type;
 
   constexpr int spaceDim  = 3;
-  constexpr int vert      = spaceDim+1;
-  constexpr int moment    = 2;
-  constexpr int meshWidth = 2;
-  constexpr int maxElem   = 100;
-
   using Fields = Fields<spaceDim>;
   constexpr int ElemNodeCount = Fields::ElemNodeCount;
   constexpr int ElemFaceCount = Fields::ElemFaceCount;
+
+  constexpr int vert      = spaceDim+1;
+  constexpr int moment    = 2;
+  constexpr int meshWidth = 2;
+  constexpr int maxElem   = 50;
+  constexpr int maxFaceCount = maxElem*ElemFaceCount;
 
   typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tet4;
   typedef r3d::Polytope<spaceDim>              Polytope;
@@ -109,14 +132,14 @@ ANONYMOUS:
   typedef typename Fields::size_type size_type;
 
   constexpr Scalar aX_scaling = 1.0;
-  constexpr Scalar aY_scaling = 2.0;
-  constexpr Scalar aZ_scaling = 3.0;
+  constexpr Scalar aY_scaling = 1.0;
+  constexpr Scalar aZ_scaling = 1.0;
 
   Teuchos::RCP<Omega_h::Mesh> meshOmegaH_src = 
     PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth, aX_scaling, aY_scaling, aZ_scaling);
 
   Teuchos::RCP<Omega_h::Mesh> meshOmegaH_trg = 
-    PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth+1, aX_scaling, aY_scaling, aZ_scaling);
+    PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth, aX_scaling, aY_scaling, aZ_scaling);
 
   Omega_h::Assoc  assoc;
   Omega_h::update_assoc(&assoc, assoc_pl);
@@ -130,13 +153,17 @@ ANONYMOUS:
   auto fields_src = Teuchos::rcp(new Fields(femesh_src, paramList));
   auto fields_trg = Teuchos::rcp(new Fields(femesh_trg, paramList));
 
-  auto magneticFaceFlux_src = MagneticFaceFlux<Fields>();
+  Kokkos::realloc(FieldDB<Fields::array_type>::Self()["magnetic face flux source"], femesh_src.nfaces);
+  Kokkos::realloc(FieldDB<Fields::array_type>::Self()["magnetic face flux target"], femesh_trg.nfaces);
+
+  auto magneticFaceFlux_src = safeFieldLookup<Fields::array_type>("magnetic face flux source");
+  auto magneticFaceFlux_trg = safeFieldLookup<Fields::array_type>("magnetic face flux target");
 
   InitialConditions<Fields> ic(initialCond);
   ic.set( mesh_sets_src[Omega_h::SIDE_SET],
           mesh_sets_src[Omega_h::ELEM_SET],
-	  magneticFaceFlux_src, 
-	  femesh_src );
+          magneticFaceFlux_src, 
+          femesh_src );
 
   const auto iter_src = mesh_sets_src[Omega_h::ELEM_SET].find("eb_1");
   const auto iter_trg = mesh_sets_trg[Omega_h::ELEM_SET].find("eb_1");
@@ -152,8 +179,6 @@ ANONYMOUS:
   LGR_THROW_IF(maxElem<elemLids_src.size(), "Number of elements exceeds max.");
   LGR_THROW_IF(maxElem<elemLids_trg.size(), "Number of elements exceeds max.");
 
-  Omega_h::Write<Scalar> errorPlusOneCell(elemLids_trg.size());
-
   const auto elem_node_ids_src = femesh_src.elem_node_ids;
   const auto node_coords_src = femesh_src.node_coords;
   const auto elemFaceIDs_src = femesh_src.elem_face_ids;
@@ -164,8 +189,17 @@ ANONYMOUS:
   const auto elemFaceIDs_trg = femesh_trg.elem_face_ids;
   const auto elemFaceOrientations_trg = femesh_trg.elem_face_orientations;
 
-  const auto magneticFaceFlux = MagneticFaceFlux<Fields>();
-
+  Kokkos::parallel_for("Tweek Coordinates", Kokkos::RangePolicy<Kokkos::Serial>(0, 1), [&] (const int) {
+      for (int n = 0; n < node_coords_src.extent(0); ++n) {
+         if (std::abs(node_coords_src(n, 0)-.5)<.00001 &&
+             std::abs(node_coords_src(n, 1)-.5)<.00001 &&
+             std::abs(node_coords_src(n, 2)-.5)<.00001) {
+                node_coords_src(n, 0) += perturbation[0];
+                node_coords_src(n, 1) += perturbation[1];
+                node_coords_src(n, 2) += perturbation[2];
+         }
+      }
+  }); //end Kokkos::parallel_for outer loop over target elements 
 
   // Can only do a single matrix for a thread, so no looping over elements.
   // Hopefully Omega_h will eventually be looping over cavities and there will
@@ -173,103 +207,69 @@ ANONYMOUS:
   const size_type inull=std::numeric_limits<size_type>::max();
   const std::string debuggingName("mhdMatrixAssemblyTests");
   Kokkos::parallel_for(debuggingName, Kokkos::RangePolicy<Kokkos::Serial>(0, 1), [&] (const int) {
-      constexpr int maxFaceCount = maxElem*ElemFaceCount;
-      size_type elemFaceLocalIDs_trg [maxElem][ElemFaceCount];
-      size_type elemLocalIDsFace_trg [maxFaceCount][4];
-      size_type elemFaceIsSurface_trg[maxElem][ElemFaceCount];
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          elemFaceLocalIDs_trg[elem][face] = inull;
-          elemLocalIDsFace_trg[elem][face] = inull;
-          elemFaceIsSurface_trg[elem][face] = 0;
-        }
+
+    size_type elemFaceLocalIDs_trg [maxElem][ElemFaceCount];
+    size_type elemFaceIsSurface_trg[maxElem][ElemFaceCount];
+    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+      for (int face = 0; face < ElemFaceCount; ++face) {
+        elemFaceLocalIDs_trg[elem][face] = inull;
+        elemFaceIsSurface_trg[elem][face] = 0;
       }
-      for (int elem = 0; elem < maxElem*ElemFaceCount; ++elem) {
-        for (int face = 0; face < 4; ++face) {
-          elemLocalIDsFace_trg[elem][face] = inull;
-        }
-      }
-      int number_of_faces = 0;
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          if (elemFaceLocalIDs_trg[elem][face] == inull) {
-            int n = 0;
-            for (int ielem = elem; ielem < elemLids_trg.size() && n < 2; ++ielem) {
-              for (int iface = face; iface < ElemFaceCount && n < 2; ++iface) {
-                if (elemFaceIDs_trg(elem,face) == elemFaceIDs_trg(ielem,iface)) {
-                  if (elemFaceLocalIDs_trg[ielem][iface] == inull) {
-                    elemFaceLocalIDs_trg[ielem][iface] = number_of_faces; 
-                    ++n;
-                  }
+    }
+    int number_of_target_faces = 0;
+    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+      for (int face = 0; face < ElemFaceCount; ++face) {
+        if (elemFaceLocalIDs_trg[elem][face] == inull) {
+          int n = 0;
+          for (int ielem = elem; ielem < elemLids_trg.size() && n < 2; ++ielem) {
+            for (int iface = 0; iface < ElemFaceCount && n < 2; ++iface) {
+              if (elemFaceIDs_trg(elem,face) == elemFaceIDs_trg(ielem,iface)) {
+                if (elemFaceLocalIDs_trg[ielem][iface] == inull) {
+                  elemFaceLocalIDs_trg[ielem][iface] = number_of_target_faces; 
+                  ++n;
                 }
               }
             }
-            ++number_of_faces;
-            if (n==1) elemFaceIsSurface_trg[elem][face] = 1;
           }
+          ++number_of_target_faces;
+          if (n==1) elemFaceIsSurface_trg[elem][face] = 1;
         }
       }
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          const size_type id = elemFaceLocalIDs_trg[elem][face];
-          const int i = elemLocalIDsFace_trg[id][0] == inull ? 0 : 2;
-          elemLocalIDsFace_trg[id][i  ] = elem;
-          elemLocalIDsFace_trg[id][i+1] = face;
-        }
-      }
-      printf ("%d", (int)elemFaceIsSurface_trg[0][0]);
-      printf ("%d", (int)elemLocalIDsFace_trg[0][0]);
+    }
 
-      double faceFluxSource[maxFaceCount];
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          const int sign = elemFaceOrientations_trg  (elem,face);
-          const size_t faceGID = elemFaceIDs_trg     (elem,face);
-          const size_t faceLID = elemFaceLocalIDs_trg[elem][face];
-          faceFluxSource[faceLID] = sign * magneticFaceFlux(faceGID);  
-        }       
+    Omega_h::Matrix<maxFaceCount,maxFaceCount> M;
+    Omega_h::Vector<maxFaceCount>              f;
+    Omega_h::Matrix<maxElem,maxFaceCount>      Q;
+    Omega_h::Vector<maxElem>                   q;
+    
+    for (int iface = 0; iface < maxFaceCount; ++iface) {
+      f(iface) = 0;
+      for (int jface = 0; jface < maxFaceCount; ++jface) {
+        M(iface,jface) = 0;
       }
+    }
+    for (int elem = 0; elem < maxElem; ++elem) {
+      q(elem) = 0;
+      for (int face = 0; face < maxFaceCount; ++face) {
+        Q(elem,face) = 0;
+      }
+    }
 
-      Omega_h::Matrix<maxFaceCount,maxFaceCount> M;
-      Omega_h::Matrix<maxElem,maxFaceCount> Q;
-      Omega_h::Matrix<maxElem,maxFaceCount> D;
-      Omega_h::Vector<maxElem>              q;
-      Omega_h::Vector<maxElem>              d;
-     
-      for (int iface = 0; iface < maxFaceCount; ++iface) {
-        for (int jface = 0; jface < maxFaceCount; ++jface) {
-          M(iface,jface) = 0;
-        }
+    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+      q(elem) = 0;
+      for (int face = 0; face < ElemFaceCount; ++face) {
+        const int sign = elemFaceOrientations_trg(elem,face);
+        const size_t iface = elemFaceLocalIDs_trg[elem][face];
+        Q(elem,iface) = sign;
       }
-      for (int elem = 0; elem < maxElem; ++elem) {
-        q(elem) = 0;
-        d(elem) = 0;
-        for (int face = 0; face < maxFaceCount; ++face) {
-          Q(elem,face) = 0;
-          D(elem,face) = 0;
-        }
-      }
+    }
 
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        q(elem) = 0;
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          const int sign = elemFaceOrientations_trg(elem,face);
-          const size_t iface = elemLocalIDsFace_trg[elem][face];
-          Q(elem,iface) = sign;
-        }
-      }
+    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+      Scalar moments[Polynomial::nterms]; 
+      for (int i=0; i<Polynomial::nterms; ++i) moments[i]=0;
+      Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
 
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
-        d(elem) = 1;
-        for (int face = 0; face < ElemFaceCount; ++face) {
-          if (1 == elemFaceIsSurface_trg[elem][face]) {
-            const size_t face = elemLocalIDsFace_trg[elem][face];
-            D(elem,face) = faceFluxSource[face];
-          }
-        }
-      }
-
-      for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+      {
         Tet4 nodalCoordinates_trg;
         for (int i = 0; i < ElemNodeCount; ++i) {
            const int n = elem_node_ids_trg(elem, i);
@@ -280,153 +280,240 @@ ANONYMOUS:
         } 
         Polytope poly_trg;
         r3d::init(poly_trg, nodalCoordinates_trg);
-        double moments[Polynomial::nterms] = {0.}; 
         r3d::reduce<moment>(poly_trg, moments);
 
-        for (int iface = 0; iface < ElemFaceCount; ++iface) {
-          Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
-          for (int j=0; j<vert; ++j)
-             for (int i=0; i<spaceDim; ++i)
-                nodalCoordinates[j][i] = nodalCoordinates_trg[j][i];
-          Omega_h::Few<double,4> ifacesomething={0};
-          ifacesomething[iface]=1;
-          Omega_h::Vector<3> iconstantTerm;
-          lgr::Scalar ilinearFactor;
-          lgr::elementPhysicalFacePolynomial( /*input*/
-					     nodalCoordinates,
-					     ifacesomething,
-					     /*output*/
-					     iconstantTerm,
-					     ilinearFactor );
+        for (int j=0; j<vert; ++j)
+           for (int i=0; i<spaceDim; ++i)
+              nodalCoordinates[j][i] = nodalCoordinates_trg[j][i];
+      }
+
+      for (int iface = 0; iface < ElemFaceCount; ++iface) {
+
+        Omega_h::Few<Scalar,ElemFaceCount> ifacesomething;
+        for (int i=0; i<ElemFaceCount; ++i) ifacesomething[i]=0;
+        ifacesomething[iface]= elemFaceOrientations_trg(elem,iface);
+        Omega_h::Vector<3> iconstantTerm;
+        Scalar ilinearFactor;
+        elementPhysicalFacePolynomial( /*input*/
+                                       nodalCoordinates,
+                                       ifacesomething,
+                                       /*output*/
+                                       iconstantTerm,
+                                       ilinearFactor );
  
-          for (int jface = 0; jface < ElemFaceCount; ++jface) {
-            Omega_h::Few<double,4> jfacesomething={0};
-            jfacesomething[jface]=1;
-            Omega_h::Vector<3> jconstantTerm;
-            lgr::Scalar jlinearFactor;
-            lgr::elementPhysicalFacePolynomial( /*input*/
-	  				       nodalCoordinates,
-					       jfacesomething,
-					       /*output*/
-					       jconstantTerm,
-					       jlinearFactor );
-            
-            double src_poly[Polynomial::nterms]={0.};
-            src_poly[0] = iconstantTerm*jconstantTerm; //inner_product(iconstantTerm,jconstantTerm);
-            src_poly[1] = iconstantTerm[0]*jlinearFactor + jconstantTerm[0]*ilinearFactor;
-            src_poly[2] = iconstantTerm[1]*jlinearFactor + jconstantTerm[1]*ilinearFactor;
-            src_poly[3] = iconstantTerm[2]*jlinearFactor + jconstantTerm[2]*ilinearFactor;
-            src_poly[4] = ilinearFactor*jlinearFactor;
-            src_poly[5] = 0;
-            src_poly[6] = 0;
-            src_poly[7] = ilinearFactor*jlinearFactor;
-            src_poly[8] = 0;
-            src_poly[9] = ilinearFactor*jlinearFactor;
+        for (int jface = 0; jface < ElemFaceCount; ++jface) {
+          Omega_h::Few<Scalar,ElemFaceCount> jfacesomething;
+          for (int i=0; i<ElemFaceCount; ++i) jfacesomething[i]=0;
+          jfacesomething[jface]= elemFaceOrientations_trg(elem,jface);
+          Omega_h::Vector<3> jconstantTerm;
+          Scalar jlinearFactor;
+          elementPhysicalFacePolynomial( /*input*/
+                                       nodalCoordinates,
+                                       jfacesomething,
+                                       /*output*/
+                                       jconstantTerm,
+                                       jlinearFactor );
+         
+          Scalar src_poly[Polynomial::nterms];
+          src_poly[0] = iconstantTerm*jconstantTerm; //inner_product(iconstantTerm,jconstantTerm);
+          src_poly[1] = iconstantTerm[0]*jlinearFactor + jconstantTerm[0]*ilinearFactor;
+          src_poly[2] = iconstantTerm[1]*jlinearFactor + jconstantTerm[1]*ilinearFactor;
+          src_poly[3] = iconstantTerm[2]*jlinearFactor + jconstantTerm[2]*ilinearFactor;
+          src_poly[4] = ilinearFactor*jlinearFactor;
+          src_poly[5] = 0;
+          src_poly[6] = 0;
+          src_poly[7] = ilinearFactor*jlinearFactor;
+          src_poly[8] = 0;
+          src_poly[9] = ilinearFactor*jlinearFactor;
 
-            double integral = 0;
-            for (int i=0; i<Polynomial::nterms; ++i) {
-              integral += moments[i]*src_poly[i];
-            }    
-            integral *= elemFaceOrientations_trg(elem,iface);
-            integral *= elemFaceOrientations_trg(elem,jface);
-
-            const size_t i = elemLocalIDsFace_trg[elem][iface];
-            const size_t j = elemLocalIDsFace_trg[elem][jface];
-            M(i,j) += integral;
-          }
+          Scalar integral = 0;
+          for (int i=0; i<Polynomial::nterms; ++i) {
+            integral += moments[i]*src_poly[i];
+          }    
+          const size_t i = elemFaceLocalIDs_trg[elem][iface];
+          const size_t j = elemFaceLocalIDs_trg[elem][jface];
+          M(i,j) += integral;
         }
       }
-#if 0
+    }
+
+    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
       Tet4 nodalCoordinates_trg;
-      const int e_trg = 1;
-      const size_t ielem_trg = elemLids_trg[e_trg];
- 
       for (int i = 0; i < ElemNodeCount; ++i) {
-        const int n = elem_node_ids_trg(ielem_trg, i);
-        r3d::Vector<spaceDim> &coord = nodalCoordinates_trg[i];
-        coord[0] = node_coords_trg(n, 0);
-        coord[1] = node_coords_trg(n, 1);
-        coord[2] = node_coords_trg(n, 2);
+         const int n = elem_node_ids_trg(elem_trg, i);
+         r3d::Vector<spaceDim> &coord = nodalCoordinates_trg[i];
+         coord[0] = node_coords_trg(n, 0);
+         coord[1] = node_coords_trg(n, 1);
+         coord[2] = node_coords_trg(n, 2);
       } 
 
-      //integral of source B over a single target/source intersection
-      auto L =  LAMBDA_EXPRESSION(int e_src, Omega_h::Vector<3> &integralB) {
+      for (int elem_src = 0; elem_src < elemLids_src.size(); ++elem_src) {
+        Scalar moments[Polynomial::nterms] = {0.}; 
+        for (int i=0; i<Polynomial::nterms; ++i) moments[i] = 0; 
 
-          Tet4 nodalCoordinates_src;
-          const size_t ielem_src = elemLids_src[e_src];
+        Tet4 nodalCoordinates_src;
+        for (int i = 0; i < ElemNodeCount; ++i) {
+           const int n = elem_node_ids_src(elem_src, i);
+           r3d::Vector<spaceDim> &coord = nodalCoordinates_src[i];
+           coord[0] = node_coords_src(n, 0);
+           coord[1] = node_coords_src(n, 1);
+           coord[2] = node_coords_src(n, 2);
+        } 
 
-          for (int i = 0; i < ElemNodeCount; ++i) {
-            const int n = elem_node_ids_src(ielem_src, i);
-            r3d::Vector<spaceDim> &coord = nodalCoordinates_src[i];
-            coord[0] = node_coords_src(n, 0); 
-            coord[1] = node_coords_src(n, 1); 
-            coord[2] = node_coords_src(n, 2);
-          } 
+        Polytope intersection;
+        r3d::intersect_simplices(intersection, nodalCoordinates_src, nodalCoordinates_trg);
+        r3d::reduce<moment>(intersection, moments);
 
-          Omega_h::Vector<ElemFaceCount> faceFluxSource;
-          for (int face = 0; face < ElemFaceCount; ++face) {
-            const int sign = elemFaceOrientations_src(ielem_src,face);
-            const size_t faceID = elemFaceIDs_src(ielem_src,face);
-            faceFluxSource[face] = sign * magneticFaceFlux(faceID);  
-          }       
-       
+        Omega_h::Vector<3> jconstantTerm;
+        Scalar jlinearFactor;
+        {
           Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
           for (int j=0; j<vert; ++j)
              for (int i=0; i<spaceDim; ++i)
                 nodalCoordinates[j][i] = nodalCoordinates_src[j][i];
-          Omega_h::Vector<3> constantTerm;
-          lgr::Scalar linearFactor;
-          lgr::elementPhysicalFacePolynomial( /*input*/
-					     nodalCoordinates,
-					     faceFluxSource,
-					     /*output*/
-					     constantTerm,
-					     linearFactor );
- 
-          double src_poly[3][Polynomial::nterms]={{0.}};
-          src_poly[0][0] = constantTerm[0];
-          src_poly[0][1] = linearFactor;
-          src_poly[1][0] = constantTerm[1];
-          src_poly[1][2] = linearFactor;
-          src_poly[2][0] = constantTerm[2];
-          src_poly[2][3] = linearFactor;
-      
-          Polytope intersection;
-          r3d::intersect_simplices(intersection, nodalCoordinates_src, nodalCoordinates_trg);
-          double moments[Polynomial::nterms] = {0.}; 
-          r3d::reduce<moment>(intersection, moments);
 
-          for (int j=0; j<3; ++j) {
-             for (int i=0; i<Polynomial::nterms; ++i) {
-                integralB(j) += moments[i]*src_poly[j][i];
-             }    
+          Omega_h::Vector<ElemFaceCount> faceFluxSource;
+          for (int face = 0; face < ElemFaceCount; ++face) {
+            const int sign = elemFaceOrientations_src(elem_src,face);
+            const size_t faceGID = elemFaceIDs_src(elem_src,face);
+            faceFluxSource[face] = sign * magneticFaceFlux_src(faceGID);  
+          }       
+          elementPhysicalFacePolynomial( /*input*/
+                                         nodalCoordinates,
+                                         faceFluxSource,
+                                         /*output*/
+                                         jconstantTerm,
+                                         jlinearFactor );
+        }
+
+        for (int iface = 0; iface < ElemFaceCount; ++iface) {
+
+          Omega_h::Vector<3> iconstantTerm;
+          Scalar ilinearFactor;
+          {
+            Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
+            for (int j=0; j<vert; ++j)
+               for (int i=0; i<spaceDim; ++i)
+                  nodalCoordinates[j][i] = nodalCoordinates_trg[j][i];
+            Omega_h::Few<Scalar,ElemFaceCount> ifacesomething;
+            for (int i=0; i<ElemFaceCount; ++i) ifacesomething[i]=0;
+            ifacesomething[iface] = elemFaceOrientations_trg(elem_trg,iface);
+            elementPhysicalFacePolynomial( /*input*/
+                                           nodalCoordinates,
+                                           ifacesomething,
+                                           /*output*/
+                                           iconstantTerm,
+                                           ilinearFactor );
           }
-      };//end lambda L
 
-      //magnetic data to be computed for one target element
-      Omega_h::Vector<3> integralMagneticFluxDensity; 
-      integralMagneticFluxDensity(0) = integralMagneticFluxDensity(1) = integralMagneticFluxDensity(2) = 0.;
+          Scalar src_poly[Polynomial::nterms];
+          for (int i=0; i<Polynomial::nterms; ++i) src_poly[i]=0;
+          src_poly[0] = iconstantTerm*jconstantTerm; //inner_product(iconstantTerm,jconstantTerm);
+          src_poly[1] = iconstantTerm[0]*jlinearFactor + jconstantTerm[0]*ilinearFactor;
+          src_poly[2] = iconstantTerm[1]*jlinearFactor + jconstantTerm[1]*ilinearFactor;
+          src_poly[3] = iconstantTerm[2]*jlinearFactor + jconstantTerm[2]*ilinearFactor;
+          src_poly[4] = ilinearFactor*jlinearFactor;
+          src_poly[5] = 0;
+          src_poly[6] = 0;
+          src_poly[7] = ilinearFactor*jlinearFactor;
+          src_poly[8] = 0;
+          src_poly[9] = ilinearFactor*jlinearFactor;
 
-      //for each target element, loop over source elements
-      //Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, elemLids_src.size()), L, integralMagneticFluxDensity);
+          Scalar integral = 0;
+          for (int i=0; i<Polynomial::nterms; ++i) {
+            integral += moments[i]*src_poly[i];
+          }    
 
-      //exact solution for a single target element
-      double target_volume(0.);
-      Polytope poly_trg;
-      r3d::init(poly_trg, nodalCoordinates_trg);
-      r3d::reduce<0>(poly_trg, &target_volume);
-      Omega_h::Vector<3> Bexact;
-      Bexact(0) = 1.; Bexact(1) = 2.; Bexact(2) = 5.; 
-      Bexact*=target_volume;
-      errorPlusOneCell[e_trg] = 1.0 + Omega_h::norm(Bexact-integralMagneticFluxDensity)/Omega_h::norm(Bexact);
+          const size_t i = elemFaceLocalIDs_trg[elem_trg][iface];
+          f(i) += integral;
+        }
+      }
+    }
 
-#endif
+    const int nface = number_of_target_faces;
+    const int nelem = elemLids_trg.size();
+    int nsize = nface+nelem;
+
+    constexpr int maxSize = maxFaceCount+maxElem;
+    Omega_h::Matrix<maxSize,maxSize> A;
+    Omega_h::Vector<maxSize>         b;
+    for (int i=0; i<maxSize; ++i) {
+      b(i) = 0;
+      for (int j=0; j<maxSize; ++j) {
+        A(i,j) = 0;
+      }
+    }
+    for (int i=0; i<nface; ++i) {
+      for (int j=0; j<nface; ++j) {
+        A(i,j) = M(i,j);
+      }
+    }
+    for (int i=0; i<nelem; ++i) {
+      for (int j=0; j<nface; ++j) {
+        A(nface+i,j) = Q(i,j);
+        A(j,nface+i) = Q(i,j);
+      }
+    }
+
+    for (int i=0; i<nface; ++i) b(i) = f(i);
+    for (int i=0; i<nelem; ++i) b(i+nface) = q(i);
+
+    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+      for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg) {
+        if (elemFaceIsSurface_trg[elem_trg][face_trg]) {  
+          const size_t faceGID_trg = elemFaceIDs_trg(elem_trg,face_trg);
+          Scalar faceFluxSource = 0;
+          int sign = 0;
+          bool found = false;
+          for (int elem_src = 0; elem_src < elemLids_src.size() && !found; ++elem_src) {
+            for (int face_src = 0; face_src < ElemFaceCount && !found; ++face_src) {
+              const size_t faceGID_src = elemFaceIDs_src(elem_src,face_src);
+              if (faceGID_trg == faceGID_src) {
+                sign = elemFaceOrientations_trg(elem_trg,face_trg);
+                faceFluxSource =  magneticFaceFlux_src(faceGID_src);  
+                found = true;
+              }
+            }
+          }
+          LGR_THROW_IF(!found, "External face not found.");
+          const int i = elemFaceLocalIDs_trg[elem_trg][face_trg];
+          A(nsize,i) = sign;
+          A(i,nsize) = sign;
+          b(nsize)   = faceFluxSource;
+          ++nsize;
+        }
+      }
+    }
+    LGR_THROW_IF(maxSize<nsize, "Maximum cavity size exceeded. Increase max number of elements.");
+
+    Omega_h::Vector<maxSize> x = Omega_h::solve_using_qr(nsize, nsize, A, b);
+
+    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+      for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg) {
+        const size_t faceID_trg = elemFaceLocalIDs_trg[elem_trg][face_trg];
+        const size_t faceGID = elemFaceIDs_trg(elem_trg,face_trg);
+        magneticFaceFlux_trg(faceGID) = x(faceID_trg);
+      }
+    }
+
   }); //end Kokkos::parallel_for outer loop over target elements 
 
-  Omega_h::HostWrite<Scalar> errorPlusOne(errorPlusOneCell);
-  for (int i=0; i<elemLids_trg.size(); ++i) 
-    TEST_FLOATING_EQUALITY(errorPlusOne[i], 1.0, 2.0e-14);
-
+  bool success = true;
+  Scalar norm = 0; for (int i=0; i<3; ++i) norm += perturbation[i]*perturbation[i];
+  const double tol = norm ? .1 : 1.0e-12;
+  auto flux_trg = Kokkos::create_mirror_view(magneticFaceFlux_trg);
+  auto flux_src = Kokkos::create_mirror_view(magneticFaceFlux_src);
+  Kokkos::deep_copy(flux_trg, magneticFaceFlux_trg);
+  Kokkos::deep_copy(flux_src, magneticFaceFlux_src);
+  for (int i=0; i<magneticFaceFlux_trg.size(); ++i) {
+    const bool check = std::abs(flux_trg(i)-flux_src(i))<tol;
+    if (!check) std::cout<<" Failed check. Target flux:"<<flux_trg(i)
+      <<" Source Flux:"<<flux_src(i)
+      <<" Diff:"<<std::abs(flux_trg(i)-flux_src(i))
+      <<" Tol:"<<tol<<std::endl;
+    success = success && check;
+  }
+  return success;
 }
 
 
