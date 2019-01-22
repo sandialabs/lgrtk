@@ -25,7 +25,7 @@ void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
-  if (models.empty()) Omega_h_fail("no material models defined!\n");
+//if (models.empty()) Omega_h_fail("no material models defined!\n");
   ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"),
       models, "modifier");
 }
