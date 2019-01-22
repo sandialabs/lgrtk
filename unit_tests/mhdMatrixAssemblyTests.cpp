@@ -70,7 +70,6 @@ TEUCHOS_UNIT_TEST( MHD, MatrixAssembly )
     perterb[0] = double(std::rand()%100)/1000.;
     perterb[1] = double(std::rand()%100)/1000.;
     perterb[2] = double(std::rand()%100)/1000.;
-    printf ("Perterb mesh by:(%f, %f, %f)\n",perterb[0],perterb[1],perterb[2]);
     bool pass = run_the_test(perterb);
     TEST_ASSERT(pass);
   }
@@ -149,15 +148,33 @@ ANONYMOUS:
   FEMesh<spaceDim> femesh_src = PlatoUtestHelpers::createFEMesh<spaceDim>(meshOmegaH_src);
   FEMesh<spaceDim> femesh_trg = PlatoUtestHelpers::createFEMesh<spaceDim>(meshOmegaH_trg);
 
+  const auto node_coords_src = femesh_src.node_coords;
+  Kokkos::parallel_for("Tweek Coordinates", Kokkos::RangePolicy<Kokkos::Serial>(0, 1), [&] (const int) {
+      for (unsigned n = 0; n < node_coords_src.extent(0); ++n) {
+         if (std::abs(node_coords_src(n, 0)-.5)<.00001 &&
+             std::abs(node_coords_src(n, 1)-.5)<.00001 &&
+             std::abs(node_coords_src(n, 2)-.5)<.00001) {
+                node_coords_src(n, 0) += perturbation[0];
+                node_coords_src(n, 1) += perturbation[1];
+                node_coords_src(n, 2) += perturbation[2];
+         }
+      }
+  }); //end Kokkos::parallel_for outer loop over target elements 
+
   Teuchos::ParameterList paramList;
   auto fields_src = Teuchos::rcp(new Fields(femesh_src, paramList));
   auto fields_trg = Teuchos::rcp(new Fields(femesh_trg, paramList));
 
   Kokkos::realloc(FieldDB<Fields::array_type>::Self()["magnetic face flux source"], femesh_src.nfaces);
   Kokkos::realloc(FieldDB<Fields::array_type>::Self()["magnetic face flux target"], femesh_trg.nfaces);
+  Kokkos::realloc(FieldDB<Fields::elem_vector_type>::Self()["magnetic flux density source"], femesh_src.nelems);
+  Kokkos::realloc(FieldDB<Fields::elem_vector_type>::Self()["magnetic flux density target"], femesh_trg.nelems);
 
   auto magneticFaceFlux_src = safeFieldLookup<Fields::array_type>("magnetic face flux source");
   auto magneticFaceFlux_trg = safeFieldLookup<Fields::array_type>("magnetic face flux target");
+
+  auto magneticFluxDensity_src = safeFieldLookup<Fields::elem_vector_type>("magnetic flux density source");
+  auto magneticFluxDensity_trg = safeFieldLookup<Fields::elem_vector_type>("magnetic flux density target");
 
   InitialConditions<Fields> ic(initialCond);
   ic.set( mesh_sets_src[Omega_h::SIDE_SET],
@@ -179,27 +196,14 @@ ANONYMOUS:
   LGR_THROW_IF(maxElem<elemLids_src.size(), "Number of elements exceeds max.");
   LGR_THROW_IF(maxElem<elemLids_trg.size(), "Number of elements exceeds max.");
 
-  const auto elem_node_ids_src = femesh_src.elem_node_ids;
-  const auto node_coords_src = femesh_src.node_coords;
-  const auto elemFaceIDs_src = femesh_src.elem_face_ids;
+  const auto elem_node_ids_src        = femesh_src.elem_node_ids;
+  const auto elemFaceIDs_src          = femesh_src.elem_face_ids;
   const auto elemFaceOrientations_src = femesh_src.elem_face_orientations;
 
-  const auto elem_node_ids_trg = femesh_trg.elem_node_ids;
-  const auto node_coords_trg = femesh_trg.node_coords;
-  const auto elemFaceIDs_trg = femesh_trg.elem_face_ids;
+  const auto elem_node_ids_trg        = femesh_trg.elem_node_ids;
+  const auto node_coords_trg          = femesh_trg.node_coords;
+  const auto elemFaceIDs_trg          = femesh_trg.elem_face_ids;
   const auto elemFaceOrientations_trg = femesh_trg.elem_face_orientations;
-
-  Kokkos::parallel_for("Tweek Coordinates", Kokkos::RangePolicy<Kokkos::Serial>(0, 1), [&] (const int) {
-      for (unsigned n = 0; n < node_coords_src.extent(0); ++n) {
-         if (std::abs(node_coords_src(n, 0)-.5)<.00001 &&
-             std::abs(node_coords_src(n, 1)-.5)<.00001 &&
-             std::abs(node_coords_src(n, 2)-.5)<.00001) {
-                node_coords_src(n, 0) += perturbation[0];
-                node_coords_src(n, 1) += perturbation[1];
-                node_coords_src(n, 2) += perturbation[2];
-         }
-      }
-  }); //end Kokkos::parallel_for outer loop over target elements 
 
   // Can only do a single matrix for a thread, so no looping over elements.
   // Hopefully Omega_h will eventually be looping over cavities and there will
@@ -486,13 +490,57 @@ ANONYMOUS:
     }
     LGR_THROW_IF(maxSize<nsize, "Maximum cavity size exceeded. Increase max number of elements.");
 
-    Omega_h::Vector<maxSize> x = Omega_h::solve_using_qr(nsize, nsize, A, b);
+    Omega_h::Vector<maxSize> X = Omega_h::solve_using_qr(nsize, nsize, A, b);
 
     for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
       for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg) {
         const size_t faceID_trg = elemFaceLocalIDs_trg[elem_trg][face_trg];
         const size_t faceGID = elemFaceIDs_trg(elem_trg,face_trg);
-        magneticFaceFlux_trg(faceGID) = x(faceID_trg);
+        magneticFaceFlux_trg(faceGID) = X(faceID_trg);
+      }
+    }
+    {
+      constexpr Scalar xi[] = {1./3.,1./3.,1./3.};
+      for (int elem_src = 0; elem_src < elemLids_src.size(); ++elem_src) {
+        Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
+        for (int i = 0; i < ElemNodeCount; ++i) {
+          const int n = elem_node_ids_src(elem_src, i);
+          x[i] = node_coords_src(n, 0);
+          y[i] = node_coords_src(n, 1);
+          z[i] = node_coords_src(n, 2);
+        }
+        const auto faceBasis = comp_face_basis( x,y,z, xi );
+        Omega_h::Vector<3> B = Omega_h::zero_vector<3>();
+        for (int face=0; face<ElemFaceCount; ++face) {
+          const int sign = elemFaceOrientations_src(elem_src,face);
+          const size_type faceID = elemFaceIDs_src(elem_src,face);
+          const Scalar globalFaceFlux = magneticFaceFlux_src(faceID);
+          const Scalar localFaceFlux = sign * globalFaceFlux;
+          B += localFaceFlux*faceBasis[face];
+        }
+      for (int i=0; i<3; ++i) magneticFluxDensity_src(elem_src,i) = B[i];
+      }
+    }
+    {
+      constexpr Scalar xi[] = {1./3.,1./3.,1./3.};
+      for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+        Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
+        for (int i = 0; i < ElemNodeCount; ++i) {
+          const int n = elem_node_ids_trg(elem_trg, i);
+          x[i] = node_coords_trg(n, 0);
+          y[i] = node_coords_trg(n, 1);
+          z[i] = node_coords_trg(n, 2);
+        }
+        const auto faceBasis = comp_face_basis( x,y,z, xi );
+        Omega_h::Vector<3> B = Omega_h::zero_vector<3>();
+        for (int face=0; face<ElemFaceCount; ++face) {
+          const int sign = elemFaceOrientations_trg(elem_trg,face);
+          const size_type faceID = elemFaceIDs_trg(elem_trg,face);
+          const Scalar globalFaceFlux = magneticFaceFlux_trg(faceID);
+          const Scalar localFaceFlux = sign * globalFaceFlux;
+          B += localFaceFlux*faceBasis[face];
+        }
+      for (int i=0; i<3; ++i) magneticFluxDensity_trg(elem_trg,i) = B[i];
       }
     }
 
@@ -503,14 +551,42 @@ ANONYMOUS:
   const double tol = norm ? .1 : 1.0e-12;
   auto flux_trg = Kokkos::create_mirror_view(magneticFaceFlux_trg);
   auto flux_src = Kokkos::create_mirror_view(magneticFaceFlux_src);
+  auto dens_trg = Kokkos::create_mirror_view(magneticFluxDensity_trg);
+  auto dens_src = Kokkos::create_mirror_view(magneticFluxDensity_src);
   Kokkos::deep_copy(flux_trg, magneticFaceFlux_trg);
   Kokkos::deep_copy(flux_src, magneticFaceFlux_src);
-  for (unsigned i=0; i<magneticFaceFlux_trg.size(); ++i) {
+  Kokkos::deep_copy(dens_trg, magneticFluxDensity_trg);
+  Kokkos::deep_copy(dens_src, magneticFluxDensity_src);
+  for (unsigned i=0; i<flux_trg.size() && success; ++i) {
     const bool check = std::abs(flux_trg(i)-flux_src(i))<tol;
     if (!check) std::cout<<" Failed check. Target flux:"<<flux_trg(i)
       <<" Source Flux:"<<flux_src(i)
       <<" Diff:"<<std::abs(flux_trg(i)-flux_src(i))
       <<" Tol:"<<tol<<std::endl;
+    success = success && check;
+  }
+  for (unsigned i=0; i<femesh_src.nelems && success; ++i) {
+    const Scalar exact[3]={1,2,5};
+    Scalar diff = 0;
+    for (int j=0;j<3;++j) diff+=(dens_src(i,j)-exact[j])*(dens_src(i,j)-exact[j]);
+    const bool check = diff<tol;
+    if (!check) std::cout<<" Failed check. Target flux density:"
+      <<dens_src(i,0)<<" "<<dens_src(i,1)<<" "<<dens_src(i,2)<<" "
+      <<"Exact flux density:"
+      <<exact[0]<<" "<<exact[1]<<" "<<exact[2]<<" "
+      <<" Diff:"<<diff <<" Tol:"<<tol<<std::endl;
+    success = success && check;
+  }
+  for (unsigned i=0; i<femesh_trg.nelems && success; ++i) {
+    const Scalar exact[3]={1,2,5};
+    Scalar diff = 0;
+    for (int j=0;j<3;++j) diff+=(dens_trg(i,j)-exact[j])*(dens_trg(i,j)-exact[j]);
+    const bool check = diff<tol;
+    if (!check) std::cout<<" Failed check. Target flux density:"
+      <<dens_trg(i,0)<<" "<<dens_trg(i,1)<<" "<<dens_trg(i,2)<<" "
+      <<"Exact flux density:"
+      <<exact[0]<<" "<<exact[1]<<" "<<exact[2]<<" "
+      <<" Diff:"<<diff <<" Tol:"<<tol<<std::endl;
     success = success && check;
   }
   return success;
