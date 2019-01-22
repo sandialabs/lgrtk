@@ -2,37 +2,9 @@
 #include <lgr_stvenant_kirchhoff.hpp>
 #include "lgr_gtest.hpp"
 
+#include <Omega_h_print.hpp>
+
 using Omega_h::are_close;
-
-template <int M, int N>
-static bool is_close(
-    Omega_h::Matrix<M, N> a,
-    Omega_h::Matrix<M, N> b,
-    double eps = 1e-12) {
-  bool close = true;
-  for (int i = 0; i < M; ++i) {
-    for (int j = 0; j < N; ++j) {
-      if (! are_close(a(i, j), b(i, j), eps)) {
-        close = false;
-      }
-    }
-  }
-  return close;
-}
-
-template <int N>
-static bool is_close(
-    Omega_h::Vector<N> a,
-    Omega_h::Vector<N> b,
-    double eps = 1e-12) {
-  bool close = true;
-  for (int i = 0; i < N; ++i) {
-    if (! are_close(a[i], b[i], eps)) {
-      close = false;
-    }
-  }
-  return close;
-}
 
 static Omega_h::Matrix<3, 3> I3x3() {
   Omega_h::Matrix<3, 3> I = Omega_h::zero_matrix<3, 3>();
@@ -339,13 +311,123 @@ static Omega_h::Few<Omega_h::Vector<6>, 4> gold_cauchy_stress() {
   return sigma;
 }
 
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_first_pk_stress() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk;
+  first_pk[0] = {
+    2.9627833040353236e9, 3.4051519034111733e9, 4.45972095644526e9,
+    1.4638379297356075e8, 3.095567251387963e8,  3.908808750632892e8,
+    1.7450473161761922e8, 4.269056051310349e8,  2.5014549902738482e8 };
+  first_pk[1] = {
+    2.9843116170476804e9, 3.58535550141769e9,   3.9851858428708878e9,
+    3.4175510386132973e8, 1.1396027797916356e8, 1.6273032901840755e8,
+    2.5303532228481236e8, 9.291718288402088e7,  3.6724304895006657e8 };
+  first_pk[2] = {
+    2.9246551235958343e9, 3.7948703908662357e9, 4.1289994493808618e9,
+    3.221074426430058e8,  6.730887040601448e8,  4.098516523361694e7,
+    5.626590800086402e8,  2.9727482276880985e8, 1.0019072433257125e8 };
+  first_pk[3] = {
+    2.9658276050033693e9, 3.6252663393705006e9, 5.152249942248564e9,
+    1.672489755254337e8,  5.875929632359095e8,  8.649810850498325e8,
+    1.9578312215072435e8, 1.0423197780807687e9, 4.6229749303606486e8 };
+  return first_pk;
+}
+
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_first_pk_stress_vol_avg() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk_vol_avg;
+  first_pk_vol_avg[0] = {
+    2.58768735527362e9,   3.0834376095521336e9, 4.2444212963296766e9,
+    1.6578045869507906e8, 3.5022328875138265e8, 4.1934643820845425e8,
+    1.9123449223093212e8, 4.598672231657681e8,  2.890814302302636e8 };
+  first_pk_vol_avg[1] = {
+    3.2111957630315027e9, 3.7915247966314583e9, 4.1800073867437644e9,
+    3.345984527007366e8,  1.1184322315795493e8, 1.4845958218697417e8,
+    2.4024604919807744e8, 9.014136227729547e7,  3.651738595006602e8 };
+  first_pk_vol_avg[2] = {
+    3.0964451728124156e9, 3.9328632365113034e9, 4.254955241971802e9,
+    2.990218844824561e8,  6.631091648868126e8,  3.8134938537194386e7,
+    5.507304787953924e8,  2.751796481388979e8,  9.946138624687307e7 };
+  first_pk_vol_avg[3] = {
+    2.9576437562858334e9, 3.58075879070754e9,   5.031839842809374e9,
+    1.5848886833578113e8, 5.512868525854561e8,  8.274942375110501e8,
+    1.8662199392205712e8, 9.972797664198612e8,  4.315986712363822e8 };
+  return first_pk_vol_avg;
+}
+
+static void do_vol_avg_F(
+    Omega_h::Vector<4> weights,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& F) {
+  double vol = 0.0;
+  double J_bar = 0.0;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    vol += weights[pt];
+    J_bar += weights[pt] * Omega_h::determinant(F[pt]);
+  }
+  J_bar /= vol;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    double fac = std::cbrt(J_bar / Omega_h::determinant(F[pt]));
+    F[pt] *= fac;
+  }
+}
+
+static Omega_h::Matrix<3, 3> compute_sigma(Omega_h::Matrix<3, 3> F) {
+  double E = 3.45e+9;
+  double nu = 0.35;
+  double K = E / (3.0 * (1.0 - 2.0 * nu));
+  double mu = E / (2.0 * (1.0 + nu));
+  double unused = 0.0;
+  Omega_h::Matrix<3, 3> cauchy_stress;
+  lgr::stvenant_kirchhoff_update(K, mu, 1.0, F, cauchy_stress, unused);
+  return cauchy_stress;
+}
+
+static Omega_h::Matrix<3, 3> compute_intermediate_first_PK(
+    Omega_h::Matrix<3, 3> F,
+    Omega_h::Matrix<3, 3> sigma) {
+  auto J = Omega_h::determinant(F);
+  auto FinvT = Omega_h::transpose(Omega_h::invert(F));
+  return J * sigma * FinvT;
+}
+
+static Omega_h::Vector<4> save_J_old(
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips) {
+  Omega_h::Vector<4> J_old;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    J_old[pt] = Omega_h::determinant(F_ips[pt]);
+  }
+  return J_old;
+}
+
+static void do_vol_avg_first_pk_stress(
+    Omega_h::Vector<4> weights,
+    Omega_h::Vector<4> J_old,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& first_pk) {
+  double vol = 0.0;
+  double p_bar = 0.0;
+  Omega_h::Vector<4> inner_P;
+  auto J_bar = Omega_h::determinant(F_ips[0]);
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    vol += weights[pt];
+    inner_P[pt] = Omega_h::inner_product(F_ips[pt], first_pk[pt]);
+    p_bar += weights[pt] * inner_P[pt] / (3.0 * J_bar);
+  }
+  p_bar /= vol;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto fac = std::cbrt(J_bar / J_old[pt]);
+    auto pk_adjust = Omega_h::invert(Omega_h::transpose(F_ips[pt]));
+    pk_adjust *= ((p_bar * J_old[pt]) - (inner_P[pt] / 3.0));
+    first_pk[pt] += pk_adjust;
+    first_pk[pt] *= fac;
+  }
+}
+
 TEST(composite_tet, O_parametric) {
   auto I = I3x3();
   auto X = get_parametric_coords();
   auto S = lgr::CompTet::compute_S();
   auto O = lgr::CompTet::compute_O(X, S);
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
-    EXPECT_TRUE(is_close(O[tet], I));
+    EXPECT_TRUE(are_close(O[tet], I));
   }
 }
 
@@ -355,7 +437,7 @@ TEST(composite_tet, O_reference) {
   auto O = lgr::CompTet::compute_O(X, S);
   auto O_gold = gold_O_reference();
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
-    EXPECT_TRUE(is_close(O[tet], O_gold[tet]));
+    EXPECT_TRUE(are_close(O[tet], O_gold[tet]));
   }
 }
 
@@ -366,7 +448,7 @@ TEST(composite_tet, M_inv_parametric) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_parametric();
-  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
+  EXPECT_TRUE(are_close(M_inv, M_inv_gold));
 }
 
 TEST(composite_tet, M_inv_reference) {
@@ -376,7 +458,7 @@ TEST(composite_tet, M_inv_reference) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_reference();
-  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
+  EXPECT_TRUE(are_close(M_inv, M_inv_gold));
 }
 
 TEST(composite_tet, B_parametric) {
@@ -388,8 +470,8 @@ TEST(composite_tet, B_parametric) {
     auto BT = shape.basis_gradients[pt];
     auto B = Omega_h::transpose(BT);
     auto result = X * B;
-    EXPECT_TRUE(is_close(result, I));
-    EXPECT_TRUE(is_close(B, B_gold[pt]));
+    EXPECT_TRUE(are_close(result, I));
+    EXPECT_TRUE(are_close(B, B_gold[pt]));
   }
 }
 
@@ -402,8 +484,8 @@ TEST(composite_tet, B_reference) {
     auto BT = shape.basis_gradients[pt];
     auto B = Omega_h::transpose(BT);
     auto result = X * B;
-    EXPECT_TRUE(is_close(result, I));
-    EXPECT_TRUE(is_close(B, B_gold[pt]));
+    EXPECT_TRUE(are_close(result, I));
+    EXPECT_TRUE(are_close(B, B_gold[pt]));
   }
 }
 
@@ -439,23 +521,7 @@ TEST(composite_tet, def_grad) {
     auto B = Omega_h::transpose(BT);
     auto F = x * B;
     auto F_sierra = to_sierra_full(F);
-    EXPECT_TRUE(is_close(F_sierra, F_gold[pt]));
-  }
-}
-
-static void do_vol_avg_F(
-    Omega_h::Vector<4> weights,
-    Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& F) {
-  double vol = 0.0;
-  double J_bar = 0.0;
-  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
-    vol += weights[pt];
-    J_bar += weights[pt] * Omega_h::determinant(F[pt]);
-  }
-  J_bar /= vol;
-  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
-    double fac = std::cbrt(J_bar / Omega_h::determinant(F[pt]));
-    F[pt] *= fac;
+    EXPECT_TRUE(are_close(F_sierra, F_gold[pt]));
   }
 }
 
@@ -473,7 +539,7 @@ TEST(composite_tet, def_grad_vol_avg) {
   auto F_gold_vol_avg = gold_F_vol_avg();
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
     auto F_sierra = to_sierra_full(F_ips[pt]);
-    EXPECT_TRUE(is_close(F_sierra, F_gold_vol_avg[pt]));
+    EXPECT_TRUE(are_close(F_sierra, F_gold_vol_avg[pt]));
   }
 }
 
@@ -488,17 +554,60 @@ TEST(composite_tet, cauchy_stress_vol_avg) {
     F_ips[pt] = x * B;
   }
   do_vol_avg_F(shape.weights, F_ips);
-  double E = 3.45e+9;
-  double nu = 0.35;
-  double K = E / (3.0 * (1.0 - 2.0 * nu));
-  double mu = E / (2.0 * (1.0 + nu));
-  double unused = 0.0;
-  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> cauchy_stress;
   auto cauchy_stress_gold = gold_cauchy_stress();
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
-    lgr::stvenant_kirchhoff_update(
-        K, mu, 1.0, F_ips[pt], cauchy_stress[pt], unused);
-    auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress[pt]);
-    EXPECT_TRUE(is_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress);
+    EXPECT_TRUE(are_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
+  }
+}
+
+TEST(composite_tet, first_pk) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0;  pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  do_vol_avg_F(shape.weights, F_ips);
+  auto first_pk_stress_gold = gold_first_pk_stress();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    auto first_pk_stress = compute_intermediate_first_PK(
+        F_ips[pt], cauchy_stress);
+    auto first_pk_stress_sierra = to_sierra_full(first_pk_stress);
+    EXPECT_TRUE(are_close(first_pk_stress_sierra, first_pk_stress_gold[pt]));
+  }
+}
+
+TEST(composite_tet, first_pk_vol_avg) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  auto J_old = save_J_old(F_ips);
+  do_vol_avg_F(shape.weights, F_ips);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk_stress_vol_avg;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    first_pk_stress_vol_avg[pt] = compute_intermediate_first_PK(
+        F_ips[pt], cauchy_stress);
+  }
+  do_vol_avg_first_pk_stress(
+      shape.weights, J_old, F_ips, first_pk_stress_vol_avg);
+  auto first_pk_stress_vol_avg_gold = gold_first_pk_stress_vol_avg();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto first_pk_stress_vol_avg_sierra = to_sierra_full(
+        first_pk_stress_vol_avg[pt]);
+    EXPECT_TRUE(are_close(first_pk_stress_vol_avg_sierra,
+          first_pk_stress_vol_avg_gold[pt]));
   }
 }
