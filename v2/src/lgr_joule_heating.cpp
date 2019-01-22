@@ -61,6 +61,7 @@ struct JouleHeating : public Model<Elem> {
     relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
     absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
+    anode_voltage = pl.get<double>("anode voltage", "1.0");
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
@@ -229,7 +230,7 @@ struct JouleHeating : public Model<Elem> {
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
     // TODO: put a circuit here!
-    anode_voltage = 1.0;
+    //anode_voltage = 1.0;
     cathode_voltage = 0.0;
   }
   void contribute_joule_heating() {
