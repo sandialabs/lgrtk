@@ -16,6 +16,7 @@ set(SOURCES
   ElementHelpersReplacements.cpp
   mhdTests.cpp
   mhdPolynomialTests.cpp
+  mhdMatrixAssemblyTests
   R3D.cpp
 )
 
