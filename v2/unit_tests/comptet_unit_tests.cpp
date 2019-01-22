@@ -2,8 +2,6 @@
 #include <lgr_stvenant_kirchhoff.hpp>
 #include "lgr_gtest.hpp"
 
-#include <Omega_h_print.hpp>
-
 using Omega_h::are_close;
 
 template <int M, int N>
@@ -404,6 +402,21 @@ static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_proj_first_pk_stress_vol_avg(
   return proj_first_pk_vol_avg;
 }
 
+static Omega_h::Matrix<3, 10> gold_internal_force() {
+  Omega_h::Matrix<3, 10> force;
+  force[0] = { -1.30132258184043e8,   -1.5185537183633882e8, -1.538507206397105e8 };
+  force[1] = {  1.6903380219124466e8,  1.809918513904932e7,   2.616316076266101e7 };
+  force[2] = { -341369.0975488222,     1.360120797364083e8,  -4.057329082722776e7 };
+  force[3] = {  2.9272342578719404e7,  4.684446158336138e7,   1.5663931929029718e8 };
+  force[4] = { -1.2683092842415749e8, -4.668989518312824e8,  -5.02230750756363e8 };
+  force[5] = {  5.211501762186061e8,   6.366940576985344e8,   2.262436060705869e8 };
+  force[6] = { -4.4482036665093243e8, -2.599106838785327e8,  -6.255280542785532e8 };
+  force[7] = { -4.6458158158432186e8, -4.910751314529436e8,  -1.894747182131428e8 };
+  force[8] = {  4.2382630669543624e8,   1.4286187263715604e8,  5.904495645706066e8 };
+  force[9] = {  2.3423876256997444e7,   3.892284822045882e8,   5.1216188402084494e8 };
+  return force;
+}
+
 static void do_vol_avg_F(
     Omega_h::Vector<4> weights,
     Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& F) {
@@ -501,6 +514,20 @@ static void do_proj_first_pk_stress(
       }
     }
   }
+}
+
+static Omega_h::Matrix<3, 10> compute_internal_force(
+    lgr::Shape<lgr::CompTet> shape,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk) {
+  Omega_h::Matrix<3, 10> node_f;
+  for (int node = 0; node < lgr::CompTet::nodes; ++node) {
+    node_f[node] = Omega_h::zero_vector<3>();
+    for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+      auto gradT = shape.basis_gradients[pt];
+      node_f[node] += (first_pk[pt] * gradT[node] * shape.weights[pt]);
+    }
+  }
+  return node_f;
 }
 
 TEST(composite_tet, O_parametric) {
@@ -718,5 +745,31 @@ TEST(composite_tet, first_pk_vol_avg_projected) {
     auto proj_first_pk_vol_avg_sierra = to_sierra_full(first_pk[pt]);
     EXPECT_TRUE(is_close(proj_first_pk_vol_avg_sierra,
           proj_first_pk_vol_avg_gold[pt]));
+  }
+}
+
+TEST(composite_tet, internal_force) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  auto J_old = save_J_old(F_ips);
+  do_vol_avg_F(shape.weights, F_ips);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    first_pk[pt] = compute_intermediate_first_PK(F_ips[pt], cauchy_stress);
+  }
+  do_vol_avg_first_pk_stress(shape.weights, J_old, F_ips, first_pk);
+  do_proj_first_pk_stress(shape.weights, X, first_pk);
+  auto internal_force = compute_internal_force(shape, first_pk);
+  auto internal_force_gold = gold_internal_force();
+  for (int node = 0; node < lgr::CompTet::nodes; ++node) {
+    EXPECT_TRUE(is_close(internal_force[node], internal_force_gold[node]));
   }
 }
