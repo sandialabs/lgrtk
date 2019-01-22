@@ -6,6 +6,36 @@
 
 using Omega_h::are_close;
 
+template <int M, int N>
+static bool is_close(
+    Omega_h::Matrix<M, N> a,
+    Omega_h::Matrix<M, N> b,
+    double eps = 1e-12) {
+  bool close = true;
+  for (int i = 0; i < M; ++i) {
+    for (int j = 0; j < N; ++j) {
+      if (! are_close(a(i, j), b(i, j), eps)) {
+        close = false;
+      }
+    }
+  }
+  return close;
+}
+
+template <int N>
+static bool is_close(
+    Omega_h::Vector<N> a,
+    Omega_h::Vector<N> b,
+    double eps = 1e-12) {
+  bool close = true;
+  for (int i = 0; i < N; ++i) {
+    if (! are_close(a[i], b[i], eps)) {
+      close = false;
+    }
+  }
+  return close;
+}
+
 static Omega_h::Matrix<3, 3> I3x3() {
   Omega_h::Matrix<3, 3> I = Omega_h::zero_matrix<3, 3>();
   for (int i = 0; i < 3; ++i) {
@@ -353,6 +383,27 @@ static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_first_pk_stress_vol_avg() {
   return first_pk_vol_avg;
 }
 
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_proj_first_pk_stress_vol_avg() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> proj_first_pk_vol_avg;
+  proj_first_pk_vol_avg[0] = {
+    2.608769057180682e9,  3.1120305120452366e9, 4.2619893252032804e9,
+    1.6895755169998825e8, 3.554349888130218e8,  4.216426696924487e8,
+    1.9548606444512677e8, 4.6609018214240646e8, 2.912470080767164e8 };
+  proj_first_pk_vol_avg[1] = {
+    3.2048032427599382e9, 3.78024513202312e9,   4.1802648700166245e9,
+    3.328645763648082e8,  1.0690903102949911e8, 1.540109136940784e8,
+    2.349336831450805e8,  9.267611909432858e7,  3.682295208691982e8 };
+  proj_first_pk_vol_avg[2] = {
+    3.08944162769325e9,   3.925793282690892e9,  4.255604010887148e9,
+    2.9714778445997673e8, 6.673684268302189e8,  4.044368149882501e7,
+    5.512623655191036e8,  2.7946232638259745e8, 9.772939894410646e7 };
+  proj_first_pk_vol_avg[3] = {
+    2.944831230168068e9,  3.5633330245091333e9, 5.003872837272947e9,
+    1.5883016145498228e8, 5.43786151194426e8,   8.129841000383611e8,
+    1.8664395493851542e8, 9.779986686938462e8,  4.267145125854173e8 };
+  return proj_first_pk_vol_avg;
+}
+
 static void do_vol_avg_F(
     Omega_h::Vector<4> weights,
     Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& F) {
@@ -421,13 +472,44 @@ static void do_vol_avg_first_pk_stress(
   }
 }
 
+static void do_proj_first_pk_stress(
+    Omega_h::Vector<4> weights,
+    Omega_h::Matrix<3, 10> node_coords,
+    Omega_h::Few<Omega_h::Matrix<3, 3>, 4>& first_pk) {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> stress_integral;
+  for (int i = 0; i < lgr::CompTet::nbarycentric_coords; ++i) {
+    stress_integral[i] = Omega_h::zero_matrix<3, 3>();
+  }
+  auto ref_points = lgr::CompTet::get_ref_points();
+  for (int pt = 0;  pt < lgr::CompTet::points; ++pt) {
+    auto lambda = lgr::CompTet::get_barycentric_coord(ref_points[pt]);
+    for (int l1 = 0; l1 < lgr::CompTet::nbarycentric_coords; ++l1) {
+      stress_integral[l1] += lambda[l1] * weights[pt] * first_pk[pt];
+    }
+  }
+  auto M_inv = lgr::CompTet::compute_M_inv(node_coords);
+  for (int pt = 0;  pt < lgr::CompTet::points; ++pt) {
+    auto lambda = lgr::CompTet::get_barycentric_coord(ref_points[pt]);
+    for (int i = 0; i < 3; ++i) {
+      for (int j = 0; j < 3; ++j) {
+        first_pk[pt](i, j) = 0.0;
+        for (int l1 = 0;  l1 < lgr::CompTet::nbarycentric_coords; ++l1) {
+          for (int l2 = 0;  l2 < lgr::CompTet::nbarycentric_coords; ++l2) {
+            first_pk[pt](i, j) += lambda[l1] * M_inv(l1, l2) * stress_integral[l2](i, j);
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST(composite_tet, O_parametric) {
   auto I = I3x3();
   auto X = get_parametric_coords();
   auto S = lgr::CompTet::compute_S();
   auto O = lgr::CompTet::compute_O(X, S);
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
-    EXPECT_TRUE(are_close(O[tet], I));
+    EXPECT_TRUE(is_close(O[tet], I));
   }
 }
 
@@ -437,7 +519,7 @@ TEST(composite_tet, O_reference) {
   auto O = lgr::CompTet::compute_O(X, S);
   auto O_gold = gold_O_reference();
   for (int tet = 0; tet < lgr::CompTet::nsub_tets; ++tet) {
-    EXPECT_TRUE(are_close(O[tet], O_gold[tet]));
+    EXPECT_TRUE(is_close(O[tet], O_gold[tet]));
   }
 }
 
@@ -448,7 +530,7 @@ TEST(composite_tet, M_inv_parametric) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_parametric();
-  EXPECT_TRUE(are_close(M_inv, M_inv_gold));
+  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
 }
 
 TEST(composite_tet, M_inv_reference) {
@@ -458,7 +540,7 @@ TEST(composite_tet, M_inv_reference) {
   auto O_det = lgr::CompTet::compute_O_det(O);
   auto M_inv = lgr::CompTet::compute_M_inv(O_det);
   auto M_inv_gold = gold_M_inv_reference();
-  EXPECT_TRUE(are_close(M_inv, M_inv_gold));
+  EXPECT_TRUE(is_close(M_inv, M_inv_gold));
 }
 
 TEST(composite_tet, B_parametric) {
@@ -470,8 +552,8 @@ TEST(composite_tet, B_parametric) {
     auto BT = shape.basis_gradients[pt];
     auto B = Omega_h::transpose(BT);
     auto result = X * B;
-    EXPECT_TRUE(are_close(result, I));
-    EXPECT_TRUE(are_close(B, B_gold[pt]));
+    EXPECT_TRUE(is_close(result, I));
+    EXPECT_TRUE(is_close(B, B_gold[pt]));
   }
 }
 
@@ -484,8 +566,8 @@ TEST(composite_tet, B_reference) {
     auto BT = shape.basis_gradients[pt];
     auto B = Omega_h::transpose(BT);
     auto result = X * B;
-    EXPECT_TRUE(are_close(result, I));
-    EXPECT_TRUE(are_close(B, B_gold[pt]));
+    EXPECT_TRUE(is_close(result, I));
+    EXPECT_TRUE(is_close(B, B_gold[pt]));
   }
 }
 
@@ -521,7 +603,7 @@ TEST(composite_tet, def_grad) {
     auto B = Omega_h::transpose(BT);
     auto F = x * B;
     auto F_sierra = to_sierra_full(F);
-    EXPECT_TRUE(are_close(F_sierra, F_gold[pt]));
+    EXPECT_TRUE(is_close(F_sierra, F_gold[pt]));
   }
 }
 
@@ -539,7 +621,7 @@ TEST(composite_tet, def_grad_vol_avg) {
   auto F_gold_vol_avg = gold_F_vol_avg();
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
     auto F_sierra = to_sierra_full(F_ips[pt]);
-    EXPECT_TRUE(are_close(F_sierra, F_gold_vol_avg[pt]));
+    EXPECT_TRUE(is_close(F_sierra, F_gold_vol_avg[pt]));
   }
 }
 
@@ -558,7 +640,7 @@ TEST(composite_tet, cauchy_stress_vol_avg) {
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
     auto cauchy_stress = compute_sigma(F_ips[pt]);
     auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress);
-    EXPECT_TRUE(are_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
+    EXPECT_TRUE(is_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
   }
 }
 
@@ -579,7 +661,7 @@ TEST(composite_tet, first_pk) {
     auto first_pk_stress = compute_intermediate_first_PK(
         F_ips[pt], cauchy_stress);
     auto first_pk_stress_sierra = to_sierra_full(first_pk_stress);
-    EXPECT_TRUE(are_close(first_pk_stress_sierra, first_pk_stress_gold[pt]));
+    EXPECT_TRUE(is_close(first_pk_stress_sierra, first_pk_stress_gold[pt]));
   }
 }
 
@@ -607,7 +689,34 @@ TEST(composite_tet, first_pk_vol_avg) {
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
     auto first_pk_stress_vol_avg_sierra = to_sierra_full(
         first_pk_stress_vol_avg[pt]);
-    EXPECT_TRUE(are_close(first_pk_stress_vol_avg_sierra,
+    EXPECT_TRUE(is_close(first_pk_stress_vol_avg_sierra,
           first_pk_stress_vol_avg_gold[pt]));
+  }
+}
+
+TEST(composite_tet, first_pk_vol_avg_projected) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  auto J_old = save_J_old(F_ips);
+  do_vol_avg_F(shape.weights, F_ips);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk;
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    first_pk[pt] = compute_intermediate_first_PK(F_ips[pt], cauchy_stress);
+  }
+  do_vol_avg_first_pk_stress(shape.weights, J_old, F_ips, first_pk);
+  do_proj_first_pk_stress(shape.weights, X, first_pk);
+  auto proj_first_pk_vol_avg_gold = gold_proj_first_pk_stress_vol_avg();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto proj_first_pk_vol_avg_sierra = to_sierra_full(first_pk[pt]);
+    EXPECT_TRUE(is_close(proj_first_pk_vol_avg_sierra,
+          proj_first_pk_vol_avg_gold[pt]));
   }
 }
