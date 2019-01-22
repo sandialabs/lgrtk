@@ -2,6 +2,8 @@
 #include <lgr_stvenant_kirchhoff.hpp>
 #include "lgr_gtest.hpp"
 
+#include <Omega_h_print.hpp>
+
 using Omega_h::are_close;
 
 template <int M, int N>
@@ -339,6 +341,27 @@ static Omega_h::Few<Omega_h::Vector<6>, 4> gold_cauchy_stress() {
   return sigma;
 }
 
+static Omega_h::Few<Omega_h::Matrix<3, 3>, 4> gold_first_pk_stress() {
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> first_pk;
+  first_pk[0] = {
+    2.9627833040353236e9, 3.4051519034111733e9, 4.45972095644526e9,
+    1.4638379297356075e8, 3.095567251387963e8,  3.908808750632892e8,
+    1.7450473161761922e8, 4.269056051310349e8,  2.5014549902738482e8 };
+  first_pk[1] = {
+    2.9843116170476804e9, 3.58535550141769e9,   3.9851858428708878e9,
+    3.4175510386132973e8, 1.1396027797916356e8, 1.6273032901840755e8,
+    2.5303532228481236e8, 9.291718288402088e7,  3.6724304895006657e8 };
+  first_pk[2] = {
+    2.9246551235958343e9, 3.7948703908662357e9, 4.1289994493808618e9,
+    3.221074426430058e8,  6.730887040601448e8,  4.098516523361694e7,
+    5.626590800086402e8,  2.9727482276880985e8, 1.0019072433257125e8 };
+  first_pk[3] = {
+    2.9658276050033693e9, 3.6252663393705006e9, 5.152249942248564e9,
+    1.672489755254337e8,  5.875929632359095e8,  8.649810850498325e8,
+    1.9578312215072435e8, 1.0423197780807687e9, 4.6229749303606486e8 };
+  return first_pk;
+}
+
 TEST(composite_tet, O_parametric) {
   auto I = I3x3();
   auto X = get_parametric_coords();
@@ -477,6 +500,17 @@ TEST(composite_tet, def_grad_vol_avg) {
   }
 }
 
+static Omega_h::Matrix<3, 3> compute_sigma(Omega_h::Matrix<3, 3> F) {
+  double E = 3.45e+9;
+  double nu = 0.35;
+  double K = E / (3.0 * (1.0 - 2.0 * nu));
+  double mu = E / (2.0 * (1.0 + nu));
+  double unused = 0.0;
+  Omega_h::Matrix<3, 3> cauchy_stress;
+  lgr::stvenant_kirchhoff_update(K, mu, 1.0, F, cauchy_stress, unused);
+  return cauchy_stress;
+}
+
 TEST(composite_tet, cauchy_stress_vol_avg) {
   auto X = get_reference_coords();
   auto x = get_current_coords();
@@ -488,17 +522,39 @@ TEST(composite_tet, cauchy_stress_vol_avg) {
     F_ips[pt] = x * B;
   }
   do_vol_avg_F(shape.weights, F_ips);
-  double E = 3.45e+9;
-  double nu = 0.35;
-  double K = E / (3.0 * (1.0 - 2.0 * nu));
-  double mu = E / (2.0 * (1.0 + nu));
-  double unused = 0.0;
-  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> cauchy_stress;
   auto cauchy_stress_gold = gold_cauchy_stress();
   for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
-    lgr::stvenant_kirchhoff_update(
-        K, mu, 1.0, F_ips[pt], cauchy_stress[pt], unused);
-    auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress[pt]);
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    auto cauchy_stress_sierra = to_sierra_symm(cauchy_stress);
     EXPECT_TRUE(is_close(cauchy_stress_sierra, cauchy_stress_gold[pt]));
+  }
+}
+
+static Omega_h::Matrix<3, 3> compute_intermediate_first_PK(
+    Omega_h::Matrix<3, 3> F,
+    Omega_h::Matrix<3, 3> sigma) {
+  auto J = Omega_h::determinant(F);
+  auto FinvT = Omega_h::transpose(Omega_h::invert(F));
+  return J * sigma * FinvT;
+}
+
+TEST(composite_tet, first_pk) {
+  auto X = get_reference_coords();
+  auto x = get_current_coords();
+  auto shape = lgr::CompTet::shape(X);
+  Omega_h::Few<Omega_h::Matrix<3, 3>, 4> F_ips;
+  for (int pt = 0;  pt < lgr::CompTet::points; ++pt) {
+    auto BT = shape.basis_gradients[pt];
+    auto B = Omega_h::transpose(BT);
+    F_ips[pt] = x * B;
+  }
+  do_vol_avg_F(shape.weights, F_ips);
+  auto first_pk_stress_gold = gold_first_pk_stress();
+  for (int pt = 0; pt < lgr::CompTet::points; ++pt) {
+    auto cauchy_stress = compute_sigma(F_ips[pt]);
+    auto first_pk_stress = compute_intermediate_first_PK(
+        F_ips[pt], cauchy_stress);
+    auto first_pk_stress_sierra = to_sierra_full(first_pk_stress);
+    EXPECT_TRUE(is_close(first_pk_stress_sierra, first_pk_stress_gold[pt]));
   }
 }
