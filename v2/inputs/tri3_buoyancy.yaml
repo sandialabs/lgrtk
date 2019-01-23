@@ -4,7 +4,7 @@ input variables:
   p0: 5.0
   g: 1.0
 CFL: 0.9
-end time: 2.0
+end time: 2.2
 element type: Tri3
 mesh:
   CUBIT:
@@ -35,7 +35,7 @@ mesh:
 material models:
   -
     sets: ['high_ball', 'low_ball']
-    type: linear elastic
+    type: neo-Hookean
   -
     sets: ['fluid']
     type: ideal gas
