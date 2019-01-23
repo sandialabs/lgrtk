@@ -68,7 +68,7 @@ struct NeoHookean : public Model<Elem> {
       setstress(points_to_stress, point, sigma);
       points_to_wave_speed[point] = c;
     };
-    parallel_for("neo-Hookean kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 

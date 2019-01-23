@@ -292,7 +292,7 @@ struct HyperEP : public Model<Elem> {
       setfull<Elem>(points_to_F, point, resize<Elem::dim>(F));
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
     };
-    parallel_for("hyper ep kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 
