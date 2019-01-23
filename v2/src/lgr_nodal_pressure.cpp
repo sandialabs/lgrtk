@@ -133,7 +133,7 @@ struct NodalPressure : public Model<Elem> {
       auto const point_p = p * basis_values;
       auto const sigma = getstress(points_to_sigma, point);
       auto const dev_sigma = deviator(sigma);
-      auto const I = identity_matrix<Elem::dim, Elem::dim>();
+      auto const I = identity_matrix<3, 3>();
       auto const sigma_tilde = dev_sigma + I * (point_p + p_prime);
       setstress(points_to_sigma, point, sigma_tilde);
     };

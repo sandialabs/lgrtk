@@ -48,7 +48,7 @@ struct ArtificialViscosity : public Model<Elem> {
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
       auto const dN_dxnp1 = getgrads<Elem>(points_to_grad, point);
-      auto const grad_v = resize<3, 3>(grad<Elem>(dN_dxnp1, v));
+      auto const grad_v = resize<3>(grad<Elem>(dN_dxnp1, v));
       auto const nu_l = points_to_nu_l[point];
       auto const nu_q = points_to_nu_q[point];
       auto const h_min = elems_to_h_min[elem];
