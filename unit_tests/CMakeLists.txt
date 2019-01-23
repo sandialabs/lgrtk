@@ -1,63 +1,54 @@
-set(SOURCES
-  LGRTestHelpers.cpp
-  CrsMatrixTests.cpp
-  InitialConditionTests.cpp
-  FieldDB.cpp
-  IdealGas.cpp
-  LowRmPotentialSolveTests.cpp
-  LowRmRLCCircuitTests.cpp
-  MatrixIOTests.cpp
-  SampleTests.cpp
-  SimplexCellToolsTests.cpp
-  SimplexCubatureTests.cpp
-  Teuchos_StandardUnitTestMain.cpp
-  ConductivityModels.cpp
-  TwoDMesh.cpp
-  ElementHelpersReplacements.cpp
-  mhdTests.cpp
-  mhdPolynomialTests.cpp
-  mhdMatrixAssemblyTests
-  R3D.cpp
-)
-
-IF (AMGX_FOUND)
+if (NOT LGR_ENABLE_PLATO)
   set(SOURCES
-      ${SOURCES}
-      AmgXTests.cpp
-)
-ENDIF()
-
-IF (ViennaCL_FOUND)
-  set(SOURCES
-      ${SOURCES}
-      ViennaCLTests.cpp
-)
-ENDIF()
-
-set(HEADERS
-  LGRTestHelpers.hpp
-)
-
-add_executable(UnitTests
-  ${SOURCES}
-  ${HEADERS}
-)
-
-target_link_libraries(UnitTests PUBLIC lgrtk)
-target_include_directories(UnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-build_mpi_test_string(MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/UnitTests)
-add_test(NAME runUnitTests COMMAND ${MPI_TEST})
-
-if(LGR_ENABLE_AD_TEST AND NOT AMGX_FOUND)
-  set(AD_Tests_SOURCES
-    ad_test.cpp
+    LGRTestHelpers.cpp
+    CrsMatrixTests.cpp
+    InitialConditionTests.cpp
+    FieldDB.cpp
+    IdealGas.cpp
+    LowRmPotentialSolveTests.cpp
+    LowRmRLCCircuitTests.cpp
+    MatrixIOTests.cpp
+    SampleTests.cpp
+    SimplexCellToolsTests.cpp
+    SimplexCubatureTests.cpp
+    Teuchos_StandardUnitTestMain.cpp
+    ConductivityModels.cpp
+    TwoDMesh.cpp
+    ElementHelpersReplacements.cpp
+    mhdTests.cpp
+    mhdPolynomialTests.cpp
+    mhdMatrixAssemblyTests
+    R3D.cpp
   )
-  add_executable(ADTest
-    ${AD_Tests_SOURCES}
+
+  IF (AMGX_FOUND)
+    set(SOURCES
+        ${SOURCES}
+        AmgXTests.cpp
   )
-  target_link_libraries(ADTest ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${FASTPOSIT_LIBRARIES})
-  target_include_directories(ADTest PRIVATE ${Trilinos_INCLUDE_DIRS} ${FASTPOSIT_INCLUDE_DIRS})
+  ENDIF()
+
+  IF (ViennaCL_FOUND)
+    set(SOURCES
+        ${SOURCES}
+        ViennaCLTests.cpp
+  )
+  ENDIF()
+
+  set(HEADERS
+    LGRTestHelpers.hpp
+  )
+
+  add_executable(UnitTests
+    ${SOURCES}
+    ${HEADERS}
+  )
+
+  target_link_libraries(UnitTests PUBLIC lgrtk)
+  target_include_directories(UnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/UnitTests)
+  add_test(NAME runUnitTests COMMAND ${MPI_TEST})
 endif()
 
 if (LGR_ENABLE_PLATO)
@@ -272,6 +263,17 @@ if (LGR_ENABLE_PLATO)
 
   build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/DerivativeUnitTests)
   add_test(NAME runDerivativeUnitTests COMMAND ${ES_MPI_TEST})
+
+  if(LGR_ENABLE_AD_TEST AND NOT AMGX_FOUND)
+    set(AD_Tests_SOURCES
+      ad_test.cpp
+    )
+    add_executable(ADTest
+      ${AD_Tests_SOURCES}
+    )
+    target_link_libraries(ADTest ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${FASTPOSIT_LIBRARIES})
+    target_include_directories(ADTest PRIVATE ${Trilinos_INCLUDE_DIRS} ${FASTPOSIT_INCLUDE_DIRS})
+  endif()
 endif()
 
 if (LGR_ENABLE_PLATO_MPMD)
