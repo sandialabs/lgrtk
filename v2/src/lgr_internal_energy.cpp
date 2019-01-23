@@ -17,15 +17,14 @@ struct InternalEnergy : public Model<Elem> {
         specific_internal_energy(
             sim_in.fields.find("specific internal energy")) {
     specific_internal_energy_rate = this->point_define(
-        "e_dot", "specific internal energy rate", 1, RemapType::NONE, "0.0");
+        "e_dot", "specific internal energy rate", 1, RemapType::NONE, "");
   }
   std::uint64_t exec_stages() override final {
     return BEFORE_MATERIAL_MODEL | BEFORE_SECONDARIES | AFTER_CORRECTION;
   }
   char const* name() override final { return "internal energy"; }
   void before_material_model() override final {
-    if (sim.dt == 0.0 &&
-        (!sim.fields[specific_internal_energy_rate].storage.exists())) {
+    if (sim.dt == 0.0 && (!sim.fields.has(specific_internal_energy_rate))) {
       zero_internal_energy_rate();
     }
     compute_internal_energy_predictor();
