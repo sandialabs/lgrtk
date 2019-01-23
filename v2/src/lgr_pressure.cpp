@@ -19,7 +19,7 @@ struct Pressure : public ModelBase {
     auto const points_to_p = this->sim.set(this->pressure);
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const sigma = getstress(points_to_sigma, point);
-      auto const p = -trace(sigma);
+      auto const p = -trace(sigma) / 3;
       points_to_p[point] = p;
     };
     parallel_for(this->points(), std::move(functor));
