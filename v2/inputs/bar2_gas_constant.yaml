@@ -23,7 +23,7 @@ scalars:
   pressure error:
     type: L2 error
     field: pressure
-    expected value: '0.4 * 3'
+    expected value: '0.4'
 responses:
   - 
     type: VTK output
