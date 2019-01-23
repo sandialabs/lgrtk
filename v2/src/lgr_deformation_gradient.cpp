@@ -1,4 +1,3 @@
-#include <Omega_h_print.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_for.hpp>
 #include <lgr_model.hpp>
