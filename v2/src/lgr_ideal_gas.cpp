@@ -30,8 +30,8 @@ struct IdealGas : public Model<Elem> {
       double c;
       double pressure;
       ideal_gas_update(gamma, rho_np1, e_np1_est, pressure, c);
-      auto const sigma = diagonal(fill_vector<Elem::dim>(-pressure));
-      setsymm<Elem>(points_to_sigma, point, sigma);
+      auto const sigma = diagonal(fill_vector<3>(-pressure));
+      setstress(points_to_sigma, point, sigma);
       points_to_c[point] = c;
     };
     parallel_for(this->points(), std::move(functor));

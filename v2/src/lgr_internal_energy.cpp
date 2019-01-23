@@ -92,7 +92,7 @@ struct InternalEnergy : public Model<Elem> {
       auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
       auto const grads = getgrads<Elem>(points_to_grad, point);
       auto const grad_v = grad<Elem>(grads, v);
-      auto const sigma = getsymm<Elem>(points_to_sigma, point);
+      auto const sigma = resize<Elem::dim>(getstress(points_to_sigma, point));
       auto const e_rho_dot = inner_product(grad_v, sigma);
       auto const rho = points_to_rho[point];
       auto const e_dot = e_rho_dot / rho;
