@@ -283,7 +283,7 @@ struct HyperEP : public Model<Elem> {
           epdot, dp, localized);
       OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
-      setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(T));
+      setstress(points_to_stress, point, T);
       points_to_wave_speed[point] = c;
       points_to_ep[point] = ep;
       points_to_epdot[point] = epdot;
@@ -292,7 +292,7 @@ struct HyperEP : public Model<Elem> {
       setfull<Elem>(points_to_F, point, resize<Elem::dim>(F));
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
     };
-    parallel_for("hyper ep kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 

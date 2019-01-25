@@ -49,8 +49,8 @@ struct MieGruneisen : public Model<Elem> {
       double pressure;
       mie_gruneisen_update(
           rho0, gamma0, c0, s1, rho_np1, e_np1_est, pressure, c);
-      auto sigma = diagonal(fill_vector<Elem::dim>(-pressure));
-      setsymm<Elem>(points_to_sigma, point, sigma);
+      auto sigma = diagonal(fill_vector<3>(-pressure));
+      setstress(points_to_sigma, point, sigma);
       points_to_c[point] = c;
     };
     parallel_for(this->points(), std::move(functor));

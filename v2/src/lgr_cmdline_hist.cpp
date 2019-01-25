@@ -20,6 +20,7 @@ struct CmdLineHist : public Response {
       column_width = Omega_h::max2(column_width, name.length());
     }
     column_width += 2;
+    if (sim.no_output) return;
     for (auto& name : scalars) {
       std::printf(" %*s ", int(column_width - 2), name.c_str());
     }

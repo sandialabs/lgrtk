@@ -1,6 +1,6 @@
 #include <Omega_h_profile.hpp>
 #include <lgr_artificial_viscosity.hpp>
-#include <lgr_circular_symmetry.hpp>
+#include <lgr_pressure.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
 #include <lgr_ideal_gas.hpp>
@@ -25,7 +25,7 @@ void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
-  if (models.empty()) Omega_h_fail("no material models defined!\n");
+//if (models.empty()) Omega_h_fail("no material models defined!\n");
   ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"),
       models, "modifier");
 }
@@ -97,7 +97,7 @@ ModelFactories get_builtin_modifier_factories() {
   out["artificial viscosity"] = artificial_viscosity_factory<Elem>;
   out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
-  out["circular symmetry"] = circular_symmetry_factory<Elem>;
+  out["compute pressure"] = pressure_factory;
   return out;
 }
 

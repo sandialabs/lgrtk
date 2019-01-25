@@ -129,7 +129,7 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
 #ifdef LGR_USE_CUBIT
     auto& cubit_pl = pl.get_map("CUBIT");
     auto cubit_path = LGR_CUBIT;
-    std::string journal_path;
+    Omega_h::filesystem::path journal_path;
     if (cubit_pl.is<std::string>("commands")) {
       auto commands = cubit_pl.get<std::string>("commands");
       journal_path =
@@ -142,10 +142,11 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     } else {
       journal_path = cubit_pl.get<std::string>("journal file");
     }
-    OMEGA_H_CHECK(Omega_h::ends_with(journal_path, ".jou"));
-    auto default_exodus_path =
-        journal_path.substr(0, journal_path.length() - 3) + "exo";
-    auto exodus_path =
+    OMEGA_H_CHECK(journal_path.extension().string() == ".jou");
+    auto default_exodus_path = journal_path.parent_path();
+    default_exodus_path /= journal_path.stem();
+    default_exodus_path += ".exo";
+    Omega_h::filesystem::path exodus_path =
         cubit_pl.get<std::string>("Exodus file", default_exodus_path.c_str());
     std::stringstream system_stream;
     system_stream << cubit_path << ' ';
@@ -162,6 +163,12 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
       if (ret != 0) Omega_h_fail("Running CUBIT failed!\n");
     }
     mesh = Omega_h::read_mesh_file(exodus_path, comm);
+    if (!cubit_pl.get<bool>("keep files", "false")) {
+      if (comm->rank() == 0) {
+        Omega_h::filesystem::remove(journal_path);
+        Omega_h::filesystem::remove(exodus_path);
+      }
+    }
 #else
     Omega_h_fail(
         "CUBIT mesh requested but LGRTK not compiled with CUBIT support!\n");
@@ -220,6 +227,7 @@ void Disc::update_from_mesh() {
     auto nodes = number_p2_nodes(mesh);
     ents2nodes_[dim_] = build_p2_ents2nodes(mesh, dim_, nodes);
     nodes2ents_[dim_] = build_p2_nodes2ents(mesh, dim_, nodes);
+    nodes2ents_[dim_ - 1] = build_p2_nodes2ents(mesh, dim_ - 1, nodes);
     node_coords_ = build_p2_node_coords(mesh, nodes);
   } else {
     ents2nodes_[dim_] = mesh.ask_elem_verts();
@@ -252,7 +260,9 @@ Omega_h::LOs Disc::ents_on_closure(
   int ent_dim = -1;
   if (type == NODES) {
     if (is_second_order_) {
-      return Omega_h::LOs{};
+      Omega_h::Graph nodes2ents[4];
+      for (int i = 0; i < 4; ++i) nodes2ents[i] = nodes2ents_[i];
+      return Omega_h::nodes_on_closure(&mesh, class_names, nodes2ents);
     } else {
       ent_dim = 0;
     }

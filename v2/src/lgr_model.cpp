@@ -78,8 +78,13 @@ FieldIndex ModelBase::point_define(std::string const& short_name,
     std::string const& long_name, int ncomps, RemapType tt,
     Omega_h::InputMap& pl, std::string const& default_value) {
   auto fi = point_define(short_name, long_name, ncomps);
-  sim.fields[fi].default_value =
-      pl.get<std::string>(long_name, default_value.c_str());
+  if (pl.is<std::string>(long_name)) {
+    OMEGA_H_CHECK(sim.fields[fi].default_value.empty());
+    sim.fields[fi].default_value = pl.get<std::string>(long_name);
+  }
+  if (sim.fields[fi].default_value.empty() && (!default_value.empty())) {
+    sim.fields[fi].default_value = default_value;
+  }
   sim.fields[fi].remap_type = tt;
   return fi;
 }

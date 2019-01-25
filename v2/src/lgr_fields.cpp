@@ -149,9 +149,10 @@ FieldIndex Fields::find(std::string const& name) {
   FieldIndex out;
   auto it = std::find_if(storage.begin(), storage.end(),
       [&](std::unique_ptr<Field> const& f) { return f->long_name == name; });
-  if (it != storage.end()) {
-    out.storage_index = decltype(out.storage_index)(it - storage.begin());
+  if (it == storage.end()) {
+    Omega_h_fail("Could not find field \"%s\"\n", name.c_str());
   }
+  out.storage_index = decltype(out.storage_index)(it - storage.begin());
   return out;
 }
 

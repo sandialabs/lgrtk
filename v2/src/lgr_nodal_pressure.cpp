@@ -131,11 +131,11 @@ struct NodalPressure : public Model<Elem> {
       auto const p_prime = -tau_p * (point_p_dot - kappa * div_v);
       auto const p = getscals<Elem>(nodes_to_p, elem_nodes);
       auto const point_p = p * basis_values;
-      auto const sigma = getsymm<Elem>(points_to_sigma, point);
+      auto const sigma = getstress(points_to_sigma, point);
       auto const dev_sigma = deviator(sigma);
-      auto const I = identity_matrix<Elem::dim, Elem::dim>();
+      auto const I = identity_matrix<3, 3>();
       auto const sigma_tilde = dev_sigma + I * (point_p + p_prime);
-      setsymm<Elem>(points_to_sigma, point, sigma_tilde);
+      setstress(points_to_sigma, point, sigma_tilde);
     };
     parallel_for(this->points(), std::move(functor));
   }
