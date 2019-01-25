@@ -145,7 +145,7 @@ void compute_stress_divergence(Simulation& sim) {
         auto const point = elem * Elem::points + elem_pt;
         auto const grad =
             getvec<Elem>(points_to_grads, point * Elem::nodes + elem_node);
-        auto const sigma = getsymm<Elem>(points_to_sigma, point);
+        auto const sigma = resize<Elem::dim>(getstress(points_to_sigma, point));
         auto const weight = points_to_weights[point];
         auto const cell_f = -(sigma * grad) * weight;
         node_f += cell_f;

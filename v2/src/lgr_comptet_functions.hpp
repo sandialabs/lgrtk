@@ -615,6 +615,15 @@ Vector<4> CompTet::get_barycentric_coord(Vector<dim> x) {
 }
 
 OMEGA_H_INLINE
+Omega_h::Matrix<4, 4> CompTet::compute_M_inv(Matrix<dim, nodes> node_coords) {
+  auto S = compute_S();
+  auto O = compute_O(node_coords, S);
+  auto O_det = compute_O_det(O);
+  auto M_inv = compute_M_inv(O_det);
+  return M_inv;
+}
+
+OMEGA_H_INLINE
 Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   Shape<CompTet> out;
 

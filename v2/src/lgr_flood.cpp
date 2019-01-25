@@ -201,8 +201,7 @@ void Flooder::flood_by_mapping(Omega_h::LOs pull_mapping) {
         class_dims_w[ent] = Omega_h::I8(dim);
       }
     };
-    parallel_for("clear flooded lowers", sim.disc.mesh.nents(ent_dim),
-        std::move(clear_functor));
+    parallel_for(sim.disc.mesh.nents(ent_dim), std::move(clear_functor));
     sim.disc.mesh.set_tag(ent_dim, "class_id", Omega_h::read(class_ids_w));
     sim.disc.mesh.set_tag(ent_dim, "class_dim", Omega_h::read(class_dims_w));
   }
@@ -268,7 +267,7 @@ void Flooder::flood_by_mapping(Omega_h::LOs pull_mapping) {
             old_data[old_set_elem * ncomps + comp];
       }
     };
-    parallel_for("flood field", nelems, std::move(flood_field_functor));
+    parallel_for(nelems, std::move(flood_field_functor));
     if (!old_mapping.is_identity) {
       Omega_h::map_value_into(-1, old_mapping.things, old_inverse);
       Omega_h::map_value_into(-1, new_mapping.things, new_inverse);

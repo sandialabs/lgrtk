@@ -31,7 +31,7 @@ struct LinearElastic : public Model<Elem> {
         "mu", "shear modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
     constexpr auto dim = Elem::dim;
     this->deformation_gradient = this->point_define("F", "deformation gradient",
-        square(dim), RemapType::POSITIVE_DETERMINANT, pl, "I");
+        square(dim), RemapType::POLAR, pl, "I");
     this->effective_bulk_modulus = this->point_define("kappa_tilde",
         "effective bulk modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
   }
@@ -55,7 +55,7 @@ struct LinearElastic : public Model<Elem> {
       Matrix<3, 3> sigma;
       double c;
       linear_elastic_update(kappa, nu, rho, grad_u, sigma, c);
-      setsymm<Elem>(points_to_stress, point, resize<Elem::dim>(sigma));
+      setstress(points_to_stress, point, sigma);
       points_to_wave_speed[point] = c;
       points_to_kappa_tilde[point] = kappa;
     };
