@@ -161,7 +161,7 @@ Plato::Scalar mesh_minimum_length_scale(Omega_h::Mesh & omega_h_mesh)
     for (unsigned n=0; n<nodesPerCell; ++n)
     {
       const Plato::Scalar gradSqrMag = length_squared(gradients[n]);
-      maxGradSqrMag = max(maxGradSqrMag, gradSqrMag);
+      maxGradSqrMag = Omega_h::max2(maxGradSqrMag, gradSqrMag);
     }
   };
 

@@ -132,22 +132,26 @@ public:
         // The first state in mStates is assumed to contain the temperature at t=0
         //
         for(Plato::OrdinalType tStepIndex = 1; tStepIndex < mNumSteps; tStepIndex++) {
-          auto tState = Kokkos::subview(mStates, tStepIndex, Kokkos::ALL());
-          auto tPrevState = Kokkos::subview(mStates, tStepIndex-1, Kokkos::ALL());
+          Plato::ScalarVector tState = Kokkos::subview(mStates, tStepIndex, Kokkos::ALL());
+          Plato::ScalarVector tPrevState = Kokkos::subview(mStates, tStepIndex-1, Kokkos::ALL());
           Plato::fill(static_cast<Plato::Scalar>(0.0), tState);
 
-          mResidual = mEqualityConstraint.value(tState, tPrevState, aControl);
+          mResidual = mEqualityConstraint.value(tState, tPrevState, aControl, mTimeStep);
 
-          mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl);
+          mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
           this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
           using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
           auto tConfigString = AmgXLinearProblem::getConfigString();
-          auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tState, mResidual, tConfigString));
+          Plato::ScalarVector deltaT("increment", tState.extent(0));
+          Plato::fill(static_cast<Plato::Scalar>(0.0), deltaT);
+          auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, deltaT, mResidual, tConfigString));
           tSolver->solve();
           tSolver = Teuchos::null;
+          Plato::axpy(-1.0, deltaT, tState);
 #endif
+
         }
         return mStates;
     }
@@ -269,14 +273,14 @@ public:
                 auto tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
                 Plato::ScalarVector tNextAdjoint = Kokkos::subview(mAdjoints, tStepIndex+1, Kokkos::ALL());
                 // compute dQ^{k+1}/dT^k: partial of PDE at k+1 wrt current state, k.
-                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl);
+                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl, mTimeStep);
 
                 // multiply dQ^{k+1}/dT^k by lagrange multiplier from k+1 and add to dFdT^k
                 Plato::MatrixTimesVectorPlusVector(mJacobianP, tNextAdjoint, tPartialObjectiveWRT_State);
             }
 
             // compute dQ^k/dT^k: partial of PDE at k wrt state current state, k.
-            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl);
+            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
 
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
@@ -292,7 +296,7 @@ public:
 #endif
             // compute dQ^k/d\phi: partial of PDE wrt control at step k.
             // dQ^k/d\phi is returned transposed, nxm.  n=z.size() and m=u.size().
-            auto tPartialPDE_WRT_Control = mEqualityConstraint.gradient_z(tState, tPrevState, aControl);
+            auto tPartialPDE_WRT_Control = mEqualityConstraint.gradient_z(tState, tPrevState, aControl, mTimeStep);
     
             // compute dgdz . adjoint + dfdz
             Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Control, tAdjoint, tTotalObjectiveWRT_Control);
@@ -336,14 +340,14 @@ public:
                 auto tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
                 Plato::ScalarVector tNextAdjoint = Kokkos::subview(mAdjoints, tStepIndex+1, Kokkos::ALL());
                 // compute dQ^{k+1}/dT^k: partial of PDE at k+1 wrt current state, k.
-                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl);
+                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl, mTimeStep);
 
                 // multiply dQ^{k+1}/dT^k by lagrange multiplier from k+1 and add to dFdT^k
                 Plato::MatrixTimesVectorPlusVector(mJacobianP, tNextAdjoint, tPartialObjectiveWRT_State);
             }
 
             // compute dQ^k/dT^k: partial of PDE at k wrt state current state, k.
-            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl);
+            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
 
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
@@ -360,7 +364,7 @@ public:
 
             // compute dQ^k/dx: partial of PDE wrt config.
             // dQ^k/dx is returned transposed, nxm.  n=x.size() and m=u.size().
-            auto tPartialPDE_WRT_Config = mEqualityConstraint.gradient_x(tState, tPrevState, aControl);
+            auto tPartialPDE_WRT_Config = mEqualityConstraint.gradient_x(tState, tPrevState, aControl, mTimeStep);
 
             // compute dgdx . adjoint + dfdx
             Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Config, tAdjoint, tPartialObjectiveWRT_Config);

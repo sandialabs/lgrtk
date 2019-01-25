@@ -39,7 +39,7 @@ class VectorFunctionInc : public WorksetBase<PhysicsT>
 
     using Residual  = typename Plato::Evaluation<PhysicsT>::Residual;
     using Jacobian  = typename Plato::Evaluation<PhysicsT>::Jacobian;
-    using JacobianP = typename Plato::Evaluation<PhysicsT>::Jacobian;
+    using JacobianP = typename Plato::Evaluation<PhysicsT>::JacobianP;
     using GradientX = typename Plato::Evaluation<PhysicsT>::GradientX;
     using GradientZ = typename Plato::Evaluation<PhysicsT>::GradientZ;
 
