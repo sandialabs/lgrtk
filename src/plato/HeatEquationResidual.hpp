@@ -52,7 +52,8 @@ class HeatEquationResidual :
     Plato::Scalar m_quadratureWeight;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
+    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
+    ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
@@ -67,7 +68,8 @@ class HeatEquationResidual :
       Teuchos::ParameterList& penaltyParams) :
      AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap),
      m_indicatorFunction(penaltyParams),
-     m_applyWeighting(m_indicatorFunction),
+     m_applyFluxWeighting(m_indicatorFunction),
+     m_applyMassWeighting(m_indicatorFunction),
      m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
      m_boundaryLoads(nullptr)
     /**************************************************************************/
@@ -124,8 +126,8 @@ class HeatEquationResidual :
       Plato::ScalarMultiVectorT<StateScalarType> tStateValues("Gauss point temperature at step k", numCells, m_numDofsPerNode);
       Plato::ScalarMultiVectorT<PrevStateScalarType> tPrevStateValues("Gauss point temperature at step k-1", numCells, m_numDofsPerNode);
 
-      Plato::ScalarMultiVectorT<StateScalarType> tThermalContent("Gauss point heat content at step k", numCells, m_numDofsPerNode);
-      Plato::ScalarMultiVectorT<PrevStateScalarType> tPrevThermalContent("Gauss point heat content at step k-1", numCells, m_numDofsPerNode);
+      Plato::ScalarMultiVectorT<ResultScalarType> tThermalContent("Gauss point heat content at step k", numCells, m_numDofsPerNode);
+      Plato::ScalarMultiVectorT<ResultScalarType> tPrevThermalContent("Gauss point heat content at step k-1", numCells, m_numDofsPerNode);
 
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
@@ -140,7 +142,8 @@ class HeatEquationResidual :
       
       auto basisFunctions = m_cubatureRule->getBasisFunctions();
     
-      auto& applyWeighting  = m_applyWeighting;
+      auto& applyFluxWeighting  = m_applyFluxWeighting;
+      auto& applyMassWeighting  = m_applyMassWeighting;
       auto quadratureWeight = m_quadratureWeight;
       Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
@@ -156,13 +159,13 @@ class HeatEquationResidual :
         // compute flux
         //
         thermalFlux(cellOrdinal, tFlux, tGrad);
-        thermalFlux(cellOrdinal, tPrevFlux, tGrad);
+        thermalFlux(cellOrdinal, tPrevFlux, tPrevGrad);
     
         // apply weighting
         //
-        applyWeighting(cellOrdinal, tFlux, aControl);
-        applyWeighting(cellOrdinal, tPrevFlux, aControl);
-    
+        applyFluxWeighting(cellOrdinal, tFlux, aControl);
+        applyFluxWeighting(cellOrdinal, tPrevFlux, aControl);
+
         // compute stress divergence
         //
         fluxDivergence(cellOrdinal, aResult, tFlux,     gradient, cellVolume, aTimeStep/2.0);
@@ -180,6 +183,11 @@ class HeatEquationResidual :
         //
         thermalContent(cellOrdinal, tThermalContent, tStateValues);
         thermalContent(cellOrdinal, tPrevThermalContent, tPrevStateValues);
+
+        // apply weighting
+        //
+        applyMassWeighting(cellOrdinal, tThermalContent, aControl);
+        applyMassWeighting(cellOrdinal, tPrevThermalContent, aControl);
 
         // project to nodes
         //

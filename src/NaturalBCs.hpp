@@ -192,7 +192,7 @@ namespace Plato {
         }
         for( int iNode=0; iNode<nodesPerFace; iNode++){
           for( int iDim=0; iDim<DofsPerNode; iDim++){
-            auto cellDofOrdinal = localNodeOrd[iNode] * nodesPerFace + iDim;
+            auto cellDofOrdinal = localNodeOrd[iNode] * DofsPerNode + iDim;
             result(cellOrdinal,cellDofOrdinal) += weight*flux[iDim];
           }
         }
@@ -290,7 +290,6 @@ namespace Plato {
         } else 
         if ( b_Value ) {
           Teuchos::Array<double> fluxVector(DofsPerNode, 0.0);
-          std::cout << " DofsPerNode: " << DofsPerNode << std::endl;
           auto value = sublist.get<double>("Value");
           fluxVector[0] = value;
           sublist.set("Vector", fluxVector);

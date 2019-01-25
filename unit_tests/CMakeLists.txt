@@ -237,12 +237,22 @@ if (LGR_ENABLE_PLATO)
     Teuchos_StandardUnitTestMain.cpp
   )
 
+  set(HeatEquationTests_SOURCES
+    LGRTestHelpers.cpp
+    HeatEquationTests.cpp
+    Teuchos_StandardUnitTestMain.cpp
+  )
+
   set(Elastostatics_HEADERS
     LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
   set(Derivatives_HEADERS
+    LGRTestHelpers.hpp
+  )
+
+  set(HeatEquationTests_HEADERS
     LGRTestHelpers.hpp
   )
 
@@ -254,6 +264,11 @@ if (LGR_ENABLE_PLATO)
   add_executable(DerivativeUnitTests
     ${Derivatives_SOURCES}
     ${Derivatives_HEADERS}
+  )
+
+  add_executable(HeatEquationUnitTests
+    ${HeatEquationTests_SOURCES}
+    ${HeatEquationTests_HEADERS}
   )
 
   target_link_libraries(ElastostaticsUnitTests ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} lgrtk)
@@ -271,6 +286,16 @@ if (LGR_ENABLE_PLATO)
 
   build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/DerivativeUnitTests)
   add_test(NAME runDerivativeUnitTests COMMAND ${ES_MPI_TEST})
+
+  target_link_libraries(HeatEquationUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(HeatEquationUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/HeatEquationUnitTests)
+  add_test(NAME runHeatEquationUnitTests COMMAND ${ES_MPI_TEST})
 endif()
 
 if (LGR_ENABLE_PLATO_MPMD)
