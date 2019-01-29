@@ -130,6 +130,7 @@ struct Quad4 {
  private:
   static OMEGA_H_INLINE Matrix<2, 4> pts();
   static OMEGA_H_INLINE Matrix<2, 4> bgrads(Vector<2> xi);
+  static OMEGA_H_INLINE Vector<4> bvals(Vector<2> xi);
   static OMEGA_H_INLINE void compute_lengths(
       Matrix<2, 4> node_coords, Shape<Quad4>& shape);
   static OMEGA_H_INLINE void compute_gradients(
