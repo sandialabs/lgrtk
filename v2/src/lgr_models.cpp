@@ -14,6 +14,7 @@
 #include <lgr_scope.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_stvenant_kirchhoff.hpp>
+#include <lgr_anti_lock.hpp>
 
 namespace lgr {
 
@@ -98,6 +99,10 @@ ModelFactories get_builtin_modifier_factories() {
   out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
   out["compute pressure"] = pressure_factory;
+  out["average J over points"] = average_J_over_points_factory<Elem>;
+  out["average pressure over points"] = average_pressure_over_points_factory<Elem>;
+  out["average internal energy over points"] = average_internal_energy_over_points_factory<Elem>;
+  out["average density over points"] = average_density_over_points_factory<Elem>;
   return out;
 }
 

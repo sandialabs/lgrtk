@@ -49,6 +49,7 @@ add_library(lgr_library
     lgr_traction.cpp
     lgr_nodal_pressure.cpp
     lgr_pressure.cpp
+    lgr_anti_lock.cpp
     )
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
