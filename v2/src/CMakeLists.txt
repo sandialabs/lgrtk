@@ -90,6 +90,7 @@ install(FILES
     lgr_condition.hpp
     lgr_when.hpp
     lgr_flood.hpp
+    lgr_element_functions.hpp
     DESTINATION include)
 
 add_executable(lgr_executable lgr.cpp)
