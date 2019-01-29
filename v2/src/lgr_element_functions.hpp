@@ -283,16 +283,29 @@ OMEGA_H_INLINE Matrix<2, 4> Quad4::pts() {
   return out;
 }
 
+OMEGA_H_INLINE Vector<4> Quad4::bvals(Vector<2> xi) {
+  Vector<4> out;
+  auto const x = xi[0];
+  auto const y = xi[1];
+  out[0] = 0.25 * (1.0 - x) * (1.0 - y);
+  out[1] = 0.25 * (1.0 + x) * (1.0 - y);
+  out[2] = 0.25 * (1.0 + x) * (1.0 + y);
+  out[3] = 0.25 * (1.0 - x) * (1.0 + y);
+  return out;
+}
+
 OMEGA_H_INLINE Matrix<2, 4> Quad4::bgrads(Vector<2> xi) {
   Matrix<2, 4> out;
-  out[0][0] = -0.25 * (1.0 - xi[1]);
-  out[0][1] = -0.25 * (1.0 - xi[0]);
-  out[1][0] = 0.25 * (1.0 - xi[1]);
-  out[1][1] = -0.25 * (1.0 - xi[0]);
-  out[2][0] = 0.25 * (1.0 + xi[1]);
-  out[2][1] = 0.25 * (1.0 + xi[0]);
-  out[3][0] = -0.25 * (1.0 + xi[1]);
-  out[3][1] = 0.25 * (1.0 + xi[0]);
+  auto const x = xi[0];
+  auto const y = xi[1];
+  out[0][0] = 0.25 * (-1.0 + y);
+  out[0][1] = 0.25 * (-1.0 + x);
+  out[1][0] = 0.25 * (1.0 - y);
+  out[1][1] = 0.25 * (-1.0 - x);
+  out[2][0] = 0.25 * (1.0 + y);
+  out[2][1] = 0.25 * (1.0 + x);
+  out[3][0] = 0.25 * (-1.0 - y);
+  out[3][1] = 0.25 * (1.0 - x);
   return out;
 }
 
@@ -347,22 +360,10 @@ constexpr double Quad4::lumping_factor(int const /* node */) {
 
 OMEGA_H_INLINE Matrix<Quad4::nodes, Quad4::points> Quad4::basis_values() {
   Matrix<nodes, points> out;
-  out[0][0] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
-  out[0][1] = 1.0 / 6.0;
-  out[0][2] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
-  out[0][3] = 1.0 / 6.0;
-  out[1][0] = 1.0 / 6.0;
-  out[1][1] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
-  out[1][2] = 1.0 / 6.0;
-  out[1][3] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
-  out[2][0] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
-  out[2][1] = 1.0 / 6.0;
-  out[2][2] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
-  out[2][3] = 1.0 / 6.0;
-  out[3][0] = 1.0 / 6.0;
-  out[3][1] = 1.0 / 6.0 * (2.0 - std::sqrt(3.0));
-  out[3][2] = 1.0 / 6.0;
-  out[3][3] = 1.0 / 6.0 * (2.0 + std::sqrt(3.0));
+  auto const ips = pts();
+  for (int ip = 0; ip < 4; ++ip) {
+    out[ip] = bvals(ips[ip]);
+  }
   return out;
 }
 #endif
