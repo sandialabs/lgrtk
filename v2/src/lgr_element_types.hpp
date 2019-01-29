@@ -231,7 +231,7 @@ struct CompTet {
   static OMEGA_H_INLINE Vector<4> get_barycentric_coord(Vector<dim> x);
 
   static OMEGA_H_INLINE Matrix<dim, 4> get_subtet_coords(
-      Matrix<dim, nodes> in, int subtet);
+      Matrix<dim, 11> in, int subtet);
 
   static OMEGA_H_INLINE double compute_char_length(Matrix<dim, nodes> in);
 

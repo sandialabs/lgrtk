@@ -625,7 +625,7 @@ Omega_h::Matrix<4, 4> CompTet::compute_M_inv(Matrix<dim, nodes> node_coords) {
 
 OMEGA_H_INLINE
 Omega_h::Matrix<3, 4> CompTet::get_subtet_coords(
-    Matrix<dim, nodes> in, int subtet) {
+    Matrix<dim, 11> in, int subtet) {
   Omega_h::Matrix<3, 4> out;
   switch (subtet) {
     case 0: out = { in[0], in[4], in[6], in[7] }; break;
@@ -662,9 +662,13 @@ static double get_tet_diameter(Omega_h::Matrix<3, 4> x) {
 
 OMEGA_H_INLINE
 double CompTet::compute_char_length(Omega_h::Matrix<dim, nodes> in) {
-  double min = 0.0;
-  for (int tet = 0; tet < 12; ++tet) {
-    auto x = get_subtet_coords(in, tet);
+  Omega_h::Matrix<dim, 11> in_full;
+  for (int i = 0; i < nodes; ++i) in_full[i] = in[i];
+  in_full[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
+  auto x0 = get_subtet_coords(in_full, 0);
+  double min = get_tet_diameter(x0);
+  for (int tet = 1; tet < 12; ++tet) {
+    auto x = get_subtet_coords(in_full, tet);
     auto length = get_tet_diameter(x);
     min = Omega_h::min2(min, length);
   }
@@ -717,7 +721,10 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   }
 
   // compute the time step lengths
-  out.lengths.time_step_length = 0.0;  // this needs to change
+  static constexpr double magic_number = 2.3;
+  out.lengths.time_step_length =
+    magic_number * compute_char_length(node_coords);
+  
   out.lengths.viscosity_length = 0.0;  // this needs to change
 
   return out;
