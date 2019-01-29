@@ -258,6 +258,18 @@ Quad4Side::basis_values() {
   return out;
 }
 
+OMEGA_H_INLINE Vector<Quad4Side::points>
+Quad4Side::weights(Matrix<dim, nodes> node_coords) {
+  Vector<points> out;
+  auto const len = node_coords[1][0] - node_coords[0][0];
+  out[0] = len;
+  return out;
+}
+
+OMEGA_H_INLINE constexpr double Quad4Side::lumping(int const) {
+  return 0.5;
+}
+
 OMEGA_H_INLINE Matrix<2, 4> Quad4::pts() {
   Matrix<2, 4> out;
   out[0][0] = -1.0 / std::sqrt(3.0);
