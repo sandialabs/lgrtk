@@ -66,21 +66,24 @@ void output(Teuchos::ParameterList & aParamList,
     }
     else if(tPhysics == "Thermal")
     {
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-
-        auto tNumVertices = aMesh.nverts();
-        Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
-        
-        const Plato::OrdinalType tStride = 0;
-        Plato::copy<1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/>
-            (tStride, tNumVertices, tSubView, tTemp);
-        
         const Plato::Scalar tRestartTime = 0.;
         Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer(aOutputFilePath, &aMesh, SpatialDim, tRestartTime);
-        aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
-        Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
-        tWriter.write(/*time_index*/1, /*current_time=*/1.0, tTags);
+
+        auto nSteps = aState.extent(0);
+        for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
+          auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
+  
+          auto tNumVertices = aMesh.nverts();
+          Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
+          
+          const Plato::OrdinalType tStride = 0;
+          Plato::copy<1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/>
+              (tStride, tNumVertices, tSubView, tTemp);
+          
+          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+          Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+          tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+        }
     }
 }
 

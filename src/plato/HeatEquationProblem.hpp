@@ -1,5 +1,5 @@
-#ifndef PLATO_PROBLEM_HPP
-#define PLATO_PROBLEM_HPP
+#ifndef PLATO_HEAT_EQUATION_PROBLEM_HPP
+#define PLATO_HEAT_EQUATION_PROBLEM_HPP
 
 #include <memory>
 #include <sstream>
@@ -14,9 +14,8 @@
 
 #include "plato/Thermal.hpp"
 #include "plato/Mechanics.hpp"
-#include "plato/VectorFunction.hpp"
-#include "plato/ScalarFunction.hpp"
-#include "plato/ScalarFunction.hpp"
+#include "plato/VectorFunctionInc.hpp"
+#include "plato/ScalarFunctionInc.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
@@ -27,7 +26,7 @@
 
 /**********************************************************************************/
 template<typename SimplexPhysics>
-class Problem: public Plato::AbstractProblem
+class HeatEquationProblem: public Plato::AbstractProblem
 {
 /**********************************************************************************/
 private:
@@ -35,13 +34,16 @@ private:
     static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims;
 
     // required
-    VectorFunction<SimplexPhysics> mEqualityConstraint;
+    VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
+
+    Plato::OrdinalType mNumSteps;
+    Plato::Scalar mTimeStep;
 
     // optional
     std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint;
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective;
+    std::shared_ptr<const ScalarFunctionInc<SimplexPhysics>> mObjective;
 
-    Plato::ScalarMultiVector mAdjoint;
+    Plato::ScalarMultiVector mAdjoints;
     Plato::ScalarVector mResidual;
     Plato::ScalarVector mBoundaryLoads;
 
@@ -50,20 +52,24 @@ private:
     bool mIsSelfAdjoint;
 
     Teuchos::RCP<Plato::CrsMatrixType> mJacobian;
+    Teuchos::RCP<Plato::CrsMatrixType> mJacobianP;
 
     Plato::LocalOrdinalVector mBcDofs;
     Plato::ScalarVector mBcValues;
 
 public:
     /******************************************************************************/
-    Problem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
+    HeatEquationProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aParamList, aParamList.get < std::string > ("PDE Constraint")),
+            mNumSteps(aParamList.sublist("Time Integration").get<int>("Number Time Steps")),
+            mTimeStep(aParamList.sublist("Time Integration").get<double>("Time Step")),
             mConstraint(nullptr),
             mObjective(nullptr),
             mResidual("MyResidual", mEqualityConstraint.size()),
             mBoundaryLoads("BoundaryLoads", mEqualityConstraint.size()),
-            mStates("States", static_cast<Plato::OrdinalType>(1), mEqualityConstraint.size()),
+            mStates("States", mNumSteps, mEqualityConstraint.size()),
             mJacobian(Teuchos::null),
+            mJacobianP(Teuchos::null),
             mIsSelfAdjoint(aParamList.get<bool>("Self-Adjoint", false))
     /******************************************************************************/
     {
@@ -71,12 +77,12 @@ public:
     }
 
     /******************************************************************************/
-    void setState(const Plato::ScalarMultiVector & aState)
+    void setState(const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
-        Kokkos::deep_copy(mStates, aState);
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
+        Kokkos::deep_copy(mStates, aStates);
     }
 
     /******************************************************************************/
@@ -90,7 +96,7 @@ public:
     Plato::ScalarMultiVector getAdjoint()
     /******************************************************************************/
     {
-        return mAdjoint;
+        return mAdjoints;
     }
 
     /******************************************************************************/
@@ -122,33 +128,40 @@ public:
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
     /******************************************************************************/
     {
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        Plato::fill(static_cast<Plato::Scalar>(0.0), tStatesSubView);
+        //
+        // The first state in mStates is assumed to contain the temperature at t=0
+        //
+        for(Plato::OrdinalType tStepIndex = 1; tStepIndex < mNumSteps; tStepIndex++) {
+          Plato::ScalarVector tState = Kokkos::subview(mStates, tStepIndex, Kokkos::ALL());
+          Plato::ScalarVector tPrevState = Kokkos::subview(mStates, tStepIndex-1, Kokkos::ALL());
+          Plato::fill(static_cast<Plato::Scalar>(0.0), tState);
 
-        mResidual = mEqualityConstraint.value(tStatesSubView, aControl);
+          mResidual = mEqualityConstraint.value(tState, tPrevState, aControl, mTimeStep);
 
-        mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
-        this->applyConstraints(mJacobian, mResidual);
+          mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
+          this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-        using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
-        auto tConfigString = AmgXLinearProblem::getConfigString();
-        auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tStatesSubView, mResidual, tConfigString));
-        tSolver->solve();
-        tSolver = Teuchos::null;
+          using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+          auto tConfigString = AmgXLinearProblem::getConfigString();
+          Plato::ScalarVector deltaT("increment", tState.extent(0));
+          Plato::fill(static_cast<Plato::Scalar>(0.0), deltaT);
+          auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, deltaT, mResidual, tConfigString));
+          tSolver->solve();
+          tSolver = Teuchos::null;
+          Plato::axpy(-1.0, deltaT, tState);
 #endif
 
-        mResidual = mEqualityConstraint.value(tStatesSubView, aControl);
+        }
         return mStates;
     }
 
     /******************************************************************************/
-    Plato::Scalar objectiveValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::Scalar objectiveValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mObjective == nullptr)
         {
@@ -160,17 +173,15 @@ public:
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
 
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mObjective->value(tStatesSubView, aControl);
+        return mObjective->value(aStates, aControl);
     }
 
     /******************************************************************************/
-    Plato::Scalar constraintValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::Scalar constraintValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mConstraint == nullptr)
         {
@@ -182,9 +193,9 @@ public:
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
 
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->value(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(mStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->value(tState, aControl);
     }
 
     /******************************************************************************/
@@ -201,10 +212,8 @@ public:
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
 
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
         Plato::ScalarMultiVector tStates = solution(aControl);
-        auto tStatesSubView = Kokkos::subview(tStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mObjective->value(tStatesSubView, aControl);
+        return mObjective->value(tStates, aControl);
     }
 
     /******************************************************************************/
@@ -221,17 +230,17 @@ public:
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
 
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->value(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(mStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->value(tState, aControl);
     }
 
     /******************************************************************************/
-    Plato::ScalarVector objectiveGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::ScalarVector objectiveGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mObjective == nullptr)
         {
@@ -243,55 +252,65 @@ public:
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
 
-        // compute dfdz: partial of objective wrt z
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        auto tPartialObjectiveWRT_Control = mObjective->gradient_z(tStatesSubView, aControl);
+        // compute dFd\phi: partial of objective wrt control
+        auto tTotalObjectiveWRT_Control = mObjective->gradient_z(aStates, aControl, mTimeStep);
+
+        // compute lagrange multiplier at the last time step, n
         
-        if(mIsSelfAdjoint)
-        {
-            Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_Control);
-        }
-        else
-        {
-            // compute dfdu: partial of objective wrt u
-            auto tPartialObjectiveWRT_State = mObjective->gradient_u(tStatesSubView, aControl);
+
+        auto tLastStepIndex = mNumSteps - 1;
+        for(Plato::OrdinalType tStepIndex = tLastStepIndex; tStepIndex > 0; tStepIndex--) {
+
+            auto tState     = Kokkos::subview(aStates,   tStepIndex,   Kokkos::ALL());
+            auto tPrevState = Kokkos::subview(aStates,   tStepIndex-1, Kokkos::ALL());
+            Plato::ScalarVector tAdjoint   = Kokkos::subview(mAdjoints, tStepIndex,   Kokkos::ALL());
+
+            // compute dFdT^k: partial of objective wrt T at step k = tStepIndex
+            auto tPartialObjectiveWRT_State = mObjective->gradient_u(aStates, aControl, mTimeStep, tStepIndex);
             Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_State);
 
-            // compute dgdu: partial of PDE wrt state
-            mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
+            if(tStepIndex != tLastStepIndex) { // the last step doesn't have a contribution from k+1
+                auto tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
+                Plato::ScalarVector tNextAdjoint = Kokkos::subview(mAdjoints, tStepIndex+1, Kokkos::ALL());
+                // compute dQ^{k+1}/dT^k: partial of PDE at k+1 wrt current state, k.
+                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl, mTimeStep);
+
+                // multiply dQ^{k+1}/dT^k by lagrange multiplier from k+1 and add to dFdT^k
+                Plato::MatrixTimesVectorPlusVector(mJacobianP, tNextAdjoint, tPartialObjectiveWRT_State);
+            }
+
+            // compute dQ^k/dT^k: partial of PDE at k wrt state current state, k.
+            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
 
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
             // adjoint problem uses transpose of global stiffness, but we're assuming the constrained
             // system is symmetric.
 
-            Plato::ScalarVector
-              tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
             typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
-            auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
+            auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
             tSolver = Teuchos::null;
 #endif
-
-            // compute dgdz: partial of PDE wrt state.
-            // dgdz is returned transposed, nxm.  n=z.size() and m=u.size().
-            auto tPartialPDE_WRT_Control = mEqualityConstraint.gradient_z(tStatesSubView, aControl);
-
+            // compute dQ^k/d\phi: partial of PDE wrt control at step k.
+            // dQ^k/d\phi is returned transposed, nxm.  n=z.size() and m=u.size().
+            auto tPartialPDE_WRT_Control = mEqualityConstraint.gradient_z(tState, tPrevState, aControl, mTimeStep);
+    
             // compute dgdz . adjoint + dfdz
-            Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Control, tAdjointSubView, tPartialObjectiveWRT_Control);
+            Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Control, tAdjoint, tTotalObjectiveWRT_Control);
         }
-        return tPartialObjectiveWRT_Control;
+
+        return tTotalObjectiveWRT_Control;
     }
 
     /******************************************************************************/
-    Plato::ScalarVector objectiveGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::ScalarVector objectiveGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mObjective == nullptr)
         {
@@ -304,44 +323,51 @@ public:
         }
 
         // compute partial derivative wrt x
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        auto tPartialObjectiveWRT_Config  = mObjective->gradient_x(tStatesSubView, aControl);
+        auto tPartialObjectiveWRT_Config  = mObjective->gradient_x(aStates, aControl, mTimeStep);
 
-        if(mIsSelfAdjoint)
-        {
-            Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_Config);
-        }
-        else
-        {
-            // compute dfdu: partial of objective wrt u
-            auto tPartialObjectiveWRT_State = mObjective->gradient_u(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        for(Plato::OrdinalType tStepIndex = tLastStepIndex; tStepIndex > 0; tStepIndex--) {
+
+            auto tState     = Kokkos::subview(aStates,   tStepIndex,   Kokkos::ALL());
+            auto tPrevState = Kokkos::subview(aStates,   tStepIndex-1, Kokkos::ALL());
+            Plato::ScalarVector tAdjoint   = Kokkos::subview(mAdjoints, tStepIndex,   Kokkos::ALL());
+
+            // compute dFdT^k: partial of objective wrt T at step k = tStepIndex
+            auto tPartialObjectiveWRT_State = mObjective->gradient_u(aStates, aControl, mTimeStep, tStepIndex);
             Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_State);
 
-            // compute dgdu: partial of PDE wrt state
-            mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
+            if(tStepIndex != tLastStepIndex) { // the last step doesn't have a contribution from k+1
+                auto tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
+                Plato::ScalarVector tNextAdjoint = Kokkos::subview(mAdjoints, tStepIndex+1, Kokkos::ALL());
+                // compute dQ^{k+1}/dT^k: partial of PDE at k+1 wrt current state, k.
+                mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl, mTimeStep);
+
+                // multiply dQ^{k+1}/dT^k by lagrange multiplier from k+1 and add to dFdT^k
+                Plato::MatrixTimesVectorPlusVector(mJacobianP, tNextAdjoint, tPartialObjectiveWRT_State);
+            }
+
+            // compute dQ^k/dT^k: partial of PDE at k wrt state current state, k.
+            mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
 
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
             // adjoint problem uses transpose of global stiffness, but we're assuming the constrained
             // system is symmetric.
 
-            Plato::ScalarVector
-              tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
             typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
-            auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
+            auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
             tSolver = Teuchos::null;
 #endif
 
-            // compute dgdx: partial of PDE wrt config.
-            // dgdx is returned transposed, nxm.  n=x.size() and m=u.size().
-            auto tPartialPDE_WRT_Config = mEqualityConstraint.gradient_x(tStatesSubView, aControl);
+            // compute dQ^k/dx: partial of PDE wrt config.
+            // dQ^k/dx is returned transposed, nxm.  n=x.size() and m=u.size().
+            auto tPartialPDE_WRT_Config = mEqualityConstraint.gradient_x(tState, tPrevState, aControl, mTimeStep);
 
             // compute dgdx . adjoint + dfdx
-            Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Config, tAdjointSubView, tPartialObjectiveWRT_Config);
+            Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Config, tAdjoint, tPartialObjectiveWRT_Config);
         }
         return tPartialObjectiveWRT_Config;
     }
@@ -359,18 +385,17 @@ public:
                     << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->gradient_z(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(mStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->gradient_z(tState, aControl);
     }
 
     /******************************************************************************/
-    Plato::ScalarVector constraintGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::ScalarVector constraintGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mConstraint == nullptr)
         {
@@ -381,10 +406,9 @@ public:
                     << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->gradient_z(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(aStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->gradient_z(tState, aControl);
     }
 
     /******************************************************************************/
@@ -400,10 +424,7 @@ public:
                     << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mObjective->gradient_z(tStatesSubView, aControl);
+        return mObjective->gradient_z(mStates, aControl, mTimeStep);
     }
 
     /******************************************************************************/
@@ -419,10 +440,7 @@ public:
                     << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mObjective->gradient_x(tStatesSubView, aControl);
+        return mObjective->gradient_x(mStates, aControl, mTimeStep);
     }
 
 
@@ -439,18 +457,17 @@ public:
                     << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->gradient_x(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(mStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->gradient_x(tState, aControl, mTimeStep);
     }
 
     /******************************************************************************/
-    Plato::ScalarVector constraintGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    Plato::ScalarVector constraintGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/
     {
-        assert(aState.extent(0) == mStates.extent(0));
-        assert(aState.extent(1) == mStates.extent(1));
+        assert(aStates.extent(0) == mStates.extent(0));
+        assert(aStates.extent(1) == mStates.extent(1));
 
         if(mConstraint == nullptr)
         {
@@ -461,10 +478,9 @@ public:
                     << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
             throw std::runtime_error(tErrorMessage.str().c_str());
         }
-
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mConstraint->gradient_x(tStatesSubView, aControl);
+        auto tLastStepIndex = mNumSteps - 1;
+        auto tState = Kokkos::subview(aStates, tLastStepIndex, Kokkos::ALL());
+        return mConstraint->gradient_x(tState, aControl, mTimeStep);
     }
 
 private:
@@ -482,10 +498,10 @@ private:
         if(aParamList.isType<std::string>("Objective"))
         {
             std::string tName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+            mObjective = std::make_shared<ScalarFunctionInc<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
 
             auto tLength = mEqualityConstraint.size();
-            mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
+            mAdjoints = Plato::ScalarMultiVector("MyAdjoint", mNumSteps, tLength);
         }
 
         // parse constraints

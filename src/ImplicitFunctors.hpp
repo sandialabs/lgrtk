@@ -136,6 +136,40 @@ class SideNodeCoordinate
 /******************************************************************************/
 
 /******************************************************************************/
+/*! InertialForces Functor.
+*
+*   Evaluates cell inertial forces.
+*/
+/******************************************************************************/
+class ComputeProjectionWorkset
+{
+public:
+    /******************************************************************************/
+    template<typename GaussPointScalarType, typename ProjectedScalarType, typename VolumeScalarType>
+    DEVICE_TYPE inline void operator()(const Plato::OrdinalType & aCellOrdinal,
+                                       const Plato::ScalarVectorT<VolumeScalarType> & aCellVolume,
+                                       const Plato::ScalarVectorT<Plato::Scalar> & tBasisFunctions,
+                                       const Plato::ScalarMultiVectorT<GaussPointScalarType> & aStateValues,
+                                       const Plato::ScalarMultiVectorT<ProjectedScalarType> & aResult, 
+                                             Plato::Scalar scale = 1.0 ) const
+    /******************************************************************************/
+    {
+        const Plato::OrdinalType tNumNodesPerCell = tBasisFunctions.size();
+        const Plato::OrdinalType tNumDofsPerNode = aStateValues.extent(1);
+        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < tNumNodesPerCell; tNodeIndex++)
+        {
+            for(Plato::OrdinalType tDofIndex = 0; tDofIndex < tNumDofsPerNode; tDofIndex++)
+            {
+                Plato::OrdinalType tMyDofIndex = (tNumDofsPerNode * tNodeIndex) + tDofIndex;
+                aResult(aCellOrdinal, tMyDofIndex) += scale * tBasisFunctions(tNodeIndex)
+                        * aStateValues(aCellOrdinal, tDofIndex) * aCellVolume(aCellOrdinal);
+            }
+        }
+    }
+};
+/******************************************************************************/
+
+/******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
 class ComputeGradientWorkset
 {

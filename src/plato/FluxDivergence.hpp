@@ -29,14 +29,14 @@ class FluxDivergence : public SimplexThermal<SpaceDim>
                 Plato::ScalarMultiVectorT< ForcingScalarType > q,
                 Plato::ScalarMultiVectorT< FluxScalarType    > tflux,
                 Plato::ScalarArray3DT<     GradientScalarType > gradient,
-                Plato::ScalarVectorT<VolumeScalarType> cellVolume ) const {
+                Plato::ScalarVectorT<VolumeScalarType> cellVolume,
+                Plato::Scalar scale = 1.0 ) const {
 
       // compute flux divergence
       //
       for( int iNode=0; iNode<m_numNodesPerCell; iNode++){
-        q(cellOrdinal,iNode) = 0.0;
         for(int iDim=0; iDim<SpaceDim; iDim++){
-          q(cellOrdinal,iNode) += tflux(cellOrdinal,iDim)*gradient(cellOrdinal,iNode,iDim)*cellVolume(cellOrdinal);
+          q(cellOrdinal,iNode) += scale*tflux(cellOrdinal,iDim)*gradient(cellOrdinal,iNode,iDim)*cellVolume(cellOrdinal);
         }
       }
     }

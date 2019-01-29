@@ -29,7 +29,7 @@ public:
     {
     }
 
-    virtual Plato::ScalarVector getAdjoint()=0;
+    virtual Plato::ScalarMultiVector getAdjoint()=0;
     virtual Plato::ScalarMultiVector getState()=0;
     virtual void setState(const Plato::ScalarMultiVector & aState)=0;
 
