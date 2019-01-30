@@ -169,7 +169,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tStateWS);
+        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //
@@ -236,7 +236,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tStateWS);
+        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //
@@ -307,7 +307,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       Plato::assemble_vector_gradient<m_numNodesPerCell, m_numDofsPerNode>(m_numCells, m_stateEntryOrdinal, tResult, tObjGradientU);
       Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
 
-      if( aStepIndex+1 >= tNumSteps ) {
+      if( aStepIndex+1 < tNumSteps ) {
 
         // workset next state
         // 
@@ -383,7 +383,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tStateWS);
+        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //

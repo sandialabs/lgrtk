@@ -587,14 +587,13 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, HeatEquationResidual3D )
 }
 
 
-#ifdef NOPE
 /******************************************************************************/
 /*! 
   \brief Compute value and both gradients (wrt state and control) of 
-         InternalElasticEnergy in 3D.
+         InternalthermalEnergy in 3D.
 */
 /******************************************************************************/
-TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
+TEUCHOS_UNIT_TEST( HeatEquationTests, InternalThermalEnergy3D )
 { 
   // create test mesh
   //
@@ -603,22 +602,20 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
   auto mesh = PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth);
 
 
-  // create mesh based density from host data
+  // create mesh based temperature from host data
   //
-  std::vector<Plato::Scalar> z_host( mesh->nverts(), 1.0 );
-  Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-    z_host_view(z_host.data(),z_host.size());
-  auto z = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), z_host_view);
+  int tNumSteps = 3;
+  int tNumNodes = mesh->nverts();
+  Plato::ScalarMultiVector T("temperature history", tNumSteps, tNumNodes);
+  Plato::ScalarVector z("density", tNumNodes);
+  Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumNodes), LAMBDA_EXPRESSION(const int & aNodeOrdinal)
+  {
+     z(aNodeOrdinal) = 1.0;
 
-
-  // create mesh based displacement from host data
-  //
-  std::vector<Plato::Scalar> u_host( spaceDim*mesh->nverts() );
-  Plato::Scalar disp = 0.0, dval = 0.0001;
-  for( auto& val : u_host ) val = (disp += dval);
-  Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-    u_host_view(u_host.data(),u_host.size());
-  auto u = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), u_host_view);
+     for( int i=0; i<tNumSteps; i++){
+       T(i, aNodeOrdinal) = (i+1)*aNodeOrdinal;
+     }
+  }, "temperature history");
 
 
   // create material model
@@ -626,20 +623,25 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Heat Equation'/>      \n"
+    "  <Parameter name='Objective' type='string' value='Internal Thermal Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Elastic Energy'>                              \n"
+    "  <ParameterList name='Internal Thermal Energy'>                              \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
     "    </ParameterList>                                                          \n"
     "  </ParameterList>                                                            \n"
     "  <ParameterList name='Material Model'>                                       \n"
-    "    <ParameterList name='Isotropic Linear Elastic'>                           \n"
-    "      <Parameter name='Poissons Ratio' type='double' value='0.3'/>            \n"
-    "      <Parameter name='Youngs Modulus' type='double' value='1.0e6'/>          \n"
+    "    <ParameterList name='Isotropic Linear Thermal'>                           \n"
+    "      <Parameter name='Mass Density' type='double' value='0.3'/>              \n"
+    "      <Parameter name='Specific Heat' type='double' value='1.0e3'/>           \n"
+    "      <Parameter name='Conductivity Coefficient' type='double' value='1.0e6'/>\n"
     "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "  <ParameterList name='Time Integration'>                                     \n"
+    "    <Parameter name='Number Time Steps' type='int' value='3'/>                \n"
+    "    <Parameter name='Time Step' type='double' value='0.5'/>                   \n"
     "  </ParameterList>                                                            \n"
     "</ParameterList>                                                              \n"
   );
@@ -648,26 +650,36 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Thermal<spaceDim>> 
-    eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
+  ScalarFunctionInc<::Plato::Thermal<spaceDim>> 
+    scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
+  auto timeStep = params->sublist("Time Integration").get<double>("Time Step");
+  int timeIncIndex = 1;
 
   // compute and test objective value
   //
-  auto value = eeScalarFunction.value(u,z);
+  auto value = scalarFunction.value(T, z, timeStep);
 
-  double value_gold = 92.25;
+  double value_gold = 7.95166666666666603e9;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
-
 
   // compute and test objective gradient wrt state, u
   //
-  auto grad_u = eeScalarFunction.gradient_u(u,z);
+  auto grad_u = scalarFunction.gradient_u(T, z, timeStep, timeIncIndex);
 
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
   std::vector<double> grad_u_gold = { 
+    -2.266666666666666e7, -2.200000000000000e7, -6.666666666666666e6, 
+    -2.700000000000000e7, -8.666666666666666e6, -6.666666666666667e6, 
+    -6.999999999999999e6, -2.000000000000001e6,  9.999999999999998e6, 
+    -2.699999999999999e7, -1.466666666666667e7, -3.999999999999999e6, 
+     1.000000000000002e6, -1.000000000000000e7, -2.000000000000007e6, 
+     4.666666666666670e6,  2.000000000000000e7,  1.333333333333331e6, 
+     2.000000000000002e6,  2.000000000000002e6,  2.399999999999999e7, 
+     2.800000000000001e7,  1.533333333333333e7,  2.666666666666666e6, 
+     6.666666666666670e6,  3.600000000000000e7,  6.666666666666666e6
   };
 
   for(int iNode=0; iNode<int(grad_u_gold.size()); iNode++){
@@ -681,21 +693,21 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
 
   // compute and test objective gradient wrt control, z
   //
-  auto grad_z = eeScalarFunction.gradient_z(u,z);
+  auto grad_z = scalarFunction.gradient_z(T, z, timeStep);
 
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
   std::vector<double> grad_z_gold = {
-    7.111298076923077 ,  7.370192307692310 ,  1.842548076923078,
-    6.053365384615385 ,  2.024278846153846 ,  0.9778846153846154,
-    1.736538461538462 ,  0.5423076923076925,  2.889663461538463,
-    6.010096153846159 ,  2.185817307692309 ,  0.4125000000000006,
-    0.7644230769230780, 13.13076923076924  ,  7.064423076923083,
-    3.088701923076925 ,  3.189663461538465 ,  1.626201923076927,
-    0.6555288461538494,  1.089663461538468 ,  4.197115384615394,
-    7.050721153846164 ,  2.869471153846158 ,  0.1096153846153868,
-    0.3512019230769271,  6.998076923076927 ,  0.9079326923076940
+    6.613750000000000e8, 6.175000000000000e8, 1.543750000000000e8, 
+    3.813333333333334e8, 1.121250000000000e8, 5.741666666666666e7, 
+    1.235000000000000e8, 3.900000000000000e7, 1.987916666666666e8, 
+    5.492500000000000e8, 2.334583333333333e8, 2.275000000000000e7, 
+    3.791666666666666e7, 1.168916666666667e9, 5.774166666666667e8, 
+    1.803750000000000e8, 2.074583333333333e8, 1.056250000000000e8, 
+    4.820833333333334e7, 1.197083333333333e8, 4.495833333333334e8, 
+    7.133750000000000e8, 2.811250000000000e8, 1.191666666666667e7, 
+    3.087500000000001e7, 7.659166666666666e8, 1.023750000000000e8
   };
 
   for(int iNode=0; iNode<int(grad_z_gold.size()); iNode++){
@@ -704,44 +716,43 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalElasticEnergy3D )
 
   // compute and test objective gradient wrt node position, x
   //
-  auto grad_x = eeScalarFunction.gradient_x(u,z);
+  auto grad_x = scalarFunction.gradient_x(T, z, timeStep);
   
   auto grad_x_Host = Kokkos::create_mirror_view( grad_x );
   Kokkos::deep_copy(grad_x_Host, grad_x);
 
   std::vector<Plato::Scalar> grad_x_gold = {
-   48.87692307692307, -31.34423076923076, -14.57307692307692,
-   45.90865384615384, -35.71442307692308, 4.534615384615376,
-    3.014423076923072, -9.447115384615387, 15.43269230769231,
-   23.52403846153845, 15.37211538461538, -5.942307692307695,
-   -3.351923076923076, 1.900961538461539, 12.83942307692307,
-   -0.8999999999999964, 5.296153846153845, 3.911538461538462,
-   -2.642307692307689, 11.86153846153845, -2.988461538461537,
-   -0.6115384615384627, 4.130769230769227, -1.857692307692306,
-   -6.700961538461539, 1.217307692307693, -8.777884615384618,
-   22.14230769230767, -2.789423076923075, -9.591346153846143,
-   12.47019230769231, -15.36057692307691, -0.6749999999999896,
-    1.650000000000000, 2.480769230769230, -0.8076923076923080,
-   -0.03461538461538199, 4.292307692307702, -5.088461538461546,
-   -9.072115384615396, 11.18653846153847, 9.931730769230770,
-  -21.82211538461539, 10.33557692307692, 19.53461538461539,
-  -20.48653846153843, 3.320192307692308, 8.443269230769241,
-  -16.67019230769229, 4.609615384615382, -3.516346153846154,
-    2.720192307692316, 3.412500000000011, -7.655769230769235,
-   -2.994230769230767, 1.298076923076930, 1.574999999999996,
-    3.574038461538469, -1.817307692307682, 3.158653846153849,
-    5.861538461538451, 7.947115384615393, 0.6086538461538544,
-  -30.13269230769227, -14.57307692307693, 3.236538461538461,
-  -17.05673076923077, -9.848076923076919, 10.87788461538462,
-   -0.1153846153846152, 0.2307692307692237, 0.4384615384615397,
-    0.1471153846153925, 0.4673076923076802, 1.704807692307704,
-  -43.86923076923075, 28.24326923076922, -28.35288461538462,
-    6.571153846153856, 3.291346153846139, -6.400961538461546
+     2.457000000000000e9, -2.656333333333333e9, -1.261000000000000e9, 
+     2.437500000000000e9, -2.710500000000000e9,  2.860000000000001e8, 
+     6.825000000000000e8, -8.775000000000000e8,  1.321666666666667e9, 
+     1.895833333333333e9,  1.124500000000000e9, -4.550000000000001e8, 
+     4.506666666666666e8,  1.928333333333333e8,  7.821666666666667e8, 
+     4.073333333333333e8,  4.030000000000000e8,  2.296666666666667e8, 
+     1.603333333333333e8,  8.493333333333333e8, -2.296666666666667e8, 
+     3.900000000000002e7,  2.860000000000000e8, -1.170000000000000e8, 
+    -1.371500000000000e9, -5.156666666666666e8, -5.914999999999999e8, 
+     2.223000000000000e9, -5.134999999999999e8, -1.180833333333333e9, 
+     1.284833333333333e9, -1.852500000000000e9,  1.213333333333331e8, 
+     9.100000000000001e7,  1.950000000000001e8,  1.299999999999999e8, 
+    -4.333333333333340e6,  1.906666666666667e8, -2.903333333333335e8, 
+     1.419166666666667e9,  4.289999999999999e8,  1.219833333333333e9, 
+     6.825000000000000e8,  3.965000000000000e8,  1.759333333333333e9, 
+    -3.943333333333335e8,  3.705000000000000e8,  4.918333333333333e8, 
+    -1.232833333333334e9,  1.690000000000002e8, -1.928333333333334e8, 
+     3.531666666666668e8,  2.665000000000002e8, -1.170000000000002e8, 
+     4.333333333333328e6,  1.083333333333333e8,  1.430000000000000e8, 
+     2.145000000000001e8,  1.083333333333333e8,  3.358333333333334e8, 
+     6.933333333333373e7,  2.329166666666666e9, -3.228333333333337e8, 
+    -4.454666666666666e9, -1.109333333333333e9,  3.293333333333337e8, 
+    -2.433166666666667e9, -6.153333333333334e8,  1.042166666666667e9, 
+    -2.166666666666649e7,  4.333333333333302e7,  4.766666666666681e7, 
+    -4.116666666666666e7,  1.559999999999996e8,  1.755000000000002e8, 
+    -5.650666666666667e9,  2.775500000000000e9, -2.901166666666666e9, 
+     7.323333333333335e8,  4.571666666666666e8, -7.561666666666669e8
   };
 
   for(int iNode=0; iNode<int(grad_x_gold.size()); iNode++){
     TEST_FLOATING_EQUALITY(grad_x_Host[iNode], grad_x_gold[iNode], 1e-13);
   }
 }
-#endif
 
