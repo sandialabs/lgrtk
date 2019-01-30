@@ -15,10 +15,10 @@ struct MieGruneisen : public Model<Elem> {
 
   MieGruneisen(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
-    this->rho0_ = this->point_define("rho_0", "initial density", 1, "");
-    this->gamma0_ = this->point_define("gamma_0", "Gruneisen parameter", 1, "");
-    this->cs_ = this->point_define("c_0", "unshocked sound speed", 1, "");
-    this->s1_ = this->point_define("S1", "Us/Up ratio", 1, "");
+    this->rho0_ = this->point_define("rho_0", "initial density", 1, RemapType::PER_UNIT_MASS, "");
+    this->gamma0_ = this->point_define("gamma_0", "Gruneisen parameter", 1, RemapType::PER_UNIT_MASS, "");
+    this->cs_ = this->point_define("c_0", "unshocked sound speed", 1, RemapType::PER_UNIT_MASS, "");
+    this->s1_ = this->point_define("S1", "Us/Up ratio", 1, RemapType::PER_UNIT_MASS, "");
     this->specific_internal_energy = this->point_define(
         "e", "specific internal energy", 1, RemapType::PER_UNIT_MASS, "");
   }

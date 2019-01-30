@@ -773,3 +773,9 @@ TEST(composite_tet, internal_force) {
     EXPECT_TRUE(is_close(internal_force[node], internal_force_gold[node]));
   }
 }
+
+TEST(composite_tet, min_char_length) {
+  auto X = get_reference_coords();
+  auto min = lgr::CompTet::compute_char_length(X);
+  EXPECT_TRUE(are_close(1.0127999982449550e-01, min));
+}

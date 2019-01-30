@@ -624,6 +624,58 @@ Omega_h::Matrix<4, 4> CompTet::compute_M_inv(Matrix<dim, nodes> node_coords) {
 }
 
 OMEGA_H_INLINE
+Omega_h::Matrix<3, 4> CompTet::get_subtet_coords(
+    Matrix<dim, 11> in, int subtet) {
+  Omega_h::Matrix<3, 4> out;
+  switch (subtet) {
+    case 0: out = { in[0], in[4], in[6], in[7] }; break;
+    case 1: out = { in[1], in[5], in[4], in[8] }; break;
+    case 2: out = { in[2], in[6], in[5], in[9] }; break;
+    case 3: out = { in[3], in[8], in[7], in[9] }; break;
+    case 4: out = { in[4], in[8], in[5], in[10] }; break;
+    case 5: out = { in[5], in[8], in[9], in[10] }; break;
+    case 6: out = { in[9], in[8], in[7], in[10] }; break;
+    case 7: out = { in[7], in[8], in[4], in[10] }; break;
+    case 8: out = { in[4], in[5], in[6], in[10] }; break;
+    case 9: out = { in[5], in[9], in[6], in[10] }; break;
+    case 10: out = { in[9], in[7], in[6], in[10] }; break;
+    case 11: out = { in[7], in[4], in[6], in[10] }; break;
+  }
+  return out;
+}
+
+OMEGA_H_INLINE
+static double get_tet_diameter(Omega_h::Matrix<3, 4> x) {
+  auto e10 = x[1] - x[0];
+  auto e20 = x[2] - x[0];
+  auto e30 = x[3] - x[0];
+  auto e21 = x[2] - x[1];
+  auto e31 = x[3] - x[1];
+  auto vol = e30 * Omega_h::cross(e10, e20);
+  auto a0 = Omega_h::norm(Omega_h::cross(e10, e20));
+  auto a1 = Omega_h::norm(Omega_h::cross(e10, e30));
+  auto a2 = Omega_h::norm(Omega_h::cross(e20, e30));
+  auto a3 = Omega_h::norm(Omega_h::cross(e21, e31));
+  auto sa = 0.5 * (a0 + a1 + a2 + a3);
+  return (sa > 0.0) ? (vol / sa) : 0.0;
+}
+
+OMEGA_H_INLINE
+double CompTet::compute_char_length(Omega_h::Matrix<dim, nodes> in) {
+  Omega_h::Matrix<dim, 11> in_full;
+  for (int i = 0; i < nodes; ++i) in_full[i] = in[i];
+  in_full[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
+  auto x0 = get_subtet_coords(in_full, 0);
+  double min = get_tet_diameter(x0);
+  for (int tet = 1; tet < 12; ++tet) {
+    auto x = get_subtet_coords(in_full, tet);
+    auto length = get_tet_diameter(x);
+    min = Omega_h::min2(min, length);
+  }
+  return min;
+}
+
+OMEGA_H_INLINE
 Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   Shape<CompTet> out;
 
@@ -669,7 +721,10 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   }
 
   // compute the time step lengths
-  out.lengths.time_step_length = 0.0;  // this needs to change
+  static constexpr double magic_number = 2.3;
+  out.lengths.time_step_length =
+    magic_number * compute_char_length(node_coords);
+  
   out.lengths.viscosity_length = 0.0;  // this needs to change
 
   return out;
