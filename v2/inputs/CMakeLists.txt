@@ -37,5 +37,5 @@ if(LGR_TET4)
 endif()
 
 if (LGR_QUAD4)
-  lgr_test(quad4_square_translation)
+  lgr_test(quad4_translation)
 endif()
