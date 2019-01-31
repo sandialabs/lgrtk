@@ -19,6 +19,9 @@ ModelBase* average_internal_energy_over_points_factory(
 template <class Elem>
 ModelBase* average_density_over_points_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap&);
+template <class Elem>
+ModelBase* average_J_over_independent_sets_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap&);
 
 #define LGR_EXPL_INST(Elem)                                                    \
   extern template ModelBase* average_J_over_points_factory<Elem>(                      \
@@ -28,6 +31,8 @@ ModelBase* average_density_over_points_factory(
   extern template ModelBase* average_internal_energy_over_points_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&); \
   extern template ModelBase* average_density_over_points_factory<Elem>(                      \
+      Simulation&, std::string const&, Omega_h::InputMap&); \
+  extern template ModelBase* average_J_over_independent_sets_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
