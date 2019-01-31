@@ -15,6 +15,7 @@
 #include <lgr_simulation.hpp>
 #include <lgr_stvenant_kirchhoff.hpp>
 #include <lgr_anti_lock.hpp>
+#include <lgr_indset.hpp>
 
 namespace lgr {
 
@@ -103,6 +104,7 @@ ModelFactories get_builtin_modifier_factories() {
   out["average pressure over points"] = average_pressure_over_points_factory<Elem>;
   out["average internal energy over points"] = average_internal_energy_over_points_factory<Elem>;
   out["average density over points"] = average_density_over_points_factory<Elem>;
+  out["average J over independent set"] = average_J_over_independent_set_factory<Elem>;
   return out;
 }
 
@@ -111,6 +113,7 @@ ModelFactories get_builtin_field_update_factories() {
   ModelFactories out;
   out["specific internal energy"] = internal_energy_factory<Elem>;
   out["deformation gradient"] = deformation_gradient_factory<Elem>;
+  out["independent set"] = independent_set_factory<Elem>;
   return out;
 }
 

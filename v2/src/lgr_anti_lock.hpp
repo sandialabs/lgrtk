@@ -20,7 +20,7 @@ template <class Elem>
 ModelBase* average_density_over_points_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap&);
 template <class Elem>
-ModelBase* average_J_over_independent_sets_factory(
+ModelBase* average_J_over_independent_set_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap&);
 
 #define LGR_EXPL_INST(Elem)                                                    \
@@ -32,7 +32,7 @@ ModelBase* average_J_over_independent_sets_factory(
       Simulation&, std::string const&, Omega_h::InputMap&); \
   extern template ModelBase* average_density_over_points_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&); \
-  extern template ModelBase* average_J_over_independent_sets_factory<Elem>(                      \
+  extern template ModelBase* average_J_over_independent_set_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
