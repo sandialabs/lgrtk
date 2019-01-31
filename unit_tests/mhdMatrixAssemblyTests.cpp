@@ -241,6 +241,20 @@ ANONYMOUS:
       }
     }
 
+    int number_of_surface_faces = 0;
+    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg)  
+      for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg)  
+        if (elemFaceIsSurface_trg[elem_trg][face_trg]) ++number_of_surface_faces;
+    const int nunknown = number_of_target_faces - number_of_surface_faces;
+
+    const int nface_trg = number_of_target_faces;
+    const int nelem_trg = elemLids_trg.size();
+    const int nQsize = nunknown < nelem_trg ? nunknown : nelem_trg;
+    int nsize = nface_trg+nQsize;
+
+    LGR_THROW_IF(4*nelem_trg != 2*nunknown + number_of_surface_faces, 
+       "Internal check of elements/faces and unknowns failed.");
+
     Omega_h::Matrix<maxFaceCount,maxFaceCount> M;
     Omega_h::Vector<maxFaceCount>              f;
     Omega_h::Matrix<maxElem,maxFaceCount>      Q;
@@ -259,7 +273,7 @@ ANONYMOUS:
       }
     }
 
-    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+    for (int elem = 0; elem < nQsize; ++elem) {
       q(elem) = 0;
       for (int face = 0; face < ElemFaceCount; ++face) {
         const int sign = elemFaceOrientations_trg(elem,face);
@@ -268,7 +282,7 @@ ANONYMOUS:
       }
     }
 
-    for (int elem = 0; elem < elemLids_trg.size(); ++elem) {
+    for (int elem = 0; elem < nelem_trg; ++elem) {
       Scalar moments[Polynomial::nterms]; 
       for (int i=0; i<Polynomial::nterms; ++i) moments[i]=0;
       Omega_h::Few<Omega_h::Vector<spaceDim>,vert> nodalCoordinates;
@@ -341,7 +355,7 @@ ANONYMOUS:
       }
     }
 
-    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+    for (int elem_trg = 0; elem_trg < nelem_trg; ++elem_trg) {
       Tet4 nodalCoordinates_trg;
       for (int i = 0; i < ElemNodeCount; ++i) {
          const int n = elem_node_ids_trg(elem_trg, i);
@@ -434,10 +448,6 @@ ANONYMOUS:
       }
     }
 
-    const int nface = number_of_target_faces;
-    const int nelem = elemLids_trg.size();
-    int nsize = nface+nelem;
-
     constexpr int maxSize = maxFaceCount+maxElem;
     Omega_h::Matrix<maxSize,maxSize> A;
     Omega_h::Vector<maxSize>         b;
@@ -447,22 +457,22 @@ ANONYMOUS:
         A(i,j) = 0;
       }
     }
-    for (int i=0; i<nface; ++i) {
-      for (int j=0; j<nface; ++j) {
+    for (int i=0; i<nface_trg; ++i) {
+      for (int j=0; j<nface_trg; ++j) {
         A(i,j) = M(i,j);
       }
     }
-    for (int i=0; i<nelem; ++i) {
-      for (int j=0; j<nface; ++j) {
-        A(nface+i,j) = Q(i,j);
-        A(j,nface+i) = Q(i,j);
+    for (int i=0; i<nQsize; ++i) {
+      for (int j=0; j<nface_trg; ++j) {
+        A(nface_trg+i,j) = Q(i,j);
+        A(j,nface_trg+i) = Q(i,j);
       }
     }
 
-    for (int i=0; i<nface; ++i) b(i) = f(i);
-    for (int i=0; i<nelem; ++i) b(i+nface) = q(i);
+    for (int i=0; i<nface_trg; ++i) b(i) = f(i);
+    for (int i=0; i<nQsize; ++i) b(i+nface_trg) = q(i);
 
-    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+    for (int elem_trg = 0; elem_trg < nelem_trg; ++elem_trg) {
       for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg) {
         if (elemFaceIsSurface_trg[elem_trg][face_trg]) {  
           const size_t faceGID_trg = elemFaceIDs_trg(elem_trg,face_trg);
@@ -492,7 +502,7 @@ ANONYMOUS:
 
     Omega_h::Vector<maxSize> X = Omega_h::solve_using_qr(nsize, nsize, A, b);
 
-    for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+    for (int elem_trg = 0; elem_trg < nelem_trg; ++elem_trg) {
       for (int face_trg = 0; face_trg < ElemFaceCount; ++face_trg) {
         const size_t faceID_trg = elemFaceLocalIDs_trg[elem_trg][face_trg];
         const size_t faceGID = elemFaceIDs_trg(elem_trg,face_trg);
@@ -523,7 +533,7 @@ ANONYMOUS:
     }
     {
       constexpr Scalar xi[] = {1./3.,1./3.,1./3.};
-      for (int elem_trg = 0; elem_trg < elemLids_trg.size(); ++elem_trg) {
+      for (int elem_trg = 0; elem_trg < nelem_trg; ++elem_trg) {
         Scalar x[ElemNodeCount], y[ElemNodeCount], z[ElemNodeCount];
         for (int i = 0; i < ElemNodeCount; ++i) {
           const int n = elem_node_ids_trg(elem_trg, i);
