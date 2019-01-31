@@ -35,3 +35,7 @@ if(LGR_TET4)
   lgr_test(tet4_cube_translation)
   lgr_test(tet4_cube_rotation)
 endif()
+
+if (LGR_QUAD4)
+  lgr_test(quad4_square_translation)
+endif()
