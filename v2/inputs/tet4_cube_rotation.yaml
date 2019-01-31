@@ -19,17 +19,16 @@ material models:
     shear modulus: 75.0e9
 conditions:
   velocity:
-    - 
-      value: '200.0 * vector(x(0), x(1), x(2))'
-      at time: 0.0
-  acceleration:
-    - 
-      value: 'vector(0.0, 0.0, 0.0)'
+    -
+      value: '100.0 * vector(-x(1), x(0), 0.0)'
 scalars:
   deformation gradient error:
     type: L2 error
     field: deformation gradient
-    expected value: '(200.0*t+1.0)*matrix(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)'
+    expected value: |
+      c = cos(100.0 * t);
+      s = sin(100.0 * t);
+      tensor(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0)
 responses:
   - 
     time period: 1.0e-04
@@ -53,4 +52,4 @@ responses:
     scalar: deformation gradient error
     expected value: 0.0
     tolerance: 0.0
-    floor: 1.0e-13
+    floor: 1.0e-03
