@@ -24,7 +24,7 @@ if(LGR_TRI3)
     lgr_test(tri3_buoyancy)
   endif()
   lgr_test(tri3_joule_heating)
-  lgr_test(tri3_Cooks_membrane)
+  lgr_test(tri3_Cooks_membrane_stabilized)
 endif()
 
 if(LGR_TET4)
