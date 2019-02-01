@@ -450,7 +450,9 @@ ErrorCode radial_return(Properties const props, tensor_type const Te,
     // determine elastic deformation
     auto const jac = determinant(F);
     auto const Bbe = find_bbe(T, mu);
-    auto const Be = Bbe * std::pow(jac, 2.0 / 3.0);
+    auto const j13 = std::cbrt(jac);
+    auto const j23 = j13 * j13;
+    auto const Be = Bbe * j23;
     auto const Ve = sqrt_spd(Be);
     Fp = invert(Ve) * F;
     if (flag == StateFlag::REMAPPED) {
@@ -490,7 +492,7 @@ tensor_type hyper_elastic_stress(Properties const props, tensor_type const Fe,
   auto const E = props.E;
   auto const Nu = props.Nu;
   // Jacobian and distortion tensor
-  auto const scale = std::pow(jac, -1.0 / 3.0);
+  auto const scale = 1.0 / std::cbrt(jac);
   auto const Fb = scale * Fe;
   // Elastic moduli
   auto const C10 = E / (4.0 * (1.0 + Nu));
@@ -572,9 +574,11 @@ ErrorCode update(Properties const props,
 
     // Update damage and check modified TEPLA rule
     dp = scalar_damage(props, T, dp, temp, ep, epdot, dtime);
-    double por=0.0, por_crit = 1.0;
-    auto const tepla = std::pow(por / por_crit, 2.0)
-                     + std::pow((props.D0 + dp) / props.DC, 2.0);
+    double const por = 0.0;
+    double const por_crit = 1.0;
+    double const por_ratio = por / por_crit;
+    double const D0dpDC = (props.D0 + dp) / props.DC;
+    auto const tepla = por_ratio * por_ratio + D0dpDC * D0dpDC;
     if (tepla > 1.0) {
       is_localized = true;
     }
