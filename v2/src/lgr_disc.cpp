@@ -177,7 +177,8 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
     Omega_h_fail("no input mesh!\n");
   }
   if (!(mesh.dim() == dim_)) {
-    Omega_h_fail("element dimension %d doesn't match mesh dimension %d\n", dim_, mesh.dim());
+    Omega_h_fail("element dimension %d doesn't match mesh dimension %d\n", dim_,
+        mesh.dim());
   }
   OMEGA_H_CHECK(
       mesh.family() == (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE));

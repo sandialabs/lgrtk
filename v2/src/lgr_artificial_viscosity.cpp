@@ -6,13 +6,12 @@ namespace lgr {
 
 OMEGA_H_INLINE void artificial_viscosity_update(double const linear,
     double const quadratic, double const h_min, double const h_max,
-    double const density, Matrix<3, 3> const grad_v,
-    Matrix<3, 3>& stress, double& wave_speed) {
+    double const density, Matrix<3, 3> const grad_v, Matrix<3, 3>& stress,
+    double& wave_speed) {
   auto const V_dot = trace(grad_v);
-  auto const kinematic = quadratic * std::abs(V_dot) * square(h_max) +
-                         linear * wave_speed * h_max;
-  auto const symm_grad_v =
-      (1. / 2.) * (grad_v + transpose(grad_v));
+  auto const kinematic =
+      quadratic * std::abs(V_dot) * square(h_max) + linear * wave_speed * h_max;
+  auto const symm_grad_v = (1. / 2.) * (grad_v + transpose(grad_v));
   stress += density * kinematic * symm_grad_v;
   auto const squiggle = kinematic / (wave_speed * h_min);
   wave_speed *= (std::sqrt(1.0 + square(squiggle)) + squiggle);

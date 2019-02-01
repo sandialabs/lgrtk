@@ -26,7 +26,8 @@ template <class Elem>
 RemapBase* remap_factory(Simulation& sim, Omega_h::InputMap& pl);
 
 #define LGR_EXPL_INST(Elem)                                                    \
-  extern template RemapBase* remap_factory<Elem>(Simulation&, Omega_h::InputMap&);
+  extern template RemapBase* remap_factory<Elem>(                              \
+      Simulation&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
