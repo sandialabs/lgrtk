@@ -1137,18 +1137,24 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   out.lengths.time_step_length =
     magic_number * compute_char_length(node_coords);
   
-  out.lengths.viscosity_length = 0.0;  // this needs to change
+  out.lengths.viscosity_length = out.lengths.time_step_length;
 
   return out;
 }
 
 OMEGA_H_INLINE
-constexpr double CompTet::lumping_factor(int /*node */) {
-  // we need to consider that density can vary over the element and
-  // the fact that the lumping factor can depend on nodal coordinates.
-  // returning 0 for now will at least break everything so that it's
-  // clear that this is incorrect.
-  return 0.0;
+constexpr double CompTet::lumping_factor(int node) {
+  return (
+      (node == 0) ? 1.0 / 32.0 :
+      (node == 1) ? 1.0 / 32.0 :
+      (node == 2) ? 1.0 / 32.0 :
+      (node == 3) ? 1.0 / 32.0 :
+      (node == 4) ? 7.0 / 48.0 :
+      (node == 5) ? 7.0 / 48.0 :
+      (node == 6) ? 7.0 / 48.0 :
+      (node == 7) ? 7.0 / 48.0 :
+      (node == 8) ? 7.0 / 48.0 :
+      (node == 9) ? 7.0 / 48.0 : -1.0);
 }
 
 OMEGA_H_INLINE Matrix<CompTet::nodes, CompTet::points> CompTet::basis_values() {
