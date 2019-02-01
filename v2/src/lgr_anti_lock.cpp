@@ -3,6 +3,9 @@
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
 
+// DEBUG!
+#include <iostream>
+
 namespace lgr {
 
 template <class Elem>
@@ -151,32 +154,30 @@ struct AverageDensityOverPoints : public Model<Elem> {
 
 template <class Elem>
 struct AverageJOverIndset : public Model<Elem> {
+  using Model<Elem>::sim;
   FieldIndex deformation_gradient;
-  FieldIndex independent_set;
   AverageJOverIndset(Simulation& sim_in)
       : Model<Elem>(
             sim_in, sim_in.fields[sim_in.fields.find("deformation gradient")]
                         .class_names),
         deformation_gradient(sim_in.fields.find("deformation gradient"))
   {
-    this->independent_set = this->sim.fields.define(
-        "i", "independent set", 1, NODES, false, this->sim.disc.covering_class_names());
   }
   std::uint64_t exec_stages() override final { return AFTER_FIELD_UPDATE; }
   char const* name() override final { return "average J over independent set"; }
   void after_field_update() override final {
     auto const points_to_F = this->points_getset(this->deformation_gradient);
     auto const points_to_w = this->points_get(this->sim.weight);
-    auto const nodes_to_indset = this->sim.get(this->independent_set);
-    auto const nodes_to_elems = this->sim.disc.nodes_to_ents(ELEMS);
-    auto functor = OMEGA_H_LAMBDA(int const node) {
-      if (nodes_to_indset[node] != 1.0) return;
-      auto const begin = nodes_to_elems.a2ab[node];
-      auto const end = nodes_to_elems.a2ab[node + 1];
+    auto const edges_to_indset = sim.disc.mesh.template get_array<Omega_h::Byte>(1, "LGR independent set");
+    auto const edges_to_elems = sim.disc.mesh.ask_up(1, sim.dim());
+    auto functor = OMEGA_H_LAMBDA(int const edge) {
+      if (edges_to_indset[edge] != 1.0) return;
+      auto const begin = edges_to_elems.a2ab[edge];
+      auto const end = edges_to_elems.a2ab[edge + 1];
       double average_J = 0.0;
       double w_sum = 0.0;
-      for (auto node_elem = begin; node_elem < end; ++node_elem) {
-        auto const elem = nodes_to_elems.ab2b[node_elem];
+      for (auto edge_elem = begin; edge_elem < end; ++edge_elem) {
+        auto const elem = edges_to_elems.ab2b[edge_elem];
         for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
           auto const point = elem * Elem::points + elem_pt;
           auto const old_F = getfull<Elem>(points_to_F, point);
@@ -187,8 +188,8 @@ struct AverageJOverIndset : public Model<Elem> {
         }
       }
       average_J /= w_sum;
-      for (auto node_elem = begin; node_elem < end; ++node_elem) {
-        auto const elem = nodes_to_elems.ab2b[node_elem];
+      for (auto edge_elem = begin; edge_elem < end; ++edge_elem) {
+        auto const elem = edges_to_elems.ab2b[edge_elem];
         for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
           auto const point = elem * Elem::points + elem_pt;
           auto const old_F = getfull<Elem>(points_to_F, point);
@@ -200,7 +201,61 @@ struct AverageJOverIndset : public Model<Elem> {
         }
       }
     };
-    parallel_for(this->elems(), std::move(functor));
+    parallel_for(sim.disc.mesh.nents(1), std::move(functor));
+  }
+};
+
+template <class Elem>
+struct AveragePressureOverIndset : public Model<Elem> {
+  using Model<Elem>::sim;
+  AveragePressureOverIndset(Simulation& sim_in)
+      : Model<Elem>(
+            sim_in, sim_in.fields[sim_in.fields.find("stress")]
+                        .class_names)
+  {}
+  std::uint64_t exec_stages() override final { return BEFORE_SECONDARIES; }
+  char const* name() override final { return "average pressure over independent set"; }
+  void before_secondaries() override final {
+    auto const points_to_sigma = this->points_getset(this->sim.stress);
+    auto const points_to_w = this->points_get(this->sim.weight);
+    auto const edges_to_indset = sim.disc.mesh.template get_array<Omega_h::Byte>(1, "LGR independent set");
+    auto const edges_to_elems = sim.disc.mesh.ask_up(1, sim.dim());
+    auto functor = OMEGA_H_LAMBDA(int const edge) {
+      if (edges_to_indset[edge] != Omega_h::Byte(1)) return;
+      auto const begin = edges_to_elems.a2ab[edge];
+      auto const end = edges_to_elems.a2ab[edge + 1];
+      double average_p = 0.0;
+      double w_sum = 0.0;
+      for (auto edge_elem = begin; edge_elem < end; ++edge_elem) {
+        auto const elem = edges_to_elems.ab2b[edge_elem];
+        for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
+          auto const point = elem * Elem::points + elem_pt;
+          auto const old_sigma = getstress(points_to_sigma, point);
+          auto const old_p = trace(old_sigma) / 3;
+          auto const w = points_to_w[point];
+          average_p += w * old_p;
+          w_sum += w;
+        }
+      }
+      average_p /= w_sum;
+      for (auto edge_elem = begin; edge_elem < end; ++edge_elem) {
+        auto const elem = edges_to_elems.ab2b[edge_elem];
+        for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
+          auto const point = elem * Elem::points + elem_pt;
+          auto const old_sigma = getstress(points_to_sigma, point);
+          auto const old_p = trace(old_sigma) / 3;
+          auto const factor = average_p - old_p;
+          auto const I = identity_matrix<3, 3>();
+          auto const new_sigma = old_sigma + I * factor;
+          if (!(Omega_h::are_close(average_p, trace(new_sigma) / 3, 1e-6, 1e-6))) {
+            std::cerr << "far away desired and written pressures: (" << average_p << ", " << (trace(new_sigma) / 3) << '\n';
+          }
+//        OMEGA_H_CHECK(Omega_h::are_close(average_p, trace(new_sigma) / 3));
+          setstress(points_to_sigma, point, new_sigma);
+        }
+      }
+    };
+    parallel_for(sim.disc.mesh.nents(1), std::move(functor));
   }
 };
 
@@ -234,6 +289,12 @@ ModelBase* average_J_over_independent_set_factory(
   return new AverageJOverIndset<Elem>(sim);
 }
 
+template <class Elem>
+ModelBase* average_pressure_over_independent_set_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap&) {
+  return new AveragePressureOverIndset<Elem>(sim);
+}
+
 #define LGR_EXPL_INST(Elem)                                                    \
   template ModelBase* average_J_over_points_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&); \
@@ -244,6 +305,8 @@ ModelBase* average_J_over_independent_set_factory(
   template ModelBase* average_density_over_points_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&); \
   template ModelBase* average_J_over_independent_set_factory<Elem>(                      \
+      Simulation&, std::string const&, Omega_h::InputMap&); \
+  template ModelBase* average_pressure_over_independent_set_factory<Elem>(                      \
       Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST

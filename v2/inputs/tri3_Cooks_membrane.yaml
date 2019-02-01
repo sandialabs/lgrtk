@@ -1,0 +1,68 @@
+CFL: 0.4
+end time: 10.0
+#end step: 1
+element type: Tri3
+mesh:
+  box:
+    x elements: 8
+    x size: 1.0
+    y elements: 8
+    y size: 1.0
+  transform: |
+    u = 1 - x(1);
+    v = x(0);
+    vector(u * 48, v * 44 + u * 16 * v + u * 44 * (1 - v))
+  mark closest nodes: [['tip', 'vector(48, 60)']]
+common fields:
+  density: 1.0
+  velocity: 'vector(0.0, (x(0) ^ 2) / (48^2) )'
+material models:
+  - 
+    type: linear elastic
+    bulk modulus: 833333
+    shear modulus: 83
+modifiers:
+  - 
+    type: independent set
+  - 
+    type: average J over independent set
+  - 
+    type: artificial viscosity
+    linear artificial viscosity: 1.0
+    quadratic artificial viscosity: 0.5
+  - 
+    type: average pressure over independent set
+  - 
+    type: compute pressure
+conditions:
+  acceleration:
+    - 
+      sets: ['y+']
+      value: 'vector(0.0, 0.0)'
+scalars:
+  tip position:
+    type: node
+    field: position
+    set: 'tip'
+    component: 1
+responses:
+  - 
+    type: VTK output
+    time period: 0.1
+    path: Cooks_membrane
+    fields:
+      - velocity
+      - density
+      - stress
+#     - nodal pressure
+#     - nodal pressure rate
+      - pressure
+      - position
+  - 
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt
+      - tip position
