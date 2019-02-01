@@ -7,10 +7,7 @@
 
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_RCPDecl.hpp>
-#include <CrsLinearProblem.hpp>
 #include <CrsMatrix.hpp>
-#include <Fields.hpp>
-#include <ParallelComm.hpp>
 
 #include "ErrorHandling.hpp"
 
