@@ -200,7 +200,7 @@ struct AverageJOverIndset : public Model<Elem> {
         }
       }
     };
-    parallel_for(this->elems(), std::move(functor));
+    parallel_for(this->sim.nodes(), std::move(functor));
   }
 };
 

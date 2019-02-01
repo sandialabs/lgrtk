@@ -32,10 +32,11 @@ struct Indset : public Model<Elem> {
         &sim.disc.mesh, 0, vert_randoms, candidates);
     auto const nodes_to_indset = sim.set(this->independent_set);
     OMEGA_H_CHECK(sim.nodes() == nverts);
+    OMEGA_H_CHECK(nverts == nodes_to_indset.size());
     auto functor = OMEGA_H_LAMBDA(int const node) {
-      nodes_to_indset[node] = double(indset_bytes[node]);
+      nodes_to_indset[node] = (indset_bytes[node] == Omega_h::Byte(1)) ? 1.0 : 0.0;
     };
-    parallel_for(sim.nodes(), std::move(functor));
+    parallel_for(nverts, std::move(functor));
   }
 };
 
