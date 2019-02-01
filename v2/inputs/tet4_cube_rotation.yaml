@@ -1,4 +1,4 @@
-end time: 1.0e-2
+end time: 5.0
 element type: Tet4
 mesh:
   box:
@@ -15,23 +15,23 @@ common fields:
 material models:
   - 
     type: neo-Hookean
-    bulk modulus: 200.0e9
-    shear modulus: 75.0e9
+    bulk modulus: 200.0e11
+    shear modulus: 75.0e11
 conditions:
   velocity:
     -
-      value: '100.0 * vector(-x(1), x(0), 0.0)'
+      value: '3.1415926535897e-1 * vector(-x(1), x(0), 0.0)'
 scalars:
   deformation gradient error:
     type: L2 error
     field: deformation gradient
     expected value: |
-      c = cos(100.0 * t);
-      s = sin(100.0 * t);
+      c = cos(3.1415926535897e-1 * t);
+      s = sin(3.1415926535897e-1 * t);
       tensor(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0)
 responses:
   - 
-    time period: 1.0e-04
+    time period: 0.125
     type: VTK output
     fields:
       - velocity
@@ -52,4 +52,4 @@ responses:
     scalar: deformation gradient error
     expected value: 0.0
     tolerance: 0.0
-    floor: 1.0e-03
+    floor: 1.0e-10
