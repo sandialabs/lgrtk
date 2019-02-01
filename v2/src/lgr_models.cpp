@@ -1,9 +1,10 @@
 #include <Omega_h_profile.hpp>
+#include <lgr_anti_lock.hpp>
 #include <lgr_artificial_viscosity.hpp>
-#include <lgr_pressure.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
 #include <lgr_ideal_gas.hpp>
+#include <lgr_indset.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_linear_elastic.hpp>
@@ -11,11 +12,10 @@
 #include <lgr_models.hpp>
 #include <lgr_neo_hookean.hpp>
 #include <lgr_nodal_pressure.hpp>
+#include <lgr_pressure.hpp>
 #include <lgr_scope.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_stvenant_kirchhoff.hpp>
-#include <lgr_anti_lock.hpp>
-#include <lgr_indset.hpp>
 
 namespace lgr {
 
@@ -27,7 +27,7 @@ void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
-//if (models.empty()) Omega_h_fail("no material models defined!\n");
+  // if (models.empty()) Omega_h_fail("no material models defined!\n");
   ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"),
       models, "modifier");
 }
@@ -101,11 +101,16 @@ ModelFactories get_builtin_modifier_factories() {
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
   out["compute pressure"] = pressure_factory;
   out["average J over points"] = average_J_over_points_factory<Elem>;
-  out["average pressure over points"] = average_pressure_over_points_factory<Elem>;
-  out["average internal energy over points"] = average_internal_energy_over_points_factory<Elem>;
-  out["average density over points"] = average_density_over_points_factory<Elem>;
-  out["average J over independent set"] = average_J_over_independent_set_factory<Elem>;
-  out["average pressure over independent set"] = average_pressure_over_independent_set_factory<Elem>;
+  out["average pressure over points"] =
+      average_pressure_over_points_factory<Elem>;
+  out["average internal energy over points"] =
+      average_internal_energy_over_points_factory<Elem>;
+  out["average density over points"] =
+      average_density_over_points_factory<Elem>;
+  out["average J over independent set"] =
+      average_J_over_independent_set_factory<Elem>;
+  out["average pressure over independent set"] =
+      average_pressure_over_independent_set_factory<Elem>;
   out["independent set"] = independent_set_factory<Elem>;
   return out;
 }

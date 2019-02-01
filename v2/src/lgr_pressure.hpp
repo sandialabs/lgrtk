@@ -1,8 +1,8 @@
 #ifndef LGR_PRESSURE_HPP
 #define LGR_PRESSURE_HPP
 
-#include <string>
 #include <Omega_h_input.hpp>
+#include <string>
 
 namespace lgr {
 
@@ -12,6 +12,6 @@ struct Simulation;
 ModelBase* pressure_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap& pl);
 
-}
+}  // namespace lgr
 
 #endif

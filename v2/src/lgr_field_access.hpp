@@ -45,14 +45,12 @@ OMEGA_H_DEVICE void setfull(
   Omega_h::set_matrix<Elem::dim, Elem::dim>(a, i, v);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
-    Omega_h::Read<double> const& a, int i) {
+OMEGA_H_DEVICE Matrix<3, 3> getstress(Omega_h::Read<double> const& a, int i) {
   return Omega_h::get_symm<3>(a, i);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
-    Omega_h::Write<double> const& a, int i) {
+OMEGA_H_DEVICE Matrix<3, 3> getstress(Omega_h::Write<double> const& a, int i) {
   return Omega_h::get_symm<3>(a, i);
 }
 
@@ -95,7 +93,8 @@ OMEGA_H_DEVICE void setgrads(Omega_h::Write<double> const& gradients, int point,
 }
 
 /* \frac{\partial u}{\partial X_i} =
-   \sum_j \frac{\partial u}{\partial \xi_j}\frac{\partial \xi_j}{\partial x_i} */
+   \sum_j \frac{\partial u}{\partial \xi_j}\frac{\partial \xi_j}{\partial x_i}
+ */
 template <class Elem>
 OMEGA_H_INLINE Vector<Elem::dim> grad(
     Matrix<Elem::dim, Elem::nodes> basis_grads,
@@ -104,7 +103,8 @@ OMEGA_H_INLINE Vector<Elem::dim> grad(
 }
 
 /* \frac{\partial u_i}{\partial X_j} =
-   \sum_k \frac{\partial u_i}{\partial \xi_k}\frac{\partial \xi_k}{\partial x_j} */
+   \sum_k \frac{\partial u_i}{\partial \xi_k}\frac{\partial \xi_k}{\partial x_j}
+ */
 template <class Elem>
 OMEGA_H_INLINE Matrix<Elem::dim, Elem::dim> grad(
     Matrix<Elem::dim, Elem::nodes> basis_grads,
@@ -211,13 +211,11 @@ OMEGA_H_DEVICE void setfull(
   Omega_h::set_matrix<Elem::dim, Elem::dim>(a.data, a.mapping[i], v);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
-    MappedRead const& a, int const i) {
+OMEGA_H_DEVICE Matrix<3, 3> getstress(MappedRead const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, a.mapping[i]);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
-    MappedWrite const& a, int const i) {
+OMEGA_H_DEVICE Matrix<3, 3> getstress(MappedWrite const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, a.mapping[i]);
 }
 
@@ -288,8 +286,8 @@ OMEGA_H_DEVICE Matrix<3, 3> getstress(
 }
 
 template <class Elem>
-OMEGA_H_DEVICE void setstress(MappedPointWrite<Elem> const& a, int const i,
-    Matrix<3, 3> v) {
+OMEGA_H_DEVICE void setstress(
+    MappedPointWrite<Elem> const& a, int const i, Matrix<3, 3> v) {
   Omega_h::set_symm<3>(a.data, map_point<Elem>(a.mapping, i), v);
 }
 

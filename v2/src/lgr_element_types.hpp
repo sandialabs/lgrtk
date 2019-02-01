@@ -222,7 +222,8 @@ struct CompTet {
 
   static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(Vector<nsub_tets> O_det);
 
-  static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(Matrix<dim, nodes> node_coords);
+  static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(
+      Matrix<dim, nodes> node_coords);
 
   static OMEGA_H_INLINE SOLType compute_SOL(Vector<nsub_tets> O_det,
       OType O_inv, Matrix<nsub_tets, 4> sub_tet_int, SType S);
@@ -245,7 +246,6 @@ struct CompTet {
 
   static OMEGA_H_INLINE Matrix<nodes, nodes> compute_mass(
       Matrix<dim, nodes> node_coords, Vector<points> density_ips);
-
 };
 #endif
 

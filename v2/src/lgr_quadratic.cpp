@@ -1,8 +1,8 @@
 #include <Omega_h_align.hpp>
+#include <Omega_h_element.hpp>
 #include <Omega_h_for.hpp>
 #include <Omega_h_int_scan.hpp>
 #include <Omega_h_mesh.hpp>
-#include <Omega_h_element.hpp>
 #include <lgr_for.hpp>
 #include <lgr_quadratic.hpp>
 
@@ -86,7 +86,8 @@ Omega_h::LOs build_p2_ents2nodes(
   return ents2nodes;
 }
 
-static Omega_h::Adj get_adj(Omega_h::Mesh& mesh, int const holder_dim, int const ent_dim) {
+static Omega_h::Adj get_adj(
+    Omega_h::Mesh& mesh, int const holder_dim, int const ent_dim) {
   if (holder_dim < ent_dim) {
     return mesh.ask_up(holder_dim, ent_dim);
   }
@@ -153,7 +154,8 @@ Omega_h::Adj build_p2_nodes2ents(
   Omega_h::Write<Omega_h::I8> codes(nab, "nodes2ents_codes");
   build_ent_nodes2ents(mesh, 0, ent_dim, nodes[0], a2ab, ab2b, codes, 0);
   auto const verts_per_ent = Omega_h::element_degree(mesh.family(), ent_dim, 0);
-  build_ent_nodes2ents(mesh, 1, ent_dim, nodes[1], a2ab, ab2b, codes, verts_per_ent);
+  build_ent_nodes2ents(
+      mesh, 1, ent_dim, nodes[1], a2ab, ab2b, codes, verts_per_ent);
   return Omega_h::Adj{a2ab, ab2b, codes};
 }
 

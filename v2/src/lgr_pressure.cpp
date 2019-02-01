@@ -1,15 +1,13 @@
-#include <lgr_pressure.hpp>
 #include <lgr_for.hpp>
 #include <lgr_model.hpp>
+#include <lgr_pressure.hpp>
 #include <lgr_simulation.hpp>
 
 namespace lgr {
 
 struct Pressure : public ModelBase {
   FieldIndex pressure;
-  Pressure(Simulation& sim_in, Omega_h::InputMap& pl)
-      : ModelBase(sim_in, pl)
-  {
+  Pressure(Simulation& sim_in, Omega_h::InputMap& pl) : ModelBase(sim_in, pl) {
     pressure = this->point_define("p", "pressure", 1, RemapType::NONE, "");
   }
   std::uint64_t exec_stages() override final { return BEFORE_SECONDARIES; }
@@ -27,8 +25,7 @@ struct Pressure : public ModelBase {
   void out_of_line_virtual_function() override final;
 };
 
-void Pressure::out_of_line_virtual_function() {
-}
+void Pressure::out_of_line_virtual_function() {}
 
 ModelBase* pressure_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap& pl) {

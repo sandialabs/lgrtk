@@ -12,7 +12,7 @@ ModelBase* independent_set_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap&);
 
 #define LGR_EXPL_INST(Elem)                                                    \
-  extern template ModelBase* independent_set_factory<Elem>(               \
+  extern template ModelBase* independent_set_factory<Elem>(                    \
       Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST

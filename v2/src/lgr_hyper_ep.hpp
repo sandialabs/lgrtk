@@ -37,7 +37,6 @@ enum class Damage { NONE, JOHNSON_COOK };
 enum class StateFlag { NONE, TRIAL, ELASTIC, PLASTIC, REMAPPED };
 
 struct Properties {
-
   // Elasticity
   Elastic elastic;
   double E;
@@ -47,7 +46,7 @@ struct Properties {
   Hardening hardening;
   RateDependence rate_dep;
   double A;
-  double B; // Hardening modulus
+  double B;  // Hardening modulus
   double n;  // exponent in hardening
   double C1;
   double C2;
@@ -69,23 +68,25 @@ struct Properties {
   double DC;
   double eps_f_min;
 
-  Properties() :
-    elastic(Elastic::LINEAR_ELASTIC),
-    hardening(Hardening::NONE),
-    rate_dep(RateDependence::NONE),
-    damage(Damage::NONE),
-    allow_no_tension(true),
-    allow_no_shear(false),
-    set_stress_to_zero(false)
-    {}
+  Properties()
+      : elastic(Elastic::LINEAR_ELASTIC),
+        hardening(Hardening::NONE),
+        rate_dep(RateDependence::NONE),
+        damage(Damage::NONE),
+        allow_no_tension(true),
+        allow_no_shear(false),
+        set_stress_to_zero(false) {}
 };
 
 using tensor_type = Matrix<3, 3>;
 
 char const* get_error_code_string(ErrorCode code);
-void read_and_validate_elastic_params(Omega_h::InputMap& params, Properties& props);
-void read_and_validate_plastic_params(Omega_h::InputMap& params, Properties& props);
-void read_and_validate_damage_params(Omega_h::InputMap& params, Properties& props);
+void read_and_validate_elastic_params(
+    Omega_h::InputMap& params, Properties& props);
+void read_and_validate_plastic_params(
+    Omega_h::InputMap& params, Properties& props);
+void read_and_validate_damage_params(
+    Omega_h::InputMap& params, Properties& props);
 
 /** \brief Determine the square of the left stretch B=V.V
 
@@ -223,8 +224,7 @@ double flow_stress(Properties props, double const temp, double const ep,
 
 OMEGA_H_INLINE
 double dflow_stress(Properties const props, double const temp, double const ep,
-    double const epdot, double const dtime, double const dp)
-{
+    double const epdot, double const dtime, double const dp) {
   double deriv = 0.;
   if (props.hardening == Hardening::LINEAR_ISOTROPIC) {
     auto const b = props.B;
@@ -295,12 +295,10 @@ double dflow_stress(Properties const props, double const temp, double const ep,
 OMEGA_H_INLINE
 double scalar_damage(Properties const props, tensor_type& T, double const dp,
     double const temp, double const /* ep */, double const epdot,
-    double const dtime)
-{
+    double const dtime) {
   if (props.damage == Damage::NONE) {
     return 0.0;
-  }
-  else if (props.damage == Damage::JOHNSON_COOK) {
+  } else if (props.damage == Damage::JOHNSON_COOK) {
     double tolerance = 1e-10;
     auto const I = identity_matrix<3, 3>();
     auto const T_mean = (trace(T) / 3.0);
@@ -309,7 +307,7 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
     auto const S_eq = std::sqrt(norm_S * norm_S * 1.5);
 
     double eps_f = props.eps_f_min;
-    double sig_star = (std::abs(S_eq) > 1e-16) ? T_mean/S_eq : 0.0;
+    double sig_star = (std::abs(S_eq) > 1e-16) ? T_mean / S_eq : 0.0;
     if (sig_star < 1.5) {
       // NOT SPALL
       // sig_star < 1.5 indicates spall conditions are *not* met and the failure
@@ -330,7 +328,8 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
       double temp_contrib = 1.0;
       auto const temp_ref = props.C1;
       auto const temp_melt = props.C2;
-      if (std::abs(temp_melt-Omega_h::ArithTraits<double>::max())+1.0 != 1.0) {
+      if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 !=
+          1.0) {
         auto const tstar =
             temp > temp_melt ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
         temp_contrib += props.D5 * tstar;
@@ -340,13 +339,12 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
       eps_f = stress_contrib * dep_contrib * temp_contrib;
     }
 
-    if (eps_f < tolerance)
-      return dp;
+    if (eps_f < tolerance) return dp;
 
     // Calculate plastic strain increment
     auto const dep = epdot * dtime;
     auto const ddp = dep / eps_f;
-    return (dp+ddp < tolerance) ? 0.0 : dp + ddp;
+    return (dp + ddp < tolerance) ? 0.0 : dp + ddp;
   }
 
   // Should never get here. The input reader already through threw if there was
@@ -367,8 +365,7 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
 OMEGA_H_INLINE
 ErrorCode radial_return(Properties const props, tensor_type const Te,
     tensor_type const F, double const temp, double const dtime, tensor_type& T,
-    tensor_type& Fp, double& ep, double& epdot, double& dp, StateFlag& flag)
-{
+    tensor_type& Fp, double& ep, double& epdot, double& dp, StateFlag& flag) {
   constexpr double tol1 = 1e-12;
   auto const tol2 = Omega_h::min2(dtime, 1e-6);
   constexpr double twothird = 2.0 / 3.0;
@@ -467,8 +464,8 @@ ErrorCode radial_return(Properties const props, tensor_type const Te,
 }
 
 OMEGA_H_INLINE
-tensor_type linear_elastic_stress(Properties const props, tensor_type const Fe)
-{
+tensor_type linear_elastic_stress(
+    Properties const props, tensor_type const Fe) {
   auto const E = props.E;
   auto const nu = props.Nu;
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -486,9 +483,8 @@ tensor_type linear_elastic_stress(Properties const props, tensor_type const Fe)
  *
  */
 OMEGA_H_INLINE
-tensor_type hyper_elastic_stress(Properties const props, tensor_type const Fe,
-    double const jac)
-{
+tensor_type hyper_elastic_stress(
+    Properties const props, tensor_type const Fe, double const jac) {
   auto const E = props.E;
   auto const Nu = props.Nu;
   // Jacobian and distortion tensor
@@ -511,19 +507,9 @@ tensor_type hyper_elastic_stress(Properties const props, tensor_type const Fe,
 }
 
 OMEGA_H_INLINE_BIG
-ErrorCode update(Properties const props,
-       double const rho,
-       tensor_type const F,
-       double const dtime,
-       double const temp,
-       tensor_type& T,
-       double& wave_speed,
-       tensor_type& Fp,
-       double& ep,
-       double& epdot,
-       double& dp,
-       double& localized)
-{
+ErrorCode update(Properties const props, double const rho, tensor_type const F,
+    double const dtime, double const temp, tensor_type& T, double& wave_speed,
+    tensor_type& Fp, double& ep, double& epdot, double& dp, double& localized) {
   auto const jac = determinant(F);
   {
     // wave speed
@@ -547,15 +533,14 @@ ErrorCode update(Properties const props,
 
   // check yield and perform radial return (if applicable)
   auto flag = StateFlag::TRIAL;
-  err_c = radial_return(
-      props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
+  err_c = radial_return(props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
   }
 
   bool is_localized = false;
   auto p = -trace(T) / 3.;
-  auto const I = identity_matrix<3,3>();
+  auto const I = identity_matrix<3, 3>();
   if (props.damage != Damage::NONE) {
     // If the particle has already failed, apply various erosion algorithms
     if (localized > 0.0) {
