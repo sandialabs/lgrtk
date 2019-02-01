@@ -194,6 +194,7 @@ struct CompTet {
   using OType = Omega_h::Few<Omega_h::Matrix<dim, dim>, nsub_tets>;
   using STIPMType = Omega_h::Few<Omega_h::Matrix<4, 4>, nsub_tets>;
   using SOLType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, 4>;
+  using GammaType = Omega_h::Few<Omega_h::Matrix<nodes, nodes>, nsub_tets>;
 
   template <int NI, int NJ, int NK>
   static OMEGA_H_INLINE void zero(
@@ -204,6 +205,8 @@ struct CompTet {
   static OMEGA_H_INLINE Matrix<4, 4> invert_44(Matrix<4, 4> a);
 
   static OMEGA_H_INLINE SType compute_S();
+
+  static OMEGA_H_INLINE GammaType compute_gamma();
 
   static OMEGA_H_INLINE STIPMType compute_sub_tet_int_proj_M();
 
@@ -235,6 +238,13 @@ struct CompTet {
       Matrix<dim, 11> in, int subtet);
 
   static OMEGA_H_INLINE double compute_char_length(Matrix<dim, nodes> in);
+
+  static OMEGA_H_INLINE Matrix<dim, nsub_tets> get_centroids();
+
+  static OMEGA_H_INLINE Vector<points> get_Q(Vector<dim> xi);
+
+  static OMEGA_H_INLINE Matrix<nodes, nodes> compute_mass(
+      Matrix<dim, nodes> node_coords, Vector<points> density_ips);
 
 };
 #endif
