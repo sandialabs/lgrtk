@@ -1,6 +1,7 @@
-end time: 5.0
-element type: Tet4
+end time: 1.0e-2
+element type: CompTet
 mesh:
+  add mid edge nodes: true
   box:
     x elements: 1
     x size: 1.0
@@ -15,23 +16,23 @@ common fields:
 material models:
   - 
     type: neo-Hookean
-    bulk modulus: 200.0e11
-    shear modulus: 75.0e11
+    bulk modulus: 200.0e9
+    shear modulus: 75.0e9
 conditions:
   velocity:
     -
-      value: '3.1415926535897e-1 * vector(-x(1), x(0), 0.0)'
+      value: '100.0 * vector(1.0, 0.0, 0.0)'
+  acceleration:
+    - 
+      value: 'vector(0.0, 0.0, 0.0)'
 scalars:
   deformation gradient error:
     type: L2 error
     field: deformation gradient
-    expected value: |
-      c = cos(3.1415926535897e-1 * t);
-      s = sin(3.1415926535897e-1 * t);
-      tensor(c, -s, 0.0, s, c, 0.0, 0.0, 0.0, 1.0)
+    expected value: 'tensor(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)'
 responses:
   - 
-    time period: 0.125
+    time period: 1.0e-04
     type: VTK output
     fields:
       - velocity
@@ -52,4 +53,4 @@ responses:
     scalar: deformation gradient error
     expected value: 0.0
     tolerance: 0.0
-    floor: 1.0e-10
+    floor: 1.0e-13
