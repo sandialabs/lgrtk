@@ -79,7 +79,7 @@ template<int SpatialDim>
       const Plato::Scalar y = coords[n*SpatialDim+1];
       const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
       Plato::Scalar exact = sqrt(x*x+y*y+z*z)-1.;
-      norm += abs(levelSet(n,fields.currentState) - exact);
+      norm += abs(levelSet(n,fields.mCurrentState) - exact);
     };
 
     Plato::Scalar norm = 0.0;
