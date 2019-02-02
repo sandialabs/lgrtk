@@ -6,8 +6,6 @@
 #include <Omega_h_vector.hpp>
 
 #include <Teuchos_RCPDecl.hpp>
-
-#include "ErrorHandling.hpp"
 #include "plato/SimplexMechanics.hpp"
 
 namespace Plato

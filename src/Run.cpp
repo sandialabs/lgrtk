@@ -49,6 +49,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "LGRConfig.hpp"
+#include "ErrorHandling.hpp"
 #include "LinearElastostatics.hpp"
 #include "Run.hpp"
 #include "Driver.hpp"
