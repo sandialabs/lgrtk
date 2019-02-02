@@ -219,17 +219,27 @@ private:
         }
     }
 
+    /******************************************************************************//**
+     * @brief Build bounding box and fields on computational mesh
+    **********************************************************************************/
     void build_mesh()
     {
-      auto libOmegaH = std::make_shared<Omega_h::Library>(nullptr, nullptr, mComm);
-      const Plato::Scalar Lx = mLength;
-      const Plato::Scalar Ly = mLength;
-      const Plato::Scalar Lz = mLength;
-      const size_t nx = mNumCellsPerSide;
-      const size_t ny = mNumCellsPerSide;
-      const size_t nz = mNumCellsPerSide;
-      mMesh = Omega_h::build_box(libOmegaH->world(), OMEGA_H_SIMPLEX, Lx, Ly, Lz, nx, ny, nz);
-      declare_fields(mMesh, mHamiltonJacobiFields);
+        auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
+        const Plato::Scalar tLengthX = mLength;
+        const Plato::Scalar tLengthY = mLength;
+        const Plato::Scalar tLengthZ = mLength;
+        const size_t tNumCellX = mNumCellsPerSide;
+        const size_t tNumCellY = mNumCellsPerSide;
+        const size_t tNumCellZ = mNumCellsPerSide;
+        mMesh = Omega_h::build_box(tLibOmegaH->world(),
+                                   OMEGA_H_SIMPLEX,
+                                   tLengthX,
+                                   tLengthY,
+                                   tLengthZ,
+                                   tNumCellX,
+                                   tNumCellY,
+                                   tNumCellZ);
+        declare_fields(mMesh, mHamiltonJacobiFields);
     }
 
 private:
