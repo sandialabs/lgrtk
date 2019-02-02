@@ -10,8 +10,6 @@
 #include "ImplicitFunctors.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
-#include "Fields.hpp"
-
 template<int SpatialDim>
 KOKKOS_INLINE_FUNCTION
 Plato::Scalar unitize(Omega_h::Vector<SpatialDim> & v)
@@ -53,24 +51,24 @@ Plato::Scalar dot(const Omega_h::Vector<SpatialDim> & v1, const Omega_h::Vector<
 template<int SpatialDim>
 struct ProblemFields
 {
-  typename lgr::Fields<SpatialDim>::state_array_type levelSet;
-  typename lgr::Fields<SpatialDim>::array_type RHS;
-  typename lgr::Fields<SpatialDim>::array_type RHSNorm;
-  typename lgr::Fields<SpatialDim>::array_type speed;
-  int currentState = 0;
+  typename Plato::ScalarVector RHS;
+  typename Plato::ScalarVector RHSNorm;
+  typename Plato::ScalarVector speed;
+  typename Plato::ScalarMultiVector levelSet;
+  Plato::OrdinalType currentState = 0;
 };
 
 template<int SpatialDim>
-void declare_fields(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields)
+void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields)
 {
-  const int elem_count = omega_h_mesh.nelems();
-  const int node_count = omega_h_mesh.nverts();
+    constexpr Plato::OrdinalType tNumStates = 2;
+    const Plato::OrdinalType tElemCount = aOmegaH_Mesh.nelems();
+    const Plato::OrdinalType tNodeCount = aOmegaH_Mesh.nverts();
 
-  typedef lgr::Fields<SpatialDim> Fields;
-  fields.levelSet = typename Fields::state_array_type("nodal levelSet", node_count);
-  fields.RHS = typename Fields::array_type("nodal RHS", node_count);
-  fields.RHSNorm = typename Fields::array_type("nodal RHS norm", node_count);
-  fields.speed = typename Fields::array_type("element speed", elem_count);
+    aFields.RHS = Plato::ScalarVector("nodal RHS", tNodeCount);
+    aFields.RHSNorm = Plato::ScalarVector("nodal RHS norm", tNodeCount);
+    aFields.speed = Plato::ScalarVector("element speed", tElemCount);
+    aFields.levelSet = Plato::ScalarMultiVector("nodal levelSet", tNodeCount, tNumStates);
 }
 
 template<int SpatialDim>
@@ -501,14 +499,18 @@ void evolve_level_set(
 }
 
 template<int SpatialDim>
-void write_mesh(Omega_h::vtk::Writer & tWriter, Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar time)
+void write_mesh(Omega_h::vtk::Writer & aWriter,
+                Omega_h::Mesh & aOmegaH_Mesh,
+                ProblemFields<SpatialDim> & aFields,
+                const Plato::Scalar aTime)
 {
-  Kokkos::View<Omega_h::Real*> view("into", lgr::Fields<SpatialDim>::getFromSA(fields.levelSet,0).size());
-  Kokkos::deep_copy(view, lgr::Fields<SpatialDim>::getFromSA(fields.levelSet,fields.currentState));
-  omega_h_mesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(view)));
-
-  auto tTags = Omega_h::vtk::get_all_vtk_tags(&omega_h_mesh,SpatialDim);
-  tWriter.write(static_cast<Omega_h::Real>(time), tTags);
+    const Plato::OrdinalType tNodeCount = aOmegaH_Mesh.nverts();
+    Kokkos::View<Omega_h::Real*> tView("into", tNodeCount);
+    auto tSubView = Kokkos::subview(aFields.levelSet, Kokkos::ALL(), aFields.currentState);
+    Kokkos::deep_copy(tView, tSubView);
+    aOmegaH_Mesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tView)));
+    auto tTags = Omega_h::vtk::get_all_vtk_tags(&aOmegaH_Mesh, SpatialDim);
+    aWriter.write(static_cast<Omega_h::Real>(aTime), tTags);
 }
 
 template<int SpatialDim>
