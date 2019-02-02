@@ -8,8 +8,8 @@
 #include "Omega_h_mesh.hpp"
 
 #include "ImplicitFunctors.hpp"
+#include "plato/PlatoStaticsTypes.hpp"
 
-#include "LGR_Types.hpp"
 #include "Fields.hpp"
 
 template<int SpatialDim>
