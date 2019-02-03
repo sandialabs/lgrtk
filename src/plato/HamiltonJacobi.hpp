@@ -54,6 +54,7 @@ struct ProblemFields
   typename Plato::ScalarVector mRHS;
   typename Plato::ScalarVector mRHSNorm;
   typename Plato::ScalarVector mSpeed;
+  typename Plato::ScalarVector mBurnRate;
   typename Plato::ScalarMultiVector mLevelSet;
   Plato::OrdinalType mCurrentState = 0;
 };
@@ -68,6 +69,7 @@ void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aF
     aFields.mRHS = Plato::ScalarVector("nodal RHS", tNodeCount);
     aFields.mRHSNorm = Plato::ScalarVector("nodal RHS norm", tNodeCount);
     aFields.mSpeed = Plato::ScalarVector("element speed", tElemCount);
+    aFields.mBurnRate = Plato::ScalarVector("nodal burn rate", tNodeCount);
     aFields.mLevelSet = Plato::ScalarMultiVector("nodal levelSet", tNodeCount, tNumStates);
 }
 
@@ -205,34 +207,49 @@ bool domain_contains_interface(Omega_h::Mesh & omega_h_mesh, ProblemFields<Spati
   return numPosNeg[0] > 0 && numPosNeg[1] > 0;
 }
 
+/******************************************************************************//**
+ * @brief Initialize level set field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [in] aLevelSetFunction level set function interface
+ * @param [in] aMultiplier level set field multiplier (default = 1)
+**********************************************************************************/
 template<int SpatialDim, class Lambda>
-void initialize_level_set(Omega_h::Mesh & omega_h_mesh,
-    ProblemFields<SpatialDim> & fields,
-    const Lambda & level_set_function,
-    const double multiplier = 1.0)
+inline void initialize_level_set(Omega_h::Mesh & aOmega_h_Mesh,
+                                 ProblemFields<SpatialDim> & aFields,
+                                 const Lambda & aLevelSetFunction,
+                                 const double aMultiplier = 1.0)
 {
-  auto levelSet = fields.mLevelSet;
-  const Omega_h::Reals coords = omega_h_mesh.coords();
-  auto f = LAMBDA_EXPRESSION(int n) {
-    const Plato::Scalar x = coords[n*SpatialDim+0];
-    const Plato::Scalar y = coords[n*SpatialDim+1];
-    const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
-    levelSet(n, fields.mCurrentState) = level_set_function(x,y,z) * multiplier;
-  };
-  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
+    auto tLevelSet = aFields.mLevelSet;
+    const Omega_h::Reals tCoords = aOmega_h_Mesh.coords();
+    auto tLambdaExp = LAMBDA_EXPRESSION(int tIndex)
+    {
+        const Plato::Scalar tX = tCoords[tIndex*SpatialDim + 0];
+        const Plato::Scalar tY = tCoords[tIndex*SpatialDim + 1];
+        const Plato::Scalar tZ = (SpatialDim > 2) ? tCoords[tIndex*SpatialDim + 2] : 0.0;
+        tLevelSet(tIndex, aFields.mCurrentState) = aLevelSetFunction(tX,tY,tZ) * aMultiplier;
+    };
+    Kokkos::parallel_for(aOmega_h_Mesh.nverts(), tLambdaExp);
 }
+// function initialize_level_set
 
+/******************************************************************************//**
+ * @brief Offset level set field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [in] aOffset level set offset rate
+**********************************************************************************/
 template<int SpatialDim>
-void offset_level_set(Omega_h::Mesh & omega_h_mesh,
-    ProblemFields<SpatialDim> & fields,
-    const double offset)
+inline void offset_level_set(Omega_h::Mesh & aOmega_h_Mesh, ProblemFields<SpatialDim> & aFields, const Plato::Scalar & aOffset)
 {
-  auto levelSet = fields.mLevelSet;
-  auto f = LAMBDA_EXPRESSION(int n) {
-    levelSet(n, fields.mCurrentState) += offset;
-  };
-  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
+    auto tLevelSet = aFields.mLevelSet;
+    auto tLambdaExp = LAMBDA_EXPRESSION(int tIndex)
+    {
+        tLevelSet(tIndex, aFields.mCurrentState) += aOffset;
+    };
+    Kokkos::parallel_for(aOmega_h_Mesh.nverts(), tLambdaExp);
 }
+// function offset_level_set
 
 template<int SpatialDim>
 class AssembleElementSpeedHamiltonian

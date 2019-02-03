@@ -52,22 +52,20 @@ namespace Plato
 {
 
 /******************************************************************************//**
- * @brief Defines options for geometry. 1) INITIAL = initial geometry. 2) DYNAMIC = geometry changing in time
+ * @brief Optimization parameters for algebraic rocket model
 **********************************************************************************/
-struct Configuration
+struct ProblemParams
 {
-    enum type_t
-    {
-        INITIAL = 0,
-        DYNAMIC = 1
-    };
+    Plato::Scalar mTimeStep; /*!< simulation's time step */
+    std::vector<Plato::Scalar> mBurnRate; /*!< define burn rate spatial distribution */
+    std::vector<Plato::Scalar> mGeometry; /*!< define chambers configuration/geometry */
 };
-// struct Configuration
+// struct ProblemParams
 
 /******************************************************************************//**
  * @brief Abstract geometry model class
 **********************************************************************************/
-template<typename ScalarType = double>
+template<typename ScalarType = Plato::Scalar>
 class GeometryModel
 {
 public:
@@ -79,21 +77,28 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Compute the area of a user-defined geometry.
+     * @brief Compute the surface area of a geometry
+     * @return surface area
     **********************************************************************************/
     virtual ScalarType area() = 0;
 
     /******************************************************************************//**
-     * @brief Compute the gradient with respect to the parameters that define the geometry.
-     * @param aOutput gradient with respect to the parameters that define the geometry
+     * @brief Compute the gradient with respect to geometry-based parameters
+     * @param [in/out] aOutput gradient with respect to geometry-based parameters
     **********************************************************************************/
-    virtual void gradient(std::vector<ScalarType>& aOutput) = 0;
+    virtual void gradient(std::vector<ScalarType> & aOutput) = 0;
 
     /******************************************************************************//**
-     * @brief Set parameters that define the geometry.
-     * @param aParam parameters that define the geometry
+     * @brief Initialize immersed geometry
+     * @param [in] aParam optimization parameters
     **********************************************************************************/
-    virtual void update(const std::map<std::string, ScalarType>& aParam) = 0;
+    virtual void initialize(const Plato::ProblemParams & aParam) = 0;
+
+    /******************************************************************************//**
+     * @brief Set parameters that define immersed geometry.
+     * @param [in] aParam optimization parameters
+    **********************************************************************************/
+    virtual void updateGeometry(const Plato::ProblemParams & aParam) = 0;
 };
 // class GeometryModel
 
