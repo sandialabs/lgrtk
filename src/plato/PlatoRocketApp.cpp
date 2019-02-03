@@ -210,13 +210,14 @@ void RocketApp::inputData(const std::string & aArgumentName, const Plato::Shared
 **********************************************************************************/
 void RocketApp::setRocketDriver()
 {
-    const Plato::Scalar tChamberRadius = 0.075; // m
-    const Plato::Scalar tChamberLength = 0.65; // m
-    std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeomModel =
-            std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(tChamberRadius, tChamberLength, mComm);
+    const Plato::Scalar tRadius = 0.075; // m
+    const Plato::Scalar tLength = 0.65; // m
+    std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeometry =
+            std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(mComm);
+    tGeometry->define(tRadius, tLength);
 
-    Plato::AlgebraicRocketInputs<Plato::Scalar> tDefaultInputs;
-    mRocketDriver = std::make_shared<Plato::AlgebraicRocketModel<Plato::Scalar>>(tDefaultInputs, tGeomModel);
+    Plato::AlgebraicRocketInputs<Plato::Scalar> tDefaulRocketParams;
+    mRocketDriver = std::make_shared<Plato::AlgebraicRocketModel<Plato::Scalar>>(tDefaulRocketParams, tGeometry);
     mRocketDriver->disableOutput();
 }
 
@@ -412,8 +413,7 @@ void RocketApp::computeObjFuncGrad(const std::vector<Plato::Scalar> & aControl,
 Plato::Scalar RocketApp::computeObjFuncValue(const std::vector<Plato::Scalar> & aControl,
                                              const std::vector<Plato::Scalar> & aTargetProfile)
 {
-    this->updateModel(aControl);
-
+    this->updateProblem(aControl);
     mRocketDriver->solve();
     auto tTrialProfile = mRocketDriver->getThrustProfile();
     assert(tTrialProfile.size() == aTargetProfile.size());
@@ -438,27 +438,21 @@ Plato::Scalar RocketApp::computeObjFuncValue(const std::vector<Plato::Scalar> & 
 }
 
 /******************************************************************************//**
-* @brief update parameters (e.g. design variables) for simulation.
+* @brief Update parameters (e.g. design variables) for simulation.
 **********************************************************************************/
-void RocketApp::updateModel(const std::vector<Plato::Scalar> & aControls)
+void RocketApp::updateProblem(const std::vector<Plato::Scalar> & aControls)
 {
     std::string tArgumentName = "NormalizationConstants";
     auto tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tNormalizationConstants = tIterator->second;
 
-    Plato::OrdinalType tINDEX = 0;
-    const Plato::Scalar tRadius = aControls[tINDEX] * tNormalizationConstants[0];
-    std::map<std::string, Plato::Scalar> tGeomParams;
-    tGeomParams.insert(std::pair<std::string, Plato::Scalar>("Radius", tRadius));
-    tGeomParams.insert(std::pair<std::string, Plato::Scalar>("Configuration", Plato::Configuration::INITIAL));
-    mRocketDriver->updateInitialChamberGeometry(tGeomParams);
-
-    tINDEX = 1;
-    const Plato::Scalar tRefBurnRate = aControls[tINDEX] * tNormalizationConstants[1];
-    std::map<std::string, Plato::Scalar> tSimParams;
-    tSimParams.insert(std::pair<std::string, Plato::Scalar>("RefBurnRate", tRefBurnRate));
-    mRocketDriver->updateSimulation(tSimParams);
+    Plato::ProblemParams tParams;
+    const Plato::Scalar tRadius = aControls[0] * tNormalizationConstants[0];
+    tParams.mGeometry.push_back(tRadius);
+    const Plato::Scalar tRefBurnRate = aControls[1] * tNormalizationConstants[1];
+    tParams.mBurnRate.push_back(tRefBurnRate);
+    mRocketDriver->updateProblem(tParams);
 }
 
 } // namespace Plato
