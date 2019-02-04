@@ -11,8 +11,15 @@
   <ParameterList name="Plato Problem">
     <Parameter name="Physics"         type="string"  value="Thermal"/>
     <Parameter name="PDE Constraint"  type="string"  value="Heat Equation"/>
+    <Parameter name="Objective"       type="string"  value="Internal Thermal Energy"/>
+    <Parameter name="Self-Adjoint"    type="bool"    value="false"/>
 
-    <Parameter name="Self-Adjoint"       type="bool"    value="false"/>
+    <ParameterList name="Internal Thermal Energy">
+      <ParameterList name="Penalty Function">
+        <Parameter name="Type" type="string" value="SIMP"/>
+        <Parameter name="Exponent" type="double" value="1.0"/>
+      </ParameterList>
+    </ParameterList>
 
     <ParameterList name="Time Integration">
       <Parameter name="Number Time Steps" type="int" value="80"/>
@@ -34,16 +41,6 @@
       </ParameterList>
     </ParameterList>
   
-    <ParameterList  name="Computed Fields">
-      <ParameterList  name="Initial Temperature">
-        <Parameter  name="Function" type="string"   value="100.0"/>
-      </ParameterList>
-    </ParameterList>
-
-    <ParameterList  name="Initial Temperature">
-      <Parameter  name="Computed Field" type="string" value="Initial Temperature"/>
-    </ParameterList>
-
     <ParameterList  name="Natural Boundary Conditions">
       <ParameterList  name="Flux Boundary Condition">
         <Parameter  name="Type"     type="string"   value="Uniform"/>

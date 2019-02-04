@@ -305,3 +305,90 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyGradX )
 
 //  TEST_FLOATING_EQUALITY(stdStateOut[0], 17308575.3656760529, 1e-12);
 }
+
+TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
+{ 
+  
+  int argc = 2;
+  char exeName[] = "exeName";
+  char arg1[] = "--input-config=InternalEnergyHeatEq_input.xml";
+  char* argv[2] = {exeName, arg1};
+
+  MPI_Comm myComm;
+  MPI_Comm_dup(MPI_COMM_WORLD, &myComm);
+
+  setenv("PLATO_APP_FILE", "InternalEnergyHeatEq_appfile.xml", true);
+
+  MPMD_App app(argc, argv, myComm);
+
+  app.initialize();
+
+  std::vector<int> localIDs;
+  app.exportDataMap(Plato::data::layout_t::SCALAR_FIELD, localIDs);
+
+  // create input data
+  //
+  FauxSharedField fauxControlIn(localIDs.size());
+  std::vector<double> stdControlIn(localIDs.size(),1.0);
+
+  // import data
+  //
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+
+  // create output data
+  //
+
+  // solve
+  //
+  app.compute("Compute Objective");
+
+  // export data
+  //
+  FauxSharedField fauxObjGradOut(localIDs.size(),0.0);
+  app.exportDataT("Objective Gradient", fauxObjGradOut);
+
+  std::vector<double> stdObjGradOut(localIDs.size());
+  fauxObjGradOut.getData(stdObjGradOut);
+
+  FauxSharedValue fauxObjValOut(1,0.0);
+  app.exportDataT("Objective Value", fauxObjValOut);
+
+  std::vector<double> stdObjValOne(1);
+  fauxObjValOut.getData(stdObjValOne);
+
+  double mag = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    mag += stdObjGradOut[iVal]*stdObjGradOut[iVal];
+  }
+  mag = sqrt(mag);
+  
+  double alpha = 1.0/mag;
+  double dval = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    double dz = alpha * stdObjGradOut[iVal];
+    stdControlIn[iVal] -= dz;
+    dval -= stdObjGradOut[iVal]*dz;
+  }
+ 
+
+
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+  app.compute("Compute Objective");
+
+  app.exportDataT("Objective Value", fauxObjValOut);
+  std::vector<double> stdObjValTwo(1);
+  fauxObjValOut.getData(stdObjValTwo);
+  
+  std::cout << "val 1: " << std::setprecision(16) << stdObjValOne[0] << std::endl;
+  std::cout << "val 2: " << std::setprecision(16) << stdObjValTwo[0] << std::endl;
+
+  double change = stdObjValTwo[0] - stdObjValOne[0];
+  std::cout << "Expected change: " << dval << std::endl;
+  std::cout << "Actual change: " << change << std::endl;
+
+  TEST_FLOATING_EQUALITY(stdObjValOne[0], 0.252525, 1e-12);
+  TEST_FLOATING_EQUALITY(stdObjValTwo[0], 0.252525, 1e-12);
+
+}
