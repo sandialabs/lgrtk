@@ -30,8 +30,8 @@ struct LinearElastic : public Model<Elem> {
     this->shear_modulus = this->point_define(
         "mu", "shear modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
     constexpr auto dim = Elem::dim;
-    this->deformation_gradient = this->point_define("F", "deformation gradient",
-        square(dim), RemapType::POLAR, pl, "I");
+    this->deformation_gradient = this->point_define(
+        "F", "deformation gradient", square(dim), RemapType::POLAR, pl, "I");
     this->effective_bulk_modulus = this->point_define("kappa_tilde",
         "effective bulk modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
   }

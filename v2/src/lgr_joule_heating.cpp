@@ -230,7 +230,7 @@ struct JouleHeating : public Model<Elem> {
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
     // TODO: put a circuit here!
-    //anode_voltage = 1.0;
+    // anode_voltage = 1.0;
     cathode_voltage = 0.0;
   }
   void contribute_joule_heating() {

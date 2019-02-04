@@ -116,8 +116,8 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   } else if (pl.is_map("box")) {
     auto& box_pl = pl.get_map("box");
     int x_elements = box_pl.get<int>("x elements");
-    int y_elements = box_pl.get<int>("y elements", (dim_ > 1) ? "1" : "0");
-    int z_elements = box_pl.get<int>("z elements", (dim_ > 2) ? "1" : "0");
+    int y_elements = box_pl.get<int>("y elements", "0");
+    int z_elements = box_pl.get<int>("z elements", "0");
     double x_size = box_pl.get<double>("x size", "1.0");
     double y_size = box_pl.get<double>("y size", "1.0");
     double z_size = box_pl.get<double>("z size", "1.0");
@@ -176,7 +176,10 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   } else {
     Omega_h_fail("no input mesh!\n");
   }
-  OMEGA_H_CHECK(mesh.dim() == dim_);
+  if (!(mesh.dim() == dim_)) {
+    Omega_h_fail("element dimension %d doesn't match mesh dimension %d\n", dim_,
+        mesh.dim());
+  }
   OMEGA_H_CHECK(
       mesh.family() == (is_simplex_ ? OMEGA_H_SIMPLEX : OMEGA_H_HYPERCUBE));
   if (pl.is_map("sets")) {

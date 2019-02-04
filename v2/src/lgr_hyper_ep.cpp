@@ -27,9 +27,8 @@ char const* get_error_code_string(ErrorCode code) {
   return "UNKNOWN";
 }
 
-void read_and_validate_elastic_params(Omega_h::InputMap& params,
-    Properties& props)
-{
+void read_and_validate_elastic_params(
+    Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
   props.elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
@@ -66,9 +65,8 @@ void read_and_validate_elastic_params(Omega_h::InputMap& params,
   props.Nu = Nu;
 }
 
-void read_and_validate_plastic_params(Omega_h::InputMap& params,
-    Properties& props)
-{
+void read_and_validate_plastic_params(
+    Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
   props.hardening = Hardening::NONE;
   props.rate_dep = RateDependence::NONE;
@@ -144,9 +142,8 @@ void read_and_validate_plastic_params(Omega_h::InputMap& params,
   }
 }
 
-void read_and_validate_damage_params(Omega_h::InputMap& params,
-    Properties& props)
-{
+void read_and_validate_damage_params(
+    Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
   props.damage = Damage::NONE;
   if (!params.is_map("plastic")) {
@@ -167,9 +164,8 @@ void read_and_validate_damage_params(Omega_h::InputMap& params,
       props.D4 = pl.get<double>("D4", "0.0");
       props.D5 = pl.get<double>("D5", "0.0");
       props.D0 = pl.get<double>("D0", "0.0");  // Initial scalar damage
-      props.DC = pl.get<double>("DC", "0.7"); // Critical scalar damage
-      props.eps_f_min =
-          pl.get<double>("spall failure strain", "0.6");
+      props.DC = pl.get<double>("DC", "0.7");  // Critical scalar damage
+      props.eps_f_min = pl.get<double>("spall failure strain", "0.6");
       bool no_shear =
           static_cast<bool>(pl.get<double>("allow no shear", "0.0"));
       bool no_tension =
@@ -213,9 +209,8 @@ struct HyperEP : public Model<Elem> {
   // Kinematics
   FieldIndex defgrad;
 
-  HyperEP(Simulation& sim_in, Omega_h::InputMap& params) :
-    Model<Elem>(sim_in, params)
-  {
+  HyperEP(Simulation& sim_in, Omega_h::InputMap& params)
+      : Model<Elem>(sim_in, params) {
     // Read input parameters
     // Elastic model
     hyper_ep::read_and_validate_elastic_params(params, this->properties);
@@ -279,8 +274,8 @@ struct HyperEP : public Model<Elem> {
       // Update the material response
       tensor_type T;  // stress tensor
       double c;
-      auto err_c = hyper_ep::update(props, rho, F, dt, temp, T, c, Fp, ep,
-          epdot, dp, localized);
+      auto err_c = hyper_ep::update(
+          props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
       OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
       setstress(points_to_stress, point, T);

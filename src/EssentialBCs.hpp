@@ -3,6 +3,7 @@
 
 #include <Omega_h_assoc.hpp>
 
+#include "ErrorHandling.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
 namespace Plato

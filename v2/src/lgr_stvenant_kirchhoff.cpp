@@ -16,8 +16,8 @@ struct StVenantKirchhoff : public Model<Elem> {
     this->shear_modulus = this->point_define(
         "mu", "shear modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
     constexpr auto dim = Elem::dim;
-    this->deformation_gradient = this->point_define("F", "deformation gradient",
-        square(dim), RemapType::POLAR, pl, "I");
+    this->deformation_gradient = this->point_define(
+        "F", "deformation gradient", square(dim), RemapType::POLAR, pl, "I");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "StVenant-Kirchhoff"; }

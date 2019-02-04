@@ -1,0 +1,52 @@
+end time: 1.0e-2
+element type: Quad4
+mesh:
+  box:
+    x elements: 1
+    x size: 1.0
+    y elements: 1
+    y size: 1.0
+  transform: 'vector(x(0)-0.5, x(1)-0.5)'
+common fields:
+  density: 7800.0
+material models:
+  - 
+    type: neo-Hookean
+    bulk modulus: 200.0e9
+    shear modulus: 75.0e9
+conditions:
+  velocity:
+    -
+      value: '100.0 * vector(-x(1), x(0))'
+scalars:
+  deformation gradient error:
+    type: L2 error
+    field: deformation gradient
+    expected value: |
+      c = cos(100.0 * t);
+      s = sin(100.0 * t);
+      tensor(c, -s, s, c)
+responses:
+  - 
+    time period: 1.0e-04
+    type: VTK output
+    fields:
+      - velocity
+      - acceleration
+      - stress
+      - deformation gradient
+      - force
+      - density
+  - 
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt
+      - deformation gradient error
+  - 
+    type: comparison
+    scalar: deformation gradient error
+    expected value: 0.0
+    tolerance: 0.0
+    floor: 1.0e-03

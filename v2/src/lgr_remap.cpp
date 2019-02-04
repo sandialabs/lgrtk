@@ -64,25 +64,30 @@ static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
   new_mesh.add_tag(new_mesh.dim(), "old class_id", 1, read(new_data));
 }
 
-static Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh,
-      int ent_dim, int ncomps, Omega_h::LOs same_ents2old_ents,
-      Omega_h::LOs same_ents2new_ents, Omega_h::Reals old_data);
+static Omega_h::Write<double> allocate_and_fill_with_same(
+    Omega_h::Mesh& new_mesh, int ent_dim, int ncomps,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    Omega_h::Reals old_data);
 
 template <class Elem>
-static void swap_point_remap_polar(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds_in, Omega_h::LOs const keys2prods,
+static void swap_point_remap_polar(Omega_h::Mesh& old_mesh,
+    Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim,
+    Omega_h::LOs const keys2kds_in, Omega_h::LOs const keys2prods,
     Omega_h::LOs const prods2new_ents, Omega_h::LOs const same_ents2old_ents,
-    Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag, double const tolerance) {
+    Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag,
+    double const tolerance) {
   auto const old_data = tag->array();
-  Omega_h::Write<double> const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
-      tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
+  Omega_h::Write<double> const new_data =
+      allocate_and_fill_with_same(new_mesh, new_mesh.dim(), tag->ncomps(),
+          same_ents2old_ents, same_ents2new_ents, old_data);
   auto const kds2doms = old_mesh.ask_graph(key_dim, prod_dim);
   MassWeighter weighter(old_mesh);
-  constexpr auto max_elems = Omega_h::SimplexAvgDegree<Elem::dim, 0, Elem::dim>::value * 3;
+  constexpr auto max_elems =
+      Omega_h::SimplexAvgDegree<Elem::dim, 0, Elem::dim>::value * 3;
   constexpr auto max_points = max_elems * Elem::points;
   (void)keys2prods;
   (void)prods2new_ents;
-  auto const keys2kds = keys2kds_in; // CUDA bug workaround
+  auto const keys2kds = keys2kds_in;  // CUDA bug workaround
   auto new_functor = OMEGA_H_LAMBDA(int const key) {
     auto const kd = keys2kds[key];
     auto const begin = kds2doms.a2ab[kd];
@@ -143,10 +148,10 @@ struct Remap : public RemapBase {
       Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
       Omega_h::Tag<double> const* tag);
   void refine_point_remap_polar(Omega_h::Mesh& old_mesh,
-      Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds,
-      Omega_h::LOs const keys2prods, Omega_h::LOs const prods2new_ents,
-      Omega_h::LOs const same_ents2old_ents, Omega_h::LOs const same_ents2new_ents,
-      Omega_h::Tag<double> const* tag);
+      Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim,
+      Omega_h::LOs const keys2kds, Omega_h::LOs const keys2prods,
+      Omega_h::LOs const prods2new_ents, Omega_h::LOs const same_ents2old_ents,
+      Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag);
   void coarsen_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
       int prod_dim, Omega_h::LOs keys2prods, Omega_h::LOs key_doms2doms,
       Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
@@ -202,10 +207,12 @@ void Remap<Elem>::before_adapt() {
   sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
 }
 
-static Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh,
-    int ent_dim, int ncomps, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, Omega_h::Reals old_data) {
-  auto const new_data = Omega_h::Write<double>(new_mesh.nents(ent_dim) * ncomps);
+static Omega_h::Write<double> allocate_and_fill_with_same(
+    Omega_h::Mesh& new_mesh, int ent_dim, int ncomps,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    Omega_h::Reals old_data) {
+  auto const new_data =
+      Omega_h::Write<double>(new_mesh.nents(ent_dim) * ncomps);
   auto same_functor = OMEGA_H_LAMBDA(int same_ent) {
     auto old_ent = same_ents2old_ents[same_ent];
     auto new_ent = same_ents2new_ents[same_ent];
@@ -218,9 +225,10 @@ static Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mes
 }
 
 template <class Elem>
-Omega_h::Write<double> Remap<Elem>::setup_new_shape_data(Omega_h::Mesh& old_mesh,
-    Omega_h::Mesh& new_mesh, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, std::string const& name) {
+Omega_h::Write<double> Remap<Elem>::setup_new_shape_data(
+    Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    std::string const& name) {
   auto tag = old_mesh.get_tag<double>(old_mesh.dim(), name);
   auto ncomps = tag->ncomps();
   auto old_data = tag->array();
@@ -238,8 +246,8 @@ void Remap<Elem>::remap_shape(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
       old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents, "gradient");
   auto new_dt_h = setup_new_shape_data(old_mesh, new_mesh, same_ents2old_ents,
       same_ents2new_ents, "time step length");
-  auto new_visc_h = setup_new_shape_data(old_mesh, new_mesh,
-      same_ents2old_ents, same_ents2new_ents, "viscosity length");
+  auto new_visc_h = setup_new_shape_data(old_mesh, new_mesh, same_ents2old_ents,
+      same_ents2new_ents, "viscosity length");
   auto new_coords = new_mesh.coords();
   auto new_elems2verts = new_mesh.ask_elem_verts();
   auto new_functor = OMEGA_H_LAMBDA(int key) {
@@ -321,10 +329,10 @@ void Remap<Elem>::refine_point_remap_ncomps(Omega_h::Mesh& old_mesh,
 
 template <class Elem>
 void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
-    Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim, Omega_h::LOs const keys2kds,
-    Omega_h::LOs const keys2prods, Omega_h::LOs const prods2new_ents,
-    Omega_h::LOs const same_ents2old_ents, Omega_h::LOs const same_ents2new_ents,
-    Omega_h::Tag<double> const* tag) {
+    Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim,
+    Omega_h::LOs const keys2kds, Omega_h::LOs const keys2prods,
+    Omega_h::LOs const prods2new_ents, Omega_h::LOs const same_ents2old_ents,
+    Omega_h::LOs const same_ents2new_ents, Omega_h::Tag<double> const* tag) {
   auto const old_data = tag->array();
   auto const new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
       tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
@@ -344,7 +352,8 @@ void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
         auto const old_value = getfull<Elem>(old_data, old_point);
         values[dom_pt] = old_value;
       }
-      Omega_h::align_packed_axis_angles(values.data(), values.size(), local_tolerance);
+      Omega_h::align_packed_axis_angles(
+          values.data(), values.size(), local_tolerance);
       auto avg_value = zero_matrix<Elem::dim, Elem::dim>();
       auto weight_sum = 0.0;
       for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
@@ -370,10 +379,11 @@ void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
 }
 
 template <class Elem>
-void Remap<Elem>::coarsen_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int prod_dim, Omega_h::LOs keys2prods, Omega_h::LOs key_doms2doms,
-    Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, std::string const& name) {
+void Remap<Elem>::coarsen_point_remap(Omega_h::Mesh& old_mesh,
+    Omega_h::Mesh& new_mesh, int prod_dim, Omega_h::LOs keys2prods,
+    Omega_h::LOs key_doms2doms, Omega_h::LOs prods2new_ents,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    std::string const& name) {
   auto tag = old_mesh.get_tag<double>(prod_dim, name);
   auto old_data = tag->array();
   auto ncomps = divide_no_remainder(tag->ncomps(), Elem::points);
@@ -400,10 +410,11 @@ void Remap<Elem>::coarsen_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& ne
 
 template <class Elem>
 template <class Weighter, int ncomps>
-void Remap<Elem>::swap_point_remap_ncomps(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int key_dim, int prod_dim, Omega_h::LOs keys2kds, Omega_h::LOs keys2prods,
-    Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, Omega_h::Tag<double> const* tag) {
+void Remap<Elem>::swap_point_remap_ncomps(Omega_h::Mesh& old_mesh,
+    Omega_h::Mesh& new_mesh, int key_dim, int prod_dim, Omega_h::LOs keys2kds,
+    Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    Omega_h::Tag<double> const* tag) {
   auto old_data = tag->array();
   auto new_data = allocate_and_fill_with_same(new_mesh, new_mesh.dim(),
       tag->ncomps(), same_ents2old_ents, same_ents2new_ents, old_data);
@@ -446,10 +457,11 @@ void Remap<Elem>::swap_point_remap_ncomps(Omega_h::Mesh& old_mesh, Omega_h::Mesh
 
 template <class Elem>
 template <class Weighter>
-void Remap<Elem>::refine_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int key_dim, int prod_dim, Omega_h::LOs keys2kds, Omega_h::LOs keys2prods,
-    Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, std::string const& name) {
+void Remap<Elem>::refine_point_remap(Omega_h::Mesh& old_mesh,
+    Omega_h::Mesh& new_mesh, int key_dim, int prod_dim, Omega_h::LOs keys2kds,
+    Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    std::string const& name) {
   auto tag = old_mesh.get_tag<double>(prod_dim, name);
   auto ncomps = divide_no_remainder(tag->ncomps(), Elem::points);
   if (ncomps == 1) {
@@ -471,20 +483,21 @@ void Remap<Elem>::refine_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new
 
 template <class Elem>
 template <class Weighter>
-void Remap<Elem>::swap_point_remap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    int key_dim, int prod_dim, Omega_h::LOs keys2kds, Omega_h::LOs keys2prods,
-    Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, std::string const& name) {
+void Remap<Elem>::swap_point_remap(Omega_h::Mesh& old_mesh,
+    Omega_h::Mesh& new_mesh, int key_dim, int prod_dim, Omega_h::LOs keys2kds,
+    Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
+    std::string const& name) {
   auto tag = old_mesh.get_tag<double>(prod_dim, name);
   auto ncomps = divide_no_remainder(tag->ncomps(), Elem::points);
   if (ncomps == 1) {
-    swap_point_remap_ncomps<Weighter, 1>(old_mesh, new_mesh, key_dim,
-        prod_dim, keys2kds, keys2prods, prods2new_ents, same_ents2old_ents,
+    swap_point_remap_ncomps<Weighter, 1>(old_mesh, new_mesh, key_dim, prod_dim,
+        keys2kds, keys2prods, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents, tag);
   } else if (ncomps == Omega_h::symm_ncomps(Elem::dim)) {
-    swap_point_remap_ncomps<Weighter, Omega_h::symm_ncomps(Elem::dim)>(
-        old_mesh, new_mesh, key_dim, prod_dim, keys2kds, keys2prods,
-        prods2new_ents, same_ents2old_ents, same_ents2new_ents, tag);
+    swap_point_remap_ncomps<Weighter, Omega_h::symm_ncomps(Elem::dim)>(old_mesh,
+        new_mesh, key_dim, prod_dim, keys2kds, keys2prods, prods2new_ents,
+        same_ents2old_ents, same_ents2new_ents, tag);
   } else if (ncomps == Omega_h::square(Elem::dim)) {
     swap_point_remap_ncomps<Weighter, Omega_h::square(Elem::dim)>(old_mesh,
         new_mesh, key_dim, prod_dim, keys2kds, keys2prods, prods2new_ents,
@@ -498,8 +511,7 @@ template <class Elem>
 void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     Omega_h::LOs keys2edges, Omega_h::LOs keys2midverts, int prod_dim,
     Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
-    Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents) {
+    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents) {
   if (prod_dim == 0) {
     for (auto& name : fields_to_remap[RemapType::NODAL]) {
       auto tag = old_mesh.get_tag<double>(0, name);
@@ -537,9 +549,9 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
           same_ents2new_ents, name);
     }
     for (auto& name : fields_to_remap[RemapType::POLAR]) {
-      refine_point_remap_polar(old_mesh, new_mesh, 1, prod_dim,
-          keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,
-          same_ents2new_ents, old_mesh.get_tag<double>(prod_dim, name));
+      refine_point_remap_polar(old_mesh, new_mesh, 1, prod_dim, keys2edges,
+          keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents,
+          old_mesh.get_tag<double>(prod_dim, name));
     }
     remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents);
@@ -596,8 +608,8 @@ void Remap<Elem>::swap_copy_verts(
 }
 
 template <class Elem>
-void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh, int prod_dim,
-    Omega_h::LOs keys2edges, Omega_h::LOs keys2prods,
+void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
+    int prod_dim, Omega_h::LOs keys2edges, Omega_h::LOs keys2prods,
     Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
     Omega_h::LOs same_ents2new_ents) {
   if (prod_dim == old_mesh.dim()) {
@@ -614,9 +626,9 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh, int pro
           same_ents2new_ents, name);
     }
     for (auto& name : fields_to_remap[RemapType::POLAR]) {
-      swap_point_remap_polar<Elem>(old_mesh, new_mesh, 1, prod_dim,
-          keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,
-          same_ents2new_ents, old_mesh.get_tag<double>(prod_dim, name), this->axis_angle_tolerance);
+      swap_point_remap_polar<Elem>(old_mesh, new_mesh, 1, prod_dim, keys2edges,
+          keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents,
+          old_mesh.get_tag<double>(prod_dim, name), this->axis_angle_tolerance);
     }
     remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents);

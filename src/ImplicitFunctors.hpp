@@ -5,15 +5,7 @@
 #include <Omega_h_matrix.hpp>
 #include <Omega_h_vector.hpp>
 
-#include <Teuchos_ParameterList.hpp>
 #include <Teuchos_RCPDecl.hpp>
-#include <CrsLinearProblem.hpp>
-#include <CrsMatrix.hpp>
-#include <Fields.hpp>
-#include <ParallelComm.hpp>
-
-#include "ErrorHandling.hpp"
-
 #include "plato/SimplexMechanics.hpp"
 
 namespace Plato
@@ -818,8 +810,6 @@ CreateMatrix( Omega_h::Mesh* mesh )
 }
 
 
-} // end namespace lgr
-
-
+} // end namespace Plato
 
 #endif

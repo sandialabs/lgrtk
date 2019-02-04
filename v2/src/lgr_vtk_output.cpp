@@ -1,9 +1,9 @@
-#include <fstream>
-#include <Omega_h_for.hpp>
 #include <Omega_h_file.hpp>
+#include <Omega_h_for.hpp>
+#include <Omega_h_map.hpp>
 #include <Omega_h_profile.hpp>
 #include <Omega_h_vtk.hpp>
-#include <Omega_h_map.hpp>
+#include <fstream>
 #include <lgr_field_index.hpp>
 #include <lgr_response.hpp>
 #include <lgr_simulation.hpp>
@@ -15,28 +15,29 @@ using LgrFields = std::set<std::size_t>;
 using OshFields = std::set<std::string>;
 
 struct VtkOutput : public Response {
-  public:
-    VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl);
-    void set_fields(Omega_h::InputMap& pl);
-    void out_of_line_virtual_method() override final;
-    void respond() override final;
-  public:
-    bool compress;
-    Omega_h::filesystem::path path;
-    std::streampos pvd_pos;
-    LgrFields lgr_fields[4];
-    OshFields osh_fields[4];
+ public:
+  VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl);
+  void set_fields(Omega_h::InputMap& pl);
+  void out_of_line_virtual_method() override final;
+  void respond() override final;
+
+ public:
+  bool compress;
+  Omega_h::filesystem::path path;
+  std::streampos pvd_pos;
+  LgrFields lgr_fields[4];
+  OshFields osh_fields[4];
 };
 
 void VtkOutput::set_fields(Omega_h::InputMap& pl) {
   auto stdim = static_cast<std::size_t>(sim.dim());
   std::map<std::string, std::size_t> omega_h_adapt_tags = {
-        {"quality", stdim}, {"metric", 0}};
+      {"quality", stdim}, {"metric", 0}};
   std::map<std::string, std::pair<std::size_t, std::string>>
-    omega_h_multi_dim_tags = {{"element class_id", {stdim, "class_id"}},
-      {"node class_dim", {0, "class_dim"}}, {"node local", {0, "local"}},
-      {"node global", {0, "global"}}, {"element local", {stdim, "local"}},
-      {"element global", {stdim, "global"}}};
+      omega_h_multi_dim_tags = {{"element class_id", {stdim, "class_id"}},
+          {"node class_dim", {0, "class_dim"}}, {"node local", {0, "local"}},
+          {"node global", {0, "global"}}, {"element local", {stdim, "local"}},
+          {"element global", {stdim, "global"}}};
   auto& field_names_in = pl.get_list("fields");
   for (int i = 0; i < field_names_in.size(); ++i) {
     auto field_name = field_names_in.get<std::string>(i);
@@ -57,7 +58,8 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
           sim.disc.is_second_order_) {
         Omega_h::fail(
             "Cannot output field \"%s\" "
-            "to VTK for 2nd order meshes\n", field_name.c_str());
+            "to VTK for 2nd order meshes\n",
+            field_name.c_str());
       }
       osh_fields[omega_h_multi_dim_tags[field_name].first].insert(
           omega_h_multi_dim_tags[field_name].second);
@@ -82,12 +84,11 @@ void VtkOutput::set_fields(Omega_h::InputMap& pl) {
   }
 }
 
-VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
-  Response(sim_in, pl),
-  compress(false),
-  path(pl.get<std::string>("path", "lgr_viz")),
-  pvd_pos(0)
-{
+VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl)
+    : Response(sim_in, pl),
+      compress(false),
+      path(pl.get<std::string>("path", "lgr_viz")),
+      pvd_pos(0) {
   set_fields(pl);
   if (sim.no_output) return;
   auto const comm = sim.comm;
@@ -100,8 +101,8 @@ VtkOutput::VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl) :
   if (rank == 0) pvd_pos = Omega_h::vtk::write_initial_pvd(path, sim.time);
 }
 
-static void write_step_dirs(Omega_h::filesystem::path const& step_path,
-    Omega_h::CommPtr comm) {
+static void write_step_dirs(
+    Omega_h::filesystem::path const& step_path, Omega_h::CommPtr comm) {
   if (comm->rank() == 0) Omega_h::filesystem::create_directory(step_path);
   comm->barrier();
   auto const pieces_dir = step_path / "pieces";
@@ -109,8 +110,8 @@ static void write_step_dirs(Omega_h::filesystem::path const& step_path,
   comm->barrier();
 }
 
-static void describe_osh_tags(std::ostream& file, Simulation& sim,
-    OshFields& osh_fields, int ent_dim) {
+static void describe_osh_tags(
+    std::ostream& file, Simulation& sim, OshFields& osh_fields, int ent_dim) {
   auto mesh = sim.disc.mesh;
   for (int i = 0; i < mesh.ntags(ent_dim); ++i) {
     auto tag = mesh.get_tag(ent_dim, i);
@@ -120,8 +121,8 @@ static void describe_osh_tags(std::ostream& file, Simulation& sim,
   }
 }
 
-static void describe_multi_point_lgr_field(std::ostream& file,
-    Simulation& sim, Field& field, int ent_dim) {
+static void describe_multi_point_lgr_field(
+    std::ostream& file, Simulation& sim, Field& field, int ent_dim) {
   OMEGA_H_CHECK(ent_dim == sim.disc.dim());
   auto npoints = sim.disc.points_per_ent(ELEMS);
   for (int pt = 0; pt < npoints; ++pt) {
@@ -130,8 +131,8 @@ static void describe_multi_point_lgr_field(std::ostream& file,
   }
 }
 
-static void describe_lgr_fields(std::ostream& file, Simulation& sim,
-    LgrFields lgr_fields, int ent_dim) {
+static void describe_lgr_fields(
+    std::ostream& file, Simulation& sim, LgrFields lgr_fields, int ent_dim) {
   for (auto it : lgr_fields) {
     FieldIndex fi;
     fi.storage_index = it;
@@ -154,8 +155,8 @@ static Omega_h::filesystem::path piece_filename(int rank) {
   return result;
 }
 
-static void write_pvtu(Omega_h::filesystem::path const& step_path, Simulation& sim,
-    LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+static void write_pvtu(Omega_h::filesystem::path const& step_path,
+    Simulation& sim, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
   if (sim.comm->rank() != 0) return;
   auto const dim = sim.disc.mesh.dim();
   auto const pvtu_name = step_path / "pieces.pvtu";
@@ -205,25 +206,21 @@ static Omega_h::I8 vtk_type(Disc& disc) {
   auto family = disc.mesh.family();
   int orderm1 = (disc.is_second_order_ == true) ? 1 : 0;
   if (family == OMEGA_H_SIMPLEX) {
-    Omega_h::I8 simplex_table[4][2] = {
-      {VTK_VERTEX, VTK_VERTEX},
-      {VTK_LINE, VTK_QUADRATIC_EDGE},
-      {VTK_TRIANGLE, VTK_QUADRATIC_TRIANGLE},
-      {VTK_TETRA, VTK_QUADRATIC_TETRA}};
+    Omega_h::I8 simplex_table[4][2] = {{VTK_VERTEX, VTK_VERTEX},
+        {VTK_LINE, VTK_QUADRATIC_EDGE}, {VTK_TRIANGLE, VTK_QUADRATIC_TRIANGLE},
+        {VTK_TETRA, VTK_QUADRATIC_TETRA}};
     return simplex_table[dim][orderm1];
   } else if (family == OMEGA_H_HYPERCUBE) {
-    Omega_h::I8 hypercube_table[4][2] = {
-      {VTK_VERTEX, VTK_VERTEX},
-      {VTK_LINE, VTK_QUADRATIC_EDGE},
-      {VTK_QUAD, VTK_QUADRATIC_QUAD},
-      {VTK_HEXAHEDRON, VTK_QUADRATIC_HEXAHEDRON}};
+    Omega_h::I8 hypercube_table[4][2] = {{VTK_VERTEX, VTK_VERTEX},
+        {VTK_LINE, VTK_QUADRATIC_EDGE}, {VTK_QUAD, VTK_QUADRATIC_QUAD},
+        {VTK_HEXAHEDRON, VTK_QUADRATIC_HEXAHEDRON}};
     return hypercube_table[dim][orderm1];
   }
   return 0;
 }
 
-static void write_connectivity(std::ostream& file, Simulation& sim,
-    bool compress) {
+static void write_connectivity(
+    std::ostream& file, Simulation& sim, bool compress) {
   auto disc = sim.disc;
   Omega_h::Read<Omega_h::I8> types(disc.count(ELEMS), vtk_type(disc));
   Omega_h::vtk::write_array(file, "types", 1, types, compress);
@@ -253,8 +250,8 @@ static void write_osh_tags(std::ostream& file, Simulation& sim,
 }
 
 template <typename T>
-Omega_h::Read<T> gather_pt(Omega_h::Read<T> data, int nents, int npoints,
-    int ncomps, int pt) {
+Omega_h::Read<T> gather_pt(
+    Omega_h::Read<T> data, int nents, int npoints, int ncomps, int pt) {
   Omega_h::Write<T> pt_data(nents * ncomps);
   auto functor = OMEGA_H_LAMBDA(int ent) {
     for (int c = 0; c < ncomps; ++c) {
@@ -265,19 +262,20 @@ Omega_h::Read<T> gather_pt(Omega_h::Read<T> data, int nents, int npoints,
   return pt_data;
 }
 
-static void write_subset_array(std::ostream& file,
-    std::string const& name, int const ncomps, Omega_h::Reals subset_data, bool compress,
+static void write_subset_array(std::ostream& file, std::string const& name,
+    int const ncomps, Omega_h::Reals subset_data, bool compress,
     Mapping const& mapping, int const nents) {
   if (mapping.is_identity) {
     Omega_h::vtk::write_array(file, name, ncomps, subset_data, compress);
   } else {
-    auto full_data = Omega_h::map_onto(subset_data, mapping.things, nents, 0.0, ncomps);
+    auto full_data =
+        Omega_h::map_onto(subset_data, mapping.things, nents, 0.0, ncomps);
     Omega_h::vtk::write_array(file, name, ncomps, full_data, compress);
   }
 }
 
-static void write_multi_point_lgr_field(std::ostream& file,
-    Simulation& sim, Field& field, bool compress) {
+static void write_multi_point_lgr_field(
+    std::ostream& file, Simulation& sim, Field& field, bool compress) {
   auto data = field.get();
   auto ncomps = field.ncomps;
   auto nents = sim.disc.count(ELEMS);
@@ -285,7 +283,8 @@ static void write_multi_point_lgr_field(std::ostream& file,
   for (int pt = 0; pt < npoints; ++pt) {
     auto pt_data = gather_pt(data, nents, npoints, ncomps, pt);
     auto pt_name = field.long_name + "_" + std::to_string(pt);
-    write_subset_array(file, pt_name, ncomps, pt_data, compress, field.support->subset->mapping, nents);
+    write_subset_array(file, pt_name, ncomps, pt_data, compress,
+        field.support->subset->mapping, nents);
   }
 }
 
@@ -302,13 +301,15 @@ static void write_lgr_fields(std::ostream& file, Simulation& sim,
       auto const array = field.get();
       auto const ent_type = (ent_dim == 0) ? NODES : ELEMS;
       auto const nents = sim.disc.count(ent_type);
-      write_subset_array(file, field.long_name, field.ncomps, field.get(), compress, field.support->subset->mapping, nents);
+      write_subset_array(file, field.long_name, field.ncomps, field.get(),
+          compress, field.support->subset->mapping, nents);
     }
   }
 }
 
-static void write_vtu(Omega_h::filesystem::path const& step_path, Simulation& sim,
-    bool compress, LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+static void write_vtu(Omega_h::filesystem::path const& step_path,
+    Simulation& sim, bool compress, LgrFields lgr_fields[4],
+    OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
   auto const dim = sim.disc.dim();
   auto const vtu_name = step_path / piece_filename(sim.comm->rank());
@@ -335,8 +336,9 @@ static void write_vtu(Omega_h::filesystem::path const& step_path, Simulation& si
   file << "</VTKFile>\n";
 }
 
-static void write_parallel(Omega_h::filesystem::path const& step_path, Simulation& sim,
-    bool compress,  LgrFields lgr_fields[4], OshFields osh_fields[4]) {
+static void write_parallel(Omega_h::filesystem::path const& step_path,
+    Simulation& sim, bool compress, LgrFields lgr_fields[4],
+    OshFields osh_fields[4]) {
   OMEGA_H_TIME_FUNCTION;
   write_step_dirs(step_path, sim.comm);
   write_pvtu(step_path, sim, lgr_fields, osh_fields);
@@ -359,8 +361,7 @@ void VtkOutput::respond() {
   }
 }
 
-void VtkOutput::out_of_line_virtual_method() {
-}
+void VtkOutput::out_of_line_virtual_method() {}
 
 Response* vtk_output_factory(
     Simulation& sim, std::string const&, Omega_h::InputMap& pl) {

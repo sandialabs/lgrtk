@@ -60,8 +60,7 @@ template void setup(FactoriesOf<Response> const& factories, Simulation& sim,
 template <class T>
 void setup(FactoriesOf<T> const& factories, Simulation& sim,
     Omega_h::InputMap& pl, VectorOf<T>& out, std::string const& category_name) {
-  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
-    auto& name = it->first;
+  for (auto& name : pl) {
     auto& subpl = pl.get_map(name);
     auto ptr = get(factories, name, sim, subpl, category_name);
     std::unique_ptr<T> unique_ptr(ptr);
