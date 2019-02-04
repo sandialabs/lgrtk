@@ -6,7 +6,7 @@ namespace lgr {
 
 OMEGA_H_INLINE void artificial_viscosity_update(double const linear,
     double const quadratic, double const h_min, double const h_max,
-    double const density, Matrix<3, 3> const grad_v, Matrix<3, 3>& stress,
+    double const density, Tensor<3> const grad_v, Tensor<3>& stress,
     double& wave_speed) {
   auto const V_dot = trace(grad_v);
   auto const kinematic =

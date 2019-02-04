@@ -9,8 +9,10 @@ namespace lgr {
 using Omega_h::diagonal;
 using Omega_h::fill_vector;
 using Omega_h::identity_matrix;
+using Omega_h::identity_tensor;
 using Omega_h::log_spd;
 using Omega_h::Matrix;
+using Omega_h::Tensor;
 using Omega_h::resize;
 using Omega_h::square;
 using Omega_h::trace;
