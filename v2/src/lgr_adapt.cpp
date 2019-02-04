@@ -43,7 +43,7 @@ void Adapter::setup(Omega_h::InputMap& pl) {
         adapt_pl.get<bool>("coarsen with expansion", "false");
 #define LGR_EXPL_INST(Elem)                                                    \
   if (sim.elem_name == Elem::name()) {                                         \
-    remap.reset(remap_factory<Elem>(sim, pl.get_map("remap")));                                     \
+    remap.reset(remap_factory<Elem>(sim, pl.get_map("remap")));                \
     opts.xfer_opts.user_xfer = remap;                                          \
   }
     LGR_EXPL_INST_ELEMS

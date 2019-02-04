@@ -70,22 +70,27 @@ namespace Plato
 
 struct LevelSetInitialCondition
 {
-  LevelSetInitialCondition(Plato::Scalar radius, Plato::Scalar length) : Nlobes(5), Rmid(radius), Rdelta(0), xCenter(0.5*length), yCenter(0.5*length)  {}
-  const int Nlobes;
-  const Plato::Scalar Rmid;
-  const Plato::Scalar Rdelta;
-  const Plato::Scalar xCenter;
-  const Plato::Scalar yCenter;
+    LevelSetInitialCondition(Plato::Scalar radius, Plato::Scalar length) :
+            Nlobes(5),
+            Rmid(radius),
+            Rdelta(0),
+            xCenter(0.5 * length),
+            yCenter(0.5 * length)
+    {
+    }
+    const int Nlobes;
+    const Plato::Scalar Rmid;
+    const Plato::Scalar Rdelta;
+    const Plato::Scalar xCenter;
+    const Plato::Scalar yCenter;
 
-  Plato::Scalar
-  operator()(Plato::Scalar x, Plato::Scalar y, Plato::Scalar z) const
-  {
-    const Plato::Scalar r = std::sqrt(
-        (x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter));
-    const Plato::Scalar theta = atan2(y - yCenter, x - xCenter);
-    const Plato::Scalar rSurf = Rmid + Rdelta * sin(Nlobes * theta);
-    return r - rSurf;
-  }
+    Plato::Scalar operator()(Plato::Scalar x, Plato::Scalar y, Plato::Scalar z) const
+    {
+        const Plato::Scalar r = std::sqrt((x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter));
+        const Plato::Scalar theta = atan2(y - yCenter, x - xCenter);
+        const Plato::Scalar rSurf = Rmid + Rdelta * sin(Nlobes * theta);
+        return r - rSurf;
+    }
 };
 
 /******************************************************************************//**
@@ -100,14 +105,11 @@ public:
     /******************************************************************************//**
      * @brief Default constructor
      **********************************************************************************/
-    explicit LevelSetCylinderInBox(const ScalarType aRadius, const ScalarType aLength, MPI_Comm aComm = MPI_COMM_WORLD) :
+    explicit LevelSetCylinderInBox(MPI_Comm aComm = MPI_COMM_WORLD) :
             mComm(aComm),
-            mRadius(aRadius),
-            mLength(aLength)
+            mRadius(0.25),
+            mLength(1)
     {
-        this->build_mesh();
-        mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
-        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
     }
 
     /******************************************************************************//**
@@ -115,6 +117,24 @@ public:
     **********************************************************************************/
     virtual ~LevelSetCylinderInBox()
     {
+    }
+
+    /******************************************************************************//**
+     * @brief Return cylinder's radius
+     * @return radius
+    **********************************************************************************/
+    ScalarType radius() const
+    {
+        return (mRadius);
+    }
+
+    /******************************************************************************//**
+     * @brief Return cylinder's length
+     * @return length
+    **********************************************************************************/
+    ScalarType length() const
+    {
+        return (mLength);
     }
 
     /******************************************************************************//**
@@ -136,100 +156,105 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief update parameters that define a cylinder.
-     * @param aParam parameters that define a cylinder
+     * @brief Update immersed geometry
+     * @param [in] aParam optimization parameters
     **********************************************************************************/
-    void update(const std::map<std::string, ScalarType>& aParam)
+    void updateGeometry(const Plato::ProblemParams & aParam)
     {
-        assert(aParam.find("Configuration") != aParam.end());
-        Plato::Configuration::type_t tConfiguration =
-                static_cast<Plato::Configuration::type_t>(aParam.find("Configuration")->second);
-
-        switch (tConfiguration)
-        {
-            case Plato::Configuration::INITIAL:
-            {
-                this->updateInitialConfiguration(aParam);
-                break;
-            }
-            case Plato::Configuration::DYNAMIC:
-            {
-                this->updateDynamicConfiguration(aParam);
-                break;
-            }
-            default:
-            {
-                std::abort();
-            }
-        }
+        assert(aParam.mBurnRate.empty() == false);
+        this->updateLevelSetCylinder(aParam);
+        this->outputLevelSetField();
     }
 
-    void compute_arrival_time_for_assumed_burn_rate()
+    /******************************************************************************//**
+     * @brief Define an immersed cylinder inside a bounding box
+     * @param [in] aRadius cylinder's radius
+     * @param [in] aLength cylinder's length
+    **********************************************************************************/
+    void define(const ScalarType & aRadius, const ScalarType & aLength)
     {
-      LevelSetInitialCondition initialCondition(mRadius, mLength);
-      initialize_level_set(mMesh, mHamiltonJacobiFields, initialCondition);
+        mRadius = aRadius;
+        mLength = aLength;
+        this->build_mesh();
+        mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, SpatialDim);
+        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+        this->initializeLevelSetCylinder();
+    }
 
-      const Plato::Scalar maxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, mAssumedBurnRate);
-      const Plato::Scalar dx = mesh_minimum_length_scale<SpatialDim>(mMesh);
-      const Plato::Scalar dtau = 0.2*dx / maxSpeed; // Units of time
-      mInterfaceWidth = 1.5*dx / maxSpeed; // Should have same units as level set
-
-      compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, dtau);
+    /******************************************************************************//**
+     * @brief Initialize level set cylinder
+     * @param [in] aParam parameters associated with the geometry and fields
+    **********************************************************************************/
+    void initialize(const Plato::ProblemParams & aParam)
+    {
+        mRadius = aParam.mGeometry[0];
+        this->initializeLevelSetCylinder();
     }
 
 private:
     /******************************************************************************//**
-     * @brief update initial configuration
-     * @param aParam parameters that define a cylinder
+     * @brief Update immersed cylinder
+     * @param [in] aParam optimization parameters
      **********************************************************************************/
-    void updateInitialConfiguration(const std::map<std::string, ScalarType>& aParam)
+    void updateLevelSetCylinder(const Plato::ProblemParams & aParam)
     {
-        assert(aParam.find("Radius") != aParam.end());
-        mRadius = aParam.find("Radius")->second;
-        if(aParam.find("Length") != aParam.end())
-        {
-            mLength = aParam.find("Length")->second;
-        }
-
-        this->compute_arrival_time_for_assumed_burn_rate();
+        const ScalarType tDeltaTime = aParam.mTimeStep;
+        const ScalarType tBurnRate = aParam.mBurnRate[0];
+        const Plato::Scalar tDeltaPseudoTime = tBurnRate / mAssumedBurnRate * tDeltaTime;
+        offset_level_set(mMesh, mHamiltonJacobiFields, -tDeltaPseudoTime);
+        mTime += tDeltaTime;
+        ++mStep;
     }
 
     /******************************************************************************//**
-     * @brief update dynamic configuration
-     * @param aParam parameters that define a cylinder
+     * @brief Initialize immersed cylinder
      **********************************************************************************/
-    void updateDynamicConfiguration(const std::map<std::string, ScalarType>& aParam)
+    void initializeLevelSetCylinder()
     {
-        assert(aParam.find("BurnRate") != aParam.end());
-        const ScalarType tBurnRate = aParam.find("BurnRate")->second;
+        LevelSetInitialCondition tInitialCondition(mRadius, mLength);
+        initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
 
-        assert(aParam.find("DeltaTime") != aParam.end());
-        const ScalarType tDeltaTime = aParam.find("DeltaTime")->second;
+        const Plato::Scalar tMaxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, mAssumedBurnRate);
+        const Plato::Scalar tDeltaX = mesh_minimum_length_scale<SpatialDim>(mMesh);
+        const Plato::Scalar tDeltaTau = static_cast<Plato::Scalar>(0.2) * tDeltaX / tMaxSpeed; // Units of time
+        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * tDeltaX / tMaxSpeed; // Should have same units as level set
 
-        const Plato::Scalar deltaPseudoTime = tBurnRate/mAssumedBurnRate * tDeltaTime;
-        offset_level_set(mMesh, mHamiltonJacobiFields, -deltaPseudoTime);
+        compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, tDeltaTau);
+    }
 
-        mTime += tDeltaTime;
-        ++mStep;
+    /******************************************************************************//**
+     * @brief Build bounding box and fields on computational mesh
+    **********************************************************************************/
+    void build_mesh()
+    {
+        auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
+        const Plato::Scalar tLengthX = mLength;
+        const Plato::Scalar tLengthY = mLength;
+        const Plato::Scalar tLengthZ = mLength;
+        const size_t tNumCellX = mNumCellsPerSide;
+        const size_t tNumCellY = mNumCellsPerSide;
+        const size_t tNumCellZ = mNumCellsPerSide;
+        mMesh = Omega_h::build_box(tLibOmegaH->world(),
+                                   OMEGA_H_SIMPLEX,
+                                   tLengthX,
+                                   tLengthY,
+                                   tLengthZ,
+                                   tNumCellX,
+                                   tNumCellY,
+                                   tNumCellZ);
+        declare_fields(mMesh, mHamiltonJacobiFields);
+    }
 
-        const size_t printInterval = 1000; // How often do you want to output mesh?
-        if(mStep % printInterval == 0)
+    /******************************************************************************//**
+     * @brief Write level set field on mesh every N number of time steps
+    **********************************************************************************/
+    void outputLevelSetField()
+    {
+        const size_t tPrintInterval = 1000; // How often do you want to output mesh?
+        if(mStep % tPrintInterval == 0)
         {
             write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
         }
-    }
-
-    void build_mesh()
-    {
-      auto libOmegaH = std::make_shared<Omega_h::Library>(nullptr, nullptr, mComm);
-      const Plato::Scalar Lx = mLength;
-      const Plato::Scalar Ly = mLength;
-      const Plato::Scalar Lz = mLength;
-      const size_t nx = mNumCellsPerSide;
-      const size_t ny = mNumCellsPerSide;
-      const size_t nz = mNumCellsPerSide;
-      mMesh = Omega_h::build_box(libOmegaH->world(), OMEGA_H_SIMPLEX, Lx, Ly, Lz, nx, ny, nz);
-      declare_fields(mMesh, mHamiltonJacobiFields);
     }
 
 private:

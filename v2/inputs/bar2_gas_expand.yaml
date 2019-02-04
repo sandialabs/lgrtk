@@ -1,5 +1,5 @@
 end time: 1.0
-max dt: 1.0e-2
+max dt: 1.0e-02
 element type: Bar2
 mesh:
   box:
@@ -11,7 +11,7 @@ common fields:
 material models:
   - 
     type: ideal gas
-    heat capacity ratio: 1.4
+    heat capacity ratio: 1.4e+00
     specific internal energy: 1.0
 modifiers:
   - 

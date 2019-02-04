@@ -1,6 +1,5 @@
 CFL: 0.4
-end time: 10.0
-#end step: 1
+end time: 8.4
 element type: Tri3
 mesh:
   box:
@@ -23,17 +22,9 @@ material models:
     shear modulus: 83
 modifiers:
   - 
-    type: independent set
-  - 
-    type: average J over independent set
-  - 
-    type: artificial viscosity
-    linear artificial viscosity: 1.0
-    quadratic artificial viscosity: 0.5
-  - 
-    type: average pressure over independent set
-  - 
-    type: compute pressure
+    type: nodal pressure
+    velocity constant: 0.5
+    pressure constant: 0.5
 conditions:
   acceleration:
     - 
@@ -54,9 +45,8 @@ responses:
       - velocity
       - density
       - stress
-#     - nodal pressure
-#     - nodal pressure rate
-      - pressure
+      - nodal pressure
+      - nodal pressure rate
       - position
   - 
     type: command line history
@@ -66,3 +56,9 @@ responses:
       - time
       - dt
       - tip position
+  - 
+    type: comparison
+    scalar: tip position
+    at time: '8.4'
+    expected value: '62.84058245'
+    tolerance: 1.0e-5

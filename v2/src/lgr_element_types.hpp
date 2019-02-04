@@ -130,6 +130,7 @@ struct Quad4 {
  private:
   static OMEGA_H_INLINE Matrix<2, 4> pts();
   static OMEGA_H_INLINE Matrix<2, 4> bgrads(Vector<2> xi);
+  static OMEGA_H_INLINE Vector<4> bvals(Vector<2> xi);
   static OMEGA_H_INLINE void compute_lengths(
       Matrix<2, 4> node_coords, Shape<Quad4>& shape);
   static OMEGA_H_INLINE void compute_gradients(
@@ -193,6 +194,7 @@ struct CompTet {
   using OType = Omega_h::Few<Omega_h::Matrix<dim, dim>, nsub_tets>;
   using STIPMType = Omega_h::Few<Omega_h::Matrix<4, 4>, nsub_tets>;
   using SOLType = Omega_h::Few<Omega_h::Matrix<nodes, dim>, 4>;
+  using GammaType = Omega_h::Few<Omega_h::Matrix<nodes, nodes>, nsub_tets>;
 
   template <int NI, int NJ, int NK>
   static OMEGA_H_INLINE void zero(
@@ -203,6 +205,8 @@ struct CompTet {
   static OMEGA_H_INLINE Matrix<4, 4> invert_44(Matrix<4, 4> a);
 
   static OMEGA_H_INLINE SType compute_S();
+
+  static OMEGA_H_INLINE GammaType compute_gamma();
 
   static OMEGA_H_INLINE STIPMType compute_sub_tet_int_proj_M();
 
@@ -218,7 +222,8 @@ struct CompTet {
 
   static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(Vector<nsub_tets> O_det);
 
-  static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(Matrix<dim, nodes> node_coords);
+  static OMEGA_H_INLINE Matrix<4, 4> compute_M_inv(
+      Matrix<dim, nodes> node_coords);
 
   static OMEGA_H_INLINE SOLType compute_SOL(Vector<nsub_tets> O_det,
       OType O_inv, Matrix<nsub_tets, 4> sub_tet_int, SType S);
@@ -235,6 +240,12 @@ struct CompTet {
 
   static OMEGA_H_INLINE double compute_char_length(Matrix<dim, nodes> in);
 
+  static OMEGA_H_INLINE Matrix<dim, nsub_tets> get_centroids();
+
+  static OMEGA_H_INLINE Vector<points> get_Q(Vector<dim> xi);
+
+  static OMEGA_H_INLINE Matrix<nodes, nodes> compute_mass(
+      Matrix<dim, nodes> node_coords, Vector<points> density_ips);
 };
 #endif
 
