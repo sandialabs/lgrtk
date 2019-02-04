@@ -1,7 +1,9 @@
 #ifndef NATURAL_BC_HPP
 #define NATURAL_BC_HPP
 
+#include "ErrorHandling.hpp"
 #include "ImplicitFunctors.hpp"
+
 #include "plato/PlatoStaticsTypes.hpp"
 
 namespace Plato {

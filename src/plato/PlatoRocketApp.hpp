@@ -101,9 +101,10 @@ private:
     void performOperation(const std::string & aOperationName);
 
     /******************************************************************************//**
-    * @brief update parameters (e.g. design variables) for simulation.
+    * @brief Update initial configuration/geometry and burn rate field.
+    * @param [in] aControls optimization variables
     **********************************************************************************/
-    void updateModel(const std::vector<Plato::Scalar> & aControls);
+    void updateProblem(const std::vector<Plato::Scalar> & aControls);
 
     /******************************************************************************//**
      * @brief Set rocket driver - runs rocket simulation given a define geometry.

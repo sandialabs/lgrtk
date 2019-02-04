@@ -70,7 +70,7 @@ template<int SpatialDim>
   compute_unit_radius_error_norm(Omega_h::Mesh & omega_h_mesh,
       ProblemFields<SpatialDim> & fields)
   {
-    auto levelSet = fields.levelSet;
+    auto levelSet = fields.mLevelSet;
     const Omega_h::Reals coords = omega_h_mesh.coords();
 
     auto f = LAMBDA_EXPRESSION(int n, Plato::Scalar &norm)
@@ -79,7 +79,7 @@ template<int SpatialDim>
       const Plato::Scalar y = coords[n*SpatialDim+1];
       const Plato::Scalar z = (SpatialDim > 2) ? coords[n*SpatialDim+2] : 0.0;
       Plato::Scalar exact = sqrt(x*x+y*y+z*z)-1.;
-      norm += abs(levelSet(n,fields.currentState) - exact);
+      norm += abs(levelSet(n,fields.mCurrentState) - exact);
     };
 
     Plato::Scalar norm = 0.0;

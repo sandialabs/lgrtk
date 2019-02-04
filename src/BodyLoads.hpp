@@ -8,6 +8,7 @@
 
 #include "Basis.hpp"
 #include "Cubature.hpp"
+#include "ErrorHandling.hpp"
 #include "ImplicitFunctors.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
