@@ -28,34 +28,34 @@ OMEGA_H_DEVICE void setvec(
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     Omega_h::Read<double> const& a, int i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(a, i);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     Omega_h::Write<double> const& a, int i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(a, i);
 }
 
 template <class Elem>
 OMEGA_H_DEVICE void setfull(
-    Omega_h::Write<double> const& a, int i, Matrix<Elem::dim, Elem::dim> v) {
+    Omega_h::Write<double> const& a, int i, Tensor<Elem::dim> v) {
   Omega_h::set_matrix<Elem::dim, Elem::dim>(a, i, v);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(Omega_h::Read<double> const& a, int i) {
+OMEGA_H_DEVICE Tensor<3> getstress(Omega_h::Read<double> const& a, int i) {
   return Omega_h::get_symm<3>(a, i);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<3, 3> getstress(Omega_h::Write<double> const& a, int i) {
+OMEGA_H_DEVICE Tensor<3> getstress(Omega_h::Write<double> const& a, int i) {
   return Omega_h::get_symm<3>(a, i);
 }
 
 OMEGA_H_DEVICE void setstress(
-    Omega_h::Write<double> const& a, int i, Matrix<3, 3> v) {
+    Omega_h::Write<double> const& a, int const i, Tensor<3> const v) {
   Omega_h::set_symm<3>(a, i, v);
 }
 
@@ -97,8 +97,8 @@ OMEGA_H_DEVICE void setgrads(Omega_h::Write<double> const& gradients, int point,
  */
 template <class Elem>
 OMEGA_H_INLINE Vector<Elem::dim> grad(
-    Matrix<Elem::dim, Elem::nodes> basis_grads,
-    Vector<Elem::nodes> node_scals) {
+    Matrix<Elem::dim, Elem::nodes> const basis_grads,
+    Vector<Elem::nodes> const node_scals) {
   return basis_grads * node_scals;
 }
 
@@ -106,9 +106,9 @@ OMEGA_H_INLINE Vector<Elem::dim> grad(
    \sum_k \frac{\partial u_i}{\partial \xi_k}\frac{\partial \xi_k}{\partial x_j}
  */
 template <class Elem>
-OMEGA_H_INLINE Matrix<Elem::dim, Elem::dim> grad(
-    Matrix<Elem::dim, Elem::nodes> basis_grads,
-    Matrix<Elem::dim, Elem::nodes> node_vecs) {
+OMEGA_H_INLINE Tensor<Elem::dim> grad(
+    Matrix<Elem::dim, Elem::nodes> const basis_grads,
+    Matrix<Elem::dim, Elem::nodes> const node_vecs) {
   return node_vecs * transpose(basis_grads);
 }
 
@@ -194,33 +194,33 @@ OMEGA_H_DEVICE void setvec(
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     MappedRead const& a, int const i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(a.data, a.mapping[i]);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     MappedWrite const& a, int const i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(a.data, a.mapping[i]);
 }
 
 template <class Elem>
 OMEGA_H_DEVICE void setfull(
-    MappedWrite const& a, int const i, Matrix<Elem::dim, Elem::dim> v) {
+    MappedWrite const& a, int const i, Tensor<Elem::dim> const v) {
   Omega_h::set_matrix<Elem::dim, Elem::dim>(a.data, a.mapping[i], v);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(MappedRead const& a, int const i) {
+OMEGA_H_DEVICE Tensor<3> getstress(MappedRead const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, a.mapping[i]);
 }
 
-OMEGA_H_DEVICE Matrix<3, 3> getstress(MappedWrite const& a, int const i) {
+OMEGA_H_DEVICE Tensor<3> getstress(MappedWrite const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, a.mapping[i]);
 }
 
 OMEGA_H_DEVICE void setstress(
-    MappedWrite const& a, int const i, Matrix<3, 3> v) {
+    MappedWrite const& a, int const i, Tensor<3> const v) {
   Omega_h::set_symm<3>(a.data, a.mapping[i], v);
 }
 
@@ -253,14 +253,14 @@ OMEGA_H_DEVICE void setvec(MappedPointWrite<Elem> const& a, int const i,
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     MappedPointRead<Elem> const& a, int const i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(
       a.data, map_point<Elem>(a.mapping, i));
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
+OMEGA_H_DEVICE Tensor<Elem::dim> getfull(
     MappedPointWrite<Elem> const& a, int const i) {
   return Omega_h::get_matrix<Elem::dim, Elem::dim>(
       a.data, map_point<Elem>(a.mapping, i));
@@ -268,26 +268,26 @@ OMEGA_H_DEVICE Matrix<Elem::dim, Elem::dim> getfull(
 
 template <class Elem>
 OMEGA_H_DEVICE void setfull(MappedPointWrite<Elem> const& a, int const i,
-    Matrix<Elem::dim, Elem::dim> v) {
+    Tensor<Elem::dim> const v) {
   Omega_h::set_matrix<Elem::dim, Elem::dim>(
       a.data, map_point<Elem>(a.mapping, i), v);
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
+OMEGA_H_DEVICE Tensor<3> getstress(
     MappedPointRead<Elem> const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, map_point<Elem>(a.mapping, i));
 }
 
 template <class Elem>
-OMEGA_H_DEVICE Matrix<3, 3> getstress(
+OMEGA_H_DEVICE Tensor<3> getstress(
     MappedPointWrite<Elem> const& a, int const i) {
   return Omega_h::get_symm<3>(a.data, map_point<Elem>(a.mapping, i));
 }
 
 template <class Elem>
 OMEGA_H_DEVICE void setstress(
-    MappedPointWrite<Elem> const& a, int const i, Matrix<3, 3> v) {
+    MappedPointWrite<Elem> const& a, int const i, Tensor<3> const v) {
   Omega_h::set_symm<3>(a.data, map_point<Elem>(a.mapping, i), v);
 }
 
@@ -300,8 +300,8 @@ OMEGA_H_DEVICE Matrix<Elem::dim, Elem::nodes> getgrads(
 }
 
 template <class Elem>
-OMEGA_H_DEVICE void setgrads(MappedPointRead<Elem> const& a, int point,
-    Matrix<Elem::dim, Elem::nodes> point_grads) {
+OMEGA_H_DEVICE void setgrads(MappedPointRead<Elem> const& a, int const point,
+    Matrix<Elem::dim, Elem::nodes> const point_grads) {
   auto mapped_pt = map_point<Elem>(a.mapping, point);
   return Omega_h::set_matrix<Elem::nodes, Elem::dim>(
       a.data, mapped_pt, tranpose(point_grads));

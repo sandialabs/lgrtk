@@ -92,7 +92,7 @@ static void swap_point_remap_polar(Omega_h::Mesh& old_mesh,
     auto const kd = keys2kds[key];
     auto const begin = kds2doms.a2ab[kd];
     auto const end = kds2doms.a2ab[kd + 1];
-    Omega_h::Few<Matrix<Elem::dim, Elem::dim>, max_points> values;
+    Omega_h::Few<Tensor<Elem::dim>, max_points> values;
     OMEGA_H_CHECK(end - begin <= max_elems);
     int point_i = 0;
     for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
@@ -346,7 +346,7 @@ void Remap<Elem>::refine_point_remap_polar(Omega_h::Mesh& old_mesh,
     auto const end = kds2doms.a2ab[kd + 1];
     for (auto kd_dom = begin; kd_dom < end; ++kd_dom) {
       auto const dom = kds2doms.ab2b[kd_dom];
-      Omega_h::Few<Matrix<Elem::dim, Elem::dim>, Elem::points> values;
+      Omega_h::Few<Tensor<Elem::dim>, Elem::points> values;
       for (int dom_pt = 0; dom_pt < Elem::points; ++dom_pt) {
         auto const old_point = dom * Elem::points + dom_pt;
         auto const old_value = getfull<Elem>(old_data, old_point);
