@@ -87,6 +87,24 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Return cylinder's radius
+     * @return radius
+    **********************************************************************************/
+    ScalarType radius() const
+    {
+        return (mRadius);
+    }
+
+    /******************************************************************************//**
+     * @brief Return cylinder's length
+     * @return length
+    **********************************************************************************/
+    ScalarType length() const
+    {
+        return (mLength);
+    }
+
+    /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
     **********************************************************************************/
     ScalarType area()
@@ -96,8 +114,8 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief compute the gradient of a cylinder with respect to parameters that define geometry.
-     * @param aOutput gradient with respect to the parameters that defined a geometry
+     * @brief compute the gradient with respect to geometric parameters
+     * @param aOutput gradient
     **********************************************************************************/
     void gradient(std::vector<ScalarType>& aOutput)
     {
@@ -107,68 +125,32 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief update parameters that define a cylinder.
-     * @param aParam parameters that define a cylinder
+     * @brief Initialize geometry
+     * @param [in] aParam parameters associated with the geometry and fields on the geometry
     **********************************************************************************/
-    void update(const std::map<std::string, ScalarType>& aParam)
+    void initialize(const Plato::ProblemParams & aParam)
     {
-        assert(aParam.find("Configuration") != aParam.end());
-        Plato::Configuration::type_t tConfiguration =
-                static_cast<Plato::Configuration::type_t>(aParam.find("Configuration")->second);
-
-        switch (tConfiguration)
+        mRadius = aParam.mGeometry[0];
+        if(aParam.mGeometry.size() > static_cast<size_t>(1))
         {
-            case Plato::Configuration::INITIAL:
-            {
-                this->updateInitialConfiguration(aParam);
-                break;
-            }
-            case Plato::Configuration::DYNAMIC:
-            {
-                this->updateDynamicConfiguration(aParam);
-                break;
-            }
-            default:
-            {
-                std::abort();
-            }
-        }
-    }
-
-private:
-    /******************************************************************************//**
-     * @brief update initial configuration
-     * @param aParam parameters that define a cylinder
-     **********************************************************************************/
-    void updateInitialConfiguration(const std::map<std::string, ScalarType>& aParam)
-    {
-        assert(aParam.find("Radius") != aParam.end());
-        mRadius = aParam.find("Radius")->second;
-
-        if(aParam.find("Length") != aParam.end())
-        {
-            mLength = aParam.find("Length")->second;
+            mLength = aParam.mGeometry[1];
         }
     }
 
     /******************************************************************************//**
-     * @brief update dynamic configuration
-     * @param aParam parameters that define a cylinder
-     **********************************************************************************/
-    void updateDynamicConfiguration(const std::map<std::string, ScalarType>& aParam)
+     * @brief Update geometry
+     * @param [in] aParam optimization parameters
+    **********************************************************************************/
+    void updateGeometry(const Plato::ProblemParams & aParam)
     {
-        assert(aParam.find("BurnRate") != aParam.end());
-        const ScalarType tBurnRate = aParam.find("BurnRate")->second;
-
-        assert(aParam.find("DeltaTime") != aParam.end());
-        const ScalarType tDeltaTime = aParam.find("DeltaTime")->second;
-
+        const ScalarType tDeltaTime = aParam.mTimeStep;
+        const ScalarType tBurnRate = aParam.mBurnRate[0];
         mRadius += tBurnRate * tDeltaTime;
     }
 
 private:
-    ScalarType mRadius;
-    ScalarType mLength;
+    ScalarType mRadius; /*!< cylinder's radius */
+    ScalarType mLength; /*!< cylinder's length */
 };
 // class Cylinder
 

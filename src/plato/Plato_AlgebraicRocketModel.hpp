@@ -140,7 +140,8 @@ public:
             mTimes(),
             mThrustProfile(),
             mPressureProfile(),
-            mChamberGeomModel(aChamberGeomModel)
+            mParams(),
+            mImmersedGeomModel(aChamberGeomModel)
     {
     }
 
@@ -274,22 +275,13 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief update parameters associated with the simulation.
+     * @brief Update initial configuration and burn rate field.
      * @param aParam simulation parameters
      **********************************************************************************/
-    void updateSimulation(const std::map<std::string, ScalarType>& aParam)
+    void updateProblem(const Plato::ProblemParams & aParams)
     {
-        // set simulation-specific data
-        mRefBurnRate = aParam.find("RefBurnRate")->second;
-    }
-
-    /******************************************************************************//**
-     * @brief update chambers geometry.
-     * @param aParam parameters associated with the chamber's geometry
-     **********************************************************************************/
-    void updateInitialChamberGeometry(const std::map<std::string, ScalarType>& aParam)
-    {
-        mChamberGeomModel->update(aParam);
+        mRefBurnRate = aParams.mBurnRate[0];
+        mImmersedGeomModel->initialize(aParams);
     }
 
     /******************************************************************************//**
@@ -313,11 +305,9 @@ public:
         ScalarType tThrust = 0.0;
         ScalarType tTotalPressure = mRefPressure; // initial guess
 
-        // initialize geometry map
-        std::map<std::string, ScalarType> tChamberGeom;
-        tChamberGeom.insert(std::pair<std::string, ScalarType>("BurnRate", 0.0));
-        tChamberGeom.insert(std::pair<std::string, ScalarType>("DeltaTime", mDeltaTime));
-        tChamberGeom.insert(std::pair<std::string, ScalarType>("Configuration", Plato::Configuration::DYNAMIC));
+        // Define problem parameters struc
+        mParams.mTimeStep = mDeltaTime;
+        mParams.mBurnRate.resize(1);
 
         bool tBurning = true;
         while(tBurning == true)
@@ -330,7 +320,7 @@ public:
             mTimes.push_back(tTime);
             mThrustProfile.push_back(tThrust);
             mPressureProfile.push_back(tTotalPressure);
-            ScalarType tChamberArea = mChamberGeomModel->area();
+            ScalarType tChamberArea = mImmersedGeomModel->area();
 
             tTotalPressure = this->newton(tChamberArea, tTotalPressure, tThroatArea);
 
@@ -338,9 +328,8 @@ public:
                     * tChamberArea * (tTotalPressure - mAmbientPressure)
                     / mCharacteristicVelocity;
 
-            ScalarType tRdot = mRefBurnRate * std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
-            tChamberGeom.find("BurnRate")->second = tRdot;
-            mChamberGeomModel->update(tChamberGeom);
+            mParams.mBurnRate[0] = mRefBurnRate * std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
+            mImmersedGeomModel->updateGeometry(mParams);
             tTime += mDeltaTime;
 
             tBurning = tTime + mNewtonTolerance < mTotalBurnTime;
@@ -424,7 +413,8 @@ private:
     std::vector<ScalarType> mThrustProfile;
     std::vector<ScalarType> mPressureProfile;
 
-    std::shared_ptr<Plato::GeometryModel<ScalarType>> mChamberGeomModel;
+    Plato::ProblemParams mParams;
+    std::shared_ptr<Plato::GeometryModel<ScalarType>> mImmersedGeomModel;
 };
 // class AlgebraicRocketModel
 
