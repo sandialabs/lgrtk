@@ -33,6 +33,16 @@
       </ParameterList>
     </ParameterList>
 
+    <ParameterList  name="Computed Fields">
+      <ParameterList  name="Initial Temperature">
+        <Parameter  name="Function" type="string"   value="100.0"/>
+      </ParameterList>
+    </ParameterList>
+
+    <ParameterList  name="Initial Temperature">
+      <Parameter  name="Computed Field" type="string" value="Initial Temperature"/>
+    </ParameterList>
+
     <ParameterList name="Material Model">
       <ParameterList name="Isotropic Linear Thermal">
         <Parameter  name="Conductivity Coefficient" type="double" value="210.0"/>
