@@ -3,9 +3,6 @@
 #include <lgr_model.hpp>
 #include <lgr_simulation.hpp>
 
-// DEBUG!
-#include <iostream>
-
 namespace lgr {
 
 template <class Elem>
@@ -250,11 +247,11 @@ struct AveragePressureOverIndset : public Model<Elem> {
           auto const factor = average_p - old_p;
           auto const I = identity_matrix<3, 3>();
           auto const new_sigma = old_sigma + I * factor;
-          if (!(Omega_h::are_close(
-                  average_p, trace(new_sigma) / 3, 1e-6, 1e-6))) {
-            std::cerr << "far away desired and written pressures: ("
-                      << average_p << ", " << (trace(new_sigma) / 3) << '\n';
-          }
+        //if (!(Omega_h::are_close(
+        //        average_p, trace(new_sigma) / 3, 1e-6, 1e-6))) {
+        //  std::cerr << "far away desired and written pressures: ("
+        //            << average_p << ", " << (trace(new_sigma) / 3) << '\n';
+        //}
           //        OMEGA_H_CHECK(Omega_h::are_close(average_p, trace(new_sigma)
           //        / 3));
           setstress(points_to_sigma, point, new_sigma);
