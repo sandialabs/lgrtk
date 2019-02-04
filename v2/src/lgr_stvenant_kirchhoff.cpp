@@ -36,7 +36,7 @@ struct StVenantKirchhoff : public Model<Elem> {
       auto F = identity_matrix<3, 3>();
       for (int i = 0; i < Elem::dim; ++i)
         for (int j = 0; j < Elem::dim; ++j) F(i, j) = F_small(i, j);
-      Matrix<3, 3> sigma;
+      Tensor<3> sigma;
       double c;
       stvenant_kirchhoff_update(kappa, nu, rho, F, sigma, c);
       setstress(points_to_stress, point, sigma);

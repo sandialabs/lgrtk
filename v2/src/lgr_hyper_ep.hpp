@@ -78,8 +78,6 @@ struct Properties {
         set_stress_to_zero(false) {}
 };
 
-using tensor_type = Matrix<3, 3>;
-
 char const* get_error_code_string(ErrorCode code);
 void read_and_validate_elastic_params(
     Omega_h::InputMap& params, Properties& props);
@@ -118,7 +116,7 @@ where Y = dev(tau) / mu
 */
 
 OMEGA_H_INLINE
-tensor_type find_bbe(tensor_type const tau, double const mu) {
+Tensor<3> find_bbe(Tensor<3> const tau, double const mu) {
   constexpr int maxit = 25;
   constexpr double tol = 1e-12;
   auto const txx = tau(0, 0);
@@ -154,7 +152,7 @@ tensor_type find_bbe(tensor_type const tau, double const mu) {
     }
     bzz_old = bzz_new;
   }
-  OMEGA_H_NORETURN(tensor_type());
+  OMEGA_H_NORETURN(Tensor<3>());
 }
 
 OMEGA_H_INLINE
@@ -293,7 +291,7 @@ double dflow_stress(Properties const props, double const temp, double const ep,
 }
 
 OMEGA_H_INLINE
-double scalar_damage(Properties const props, tensor_type& T, double const dp,
+double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
     double const temp, double const /* ep */, double const epdot,
     double const dtime) {
   if (props.damage == Damage::NONE) {
@@ -363,9 +361,9 @@ double scalar_damage(Properties const props, tensor_type& T, double const dp,
  *
  */
 OMEGA_H_INLINE
-ErrorCode radial_return(Properties const props, tensor_type const Te,
-    tensor_type const F, double const temp, double const dtime, tensor_type& T,
-    tensor_type& Fp, double& ep, double& epdot, double& dp, StateFlag& flag) {
+ErrorCode radial_return(Properties const props, Tensor<3> const Te,
+    Tensor<3> const F, double const temp, double const dtime, Tensor<3>& T,
+    Tensor<3>& Fp, double& ep, double& epdot, double& dp, StateFlag& flag) {
   constexpr double tol1 = 1e-12;
   auto const tol2 = Omega_h::min2(dtime, 1e-6);
   constexpr double twothird = 2.0 / 3.0;
@@ -464,8 +462,8 @@ ErrorCode radial_return(Properties const props, tensor_type const Te,
 }
 
 OMEGA_H_INLINE
-tensor_type linear_elastic_stress(
-    Properties const props, tensor_type const Fe) {
+Tensor<3> linear_elastic_stress(
+    Properties const props, Tensor<3> const Fe) {
   auto const E = props.E;
   auto const nu = props.Nu;
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -483,8 +481,8 @@ tensor_type linear_elastic_stress(
  *
  */
 OMEGA_H_INLINE
-tensor_type hyper_elastic_stress(
-    Properties const props, tensor_type const Fe, double const jac) {
+Tensor<3> hyper_elastic_stress(
+    Properties const props, Tensor<3> const Fe, double const jac) {
   auto const E = props.E;
   auto const Nu = props.Nu;
   // Jacobian and distortion tensor
@@ -507,9 +505,9 @@ tensor_type hyper_elastic_stress(
 }
 
 OMEGA_H_INLINE_BIG
-ErrorCode update(Properties const props, double const rho, tensor_type const F,
-    double const dtime, double const temp, tensor_type& T, double& wave_speed,
-    tensor_type& Fp, double& ep, double& epdot, double& dp, double& localized) {
+ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
+    double const dtime, double const temp, Tensor<3>& T, double& wave_speed,
+    Tensor<3>& Fp, double& ep, double& epdot, double& dp, double& localized) {
   auto const jac = determinant(F);
   {
     // wave speed
@@ -522,7 +520,7 @@ ErrorCode update(Properties const props, double const rho, tensor_type const F,
   }
 
   // Determine the stress predictor.
-  tensor_type Te;
+  Tensor<3> Te;
   auto const Fe = F * invert(Fp);
   ErrorCode err_c = ErrorCode::NOT_SET;
   if (props.elastic == Elastic::LINEAR_ELASTIC) {

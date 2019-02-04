@@ -8,13 +8,13 @@
 namespace lgr {
 
 OMEGA_H_INLINE void stvenant_kirchhoff_update(double bulk_modulus,
-    double shear_modulus, double density, Matrix<3, 3> F, Matrix<3, 3>& stress,
+    double shear_modulus, double density, Tensor<3> F, Tensor<3>& stress,
     double& wave_speed) {
   OMEGA_H_CHECK(density > 0.0);
-  auto const J = Omega_h::determinant(F);
+  auto const J = determinant(F);
   OMEGA_H_CHECK(J > 0.0);
   auto const Jinv = 1.0 / J;
-  auto const I = Omega_h::identity_matrix<3, 3>();
+  auto const I = identity_tensor<3>();
   auto const C = transpose(F) * F;
   auto const E = 0.5 * (C - I);
   auto const mu = shear_modulus;
