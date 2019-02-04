@@ -50,6 +50,7 @@
 #include "ApplyConstraints.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/Thermal.hpp"
+#include "plato/ComputedField.hpp"
 
 #include <fenv.h>
 
@@ -756,3 +757,100 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalThermalEnergy3D )
   }
 }
 
+/******************************************************************************/
+/*! 
+  \brief Create a 'ComputedField' object for a uniform scalar field
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST( HeatEquationTests, ComputedField_UniformScalar )
+{ 
+  // create test mesh
+  //
+  constexpr int meshWidth=2;
+  constexpr int spaceDim=3;
+  auto mesh = PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth);
+
+  // compute fields
+  //
+  Teuchos::RCP<Teuchos::ParameterList> params =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                \n"
+    "  <ParameterList name='Computed Fields'>                            \n"
+    "    <ParameterList name='Uniform Initial Temperature'>              \n"
+    "      <Parameter name='Function' type='string' value='100.0'/>      \n"
+    "    </ParameterList>                                                \n"
+    "    <ParameterList name='Linear X Initial Temperature'>             \n"
+    "      <Parameter name='Function' type='string' value='1.0*x'/>      \n"
+    "    </ParameterList>                                                \n"
+    "    <ParameterList name='Linear Y Initial Temperature'>             \n"
+    "      <Parameter name='Function' type='string' value='1.0*y'/>      \n"
+    "    </ParameterList>                                                \n"
+    "    <ParameterList name='Linear Z Initial Temperature'>             \n"
+    "      <Parameter name='Function' type='string' value='1.0*z'/>      \n"
+    "    </ParameterList>                                                \n"
+    "    <ParameterList name='Bilinear XY Initial Temperature'>          \n"
+    "      <Parameter name='Function' type='string' value='1.0*x*y'/>    \n"
+    "    </ParameterList>                                                \n"
+    "  </ParameterList>                                                  \n"
+    "</ParameterList>                                                    \n"
+  );
+
+  auto tComputedFields = Plato::ComputedFields<spaceDim>(*mesh, params->sublist("Computed Fields"));
+
+  int tNumNodes = mesh->nverts();
+  Plato::ScalarVector T("temperature", tNumNodes);
+
+  tComputedFields.get("Uniform Initial Temperature", T);
+
+  // pull temperature to host
+  //
+  auto T_Host = Kokkos::create_mirror_view( T );
+  Kokkos::deep_copy( T_Host, T );
+
+  for(int iNode=0; iNode<tNumNodes; iNode++){
+    TEST_FLOATING_EQUALITY(T_Host[iNode], 100.0, 1e-15);
+  }
+
+
+  Plato::ScalarVector xcoords("x", tNumNodes);
+  Plato::ScalarVector ycoords("y", tNumNodes);
+  Plato::ScalarVector zcoords("z", tNumNodes);
+  auto coords = mesh->coords();
+  Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumNodes), LAMBDA_EXPRESSION(int nodeOrdinal)
+  {
+    xcoords(nodeOrdinal) = coords[nodeOrdinal*spaceDim+0];
+    ycoords(nodeOrdinal) = coords[nodeOrdinal*spaceDim+1];
+    zcoords(nodeOrdinal) = coords[nodeOrdinal*spaceDim+2];
+  }, "get coords");
+
+  auto xCoords_Host = Kokkos::create_mirror_view( xcoords );
+  auto yCoords_Host = Kokkos::create_mirror_view( ycoords );
+  auto zCoords_Host = Kokkos::create_mirror_view( zcoords );
+  Kokkos::deep_copy( xCoords_Host, xcoords );
+  Kokkos::deep_copy( yCoords_Host, ycoords );
+  Kokkos::deep_copy( zCoords_Host, zcoords );
+
+  tComputedFields.get("Linear X Initial Temperature", T);
+  Kokkos::deep_copy( T_Host, T );
+  for(int iNode=0; iNode<tNumNodes; iNode++){
+    TEST_FLOATING_EQUALITY(T_Host[iNode], 1.0*xCoords_Host[iNode], 1e-15);
+  }
+
+  tComputedFields.get("Linear Y Initial Temperature", T);
+  Kokkos::deep_copy( T_Host, T );
+  for(int iNode=0; iNode<tNumNodes; iNode++){
+    TEST_FLOATING_EQUALITY(T_Host[iNode], 1.0*yCoords_Host[iNode], 1e-15);
+  }
+
+  tComputedFields.get("Linear Z Initial Temperature", T);
+  Kokkos::deep_copy( T_Host, T );
+  for(int iNode=0; iNode<tNumNodes; iNode++){
+    TEST_FLOATING_EQUALITY(T_Host[iNode], 1.0*zCoords_Host[iNode], 1e-15);
+  }
+
+  tComputedFields.get("Bilinear XY Initial Temperature", T);
+  Kokkos::deep_copy( T_Host, T );
+  for(int iNode=0; iNode<tNumNodes; iNode++){
+    TEST_FLOATING_EQUALITY(T_Host[iNode], 1.0*xCoords_Host[iNode]*yCoords_Host[iNode], 1e-15);
+  }
+}

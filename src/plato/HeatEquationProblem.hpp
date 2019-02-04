@@ -19,6 +19,7 @@
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
+#include "plato/ComputedField.hpp"
 
 #ifdef HAVE_AMGX
 #include "AmgXSparseLinearProblem.hpp"
@@ -49,10 +50,13 @@ private:
 
     Plato::ScalarMultiVector mStates;
 
-    bool mIsSelfAdjoint;
-
     Teuchos::RCP<Plato::CrsMatrixType> mJacobian;
     Teuchos::RCP<Plato::CrsMatrixType> mJacobianP;
+
+    std::string mInitialTemperatureCF;
+    Teuchos::RCP<Plato::ComputedFields<SpatialDim>> mComputedFields;
+
+    bool mIsSelfAdjoint;
 
     Plato::LocalOrdinalVector mBcDofs;
     Plato::ScalarVector mBcValues;
@@ -70,6 +74,7 @@ public:
             mStates("States", mNumSteps, mEqualityConstraint.size()),
             mJacobian(Teuchos::null),
             mJacobianP(Teuchos::null),
+            mComputedFields(Teuchos::null),
             mIsSelfAdjoint(aParamList.get<bool>("Self-Adjoint", false))
     /******************************************************************************/
     {
@@ -128,9 +133,13 @@ public:
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
     /******************************************************************************/
     {
+        // initialize first state
         //
-        // The first state in mStates is assumed to contain the temperature at t=0
-        //
+        if (!mInitialTemperatureCF.empty()) {
+          Plato::ScalarVector firstState = Kokkos::subview(mStates, 0, Kokkos::ALL());
+          mComputedFields->get(mInitialTemperatureCF, firstState);
+        }
+
         for(Plato::OrdinalType tStepIndex = 1; tStepIndex < mNumSteps; tStepIndex++) {
           Plato::ScalarVector tState = Kokkos::subview(mStates, tStepIndex, Kokkos::ALL());
           Plato::ScalarVector tPrevState = Kokkos::subview(mStates, tStepIndex-1, Kokkos::ALL());
@@ -300,6 +309,7 @@ public:
     
             // compute dgdz . adjoint + dfdz
             Plato::MatrixTimesVectorPlusVector(tPartialPDE_WRT_Control, tAdjoint, tTotalObjectiveWRT_Control);
+
         }
 
         return tTotalObjectiveWRT_Control;
@@ -488,6 +498,20 @@ private:
     void initialize(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList)
     /******************************************************************************/
     {
+        if(aParamList.isSublist("Computed Fields"))
+        {
+          mComputedFields = Teuchos::rcp(new Plato::ComputedFields<SpatialDim>(aMesh, aParamList.sublist("Computed Fields")));
+        }
+
+        if(aParamList.isSublist("Initial Temperature"))
+        {
+          if(mComputedFields == Teuchos::null) {
+            throw std::runtime_error("No 'Computed Fields' have been defined");
+          }
+          mInitialTemperatureCF = aParamList.sublist("Initial Temperature").get<std::string>("Computed Field");
+          mComputedFields->find(mInitialTemperatureCF);
+        }
+
         if(aParamList.isType<std::string>("Linear Constraint"))
         {
             std::string tName = aParamList.get<std::string>("Linear Constraint");
