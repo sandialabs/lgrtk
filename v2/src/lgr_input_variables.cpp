@@ -6,8 +6,7 @@ InputVariables::InputVariables(Simulation&) {}
 
 void InputVariables::setup(Omega_h::InputMap& pl) {
   env = decltype(env)(1, 1);
-  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
-    auto& name = it->first;
+  for (auto& name : pl) {
     double const value = get_double(pl, name.c_str(), "");
     env.register_variable(name, Omega_h::any(value));
   }

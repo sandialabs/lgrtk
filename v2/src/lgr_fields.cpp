@@ -105,8 +105,7 @@ void Fields::setup_default_conditions(Simulation& sim, double start_time) {
 }
 
 void Fields::setup_conditions(Simulation& sim, Omega_h::InputMap& pl) {
-  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
-    auto const& field_name = it->first;
+  for (auto& field_name : pl) {
     if (pl.is_list(field_name)) {
       auto& field_pl = pl.get_list(field_name);
       auto fit = std::find_if(
@@ -125,8 +124,7 @@ void Fields::setup_conditions(Simulation& sim, Omega_h::InputMap& pl) {
 }
 
 void Fields::setup_common_defaults(Omega_h::InputMap& pl) {
-  for (auto it = pl.map.begin(), end = pl.map.end(); it != end; ++it) {
-    auto const& field_name = it->first;
+  for (auto& field_name : pl) {
     if (pl.is<std::string>(field_name)) {
       auto value = pl.get<std::string>(field_name);
       auto fit = std::find_if(
