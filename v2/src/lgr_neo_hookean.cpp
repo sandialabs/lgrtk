@@ -5,7 +5,7 @@
 namespace lgr {
 
 OMEGA_H_INLINE void neo_hookean_update(double bulk_modulus,
-    double shear_modulus, double density, Matrix<3, 3> F, Matrix<3, 3>& stress,
+    double shear_modulus, double density, Tensor<3> F, Tensor<3>& stress,
     double& wave_speed) {
   OMEGA_H_CHECK(density > 0.0);
   auto const J = Omega_h::determinant(F);
@@ -59,10 +59,13 @@ struct NeoHookean : public Model<Elem> {
       auto kappa = points_to_kappa[point];
       auto nu = points_to_nu[point];
       auto rho = points_to_rho[point];
-      auto F = identity_matrix<3, 3>();
-      for (int i = 0; i < Elem::dim; ++i)
-        for (int j = 0; j < Elem::dim; ++j) F(i, j) = F_small(i, j);
-      Matrix<3, 3> sigma;
+      auto F = identity_tensor<3>();
+      for (int i = 0; i < Elem::dim; ++i) {
+        for (int j = 0; j < Elem::dim; ++j) {
+          F(i, j) = F_small(i, j);
+        }
+      }
+      Tensor<3> sigma;
       double c;
       neo_hookean_update(kappa, nu, rho, F, sigma, c);
       setstress(points_to_stress, point, sigma);

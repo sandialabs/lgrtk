@@ -240,7 +240,6 @@ struct HyperEP : public Model<Elem> {
   char const* name() override final { return "hyper elastic-plastic"; }
 
   void at_material_model() override final {
-    using hyper_ep::tensor_type;
     //  properties
     auto points_to_rho = this->points_get(this->sim.density);
     // State dependent variables
@@ -272,7 +271,7 @@ struct HyperEP : public Model<Elem> {
       auto localized = points_to_localized[point];
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
       // Update the material response
-      tensor_type T;  // stress tensor
+      Tensor<3> T;  // stress tensor
       double c;
       auto err_c = hyper_ep::update(
           props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);

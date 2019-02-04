@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include <lgr_hyper_ep.hpp>
+#include <lgr_math.hpp>
 #include "lgr_gtest.hpp"
 #if 0
 #include <Teuchos_ParameterList.hpp>
@@ -10,7 +11,9 @@ namespace {
 
 using scalar_type = double;
 namespace Details = lgr::hyper_ep;
-using tensor_type = Details::tensor_type;
+using lgr::Tensor;
+using lgr::identity_tensor;
+using lgr::zero_matrix;
 
 #ifdef OMEGA_H_THROW
 using invalid_argument = Omega_h::exception;
@@ -102,9 +105,9 @@ static void eval_prescribed_motions(
   scalar_type temp = 298.;
 
   // Initialize in/out variables to be updated by material update
-  tensor_type T;
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> T;
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
 
   scalar_type wave_speed = 0.;
   scalar_type ep = 0.;
@@ -388,9 +391,9 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   scalar_type temp = 298.;
   scalar_type dtime = 1.;
 
-  tensor_type T;
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> T;
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
 
   Details::Properties props;
   props.elastic = Details::Elastic::NEO_HOOKEAN;
@@ -430,9 +433,9 @@ TEST(HyperEPMaterialModel, LinearElastic)
   scalar_type temp = 298.;
   scalar_type dtime = 1.;
 
-  tensor_type T;
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> T;
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
 
   Details::Properties props;
   props.elastic = Details::Elastic::LINEAR_ELASTIC;
@@ -469,9 +472,9 @@ TEST(HyperEPMaterialModel, SimpleJ2)
   scalar_type temp = 298.;
   scalar_type dtime = 1.;
 
-  tensor_type T;
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> T;
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
 
   Details::Properties props;
   props.elastic = Details::Elastic::NEO_HOOKEAN;
@@ -506,9 +509,9 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type temp = 298.;
   scalar_type dtime = 1.;
 
-  tensor_type T;
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> T;
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
 
   Details::Properties props;
   props.elastic = Details::Elastic::NEO_HOOKEAN;
@@ -523,7 +526,7 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   Details::StateFlag flag;
 
   // Uniaxial stress, below yield
-  tensor_type Te = Omega_h::zero_matrix<3, 3>();
+  Tensor<3> Te = zero_matrix<3, 3>();
   scalar_type fac = .9;
   Te(0,0) = fac * props.A;
   flag = Details::StateFlag::TRIAL;
@@ -562,8 +565,8 @@ TEST(HyperEPMaterialModel, JohnsonCookDamage2)
   props.set_stress_to_zero = false;
 
   // Initialize in/out variables to be updated by material update
-  tensor_type F = Omega_h::identity_matrix<3, 3>();
-  tensor_type Fp = Omega_h::identity_matrix<3, 3>();
+  Tensor<3> F = identity_tensor<3>();
+  Tensor<3> Fp = identity_tensor<3>();
   auto T = 0.0 * F;
 
   scalar_type dtime = 1.;
