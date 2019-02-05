@@ -363,7 +363,8 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
   }
   mag = sqrt(mag);
   
-  double alpha = 1.0/mag;
+  double tol = 1.0e-5;
+  double alpha = tol/mag;
   double dval = 0.0;
   for(int iVal=0; iVal<localIDs.size(); iVal++){
     double dz = alpha * stdObjGradOut[iVal];
@@ -371,8 +372,6 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
     dval -= stdObjGradOut[iVal]*dz;
   }
  
-
-
   fauxControlIn.setData(stdControlIn);
   app.importDataT("Topology", fauxControlIn);
   app.compute("Compute Objective");
@@ -381,14 +380,5 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
   std::vector<double> stdObjValTwo(1);
   fauxObjValOut.getData(stdObjValTwo);
   
-  std::cout << "val 1: " << std::setprecision(16) << stdObjValOne[0] << std::endl;
-  std::cout << "val 2: " << std::setprecision(16) << stdObjValTwo[0] << std::endl;
-
-  double change = stdObjValTwo[0] - stdObjValOne[0];
-  std::cout << "Expected change: " << dval << std::endl;
-  std::cout << "Actual change: " << change << std::endl;
-
-  TEST_FLOATING_EQUALITY(stdObjValOne[0], 0.252525, 1e-12);
-  TEST_FLOATING_EQUALITY(stdObjValTwo[0], 0.252525, 1e-12);
-
+  TEST_FLOATING_EQUALITY(stdObjValOne[0], stdObjValTwo[0], tol);
 }
