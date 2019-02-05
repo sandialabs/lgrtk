@@ -1,4 +1,4 @@
-side set ss_1 1
-2 1
-node set ns_2 1
-2 3
+side set ss_2 1
+2 2
+node set ns_1440 1
+2 1442
