@@ -373,8 +373,7 @@ private:
     {
         ScalarType tPower = mAlpha - static_cast<ScalarType>(1);
         ScalarType tValue = mPropellantDensity * aChamberArea * mRefBurnRate * mAlpha * mInvPrefAlpha
-                            * std::pow(aTotalPressure, tPower)
-                            - aThroatArea / mCharacteristicVelocity;
+                            * std::pow(aTotalPressure, tPower) - aThroatArea / mCharacteristicVelocity;
         return tValue;
     }
 
