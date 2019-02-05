@@ -141,33 +141,33 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runAlgebraicRocketUnitTests COMMAND ${ES_MPI_TEST})
 #end: Algebraic rocket model unit test
 
-#begin: Elastodynamics unit test
-  set(Elastodynamics_SOURCES
+#begin: AugLagStressTest unit test
+  set(AugLagStressTest_SOURCES
     LGRTestHelpers.cpp
-    ElastodynamicsTest.cpp
+    PlatoAugLagStressTest.cpp
     Teuchos_StandardUnitTestMain.cpp
   )
 
-  set(Elastodynamics_HEADERS
+  set(AugLagStressTest_HEADERS
     LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
-  add_executable(ElastodynamicsUnitTests
-    ${Elastodynamics_SOURCES}
-    ${Elastodynamics_HEADERS}
+  add_executable(AugLagStressUnitTests
+    ${AugLagStressTest_SOURCES}
+    ${AugLagStressTest_HEADERS}
   )
 
-  target_link_libraries(ElastodynamicsUnitTests 
+  target_link_libraries(AugLagStressUnitTests 
     lgrtk
     ${Trilinos_LIBRARIES} 
     ${Trilinos_TPL_LIBRARIES} 
     )
-  target_include_directories(ElastodynamicsUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+  target_include_directories(AugLagStressUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
-  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ElastodynamicsUnitTests)
-  add_test(NAME runElastodynamicsUnitTests COMMAND ${ES_MPI_TEST})
-#end: Elastodynamics unit test
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/AugLagStressUnitTests)
+  add_test(NAME runAugLagStressUnitTests COMMAND ${ES_MPI_TEST})
+#end: AugLagStressTest unit test
 
 #begin: PlatoMathHelpers unit test
   set(PlatoMathHelpers_SOURCES
