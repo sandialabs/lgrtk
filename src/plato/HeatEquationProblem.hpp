@@ -344,10 +344,9 @@ public:
 
             // compute dFdT^k: partial of objective wrt T at step k = tStepIndex
             auto tPartialObjectiveWRT_State = mObjective->gradient_u(aStates, aControl, mTimeStep, tStepIndex);
-            Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_State);
 
             if(tStepIndex != tLastStepIndex) { // the last step doesn't have a contribution from k+1
-                auto tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
+                Plato::ScalarVector tNextState   = Kokkos::subview(aStates,   tStepIndex+1, Kokkos::ALL());
                 Plato::ScalarVector tNextAdjoint = Kokkos::subview(mAdjoints, tStepIndex+1, Kokkos::ALL());
                 // compute dQ^{k+1}/dT^k: partial of PDE at k+1 wrt current state, k.
                 mJacobianP = mEqualityConstraint.gradient_p(tNextState, tState, aControl, mTimeStep);
@@ -355,6 +354,7 @@ public:
                 // multiply dQ^{k+1}/dT^k by lagrange multiplier from k+1 and add to dFdT^k
                 Plato::MatrixTimesVectorPlusVector(mJacobianP, tNextAdjoint, tPartialObjectiveWRT_State);
             }
+            Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_State);
 
             // compute dQ^k/dT^k: partial of PDE at k wrt state current state, k.
             mJacobian = mEqualityConstraint.gradient_u(tState, tPrevState, aControl, mTimeStep);
