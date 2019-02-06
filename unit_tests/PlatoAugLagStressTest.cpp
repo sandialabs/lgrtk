@@ -51,19 +51,22 @@ cell_mass(const Plato::OrdinalType & aCellOrdinal,
 /******************************************************************************//**
  * @brief Compute average cell density
  * @param [in] aCellOrdinal cell/element index
+ * @param [in] aNumControls number of controls
  * @param [in] aCellControls 2D container of cell controls
  * @return average density for this cell/element
 **********************************************************************************/
-template<typename ControlType, Plato::OrdinalType NumControls>
+template<typename ControlType>
 DEVICE_TYPE inline ControlType
-cell_density(const Plato::OrdinalType & aCellOrdinal, const Plato::ScalarMultiVectorT<ControlType> & aCellControls)
+cell_density(const Plato::OrdinalType & aCellOrdinal,
+             const Plato::OrdinalType & aNumControls,
+             const Plato::ScalarMultiVectorT<ControlType> & aCellControls)
 {
     ControlType tCellDensity = 0.0;
-    for(Plato::OrdinalType tIndex = 0; tIndex < NumControls; tIndex++)
+    for(Plato::OrdinalType tIndex = 0; tIndex < aNumControls; tIndex++)
     {
         tCellDensity += aCellControls(aCellOrdinal, tIndex);
     }
-    tCellDensity /= NumControls;
+    tCellDensity /= aNumControls;
     return (tCellDensity);
 }
 // function cell_density
@@ -157,6 +160,92 @@ VonMisesYield<1>::operator()(const Plato::OrdinalType & aCellOrdinal,
     aVonMisesStress(aCellOrdinal) = aCauchyStress(aCellOrdinal, 0);
 }
 
+template< Plato::OrdinalType SpaceDim, typename StateT, typename ControlT, typename ConfigT, typename ResultT>
+inline void evaluate(const Omega_h::Mesh & aMesh,
+                     const Plato::ScalarMultiVectorT<StateT> & aStateWS,
+                     const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
+                     const Plato::ScalarArray3DT<ConfigT> & aConfigWS,
+                     const Plato::ScalarVectorT<ResultT> & aResultWS)
+{
+    using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<SpaceDim>, StateT, ControlT>;
+
+    // Create Lagrange multipliers workset
+    const Plato::OrdinalType tNumCells = aMesh.nelems();
+    std::vector<Plato::Scalar> tHostLambdaData(tNumCells, 0.1);
+    Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
+        tHostLambdaView(tHostLambdaData.data(),tHostLambdaData.size());
+    auto tDeviceLambdaView = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), tHostLambdaView);
+
+    // Create stress weight workset
+    std::vector<Plato::Scalar> tHostMassMultiplierData(tNumCells, 0.01);
+    Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
+        tHostMassMultiplierView(tHostMassMultiplierData.data(),tHostMassMultiplierData.size());
+    auto tDeviceMassMultiplierView = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), tHostMassMultiplierView);
+
+    constexpr Plato::Scalar tYoungsModulus = 1;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
+    Plato::IsotropicLinearElasticMaterial<SpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+
+    SIMP tPenaltySIMP;
+    Strain<SpaceDim> tCauchyStrain;
+    Plato::VonMisesYield<SpaceDim> tVonMises;
+    LinearStress<SpaceDim> tCauchyStress(tCellStiffMatrix);
+    Plato::ComputeGradientWorkset<SpaceDim> tComputeGradient;
+
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
+    Plato::ScalarVectorT<ResultT> tCellVonMises("von mises", tNumCells);
+    Plato::ScalarVectorT<ConfigT> tCellVolume("cell volume", tNumCells);
+    Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, tNumNodesPerCell, SpaceDim);
+    Plato::ScalarMultiVectorT<StrainT> tCellCauchyStrain("strain", tNumCells, tNumVoigtTerms);
+    Plato::ScalarMultiVectorT<ResultT> tCellCauchyStress("stress", tNumCells, tNumVoigtTerms);
+
+    constexpr Plato::Scalar tStressLimit = 1;
+    constexpr Plato::Scalar tAugLagPenaltyParam = 0.1;
+
+    // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
+    Plato::LinearTetCubRuleDegreeOne<SpaceDim> tCubatureRule;
+    auto tCubWeight = tCubatureRule.getCubWeight();
+    auto tBasisFunc = tCubatureRule.getBasisFunctions();
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
+    {
+        tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tCellVolume);
+        tCellVolume(tCellOrdinal) *= tCubWeight;
+        tCauchyStrain(tCellOrdinal, tCellCauchyStrain, aStateWS, tGradient);
+        tCauchyStress(tCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
+
+        // Compute 3D Von Mises Yield Criterion
+        tVonMises(tCellOrdinal, tCellCauchyStress, tCellVonMises);
+
+        // Compute Von Mises stress constraint residual
+        ResultT tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
+        ResultT tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
+
+        ControlT tCellDensity = Plato::cell_density<ControlT>(tCellOrdinal, tNumNodesPerCell, aControlWS);
+        ControlT tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
+        ResultT tPenalizedStressConstraint = tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+        tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
+                tPenalizedStressConstraint : static_cast<ResultT>(0.0);
+
+        // Compute relaxed Von Mises stress constraint
+        ResultT tLambdaOverPenalty = static_cast<Plato::Scalar>(-1.0) * tDeviceLambdaView(tCellOrdinal) / tAugLagPenaltyParam;
+        ResultT tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
+
+        // Compute Von Mises stress contribution to augmented Lagrangian function
+        const Plato::Scalar tStressContribution = ( tDeviceLambdaView(tCellOrdinal) +
+                static_cast<Plato::Scalar>(0.5) * tAugLagPenaltyParam * tRelaxedStressConstraint ) * tRelaxedStressConstraint;
+
+        // Compute mass contribution to augmented Lagrangian function
+        ControlT tCellMass = Plato::cell_mass<Plato::Scalar, tNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
+        tCellMass *= tCellVolume(tCellOrdinal);
+        ResultT tMassContribution = tDeviceMassMultiplierView(tCellOrdinal) * tCellMass;
+
+        // Compute augmented Lagrangian
+        aResultWS(tCellOrdinal) = tMassContribution + tStressContribution;
+    },"Compute Augmented Lagrangian Stress Func.");
+}
+
 } // namespace Plato
 
 namespace AugLagStressTest
@@ -177,7 +266,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CellDensity)
     Plato::ScalarVector tCellDensity("Cell Density", tNumCells);
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
     {
-        tCellDensity(tCellOrdinal) = Plato::cell_density<Plato::Scalar, tNumNodesPerCell>(tCellOrdinal, tCellControls);
+        tCellDensity(tCellOrdinal) = Plato::cell_density<Plato::Scalar>(tCellOrdinal, tNumNodesPerCell, tCellControls);
     }, "Test cell density inline function");
 
     constexpr Plato::Scalar tTolerance = 1e-4;
@@ -290,13 +379,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval3D)
     constexpr Plato::OrdinalType tMeshWidth = 1;
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
+    using StateT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual::StateScalarType;
+    using ConfigT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual::ConfigScalarType;
+    using ResultT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual::ResultScalarType;
+    using ControlT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual::ControlScalarType;
+
     const Plato::OrdinalType tNumCells = tMesh->nelems();
     constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
     constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
 
     // Create configuration workset
     WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
-    Plato::ScalarArray3DT<Plato::Scalar> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
     tWorksetBase.worksetConfig(tConfigWS);
 
     // Create control workset
@@ -305,7 +399,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval3D)
     Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
         tHostControlView(tHostControl.data(),tHostControl.size());
     auto tDeviceControlView = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), tHostControlView);
-    Plato::ScalarMultiVectorT<Plato::Scalar> tControlWS("control workset", tNumCells, tNodesPerCell);
+    Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
     tWorksetBase.worksetControl(tDeviceControlView, tControlWS);
 
     // Create state workset
@@ -316,97 +410,22 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval3D)
     Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
         tHostStateView(tHostStateData.data(),tHostStateData.size());
     auto tDeviceStateView = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), tHostStateView);
-    Plato::ScalarMultiVectorT<Plato::Scalar> tStateWS("state workset", tNumCells, tDofsPerCell);
+    Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tDeviceStateView, tStateWS);
 
-    // Create Lagrange multipliers workset
-    std::vector<Plato::Scalar> tHostLambdaData(tNumCells, 0.1);
-    Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-        tHostLambdaView(tHostLambdaData.data(),tHostLambdaData.size());
-    auto tDeviceLambdaView = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), tHostLambdaView);
+    // Create result workset
+    Plato::ScalarVectorT<ResultT> tResultWS("result", tNumCells);
 
-    // Create stress weight workset
-    std::vector<Plato::Scalar> tHostMassMultiplierData(tNumCells, 0.01);
-    Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-        tHostMassMultiplierView(tHostMassMultiplierData.data(),tHostMassMultiplierData.size());
-    auto tDeviceMassMultiplierView = Kokkos::create_mirror_view_and_copy(Kokkos::DefaultExecutionSpace(), tHostMassMultiplierView);
+    Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
 
-    constexpr Plato::Scalar tYoungsModulus = 1;
-    constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = 6;
-    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
-    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
-
-    SIMP tPenaltySIMP;
-    Strain<tSpaceDim> tCauchyStrain;
-    Plato::VonMisesYield<tSpaceDim> tVonMises;
-    LinearStress<tSpaceDim> tCauchyStress(tCellStiffMatrix);
-    Plato::ComputeGradientWorkset<tSpaceDim> tComputeGradient;
-
-    Plato::ScalarVectorT<Plato::Scalar> tResult("result", tNumCells);
-    Plato::ScalarVectorT<Plato::Scalar> tCellVonMises("von mises", tNumCells);
-    Plato::ScalarVectorT<Plato::Scalar> tCellVolume("cell volume", tNumCells);
-    Plato::ScalarArray3DT<Plato::Scalar> tGradient("gradient", tNumCells, tNodesPerCell, tSpaceDim);
-    Plato::ScalarMultiVectorT<Plato::Scalar> tCellCauchyStrain("strain", tNumCells, tNumVoigtTerms);
-    Plato::ScalarMultiVectorT<Plato::Scalar> tCellCauchyStress("stress", tNumCells, tNumVoigtTerms);
-
-    constexpr Plato::Scalar tStressLimit = 1;
-    constexpr Plato::Scalar tAugLagPenaltyParam = 0.1;
-
-    // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
-    Plato::LinearTetCubRuleDegreeOne<tSpaceDim> tCubatureRule;
-    auto tCubWeight = tCubatureRule.getCubWeight();
-    auto tBasisFunc = tCubatureRule.getBasisFunctions();
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGold = { 0.00166667, 0.0121221, 0.00166667, 0.0426097, 0.26095, 0.383705 };
+    auto tHostResultWS = Kokkos::create_mirror(tResultWS);
+    Kokkos::deep_copy(tHostResultWS, tResultWS);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
     {
-        tComputeGradient(tCellOrdinal, tGradient, tConfigWS, tCellVolume);
-        tCellVolume(tCellOrdinal) *= tCubWeight;
-        tCauchyStrain(tCellOrdinal, tCellCauchyStrain, tStateWS, tGradient);
-        tCauchyStress(tCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
-        printf("Cell %d : Cauchy Stress 11 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 0));
-        printf("Cell %d : Cauchy Stress 22 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 1));
-        printf("Cell %d : Cauchy Stress 33 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 2));
-        printf("Cell %d : Cauchy Stress 23 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 3));
-        printf("Cell %d : Cauchy Stress 13 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 4));
-        printf("Cell %d : Cauchy Stress 12 = %f\n", tCellOrdinal, tCellCauchyStress(tCellOrdinal, 5));
-
-        // Compute 3D Von Mises Yield Criterion
-        tVonMises(tCellOrdinal, tCellCauchyStress, tCellVonMises);
-        printf("Cell %d : Von Mises stress = %f\n", tCellOrdinal, tCellVonMises(tCellOrdinal));
-
-        // Compute Von Mises stress constraint residual
-        const Plato::Scalar tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
-        const Plato::Scalar tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-        printf("Cell %d : Von Mises stress - limit = %f\n", tCellOrdinal, tVonMisesOverLimitMinusOne);
-
-        Plato::Scalar tCellDensity = Plato::cell_density<Plato::Scalar, tNodesPerCell>(tCellOrdinal, tControlWS);
-        const Plato::Scalar tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
-        printf("Cell %d : Penalized density = %f\n", tCellOrdinal, tPenalizedCellDensity);
-        Plato::Scalar tPenalizedStressConstraint = tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
-        tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
-                tPenalizedStressConstraint : static_cast<Plato::Scalar>(0.0);
-        printf("Cell %d : Penalized stress contribution = %f\n", tCellOrdinal, tPenalizedStressConstraint);
-
-        // Compute relaxed Von Mises stress constraint
-        const Plato::Scalar tLambdaOverPenalty = static_cast<Plato::Scalar>(-1.0) * tDeviceLambdaView(tCellOrdinal) / tAugLagPenaltyParam;
-        const Plato::Scalar tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
-        printf("Cell %d : Relaxed stress contribution = %f\n", tCellOrdinal, tRelaxedStressConstraint);
-
-        // Compute Von Mises stress contribution to augmented Lagrangian function
-        const Plato::Scalar tStressContribution = ( tDeviceLambdaView(tCellOrdinal) +
-                static_cast<Plato::Scalar>(0.5) * tAugLagPenaltyParam * tRelaxedStressConstraint ) * tRelaxedStressConstraint;
-        printf("Cell %d : Stress contribution = %f\n", tCellOrdinal, tStressContribution);
-
-        // Compute mass contribution to augmented Lagrangian function
-        Plato::Scalar tCellMass = Plato::cell_mass<Plato::Scalar, tNodesPerCell>(tCellOrdinal, tBasisFunc, tControlWS);
-        tCellMass *= tCellVolume(tCellOrdinal);
-        const Plato::Scalar tMassContribution = tDeviceMassMultiplierView(tCellOrdinal) * tCellMass;
-        printf("Cell %d : Mass contribution = %f\n", tCellOrdinal, tMassContribution);
-
-        // Compute augmented Lagrangian
-        tResult(tCellOrdinal) = tMassContribution + tStressContribution;
-        printf("Cell %d : Augmented Lag = %f\n", tCellOrdinal, tResult(tCellOrdinal));
-    },"Compute Augmented Lagrangian Stress Func.");
+        TEST_FLOATING_EQUALITY(tHostResultWS(tIndex), tGold[tIndex], tTolerance);
+    }
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
@@ -498,7 +517,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
         const Plato::Scalar tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
 
         // Compute mass multiplier measure
-        Plato::Scalar tCellDensity = Plato::cell_density<Plato::Scalar, tNodesPerCell>(tCellOrdinal, tControlWS);
+        Plato::Scalar tCellDensity = Plato::cell_density<Plato::Scalar>(tCellOrdinal, tNodesPerCell, tControlWS);
         tMassMultiplierMeasures(tCellOrdinal) = tVonMisesOverStressLimit * pow(tCellDensity, static_cast<Plato::Scalar>(0.5));
 
         const Plato::Scalar tOptionOne = static_cast<Plato::Scalar>(0.7) * tMassMultipliers(tCellOrdinal) - static_cast<Plato::Scalar>(0.1);
