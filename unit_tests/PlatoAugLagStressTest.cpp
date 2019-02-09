@@ -22,6 +22,10 @@
 namespace Plato
 {
 
+/******************************************************************************//**
+ * @brief Print input 1D container to terminal
+ * @param [in] aInput 1D container
+**********************************************************************************/
 template<typename VecT>
 inline void print(const VecT & aInput)
 {
@@ -29,6 +33,7 @@ inline void print(const VecT & aInput)
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tSize), LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex){
         printf("X[%d] = %f\n", aIndex, aInput(aIndex));
     }, "fill vector");
+    printf("\n");
 }
 
 /******************************************************************************//**
@@ -178,7 +183,7 @@ inline void evaluate(const Omega_h::Mesh & aMesh,
                      const Plato::ScalarArray3DT<ConfigT> & aConfigWS,
                      const Plato::ScalarVectorT<ResultT> & aResultWS)
 {
-    using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<SpaceDim>, StateT, ControlT>;
+    using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<SpaceDim>, StateT, ConfigT>;
 
     // Create Lagrange multipliers workset
     const Plato::OrdinalType tNumCells = aMesh.nelems();
@@ -250,7 +255,7 @@ inline void evaluate(const Omega_h::Mesh & aMesh,
                 static_cast<Plato::Scalar>(0.5) * tAugLagPenaltyParam * tRelaxedStressConstraint ) * tRelaxedStressConstraint;
 
         // Compute mass contribution to augmented Lagrangian function
-        ControlT tCellMass = Plato::cell_mass<tNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
+        ResultT tCellMass = Plato::cell_mass<tNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
         tCellMass *= tCellVolume(tCellOrdinal);
         ResultT tMassContribution = tDeviceMassMultiplierView(tCellOrdinal) * tCellMass;
 
@@ -590,6 +595,108 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradZ_3D)
         Plato::update(1.0, tControl, 0.0, tTrialControl);
         Plato::update(-2.0 * tEpsilon, tStep, 1.0, tTrialControl);
         tWorksetBase.worksetControl(tTrialControl, tControlWS);
+        Plato::fill(static_cast<Plato::Scalar>(0.0), tResultWS);
+        Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
+        Plato::Scalar tObjFuncValueFour = Plato::assemble_scalar_func_value<Plato::Scalar>(tNumCells, tResultWS);
+
+        Plato::Scalar tNumerator = -tObjFuncValueThree + static_cast<Plato::Scalar>(8.) * tObjFuncValueOne
+                - static_cast<Plato::Scalar>(8.) * tObjFuncValueTwo + tObjFuncValueFour;
+        Plato::Scalar tDenominator = static_cast<Plato::Scalar>(12.) * tEpsilon;
+        Plato::Scalar tFiniteDiffAppxError = tNumerator / tDenominator;
+        Plato::Scalar tAppxError = std::abs(tFiniteDiffAppxError - tGradientDotStep);
+
+        std::cout << std::right << std::scientific << std::setprecision(8) << std::setw(14) << tEpsilon << std::setw(19)
+              << tGradientDotStep << std::setw(19) << tFiniteDiffAppxError << std::setw(19) << tAppxError << "\n";
+    }
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradU_3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    using StateT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian::StateScalarType;
+    using ConfigT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian::ConfigScalarType;
+    using ResultT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian::ResultScalarType;
+    using ControlT = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian::ControlScalarType;
+
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerNode = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+
+    // Create configuration workset
+    WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create control workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("Control", tNumVerts);
+    Plato::fill(0.5, tControl);
+    Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // Create state workset
+    const Plato::OrdinalType tTotalNumDofs = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tState("State", tTotalNumDofs);
+    auto tHostState = Kokkos::create_mirror(tState);
+    Plato::random(1, 5, tHostState);
+    Kokkos::deep_copy(tState, tHostState);
+    Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tState, tStateWS);
+
+    // Create result workset
+    Plato::ScalarVectorT<ResultT> tResultWS("result", tNumCells);
+
+    // finite difference
+    Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
+    Plato::ScalarVector tPartialU("objective partial state", tTotalNumDofs);
+    Plato::VectorEntryOrdinal<tSpaceDim, tDofsPerNode> tStateEntryOrdinal(&(*tMesh));
+    Plato::assemble_vector_gradient<tNodesPerCell, tDofsPerNode>(tNumCells, tStateEntryOrdinal, tResultWS, tPartialU);
+
+    Plato::ScalarVector tStep("step", tTotalNumDofs);
+    auto tHostStep = Kokkos::create_mirror(tStep);
+    Plato::random(0.05, 0.1, tHostStep);
+    Kokkos::deep_copy(tStep, tHostStep);
+    Plato::Scalar tGradientDotStep = Plato::dot(tPartialU, tStep);
+
+    std::cout << std::right << std::setw(18) << "\nStep Size" << std::setw(20) << "Grad'*Step" << std::setw(18) << "FD Approx"
+               << std::setw(20) << "abs(Error)" << "\n";
+
+    constexpr Plato::OrdinalType tSuperscriptLowerBound = 1;
+    constexpr Plato::OrdinalType tSuperscriptUpperBound = 10;
+    Plato::ScalarVector tTrialState("trial state", tTotalNumDofs);
+    for(Plato::OrdinalType tIndex = tSuperscriptLowerBound; tIndex <= tSuperscriptUpperBound; tIndex++)
+    {
+        Plato::Scalar tEpsilon = tEpsilon = static_cast<Plato::Scalar>(1) /
+                std::pow(static_cast<Plato::Scalar>(10), tIndex);
+        // four point finite difference approximation
+        Plato::update(1.0, tState, 0.0, tTrialState);
+        Plato::update(tEpsilon, tStep, 1.0, tTrialState);
+        tWorksetBase.worksetState(tTrialState, tStateWS);
+        Plato::fill(static_cast<Plato::Scalar>(0.0), tResultWS);
+        Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
+        Plato::Scalar tObjFuncValueOne = Plato::assemble_scalar_func_value<Plato::Scalar>(tNumCells, tResultWS);
+
+        Plato::update(1.0, tState, 0.0, tTrialState);
+        Plato::update(-tEpsilon, tStep, 1.0, tTrialState);
+        tWorksetBase.worksetState(tTrialState, tStateWS);
+        Plato::fill(static_cast<Plato::Scalar>(0.0), tResultWS);
+        Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
+        Plato::Scalar tObjFuncValueTwo = Plato::assemble_scalar_func_value<Plato::Scalar>(tNumCells, tResultWS);
+
+        Plato::update(1.0, tState, 0.0, tTrialState);
+        Plato::update(2.0 * tEpsilon, tStep, 1.0, tTrialState);
+        tWorksetBase.worksetState(tTrialState, tStateWS);
+        Plato::fill(static_cast<Plato::Scalar>(0.0), tResultWS);
+        Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
+        Plato::Scalar tObjFuncValueThree = Plato::assemble_scalar_func_value<Plato::Scalar>(tNumCells, tResultWS);
+
+        Plato::update(1.0, tState, 0.0, tTrialState);
+        Plato::update(-2.0 * tEpsilon, tStep, 1.0, tTrialState);
+        tWorksetBase.worksetState(tTrialState, tStateWS);
         Plato::fill(static_cast<Plato::Scalar>(0.0), tResultWS);
         Plato::evaluate<tSpaceDim>(*tMesh, tStateWS, tControlWS, tConfigWS, tResultWS);
         Plato::Scalar tObjFuncValueFour = Plato::assemble_scalar_func_value<Plato::Scalar>(tNumCells, tResultWS);
