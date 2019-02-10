@@ -17,8 +17,6 @@
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 
-#include "plato/ApplyWeighting.hpp"
-
 namespace Plato
 {
 
@@ -205,7 +203,6 @@ inline void evaluate(const Omega_h::Mesh & aMesh,
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
 
     SIMP tPenaltySIMP;
-    ApplyWeighting<SpaceDim, tNumVoigtTerms, SIMP> tApplyWeighting(tPenaltySIMP);
     Strain<SpaceDim> tCauchyStrain;
     Plato::VonMisesYield<SpaceDim> tVonMises;
     LinearStress<SpaceDim> tCauchyStress(tCellStiffMatrix);
