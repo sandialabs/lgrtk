@@ -105,8 +105,14 @@ private:
 
     Plato::Scalar mStressLimit;
     Plato::Scalar mAugLagPenalty;
-    Plato::Scalar mMassMultiplierLowerBound;
-    Plato::Scalar mMassMultiplierUpperBound;
+    Plato::Scalar mAugLagPenaltyUpperBound;
+    Plato::Scalar mMassMultipliersLowerBound;
+    Plato::Scalar mMassMultipliersUpperBound;
+    Plato::Scalar mMassNormalizationMultiplier;
+    Plato::Scalar mInitialMassMultipliersValue;
+    Plato::Scalar mInitialLagrangeMultipliersValue;
+    Plato::Scalar mAugLagPenaltyExpansionMultiplier;
+    Plato::Scalar mMassMultiplierUpperBoundReductionParam;
 
     Plato::ScalarVector mMassMultipliers;
     Plato::ScalarVector mLagrangeMultipliers;
@@ -115,15 +121,47 @@ private:
 private:
     /******************************************************************************//**
      * @brief Allocate member data
-     * @param [in] aProblemParams input parameters database
-     **********************************************************************************/
-    void initialize(Teuchos::ParameterList & aProblemParams)
+     * @param [in] aInputParams input parameters database
+    **********************************************************************************/
+    void initialize(Teuchos::ParameterList & aInputParams)
     {
-        Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
+        Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aInputParams);
         auto tMaterialModel = tMaterialModelFactory.create();
         mCellStiffMatrix = tMaterialModel->getStiffnessMatrix();
 
-        Plato::fill(0.01, mLagrangeMultipliers);
+        this->readInputs(aInputParams);
+
+        Plato::fill(mInitialMassMultipliersValue, mMassMultipliers);
+        Plato::fill(mInitialLagrangeMultipliersValue, mLagrangeMultipliers);
+    }
+
+    /******************************************************************************//**
+     * @brief Read user inputs
+     * @param [in] aInputParams input parameters database
+    **********************************************************************************/
+    void readInputs(Teuchos::ParameterList & aInputParams)
+    {
+        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
+        mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
+        mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
+        mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
+        mMassMultipliersLowerBound = tParams.get<Plato::Scalar>("Mass Multiplier Lower Bound", 0.0);
+        mMassMultipliersUpperBound = tParams.get<Plato::Scalar>("Mass Multiplier Upper Bound", 4.0);
+        mInitialMassMultipliersValue = tParams.get<Plato::Scalar>("Initial Mass Multiplier", 0.0);
+        mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
+        mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
+        mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.05);
+        mMassMultiplierUpperBoundReductionParam = tParams.get<Plato::Scalar>("Mass Multiplier Reduction Multiplier", 0.95);
+    }
+
+    /******************************************************************************//**
+     * @brief Update augmented Lagrangian penalty and upper bound on mass multipliers.
+    **********************************************************************************/
+    void updateAugLagPenaltyMultipliers()
+    {
+        mAugLagPenalty = mAugLagPenaltyExpansionMultiplier * mAugLagPenalty;
+        mAugLagPenalty = std::min(mAugLagPenalty, mAugLagPenaltyUpperBound);
+        mMassMultipliersUpperBound = mMassMultipliersUpperBound * mMassMultiplierUpperBoundReductionParam;
     }
 
 public:
@@ -141,8 +179,14 @@ public:
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Von Mises Criterion"),
             mStressLimit(1),
             mAugLagPenalty(0.1),
-            mMassMultiplierLowerBound(0),
-            mMassMultiplierUpperBound(4),
+            mAugLagPenaltyUpperBound(100),
+            mMassMultipliersLowerBound(0),
+            mMassMultipliersUpperBound(4),
+            mMassNormalizationMultiplier(1.0),
+            mInitialMassMultipliersValue(0.0),
+            mInitialLagrangeMultipliersValue(0.01),
+            mAugLagPenaltyExpansionMultiplier(1.05),
+            mMassMultiplierUpperBoundReductionParam(0.95),
             mMassMultipliers("Mass Multipliers", aMesh.nelems()),
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
@@ -159,12 +203,19 @@ public:
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Von Mises Criterion"),
             mStressLimit(1),
             mAugLagPenalty(0.1),
-            mMassMultiplierLowerBound(0),
-            mMassMultiplierUpperBound(4),
+            mAugLagPenaltyUpperBound(100),
+            mMassMultipliersLowerBound(0),
+            mMassMultipliersUpperBound(4),
+            mMassNormalizationMultiplier(1.0),
+            mInitialMassMultipliersValue(0.0),
+            mInitialLagrangeMultipliersValue(0.01),
+            mAugLagPenaltyExpansionMultiplier(1.05),
+            mMassMultiplierUpperBoundReductionParam(0.95),
             mMassMultipliers("Mass Multipliers", aMesh.nelems()),
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
-        Plato::fill(0.01, mLagrangeMultipliers);
+        Plato::fill(mInitialMassMultipliersValue, mMassMultipliers);
+        Plato::fill(mInitialLagrangeMultipliersValue, mLagrangeMultipliers);
     }
 
     /******************************************************************************//**
@@ -172,6 +223,24 @@ public:
      **********************************************************************************/
     virtual ~AugLagStressCriterion()
     {
+    }
+
+    /******************************************************************************//**
+     * @brief Return augmented Lagrangian penalty multiplier
+     * @return augmented Lagrangian penalty multiplier
+    **********************************************************************************/
+    Plato::Scalar getAugLagPenalty() const
+    {
+        return (mAugLagPenalty);
+    }
+
+    /******************************************************************************//**
+     * @brief Return upper bound on mass multipliers
+     * @return upper bound on mass multipliers
+    **********************************************************************************/
+    Plato::Scalar getMassMultipliersUpperBound() const
+    {
+        return (mMassMultipliersUpperBound);
     }
 
     /******************************************************************************//**
@@ -250,6 +319,7 @@ public:
                        const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
     {
         this->updateMultipliers(aStateWS, aControlWS, aConfigWS);
+        this->updateAugLagPenaltyMultipliers();
     }
 
     /******************************************************************************//**
@@ -286,6 +356,7 @@ public:
         auto tAugLagPenalty = mAugLagPenalty;
         auto tMassMultipliers = mMassMultipliers;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
+        auto tMassNormalizationMultiplier = mMassNormalizationMultiplier;
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
@@ -323,7 +394,7 @@ public:
             // Compute mass contribution to augmented Lagrangian function
             ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
             tCellMass *= tCellVolume(tCellOrdinal);
-            ResultT tMassContribution = tMassMultipliers(tCellOrdinal) * tCellMass;
+            ResultT tMassContribution = (tMassMultipliers(tCellOrdinal) * tCellMass) / tMassNormalizationMultiplier;
 
             // Compute augmented Lagrangian
             aResultWS(tCellOrdinal) = tMassContribution + tStressContribution;
@@ -361,8 +432,8 @@ public:
         auto tAugLagPenalty = mAugLagPenalty;
         auto tMassMultipliers = mMassMultipliers;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
-        auto tMassMultiplierLowerBound = mMassMultiplierLowerBound;
-        auto tMassMultiplierUpperBound = mMassMultiplierUpperBound;
+        auto tMassMultiplierLowerBound = mMassMultipliersLowerBound;
+        auto tMassMultiplierUpperBound = mMassMultipliersUpperBound;
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
