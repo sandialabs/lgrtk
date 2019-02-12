@@ -25,6 +25,20 @@
 namespace PlatoUnitTests
 {
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_dot)
+{
+  constexpr Plato::OrdinalType numVerts = 10;
+  Plato::ScalarVector tVecA("Vec A", numVerts);
+  Plato::fill(1.0, tVecA);
+  Plato::ScalarVector tVecB("Vec B", numVerts);
+  Plato::fill(2.0, tVecB);
+
+  const Plato::Scalar tOutput = Plato::dot(tVecA, tVecB);
+
+  constexpr Plato::Scalar tTolerance = 1e-4;
+  TEST_FLOATING_EQUALITY(20., tOutput, tTolerance);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_fill)
 {
   // create test mesh
