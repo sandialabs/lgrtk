@@ -14,8 +14,31 @@
 namespace Plato
 {
 
+/******************************************************************************//**
+ * @brief Print input 1D container to terminal
+ * @param [in] aInput 1D container
+**********************************************************************************/
+template<typename VecT>
+inline void print(const VecT & aInput)
+{
+    Plato::OrdinalType tSize = aInput.size();
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tSize), LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+            {
+                printf("X[%d] = %f\n", aIndex, aInput(aIndex));
+            }, "fill vector");
+    printf("\n");
+}
+// function print
+
+/******************************************************************************//**
+ * @brief Copy 1D view into Omega_h 1D array
+ * @param [in] aStride stride
+ * @param [in] aNumVertices number of mesh vertices
+ * @param [in] aInput 1D view
+ * @param [out] aOutput 1D Omega_h array
+**********************************************************************************/
 template<const Plato::OrdinalType NumDofsPerNodeInInputArray, const Plato::OrdinalType NumDofsPerNodeInOutputArray>
-void inline copy(const Plato::OrdinalType & aStride,
+inline void copy(const Plato::OrdinalType & aStride,
                  const Plato::OrdinalType & aNumVertices,
                  const Plato::ScalarVector & aInput,
                  Omega_h::Write<Omega_h::Real> & aOutput)
@@ -30,6 +53,7 @@ void inline copy(const Plato::OrdinalType & aStride,
         }
     },"PlatoDriver::copy");
 }
+// function copy
 
 } // namespace Plato
 
