@@ -15,108 +15,46 @@
 #include "plato/LinearStress.hpp"
 #include "plato/Plato_Diagnostics.hpp"
 #include "plato/Plato_VonMisesYield.hpp"
+#include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 
 namespace Plato
 {
 
 /******************************************************************************//**
- * @brief Print input 1D container to terminal
- * @param [in] aInput 1D container
- **********************************************************************************/
-template<typename VecT>
-inline void print(const VecT & aInput)
-{
-    Plato::OrdinalType tSize = aInput.size();
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tSize), LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
-            {
-                printf("X[%d] = %f\n", aIndex, aInput(aIndex));
-            }, "fill vector");
-    printf("\n");
-}
-
-/******************************************************************************//**
- * @brief Compute cell/element mass, /f$ \sum_{i=1}^{N} \[M\] \{z\} /f$, where
- * /f$ \[M\] /f$ is the mass matrix, /f$ \{z\} /f$ is the control vector and
- * /f$ N /f$ is the number of nodes.
- * @param [in] aCellOrdinal cell/element index
- * @param [in] aBasisFunc 1D container of cell basis functions
- * @param [in] aCellControls 2D container of cell controls
- * @return cell/element penalized mass
- **********************************************************************************/
-template<Plato::OrdinalType CellNumNodes, typename ControlType>
-DEVICE_TYPE inline ControlType
-cell_mass(const Plato::OrdinalType & aCellOrdinal,
-        const Plato::ScalarVectorT<Plato::Scalar> & aBasisFunc,
-        const Plato::ScalarMultiVectorT<ControlType> & aCellControls)
-{
-    ControlType tCellMass = 0.0;
-    for(Plato::OrdinalType tIndex_I = 0; tIndex_I < CellNumNodes; tIndex_I++)
-    {
-        ControlType tNodalMass = 0.0;
-        for(Plato::OrdinalType tIndex_J = 0; tIndex_J < CellNumNodes; tIndex_J++)
-        {
-            tNodalMass += aBasisFunc(tIndex_I) * aBasisFunc(tIndex_J)
-            * aCellControls(aCellOrdinal, tIndex_J);
-        }
-        tCellMass += tNodalMass;
-    }
-    return (tCellMass);
-}
-
-/******************************************************************************//**
- * @brief Compute average cell density
- * @param [in] aCellOrdinal cell/element index
- * @param [in] aNumControls number of controls
- * @param [in] aCellControls 2D container of cell controls
- * @return average density for this cell/element
- **********************************************************************************/
-template<Plato::OrdinalType NumControls, typename ControlType>
-DEVICE_TYPE inline ControlType
-cell_density(const Plato::OrdinalType & aCellOrdinal,
-        const Plato::ScalarMultiVectorT<ControlType> & aCellControls)
-{
-    ControlType tCellDensity = 0.0;
-    for(Plato::OrdinalType tIndex = 0; tIndex < NumControls; tIndex++)
-    {
-        tCellDensity += aCellControls(aCellOrdinal, tIndex);
-    }
-    tCellDensity /= NumControls;
-    return (tCellDensity);
-}
-// function cell_density
-
+ * @brief Augmented Lagrangian stress constraint criterion
+**********************************************************************************/
 template<typename EvaluationType>
 class AugLagStressCriterion :
         public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
         public AbstractScalarFunction<EvaluationType>
 {
 private:
-    static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell;
+    static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
 
-    using AbstractScalarFunction<EvaluationType>::mMesh;
+    using AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
 
-    using StateT = typename EvaluationType::StateScalarType;
-    using ConfigT = typename EvaluationType::ConfigScalarType;
-    using ResultT = typename EvaluationType::ResultScalarType;
-    using ControlT = typename EvaluationType::ControlScalarType;
+    using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
+    using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
+    using ResultT = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
+    using ControlT = typename EvaluationType::ControlScalarType; /*!< control variables automatic differentiation type */
 
-    Plato::Scalar mStressLimit;
-    Plato::Scalar mAugLagPenalty;
-    Plato::Scalar mAugLagPenaltyUpperBound;
-    Plato::Scalar mMassMultipliersLowerBound;
-    Plato::Scalar mMassMultipliersUpperBound;
-    Plato::Scalar mMassNormalizationMultiplier;
-    Plato::Scalar mInitialMassMultipliersValue;
-    Plato::Scalar mInitialLagrangeMultipliersValue;
-    Plato::Scalar mAugLagPenaltyExpansionMultiplier;
-    Plato::Scalar mMassMultiplierUpperBoundReductionParam;
+    Plato::Scalar mStressLimit; /*!< stress limit/upper bound */
+    Plato::Scalar mAugLagPenalty; /*!< augmented Lagrangian penalty */
+    Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
+    Plato::Scalar mMassMultipliersLowerBound; /*!< lower bound on mass multipliers */
+    Plato::Scalar mMassMultipliersUpperBound; /*!< upper bound on mass multipliers */
+    Plato::Scalar mMassNormalizationMultiplier; /*!< normalization multipliers for mass criterion */
+    Plato::Scalar mInitialMassMultipliersValue; /*!< initial value for mass multipliers */
+    Plato::Scalar mInitialLagrangeMultipliersValue; /*!< initial value for Lagrange multipliers */
+    Plato::Scalar mAugLagPenaltyExpansionMultiplier; /*!< expanxion parameter for augmented Lagrangian penalty */
+    Plato::Scalar mMassMultiplierUpperBoundReductionParam; /*!< reduction parameter for upper bound on mass multipliers */
 
-    Plato::ScalarVector mMassMultipliers;
-    Plato::ScalarVector mLagrangeMultipliers;
-    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix;
+    Plato::ScalarVector mMassMultipliers; /*!< mass multipliers */
+    Plato::ScalarVector mLagrangeMultipliers; /*!< Lagrange multipliers */
+    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
 
 private:
     /******************************************************************************//**
@@ -170,12 +108,12 @@ public:
      * @param [in] aMesh mesh database
      * @param [in] aMeshSets side sets database
      * @param [in] aDataMap PLATO Engine and Analyze data map
-     * @param [in] aProblemParams input parameters database
+     * @param [in] aInputParams input parameters database
      **********************************************************************************/
     AugLagStressCriterion(Omega_h::Mesh & aMesh,
                           Omega_h::MeshSets & aMeshSets,
                           Plato::DataMap & aDataMap,
-                          Teuchos::ParameterList & aProblemParams) :
+                          Teuchos::ParameterList & aInputParams) :
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Von Mises Criterion"),
             mStressLimit(1),
             mAugLagPenalty(0.1),
@@ -190,7 +128,7 @@ public:
             mMassMultipliers("Mass Multipliers", aMesh.nelems()),
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
-        this->initialize(aProblemParams);
+        this->initialize(aInputParams);
     }
 
     /******************************************************************************//**
