@@ -49,8 +49,6 @@ class HeatEquationResidual :
     Plato::Scalar m_cellDensity;
     Plato::Scalar m_cellSpecificHeat;
     
-    Plato::Scalar m_quadratureWeight;
-
     IndicatorFunctionType m_indicatorFunction;
     ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
     ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
@@ -80,7 +78,6 @@ class HeatEquationResidual :
       m_cellDensity      = materialModel->getMassDensity();
       m_cellSpecificHeat = materialModel->getSpecificHeat();
 
-      m_quadratureWeight = m_cubatureRule->getCubWeight();
 
       // parse boundary Conditions
       // 
@@ -144,7 +141,7 @@ class HeatEquationResidual :
     
       auto& applyFluxWeighting  = m_applyFluxWeighting;
       auto& applyMassWeighting  = m_applyMassWeighting;
-      auto quadratureWeight = m_quadratureWeight;
+      auto quadratureWeight = m_cubatureRule->getCubWeight();
       Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
     

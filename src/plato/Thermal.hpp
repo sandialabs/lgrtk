@@ -8,6 +8,7 @@
 #include "plato/ThermostaticResidual.hpp"
 #include "plato/HeatEquationResidual.hpp"
 #include "plato/InternalThermalEnergy.hpp"
+#include "plato/TemperaturePNorm.hpp"
 #include "plato/ThermalFluxRate.hpp"
 #include "plato/FluxPNorm.hpp"
 #include "plato/Volume.hpp"
@@ -159,6 +160,21 @@ struct FunctionFactory{
       } else
       if( penaltyType == "Heaviside" ){
         return std::make_shared<InternalThermalEnergyInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+      } else {
+        throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+      }
+    } else
+    if( strScalarFunctionType == "Temperature Average" ){
+      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      std::string penaltyType = penaltyParams.get<std::string>("Type");
+      if( penaltyType == "SIMP" ){
+        return std::make_shared<TemperaturePNormInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+      } else
+      if( penaltyType == "RAMP" ){
+        return std::make_shared<TemperaturePNormInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+      } else
+      if( penaltyType == "Heaviside" ){
+        return std::make_shared<TemperaturePNormInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }

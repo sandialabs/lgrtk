@@ -389,7 +389,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval3D)
 
         // Compute relaxed Von Mises stress constraint
         const Plato::Scalar tLambdaOverPenalty = static_cast<Plato::Scalar>(-1.0) * tDeviceLambdaView(tCellOrdinal) / tAugLagPenaltyParam;
-        const Plato::Scalar tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
+        const Plato::Scalar tRelaxedStressConstraint = Omega_h::max2(tPenalizedStressConstraint, tLambdaOverPenalty);
         printf("Cell %d : Relaxed stress contribution = %f\n", tCellOrdinal, tRelaxedStressConstraint);
 
         // Compute Von Mises stress contribution to augmented Lagrangian function
@@ -504,7 +504,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
         const Plato::Scalar tOptionOne = static_cast<Plato::Scalar>(0.7) * tMassMultipliers(tCellOrdinal) - static_cast<Plato::Scalar>(0.1);
         const Plato::Scalar tOptionTwo = static_cast<Plato::Scalar>(2.5) * tMassMultipliers(tCellOrdinal) + static_cast<Plato::Scalar>(0.5);
         tMassMultipliers(tCellOrdinal) = tMassMultiplierMeasures(tCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
-                max(tOptionOne, tMassMultiplierLowerBound) : min(tOptionTwo, tMassMultiplierUpperBound);
+                Omega_h::max2(tOptionOne, tMassMultiplierLowerBound) : min(tOptionTwo, tMassMultiplierUpperBound);
     }, "Update Mass Multipliers");
 }
 

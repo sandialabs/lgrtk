@@ -41,6 +41,26 @@ class ApplyWeighting : public Simplex<SpaceDim>
         voigtTensor(cellOrdinal,iVoigt) *= m_penaltyFunction(cellDensity);
       }
     }
+    template<typename InputScalarType,
+             typename OutputScalarType, 
+             typename WeightScalarType>
+    DEVICE_TYPE inline void
+    operator()( int cellOrdinal,
+                Plato::ScalarMultiVectorT<InputScalarType> const& input,
+                Plato::ScalarMultiVectorT<OutputScalarType> const& output,
+                Plato::ScalarMultiVectorT<WeightScalarType> const& rho) const {
+
+      // apply weighting
+      //
+      WeightScalarType cellDensity = 0.0;
+      for( int iNode=0; iNode<m_numNodesPerCell; iNode++){
+        cellDensity += rho(cellOrdinal, iNode);
+      }
+      cellDensity = (cellDensity/m_numNodesPerCell);
+      for( int iVoigt=0; iVoigt<NumVoigtTerms; iVoigt++){
+        output(cellOrdinal,iVoigt) = m_penaltyFunction(cellDensity)*input(cellOrdinal, iVoigt);
+      }
+    }
     template<typename ResultScalarType, typename WeightScalarType>
     DEVICE_TYPE inline void
     operator()( int cellOrdinal,
@@ -55,6 +75,24 @@ class ApplyWeighting : public Simplex<SpaceDim>
       }
       cellDensity = (cellDensity/m_numNodesPerCell);
       result(cellOrdinal) *= m_penaltyFunction(cellDensity);
+    }
+    template<typename InputScalarType, 
+             typename OutputScalarType, 
+             typename WeightScalarType>
+    DEVICE_TYPE inline void
+    operator()( int cellOrdinal,
+                Plato::ScalarVectorT<InputScalarType> const& input,
+                Plato::ScalarVectorT<OutputScalarType>& output,
+                Plato::ScalarMultiVectorT<WeightScalarType> const& rho) const {
+
+      // apply weighting
+      //
+      WeightScalarType cellDensity = 0.0;
+      for( int iNode=0; iNode<m_numNodesPerCell; iNode++){
+        cellDensity += rho(cellOrdinal, iNode);
+      }
+      cellDensity = (cellDensity/m_numNodesPerCell);
+      output(cellOrdinal) = m_penaltyFunction(cellDensity)*input(cellOrdinal);
     }
 };
 
