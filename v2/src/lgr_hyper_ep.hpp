@@ -1,6 +1,23 @@
 #ifndef LGR_HYPER_EP_HPP
 #define LGR_HYPER_EP_HPP
 
+//#define LGR_COMPILE_TIME_MATERIAL_BRANCHES
+
+#ifdef LGR_COMPILE_TIME_MATERIAL_BRANCHES
+// Allows for compile time branching in the material model.
+// The variables props_##ARG1 must be defined in lgr_hyper_ep_user.hpp.
+#define IF_MAT_PROPS_EQ(ARG1, ARG2) if constexpr(props_##ARG1 == ARG2)
+#define IF_MAT_PROPS_NEQ(ARG1, ARG2) if constexpr(props_##ARG1 != ARG2)
+#define IF_MAT_PROPS(ARG1) if constexpr(props_##ARG1)
+
+#else
+// Allows for run time branching in the material model.
+// The variables props.ARG1 are defined by reading the user input.
+#define IF_MAT_PROPS_EQ(ARG1, ARG2) if (props.ARG1 == ARG2)
+#define IF_MAT_PROPS_NEQ(ARG1, ARG2) if (props.ARG1 != ARG2)
+#define IF_MAT_PROPS(ARG1) if (props.ARG1)
+#endif
+
 #include <string>
 
 #include <lgr_element_types.hpp>
@@ -64,6 +81,8 @@ struct Properties {
   double D3;
   double D4;
   double D5;
+  double D6;
+  double D7;
   double D0;
   double DC;
   double eps_f_min;
@@ -77,6 +96,12 @@ struct Properties {
         allow_no_shear(false),
         set_stress_to_zero(false) {}
 };
+
+using tensor_type = Matrix<3, 3>;
+
+#ifdef LGR_COMPILE_TIME_MATERIAL_BRANCHES
+#include "lgr_hyper_ep_user.hpp"
+#endif
 
 char const* get_error_code_string(ErrorCode code);
 void read_and_validate_elastic_params(
@@ -159,16 +184,16 @@ OMEGA_H_INLINE
 double flow_stress(Properties props, double const temp, double const ep,
     double const epdot, double const dp) {
   auto Y = Omega_h::ArithTraits<double>::max();
-  if (props.hardening == Hardening::NONE) {
+  IF_MAT_PROPS_EQ(hardening, Hardening::NONE) {
     Y = props.A;
-  } else if (props.hardening == Hardening::LINEAR_ISOTROPIC) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::LINEAR_ISOTROPIC) {
     Y = props.A + props.B * ep;
-  } else if (props.hardening == Hardening::POWER_LAW) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::POWER_LAW) {
     auto const a = props.A;
     auto const b = props.B;
     auto const n = props.n;
     Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-  } else if (props.hardening == Hardening::ZERILLI_ARMSTRONG) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::ZERILLI_ARMSTRONG) {
     auto const a = props.A;
     auto const b = props.B;
     auto const n = props.n;
@@ -177,12 +202,12 @@ double flow_stress(Properties props, double const temp, double const ep,
     auto const C2 = props.C2;
     auto const C3 = props.C3;
     auto alpha = C3;
-    if (props.rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
+    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
       auto const C4 = props.C4;
       alpha -= C4 * std::log(epdot);
     }
     Y += (C1 + C2 * std::sqrt(ep)) * std::exp(-alpha * temp);
-  } else if (props.hardening == Hardening::JOHNSON_COOK) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::JOHNSON_COOK) {
     auto const ajo = props.A;
     auto const bjo = props.B;
     auto const njo = props.n;
@@ -204,7 +229,7 @@ double flow_stress(Properties props, double const temp, double const ep,
       Y *= (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
     }
   }
-  if (props.rate_dep == RateDependence::JOHNSON_COOK) {
+  IF_MAT_PROPS_EQ(rate_dep, RateDependence::JOHNSON_COOK) {
     auto const cjo = props.C4;
     auto const epdot0 = props.ep_dot_0;
     auto const rfac = epdot / epdot0;
@@ -224,14 +249,14 @@ OMEGA_H_INLINE
 double dflow_stress(Properties const props, double const temp, double const ep,
     double const epdot, double const dtime, double const dp) {
   double deriv = 0.;
-  if (props.hardening == Hardening::LINEAR_ISOTROPIC) {
+  IF_MAT_PROPS_EQ(hardening, Hardening::LINEAR_ISOTROPIC) {
     auto const b = props.B;
     deriv = b;
-  } else if (props.hardening == Hardening::POWER_LAW) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::POWER_LAW) {
     auto const b = props.B;
     auto const n = props.n;
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-  } else if (props.hardening == Hardening::ZERILLI_ARMSTRONG) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::ZERILLI_ARMSTRONG) {
     auto const b = props.B;
     auto const n = props.n;
     deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
@@ -239,19 +264,19 @@ double dflow_stress(Properties const props, double const temp, double const ep,
     auto const C2 = props.C2;
     auto const C3 = props.C3;
     auto alpha = C3;
-    if (props.rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
+    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
       auto const C4 = props.C4;
       alpha -= C4 * std::log(epdot);
     }
     deriv +=
         .5 * C2 / std::sqrt(ep <= 0.0 ? 1.e-8 : ep) * std::exp(-alpha * temp);
-    if (props.rate_dep == RateDependence::ZERILLI_ARMSTRONG) {
+    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
       auto const C4 = props.C4;
       auto const term1 = C1 * C4 * temp * std::exp(-alpha * temp);
       auto const term2 = C2 * sqrt(ep) * C4 * temp * std::exp(-alpha * temp);
       deriv += (term1 + term2) / (epdot <= 0.0 ? 1.e-8 : epdot) / dtime;
     }
-  } else if (props.hardening == Hardening::JOHNSON_COOK) {
+  } else IF_MAT_PROPS_EQ(hardening, Hardening::JOHNSON_COOK) {
     auto const bjo = props.B;
     auto const njo = props.n;
     auto const temp_ref = props.C1;
@@ -268,7 +293,7 @@ double dflow_stress(Properties const props, double const temp, double const ep,
     }
     deriv =
         (ep > 0.0) ? (bjo * njo * std::pow(ep, njo - 1) * temp_contrib) : 0.0;
-    if (props.rate_dep == RateDependence::JOHNSON_COOK) {
+    IF_MAT_PROPS_EQ(rate_dep, RateDependence::JOHNSON_COOK) {
       auto const ajo = props.A;
       auto const cjo = props.C4;
       auto const epdot0 = props.ep_dot_0;
@@ -294,9 +319,10 @@ OMEGA_H_INLINE
 double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
     double const temp, double const /* ep */, double const epdot,
     double const dtime) {
-  if (props.damage == Damage::NONE) {
+  IF_MAT_PROPS_EQ(damage, Damage::NONE) {
     return 0.0;
-  } else if (props.damage == Damage::JOHNSON_COOK) {
+  }
+  else IF_MAT_PROPS_EQ(damage, Damage::JOHNSON_COOK) {
     double tolerance = 1e-10;
     auto const I = identity_matrix<3, 3>();
     auto const T_mean = (trace(T) / 3.0);
@@ -324,10 +350,9 @@ double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
       }
 
       double temp_contrib = 1.0;
-      auto const temp_ref = props.C1;
-      auto const temp_melt = props.C2;
-      if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 !=
-          1.0) {
+      auto const temp_ref = props.D6;
+      auto const temp_melt = props.D7;
+      if (std::abs(temp_melt-Omega_h::ArithTraits<double>::max())+1.0 != 1.0) {
         auto const tstar =
             temp > temp_melt ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
         temp_contrib += props.D5 * tstar;
@@ -523,9 +548,9 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
   Tensor<3> Te;
   auto const Fe = F * invert(Fp);
   ErrorCode err_c = ErrorCode::NOT_SET;
-  if (props.elastic == Elastic::LINEAR_ELASTIC) {
+  IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {
     Te = linear_elastic_stress(props, Fe);
-  } else if (props.elastic == Elastic::NEO_HOOKEAN) {
+  } else IF_MAT_PROPS_EQ(elastic, Elastic::NEO_HOOKEAN) {
     Te = hyper_elastic_stress(props, Fe, jac);
   }
 
@@ -539,18 +564,18 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
   bool is_localized = false;
   auto p = -trace(T) / 3.;
   auto const I = identity_matrix<3, 3>();
-  if (props.damage != Damage::NONE) {
+  IF_MAT_PROPS_NEQ(damage, Damage::NONE) {
     // If the particle has already failed, apply various erosion algorithms
     if (localized > 0.0) {
-      if (props.allow_no_tension) {
+      IF_MAT_PROPS(allow_no_tension) {
         if (p < 0.0) {
           T = 0.0 * I;
         } else {
           T = -p * I;
         }
-      } else if (props.allow_no_shear) {
+      } else IF_MAT_PROPS(allow_no_shear) {
         T = -p * I;
-      } else if (props.set_stress_to_zero) {
+      } else IF_MAT_PROPS(set_stress_to_zero) {
         T = 0.0 * I;
       }
     }
@@ -577,15 +602,15 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
       localized = 1.0;
       dp = 0.0;
       // Apply various erosion algorithms
-      if (props.allow_no_tension) {
+      IF_MAT_PROPS(allow_no_tension) {
         if (p < 0.0) {
           T = 0.0 * I;
         } else {
           T = -p * I;
         }
-      } else if (props.allow_no_shear) {
+      } else IF_MAT_PROPS(allow_no_shear) {
         T = -p * I;
-      } else if (props.set_stress_to_zero) {
+      } else IF_MAT_PROPS(set_stress_to_zero) {
         T = 0.0 * I;
       }
     }
