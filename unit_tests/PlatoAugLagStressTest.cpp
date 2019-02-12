@@ -184,6 +184,15 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Return Lagrange multipliers
+     * @return 1D view of Lagrange multipliers
+    **********************************************************************************/
+    Plato::ScalarVector getLagrangeMultipliers() const
+    {
+        return (mLagrangeMultipliers);
+    }
+
+    /******************************************************************************//**
      * @brief Set stress constraint limit/upper bound
      * @param [in] aInput stress constraint limit
     **********************************************************************************/
@@ -240,7 +249,7 @@ public:
                        const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
                        const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
     {
-        this->updateMassMultipliers(aStateWS, aControlWS, aConfigWS);
+        this->updateMultipliers(aStateWS, aControlWS, aConfigWS);
     }
 
     /******************************************************************************//**
@@ -300,11 +309,11 @@ public:
             ControlT tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
             ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
             ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
-            tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
+                    tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
 
             // Compute relaxed Von Mises stress constraint
             Plato::Scalar tLambdaOverPenalty =
-            static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
+                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
             ResultT tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
 
             // Compute Von Mises stress contribution to augmented Lagrangian function
@@ -322,14 +331,14 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Update mass multipliers
+     * @brief Update Lagrange and mass multipliers
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateMassMultipliers(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
-                               const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
-                               const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
+    void updateMultipliers(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
+                           const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
+                           const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
     {
         // Create Cauchy stress functors
         SIMP tPenaltySIMP;
@@ -340,15 +349,16 @@ public:
 
         // Create test views
         const Plato::OrdinalType tNumCells = mMesh.nelems();
-        Plato::ScalarVectorT<Plato::Scalar> tCellVonMises("von mises", tNumCells);
-        Plato::ScalarVectorT<Plato::Scalar> tCellVolume("cell volume", tNumCells);
+        Plato::ScalarVector tCellVonMises("von mises", tNumCells);
+        Plato::ScalarVector tCellVolume("cell volume", tNumCells);
         Plato::ScalarVector tMassMultiplierMeasures("mass multipliers measures", tNumCells);
-        Plato::ScalarArray3DT<Plato::Scalar> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
-        Plato::ScalarMultiVectorT<Plato::Scalar> tCellCauchyStress("stress", tNumCells, mNumVoigtTerms);
-        Plato::ScalarMultiVectorT<Plato::Scalar> tCellCauchyStrain("strain", tNumCells, mNumVoigtTerms);
+        Plato::ScalarArray3D tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
+        Plato::ScalarMultiVector tCellCauchyStress("stress", tNumCells, mNumVoigtTerms);
+        Plato::ScalarMultiVector tCellCauchyStrain("strain", tNumCells, mNumVoigtTerms);
 
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tStressLimit = mStressLimit;
+        auto tAugLagPenalty = mAugLagPenalty;
         auto tMassMultipliers = mMassMultipliers;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
         auto tMassMultiplierLowerBound = mMassMultiplierLowerBound;
@@ -373,11 +383,32 @@ public:
             Plato::Scalar tCellDensity = Plato::cell_density<mNumNodesPerCell>(tCellOrdinal, aControlWS);
             tMassMultiplierMeasures(tCellOrdinal) = tVonMisesOverStressLimit * pow(tCellDensity, static_cast<Plato::Scalar>(0.5));
 
-            const Plato::Scalar tOptionOne = static_cast<Plato::Scalar>(0.7) * tMassMultipliers(tCellOrdinal) - static_cast<Plato::Scalar>(0.1);
-            const Plato::Scalar tOptionTwo = static_cast<Plato::Scalar>(2.5) * tMassMultipliers(tCellOrdinal) + static_cast<Plato::Scalar>(0.5);
+            // Update mass multipliers
+            const Plato::Scalar tOptionOne =
+                    static_cast<Plato::Scalar>(0.7) * tMassMultipliers(tCellOrdinal) - static_cast<Plato::Scalar>(0.1);
+            const Plato::Scalar tOptionTwo =
+                    static_cast<Plato::Scalar>(2.5) * tMassMultipliers(tCellOrdinal) + static_cast<Plato::Scalar>(0.5);
             tMassMultipliers(tCellOrdinal) = tMassMultiplierMeasures(tCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
                     max(tOptionOne, tMassMultiplierLowerBound) : min(tOptionTwo, tMassMultiplierUpperBound);
-        }, "Update Mass Multipliers");
+
+            // Compute Von Mises stress constraint residual
+            const Plato::Scalar tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
+            const Plato::Scalar tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
+            const Plato::Scalar tSuggestedPenalizedStressConstraint =
+                    tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
+                    tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
+
+            // Compute relaxed stress constraint
+            const Plato::Scalar tLambdaOverPenalty =
+                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
+            const Plato::Scalar tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
+
+            // Update Lagrange multipliers
+            const Plato::Scalar tSuggestedLagrangeMultiplier =
+                    tLagrangeMultipliers(tCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
+            tLagrangeMultipliers(tCellOrdinal) = max(tSuggestedLagrangeMultiplier, 0.0);
+        }, "Update Multipliers");
     }
 };
 // class AugLagStressCriterion
@@ -661,7 +692,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradU_3D)
     Plato::test_partial_state<Jacobian, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tCriterion);
 }
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMultipliers1)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -706,7 +737,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
     const Plato::OrdinalType tNumDofs = tNumVerts * tSpaceDim;
     Plato::ScalarVector tState("State", tNumDofs);
     auto tHostState = Kokkos::create_mirror(tState);
-    Plato::random(0.1, 0.5, tHostState);
+    tHostState(0) = 0.4360751; tHostState(1) = 0.2577532;  tHostState(2) = 0.4132397;
+    tHostState(3) = 0.4193760; tHostState(4) = 0.4646589;  tHostState(5) = 0.1790205;
+    tHostState(6) = 0.2340891; tHostState(7) = 0.4072918;  tHostState(8) = 0.2111099;
+    tHostState(9) = 0.3215880; tHostState(10) = 0.2909588;  tHostState(11) = 0.3515484;
+    tHostState(12) = 0.2459138; tHostState(13) = 0.3053604;  tHostState(14) = 0.4808919;
+    tHostState(15) = 0.4664780; tHostState(16) = 0.3542847;  tHostState(17) = 0.3869188;
+    tHostState(18) = 0.1566410; tHostState(19) = 0.3427876;  tHostState(20) = 0.1065202;
+    tHostState(21) = 0.1971547; tHostState(22) = 0.1548926;  tHostState(23) = 0.4216707;
     Kokkos::deep_copy(tState, tHostState);
     Plato::ScalarMultiVectorT<Plato::Scalar> tStateWS("state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tState, tStateWS);
@@ -714,14 +752,98 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMassMultipliers)
     // TEST UPDATE PROBLEM FUNCTION
     tCriterion.updateProblem(tStateWS, tControlWS, tConfigWS);
     tMassMultipliers = tCriterion.getMassMultipliers();
+    auto tLagrangeMultipliers = tCriterion.getLagrangeMultipliers();
 
     constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold(tNumCells, 0.525);
-    auto tHostMultipliers = Kokkos::create_mirror(tMassMultipliers);
-    Kokkos::deep_copy(tHostMultipliers, tMassMultipliers);
+    std::vector<Plato::Scalar> tGoldMassMultipliers(tNumCells, 0.525);
+    std::vector<Plato::Scalar> tGoldLagrangeMultipliers(tNumCells, 0.01);
+    auto tHostMassMultipliers = Kokkos::create_mirror(tMassMultipliers);
+    Kokkos::deep_copy(tHostMassMultipliers, tMassMultipliers);
+    auto tHostLagrangeMultipliers = Kokkos::create_mirror(tLagrangeMultipliers);
+    Kokkos::deep_copy(tHostLagrangeMultipliers, tLagrangeMultipliers);
+
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
     {
-        TEST_FLOATING_EQUALITY(tGold[tIndex], tHostMultipliers(tIndex), tTolerance);
+        TEST_FLOATING_EQUALITY(tGoldMassMultipliers[tIndex], tHostMassMultipliers(tIndex), tTolerance);
+        TEST_FLOATING_EQUALITY(tGoldLagrangeMultipliers[tIndex], tHostLagrangeMultipliers(tIndex), tTolerance);
+    }
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMultipliers2)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    using Residual = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual;
+    Plato::AugLagStressCriterion<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+
+    // SET INPUT DATA
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    Plato::ScalarVector tMassMultipliers("Mass Multiplier", tNumCells);
+    Plato::fill(0.01, tMassMultipliers);
+    tCriterion.setMassMultipliers(tMassMultipliers);
+
+    constexpr Plato::Scalar tYoungsModulus = 1;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    tCriterion.setCellStiffMatrix(tCellStiffMatrix);
+
+    // CREATE WORKSETS FOR TEST
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+
+    // Create configuration workset
+    WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<Plato::Scalar> tConfigWS("config workset", tNumCells, tNumNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create control workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("controls", tNumVerts);
+    Plato::fill(0.5, tControl);
+    Plato::ScalarMultiVectorT<Plato::Scalar> tControlWS("control workset", tNumCells, tNumNodesPerCell);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // Create state workset
+    const Plato::OrdinalType tNumDofs = tNumVerts * tSpaceDim;
+    Plato::ScalarVector tState("State", tNumDofs);
+    auto tHostState = Kokkos::create_mirror(tState);
+    tHostState(0) = 4.360751; tHostState(1) = 2.577532;  tHostState(2) = 4.132397;
+    tHostState(3) = 4.193760; tHostState(4) = 4.646589;  tHostState(5) = 1.790205;
+    tHostState(6) = 2.340891; tHostState(7) = 4.072918;  tHostState(8) = 2.111099;
+    tHostState(9) = 3.215880; tHostState(10) = 2.909588;  tHostState(11) = 3.515484;
+    tHostState(12) = 2.459138; tHostState(13) = 3.053604;  tHostState(14) = 4.808919;
+    tHostState(15) = 4.664780; tHostState(16) = 3.542847;  tHostState(17) = 3.869188;
+    tHostState(18) = 1.566410; tHostState(19) = 3.427876;  tHostState(20) = 1.065202;
+    tHostState(21) = 1.971547; tHostState(22) = 1.548926;  tHostState(23) = 4.216707;
+    Kokkos::deep_copy(tState, tHostState);
+    Plato::ScalarMultiVectorT<Plato::Scalar> tStateWS("state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tState, tStateWS);
+
+    // TEST UPDATE PROBLEM FUNCTION
+    tCriterion.updateProblem(tStateWS, tControlWS, tConfigWS);
+    tMassMultipliers = tCriterion.getMassMultipliers();
+    auto tLagrangeMultipliers = tCriterion.getLagrangeMultipliers();
+
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGoldMassMultipliers(tNumCells, 0.);
+    std::vector<Plato::Scalar> tGoldLagrangeMultipliers =
+        {0.0211555, 0.0441683, 0.0943195, 0.0707151, 0.0772896, 0.054743};
+    auto tHostMassMultipliers = Kokkos::create_mirror(tMassMultipliers);
+    Kokkos::deep_copy(tHostMassMultipliers, tMassMultipliers);
+    auto tHostLagrangeMultipliers = Kokkos::create_mirror(tLagrangeMultipliers);
+    Kokkos::deep_copy(tHostLagrangeMultipliers, tLagrangeMultipliers);
+
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
+    {
+        TEST_FLOATING_EQUALITY(tGoldMassMultipliers[tIndex], tHostMassMultipliers(tIndex), tTolerance);
+        TEST_FLOATING_EQUALITY(tGoldLagrangeMultipliers[tIndex], tHostLagrangeMultipliers(tIndex), tTolerance);
     }
 }
 
