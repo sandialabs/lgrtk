@@ -1,0 +1,110 @@
+end time: 0.01
+print all fields: false
+element type: Tet4
+mesh:
+  # Cylinder with height 2, radius 0.5
+  CUBIT:
+    commands: |
+      create cylinder height 2 radius 0.5
+      move volume 1 x 0 y 0 z 1 include_merged
+      volume 1 scheme tetmesh proximity layers off geometry approximation angle 15
+      volume 1 tetmesh growth_factor 1
+      trimesher surface gradation 1.3
+      trimesher volume gradation 1.3
+      volume 1 size auto factor 3.5
+      mesh volume 1
+      set duplicate block elements off
+      block 1 add volume 1
+      block 1 name "gauge_length"
+      sideset 1 add surface 3
+      sideset 1 name "Surf_Top"
+      sideset 2 add surface 2
+      sideset 2 name "Surf_Bottom"
+      export genesis "uniform_tension.exo"
+    Exodus file: uniform_tension.exo
+  mark closest nodes: [['NS_Pin', 'vector(0.0267901, -0.0237694, 0.0)']]
+
+common fields:
+  density: 900000.  #8960
+  #velocity: "vector(0.0, 0.0, 0.025 * x(2) / 2.0)"
+
+material models:
+  -
+    type: linear elastic
+    bulk modulus: 140e9
+    shear modulus: 48e9
+  -
+    type: hyper elastic-plastic
+    sets: ['gauge_length']
+    elastic:
+      hyperelastic: neo hookean
+      E: 200.0e9
+      Nu: 0.333
+    plastic:
+      A: 8.970000E+08
+      hardening:
+        type: johnson cook
+        B: 2.918700E+09
+        N: 3.100000E-01
+        # Temperature dependence
+        T0: 298.0
+        TM: 1e40
+        M: 1.090000E+00
+      rate dependent:
+        type: johnson cook
+        C: 2.500000E-02
+        EPDOT0: 1.0
+      damage:
+        type: johnson cook
+        D0: 0.0
+        DC: 0.4
+        D1: 0.54
+        D2: 4.89
+        D3: -3.03
+        D4: 0.0
+        D5: 0.0
+#        "allow no shear": false
+#        "allow no tension": true
+#        "spall failure strain": 0.6
+#        "set stress to zero": true
+        # Temperature dependence
+        T0: 298.0
+        TM: 1e40
+
+conditions:
+  velocity:
+    -
+      sets: [Surf_Top]
+      at time: 0.0
+      value: "vector(0.0, 0.0, 0.0025)"
+
+  acceleration:
+    -
+      sets: [NS_Pin]
+      value: "vector(0.0, 0.0, 0.0)"
+    -
+      sets: [Surf_Bottom]
+      value: "vector(a(0), a(1), 0.0)"
+    -
+      sets: [Surf_Top]
+      value: "vector(a(0), a(1), 0.0)"
+
+responses:
+  -
+    time period: 0.05
+    type: VTK output
+    path: tet4_uniform_tension
+    fields:
+      - velocity
+      - stress
+      - deformation gradient
+      - equivalent plastic strain
+      - equivalent plastic strain rate
+      - scalar damage
+      - localized
+  -
+    type: command line history
+    scalars:
+      - step
+      - time
+      - dt

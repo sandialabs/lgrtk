@@ -180,7 +180,6 @@ struct Evaluation {
    using GradientX = GradientXTypes<SimplexPhysicsT>;
 };
   
-
-}
+} // namespace Plato
 
 #endif

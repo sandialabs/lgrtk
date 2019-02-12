@@ -112,13 +112,20 @@ void driver(Omega_h::Library* aLibOSH,
             const std::string& aInputFilename,
             const std::string& aVizFilePath)
 {
-    auto& tAssocParamList = aProblemSpec.sublist("Associations");
-    auto tMesh = Omega_h::binary::read(aInputFilename, aLibOSH);
+    Omega_h::Mesh tMesh = Omega_h::read_mesh_file(aInputFilename, aLibOSH->world());
     tMesh.set_parting(Omega_h_Parting::OMEGA_H_GHOSTED);
 
     Omega_h::Assoc tAssoc;
-    Omega_h::update_assoc(&tAssoc, tAssocParamList);
-    auto tMeshSets = Omega_h::invert(&tMesh, tAssoc);
+    if (aProblemSpec.isSublist("Associations"))
+    {
+      auto& tAssocParamList = aProblemSpec.sublist("Associations");
+      Omega_h::update_assoc(&tAssoc, tAssocParamList);
+    } 
+    else {
+      tAssoc[Omega_h::NODE_SET] = tMesh.class_sets;
+      tAssoc[Omega_h::SIDE_SET] = tMesh.class_sets;
+    }
+    Omega_h::MeshSets tMeshSets = Omega_h::invert(&tMesh, tAssoc);
     
     Plato::run<SpatialDim>(aProblemSpec, tMesh, tMeshSets, aVizFilePath);
 }

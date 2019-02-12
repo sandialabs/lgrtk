@@ -12,7 +12,9 @@ volume all scheme tetmesh
 body all size 0.1
 mesh volume all
 nodeset 1440 surface 4
+nodeset 1440 name "ns_1440"
 sideset 2 surface 6
+sideset 2 name "ss_2"
 block 1 volume 1
 block 1 element type TETRA
-export mesh "soap.gen" overwrite
+export mesh "soap.exo" overwrite
