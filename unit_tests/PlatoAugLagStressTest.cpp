@@ -224,6 +224,60 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
     TEST_FLOATING_EQUALITY(0.702721, tObjFuncVal, tTolerance);
 }
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradZ_2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
+    Plato::AugLagStressCriterion<GradientZ> tCriterion(*tMesh, tMeshSets, tDataMap);
+
+    // SET INPUT DATA
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    Plato::ScalarVector tMassMultipliers("Mass Multiplier", tNumCells);
+    Plato::fill(0.1, tMassMultipliers);
+    tCriterion.setMassMultipliers(tMassMultipliers);
+
+    constexpr Plato::Scalar tYoungsModulus = 1;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    tCriterion.setCellStiffMatrix(tCellStiffMatrix);
+    Plato::test_partial_control<GradientZ, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tCriterion);
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradU_2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
+    Plato::AugLagStressCriterion<Jacobian> tCriterion(*tMesh, tMeshSets, tDataMap);
+
+    // SET INPUT DATA
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    Plato::ScalarVector tMassMultipliers("Mass Multiplier", tNumCells);
+    Plato::fill(0.1, tMassMultipliers);
+    tCriterion.setMassMultipliers(tMassMultipliers);
+
+    constexpr Plato::Scalar tYoungsModulus = 1;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    tCriterion.setCellStiffMatrix(tCellStiffMatrix);
+    Plato::test_partial_state<Jacobian, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tCriterion);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradZ_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
