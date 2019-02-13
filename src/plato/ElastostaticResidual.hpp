@@ -13,10 +13,9 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/CellForcing.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
-
-#include "LinearElasticMaterial.hpp"
-#include "NaturalBCs.hpp"
-#include "BodyLoads.hpp"
+#include "plato/LinearElasticMaterial.hpp"
+#include "plato/NaturalBCs.hpp"
+#include "plato/BodyLoads.hpp"
 
 namespace Plato {
 

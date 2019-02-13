@@ -11,16 +11,16 @@
 
 #include <Teuchos_ParameterList.hpp>
 
-#include "ImplicitFunctors.hpp"
-#include "LinearElasticMaterial.hpp"
 
 #include "plato/StateValues.hpp"
 #include "plato/ApplyPenalty.hpp"
 #include "plato/ComplexStrain.hpp"
 #include "plato/InertialForces.hpp"
 #include "plato/ApplyProjection.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/ComplexLinearStress.hpp"
+#include "plato/LinearElasticMaterial.hpp"
 #include "plato/AbstractVectorFunction.hpp"
 #include "plato/ComplexStressDivergence.hpp"
 #include "plato/SimplexStructuralDynamics.hpp"

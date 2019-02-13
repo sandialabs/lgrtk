@@ -1,14 +1,13 @@
 #ifndef INTERNAL_THERMAL_ENERGY_HPP
 #define INTERNAL_THERMAL_ENERGY_HPP
 
-#include "LinearThermalMaterial.hpp"
-
 #include "plato/ScalarGrad.hpp"
 #include "plato/ThermalFlux.hpp"
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/SimplexFadTypes.hpp"
+#include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 
 /******************************************************************************/

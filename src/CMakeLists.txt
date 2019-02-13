@@ -10,8 +10,8 @@ SET(SOURCES
   AdaptRecon.cpp
   LowRmPotentialSolve.cpp
   LowRmRLCCircuit.cpp
-  ElastostaticSolve.cpp
-  LinearElasticMaterial.cpp
+  plato/ElastostaticSolve.cpp
+  plato/LinearElasticMaterial.cpp
   VizOutput.cpp
   CmdLineOutput.cpp
   Basis.cpp

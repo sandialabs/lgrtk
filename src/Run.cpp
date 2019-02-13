@@ -50,12 +50,12 @@
 
 #include "LGRConfig.hpp"
 #include "ErrorHandling.hpp"
-#include "LinearElastostatics.hpp"
+#include "plato/LinearElastostatics.hpp"
 #include "Run.hpp"
 #include "Driver.hpp"
 
 #ifdef LGR_ENABLE_PLATO
-#include "PlatoDriver.hpp"
+#include "plato/PlatoDriver.hpp"
 #endif
 
 namespace lgr {

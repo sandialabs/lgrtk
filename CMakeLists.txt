@@ -254,6 +254,13 @@ if (LGR_ENABLE_PLATO_MPMD)
       exodus
      )
 
+  if (LGR_ENABLE_PLATO_GEOMETRY)
+    find_library(PLATO_GEOMETRY_MLS_LIB NAMES PlatoGeometryMLS PATHS ${PLATO_PREFIX}/lib)
+    find_library(PLATO_GEOMETRY_COGENT_LIB NAMES PlatoGeometryCogent PATHS ${PLATO_PREFIX}/lib)
+    find_package(Pamgen REQUIRED)
+    set(PLATO_LIBS ${PLATO_LIBS} ${PLATO_GEOMETRY_MLS_LIB} ${PLATO_GEOMETRY_COGENT_LIB} pamgen)
+  endif()
+
   target_link_libraries(LGR_MPMD ${PLATO_LIBS} ${PLATO_LIBS} lgrtk)
 
   option(LGR_ENABLE_PLATO_PYTHON "Enable the Plato Python interface" OFF)
@@ -318,6 +325,13 @@ if (LGR_ENABLE_PLATO_MPMD)
       nemesis
       exodus
      )
+
+  if (LGR_ENABLE_PLATO_GEOMETRY)
+    find_library(PLATO_GEOMETRY_MLS_LIB NAMES PlatoGeometryMLS PATHS ${PLATO_PREFIX}/lib)
+    find_library(PLATO_GEOMETRY_COGENT_LIB NAMES PlatoGeometryCogent PATHS ${PLATO_PREFIX}/lib)
+    find_package(Pamgen REQUIRED)
+    set(PLATO_LIBS ${PLATO_LIBS} ${PLATO_GEOMETRY_MLS_LIB} ${PLATO_GEOMETRY_COGENT_LIB} pamgen)
+  endif()
 
   target_link_libraries(ROCKET_MPMD ${PLATO_LIBS} ${PLATO_LIBS} lgrtk)
 

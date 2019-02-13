@@ -12,12 +12,12 @@
 #include "plato/StateValues.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 
-#include "LinearThermalMaterial.hpp"
-#include "AbstractVectorFunctionInc.hpp"
-#include "ImplicitFunctors.hpp"
-#include "ApplyWeighting.hpp"
-#include "NaturalBCs.hpp"
-#include "SimplexFadTypes.hpp"
+#include "plato/LinearThermalMaterial.hpp"
+#include "plato/AbstractVectorFunctionInc.hpp"
+#include "plato/ImplicitFunctors.hpp"
+#include "plato/ApplyWeighting.hpp"
+#include "plato/NaturalBCs.hpp"
+#include "plato/SimplexFadTypes.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>

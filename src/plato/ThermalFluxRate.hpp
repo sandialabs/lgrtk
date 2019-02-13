@@ -1,7 +1,7 @@
 #ifndef THERMAL_FLUX_RATE_HPP
 #define THERMAL_FLUX_RATE_HPP
 
-#include "LinearThermalMaterial.hpp"
+#include "plato/LinearThermalMaterial.hpp"
 
 #include "plato/ScalarGrad.hpp"
 #include "plato/ThermalFlux.hpp"
