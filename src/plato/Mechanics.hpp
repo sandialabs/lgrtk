@@ -6,9 +6,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
-#include "plato/Simplex.hpp"
 #include "plato/SimplexMechanics.hpp"
-#include "plato/AbstractVectorFunction.hpp"
 #include "plato/ElastostaticResidual.hpp"
 #include "plato/InternalElasticEnergy.hpp"
 #include "plato/EffectiveEnergy.hpp"

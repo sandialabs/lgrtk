@@ -12,10 +12,7 @@
 #include "ImplicitFunctors.hpp"
 #include "ApplyConstraints.hpp"
 
-#include "plato/Thermal.hpp"
-#include "plato/Mechanics.hpp"
 #include "plato/VectorFunction.hpp"
-#include "plato/ScalarFunction.hpp"
 #include "plato/ScalarFunction.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
@@ -25,77 +22,91 @@
 #include "AmgXSparseLinearProblem.hpp"
 #endif
 
-/**********************************************************************************/
+/******************************************************************************//**
+ * @brief Manage scalar and vector function evaluations
+**********************************************************************************/
 template<typename SimplexPhysics>
 class Problem: public Plato::AbstractProblem
 {
-/**********************************************************************************/
 private:
 
-    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims;
+    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims; /*!< spatial dimensions */
 
     // required
-    VectorFunction<SimplexPhysics> mEqualityConstraint;
+    VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
 
     // optional
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint;
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective;
+    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
+    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
 
-    Plato::ScalarMultiVector mAdjoint;
-    Plato::ScalarVector mResidual;
-    Plato::ScalarVector mBoundaryLoads;
+    Plato::ScalarMultiVector mAdjoint; /*!< adjoint variables */
+    Plato::ScalarVector mResidual; /*!< residual vector */
+    Plato::ScalarVector mBoundaryLoads; /*!< boundary forces */
 
-    Plato::ScalarMultiVector mStates;
+    Plato::ScalarMultiVector mStates; /*!< state variables */
 
-    bool mIsSelfAdjoint;
+    bool mIsSelfAdjoint; /*!< indicates if problem is self-adjoint */
 
-    Teuchos::RCP<Plato::CrsMatrixType> mJacobian;
+    Teuchos::RCP<Plato::CrsMatrixType> mJacobian; /*!< Jacobian matrix */
 
-    Plato::LocalOrdinalVector mBcDofs;
-    Plato::ScalarVector mBcValues;
+    Plato::LocalOrdinalVector mBcDofs; /*!< list of degrees of freedom associated with the Dirichlet boundary conditions */
+    Plato::ScalarVector mBcValues; /*!< values associated with the Dirichlet boundary conditions */
 
 public:
-    /******************************************************************************/
-    Problem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
-            mEqualityConstraint(aMesh, aMeshSets, mDataMap, aParamList, aParamList.get < std::string > ("PDE Constraint")),
+    /******************************************************************************//**
+     * @brief PLATO problem constructor
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aInputParams input parameters database
+    **********************************************************************************/
+    Problem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams) :
+            mEqualityConstraint(aMesh, aMeshSets, mDataMap, aInputParams, aInputParams.get<std::string>("PDE Constraint")),
             mConstraint(nullptr),
             mObjective(nullptr),
             mResidual("MyResidual", mEqualityConstraint.size()),
             mBoundaryLoads("BoundaryLoads", mEqualityConstraint.size()),
             mStates("States", static_cast<Plato::OrdinalType>(1), mEqualityConstraint.size()),
             mJacobian(Teuchos::null),
-            mIsSelfAdjoint(aParamList.get<bool>("Self-Adjoint", false))
-    /******************************************************************************/
+            mIsSelfAdjoint(aInputParams.get<bool>("Self-Adjoint", false))
     {
-        this->initialize(aMesh, aMeshSets, aParamList);
+        this->initialize(aMesh, aMeshSets, aInputParams);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Set state variables
+     * @param [in] aState 2D view of state variables
+    **********************************************************************************/
     void setState(const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
         Kokkos::deep_copy(mStates, aState);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Return 2D view of state variables
+     * @return aState 2D view of state variables
+    **********************************************************************************/
     Plato::ScalarMultiVector getState()
-    /******************************************************************************/
     {
         return mStates;
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Return 2D view of adjoint variables
+     * @return 2D view of adjoint variables
+    **********************************************************************************/
     Plato::ScalarMultiVector getAdjoint()
-    /******************************************************************************/
     {
         return mAdjoint;
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Apply Dirichlet constraints
+     * @param [in] aMatrix Compressed Row Storage (CRS) matrix
+     * @param [in] aVector 1D view of Right-Hand-Side forces
+    **********************************************************************************/
     void applyConstraints(const Teuchos::RCP<Plato::CrsMatrixType> & aMatrix, const Plato::ScalarVector & aVector)
-    /******************************************************************************/
     {
         if(mJacobian->isBlockMatrix())
         {
@@ -107,9 +118,11 @@ public:
         }
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Apply boundary forces
+     * @param [in/out] aForce 1D view of forces
+    **********************************************************************************/
     void applyBoundaryLoads(const Plato::ScalarVector & aForce)
-    /******************************************************************************/
     {
         auto tBoundaryLoads = mBoundaryLoads;
         auto tNumDofs = aForce.size();
@@ -118,9 +131,24 @@ public:
         }, "add boundary loads");
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Update physics-based parameters within optimization iterations
+     * @param [in] aState 2D container of state variables
+     * @param [in] aControl 1D container of control variables
+    **********************************************************************************/
+    void updateProblem(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    {
+        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
+        mObjective->updateProblem(tStatesSubView, aControl);
+    }
+
+    /******************************************************************************//**
+     * @brief Solve system of equations
+     * @param [in] aControl 1D view of control variables
+     * @return 2D view of state variables
+    **********************************************************************************/
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
         auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
@@ -143,9 +171,13 @@ public:
         return mStates;
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective function
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return objective function value
+    **********************************************************************************/
     Plato::Scalar objectiveValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -165,9 +197,13 @@ public:
         return mObjective->value(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint function
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return constraint function value
+    **********************************************************************************/
     Plato::Scalar constraintValue(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -187,9 +223,12 @@ public:
         return mConstraint->value(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective function
+     * @param [in] aControl 1D view of control variables
+     * @return objective function value
+    **********************************************************************************/
     Plato::Scalar objectiveValue(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mObjective == nullptr)
         {
@@ -207,9 +246,12 @@ public:
         return mObjective->value(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint function
+     * @param [in] aControl 1D view of control variables
+     * @return constraint function value
+    **********************************************************************************/
     Plato::Scalar constraintValue(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mObjective == nullptr)
         {
@@ -226,9 +268,13 @@ public:
         return mConstraint->value(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective gradient wrt control variables
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return 1D view - objective gradient wrt control variables
+    **********************************************************************************/
     Plato::ScalarVector objectiveGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -286,9 +332,13 @@ public:
         return tPartialObjectiveWRT_Control;
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective gradient wrt configuration variables
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return 1D view - objective gradient wrt configuration variables
+    **********************************************************************************/
     Plato::ScalarVector objectiveGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -346,9 +396,12 @@ public:
         return tPartialObjectiveWRT_Config;
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint partial derivative wrt control variables
+     * @param [in] aControl 1D view of control variables
+     * @return 1D view - constraint partial derivative wrt control variables
+    **********************************************************************************/
     Plato::ScalarVector constraintGradient(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mConstraint == nullptr)
         {
@@ -365,9 +418,13 @@ public:
         return mConstraint->gradient_z(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint partial derivative wrt control variables
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return 1D view - constraint partial derivative wrt control variables
+    **********************************************************************************/
     Plato::ScalarVector constraintGradient(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -387,9 +444,12 @@ public:
         return mConstraint->gradient_z(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective partial derivative wrt control variables
+     * @param [in] aControl 1D view of control variables
+     * @return 1D view - objective partial derivative wrt control variables
+    **********************************************************************************/
     Plato::ScalarVector objectiveGradient(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mObjective == nullptr)
         {
@@ -406,9 +466,12 @@ public:
         return mObjective->gradient_z(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate objective partial derivative wrt configuration variables
+     * @param [in] aControl 1D view of control variables
+     * @return 1D view - objective partial derivative wrt configuration variables
+    **********************************************************************************/
     Plato::ScalarVector objectiveGradientX(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mObjective == nullptr)
         {
@@ -425,10 +488,12 @@ public:
         return mObjective->gradient_x(tStatesSubView, aControl);
     }
 
-
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint partial derivative wrt configuration variables
+     * @param [in] aControl 1D view of control variables
+     * @return 1D view - constraint partial derivative wrt configuration variables
+    **********************************************************************************/
     Plato::ScalarVector constraintGradientX(const Plato::ScalarVector & aControl)
-    /******************************************************************************/
     {
         if(mConstraint == nullptr)
         {
@@ -445,9 +510,13 @@ public:
         return mConstraint->gradient_x(tStatesSubView, aControl);
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate constraint partial derivative wrt configuration variables
+     * @param [in] aControl 1D view of control variables
+     * @param [in] aState 2D view of state variables
+     * @return 1D view - constraint partial derivative wrt configuration variables
+    **********************************************************************************/
     Plato::ScalarVector constraintGradientX(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    /******************************************************************************/
     {
         assert(aState.extent(0) == mStates.extent(0));
         assert(aState.extent(1) == mStates.extent(1));
@@ -468,21 +537,25 @@ public:
     }
 
 private:
-    /******************************************************************************/
-    void initialize(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList)
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Initialize member data
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aInputParams input parameters database
+    **********************************************************************************/
+    void initialize(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams)
     {
-        if(aParamList.isType<std::string>("Linear Constraint"))
+        if(aInputParams.isType<std::string>("Linear Constraint"))
         {
-            std::string tName = aParamList.get<std::string>("Linear Constraint");
+            std::string tName = aInputParams.get<std::string>("Linear Constraint");
             mConstraint =
-                    std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+                    std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
-        if(aParamList.isType<std::string>("Objective"))
+        if(aInputParams.isType<std::string>("Objective"))
         {
-            std::string tName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+            std::string tName = aInputParams.get<std::string>("Objective");
+            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
@@ -491,13 +564,13 @@ private:
         // parse constraints
         //
         Plato::EssentialBCs<SimplexPhysics>
-            tEssentialBoundaryConditions(aParamList.sublist("Essential Boundary Conditions",false));
+            tEssentialBoundaryConditions(aInputParams.sublist("Essential Boundary Conditions",false));
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
 
         // parse loads
         //
         Plato::NaturalBCs<SimplexPhysics::SpaceDim, SimplexPhysics::m_numDofsPerNode>
-            tNaturalBoundaryConditions(aParamList.sublist("Natural Boundary Conditions", false));
+            tNaturalBoundaryConditions(aInputParams.sublist("Natural Boundary Conditions", false));
         tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }
 };

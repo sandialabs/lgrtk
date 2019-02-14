@@ -249,21 +249,21 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Perform continuation on criterion-based parameters
+     * @brief Update physics-based parameters within optimization iterations
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateProblem(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
-                       const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
-                       const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
+    void updateProblem(const Plato::ScalarMultiVector & aStateWS,
+                       const Plato::ScalarMultiVector & aControlWS,
+                       const Plato::ScalarArray3D & aConfigWS) override
     {
         this->updateMultipliers(aStateWS, aControlWS, aConfigWS);
         this->updateAugLagPenaltyMultipliers();
     }
 
     /******************************************************************************//**
-     * @brief Evaluate Von Mises criterion
+     * @brief Evaluate augmented Lagrangian stress constraint criterion
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
@@ -347,9 +347,9 @@ public:
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateMultipliers(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
-                           const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
-                           const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
+    void updateMultipliers(const Plato::ScalarMultiVector & aStateWS,
+                           const Plato::ScalarMultiVector & aControlWS,
+                           const Plato::ScalarArray3D & aConfigWS)
     {
         // Create Cauchy stress functors
         SIMP tPenaltySIMP;
@@ -407,8 +407,8 @@ public:
             const Plato::Scalar tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
             const Plato::Scalar tSuggestedPenalizedStressConstraint =
                     tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
-            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
-                    tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
+            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
+                    tSuggestedPenalizedStressConstraint : static_cast<Plato::Scalar>(0.0);
 
             // Compute relaxed stress constraint
             const Plato::Scalar tLambdaOverPenalty =
