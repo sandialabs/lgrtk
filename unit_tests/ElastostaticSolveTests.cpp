@@ -17,12 +17,12 @@
 #include "MatrixIO.hpp"
 #include "VizOutput.hpp"
 #include "MeshFixture.hpp"
-#include "plato/PlatoStaticsTypes.hpp"
 
-#include "ElastostaticSolve.hpp"
+#include "plato/PlatoStaticsTypes.hpp"
+#include "plato/ElastostaticSolve.hpp"
 #include "PlatoTestHelpers.hpp"
-#include "EssentialBCs.hpp"
-#include "BodyLoads.hpp"
+#include "plato/EssentialBCs.hpp"
+#include "plato/BodyLoads.hpp"
 
 #ifdef HAVE_VIENNA_CL
 #include "ViennaSparseLinearProblem.hpp"

@@ -20,8 +20,8 @@
 #include "MeshFixture.hpp"
 #include "StaticsTypes.hpp"
 
-#include "ImplicitFunctors.hpp"
-#include "LinearThermalMaterial.hpp"
+#include "plato/ImplicitFunctors.hpp"
+#include "plato/LinearThermalMaterial.hpp"
 
 #ifdef HAVE_AMGX
 #include "AmgXSparseLinearProblem.hpp"
@@ -47,7 +47,7 @@
 #include <plato/VectorFunctionInc.hpp>
 #include <plato/ScalarFunctionInc.hpp>
 #include <plato/StateValues.hpp>
-#include "ApplyConstraints.hpp"
+#include "plato/ApplyConstraints.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/Thermal.hpp"
 #include "plato/ComputedField.hpp"
