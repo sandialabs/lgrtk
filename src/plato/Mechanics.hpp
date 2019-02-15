@@ -6,6 +6,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
+#include "plato/Plato_AugLagStressCriterion.hpp"
 #include "plato/SimplexMechanics.hpp"
 #include "plato/ElastostaticResidual.hpp"
 #include "plato/InternalElasticEnergy.hpp"
@@ -58,6 +59,25 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
     return (tOutput);
 }
 // function elastostatics_residual
+
+/******************************************************************************//**
+ * @brief Create augmented Lagrangian stress constraint criterion
+ * @param [in] aMesh mesh database
+ * @param [in] aMeshSets side sets database
+ * @param [in] aDataMap PLATO Analyze physics-based database
+ * @param [in] aInputParams input parameters
+**********************************************************************************/
+template<typename EvaluationType>
+inline std::shared_ptr<AbstractScalarFunction<EvaluationType>>
+stress_constraint(Omega_h::Mesh& aMesh,
+                  Omega_h::MeshSets& aMeshSets,
+                  Plato::DataMap& aDataMap,
+                  Teuchos::ParameterList & aInputParams)
+{
+    std::shared_ptr<AbstractScalarFunction<EvaluationType>> tOutput;
+    tOutput = std::make_shared< AugLagStressCriterion<EvaluationType> >(aMesh, aMeshSets, aDataMap, aInputParams);
+    return (tOutput);
+}
 
 /******************************************************************************//**
  * @brief Create internal elastic energy criterion
@@ -267,6 +287,10 @@ struct FunctionFactory
         else if(aFuncName == "Effective Energy")
         {
             return (Plato::MechanicsFactory::effective_energy<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
+        }
+        else if(aFuncName == "Stress Constraint")
+        {
+            return (Plato::MechanicsFactory::stress_constraint<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
         }
         else if(aFuncName == "Volume")
         {

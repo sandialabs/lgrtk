@@ -62,7 +62,7 @@ public:
                        Plato::DataMap& aDataMap) :
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Experimental Volume"),
             mProjectionFunction(),
-            mPenaltyFunction(),
+            mPenaltyFunction(3.0, 0.0),
             mApplyProjection(mProjectionFunction),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
