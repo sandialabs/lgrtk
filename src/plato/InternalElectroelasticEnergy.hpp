@@ -11,17 +11,17 @@
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
-class InternalThermoelasticEnergy : 
-  public Plato::SimplexThermomechanics<EvaluationType::SpatialDim>,
+class InternalElectroelasticEnergy : 
+  public Plato::SimplexElectromechanics<EvaluationType::SpatialDim>,
   public AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
     
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
+    using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
 
     using AbstractScalarFunction<EvaluationType>::mMesh;
     using AbstractScalarFunction<EvaluationType>::m_dataMap;
@@ -31,7 +31,7 @@ class InternalThermoelasticEnergy :
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
-    Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> m_materialModel;
+    Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> m_materialModel;
     
     Plato::Scalar m_quadratureWeight;
 
@@ -43,18 +43,18 @@ class InternalThermoelasticEnergy :
 
   public:
     /**************************************************************************/
-    InternalThermoelasticEnergy(Omega_h::Mesh& aMesh,
+    InternalElectroelasticEnergy(Omega_h::Mesh& aMesh,
                           Omega_h::MeshSets& aMeshSets,
                           Plato::DataMap& aDataMap,
                           Teuchos::ParameterList& aProblemParams,
                           Teuchos::ParameterList& aPenaltyParams ) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermoelastic Energy"),
+            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Electroelastic Energy"),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction),
             m_CubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
-      Plato::ThermoelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
+      Plato::ElectroelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
       m_materialModel = mmfactory.create();
 
       if( aProblemParams.isType<Teuchos::Array<std::string>>("Plottable") )
@@ -78,7 +78,7 @@ class InternalThermoelasticEnergy :
       ScalarProduct<m_numVoigtTerms>          scalarProduct;
 
       using StrainScalarType = 
-        typename Plato::fad_type_t<Plato::SimplexThermomechanics<EvaluationType::SpatialDim>,
+        typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>,
                             StateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>

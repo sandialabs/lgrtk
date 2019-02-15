@@ -99,11 +99,11 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 

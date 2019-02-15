@@ -1,0 +1,9 @@
+AMGX_LOG	RUNTIME_VERSION=9.2
+AMGX_LOG	Initial Residual=0.0814804
+AMGX_LOG	Final Residual=4.40842e+10
+AMGX_LOG	Avg. Conv. Rate=1.02739
+AMGX_LOG	Total Iterations=1000
+AMGX_LOG	Total Time=0.164119
+AMGX_LOG	Setup=3.8912e-05
+AMGX_LOG	Solve=0.16408
+AMGX_LOG	Max Mem. Usage=0

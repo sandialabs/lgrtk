@@ -18,7 +18,7 @@ namespace Plato {
   {
     const std::string    name;
     const std::string ss_name;
-    Omega_h::Vector<DofsPerNode> m_flux;
+    Omega_h::Vector<SpatialDim> m_flux;
 
   public:
   
@@ -27,7 +27,7 @@ namespace Plato {
       ss_name(param.get<std::string>("Sides"))
       {
         auto flux = param.get<Teuchos::Array<double>>("Vector");
-        for(int i=0; i<DofsPerNode; i++)
+        for(int i=0; i<SpatialDim; i++)
           m_flux(i) = flux[i];
       }
   
@@ -193,7 +193,7 @@ namespace Plato {
           }
         }
         for( int iNode=0; iNode<nodesPerFace; iNode++){
-          for( int iDim=0; iDim<DofsPerNode; iDim++){
+          for( int iDim=0; iDim<SpatialDim; iDim++){
             auto cellDofOrdinal = localNodeOrd[iNode] * DofsPerNode + iDim;
             result(cellOrdinal,cellDofOrdinal) += weight*flux[iDim];
           }
@@ -258,7 +258,7 @@ namespace Plato {
 
       for( int iNode=0; iNode<numNodesPerFace; iNode++){
         auto nodeOrdinal = face2verts[faceOrdinal*numNodesPerFace+iNode];
-        for( int iDim=0; iDim<DofsPerNode; iDim++)
+        for( int iDim=0; iDim<SpatialDim; iDim++)
           Kokkos::atomic_add(&fVec(nodeOrdinal*DofsPerNode+iDim),weight*flux[iDim]);
       } 
     });

@@ -12,7 +12,7 @@ SET(SOURCES
   LowRmRLCCircuit.cpp
   plato/ElastostaticSolve.cpp
   plato/LinearElasticMaterial.cpp
-  plato/LinearThermoelasticMaterial.cpp
+  plato/LinearElectroelasticMaterial.cpp
   VizOutput.cpp
   CmdLineOutput.cpp
   Basis.cpp

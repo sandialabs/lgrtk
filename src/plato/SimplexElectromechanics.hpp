@@ -8,11 +8,11 @@ namespace Plato
 {
 
 /******************************************************************************/
-/*! Base class for simplex-based thermomechanics
+/*! Base class for simplex-based electromechanics
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
-class SimplexThermomechanics : public Simplex<SpaceDim>
+class SimplexElectromechanics : public Simplex<SpaceDim>
 {
   public:
     using Simplex<SpaceDim>::m_numNodesPerCell;
