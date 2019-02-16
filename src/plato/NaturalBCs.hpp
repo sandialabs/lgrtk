@@ -12,22 +12,22 @@ namespace Plato {
   /*!
     \brief Class for natural boundary conditions.
   */
-    template<int SpatialDim, int DofsPerNode=SpatialDim>
+    template<int SpatialDim, int NumDofs=SpatialDim, int DofsPerNode=NumDofs, int DofOffset=0>
     class NaturalBC
   /******************************************************************************/
   {
     const std::string    name;
     const std::string ss_name;
-    Omega_h::Vector<SpatialDim> m_flux;
+    Omega_h::Vector<NumDofs> m_flux;
 
   public:
   
-    NaturalBC<SpatialDim,DofsPerNode>(const std::string &n, Teuchos::ParameterList &param) :
+    NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(const std::string &n, Teuchos::ParameterList &param) :
       name(n),
       ss_name(param.get<std::string>("Sides"))
       {
         auto flux = param.get<Teuchos::Array<double>>("Vector");
-        for(int i=0; i<SpatialDim; i++)
+        for(int i=0; i<NumDofs; i++)
           m_flux(i) = flux[i];
       }
   
@@ -37,9 +37,9 @@ namespace Plato {
       \brief Get the contribution to the assembled forcing vector.
       @param aMesh Omega_h mesh that contains sidesets.
       @param aMeshSets Omega_h mesh sets that contains sideset information.
-      @param forces Assembled forcing vector to which the boundary forces will be added.
+      @param aResult Assembled vector to which the boundary terms will be added.
 
-      The boundary forces are integrated on the parameterized surface, \f$\phi(\xi,\psi)\f$, according to:
+      The boundary terms are integrated on the parameterized surface, \f$\phi(\xi,\psi)\f$, according to:
       \f{eqnarray*}{
           \phi(\xi,\psi)=
             \left\{ 
@@ -57,7 +57,7 @@ namespace Plato {
     */
     void get( Omega_h::Mesh* aMesh, 
               const Omega_h::MeshSets& aMeshSets,
-              Plato::ScalarVector& forces );
+              Plato::ScalarVector& aResult );
 
     template<typename StateScalarType,
              typename ControlScalarType,
@@ -82,12 +82,12 @@ namespace Plato {
   /*!
     \brief Owner class that contains a vector of NaturalBC objects.
   */
-  template<int SpatialDim, int DofsPerNode=SpatialDim>
+  template<int SpatialDim, int NumDofs=SpatialDim, int DofsPerNode=NumDofs, int DofOffset=0>
   class NaturalBCs
   /******************************************************************************/
   {
   private:
-    std::vector<std::shared_ptr<NaturalBC<SpatialDim,DofsPerNode>>> BCs;
+    std::vector<std::shared_ptr<NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>>> BCs;
 
   public :
 
@@ -101,11 +101,11 @@ namespace Plato {
       \brief Get the contribution to the assembled forcing vector from the owned boundary conditions.
       @param aMesh Omega_h mesh that contains sidesets.
       @param aMeshSets Omega_h mesh sets that contains sideset information.
-      @param aForces Assembled forcing vector to which the boundary forces will be added.
+      @param aResult Assembled vector to which the boundary terms will be added.
     */
     void get( Omega_h::Mesh* aMesh,             
               const Omega_h::MeshSets& aMeshSets, 
-              Plato::ScalarVector& aForces);
+              Plato::ScalarVector& aResult);
 
     template<typename StateScalarType,
              typename ControlScalarType,
@@ -119,11 +119,11 @@ namespace Plato {
   };
 
   /**************************************************************************/
-  template<int SpatialDim, int DofsPerNode>
+  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
   template<typename StateScalarType,
            typename ControlScalarType,
            typename ResultScalarType>
-  void NaturalBC<SpatialDim,DofsPerNode>::get( Omega_h::Mesh* aMesh,             
+  void NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,             
                                                const Omega_h::MeshSets& aMeshSets,
                                                Plato::ScalarMultiVectorT<  StateScalarType>,
                                                Plato::ScalarMultiVectorT<ControlScalarType>,
@@ -193,9 +193,9 @@ namespace Plato {
           }
         }
         for( int iNode=0; iNode<nodesPerFace; iNode++){
-          for( int iDim=0; iDim<SpatialDim; iDim++){
-            auto cellDofOrdinal = localNodeOrd[iNode] * DofsPerNode + iDim;
-            result(cellOrdinal,cellDofOrdinal) += weight*flux[iDim];
+          for( int iDof=0; iDof<NumDofs; iDof++){
+            auto cellDofOrdinal = localNodeOrd[iNode] * DofsPerNode + iDof + DofOffset;
+            result(cellOrdinal,cellDofOrdinal) += weight*flux[iDof];
           }
         }
       }
@@ -203,8 +203,8 @@ namespace Plato {
   }
 
   /****************************************************************************/
-  template<int SpatialDim, int DofsPerNode>
-  void NaturalBC<SpatialDim,DofsPerNode>::get( Omega_h::Mesh* aMesh,      
+  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
+  void NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,      
                                                const Omega_h::MeshSets& aMeshSets,
                                                Plato::ScalarVector& forcing )
   /****************************************************************************/
@@ -258,16 +258,16 @@ namespace Plato {
 
       for( int iNode=0; iNode<numNodesPerFace; iNode++){
         auto nodeOrdinal = face2verts[faceOrdinal*numNodesPerFace+iNode];
-        for( int iDim=0; iDim<SpatialDim; iDim++)
-          Kokkos::atomic_add(&fVec(nodeOrdinal*DofsPerNode+iDim),weight*flux[iDim]);
+        for( int iDof=0; iDof<NumDofs; iDof++)
+          Kokkos::atomic_add(&fVec(nodeOrdinal*DofsPerNode+iDof+DofOffset),weight*flux[iDof]);
       } 
     });
   }
 
 
   /****************************************************************************/
-  template<int SpatialDim, int DofsPerNode>
-  NaturalBCs<SpatialDim,DofsPerNode>::NaturalBCs(Teuchos::ParameterList &params) : BCs()
+  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
+  NaturalBCs<SpatialDim,NumDofs,DofsPerNode,DofOffset>::NaturalBCs(Teuchos::ParameterList &params) : BCs()
   /****************************************************************************/
   {
     for (Teuchos::ParameterList::ConstIterator i = params.begin(); i != params.end(); ++i) {
@@ -279,7 +279,7 @@ namespace Plato {
   
       Teuchos::ParameterList& sublist = params.sublist(name);
       const std::string type = sublist.get<std::string>("Type");
-      std::shared_ptr<NaturalBC<SpatialDim,DofsPerNode>> bc;
+      std::shared_ptr<NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>> bc;
       if ("Uniform" == type) {
         bool b_Values = sublist.isType<Teuchos::Array<double>>("Values");
         bool b_Value  = sublist.isType<double>("Value");
@@ -291,17 +291,17 @@ namespace Plato {
           sublist.set("Vector", values);
         } else 
         if ( b_Value ) {
-          Teuchos::Array<double> fluxVector(DofsPerNode, 0.0);
+          Teuchos::Array<double> fluxVector(NumDofs, 0.0);
           auto value = sublist.get<double>("Value");
           fluxVector[0] = value;
           sublist.set("Vector", fluxVector);
         } else {
           LGR_THROW_IF(true, " Natural Boundary Condition: provide either 'Values' or 'Value' Parameter.");
         }
-        bc.reset(new NaturalBC<SpatialDim,DofsPerNode>(name, sublist));
+        bc.reset(new NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(name, sublist));
       }
       else if ("Uniform Component" == type){
-        Teuchos::Array<double> fluxVector(DofsPerNode, 0.0);
+        Teuchos::Array<double> fluxVector(NumDofs, 0.0);
         auto fluxComponent = sublist.get<std::string>("Component");
         auto value = sublist.get<double>("Value");
         if( (fluxComponent == "x" || fluxComponent == "X") ) fluxVector[0] = value;
@@ -310,7 +310,7 @@ namespace Plato {
         else
         if( (fluxComponent == "z" || fluxComponent == "Z") && DofsPerNode > 2 ) fluxVector[2] = value;
         sublist.set("Vector", fluxVector);
-        bc.reset(new NaturalBC<SpatialDim,DofsPerNode>(name, sublist));
+        bc.reset(new NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(name, sublist));
       } else {
         LGR_THROW_IF(true, " Natural Boundary Condition type invalid");
       }
@@ -319,14 +319,14 @@ namespace Plato {
   }
 
   /****************************************************************************/
-  template<int SpatialDim, int DofsPerNode>
-  void NaturalBCs<SpatialDim,DofsPerNode>::get( Omega_h::Mesh* aMesh,      
+  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
+  void NaturalBCs<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,      
                                                 const Omega_h::MeshSets& aMeshSets, 
                                                 Plato::ScalarVector& aForcing)
   /****************************************************************************/
   {
  
-    for (std::shared_ptr<NaturalBC<SpatialDim,DofsPerNode>> &bc : BCs){
+    for (auto &bc : BCs){
       bc->get(aMesh, aMeshSets, aForcing);
     }
   }
@@ -335,11 +335,11 @@ namespace Plato {
   /*!
     \brief Add the boundary load to the result workset
   */
-  template<int SpatialDim, int DofsPerNode>
+  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
   template<typename StateScalarType,
            typename ControlScalarType,
            typename ResultScalarType>
-  void NaturalBCs<SpatialDim,DofsPerNode>::get(Omega_h::Mesh* aMesh,      
+  void NaturalBCs<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get(Omega_h::Mesh* aMesh,      
        const Omega_h::MeshSets& aMeshSets, 
        Kokkos::View<   StateScalarType**, Kokkos::LayoutRight, Plato::MemSpace > state,
        Kokkos::View< ControlScalarType**, Kokkos::LayoutRight, Plato::MemSpace > control,
@@ -347,7 +347,7 @@ namespace Plato {
        Plato::Scalar scale) const
   /**************************************************************************/
   {
-    for (const std::shared_ptr<NaturalBC<SpatialDim,DofsPerNode>> &bc : BCs){
+    for (const auto &bc : BCs){
       bc->get(aMesh, aMeshSets, state, control, result, scale);
     }
   }

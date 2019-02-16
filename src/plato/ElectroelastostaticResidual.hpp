@@ -30,6 +30,12 @@ class ElectroelastostaticResidual :
 private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
+    static constexpr int NElecDims = 1;
+    static constexpr int NMechDims = SpaceDim;
+
+    static constexpr int EDofOffset = SpaceDim;
+    static constexpr int MDofOffset = 0;
+
     using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
     using Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerNode;
@@ -49,7 +55,10 @@ private:
     ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting;
 
     std::shared_ptr<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>> m_bodyLoads;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
+
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>> m_boundaryLoads;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NElecDims, m_numDofsPerNode, EDofOffset>> m_boundaryCharges;
+
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
     Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> m_materialModel;
@@ -69,6 +78,7 @@ public:
             m_applyEDispWeighting(m_indicatorFunction),
             m_bodyLoads(nullptr),
             m_boundaryLoads(nullptr),
+            m_boundaryCharges(nullptr),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
@@ -85,11 +95,18 @@ public:
             m_bodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
         }
   
-        // parse boundary Conditions
+        // parse mechanical boundary Conditions
         // 
-        if(aProblemParams.isSublist("Natural Boundary Conditions"))
+        if(aProblemParams.isSublist("Mechanical Natural Boundary Conditions"))
         {
-            m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
+            m_boundaryLoads =   std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
+        }
+  
+        // parse electrical boundary Conditions
+        // 
+        if(aProblemParams.isSublist("Electrical Natural Boundary Conditions"))
+        {
+            m_boundaryCharges = std::make_shared<Plato::NaturalBCs<SpaceDim, NElecDims, m_numDofsPerNode, EDofOffset>>(aProblemParams.sublist("Electrical Natural Boundary Conditions"));
         }
   
         auto tResidualParams = aProblemParams.sublist("Electroelastostatics");
@@ -114,8 +131,9 @@ public:
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
       EMKinematics<SpaceDim>                  kinematics;
       EMKinetics<SpaceDim>                    kinetics(m_materialModel);
-      StressDivergence<SpaceDim>              stressDivergence;
-      FluxDivergence<SpaceDim>                edispDivergence;
+      
+      StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      FluxDivergence  <SpaceDim, m_numDofsPerNode, EDofOffset> edispDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight",tNumCells);
 
@@ -158,16 +176,19 @@ public:
         edispDivergence (cellOrdinal, result, edisp,  gradient, cellVolume);
       }, "Apply weighting and compute divergence");
 
-      // JR TODO:  below has to be aware that there are now nMech + nElec dofs
       if( m_bodyLoads != nullptr )
       {
           m_bodyLoads->get( mMesh, state, control, result );
       }
 
-      // JR TODO:  below has to be aware that there are now nMech + nElec dofs
       if( m_boundaryLoads != nullptr )
       {
           m_boundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+      }
+
+      if( m_boundaryCharges != nullptr )
+      {
+          m_boundaryCharges->get( &mMesh, mMeshSets, state, control, result );
       }
 
       if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, strain, "strain");

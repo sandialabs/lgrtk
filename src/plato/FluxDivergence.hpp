@@ -9,13 +9,12 @@
     Given a thermal flux, compute the flux divergence.
 */
 /******************************************************************************/
-template<int SpaceDim>
+template<int SpaceDim, int NumDofsPerNode=1, int DofOffset=0>
 class FluxDivergence : public SimplexThermal<SpaceDim>
 {
   private:
 
     using SimplexThermal<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
 
   public:
 
@@ -35,8 +34,9 @@ class FluxDivergence : public SimplexThermal<SpaceDim>
       // compute flux divergence
       //
       for( int iNode=0; iNode<m_numNodesPerCell; iNode++){
+        Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+DofOffset;
         for(int iDim=0; iDim<SpaceDim; iDim++){
-          q(cellOrdinal,iNode) += scale*tflux(cellOrdinal,iDim)*gradient(cellOrdinal,iNode,iDim)*cellVolume(cellOrdinal);
+          q(cellOrdinal, localOrdinal) += scale*tflux(cellOrdinal,iDim)*gradient(cellOrdinal,iNode,iDim)*cellVolume(cellOrdinal);
         }
       }
     }

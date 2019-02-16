@@ -55,7 +55,7 @@ class EMKinematics : public Plato::SimplexElectromechanics<SpaceDim>
  
       // compute efield
       //
-      Plato::OrdinalType dofOffset = SpaceDim-1;
+      Plato::OrdinalType dofOffset = SpaceDim;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         efield(cellOrdinal,iDof) = 0.0;
         for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){

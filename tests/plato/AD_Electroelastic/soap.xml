@@ -7,15 +7,12 @@
   <ParameterList  name="Associations">
     <Parameter name="File" type="string" value="./soap_assoc.txt"/>
   </ParameterList>
-  
+
   <ParameterList name="Plato Problem">
     <Parameter name="Physics"         type="string"  value="Electromechanical"/>
     <Parameter name="PDE Constraint"  type="string"  value="Electroelastostatics"/>
 
     <ParameterList name="Electroelastostatics">
-<!--
-      <Parameter  name="Plottable"   type="Array(string)" value="{strain, efield, stress, edisp}"/>
--->
       <ParameterList name="Penalty Function">
         <Parameter name="Type" type="string" value="SIMP"/>
         <Parameter name="Exponent" type="double" value="1.0"/>
@@ -31,25 +28,24 @@
         <Parameter  name="e33" type="double" value="15.8"/>
         <Parameter  name="e31" type="double" value="-5.4"/>
         <Parameter  name="e15" type="double" value="12.3"/>
-<!--
-        <Parameter  name="p11" type="double" value="-1.0e-10"/>
-        <Parameter  name="p33" type="double" value="-1.4e-10"/>
-        <Parameter  name="e33" type="double" value="0.0"/>
-        <Parameter  name="e31" type="double" value="0.0"/>
-        <Parameter  name="e15" type="double" value="0.0"/>
--->
-        <Parameter  name="Alpha" type="double" value="1e9"/>
+        <Parameter  name="Alpha" type="double" value="1e10"/>
       </ParameterList>
     </ParameterList>
   
-    <ParameterList  name="Natural Boundary Conditions">
+    <ParameterList  name="Mechanical Natural Boundary Conditions">
       <ParameterList  name="Traction Vector Boundary Condition">
         <Parameter  name="Type"     type="string"        value="Uniform"/>
-        <Parameter  name="Values"   type="Array(double)" value="{1.0, 0.0, 0.0}"/>
+        <Parameter  name="Values"   type="Array(double)" value="{0.0e4, 0.0, 0.0}"/>
         <Parameter  name="Sides"    type="string"        value="ss_2"/>
       </ParameterList>
     </ParameterList>
-
+    <ParameterList  name="Electrical Natural Boundary Conditions">
+      <ParameterList  name="Charge Density Boundary Condition">
+        <Parameter  name="Type"     type="string" value="Uniform"/>
+        <Parameter  name="Value"   type="double"  value="1.0e3"/>
+        <Parameter  name="Sides"    type="string" value="ss_2"/>
+      </ParameterList>
+    </ParameterList>
     <ParameterList  name="Essential Boundary Conditions">
       <ParameterList  name="X Fixed Displacement Boundary Condition">
         <Parameter  name="Type"     type="string" value="Zero Value"/>

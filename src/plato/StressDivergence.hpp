@@ -9,14 +9,12 @@
     Given a stress, compute the stress divergence.
 */
 /******************************************************************************/
-template<Plato::OrdinalType SpaceDim>
+template<int SpaceDim, int NumDofsPerNode=SpaceDim, int DofOffset=0>
 class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
     using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
 
     Plato::OrdinalType m_voigt[SpaceDim][SpaceDim];
 
@@ -51,7 +49,7 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
 
       for(Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
         for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*SpaceDim+iDim;
+          Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+iDim+DofOffset;
           forcing(cellOrdinal, localOrdinal) = 0.0;
           for(Plato::OrdinalType jDim=0; jDim<SpaceDim; jDim++){
             forcing(cellOrdinal,localOrdinal) += 

@@ -60,7 +60,7 @@ LinearElectroelasticMaterial<3>()
 /******************************************************************************/
 {
     if (paramList.isType<double>("Alpha")){
-      m_alpha = paramList.isType<double>("Alpha");
+      m_alpha = paramList.get<double>("Alpha");
     }
 
     Plato::Scalar v = paramList.get<double>("Poissons Ratio");
@@ -82,7 +82,7 @@ LinearElectroelasticMaterial<3>()
     m_cellPiezoelectricCoupling(2,1)=e31;
     m_cellPiezoelectricCoupling(2,2)=e33;
     m_cellPiezoelectricCoupling(1,3)=e15;
-    m_cellPiezoelectricCoupling(2,4)=e15;
+    m_cellPiezoelectricCoupling(0,4)=e15;
 
     m_cellPermittivity(0,0)=p11;
     m_cellPermittivity(1,1)=p11;
