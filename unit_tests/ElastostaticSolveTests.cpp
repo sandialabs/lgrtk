@@ -19,7 +19,7 @@
 #include "MeshFixture.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
-#include "ElastostaticSolve.hpp"
+#include "plato/ElastostaticSolve.hpp"
 #include "PlatoTestHelpers.hpp"
 #include "EssentialBCs.hpp"
 #include "BodyLoads.hpp"

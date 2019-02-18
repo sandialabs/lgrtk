@@ -28,7 +28,6 @@ class ScalarProduct
 
       // compute scalar product
       //
-      scalarProduct(cellOrdinal) = 0.0;
       for( Plato::OrdinalType iVoigt=0; iVoigt<NumElements; iVoigt++){
         scalarProduct(cellOrdinal) += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2(cellOrdinal,iVoigt);
       }
@@ -47,7 +46,6 @@ class ScalarProduct
 
       // compute scalar product
       //
-      scalarProduct(cellOrdinal) = 0.0;
       for( Plato::OrdinalType iVoigt=0; iVoigt<NumElements; iVoigt++){
         scalarProduct(cellOrdinal) += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2[iVoigt];
       }

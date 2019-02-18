@@ -66,7 +66,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
   for(int i=0; i<localIDs.size(); i++)
   {
     if( fabs(stdStateOne[i]) > 1e-16 )
-      TEST_FLOATING_EQUALITY(stdStateOne[i], -stdStateTwo[i], 1e-12);
+      TEST_FLOATING_EQUALITY(stdStateOne[i], -stdStateTwo[i], 1e-10);
   }
 }
 
@@ -318,6 +318,160 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
   MPI_Comm_dup(MPI_COMM_WORLD, &myComm);
 
   setenv("PLATO_APP_FILE", "InternalEnergyHeatEq_appfile.xml", true);
+
+  MPMD_App app(argc, argv, myComm);
+
+  app.initialize();
+
+  std::vector<int> localIDs;
+  app.exportDataMap(Plato::data::layout_t::SCALAR_FIELD, localIDs);
+
+  // create input data
+  //
+  FauxSharedField fauxControlIn(localIDs.size());
+  std::vector<double> stdControlIn(localIDs.size(),1.0);
+
+  // import data
+  //
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+
+  // create output data
+  //
+
+  // solve
+  //
+  app.compute("Compute Objective");
+
+  // export data
+  //
+  FauxSharedField fauxObjGradOut(localIDs.size(),0.0);
+  app.exportDataT("Objective Gradient", fauxObjGradOut);
+
+  std::vector<double> stdObjGradOut(localIDs.size());
+  fauxObjGradOut.getData(stdObjGradOut);
+
+  FauxSharedValue fauxObjValOut(1,0.0);
+  app.exportDataT("Objective Value", fauxObjValOut);
+
+  std::vector<double> stdObjValOne(1);
+  fauxObjValOut.getData(stdObjValOne);
+
+  double mag = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    mag += stdObjGradOut[iVal]*stdObjGradOut[iVal];
+  }
+  mag = sqrt(mag);
+  
+  double tol = 1.0e-5;
+  double alpha = tol/mag;
+  double dval = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    double dz = alpha * stdObjGradOut[iVal];
+    stdControlIn[iVal] -= dz;
+    dval -= stdObjGradOut[iVal]*dz;
+  }
+ 
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+  app.compute("Compute Objective");
+
+  app.exportDataT("Objective Value", fauxObjValOut);
+  std::vector<double> stdObjValTwo(1);
+  fauxObjValOut.getData(stdObjValTwo);
+  
+  TEST_FLOATING_EQUALITY(stdObjValOne[0], stdObjValTwo[0], tol);
+}
+
+TEUCHOS_UNIT_TEST( LGRAppTests, InternalElectroelasticEnergy )
+{ 
+  
+  int argc = 2;
+  char exeName[] = "exeName";
+  char arg1[] = "--input-config=InternalElectroelasticEnergy_input.xml";
+  char* argv[2] = {exeName, arg1};
+
+  MPI_Comm myComm;
+  MPI_Comm_dup(MPI_COMM_WORLD, &myComm);
+
+  setenv("PLATO_APP_FILE", "InternalElectroelasticEnergy_appfile.xml", true);
+
+  MPMD_App app(argc, argv, myComm);
+
+  app.initialize();
+
+  std::vector<int> localIDs;
+  app.exportDataMap(Plato::data::layout_t::SCALAR_FIELD, localIDs);
+
+  // create input data
+  //
+  FauxSharedField fauxControlIn(localIDs.size());
+  std::vector<double> stdControlIn(localIDs.size(),1.0);
+
+  // import data
+  //
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+
+  // create output data
+  //
+
+  // solve
+  //
+  app.compute("Compute Objective");
+
+  // export data
+  //
+  FauxSharedField fauxObjGradOut(localIDs.size(),0.0);
+  app.exportDataT("Objective Gradient", fauxObjGradOut);
+
+  std::vector<double> stdObjGradOut(localIDs.size());
+  fauxObjGradOut.getData(stdObjGradOut);
+
+  FauxSharedValue fauxObjValOut(1,0.0);
+  app.exportDataT("Objective Value", fauxObjValOut);
+
+  std::vector<double> stdObjValOne(1);
+  fauxObjValOut.getData(stdObjValOne);
+
+  double mag = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    mag += stdObjGradOut[iVal]*stdObjGradOut[iVal];
+  }
+  mag = sqrt(mag);
+  
+  double tol = 1.0e-5;
+  double alpha = tol/mag;
+  double dval = 0.0;
+  for(int iVal=0; iVal<localIDs.size(); iVal++){
+    double dz = alpha * stdObjGradOut[iVal];
+    stdControlIn[iVal] -= dz;
+    dval -= stdObjGradOut[iVal]*dz;
+  }
+ 
+  fauxControlIn.setData(stdControlIn);
+  app.importDataT("Topology", fauxControlIn);
+  app.compute("Compute Objective");
+
+  app.exportDataT("Objective Value", fauxObjValOut);
+  std::vector<double> stdObjValTwo(1);
+  fauxObjValOut.getData(stdObjValTwo);
+  
+  TEST_FLOATING_EQUALITY(stdObjValOne[0], stdObjValTwo[0], tol);
+}
+
+TEUCHOS_UNIT_TEST( LGRAppTests, EMStressPNorm )
+{ 
+  
+  int argc = 2;
+  char exeName[] = "exeName";
+  char arg1[] = "--input-config=EMStressPNorm_input.xml";
+  char* argv[2] = {exeName, arg1};
+
+  MPI_Comm myComm;
+  MPI_Comm_dup(MPI_COMM_WORLD, &myComm);
+
+  setenv("PLATO_APP_FILE", "EMStressPNorm_appfile.xml", true);
 
   MPMD_App app(argc, argv, myComm);
 

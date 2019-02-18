@@ -99,8 +99,6 @@ class HeatEquationResidual :
                     Plato::Scalar aTimeStep = 0.0) const
     /**************************************************************************/
     {
-      Kokkos::deep_copy(aResult, 0.0);
-
       auto numCells = mMesh.nelems();
 
       using GradScalarType =

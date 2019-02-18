@@ -10,11 +10,11 @@
 */
 /******************************************************************************/
 template<int SpaceDim, int NumDofsPerNode=1, int DofOffset=0>
-class FluxDivergence : public SimplexThermal<SpaceDim>
+class FluxDivergence : public Simplex<SpaceDim>
 {
   private:
 
-    using SimplexThermal<SpaceDim>::m_numNodesPerCell;
+    using Simplex<SpaceDim>::m_numNodesPerCell;
 
   public:
 

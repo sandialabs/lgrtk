@@ -3,8 +3,8 @@
 
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
-#include "plato/Strain.hpp"
-#include "plato/LinearStress.hpp"
+#include "plato/EMKinematics.hpp"
+#include "plato/EMKinetics.hpp"
 #include "plato/TensorPNorm.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
@@ -70,27 +70,23 @@ class EMStressPNorm :
     /**************************************************************************/
     {
       auto numCells = mMesh.nelems();
-      auto cellStiffness = m_materialModel->getStiffnessMatrix();
+
+      using GradScalarType = 
+        typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      Strain<SpaceDim>                        voigtStrain;
-      LinearStress<SpaceDim>                  voigtStress(cellStiffness);
+      EMKinematics<SpaceDim>                  kinematics;
+      EMKinetics<SpaceDim>                    kinetics(m_materialModel);
 
-      using StrainScalarType = 
-        typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>,
-                            StateScalarType, ConfigScalarType>;
+      Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight", numCells);
 
-      Plato::ScalarVectorT<ConfigScalarType>
-        cellVolume("cell weight",numCells);
+      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient", numCells, m_numNodesPerCell, SpaceDim);
 
-      Plato::ScalarMultiVectorT<StrainScalarType>
-        strain("strain",numCells,m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType> strain("strain", numCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType> efield("efield", numCells, SpaceDim);
 
-      Plato::ScalarArray3DT<ConfigScalarType>
-        gradient("gradient",numCells,m_numNodesPerCell,SpaceDim);
-
-      Plato::ScalarMultiVectorT<ResultScalarType>
-        stress("stress",numCells,m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> stress("stress", numCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> edisp ("edisp",  numCells, SpaceDim);
 
       auto quadratureWeight = m_CubatureRule->getCubWeight();
       auto applyWeighting   = m_applyWeighting;
@@ -101,11 +97,11 @@ class EMStressPNorm :
 
         // compute strain
         //
-        voigtStrain(cellOrdinal, strain, aState, gradient);
+        kinematics(cellOrdinal, strain, efield, aState, gradient);
 
         // compute stress
         //
-        voigtStress(cellOrdinal, stress, strain);
+        kinetics(cellOrdinal, stress, edisp, strain, efield);
       
         // apply weighting
         //
