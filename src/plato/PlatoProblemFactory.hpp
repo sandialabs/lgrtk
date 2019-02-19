@@ -19,6 +19,7 @@
 
 #include "plato/Mechanics.hpp"
 #include "plato/Electromechanics.hpp"
+#include "plato/Thermomechanics.hpp"
 //#include "plato/StructuralDynamics.hpp"
 //#include "plato/StructuralDynamicsProblem.hpp"
 
@@ -58,6 +59,10 @@ public:
         else if(tProblemPhysics == "Electromechanical")
         {
             return std::make_shared<Problem<::Plato::Electromechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+        }
+        else if(tProblemPhysics == "Thermomechanical")
+        {
+            return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
         }
         return nullptr;
     }

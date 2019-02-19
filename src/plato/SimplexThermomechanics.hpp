@@ -1,5 +1,5 @@
-#ifndef SIMPLEX_ELECTROMECHANICS_HPP
-#define SIMPLEX_ELECTROMECHANICS_HPP
+#ifndef SIMPLEX_THERMOMECHANICS_HPP
+#define SIMPLEX_THERMOMECHANICS_HPP
 
 #include "plato/Simplex.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
@@ -8,11 +8,11 @@ namespace Plato
 {
 
 /******************************************************************************/
-/*! Base class for simplex-based electromechanics
+/*! Base class for simplex-based thermomechanics
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
-class SimplexElectromechanics : public Simplex<SpaceDim>
+class SimplexThermomechanics : public Simplex<SpaceDim>
 {
   public:
     using Simplex<SpaceDim>::m_numNodesPerCell;

@@ -1,24 +1,24 @@
-#ifndef EMKINEMATICS_HPP
-#define EMKINEMATICS_HPP
+#ifndef TMKINEMATICS_HPP
+#define TMKINEMATICS_HPP
 
-#include "plato/SimplexElectromechanics.hpp"
+#include "plato/SimplexThermomechanics.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
 /******************************************************************************/
-/*! Electromechanical kinematics functor.
+/*! Thermomechanical kinematics functor.
   
     Given a gradient matrix and displacement array, compute the strain 
-    and electric field.
+    and temperature gradient.
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
-class EMKinematics : public Plato::SimplexElectromechanics<SpaceDim>
+class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
+    using Plato::SimplexThermomechanics<SpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
 
   public:
 
@@ -26,7 +26,7 @@ class EMKinematics : public Plato::SimplexElectromechanics<SpaceDim>
     DEVICE_TYPE inline void
     operator()( Plato::OrdinalType cellOrdinal,
                 Plato::ScalarMultiVectorT< StrainScalarType   > const& strain,
-                Plato::ScalarMultiVectorT< StrainScalarType   > const& efield,
+                Plato::ScalarMultiVectorT< StrainScalarType   > const& tgrad,
                 Plato::ScalarMultiVectorT< StateScalarType    > const& state,
                 Plato::ScalarArray3DT<     GradientScalarType > const& gradient) const {
 
@@ -53,14 +53,14 @@ class EMKinematics : public Plato::SimplexElectromechanics<SpaceDim>
         }
       }
  
-      // compute efield
+      // compute tgrad
       //
       Plato::OrdinalType dofOffset = SpaceDim;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
-        efield(cellOrdinal,iDof) = 0.0;
+        tgrad(cellOrdinal,iDof) = 0.0;
         for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
           Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+dofOffset;
-          efield(cellOrdinal,iDof) -= state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
+          tgrad(cellOrdinal,iDof) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
       }
     }
