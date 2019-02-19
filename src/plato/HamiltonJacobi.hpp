@@ -143,6 +143,42 @@ Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<Spa
 }
 
 template<int SpatialDim>
+Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+{
+  constexpr int nodesPerElem = SpatialDim + 1;
+  Plato::NodeCoordinate<SpatialDim> nodeCoordinate(&omega_h_mesh);
+  Plato::ComputeVolume<SpatialDim> computeElemVolume(nodeCoordinate);
+  auto levelSetField = fields.mLevelSet;
+  auto elems2Verts = omega_h_mesh.ask_elem_verts();
+
+  auto computeIntegral = LAMBDA_EXPRESSION(int elem, Plato::Scalar & integral) {
+    Plato::Scalar elemVolume = computeElemVolume(elem);
+
+    Plato::Scalar avgLS = 0.;
+    for (int n=0; n<nodesPerElem; ++n)
+    {
+      avgLS += levelSetField(elems2Verts[elem * nodesPerElem + n],fields.mCurrentState)/nodesPerElem;
+    }
+
+    Plato::Scalar elemSpeed = 0.;
+    if (fields.useElementSpeed)
+    {
+      elemSpeed = fields.mElementSpeed[elem];
+    }
+    else
+    {
+      for (int n=0; n<nodesPerElem; ++n)
+        elemSpeed += fields.mNodalSpeed(elems2Verts[elem * nodesPerElem + n])/nodesPerElem;
+    }
+
+    integral += elemVolume * elemSpeed * Delta(avgLS - levelSet, eps);
+  };
+  Plato::Scalar integral = 0.;
+  Kokkos::parallel_reduce(omega_h_mesh.nelems(), computeIntegral, integral);
+  return integral;
+}
+
+template<int SpatialDim>
 Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
 {
   auto fn = LAMBDA_EXPRESSION(const Plato::Scalar signedDist, const Plato::Scalar eps) {

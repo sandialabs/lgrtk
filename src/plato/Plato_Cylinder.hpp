@@ -73,9 +73,7 @@ public:
     /******************************************************************************//**
      * @brief Default constructor
     **********************************************************************************/
-    explicit Cylinder(const ScalarType aRadius, const ScalarType aLength) :
-            mRadius(aRadius),
-            mLength(aLength)
+    explicit Cylinder()
     {
     }
 
@@ -114,6 +112,15 @@ public:
     }
 
     /******************************************************************************//**
+	 * @brief Compute the reference rate that gas mass is begin produced
+	 * @return mass production rate
+	**********************************************************************************/
+	ScalarType referencMassProductionRate()
+	{
+		return mRefBurnRate * mPropellantDensity * area();
+	}
+
+    /******************************************************************************//**
      * @brief compute the gradient with respect to geometric parameters
      * @param aOutput gradient
     **********************************************************************************/
@@ -125,17 +132,13 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Initialize geometry
-     * @param [in] aParam parameters associated with the geometry and fields on the geometry
-    **********************************************************************************/
-    void initialize(const Plato::ProblemParams & aParam)
-    {
-        mRadius = aParam.mGeometry[0];
-        if(aParam.mGeometry.size() > static_cast<size_t>(1))
-        {
-            mLength = aParam.mGeometry[1];
-        }
-    }
+	 * @brief Update geometry
+	 * @param [in] aParam optimization parameters
+	**********************************************************************************/
+	void initialize(const Plato::ProblemParams & aParam)
+	{
+		updateGeometry(aParam);
+	}
 
     /******************************************************************************//**
      * @brief Update geometry
@@ -143,14 +146,29 @@ public:
     **********************************************************************************/
     void updateGeometry(const Plato::ProblemParams & aParam)
     {
-        const ScalarType tDeltaTime = aParam.mTimeStep;
-        const ScalarType tBurnRate = aParam.mBurnRate[0];
-        mRadius += tBurnRate * tDeltaTime;
+    	assert(aParam.mGeometry.size() == static_cast<size_t>(2));
+    	mRadius = aParam.mGeometry[0];
+    	mLength = aParam.mGeometry[1];
+    	assert(aParam.mRefBurnRate.size() == static_cast<size_t>(1));
+    	mRefBurnRate = aParam.mRefBurnRate[0];
+    	mPropellantDensity = aParam.mPropellantDensity;
+    }
+
+    /******************************************************************************//**
+	 * @brief Evolve geometry in time
+	 * @param [in] aDeltaTime time step
+	 * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
+	**********************************************************************************/
+	virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+    {
+        mRadius += aBurnRateMultiplier * mRefBurnRate * aDeltaTime;
     }
 
 private:
-    ScalarType mRadius; /*!< cylinder's radius */
-    ScalarType mLength; /*!< cylinder's length */
+    ScalarType mRadius{0}; /*!< cylinder's radius */
+    ScalarType mLength{0}; /*!< cylinder's length */
+    ScalarType mPropellantDensity{0}; /*!< propellant density */
+    ScalarType mRefBurnRate{0}; /*!< constant reference burn rate */
 };
 // class Cylinder
 

@@ -56,8 +56,8 @@ namespace Plato
 **********************************************************************************/
 struct ProblemParams
 {
-    Plato::Scalar mTimeStep; /*!< simulation's time step */
-    std::vector<Plato::Scalar> mBurnRate; /*!< define burn rate spatial distribution */
+    Plato::Scalar mPropellantDensity{1744}; /*!< propellant density */
+    std::vector<Plato::Scalar> mRefBurnRate; /*!< define burn rate spatial distribution */
     std::vector<Plato::Scalar> mGeometry; /*!< define chambers configuration/geometry */
 };
 // struct ProblemParams
@@ -83,6 +83,12 @@ public:
     virtual ScalarType area() = 0;
 
     /******************************************************************************//**
+	 * @brief Compute the reference rate that gas mass is begin produced
+	 * @return mass production rate
+	**********************************************************************************/
+	virtual ScalarType referencMassProductionRate() = 0;
+
+    /******************************************************************************//**
      * @brief Compute the gradient with respect to geometry-based parameters
      * @param [in/out] aOutput gradient with respect to geometry-based parameters
     **********************************************************************************/
@@ -99,6 +105,13 @@ public:
      * @param [in] aParam optimization parameters
     **********************************************************************************/
     virtual void updateGeometry(const Plato::ProblemParams & aParam) = 0;
+
+    /******************************************************************************//**
+	 * @brief Evolve geometry in time
+	 * @param [in] aDeltaTime time step
+	 * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
+	**********************************************************************************/
+	virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) = 0;
 };
 // class GeometryModel
 
