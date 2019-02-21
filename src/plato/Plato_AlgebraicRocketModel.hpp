@@ -250,8 +250,18 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Initialize geometry and material properties given a new parameter set
+     *        from the optimizer.
+     * @param aParam Problem database
+    **********************************************************************************/
+    void initialize(const Plato::ProblemParams & aParams)
+    {
+        mImmersedGeomModel->initialize(aParams);
+    }
+
+    /******************************************************************************//**
      * @brief compute thrust and pressure profiles given a simple algebraic model for a rocket.
-     **********************************************************************************/
+    **********************************************************************************/
     void solve()
     {
         mTimes.clear();

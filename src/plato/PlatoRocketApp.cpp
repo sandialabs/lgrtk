@@ -8,6 +8,7 @@
 #include <fstream>
 
 #include "plato/PlatoRocketApp.hpp"
+#include "plato/Plato_RocketMocks.hpp"
 #include "plato/Plato_LevelSetCylinderInBox.hpp"
 
 namespace Plato
@@ -212,9 +213,12 @@ void RocketApp::setRocketDriver()
 {
     const Plato::Scalar tRadius = 0.075; // m
     const Plato::Scalar tLength = 0.65; // m
+    const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
+    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, tLength, tRefBurnRate);
+
     std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeometry =
             std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(mComm);
-    tGeometry->define(tRadius, tLength);
+    tGeometry->initialize(tParams);
 
     Plato::AlgebraicRocketInputs<Plato::Scalar> tDefaulRocketParams;
     mRocketDriver = std::make_shared<Plato::AlgebraicRocketModel<Plato::Scalar>>(tDefaulRocketParams, tGeometry);
@@ -451,8 +455,8 @@ void RocketApp::updateProblem(const std::vector<Plato::Scalar> & aControls)
     const Plato::Scalar tRadius = aControls[0] * tNormalizationConstants[0];
     tParams.mGeometry.push_back(tRadius);
     const Plato::Scalar tRefBurnRate = aControls[1] * tNormalizationConstants[1];
-    tParams.mBurnRate.push_back(tRefBurnRate);
-    mRocketDriver->updateProblem(tParams);
+    tParams.mRefBurnRate.push_back(tRefBurnRate);
+    mRocketDriver->initialize(tParams);
 }
 
 } // namespace Plato
