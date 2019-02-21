@@ -1,0 +1,43 @@
+end time: 10.0
+element type: Bar2
+mesh:
+  box:
+    x elements: 160
+    x size: 2.0
+material models:
+  - 
+    type: ideal gas
+    heat capacity ratio: 1.4e+00
+    specific internal energy: 1.0
+modifiers:
+  - 
+    type: compute pressure
+conditions:
+  velocity:
+    - 
+      at time: 0.0
+      value: 'vector(0.0)'
+  density:
+    - 
+      at time: 0.0
+      value: '1.0'
+responses:
+  - 
+    type: VTK output
+    path: bar2_void_expand
+    fields:
+      - velocity
+      - specific internal energy
+      - specific internal energy rate
+      - stress
+      - wave speed
+      - pressure
+      - density
+  - 
+    type: command line history
+    scalars:
+      - step
+      - CPU time
+      - time
+      - dt
+
