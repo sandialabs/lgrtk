@@ -48,7 +48,6 @@ add_library(lgr_library
     lgr_traction.cpp
     lgr_nodal_pressure.cpp
     lgr_pressure.cpp
-    lgr_anti_lock.cpp
     lgr_indset.cpp
     lgr_setup.cpp
     )

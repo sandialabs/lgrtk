@@ -1,5 +1,4 @@
 #include <Omega_h_profile.hpp>
-#include <lgr_anti_lock.hpp>
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
@@ -108,18 +107,6 @@ ModelFactories get_builtin_modifier_factories() {
   out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
   out["compute pressure"] = pressure_factory;
-  out["average J over points"] = average_J_over_points_factory<Elem>;
-  out["average pressure over points"] =
-      average_pressure_over_points_factory<Elem>;
-  out["average internal energy over points"] =
-      average_internal_energy_over_points_factory<Elem>;
-  out["average density over points"] =
-      average_density_over_points_factory<Elem>;
-  out["average J over independent set"] =
-      average_J_over_independent_set_factory<Elem>;
-  out["average pressure over independent set"] =
-      average_pressure_over_independent_set_factory<Elem>;
-  out["independent set"] = independent_set_factory<Elem>;
   return out;
 }
 
