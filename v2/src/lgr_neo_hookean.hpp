@@ -17,6 +17,8 @@ ModelBase* neo_hookean_factory(
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
+void setup_neo_hookean(Simulation& sim, Omega_h::InputMap& pl);
+
 }  // namespace lgr
 
 #endif

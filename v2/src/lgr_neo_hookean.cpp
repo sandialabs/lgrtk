@@ -92,4 +92,19 @@ ModelBase* neo_hookean_factory(
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
+void setup_neo_hookean(Simulation& sim, Omega_h::InputMap& pl) {
+  auto& models_pl = pl.get_list("material models");
+  for (int i = 0; i < models_pl.size(); ++i) {
+    auto& model_pl = models_pl.get_map(i);
+    if (model_pl.get<std::string>("type") == "neo-Hookean") {
+#define LGR_EXPL_INST(Elem) \
+      if (sim.elem_name == Elem::name()) { \
+        sim.models.add(new NeoHookean<Elem>(sim, model_pl)); \
+      }
+LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
+    }
+  }
+}
+
 }  // namespace lgr

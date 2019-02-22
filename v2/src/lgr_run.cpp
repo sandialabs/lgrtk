@@ -95,7 +95,12 @@ void run(
 #define LGR_EXPL_INST(Elem)                                                    \
   if (elem == Elem::name()) {                                                  \
     sim.set_elem<Elem>();                                                      \
-    sim.setup(pl);                                                             \
+  }
+  LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
+  sim.setup(pl);
+#define LGR_EXPL_INST(Elem)                                                    \
+  if (elem == Elem::name()) {                                                  \
     run_simulation<Elem>(sim);                                                 \
     return;                                                                    \
   }
