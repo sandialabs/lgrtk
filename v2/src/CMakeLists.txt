@@ -8,7 +8,6 @@ add_library(lgr_library
     lgr_field.cpp
     lgr_fields.cpp
     lgr_hydro.cpp
-    lgr_linear_elastic.cpp
     lgr_hyper_ep.cpp
     lgr_ideal_gas.cpp
     lgr_mie_gruneisen.cpp

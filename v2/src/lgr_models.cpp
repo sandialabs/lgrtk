@@ -7,7 +7,6 @@
 #include <lgr_indset.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
-#include <lgr_linear_elastic.hpp>
 #include <lgr_mie_gruneisen.hpp>
 #include <lgr_models.hpp>
 #include <lgr_neo_hookean.hpp>
@@ -98,7 +97,6 @@ void Models::run(std::string const& name) {
 template <class Elem>
 ModelFactories get_builtin_material_model_factories() {
   ModelFactories out;
-  out["linear elastic"] = linear_elastic_factory<Elem>;
   out["hyper elastic-plastic"] = hyper_ep_factory<Elem>;
   out["ideal gas"] = ideal_gas_factory<Elem>;
   out["Mie-Gruneisen"] = mie_gruneisen_factory<Elem>;
