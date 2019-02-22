@@ -26,6 +26,9 @@ namespace Plato
 
 /******************************************************************************//**
  * @brief Augmented Lagrangian stress constraint criterion
+ * This implementation is based on recent work by Prof. Glaucio Paulino research
+ * group at Georgia Institute of Technology. Reference will be provided as soon as
+ * it becomes available.
 **********************************************************************************/
 template<typename EvaluationType>
 class AugLagStressCriterion :
