@@ -87,9 +87,10 @@ MappedPointWrite<Elem> Simulation::points_getset(
 
 void Simulation::del(FieldIndex fi) { fields.del(fi); }
 
-Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
+Simulation::Simulation(Omega_h::CommPtr comm_in, Setups const& setups_in, Factories&& factories_in)
     : comm(comm_in),
       factories(std::move(factories_in)),
+      setups(setups_in),
       input_variables(*this),
       disc(),
       subsets(disc),
@@ -157,6 +158,9 @@ void Simulation::setup(Omega_h::InputMap& pl) {
       fields.define("dt", "time step", 1, ELEMS, true, everywhere);
   traction = fields.define("tau", "traction", 1, SIDES, true, nowhere);
   // done defining fields
+  for (auto& setup : setups.material_models) {
+    setup(*this, pl);
+  }
   models.setup_material_models_and_modifiers(pl);
   flooder.setup(pl);
   models.setup_field_updates();

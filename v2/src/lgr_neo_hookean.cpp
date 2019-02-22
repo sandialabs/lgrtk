@@ -80,18 +80,6 @@ struct NeoHookean : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* neo_hookean_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new NeoHookean<Elem>(sim, pl);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* neo_hookean_factory<Elem>(                               \
-      Simulation&, std::string const&, Omega_h::InputMap&);
-LGR_EXPL_INST_ELEMS
-#undef LGR_EXPL_INST
-
 void setup_neo_hookean(Simulation& sim, Omega_h::InputMap& pl) {
   auto& models_pl = pl.get_list("material models");
   for (int i = 0; i < models_pl.size(); ++i) {

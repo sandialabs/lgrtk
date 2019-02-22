@@ -6,6 +6,7 @@
 #include <lgr_disc.hpp>
 #include <lgr_element_types.hpp>
 #include <lgr_factories.hpp>
+#include <lgr_setup.hpp>
 #include <lgr_field_access.hpp>
 #include <lgr_fields.hpp>
 #include <lgr_flood.hpp>
@@ -22,6 +23,7 @@ struct Simulation {
   std::string elem_name;
   Omega_h::CommPtr comm;
   Factories factories;
+  Setups const& setups;
   InputVariables input_variables;
   Disc disc;
   Subsets subsets;
@@ -32,7 +34,7 @@ struct Simulation {
   Responses responses;
   Adapter adapter;
   Flooder flooder;
-  Simulation(Omega_h::CommPtr comm, Factories&& factories_in);
+  Simulation(Omega_h::CommPtr comm, Setups const& setups_in, Factories&& factories_in);
   double get_double(
       Omega_h::InputMap& pl, const char* name, const char* default_expr);
   int get_int(

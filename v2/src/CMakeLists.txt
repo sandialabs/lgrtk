@@ -50,6 +50,7 @@ add_library(lgr_library
     lgr_pressure.cpp
     lgr_anti_lock.cpp
     lgr_indset.cpp
+    lgr_setup.cpp
     )
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
@@ -91,6 +92,7 @@ install(FILES
     lgr_when.hpp
     lgr_flood.hpp
     lgr_element_functions.hpp
+    lgr_setup.hpp
     DESTINATION include)
 
 if(LGR_COMPTET)
