@@ -1,5 +1,4 @@
 #include <Omega_h_profile.hpp>
-#include <lgr_cmdline_hist.hpp>
 #include <lgr_comparison.hpp>
 #include <lgr_csv_hist.hpp>
 #include <lgr_osh_output.hpp>
@@ -13,6 +12,11 @@ Responses::Responses(Simulation& sim_in) : sim(sim_in) {}
 
 void Responses::setup(Omega_h::InputList& pl) {
   ::lgr::setup(sim.factories.response_factories, sim, pl, storage, "response");
+}
+
+void Responses::add(Response* new_response) {
+  std::unique_ptr<Response> uptr(new_response);
+  storage.push_back(std::move(uptr));
 }
 
 void Responses::evaluate() {
@@ -34,7 +38,6 @@ double Responses::next_event(double time) {
 ResponseFactories get_builtin_response_factories() {
   ResponseFactories out;
   out["VTK output"] = vtk_output_factory;
-  out["command line history"] = cmdline_hist_factory;
   out["CSV history"] = csv_hist_factory;
   out["comparison"] = comparison_factory;
   out["osh output"] = osh_output_factory;

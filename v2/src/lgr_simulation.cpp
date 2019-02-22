@@ -174,6 +174,9 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   // done setting coordinates
   scalars.setup(pl.get_map("scalars"));
   no_output = pl.get<bool>("no output", "false");
+  for (auto& setup : setups.responses) {
+    setup(*this, pl);
+  }
   responses.setup(pl.get_list("responses"));
   adapter.setup(pl);
   // echo parameters

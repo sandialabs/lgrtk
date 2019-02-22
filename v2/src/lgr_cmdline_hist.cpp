@@ -44,9 +44,16 @@ struct CmdLineHist : public Response {
 
 void CmdLineHist::out_of_line_virtual_method() {}
 
-Response* cmdline_hist_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new CmdLineHist(sim, pl);
+void setup_cmdline_hist(Simulation& sim, Omega_h::InputMap& pl) {
+  std::printf("calling setup_cmdline_hist\n");
+  auto& models_pl = pl.get_list("responses");
+  for (int i = 0; i < models_pl.size(); ++i) {
+    auto& model_pl = models_pl.get_map(i);
+    if (model_pl.get<std::string>("type") == "command line history") {
+      std::printf("adding new CmdLineHist\n");
+      sim.responses.add(new CmdLineHist(sim, model_pl));
+    }
+  }
 }
 
 }  // namespace lgr

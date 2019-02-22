@@ -5,11 +5,9 @@
 
 namespace lgr {
 
-struct Response;
 struct Simulation;
 
-Response* cmdline_hist_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl);
+void setup_cmdline_hist(Simulation&, Omega_h::InputMap&);
 
 }  // namespace lgr
 
