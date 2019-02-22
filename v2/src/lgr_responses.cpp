@@ -1,5 +1,4 @@
 #include <Omega_h_profile.hpp>
-#include <lgr_csv_hist.hpp>
 #include <lgr_osh_output.hpp>
 #include <lgr_responses.hpp>
 #include <lgr_simulation.hpp>
@@ -37,7 +36,6 @@ double Responses::next_event(double time) {
 ResponseFactories get_builtin_response_factories() {
   ResponseFactories out;
   out["VTK output"] = vtk_output_factory;
-  out["CSV history"] = csv_hist_factory;
   out["osh output"] = osh_output_factory;
   out["checkpoint"] = osh_output_factory;
   return out;
