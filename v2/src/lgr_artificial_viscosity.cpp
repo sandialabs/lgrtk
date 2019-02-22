@@ -64,16 +64,19 @@ struct ArtificialViscosity : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* artificial_viscosity_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new ArtificialViscosity<Elem>(sim, pl);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* artificial_viscosity_factory<Elem>(                      \
-      Simulation&, std::string const&, Omega_h::InputMap&);
+void setup_artifical_viscosity(Simulation& sim, Omega_h::InputMap& pl) {
+  auto& models_pl = pl.get_list("modifiers");
+  for (int i = 0; i < models_pl.size(); ++i) {
+    auto& model_pl = models_pl.get_map(i);
+    if (model_pl.get<std::string>("type") == "artificial viscosity") {
+#define LGR_EXPL_INST(Elem) \
+      if (sim.elem_name == Elem::name()) { \
+        sim.models.add(new ArtificialViscosity<Elem>(sim, model_pl)); \
+      }
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
+    }
+  }
+}
 
 }  // namespace lgr
