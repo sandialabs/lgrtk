@@ -42,8 +42,7 @@ struct StVenantKirchhoff : public Model<Elem> {
       setstress(points_to_stress, point, sigma);
       points_to_wave_speed[point] = c;
     };
-    parallel_for(
-        "StVenant-Kirchhoff kernel", this->points(), std::move(functor));
+    parallel_for(this->points(), std::move(functor));
   }
 };
 
@@ -58,5 +57,20 @@ ModelBase* stvenant_kirchhoff_factory(
       Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
+
+void setup_stvenant_kirchoff(Simulation& sim, Omega_h::InputMap& pl) {
+  auto& models_pl = pl.get_list("material models");
+  for (int i = 0; i < models_pl.size(); ++i) {
+    auto& model_pl = models_pl.get_map(i);
+    if (model_pl.get<std::string>("type") == "StVenant-Kirchhoff") {
+#define LGR_EXPL_INST(Elem) \
+      if (sim.elem_name == Elem::name()) { \
+        sim.models.add(new StVenantKirchhoff<Elem>(sim, model_pl)); \
+      }
+LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
+    }
+  }
+}
 
 }  // namespace lgr

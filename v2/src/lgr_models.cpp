@@ -21,6 +21,11 @@ namespace lgr {
 
 Models::Models(Simulation& sim_in) : sim(sim_in) {}
 
+void Models::add(ModelBase* new_model) {
+  std::unique_ptr<ModelBase> uptr(new_model);
+  models.push_back(std::move(uptr));
+}
+
 void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
   ::lgr::setup(sim.factories.material_model_factories, sim,
       pl.get_list("material models"), models, "material model");
@@ -80,6 +85,15 @@ LGR_STAGE_DEF(at_secondaries, AT_SECONDARIES)
 LGR_STAGE_DEF(after_secondaries, AFTER_SECONDARIES)
 LGR_STAGE_DEF(after_correction, AFTER_CORRECTION)
 #undef LGR_STAGE_DEF
+
+void Models::run(std::string const& name) {
+  for (auto& model : models) {
+    if (name == model->name()) {
+      Scope scope{sim, name.c_str()};
+    //model->run();
+    }
+  }
+}
 
 template <class Elem>
 ModelFactories get_builtin_material_model_factories() {
