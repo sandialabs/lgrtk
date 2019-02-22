@@ -33,7 +33,7 @@ struct LinearElastic : public Model<Elem> {
     this->deformation_gradient = this->point_define(
         "F", "deformation gradient", square(dim), RemapType::POLAR, pl, "I");
     this->effective_bulk_modulus = this->point_define("kappa_tilde",
-        "effective bulk modulus", 1, RemapType::PER_UNIT_VOLUME, pl, "");
+        "effective bulk modulus", 1, RemapType::NONE, pl, "");
   }
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
   char const* name() override final { return "linear elastic"; }

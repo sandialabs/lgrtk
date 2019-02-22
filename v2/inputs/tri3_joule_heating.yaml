@@ -10,7 +10,7 @@ common fields:
   density: 1.0
 material models:
   - 
-    type: linear elastic
+    type: neo-Hookean
     bulk modulus: 1.0
     shear modulus: 0.0
 modifiers:
