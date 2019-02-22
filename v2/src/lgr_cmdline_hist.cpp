@@ -45,13 +45,11 @@ struct CmdLineHist : public Response {
 void CmdLineHist::out_of_line_virtual_method() {}
 
 void setup_cmdline_hist(Simulation& sim, Omega_h::InputMap& pl) {
-  std::printf("calling setup_cmdline_hist\n");
-  auto& models_pl = pl.get_list("responses");
-  for (int i = 0; i < models_pl.size(); ++i) {
-    auto& model_pl = models_pl.get_map(i);
-    if (model_pl.get<std::string>("type") == "command line history") {
-      std::printf("adding new CmdLineHist\n");
-      sim.responses.add(new CmdLineHist(sim, model_pl));
+  auto& responses_pl = pl.get_list("responses");
+  for (int i = 0; i < responses_pl.size(); ++i) {
+    auto& response_pl = responses_pl.get_map(i);
+    if (response_pl.get<std::string>("type") == "command line history") {
+      sim.responses.add(new CmdLineHist(sim, response_pl));
     }
   }
 }
