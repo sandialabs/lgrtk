@@ -5,6 +5,7 @@
 #include <lgr_indset.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
+#include <lgr_j2_plasticity.hpp>
 #include <lgr_mie_gruneisen.hpp>
 #include <lgr_models.hpp>
 #include <lgr_nodal_pressure.hpp>
@@ -100,6 +101,7 @@ template <class Elem>
 ModelFactories get_builtin_material_model_factories() {
   ModelFactories out;
   out["hyper elastic-plastic"] = hyper_ep_factory<Elem>;
+  out["J2 plasticity"] = j2_plasticity_factory<Elem>;
   out["Mie-Gruneisen"] = mie_gruneisen_factory<Elem>;
   out["StVenant-Kirchhoff"] = stvenant_kirchhoff_factory<Elem>;
   return out;
