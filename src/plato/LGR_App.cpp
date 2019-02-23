@@ -70,9 +70,9 @@ createProblem(ProblemDefinition& aDefinition){
   mMesh.set_parting(Omega_h_Parting::OMEGA_H_GHOSTED);
 
   Omega_h::Assoc tAssoc;
-  if (definition.params.isSublist("Associations"))
+  if (aDefinition.params.isSublist("Associations"))
   {
-    auto& tAssocParamList = definition.params.sublist("Associations");
+    auto& tAssocParamList = aDefinition.params.sublist("Associations");
     Omega_h::update_assoc(&tAssoc, tAssocParamList);
   }
   else {
