@@ -158,7 +158,7 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   // done defining fields
   models.setup_material_models_and_modifiers(pl);
   flooder.setup(pl);
-  models.setup_field_updates();
+  models.setup_field_updates(pl);
   finalize_definitions();
   // setup conditions
   fields.setup_conditions(*this, pl.get_map("conditions"));

@@ -1,8 +1,5 @@
 #include <Omega_h_profile.hpp>
-#include <lgr_artificial_viscosity.hpp>
-#include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
-#include <lgr_indset.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_mie_gruneisen.hpp>
@@ -38,7 +35,10 @@ void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
       models, "modifier");
 }
 
-void Models::setup_field_updates() {
+void Models::setup_field_updates(Omega_h::InputMap& pl) {
+  for (auto& setup : sim.setups.field_updates) {
+    setup(sim, pl);
+  }
   auto const& factories = sim.factories.field_update_factories;
   Omega_h::InputMap dummy_pl;
   // this can't be a range-based for loop because some field update
@@ -118,7 +118,6 @@ template <class Elem>
 ModelFactories get_builtin_field_update_factories() {
   ModelFactories out;
   out["specific internal energy"] = internal_energy_factory<Elem>;
-  out["deformation gradient"] = deformation_gradient_factory<Elem>;
   return out;
 }
 

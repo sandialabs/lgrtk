@@ -251,4 +251,12 @@ void Fields::remove_from_omega_h(
   }
 }
 
+bool Fields::has(std::string const& name) {
+  auto it = std::find_if(
+      storage.begin(), storage.end(), [&](std::unique_ptr<Field> const& f) {
+        return f->long_name == name;
+      });
+  return it != storage.end();
+}
+
 }  // namespace lgr

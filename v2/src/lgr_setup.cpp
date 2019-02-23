@@ -4,6 +4,7 @@
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_cmdline_hist.hpp>
 #include <lgr_comparison.hpp>
+#include <lgr_deformation_gradient.hpp>
 
 namespace lgr {
 
@@ -13,6 +14,7 @@ void add_builtin_setups(Setups& setups) {
   setups.modifiers.push_back(setup_artifical_viscosity);
   setups.responses.push_back(setup_cmdline_hist);
   setups.responses.push_back(setup_comparison);
+  setups.field_updates.push_back(setup_deformation_gradient);
 }
 
 }

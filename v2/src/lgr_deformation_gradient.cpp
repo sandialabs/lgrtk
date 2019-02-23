@@ -42,16 +42,15 @@ struct DeformationGradient : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* deformation_gradient_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap&) {
-  return new DeformationGradient<Elem>(sim);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* deformation_gradient_factory<Elem>(                      \
-      Simulation&, std::string const&, Omega_h::InputMap&);
+void setup_deformation_gradient(Simulation& sim, Omega_h::InputMap&) {
+  if (sim.fields.has("deformation gradient")) {
+#define LGR_EXPL_INST(Elem) \
+    if (sim.elem_name == Elem::name()) { \
+      sim.models.add(new DeformationGradient<Elem>(sim)); \
+    }
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
+  }
+}
 
 }  // namespace lgr

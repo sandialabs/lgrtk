@@ -36,6 +36,7 @@ struct Fields {
   void copy_to_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
   void copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
   void remove_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
+  bool has(std::string const& name);
 };
 
 }  // namespace lgr
