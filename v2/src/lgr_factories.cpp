@@ -29,13 +29,10 @@ bool Factories::empty() {
 
 template <class T>
 static T* get(FactoriesOf<T> const& factories, std::string const& name,
-    Simulation& sim, Omega_h::InputMap& pl, std::string const& category_name) {
+    Simulation& sim, Omega_h::InputMap& pl, std::string const&/*category_name*/) {
   auto type_name = pl.get<std::string>("type");
   auto factory_it = factories.find(type_name);
-  if (factory_it == factories.end()) {
-    Omega_h_fail("no %s factory for type \"%s\"\n", category_name.c_str(),
-        type_name.c_str());
-  }
+  if (factory_it == factories.end()) return nullptr;
   auto& factory = factory_it->second;
   return factory(sim, name, pl);
 }
@@ -47,6 +44,7 @@ void setup(FactoriesOf<T> const& factories, Simulation& sim,
   for (int i = 0; i < pl.size(); ++i) {
     auto& subpl = pl.get_map(i);
     auto const ptr = get(factories, "", sim, subpl, category_name);
+    if (!ptr) continue;
     std::unique_ptr<T> unique_ptr(ptr);
     out.push_back(std::move(unique_ptr));
   }

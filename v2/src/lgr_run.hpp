@@ -3,13 +3,14 @@
 
 #include <Omega_h_input.hpp>
 #include <lgr_factories.hpp>
+#include <lgr_setup.hpp>
 
 namespace lgr {
 
-void run(
-    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Factories&& model_factories);
 int run_cmdline(int argc, char** argv,
-    std::function<void(lgr::Factories&, std::string const&)> add_factories);
+    std::function<void(lgr::Factories&, std::string const&)> add_factories,
+    std::function<void(lgr::Setups&)> add_other_setups
+    );
 
 }  // namespace lgr
 

@@ -8,7 +8,6 @@ add_library(lgr_library
     lgr_field.cpp
     lgr_fields.cpp
     lgr_hydro.cpp
-    lgr_linear_elastic.cpp
     lgr_hyper_ep.cpp
     lgr_ideal_gas.cpp
     lgr_mie_gruneisen.cpp
@@ -28,7 +27,6 @@ add_library(lgr_library
     lgr_scalar.cpp
     lgr_scalars.cpp
     lgr_cmdline_hist.cpp
-    lgr_csv_hist.cpp
     lgr_node_scalar.cpp
     lgr_comparison.cpp
     lgr_l2_error.cpp
@@ -49,8 +47,8 @@ add_library(lgr_library
     lgr_traction.cpp
     lgr_nodal_pressure.cpp
     lgr_pressure.cpp
-    lgr_anti_lock.cpp
     lgr_indset.cpp
+    lgr_setup.cpp
     )
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
@@ -92,6 +90,7 @@ install(FILES
     lgr_when.hpp
     lgr_flood.hpp
     lgr_element_functions.hpp
+    lgr_setup.hpp
     DESTINATION include)
 
 if(LGR_COMPTET)

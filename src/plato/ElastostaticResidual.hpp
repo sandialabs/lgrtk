@@ -109,7 +109,7 @@ public:
     /**************************************************************************/
     ElastostaticResidual(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Plato::DataMap aDataMap) :
             AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(),
+            m_indicatorFunction(3.0, 0.0),
             m_applyWeighting(m_indicatorFunction),
             m_bodyLoads(nullptr),
             m_boundaryLoads(nullptr),

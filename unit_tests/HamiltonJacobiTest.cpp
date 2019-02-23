@@ -120,7 +120,7 @@ TEUCHOS_UNIT_TEST(HamiltonJacobi, 3DPoorInitialCondition_ComputingArrivalTimePro
   auto omega_h_mesh = build_3D_box(2., 2., 2., 32, 32, 32);
 
   ProblemFields<SpatialDim> fields;
-  declare_fields(omega_h_mesh, fields);
+  declare_fields(omega_h_mesh, fields, false);
 
   PoorSignedDistanceForUnitSphere initialCondition;
   initialize_level_set(omega_h_mesh, fields, initialCondition);

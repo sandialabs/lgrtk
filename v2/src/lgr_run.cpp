@@ -86,16 +86,21 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-void run(
-    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Factories&& factories_in) {
+static void run(
+    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Setups const& setups, Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));
   auto elem = pl.get<std::string>("element type");
-  Simulation sim(comm, std::move(factories));
+  Simulation sim(comm, setups, std::move(factories));
 #define LGR_EXPL_INST(Elem)                                                    \
   if (elem == Elem::name()) {                                                  \
     sim.set_elem<Elem>();                                                      \
-    sim.setup(pl);                                                             \
+  }
+  LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
+  sim.setup(pl);
+#define LGR_EXPL_INST(Elem)                                                    \
+  if (elem == Elem::name()) {                                                  \
     run_simulation<Elem>(sim);                                                 \
     return;                                                                    \
   }
@@ -105,7 +110,9 @@ void run(
 }
 
 int run_cmdline(int argc, char** argv,
-    std::function<void(lgr::Factories&, std::string const&)> add_factories) {
+    std::function<void(lgr::Factories&, std::string const&)> add_factories,
+    std::function<void(lgr::Setups&)> add_other_setups
+    ) {
   Omega_h::Library lib(&argc, &argv);
   auto const world = lib.world();
   Omega_h::CmdLine cmdline;
@@ -128,7 +135,10 @@ int run_cmdline(int argc, char** argv,
   auto const elem = params.get<std::string>("element type");
   lgr::Factories factories(elem);
   if (add_factories) add_factories(factories, elem);
-  lgr::run(world, params, std::move(factories));
+  lgr::Setups setups;
+  add_builtin_setups(setups);
+  if (add_other_setups) add_other_setups(setups);
+  lgr::run(world, params, setups, std::move(factories));
   return 0;
 }
 

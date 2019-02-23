@@ -88,7 +88,7 @@ public:
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
             mDensity(1.0),
             mProjectionFunction(),
-            mPenaltyFunction(),
+            mPenaltyFunction(3.0, 0.0),
             mApplyPenalty(mPenaltyFunction),
             mApplyProjection(mProjectionFunction),
             mCellStiffness(),

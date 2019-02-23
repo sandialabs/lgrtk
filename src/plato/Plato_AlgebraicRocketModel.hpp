@@ -73,13 +73,11 @@ struct AlgebraicRocketInputs
 
     ScalarType mAlpha;
     ScalarType mDeltaTime;                // seconds
-    ScalarType mRefBurnRate;              // meters/seconds
     ScalarType mRefPressure;              // Pascal
     ScalarType mTotalBurnTime;            // seconds
     ScalarType mThroatDiameter;           // meters
     ScalarType mNewtonTolerance;          // Pascal
     ScalarType mAmbientPressure;          // Pascal
-    ScalarType mPropellantDensity;        // kilogram/meter^3
     ScalarType mCharacteristicVelocity;   // meters/seconds
 
     /******************************************************************************//**
@@ -89,13 +87,11 @@ struct AlgebraicRocketInputs
             mMaxNumNewtonItr(1000),
             mAlpha(0.38),
             mDeltaTime(0.1),
-            mRefBurnRate(0.005),
             mRefPressure(3.5e6),
             mTotalBurnTime(10),
             mThroatDiameter(0.04),
             mNewtonTolerance(1.e-8),
             mAmbientPressure(101.325),
-            mPropellantDensity(1744),
             mCharacteristicVelocity(1554.5)
     {
     }
@@ -126,12 +122,10 @@ public:
             mPrint(true),
             mNumNewtonItr(0),
             mMaxNumNewtonItr(aInputs.mMaxNumNewtonItr),
-            mRefBurnRate(aInputs.mRefBurnRate), // m/sec
             mRefPressure(aInputs.mRefPressure), // Pa
             mAlpha(aInputs.mAlpha),
             mThroatDiameter(aInputs.mThroatDiameter), // m
             mCharacteristicVelocity(aInputs.mCharacteristicVelocity), // m/sec
-            mPropellantDensity(aInputs.mPropellantDensity), // kg/m^3
             mAmbientPressure(aInputs.mAmbientPressure), // Pa
             mDeltaTime(aInputs.mDeltaTime), // sec
             mTotalBurnTime(aInputs.mTotalBurnTime), // sec
@@ -140,7 +134,6 @@ public:
             mTimes(),
             mThrustProfile(),
             mPressureProfile(),
-            mParams(),
             mImmersedGeomModel(aChamberGeomModel)
     {
     }
@@ -167,15 +160,6 @@ public:
     void setMaxNumIterations(const size_t& aInput)
     {
         mMaxNumNewtonItr = aInput;
-    }
-
-    /******************************************************************************//**
-     * @brief set propellant's reference burn rate at a reference pressure.
-     * @param aInput propellant's reference burn rate
-     **********************************************************************************/
-    void setRefBurnRate(const ScalarType& aInput)
-    {
-        mRefBurnRate = aInput;
     }
 
     /******************************************************************************//**
@@ -212,15 +196,6 @@ public:
     void setCharacteristicVelocity(const ScalarType& aInput)
     {
         mCharacteristicVelocity = aInput;
-    }
-
-    /******************************************************************************//**
-     * @brief set propellant's density.
-     * @param aInput propellant's density
-     **********************************************************************************/
-    void setPropellantDensity(const ScalarType& aInput)
-    {
-        mPropellantDensity = aInput;
     }
 
     /******************************************************************************//**
@@ -275,18 +250,18 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Update initial configuration and burn rate field.
-     * @param aParam simulation parameters
-     **********************************************************************************/
-    void updateProblem(const Plato::ProblemParams & aParams)
+     * @brief Initialize geometry and material properties given a new parameter set
+     *        from the optimizer.
+     * @param aParam Problem database
+    **********************************************************************************/
+    void initialize(const Plato::ProblemParams & aParams)
     {
-        mRefBurnRate = aParams.mBurnRate[0];
         mImmersedGeomModel->initialize(aParams);
     }
 
     /******************************************************************************//**
      * @brief compute thrust and pressure profiles given a simple algebraic model for a rocket.
-     **********************************************************************************/
+    **********************************************************************************/
     void solve()
     {
         mTimes.clear();
@@ -305,10 +280,6 @@ public:
         ScalarType tThrust = 0.0;
         ScalarType tTotalPressure = mRefPressure; // initial guess
 
-        // Define problem parameters struc
-        mParams.mTimeStep = mDeltaTime;
-        mParams.mBurnRate.resize(1);
-
         bool tBurning = true;
         while(tBurning == true)
         {
@@ -321,15 +292,16 @@ public:
             mThrustProfile.push_back(tThrust);
             mPressureProfile.push_back(tTotalPressure);
             ScalarType tChamberArea = mImmersedGeomModel->area();
+            ScalarType tMassProductionRate = mImmersedGeomModel->referencMassProductionRate();
 
-            tTotalPressure = this->newton(tChamberArea, tTotalPressure, tThroatArea);
+            tTotalPressure = this->newton(tMassProductionRate, tTotalPressure, tThroatArea);
 
             tThrust = static_cast<ScalarType>(269.0) * static_cast<ScalarType>(9.8)
                     * tChamberArea * (tTotalPressure - mAmbientPressure)
                     / mCharacteristicVelocity;
 
-            mParams.mBurnRate[0] = mRefBurnRate * std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
-            mImmersedGeomModel->updateGeometry(mParams);
+            ScalarType tBurnRateMultiplier = std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
+            mImmersedGeomModel->evolveGeometry(mDeltaTime, tBurnRateMultiplier);
             tTime += mDeltaTime;
 
             tBurning = tTime + mNewtonTolerance < mTotalBurnTime;
@@ -339,11 +311,11 @@ public:
 private:
     /******************************************************************************//**
      * @brief Newton solver.
-     * @param aChamberArea current chamber area
+     * @param aRefMassProductionRate current production rate of gas by mass
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType newton(const ScalarType& aChamberArea, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    ScalarType newton(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
     {
         bool tDone = false;
         ScalarType tNewTotalPressure = aTotalPressure;
@@ -351,8 +323,8 @@ private:
         mNumNewtonItr = 0;
         while(tDone == false)
         {
-            ScalarType tMyResidualEvaluation = this->residual(aChamberArea, tNewTotalPressure, aThroatArea);
-            ScalarType tMyJacobianEvaluation = this->jacobian(aChamberArea, tNewTotalPressure, aThroatArea);
+            ScalarType tMyResidualEvaluation = this->residual(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
+            ScalarType tMyJacobianEvaluation = this->jacobian(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
             ScalarType tDeltaPressure = static_cast<ScalarType>(-1.0) * tMyResidualEvaluation / tMyJacobianEvaluation;
             tNewTotalPressure += tDeltaPressure;
 
@@ -365,27 +337,28 @@ private:
 
     /******************************************************************************//**
      * @brief Jacobian evaluation.
-     * @param aChamberArea current chamber area
+     * @param aRefMassProductionRate current production rate of gas by mass
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType jacobian(const ScalarType& aChamberArea, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    ScalarType jacobian(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
     {
         ScalarType tPower = mAlpha - static_cast<ScalarType>(1);
-        ScalarType tValue = mPropellantDensity * aChamberArea * mRefBurnRate * mAlpha * mInvPrefAlpha
-                            * std::pow(aTotalPressure, tPower) - aThroatArea / mCharacteristicVelocity;
+        ScalarType tValue = aRefMassProductionRate * mAlpha * mInvPrefAlpha
+                            * std::pow(aTotalPressure, tPower)
+                            - aThroatArea / mCharacteristicVelocity;
         return tValue;
     }
 
     /******************************************************************************//**
      * @brief Residual evaluation.
-     * @param aChamberArea current chamber area
+     * @param aRefMassProductionRate current production rate of gas by mass
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType residual(const ScalarType& aChamberArea, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    ScalarType residual(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
     {
-        ScalarType tValue = mPropellantDensity * aChamberArea * mRefBurnRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
+        ScalarType tValue = aRefMassProductionRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
                 - aThroatArea * aTotalPressure / mCharacteristicVelocity;
         return tValue;
     }
@@ -395,12 +368,10 @@ private:
     size_t mNumNewtonItr;
     size_t mMaxNumNewtonItr;
 
-    ScalarType mRefBurnRate; // m/sec
     ScalarType mRefPressure; // Pa
     ScalarType mAlpha;
     ScalarType mThroatDiameter; // m
     ScalarType mCharacteristicVelocity; // m/sec
-    ScalarType mPropellantDensity; // kg/m^3
     ScalarType mAmbientPressure; // Pa
     ScalarType mDeltaTime; // sec
     ScalarType mTotalBurnTime; // sec
@@ -412,7 +383,6 @@ private:
     std::vector<ScalarType> mThrustProfile;
     std::vector<ScalarType> mPressureProfile;
 
-    Plato::ProblemParams mParams;
     std::shared_ptr<Plato::GeometryModel<ScalarType>> mImmersedGeomModel;
 };
 // class AlgebraicRocketModel

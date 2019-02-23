@@ -1,16 +1,12 @@
 #include <Omega_h_profile.hpp>
-#include <lgr_anti_lock.hpp>
 #include <lgr_artificial_viscosity.hpp>
 #include <lgr_deformation_gradient.hpp>
 #include <lgr_hyper_ep.hpp>
-#include <lgr_ideal_gas.hpp>
 #include <lgr_indset.hpp>
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
-#include <lgr_linear_elastic.hpp>
 #include <lgr_mie_gruneisen.hpp>
 #include <lgr_models.hpp>
-#include <lgr_neo_hookean.hpp>
 #include <lgr_nodal_pressure.hpp>
 #include <lgr_pressure.hpp>
 #include <lgr_scope.hpp>
@@ -21,13 +17,23 @@ namespace lgr {
 
 Models::Models(Simulation& sim_in) : sim(sim_in) {}
 
+void Models::add(ModelBase* new_model) {
+  std::unique_ptr<ModelBase> uptr(new_model);
+  models.push_back(std::move(uptr));
+}
+
 void Models::setup_material_models_and_modifiers(Omega_h::InputMap& pl) {
+  for (auto& setup : sim.setups.material_models) {
+    setup(sim, pl);
+  }
   ::lgr::setup(sim.factories.material_model_factories, sim,
       pl.get_list("material models"), models, "material model");
   for (auto& model_ptr : models) {
     OMEGA_H_CHECK((model_ptr->exec_stages() & AT_MATERIAL_MODEL) != 0);
   }
-  // if (models.empty()) Omega_h_fail("no material models defined!\n");
+  for (auto& setup : sim.setups.modifiers) {
+    setup(sim, pl);
+  }
   ::lgr::setup(sim.factories.modifier_factories, sim, pl.get_list("modifiers"),
       models, "modifier");
 }
@@ -81,14 +87,20 @@ LGR_STAGE_DEF(after_secondaries, AFTER_SECONDARIES)
 LGR_STAGE_DEF(after_correction, AFTER_CORRECTION)
 #undef LGR_STAGE_DEF
 
+void Models::run(std::string const& name) {
+  for (auto& model : models) {
+    if (name == model->name()) {
+      Scope scope{sim, name.c_str()};
+    //model->run();
+    }
+  }
+}
+
 template <class Elem>
 ModelFactories get_builtin_material_model_factories() {
   ModelFactories out;
-  out["linear elastic"] = linear_elastic_factory<Elem>;
   out["hyper elastic-plastic"] = hyper_ep_factory<Elem>;
-  out["ideal gas"] = ideal_gas_factory<Elem>;
   out["Mie-Gruneisen"] = mie_gruneisen_factory<Elem>;
-  out["neo-Hookean"] = neo_hookean_factory<Elem>;
   out["StVenant-Kirchhoff"] = stvenant_kirchhoff_factory<Elem>;
   return out;
 }
@@ -96,22 +108,9 @@ ModelFactories get_builtin_material_model_factories() {
 template <class Elem>
 ModelFactories get_builtin_modifier_factories() {
   ModelFactories out;
-  out["artificial viscosity"] = artificial_viscosity_factory<Elem>;
   out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
   out["compute pressure"] = pressure_factory;
-  out["average J over points"] = average_J_over_points_factory<Elem>;
-  out["average pressure over points"] =
-      average_pressure_over_points_factory<Elem>;
-  out["average internal energy over points"] =
-      average_internal_energy_over_points_factory<Elem>;
-  out["average density over points"] =
-      average_density_over_points_factory<Elem>;
-  out["average J over independent set"] =
-      average_J_over_independent_set_factory<Elem>;
-  out["average pressure over independent set"] =
-      average_pressure_over_independent_set_factory<Elem>;
-  out["independent set"] = independent_set_factory<Elem>;
   return out;
 }
 

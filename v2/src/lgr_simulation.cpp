@@ -87,9 +87,10 @@ MappedPointWrite<Elem> Simulation::points_getset(
 
 void Simulation::del(FieldIndex fi) { fields.del(fi); }
 
-Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
+Simulation::Simulation(Omega_h::CommPtr comm_in, Setups const& setups_in, Factories&& factories_in)
     : comm(comm_in),
       factories(std::move(factories_in)),
+      setups(setups_in),
       input_variables(*this),
       disc(),
       subsets(disc),
@@ -173,6 +174,9 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   // done setting coordinates
   scalars.setup(pl.get_map("scalars"));
   no_output = pl.get<bool>("no output", "false");
+  for (auto& setup : setups.responses) {
+    setup(*this, pl);
+  }
   responses.setup(pl.get_list("responses"));
   adapter.setup(pl);
   // echo parameters

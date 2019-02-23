@@ -20,8 +20,8 @@
 #include "MeshFixture.hpp"
 #include "StaticsTypes.hpp"
 
-#include "ImplicitFunctors.hpp"
-#include "LinearElasticMaterial.hpp"
+#include "plato/ImplicitFunctors.hpp"
+#include "plato/LinearElasticMaterial.hpp"
 
 #ifdef HAVE_VIENNA_CL
 #include "ViennaSparseLinearProblem.hpp"
@@ -54,8 +54,8 @@
 #include <plato/AbstractScalarFunction.hpp>
 #include <plato/InternalElasticEnergy.hpp>
 #include <plato/ScalarFunction.hpp>
-#include "ApplyConstraints.hpp"
-#include "PlatoProblem.hpp"
+#include "plato/ApplyConstraints.hpp"
+#include "plato/PlatoProblem.hpp"
 #include "plato/Mechanics.hpp"
 #include "plato/Thermal.hpp"
 

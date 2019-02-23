@@ -15,6 +15,7 @@
 #include "plato/Strain.hpp"
 #include "plato/LinearStress.hpp"
 #include "plato/SimplexFadTypes.hpp"
+#include "plato/PlatoMathHelpers.hpp"
 #include "plato/Plato_VonMisesYield.hpp"
 #include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/AbstractScalarFunction.hpp"
@@ -25,6 +26,9 @@ namespace Plato
 
 /******************************************************************************//**
  * @brief Augmented Lagrangian stress constraint criterion
+ * This implementation is based on recent work by Prof. Glaucio Paulino research
+ * group at Georgia Institute of Technology. Reference will be provided as soon as
+ * it becomes available.
 **********************************************************************************/
 template<typename EvaluationType>
 class AugLagStressCriterion :
@@ -43,8 +47,10 @@ private:
     using ResultT = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
     using ControlT = typename EvaluationType::ControlScalarType; /*!< control variables automatic differentiation type */
 
+    Plato::Scalar mPenalty; /*!< penalty parameter in SIMP model */
     Plato::Scalar mStressLimit; /*!< stress limit/upper bound */
     Plato::Scalar mAugLagPenalty; /*!< augmented Lagrangian penalty */
+    Plato::Scalar mMinErsatzValue; /*!< minimum ersatz material value in SIMP model */
     Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
     Plato::Scalar mMassMultipliersLowerBound; /*!< lower bound on mass multipliers */
     Plato::Scalar mMassMultipliersUpperBound; /*!< upper bound on mass multipliers */
@@ -82,8 +88,10 @@ private:
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
         Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
+        mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
+        mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
         mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
         mMassMultipliersLowerBound = tParams.get<Plato::Scalar>("Mass Multiplier Lower Bound", 0.0);
         mMassMultipliersUpperBound = tParams.get<Plato::Scalar>("Mass Multiplier Upper Bound", 4.0);
@@ -116,9 +124,11 @@ public:
                           Omega_h::MeshSets & aMeshSets,
                           Plato::DataMap & aDataMap,
                           Teuchos::ParameterList & aInputParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Von Mises Criterion"),
+            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
+            mPenalty(3),
             mStressLimit(1),
             mAugLagPenalty(0.1),
+            mMinErsatzValue(0.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -140,9 +150,11 @@ public:
      * @param [in] aDataMap PLATO Engine and Analyze data map
      **********************************************************************************/
     AugLagStressCriterion(Omega_h::Mesh & aMesh, Omega_h::MeshSets & aMeshSets, Plato::DataMap & aDataMap) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Von Mises Criterion"),
+            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
+            mPenalty(3),
             mStressLimit(1),
             mAugLagPenalty(0.1),
+            mMinErsatzValue(0.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -249,21 +261,21 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Perform continuation on criterion-based parameters
+     * @brief Update physics-based parameters within optimization iterations
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateProblem(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
-                       const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
-                       const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
+    void updateProblem(const Plato::ScalarMultiVector & aStateWS,
+                       const Plato::ScalarMultiVector & aControlWS,
+                       const Plato::ScalarArray3D & aConfigWS) override
     {
         this->updateMultipliers(aStateWS, aControlWS, aConfigWS);
         this->updateAugLagPenaltyMultipliers();
     }
 
     /******************************************************************************//**
-     * @brief Evaluate Von Mises criterion
+     * @brief Evaluate augmented Lagrangian stress constraint criterion
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
@@ -278,9 +290,9 @@ public:
     {
         using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
 
-        SIMP tPenaltySIMP;
         Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
+        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
         LinearStress<mSpaceDim> tCauchyStress(mCellStiffMatrix);
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
 
@@ -315,10 +327,11 @@ public:
             // Compute Von Mises stress constraint residual
             ResultT tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
             ResultT tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
+            ResultT tCellConstraintValue = tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
 
             ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(tCellOrdinal, aControlWS);
-            ControlT tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
-            ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+            ControlT tPenalizedCellDensity = tSIMP(tCellDensity);
+            ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tCellConstraintValue;
             ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
 
@@ -338,7 +351,7 @@ public:
 
             // Compute augmented Lagrangian
             aResultWS(tCellOrdinal) = tMassContribution + tStressContribution;
-        },"Compute Augmented Lagrangian Stress Func.");
+        },"Compute Augmented Lagrangian Function");
     }
 
     /******************************************************************************//**
@@ -347,14 +360,14 @@ public:
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateMultipliers(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
-                           const Plato::ScalarMultiVectorT<ControlT> & aControlWS,
-                           const Plato::ScalarArray3DT<ConfigT> & aConfigWS)
+    void updateMultipliers(const Plato::ScalarMultiVector & aStateWS,
+                           const Plato::ScalarMultiVector & aControlWS,
+                           const Plato::ScalarArray3D & aConfigWS)
     {
         // Create Cauchy stress functors
-        SIMP tPenaltySIMP;
         Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
+        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
         LinearStress<mSpaceDim> tCauchyStress(mCellStiffMatrix);
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
 
@@ -404,11 +417,11 @@ public:
 
             // Compute Von Mises stress constraint residual
             const Plato::Scalar tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-            const Plato::Scalar tPenalizedCellDensity = tPenaltySIMP(tCellDensity);
+            const Plato::Scalar tPenalizedCellDensity = tSIMP(tCellDensity);
             const Plato::Scalar tSuggestedPenalizedStressConstraint =
                     tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
-            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
-                    tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
+            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
+                    tSuggestedPenalizedStressConstraint : static_cast<Plato::Scalar>(0.0);
 
             // Compute relaxed stress constraint
             const Plato::Scalar tLambdaOverPenalty =

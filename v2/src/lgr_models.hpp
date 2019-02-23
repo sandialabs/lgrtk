@@ -26,6 +26,9 @@ struct Models {
   void at_secondaries();
   void after_secondaries();
   void after_correction();
+
+  void add(ModelBase* new_model);
+  void run(std::string const& name);
 };
 
 template <class Elem>

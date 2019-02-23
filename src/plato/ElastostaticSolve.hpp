@@ -13,7 +13,7 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
-#include "ImplicitFunctors.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "LinearElasticMaterial.hpp"
 
 namespace Plato {

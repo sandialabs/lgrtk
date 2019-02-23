@@ -129,6 +129,14 @@ public:
         }, "add boundary loads");
     }
 
+    /******************************************************************************//**
+     * @brief Update physics-based parameters within optimization iterations
+     * @param [in] aState 2D container of state variables
+     * @param [in] aControl 1D container of control variables
+    **********************************************************************************/
+    void updateProblem(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
+    { return; }
+
     /******************************************************************************/
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
     /******************************************************************************/

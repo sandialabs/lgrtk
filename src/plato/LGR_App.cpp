@@ -25,7 +25,7 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
   m_defaultProblem = Teuchos::rcp(new ProblemDefinition(problemName));
   m_defaultProblem->params = tInputParams;
 
-  createProblem(*m_defaultProblem);
+  this->createProblem(*m_defaultProblem);
 
 
   // parse/create the MLS PointArrays
@@ -59,12 +59,12 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
 /******************************************************************************/
 void
 MPMD_App::
-createProblem(ProblemDefinition& definition){
+createProblem(ProblemDefinition& aDefinition){
 /******************************************************************************/
 
-  m_currentProblemName = definition.name;
+  m_currentProblemName = aDefinition.name;
 
-  auto input_mesh = definition.params.get<std::string>("Input Mesh");
+  auto input_mesh = aDefinition.params.get<std::string>("Input Mesh");
 
   mMesh = Omega_h::read_mesh_file(input_mesh, m_lib_osh.world());
   mMesh.set_parting(Omega_h_Parting::OMEGA_H_GHOSTED);
@@ -81,31 +81,31 @@ createProblem(ProblemDefinition& definition){
   }
   mMeshSets = Omega_h::invert(&mMesh, tAssoc);
 
-  m_numSpatialDims = definition.params.get<int>("Spatial Dimension");
+  m_numSpatialDims = aDefinition.params.get<int>("Spatial Dimension");
 
   if (m_numSpatialDims == 3)
   {
     Plato::ProblemFactory<3> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, definition.params);
+    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
   } else
   if (m_numSpatialDims == 2)
   {
     Plato::ProblemFactory<2> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, definition.params);
+    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
   } else
   if (m_numSpatialDims == 1)
   {
     Plato::ProblemFactory<1> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, definition.params);
+    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
   }
 
-  definition.modified = false;
+  aDefinition.modified = false;
 }
 
 /******************************************************************************/
@@ -152,6 +152,10 @@ void MPMD_App::initialize()
     if(tStrFunction == "Reinitialize"){
       m_operationMap[tStrName] = new Reinitialize(this, tOperationNode, opDef);
     } else 
+
+    if(tStrFunction == "UpdateProblem"){
+      m_operationMap[tStrName] = new UpdateProblem(this, tOperationNode, opDef);
+    } else
 
     if(tStrFunction == "ComputeObjective"){
       m_operationMap[tStrName] = new ComputeObjective(this, tOperationNode, opDef);
@@ -271,8 +275,9 @@ MPMD_App::compute(const std::string & aOperationName)
 
 /******************************************************************************/
 MPMD_App::LocalOp::
-LocalOp(MPMD_App* aMyApp, Plato::InputData& aOperationNode, 
-        Teuchos::RCP<ProblemDefinition> aOpDef) : mMyApp(aMyApp), m_def(aOpDef)
+LocalOp(MPMD_App* aMyApp, Plato::InputData& aOperationNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        mMyApp(aMyApp),
+        m_def(aOpDef)
 /******************************************************************************/
 {
   // parse parameters
@@ -320,11 +325,12 @@ updateParameters(std::string aName, Plato::Scalar aValue)
   }
 }
 
-
 /******************************************************************************/
 MPMD_App::ComputeObjective::
-ComputeObjective(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                 Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef){}
+ComputeObjective(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -339,8 +345,10 @@ void MPMD_App::ComputeObjective::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeObjectiveX::
-ComputeObjectiveX(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                  Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef){}
+ComputeObjectiveX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -356,8 +364,10 @@ void MPMD_App::ComputeObjectiveX::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeObjectiveValue::
-ComputeObjectiveValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                      Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeObjectiveValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -370,8 +380,11 @@ void MPMD_App::ComputeObjectiveValue::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeObjectiveGradient::
-ComputeObjectiveGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                         Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeObjectiveGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode,  Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
+
 /******************************************************************************/
 
 /******************************************************************************/
@@ -383,8 +396,10 @@ void MPMD_App::ComputeObjectiveGradient::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeObjectiveGradientX::
-ComputeObjectiveGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                          Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeObjectiveGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -396,8 +411,10 @@ void MPMD_App::ComputeObjectiveGradientX::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeConstraint::
-ComputeConstraint(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                  Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeConstraint(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -429,8 +446,10 @@ void MPMD_App::ComputeConstraintX::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeConstraintValue::
-ComputeConstraintValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                       Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeConstraintValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -444,8 +463,10 @@ void MPMD_App::ComputeConstraintValue::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeConstraintGradient::
-ComputeConstraintGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                          Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeConstraintGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -457,8 +478,10 @@ void MPMD_App::ComputeConstraintGradient::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeConstraintGradientX::
-ComputeConstraintGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                          Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeConstraintGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -470,8 +493,10 @@ void MPMD_App::ComputeConstraintGradientX::operator()()
 
 /******************************************************************************/
 MPMD_App::ComputeSolution::
-ComputeSolution(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-                Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+ComputeSolution(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -483,8 +508,10 @@ void MPMD_App::ComputeSolution::operator()()
 
 /******************************************************************************/
 MPMD_App::Reinitialize::
-Reinitialize(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-             Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+Reinitialize(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -497,9 +524,27 @@ void MPMD_App::Reinitialize::operator()()
 
 
 /******************************************************************************/
+MPMD_App::UpdateProblem::
+UpdateProblem(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
+
+/******************************************************************************/
+
+/******************************************************************************/
+void MPMD_App::UpdateProblem::operator()()
+/******************************************************************************/
+{
+    mMyApp->m_problem->updateProblem(mMyApp->m_control, mMyApp->m_state);
+}
+
+/******************************************************************************/
 MPMD_App::WriteOutput::
-WriteOutput(MPMD_App* aMyApp, Plato::InputData& aOpNode, 
-            Teuchos::RCP<ProblemDefinition> aOpDef) : LocalOp(aMyApp, aOpNode, aOpDef) { }
+WriteOutput(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef)
+{
+}
 /******************************************************************************/
 
 /******************************************************************************/
@@ -508,14 +553,11 @@ void MPMD_App::WriteOutput::operator()() { }
 
 /******************************************************************************/
 MPMD_App::ComputeFiniteDifference::
-ComputeFiniteDifference(
-  MPMD_App* aMyApp, 
-  Plato::InputData& aOpNode, 
-  Teuchos::RCP<ProblemDefinition> aOpDef) : 
-    LocalOp(aMyApp, aOpNode, aOpDef) ,
-    m_strInitialValue("Initial Value"),
-    m_strPerturbedValue("Perturbed Value"),
-    m_strGradient("Gradient")
+ComputeFiniteDifference(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
+        LocalOp(aMyApp, aOpNode, aOpDef),
+        m_strInitialValue("Initial Value"),
+        m_strPerturbedValue("Perturbed Value"),
+        m_strGradient("Gradient")
 /******************************************************************************/
 { 
     aMyApp->mValuesMap[m_strInitialValue] = std::vector<Plato::Scalar>();

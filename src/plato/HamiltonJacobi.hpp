@@ -53,34 +53,48 @@ struct ProblemFields
 {
   typename Plato::ScalarVector mRHS;
   typename Plato::ScalarVector mRHSNorm;
-  typename Plato::ScalarVector mSpeed;
-  typename Plato::ScalarVector mBurnRate;
+  typename Plato::ScalarVector mElementSpeed;
+  typename Plato::ScalarVector mNodalSpeed;
   typename Plato::ScalarMultiVector mLevelSet;
   Plato::OrdinalType mCurrentState = 0;
+  bool useElementSpeed = true;
 };
 
 template<int SpatialDim>
-void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields)
+void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields, const bool useElementSpeed = true)
 {
     constexpr Plato::OrdinalType tNumStates = 2;
     const Plato::OrdinalType tElemCount = aOmegaH_Mesh.nelems();
     const Plato::OrdinalType tNodeCount = aOmegaH_Mesh.nverts();
-
     aFields.mRHS = Plato::ScalarVector("nodal RHS", tNodeCount);
     aFields.mRHSNorm = Plato::ScalarVector("nodal RHS norm", tNodeCount);
-    aFields.mSpeed = Plato::ScalarVector("element speed", tElemCount);
-    aFields.mBurnRate = Plato::ScalarVector("nodal burn rate", tNodeCount);
     aFields.mLevelSet = Plato::ScalarMultiVector("nodal levelSet", tNodeCount, tNumStates);
+    aFields.useElementSpeed = useElementSpeed;
+    if (useElementSpeed)
+    	aFields.mElementSpeed = Plato::ScalarVector("element speed", tElemCount);
+    else
+    	aFields.mNodalSpeed = Plato::ScalarVector("nodal speed", tNodeCount);
 }
 
 template<int SpatialDim>
 Plato::Scalar initialize_constant_speed(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar speed)
 {
-  auto elemSpeed = fields.mSpeed;
-  auto f = LAMBDA_EXPRESSION(int elem) {
-    elemSpeed(elem) = speed;
-  };
-  Kokkos::parallel_for(omega_h_mesh.nelems(), f);
+  if (fields.useElementSpeed)
+  {
+	  auto elementSpeed = fields.mElementSpeed;
+	  auto f = LAMBDA_EXPRESSION(int elem) {
+		elementSpeed(elem) = speed;
+	  };
+	  Kokkos::parallel_for(omega_h_mesh.nelems(), f);
+  }
+  else
+  {
+	  auto nodalSpeed = fields.mNodalSpeed;
+	  auto f = LAMBDA_EXPRESSION(int node) {
+		nodalSpeed(node) = speed;
+	  };
+	  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
+  }
   return speed;
 }
 
@@ -122,6 +136,42 @@ Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<Spa
     }
 
     integral += elemVolume * levelSetFn(avgLS - levelSet, eps);
+  };
+  Plato::Scalar integral = 0.;
+  Kokkos::parallel_reduce(omega_h_mesh.nelems(), computeIntegral, integral);
+  return integral;
+}
+
+template<int SpatialDim>
+Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+{
+  constexpr int nodesPerElem = SpatialDim + 1;
+  Plato::NodeCoordinate<SpatialDim> nodeCoordinate(&omega_h_mesh);
+  Plato::ComputeVolume<SpatialDim> computeElemVolume(nodeCoordinate);
+  auto levelSetField = fields.mLevelSet;
+  auto elems2Verts = omega_h_mesh.ask_elem_verts();
+
+  auto computeIntegral = LAMBDA_EXPRESSION(int elem, Plato::Scalar & integral) {
+    Plato::Scalar elemVolume = computeElemVolume(elem);
+
+    Plato::Scalar avgLS = 0.;
+    for (int n=0; n<nodesPerElem; ++n)
+    {
+      avgLS += levelSetField(elems2Verts[elem * nodesPerElem + n],fields.mCurrentState)/nodesPerElem;
+    }
+
+    Plato::Scalar elemSpeed = 0.;
+    if (fields.useElementSpeed)
+    {
+      elemSpeed = fields.mElementSpeed[elem];
+    }
+    else
+    {
+      for (int n=0; n<nodesPerElem; ++n)
+        elemSpeed += fields.mNodalSpeed(elems2Verts[elem * nodesPerElem + n])/nodesPerElem;
+    }
+
+    integral += elemVolume * elemSpeed * Delta(avgLS - levelSet, eps);
   };
   Plato::Scalar integral = 0.;
   Kokkos::parallel_reduce(omega_h_mesh.nelems(), computeIntegral, integral);
@@ -261,6 +311,18 @@ private:
   const Plato::ComputeGradient<SpatialDim> mComputeGradient;
   const ProblemFields<SpatialDim> mFields;
   const double mEps;
+
+  DEVICE_TYPE inline
+  Plato::Scalar get_element_speed(const ProblemFields<SpatialDim> & fields, int elem) const
+  {
+	if (fields.useElementSpeed) return fields.mElementSpeed[elem];
+
+	constexpr int nodesPerElem = SpatialDim + 1;
+	Plato::Scalar elementSpeed = 0.;
+	for (int n=0; n<nodesPerElem; ++n)
+		elementSpeed += mFields.mNodalSpeed(mElems2Verts[elem * nodesPerElem + n]);
+    return elementSpeed/nodesPerElem;
+  }
 public:
   AssembleElementSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const double eps) :
     mElems2Verts(omega_h_mesh.ask_elem_verts()),
@@ -286,7 +348,7 @@ public:
     }
     unitize(normalDir);
 
-    const Plato::Scalar elementSpeed = mFields.mSpeed[elem];
+    const Plato::Scalar elementSpeed = get_element_speed(mFields, elem);
     Omega_h::Vector<nodesPerElem> volHamiltonianCoeffs; // K_i in Barth-Sethian
     double sumNegCoeffs = 0.;
     double sumPosCoeffs = 0.;
@@ -359,7 +421,9 @@ private:
     // For now just implement Eikonal-type nodal speed (either redistancing or time-of-arrival).
     const Plato::Scalar LSOld = fields.mLevelSet(node, fields.mCurrentState);
     const Plato::Scalar sign = LSOld/sqrt(LSOld*LSOld + eps*eps);
-    return (mComputeTimeOfArrival) ? sign*fields.mSpeed[elem] : sign;
+    return (mComputeTimeOfArrival) ?
+    		(fields.useElementSpeed ? sign*fields.mElementSpeed[elem] : sign*fields.mNodalSpeed(node)) :
+    		sign;
   }
 public:
   AssembleNodalSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh,
