@@ -38,18 +38,6 @@ struct IdealGas : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* ideal_gas_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new IdealGas<Elem>(sim, pl);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* ideal_gas_factory<Elem>(                                 \
-      Simulation&, std::string const&, Omega_h::InputMap&);
-LGR_EXPL_INST_ELEMS
-#undef LGR_EXPL_INST
-
 void setup_ideal_gas(Simulation& sim, Omega_h::InputMap& pl) {
   auto& models_pl = pl.get_list("material models");
   for (int i = 0; i < models_pl.size(); ++i) {

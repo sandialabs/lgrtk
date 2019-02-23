@@ -119,16 +119,15 @@ struct InternalEnergy : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* internal_energy_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap&) {
-  return new InternalEnergy<Elem>(sim);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* internal_energy_factory<Elem>(                           \
-      Simulation&, std::string const&, Omega_h::InputMap&);
+void setup_internal_energy(Simulation& sim, Omega_h::InputMap&) {
+  if (sim.fields.has("specific internal energy")) {
+#define LGR_EXPL_INST(Elem) \
+    if (sim.elem_name == Elem::name()) { \
+      sim.models.add(new InternalEnergy<Elem>(sim)); \
+    }
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
+  }
+}
 
 }  // namespace lgr
