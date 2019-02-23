@@ -7,6 +7,8 @@
 
 namespace lgr {
 
+class Properties;
+
 void read_and_validate_elastic_params(
     Omega_h::InputMap & pl, Properties & props);
 

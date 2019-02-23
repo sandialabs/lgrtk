@@ -55,14 +55,14 @@ void read_and_validate_elastic_params(
   if (!pl.is<double>("E")) {
     Omega_h_fail("Young's modulus \"E\" modulus must be defined");
   }
-  double const E = pl.get<double>("E", 0.0);
+  double const E = pl.get<double>("E", "0.0");
   if (E <= 0.0) {
     Omega_h_fail("Young's modulus \"E\" must be positive");
   }
   if (!pl.is<double>("nu")) {
     Omega_h_fail("Poisson's ratio \"nu\" must be defined");
   }
-  double const nu = pl.get<double>("nu", 0.0);
+  double const nu = pl.get<double>("nu", "0.0");
   if (nu <= -1.0 || nu >= 0.5) {
     Omega_h_fail("Invalid value for Poisson's ratio \"nu\"");
   }
@@ -80,15 +80,15 @@ void read_and_validate_hardening_params(
   }
   std::string const hardening_str = pl.get<std::string>("Hardening", "NONE");
   if (hardening_str == "Power Law") {
-    double const Y0 = pl.get<double>("Y0", 0.0);
+    double const Y0 = pl.get<double>("Y0", "0.0");
     if (Y0 <= 0.0) {
       Omega_h_fail("Virgin yield strength \"Y0\" must be positive");
     }
-    double const n = pl.get<double>("n", 0.0);
+    double const n = pl.get<double>("n", "0.0");
     if (n < 0.0) {
       Omega_h_fail("Hardening exponent \"n\" must be non-negative");
     }
-    double const eps0 = pl.get<double>("eps0", 0.0);
+    double const eps0 = pl.get<double>("eps0", "0.0");
     if (eps0 <= 0.0) {
       Omega_h_fail("Reference plastic strain \"eps0\" must be positive");
     }
@@ -97,15 +97,15 @@ void read_and_validate_hardening_params(
     props.n = n;
     props.eps0 = eps0;
   } else if (hardening_str == "Voce") {
-    double const Y0 = pl.get<double>("Y0", 0.0);
+    double const Y0 = pl.get<double>("Y0", "0.0");
     if (Y0 <= 0.0) {
       Omega_h_fail("Virgin yield strength \"Y0\" must be positive");
     }
-    double const Ysat = pl.get<double>("Ysat", 0.0);
+    double const Ysat = pl.get<double>("Ysat", "0.0");
     if (Ysat <= 0.0) {
       Omega_h_fail("Saturation strength \"n\" must be positive");
     }
-    double const H0 = pl.get<double>("H0", 0.0);
+    double const H0 = pl.get<double>("H0", "0.0");
     if (H0 < 0.0) {
       Omega_h_fail("Hardening modulus \"eps0\" must be non-negative");
     }
@@ -127,15 +127,15 @@ void read_and_validate_rate_sensitivity_params(
   }
   std::string const rate_str = pl.get<std::string>("Rate Sensitivity", "NONE");
   if (rate_str == "Power Law") {
-    double const S0 = pl.get<double>("S0", 0.0);
+    double const S0 = pl.get<double>("S0", "0.0");
     if (S0 <= 0.0) {
       Omega_h_fail("Reference stress \"S0\" must be positive");
     }
-    double const m = pl.get<double>("m", 0.0);
+    double const m = pl.get<double>("m", "0.0");
     if (m < 0.0) {
       Omega_h_fail("Rate sensitivity exponent \"n\" must be positive");
     }
-    double const epsdot0 = pl.get<double>("epsdot0", 0.0);
+    double const epsdot0 = pl.get<double>("epsdot0", "0.0");
     if (epsdot0 <= 0.0) {
       Omega_h_fail("Reference plastic strain rate \"epsdot0\" must be positive");
     }
@@ -144,11 +144,11 @@ void read_and_validate_rate_sensitivity_params(
     props.m = m;
     props.epsdot0 = epsdot0;
   } else if (rate_str == "Arcsinh") {
-    double const S0 = pl.get<double>("S0", 0.0);
+    double const S0 = pl.get<double>("S0", "0.0");
     if (S0 <= 0.0) {
       Omega_h_fail("Reference stress \"S0\" must be positive");
     }
-    double const epsdot0 = pl.get<double>("epsdot0", 0.0);
+    double const epsdot0 = pl.get<double>("epsdot0", "0.0");
     if (epsdot0 <= 0.0) {
       Omega_h_fail("Reference plastic strain rate \"epsdot0\" must be positive");
     }
