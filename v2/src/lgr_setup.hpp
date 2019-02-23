@@ -14,6 +14,7 @@ struct Setups {
   Vector material_models;
   Vector modifiers;
   Vector responses;
+  Vector field_updates;
 };
 
 void add_builtin_setups(Setups&);

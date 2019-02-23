@@ -49,7 +49,6 @@ struct Simulation {
   Omega_h::LOs elems_to_nodes();
   Omega_h::Adj nodes_to_elems();
   void finalize_definitions();
-  bool has(FieldIndex fi);
   Omega_h::Read<double> get(FieldIndex fi);
   Omega_h::Write<double> set(FieldIndex fi);
   Omega_h::Write<double> getset(FieldIndex fi);

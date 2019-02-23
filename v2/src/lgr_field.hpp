@@ -29,7 +29,7 @@ struct Field {
   std::string default_value;
   RemapType remap_type;
   std::vector<Condition> conditions;
-  bool has();
+  bool is_allocated();
   void ensure_allocated();
   Omega_h::Read<double> get();
   Omega_h::Write<double> set();

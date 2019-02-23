@@ -20,7 +20,7 @@ struct Fields {
       int ncomps, Support* support);
   void finalize_definitions(Supports& s);
   Field& operator[](FieldIndex fi);
-  bool has(FieldIndex fi);
+  bool is_allocated(FieldIndex fi);
   Omega_h::Read<double> get(FieldIndex fi);
   Omega_h::Write<double> getset(FieldIndex fi);
   Omega_h::Write<double> set(FieldIndex fi);

@@ -18,10 +18,10 @@ Field::Field(std::string const& short_name_in, std::string const& long_name_in,
       filling_with_nan(filling_with_nan_in),
       remap_type(RemapType::NONE) {}
 
-bool Field::has() { return storage.exists(); }
+bool Field::is_allocated() { return storage.exists(); }
 
 void Field::ensure_allocated() {
-  if (!has()) {
+  if (!is_allocated()) {
     storage = Omega_h::Write<double>(ncomps * support->count(), long_name);
     if (filling_with_nan) {
       auto nan = std::numeric_limits<double>::signaling_NaN();
@@ -31,7 +31,7 @@ void Field::ensure_allocated() {
 }
 
 Omega_h::Read<double> Field::get() {
-  if (!has()) {
+  if (!is_allocated()) {
     Omega_h_fail(
         "attempt to read uninitialized "
         "field \"%s\"\n",
@@ -46,7 +46,7 @@ Omega_h::Write<double> Field::set() {
 }
 
 Omega_h::Write<double> Field::getset() {
-  if (!has()) {
+  if (!is_allocated()) {
     Omega_h_fail(
         "attempt to modify uninitialized "
         "field \"%s\"\n",

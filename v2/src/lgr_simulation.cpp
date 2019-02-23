@@ -23,8 +23,6 @@ void Simulation::finalize_definitions() {
   fields.finalize_definitions(supports);
 }
 
-bool Simulation::has(FieldIndex fi) { return fields.has(fi); }
-
 Omega_h::Read<double> Simulation::get(FieldIndex fi) { return fields.get(fi); }
 
 Omega_h::Write<double> Simulation::set(FieldIndex fi) { return fields.set(fi); }

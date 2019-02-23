@@ -24,7 +24,7 @@ struct InternalEnergy : public Model<Elem> {
   }
   char const* name() override final { return "internal energy"; }
   void before_material_model() override final {
-    if (sim.dt == 0.0 && (!sim.fields.has(specific_internal_energy_rate))) {
+    if (sim.dt == 0.0 && (!sim.fields.is_allocated(specific_internal_energy_rate))) {
       zero_internal_energy_rate();
     }
     compute_internal_energy_predictor();

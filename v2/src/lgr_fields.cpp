@@ -58,9 +58,9 @@ static void check_index(FieldIndex fi) {
   }
 }
 
-bool Fields::has(FieldIndex fi) {
+bool Fields::is_allocated(FieldIndex fi) {
   check_index(fi);
-  return storage[fi.storage_index]->has();
+  return storage[fi.storage_index]->is_allocated();
 }
 
 Field& Fields::operator[](FieldIndex fi) {
