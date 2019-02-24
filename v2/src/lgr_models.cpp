@@ -105,7 +105,6 @@ ModelFactories get_builtin_material_model_factories() {
 template <class Elem>
 ModelFactories get_builtin_modifier_factories() {
   ModelFactories out;
-  out["Joule heating"] = joule_heating_factory<Elem>;
   out["nodal pressure"] = nodal_pressure_factory<Elem>;
   out["compute pressure"] = pressure_factory;
   return out;

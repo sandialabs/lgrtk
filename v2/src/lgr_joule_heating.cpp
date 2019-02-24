@@ -255,16 +255,19 @@ struct JouleHeating : public Model<Elem> {
   }
 };
 
-template <class Elem>
-ModelBase* joule_heating_factory(
-    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
-  return new JouleHeating<Elem>(sim, pl);
-}
-
-#define LGR_EXPL_INST(Elem)                                                    \
-  template ModelBase* joule_heating_factory<Elem>(                             \
-      Simulation&, std::string const&, Omega_h::InputMap&);
+void setup_joule_heating(Simulation& sim, Omega_h::InputMap& pl) {
+  auto& models_pl = pl.get_list("modifiers");
+  for (int i = 0; i < models_pl.size(); ++i) {
+    auto& model_pl = models_pl.get_map(i);
+    if (model_pl.get<std::string>("type") == "Joule heating") {
+#define LGR_EXPL_INST(Elem) \
+      if (sim.elem_name == Elem::name()) { \
+        sim.models.add(new JouleHeating<Elem>(sim, model_pl)); \
+      }
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
+    }
+  }
+}
 
 }  // namespace lgr
