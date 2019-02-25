@@ -1,9 +1,9 @@
-#include <cstdlib>
-
-#include "LGRAppIntxTests.hpp"
 #include <Teuchos_UnitTestHarness.hpp>
+#include "LGRAppIntxTests.hpp"
 
 #include "plato/LGR_App.hpp"
+
+void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, double& val1, double& val2, double tol);
 
 TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
 { 
@@ -66,7 +66,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
   for(int i=0; i<localIDs.size(); i++)
   {
     if( fabs(stdStateOne[i]) > 1e-16 )
-      TEST_FLOATING_EQUALITY(stdStateOne[i], -stdStateTwo[i], 1e-12);
+      TEST_FLOATING_EQUALITY(stdStateOne[i], -stdStateTwo[i], 1e-10);
   }
 }
 
@@ -308,16 +308,53 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyGradX )
 
 TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
 { 
-  
+  std::string inputFile = "InternalEnergyHeatEq_input.xml";
+  std::string appFile = "InternalEnergyHeatEq_appfile.xml";
+  double val1(0.0), val2(0.0), tol(1e-5);
+  objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
+  TEST_FLOATING_EQUALITY(val1, val2, tol);
+}
+
+TEUCHOS_UNIT_TEST( LGRAppTests, InternalElectroelasticEnergy )
+{ 
+  std::string inputFile = "InternalElectroelasticEnergy_input.xml";
+  std::string appFile = "InternalElectroelasticEnergy_appfile.xml";
+  double val1(0.0), val2(0.0), tol(1e-5);
+  objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
+  TEST_FLOATING_EQUALITY(val1, val2, tol);
+}
+
+TEUCHOS_UNIT_TEST( LGRAppTests, EMStressPNorm )
+{ 
+  std::string inputFile = "EMStressPNorm_input.xml";
+  std::string appFile = "EMStressPNorm_appfile.xml";
+  double val1(0.0), val2(0.0), tol(1e-5);
+  objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
+  TEST_FLOATING_EQUALITY(val1, val2, tol);
+}
+
+TEUCHOS_UNIT_TEST( LGRAppTests, ThermoelasticEnergy )
+{ 
+  std::string inputFile = "InternalThermoelasticEnergy_input.xml";
+  std::string appFile = "InternalThermoelasticEnergy_appfile.xml";
+  double val1(0.0), val2(0.0), tol(1e-5);
+  objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
+  TEST_FLOATING_EQUALITY(val1, val2, tol);
+}
+
+void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, double& val1, double& val2, double tol)
+{
   int argc = 2;
   char exeName[] = "exeName";
-  char arg1[] = "--input-config=InternalEnergyHeatEq_input.xml";
-  char* argv[2] = {exeName, arg1};
+  std::stringstream input;
+  input << "--input-config=" << inputFile;
+  char* arg1 = strdup(input.str().c_str());
+  char* argv[3] = {exeName, arg1, NULL};
 
   MPI_Comm myComm;
   MPI_Comm_dup(MPI_COMM_WORLD, &myComm);
 
-  setenv("PLATO_APP_FILE", "InternalEnergyHeatEq_appfile.xml", true);
+  setenv("PLATO_APP_FILE", appFile.c_str(), true);
 
   MPMD_App app(argc, argv, myComm);
 
@@ -363,7 +400,6 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
   }
   mag = sqrt(mag);
   
-  double tol = 1.0e-5;
   double alpha = tol/mag;
   double dval = 0.0;
   for(int iVal=0; iVal<localIDs.size(); iVal++){
@@ -380,5 +416,6 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
   std::vector<double> stdObjValTwo(1);
   fauxObjValOut.getData(stdObjValTwo);
   
-  TEST_FLOATING_EQUALITY(stdObjValOne[0], stdObjValTwo[0], tol);
+  val1 = stdObjValOne[0];
+  val2 = stdObjValTwo[0];
 }

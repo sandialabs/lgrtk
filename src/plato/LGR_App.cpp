@@ -65,15 +65,21 @@ createProblem(ProblemDefinition& aDefinition){
   m_currentProblemName = aDefinition.name;
 
   auto input_mesh = aDefinition.params.get<std::string>("Input Mesh");
-  auto& assoc_pl  = aDefinition.params.sublist("Associations");
 
-  // Read input mesh
-  mMesh = Omega_h::binary::read(input_mesh, &m_lib_osh);
+  mMesh = Omega_h::read_mesh_file(input_mesh, m_lib_osh.world());
   mMesh.set_parting(Omega_h_Parting::OMEGA_H_GHOSTED);
 
-  // Compute mesh sets - hold side sets information
-  Omega_h::update_assoc(&mAssoc, assoc_pl);
-  mMeshSets = Omega_h::invert(&mMesh, mAssoc);
+  Omega_h::Assoc tAssoc;
+  if (aDefinition.params.isSublist("Associations"))
+  {
+    auto& tAssocParamList = aDefinition.params.sublist("Associations");
+    Omega_h::update_assoc(&tAssoc, tAssocParamList);
+  }
+  else {
+    tAssoc[Omega_h::NODE_SET] = mMesh.class_sets;
+    tAssoc[Omega_h::SIDE_SET] = mMesh.class_sets;
+  }
+  mMeshSets = Omega_h::invert(&mMesh, tAssoc);
 
   m_numSpatialDims = aDefinition.params.get<int>("Spatial Dimension");
 

@@ -39,9 +39,8 @@ private:
     std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
     std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
 
-    Plato::ScalarMultiVector mAdjoint; /*!< adjoint variables */
-    Plato::ScalarVector mResidual; /*!< residual vector */
-    Plato::ScalarVector mBoundaryLoads; /*!< boundary forces */
+    Plato::ScalarMultiVector mAdjoint;
+    Plato::ScalarVector mResidual;
 
     Plato::ScalarMultiVector mStates; /*!< state variables */
 
@@ -64,7 +63,6 @@ public:
             mConstraint(nullptr),
             mObjective(nullptr),
             mResidual("MyResidual", mEqualityConstraint.size()),
-            mBoundaryLoads("BoundaryLoads", mEqualityConstraint.size()),
             mStates("States", static_cast<Plato::OrdinalType>(1), mEqualityConstraint.size()),
             mJacobian(Teuchos::null),
             mIsSelfAdjoint(aInputParams.get<bool>("Self-Adjoint", false))
@@ -110,26 +108,15 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
-    /******************************************************************************//**
-     * @brief Apply boundary forces
-     * @param [in/out] aForce 1D view of forces
-    **********************************************************************************/
-    void applyBoundaryLoads(const Plato::ScalarVector & aForce)
-    {
-        auto tBoundaryLoads = mBoundaryLoads;
-        auto tNumDofs = aForce.size();
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & aDofOrdinal){
-            aForce(aDofOrdinal) += tBoundaryLoads(aDofOrdinal);
-        }, "add boundary loads");
-    }
+    void applyBoundaryLoads(const Plato::ScalarVector & aForce){}
 
     /******************************************************************************//**
      * @brief Update physics-based parameters within optimization iterations
@@ -566,12 +553,6 @@ private:
         Plato::EssentialBCs<SimplexPhysics>
             tEssentialBoundaryConditions(aInputParams.sublist("Essential Boundary Conditions",false));
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
-
-        // parse loads
-        //
-        Plato::NaturalBCs<SimplexPhysics::SpaceDim, SimplexPhysics::m_numDofsPerNode>
-            tNaturalBoundaryConditions(aInputParams.sublist("Natural Boundary Conditions", false));
-        tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }
 };
 

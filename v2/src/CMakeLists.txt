@@ -36,6 +36,7 @@ add_library(lgr_library
     lgr_flood.cpp
     lgr_internal_energy.cpp
     lgr_deformation_gradient.cpp
+    lgr_j2_plasticity.cpp
     lgr_neo_hookean.cpp
     lgr_stvenant_kirchhoff.cpp
     lgr_riemann.cpp
