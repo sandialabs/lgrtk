@@ -19,6 +19,7 @@ namespace Plato
 **********************************************************************************/
 RocketApp::RocketApp() :
         mComm(MPI_COMM_NULL),
+        mLength(0.65),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -31,6 +32,7 @@ RocketApp::RocketApp() :
 **********************************************************************************/
 RocketApp::RocketApp(int aArgc, char **aArgv, MPI_Comm & aComm) :
         mComm(aComm),
+        mLength(0.65),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -45,18 +47,21 @@ RocketApp::~RocketApp()
 {
 }
 
+/******************************************************************************//**
+ * @brief print solution to file
+**********************************************************************************/
 void RocketApp::printSolution()
 {
     Plato::OrdinalType tMyProcID = 0;
     MPI_Comm_rank(mComm, &tMyProcID);
     if(tMyProcID == static_cast<Plato::OrdinalType>(0))
     {
-        std::string tArgumentName = "DesignVariables";
+        std::string tArgumentName = "DesignVars";
         auto tIterator = mSharedDataMap.find(tArgumentName);
         assert(tIterator != mSharedDataMap.end());
         std::vector<Plato::Scalar> & tControl = tIterator->second;
 
-        tArgumentName = "NormalizationConstants";
+        tArgumentName = "Normalization";
         tIterator = mSharedDataMap.find(tArgumentName);
         assert(tIterator != mSharedDataMap.end());
         std::vector<Plato::Scalar> & tNormalizationConstants = tIterator->second;
@@ -211,10 +216,9 @@ void RocketApp::inputData(const std::string & aArgumentName, const Plato::Shared
 **********************************************************************************/
 void RocketApp::setRocketDriver()
 {
-    const Plato::Scalar tRadius = 0.075; // m
-    const Plato::Scalar tLength = 0.65; // m
+    const Plato::Scalar tRadius = 0.075; // meters
     const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, tLength, tRefBurnRate);
+    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, mLength /* meters */, tRefBurnRate);
 
     std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeometry =
             std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(mComm);
@@ -292,11 +296,11 @@ void RocketApp::setDefaultTargetThrustProfile()
 void RocketApp::defineSharedDataMaps()
 {
     const int tLength = 1;
-    std::string tName = "ObjFuncValue";
+    std::string tName = "ObjFuncVal";
     mSharedDataMap[tName] = std::vector<Plato::Scalar>(tLength);
     mDefinedDataLayout[tName] = Plato::data::SCALAR;
 
-    tName = "DesignVariables";
+    tName = "DesignVars";
     mSharedDataMap[tName] = std::vector<Plato::Scalar>(mNumDesigVariables);
     mDefinedDataLayout[tName] = Plato::data::SCALAR;
 
@@ -314,8 +318,8 @@ void RocketApp::defineSharedDataMaps()
 void RocketApp::setNormalizationConstants()
 {
     std::vector<Plato::Scalar> tValues(mNumDesigVariables);
-    tValues[0] = 0.08; tValues[1] = 0.006;
-    std::string tName = "NormalizationConstants";
+    tValues[0] = 0.1; tValues[1] = 0.01;
+    std::string tName = "Normalization";
     mSharedDataMap[tName] = tValues;
     mDefinedDataLayout[tName] = Plato::data::SCALAR;
 }
@@ -326,11 +330,11 @@ void RocketApp::setNormalizationConstants()
 **********************************************************************************/
 void RocketApp::performOperation(const std::string & aOperationName)
 {
-    if(aOperationName.compare("ObjectiveValue") == static_cast<int>(0))
+    if(aOperationName.compare("ObjFuncEval") == static_cast<int>(0))
     {
         this->evaluateObjFunc();
     }
-    else if (aOperationName.compare("ObjectiveGradient") == static_cast<int>(0))
+    else if (aOperationName.compare("ObjFuncGrad") == static_cast<int>(0))
     {
         this->evaluateObjFuncGrad();
     }
@@ -341,7 +345,7 @@ void RocketApp::performOperation(const std::string & aOperationName)
 **********************************************************************************/
 void RocketApp::evaluateObjFunc()
 {
-    std::string tArgumentName = "DesignVariables";
+    std::string tArgumentName = "DesignVars";
     auto tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tControl = tIterator->second;
@@ -351,7 +355,7 @@ void RocketApp::evaluateObjFunc()
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tTargetThrustProfile = tIterator->second;
 
-    tArgumentName = "ObjFuncValue";
+    tArgumentName = "ObjFuncVal";
     tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     const Plato::OrdinalType tINDEX = 0;
@@ -363,7 +367,7 @@ void RocketApp::evaluateObjFunc()
 **********************************************************************************/
 void RocketApp::evaluateObjFuncGrad()
 {
-    std::string tArgumentName("DesignVariables");
+    std::string tArgumentName("DesignVars");
     auto tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tControl = tIterator->second;
@@ -391,7 +395,7 @@ void RocketApp::computeObjFuncGrad(const std::vector<Plato::Scalar> & aControl,
 {
     Plato::Scalar tEpsilon = 1e-4;
     std::vector<Plato::Scalar> tControlCopy(aControl);
-    const Plato::OrdinalType tNumControls = aControl.size();
+    auto tNumControls = aControl.size();
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumControls; tIndex++)
     {
         // modify base value - forward
@@ -436,6 +440,7 @@ Plato::Scalar RocketApp::computeObjFuncValue(const std::vector<Plato::Scalar> & 
     const Plato::OrdinalType tINDEX = 0;
     const Plato::Scalar tVecLength = aTargetProfile.size();
     const Plato::Scalar tDenominator = static_cast<Plato::Scalar>(2.0) * tVecLength * tNormThrustProfile[tINDEX];
+    //const Plato::Scalar tDenominator = tNormThrustProfile[tINDEX];
     tObjFuncValue = (static_cast<Plato::Scalar>(1.0) / tDenominator) * tObjFuncValue;
 
     return (tObjFuncValue);
@@ -446,16 +451,14 @@ Plato::Scalar RocketApp::computeObjFuncValue(const std::vector<Plato::Scalar> & 
 **********************************************************************************/
 void RocketApp::updateProblem(const std::vector<Plato::Scalar> & aControls)
 {
-    std::string tArgumentName = "NormalizationConstants";
+    std::string tArgumentName = "Normalization";
     auto tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     std::vector<Plato::Scalar> & tNormalizationConstants = tIterator->second;
 
-    Plato::ProblemParams tParams;
-    const Plato::Scalar tRadius = aControls[0] * tNormalizationConstants[0];
-    tParams.mGeometry.push_back(tRadius);
-    const Plato::Scalar tRefBurnRate = aControls[1] * tNormalizationConstants[1];
-    tParams.mRefBurnRate.push_back(tRefBurnRate);
+    auto tRadius = aControls[0] * tNormalizationConstants[0]; // meters
+    auto tRefBurnRate = aControls[1] * tNormalizationConstants[1]; // meters/seconds
+    auto tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, mLength /* meters */, tRefBurnRate);
     mRocketDriver->initialize(tParams);
 }
 

@@ -161,6 +161,7 @@ private:
 
 private:
     MPI_Comm mComm; /*!< local mpi communicator */
+    Plato::Scalar mLength; /*!< cylinder's length */
     size_t mNumDesigVariables; /*!< import/export parameter map */
 
     std::shared_ptr<Plato::AlgebraicRocketModel<Plato::Scalar>> mRocketDriver; /*!< rocket driver */

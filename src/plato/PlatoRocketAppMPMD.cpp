@@ -28,12 +28,12 @@ int main(int aArgc, char **aArgv)
     Plato::Interface* tPlatoInterface = nullptr;
     try
     {
-      tPlatoInterface = new Plato::Interface();
+        tPlatoInterface = new Plato::Interface();
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+        Kokkos::finalize_all();
+        MPI_Finalize();
     }
 
     MPI_Comm tLocalComm;
@@ -42,26 +42,25 @@ int main(int aArgc, char **aArgv)
     Plato::RocketApp* tMyApp = nullptr;
     try
     {
-      tMyApp = new Plato::RocketApp(aArgc, aArgv, tLocalComm);
+        tMyApp = new Plato::RocketApp(aArgc, aArgv, tLocalComm);
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+        Kokkos::finalize_all();
+        MPI_Finalize();
     }
 
     try
     {
-      tPlatoInterface->registerPerformer(tMyApp);
+        tPlatoInterface->registerPerformer(tMyApp);
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+        Kokkos::finalize_all();
+        MPI_Finalize();
     }
 
     tPlatoInterface->perform();
-    tMyApp->printSolution();
 
     delete tMyApp;
 
