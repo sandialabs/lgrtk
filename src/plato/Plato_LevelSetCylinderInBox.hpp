@@ -68,34 +68,51 @@
 namespace Plato
 {
 
+/******************************************************************************//**
+ * @brief Initial conditions for the algebraic function used to represent the level set field.
+**********************************************************************************/
 struct LevelSetInitialCondition
 {
-    LevelSetInitialCondition(Plato::Scalar radius, Plato::Scalar length) :
-            Nlobes(5),
-            Rmid(radius),
-            Rdelta(0),
-            xCenter(0.5 * length),
-            yCenter(0.5 * length)
+    /******************************************************************************//**
+     * @brief Constructor
+     * @param [in] aRadius cylinder's radius
+     * @param [in] aLength cylinder's length
+    **********************************************************************************/
+    LevelSetInitialCondition(const Plato::Scalar & aRadius, const Plato::Scalar & aLength) :
+            mNlobes(5),
+            mRmid(aRadius),
+            mRdelta(0),
+            mXCenter(0.5 * aLength),
+            mYCenter(0.5 * aLength)
     {
     }
-    const int Nlobes;
-    const Plato::Scalar Rmid;
-    const Plato::Scalar Rdelta;
-    const Plato::Scalar xCenter;
-    const Plato::Scalar yCenter;
 
-    Plato::Scalar operator()(Plato::Scalar x, Plato::Scalar y, Plato::Scalar z) const
+    const Plato::OrdinalType mNlobes;
+    const Plato::Scalar mRmid;
+    const Plato::Scalar mRdelta;
+    const Plato::Scalar mXCenter;
+    const Plato::Scalar mYCenter;
+
+    /******************************************************************************//**
+     * @brief Compute level set value
+     * @param [in] aX x-coordinate
+     * @param [in] aY y-coordinate
+     * @param [in] aZ z-coordinate
+     * @return level set value
+    **********************************************************************************/
+    Plato::Scalar operator()(const Plato::Scalar & aX, const Plato::Scalar & aY, const Plato::Scalar & aZ) const
     {
-        const Plato::Scalar r = std::sqrt((x - xCenter) * (x - xCenter) + (y - yCenter) * (y - yCenter));
-        const Plato::Scalar theta = atan2(y - yCenter, x - xCenter);
-        const Plato::Scalar rSurf = Rmid + Rdelta * sin(Nlobes * theta);
-        return r - rSurf;
+        const Plato::Scalar tRadius = std::sqrt((aX - mXCenter) * (aX - mXCenter) + (aY - mYCenter) * (aY - mYCenter));
+        const Plato::Scalar tTheta = atan2(aY - mYCenter, aX - mXCenter);
+        const Plato::Scalar tRSurf = mRmid + mRdelta * sin(mNlobes * tTheta);
+        return tRadius - tRSurf;
     }
 };
+// struct LevelSetInitialCondition
 
 /******************************************************************************//**
  * @brief Cylinder geometry model class
- **********************************************************************************/
+**********************************************************************************/
 template<typename ScalarType = double>
 class LevelSetCylinderInBox : public Plato::GeometryModel<ScalarType>
 {
