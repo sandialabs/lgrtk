@@ -26,9 +26,11 @@ namespace Plato
 
 /******************************************************************************//**
  * @brief Augmented Lagrangian stress constraint criterion
+ *
  * This implementation is based on recent work by Prof. Glaucio Paulino research
  * group at Georgia Institute of Technology. Reference will be provided as soon as
  * it becomes available.
+ *
 **********************************************************************************/
 template<typename EvaluationType>
 class AugLagStressCriterion :
@@ -51,6 +53,7 @@ private:
     Plato::Scalar mStressLimit; /*!< stress limit/upper bound */
     Plato::Scalar mAugLagPenalty; /*!< augmented Lagrangian penalty */
     Plato::Scalar mMinErsatzValue; /*!< minimum ersatz material value in SIMP model */
+    Plato::Scalar mMaterialDensity; /*!< material density */
     Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
     Plato::Scalar mMassMultipliersLowerBound; /*!< lower bound on mass multipliers */
     Plato::Scalar mMassMultipliersUpperBound; /*!< upper bound on mass multipliers */
@@ -74,6 +77,9 @@ private:
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aInputParams);
         auto tMaterialModel = tMaterialModelFactory.create();
         mCellStiffMatrix = tMaterialModel->getStiffnessMatrix();
+
+        auto tMaterialModelInputs = aInputParams.get<Teuchos::ParameterList>("Material Model");
+        mMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
 
         this->readInputs(aInputParams);
 
@@ -129,6 +135,7 @@ public:
             mStressLimit(1),
             mAugLagPenalty(0.1),
             mMinErsatzValue(0.0),
+            mMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -155,6 +162,7 @@ public:
             mStressLimit(1),
             mAugLagPenalty(0.1),
             mMinErsatzValue(0.0),
+            mMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -306,6 +314,7 @@ public:
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tStressLimit = mStressLimit;
         auto tAugLagPenalty = mAugLagPenalty;
+        auto tMaterialDensity = mMaterialDensity;
         auto tMassMultipliers = mMassMultipliers;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
         auto tMassNormalizationMultiplier = mMassNormalizationMultiplier;
@@ -347,7 +356,7 @@ public:
             // Compute mass contribution to augmented Lagrangian function
             ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
             tCellMass *= tCellVolume(tCellOrdinal);
-            ResultT tMassContribution = (tMassMultipliers(tCellOrdinal) * tCellMass) / tMassNormalizationMultiplier;
+            ResultT tMassContribution = (tMassMultipliers(tCellOrdinal) * tMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
 
             // Compute augmented Lagrangian
             aResultWS(tCellOrdinal) = tMassContribution + tStressContribution;

@@ -258,19 +258,19 @@ void
 MPMD_App::compute(const std::string & aOperationName)
 /******************************************************************************/
 {
-  LocalOp *op = getOperation(aOperationName);
+  LocalOp *tOperation = this->getOperation(aOperationName);
 
   // if a different problem definition is needed, create it
   //
-  auto def = op->getProblemDefinition();
-  if( def->name != m_currentProblemName || def->modified  )
+  auto tProblemDefinition = tOperation->getProblemDefinition();
+  if( tProblemDefinition->name != m_currentProblemName || tProblemDefinition->modified  )
   {
-    createProblem(*def);
+    this->createProblem(*tProblemDefinition);
   }
 
   // call the operation
   //
-  (*op)();
+  (*tOperation)();
 }
 
 /******************************************************************************/
