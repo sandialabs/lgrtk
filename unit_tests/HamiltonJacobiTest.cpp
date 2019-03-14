@@ -151,14 +151,14 @@ TEUCHOS_UNIT_TEST(HamiltonJacobi, 3D_CylinderWithFlowerIC_ReinitializationThenEv
   Flower2DApproximateSignedDistance initialCondition;
   initialize_level_set(omega_h_mesh, fields, initialCondition);
 
-  const Plato::Scalar maxSpeed = initialize_constant_speed(omega_h_mesh, fields,
-      5.0);
+  const Plato::Scalar speed = 5.0;
+  initialize_constant_speed(omega_h_mesh, fields, speed);
 
   const Plato::Scalar Courant = 0.3;
   const Plato::Scalar Ttotal = 0.05;
   const Plato::Scalar dx = mesh_minimum_length_scale<SpatialDim>(omega_h_mesh);
-  const unsigned Nt = (Ttotal + 0.5 * (Courant * dx / maxSpeed))
-      / (Courant * dx / maxSpeed);
+  const unsigned Nt = (Ttotal + 0.5 * (Courant * dx / speed))
+      / (Courant * dx / speed);
   const Plato::Scalar dt = Ttotal / Nt;
   const Plato::Scalar eps = 1.5 * dx;
   const Plato::Scalar dtau = 0.2 * dx; // Reinitialization time step, based on unit advection speed used in reinitialization

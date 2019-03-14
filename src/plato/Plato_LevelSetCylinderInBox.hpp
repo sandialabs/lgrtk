@@ -111,6 +111,36 @@ struct LevelSetInitialCondition
 // struct LevelSetInitialCondition
 
 /******************************************************************************//**
+ * @brief Initial conditions for the algebraic function used to represent the burn rate field
+**********************************************************************************/
+struct BurnRateInitialCondition
+{
+    /******************************************************************************//**
+     * @brief Constructor
+     * @param [in] aRefBurnRate constant burn rate
+    **********************************************************************************/
+    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate) :
+            mRefBurnRate(aRefBurnRate)
+    {
+    }
+
+    const Plato::Scalar mRefBurnRate;
+
+    /******************************************************************************//**
+     * @brief Compute burn rate
+     * @param [in] aX x-coordinate
+     * @param [in] aY y-coordinate
+     * @param [in] aZ z-coordinate
+     * @return burn rate value
+    **********************************************************************************/
+    Plato::Scalar operator()(const Plato::Scalar & aX, const Plato::Scalar & aY, const Plato::Scalar & aZ) const
+    {
+        return mRefBurnRate;
+    }
+};
+// struct LevelSetInitialCondition
+
+/******************************************************************************//**
  * @brief Cylinder geometry model class
 **********************************************************************************/
 template<typename ScalarType = double>
@@ -168,7 +198,7 @@ public:
     ScalarType referencMassProductionRate()
     {
         const ScalarType tRefMassProdRate =
-                mPropellantDensity * mRefBurnRate * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
+                mPropellantDensity * mSpeedScale * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return tRefMassProdRate;
     }
 
@@ -223,7 +253,7 @@ private:
      **********************************************************************************/
     void updateLevelSetCylinder(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
     {
-        const Plato::Scalar tDeltaPseudoTime = aBurnRateMultiplier * mRefBurnRate * aDeltaTime;
+        const Plato::Scalar tDeltaPseudoTime = aBurnRateMultiplier * mSpeedScale * aDeltaTime;
         offset_level_set(mMesh, mHamiltonJacobiFields, -tDeltaPseudoTime);
         mTime += aDeltaTime;
         ++mStep;
@@ -244,11 +274,14 @@ private:
         LevelSetInitialCondition tInitialCondition(mRadius, mLength);
         initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
 
+        BurnRateInitialCondition tSpeedInitialCondition(mRefBurnRate);
+        initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
+        mSpeedScale = normalize_interface_speed(mMesh, mHamiltonJacobiFields);
+
         const Plato::Scalar tRelativeSpeed = 1.0;
-        const Plato::Scalar tMaxSpeed = initialize_constant_speed(mMesh, mHamiltonJacobiFields, tRelativeSpeed);
         const Plato::Scalar tDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
-        const Plato::Scalar tDeltaTau = static_cast<Plato::Scalar>(0.2) * tDeltaX / tMaxSpeed; // Units of time
-        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * tDeltaX / tMaxSpeed; // Should have same units as level set
+        const Plato::Scalar tDeltaTau = static_cast<Plato::Scalar>(0.2) * tDeltaX / tRelativeSpeed; // Units of time
+        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * tDeltaX / tRelativeSpeed; // Should have same units as level set
 
         compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, tDeltaTau);
     }
@@ -300,6 +333,7 @@ private:
     ScalarType mMeshLength = 0.0;
     ScalarType mPropellantDensity = 0.0;
     ScalarType mRefBurnRate = 0.0;
+    ScalarType mSpeedScale = 0.0;
     ScalarType mInterfaceWidth = 0.0;
     ScalarType mTime = 0.0;
     size_t mStep = 0;

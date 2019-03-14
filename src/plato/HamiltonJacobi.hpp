@@ -77,7 +77,7 @@ void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aF
 }
 
 template<int SpatialDim>
-Plato::Scalar initialize_constant_speed(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar speed)
+void initialize_constant_speed(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar speed)
 {
   if (fields.useElementSpeed)
   {
@@ -95,7 +95,6 @@ Plato::Scalar initialize_constant_speed(Omega_h::Mesh & omega_h_mesh, ProblemFie
 	  };
 	  Kokkos::parallel_for(omega_h_mesh.nverts(), f);
   }
-  return speed;
 }
 
 KOKKOS_INLINE_FUNCTION
@@ -280,6 +279,158 @@ inline void initialize_level_set(Omega_h::Mesh & aOmega_h_Mesh,
         tLevelSet(tIndex, aFields.mCurrentState) = aLevelSetFunction(tX,tY,tZ) * aMultiplier;
     };
     Kokkos::parallel_for(aOmega_h_Mesh.nverts(), tLambdaExp);
+}
+// function initialize_level_set
+
+template<int SpatialDim>
+Plato::Scalar max_element_speed(Omega_h::Mesh & omega_h_mesh,
+		ProblemFields<SpatialDim> & aFields)
+{
+  auto elementSpeed = aFields.mElementSpeed;
+  auto findElemMaxSpeed = LAMBDA_EXPRESSION(int e, Plato::Scalar & maxSpeed) {
+    maxSpeed = Omega_h::max2(maxSpeed, elementSpeed(e));
+  };
+
+  Plato::Scalar maxSpeed ;
+  Kokkos::Max<Plato::Scalar> xreducer(maxSpeed);
+  Kokkos::parallel_reduce(omega_h_mesh.nelems(), findElemMaxSpeed, xreducer);
+
+  return maxSpeed;
+}
+
+template<int SpatialDim>
+Plato::Scalar max_nodal_speed(Omega_h::Mesh & omega_h_mesh,
+		ProblemFields<SpatialDim> & aFields)
+{
+  auto nodalSpeed = aFields.mNodalSpeed;
+  auto findNodalMaxSpeed = LAMBDA_EXPRESSION(int n, Plato::Scalar & maxSpeed) {
+    maxSpeed = Omega_h::max2(maxSpeed, nodalSpeed(n));
+  };
+
+  Plato::Scalar maxSpeed ;
+  Kokkos::Max<Plato::Scalar> xreducer(maxSpeed);
+  Kokkos::parallel_reduce(omega_h_mesh.nverts(), findNodalMaxSpeed, xreducer);
+
+  return maxSpeed;
+}
+
+inline void scale_field(const Plato::Scalar scale,
+		Omega_h::Mesh & omega_h_mesh,
+		Plato::ScalarVector & field,
+		const Plato::OrdinalType count)
+{
+  auto scaleField = LAMBDA_EXPRESSION(int n) {
+    field(n) *= scale;
+  };
+  Kokkos::parallel_for(count, scaleField);
+}
+
+/******************************************************************************//**
+ * @brief Initialize nodal speed field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [in] aSpeedFunction level set interface speed interface
+**********************************************************************************/
+template<int SpatialDim, class Lambda>
+inline void initialize_nodal_speed(Omega_h::Mesh & aOmega_h_Mesh,
+                                 ProblemFields<SpatialDim> & aFields,
+                                 const Lambda & aSpeedFunction)
+{
+    auto nodalSpeed = aFields.mNodalSpeed;
+    const Omega_h::Reals tCoords = aOmega_h_Mesh.coords();
+    auto tLambdaExp = LAMBDA_EXPRESSION(int tNode)
+    {
+        const Plato::Scalar tX = tCoords[tNode*SpatialDim + 0];
+        const Plato::Scalar tY = tCoords[tNode*SpatialDim + 1];
+        const Plato::Scalar tZ = (SpatialDim > 2) ? tCoords[tNode*SpatialDim + 2] : 0.0;
+        nodalSpeed(tNode) = aSpeedFunction(tX,tY,tZ);
+    };
+    Kokkos::parallel_for(aOmega_h_Mesh.nverts(), tLambdaExp);
+}
+// function initialize_nodal_speed
+
+/******************************************************************************//**
+ * @brief Initialize element speed field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [in] aSpeedFunction level set interface speed interface
+**********************************************************************************/
+template<int SpatialDim, class Lambda>
+inline void initialize_element_speed(Omega_h::Mesh & aOmega_h_Mesh,
+                                 ProblemFields<SpatialDim> & aFields,
+                                 const Lambda & aSpeedFunction)
+{
+	constexpr int nodesPerElem = SpatialDim + 1;
+    constexpr Plato::Scalar invNPE = 1./nodesPerElem;
+
+    auto elementSpeed = aFields.mElementSpeed;
+    auto elems2Verts = aOmega_h_Mesh.ask_elem_verts();
+    const Omega_h::Reals tCoords = aOmega_h_Mesh.coords();
+    auto tLambdaExp = LAMBDA_EXPRESSION(int tElem)
+    {
+		Plato::Scalar tX = 0.;
+		Plato::Scalar tY = 0.;
+		Plato::Scalar tZ = 0.;
+		for (unsigned n=0; n<nodesPerElem; ++n)
+		{
+			auto node = elems2Verts[tElem * nodesPerElem + n];
+			tX += invNPE*tCoords[node*SpatialDim+0];
+			tY += invNPE*tCoords[node*SpatialDim+1];
+			tZ += (SpatialDim > 2) ? invNPE*tCoords[node*SpatialDim+2] : 0.0;
+		}
+        elementSpeed(tElem) = aSpeedFunction(tX,tY,tZ);
+    };
+    Kokkos::parallel_for(aOmega_h_Mesh.nelems(), tLambdaExp);
+}
+// function initialize_element_speed
+
+
+/******************************************************************************//**
+ * @brief Initialize speed field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [in] aSpeedFunction level set interface speed interface
+**********************************************************************************/
+template<int SpatialDim, class Lambda>
+inline void initialize_interface_speed(Omega_h::Mesh & aOmega_h_Mesh,
+                                 ProblemFields<SpatialDim> & aFields,
+                                 const Lambda & aSpeedFunction)
+{
+      if (aFields.useElementSpeed)
+      {
+    	  initialize_element_speed(aOmega_h_Mesh, aFields, aSpeedFunction);
+      }
+      else
+      {
+          initialize_nodal_speed(aOmega_h_Mesh, aFields, aSpeedFunction);
+      }
+}
+// function initialize_level_set
+
+/******************************************************************************//**
+ * @brief normalize speed field
+ * @param [in] aOmega_h_Mesh mesh database
+ * @param [in/out] aFields problem fields data structure
+ * @param [out] tMaxSpeed maximum interface speed
+**********************************************************************************/
+template<int SpatialDim>
+inline Plato::Scalar normalize_interface_speed(Omega_h::Mesh & aOmega_h_Mesh,
+                                 ProblemFields<SpatialDim> & aFields)
+{
+	  Plato::Scalar max_speed = (aFields.useElementSpeed) ?
+			  max_element_speed(aOmega_h_Mesh, aFields) :
+			  max_nodal_speed(aOmega_h_Mesh, aFields);
+
+      if (aFields.useElementSpeed)
+      {
+    	  scale_field(1./max_speed, aOmega_h_Mesh, aFields.mElementSpeed, aOmega_h_Mesh.nelems());
+      }
+      else
+      {
+          scale_field(1./max_speed, aOmega_h_Mesh, aFields.mNodalSpeed, aOmega_h_Mesh.nverts());
+      }
+
+      return max_speed;
 }
 // function initialize_level_set
 
