@@ -17,10 +17,11 @@ namespace AlgebraicRocketTest
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketAnalyticalCylinder)
 {
-  const Plato::Scalar tRadius = 0.075; // m
+  const Plato::Scalar tInitialRadius = 0.075; // m
+  const Plato::Scalar tMaxRadius = 0.15; // m
   const Plato::Scalar tLength = 0.65; // m
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, tLength, tRefBurnRate);
+  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
   auto tCylinder = std::make_shared<Plato::Cylinder<Plato::Scalar>>();
   tCylinder->initialize(tParams);
@@ -32,10 +33,11 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketAnalyticalCylinder)
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
 {
-  const Plato::Scalar tRadius = 0.075; // m
+  const Plato::Scalar tInitialRadius = 0.075; // m
+  const Plato::Scalar tMaxRadius = 0.15; // m
   const Plato::Scalar tLength = 0.65; // m
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, tLength, tRefBurnRate);
+  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
   auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>();
   tCylinder->initialize(tParams);

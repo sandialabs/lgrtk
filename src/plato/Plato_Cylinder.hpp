@@ -146,10 +146,10 @@ public:
     **********************************************************************************/
     void updateGeometry(const Plato::ProblemParams & aParam)
     {
-    	assert(aParam.mGeometry.size() == static_cast<size_t>(2));
-    	mRadius = aParam.mGeometry[0];
+    	assert(aParam.mGeometry.size() == static_cast<size_t>(3));
     	mLength = aParam.mGeometry[1];
-    	assert(aParam.mRefBurnRate.size() == static_cast<size_t>(1));
+    	mRadius = aParam.mGeometry[2];
+    	assert(aParam.mRefBurnRate.size() == static_cast<size_t>(2));
     	mRefBurnRate = aParam.mRefBurnRate[0];
     	mPropellantDensity = aParam.mPropellantDensity;
     }

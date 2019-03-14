@@ -20,6 +20,7 @@ namespace Plato
 RocketApp::RocketApp() :
         mComm(MPI_COMM_NULL),
         mLength(0.65),
+        mMaxRadius(0.15),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -33,6 +34,7 @@ RocketApp::RocketApp() :
 RocketApp::RocketApp(int aArgc, char **aArgv, MPI_Comm & aComm) :
         mComm(aComm),
         mLength(0.65),
+        mMaxRadius(0.15),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -218,7 +220,7 @@ void RocketApp::setRocketDriver()
 {
     const Plato::Scalar tRadius = 0.075; // meters
     const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, mLength /* meters */, tRefBurnRate);
+    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(mMaxRadius /* meters */, mLength /* meters */, tRadius, tRefBurnRate);
 
     std::shared_ptr<Plato::LevelSetCylinderInBox<Plato::Scalar>> tGeometry =
             std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>(mComm);
@@ -458,7 +460,7 @@ void RocketApp::updateProblem(const std::vector<Plato::Scalar> & aControls)
 
     auto tRadius = aControls[0] * tNormalizationConstants[0]; // meters
     auto tRefBurnRate = aControls[1] * tNormalizationConstants[1]; // meters/seconds
-    auto tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tRadius, mLength /* meters */, tRefBurnRate);
+    auto tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(mMaxRadius /* meters */, mLength /* meters */, tRadius, tRefBurnRate);
     mRocketDriver->initialize(tParams);
 }
 

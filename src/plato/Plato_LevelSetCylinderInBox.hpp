@@ -78,12 +78,12 @@ struct LevelSetInitialCondition
      * @param [in] aRadius cylinder's radius
      * @param [in] aLength cylinder's length
     **********************************************************************************/
-    LevelSetInitialCondition(const Plato::Scalar & aRadius, const Plato::Scalar & aLength) :
+    LevelSetInitialCondition(const Plato::Scalar & aRadius, const Plato::Scalar & aMaxRadius) :
             mNlobes(5),
             mRmid(aRadius),
             mRdelta(0),
-            mXCenter(0.5 * aLength),
-            mYCenter(0.5 * aLength)
+            mXCenter(aMaxRadius),
+            mYCenter(aMaxRadius)
     {
     }
 
@@ -119,12 +119,18 @@ struct BurnRateInitialCondition
      * @brief Constructor
      * @param [in] aRefBurnRate constant burn rate
     **********************************************************************************/
-    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate) :
-            mRefBurnRate(aRefBurnRate)
+    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate, const Plato::Scalar & aRefBurnRateSlopeWithRadius, const Plato::Scalar & aMaxRadius) :
+            mRefBurnRate(aRefBurnRate),
+            mRefBurnRateSlopeWithRadius(aRefBurnRateSlopeWithRadius),
+            mXCenter(aMaxRadius),
+            mYCenter(aMaxRadius)
     {
     }
 
     const Plato::Scalar mRefBurnRate;
+    const Plato::Scalar mRefBurnRateSlopeWithRadius;
+    const Plato::Scalar mXCenter;
+    const Plato::Scalar mYCenter;
 
     /******************************************************************************//**
      * @brief Compute burn rate
@@ -135,7 +141,8 @@ struct BurnRateInitialCondition
     **********************************************************************************/
     Plato::Scalar operator()(const Plato::Scalar & aX, const Plato::Scalar & aY, const Plato::Scalar & aZ) const
     {
-        return mRefBurnRate;
+    	const Plato::Scalar tRadius = std::sqrt((aX - mXCenter) * (aX - mXCenter) + (aY - mYCenter) * (aY - mYCenter));
+        return mRefBurnRate + tRadius * mRefBurnRateSlopeWithRadius;
     }
 };
 // struct LevelSetInitialCondition
@@ -227,11 +234,13 @@ public:
      **********************************************************************************/
     void updateGeometry(const Plato::ProblemParams & aParam)
     {
-        assert(aParam.mGeometry.size() == static_cast<size_t>(2));
-        mRadius = aParam.mGeometry[0];
+        assert(aParam.mGeometry.size() == static_cast<size_t>(3));
+        mMaxRadius = aParam.mGeometry[0];
         mLength = aParam.mGeometry[1];
-        assert(aParam.mRefBurnRate.size() == static_cast<size_t>(1));
+        mRadius = aParam.mGeometry[2];
+        assert(aParam.mRefBurnRate.size() == static_cast<size_t>(2));
         mRefBurnRate = aParam.mRefBurnRate[0];
+        mRefBurnRateSlopeWithRadius = aParam.mRefBurnRate[1];
         mPropellantDensity = aParam.mPropellantDensity;
 
         this->initializeLevelSetCylinder();
@@ -264,17 +273,17 @@ private:
      **********************************************************************************/
     void initializeLevelSetCylinder()
     {
-        if(mLength != mMeshLength)
+        if(mLength != mMeshLength || mMaxRadius != mMeshMaxRadius)
         {
-            build_mesh(mLength);
+            build_mesh(mMaxRadius, mLength);
             mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, mSpatialDim);
             write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
         }
 
-        LevelSetInitialCondition tInitialCondition(mRadius, mLength);
+        LevelSetInitialCondition tInitialCondition(mRadius, mMaxRadius);
         initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
 
-        BurnRateInitialCondition tSpeedInitialCondition(mRefBurnRate);
+        BurnRateInitialCondition tSpeedInitialCondition(mRefBurnRate, mRefBurnRateSlopeWithRadius, mMaxRadius);
         initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
         mSpeedScale = normalize_interface_speed(mMesh, mHamiltonJacobiFields);
 
@@ -289,12 +298,13 @@ private:
     /******************************************************************************//**
      * @brief Build bounding box and fields on computational mesh
      **********************************************************************************/
-    void build_mesh(const ScalarType aMeshLength)
+    void build_mesh(const ScalarType aMeshMaxRadius, const ScalarType aMeshLength)
     {
+        mMeshMaxRadius = aMeshMaxRadius;
         mMeshLength = aMeshLength;
         auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
-        const Plato::Scalar tLengthX = mMeshLength;
-        const Plato::Scalar tLengthY = mMeshLength;
+        const Plato::Scalar tLengthX = 2.*mMeshMaxRadius;
+        const Plato::Scalar tLengthY = 2.*mMeshMaxRadius;
         const Plato::Scalar tLengthZ = mMeshLength;
         const size_t tNumCellsPerSide = 64;
         const size_t tNumCellX = tNumCellsPerSide;
@@ -328,11 +338,14 @@ private:
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
-    ScalarType mRadius = 0.0;
+    ScalarType mMaxRadius = 0.0;
     ScalarType mLength = 0.0;
+    ScalarType mRadius = 0.0;
     ScalarType mMeshLength = 0.0;
+    ScalarType mMeshMaxRadius = 0.0;
     ScalarType mPropellantDensity = 0.0;
     ScalarType mRefBurnRate = 0.0;
+    ScalarType mRefBurnRateSlopeWithRadius = 0.0;
     ScalarType mSpeedScale = 0.0;
     ScalarType mInterfaceWidth = 0.0;
     ScalarType mTime = 0.0;
