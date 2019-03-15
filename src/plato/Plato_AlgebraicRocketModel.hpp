@@ -291,13 +291,12 @@ public:
             mTimes.push_back(tTime);
             mThrustProfile.push_back(tThrust);
             mPressureProfile.push_back(tTotalPressure);
-            ScalarType tChamberArea = mImmersedGeomModel->area();
             ScalarType tMassProductionRate = mImmersedGeomModel->referencMassProductionRate();
 
             tTotalPressure = this->newton(tMassProductionRate, tTotalPressure, tThroatArea);
 
             tThrust = static_cast<ScalarType>(269.0) * static_cast<ScalarType>(9.8)
-                    * tChamberArea * (tTotalPressure - mAmbientPressure)
+                    * tThroatArea * (tTotalPressure - mAmbientPressure)
                     / mCharacteristicVelocity;
 
             ScalarType tBurnRateMultiplier = std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
