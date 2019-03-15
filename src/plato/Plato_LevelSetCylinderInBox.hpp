@@ -205,7 +205,7 @@ public:
     ScalarType referencMassProductionRate()
     {
         const ScalarType tRefMassProdRate =
-                mPropellantDensity * mSpeedScale * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
+                mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return tRefMassProdRate;
     }
 
@@ -262,10 +262,13 @@ private:
      **********************************************************************************/
     void updateLevelSetCylinder(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
     {
-        const Plato::Scalar tDeltaPseudoTime = aBurnRateMultiplier * mSpeedScale * aDeltaTime;
-        offset_level_set(mMesh, mHamiltonJacobiFields, -tDeltaPseudoTime);
+        evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
+
+        reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
+
         ++mStep;
+        outputLevelSetField();
     }
 
     /******************************************************************************//**
@@ -285,14 +288,8 @@ private:
 
         BurnRateInitialCondition tSpeedInitialCondition(mRefBurnRate, mRefBurnRateSlopeWithRadius, mMaxRadius);
         initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
-        mSpeedScale = normalize_interface_speed(mMesh, mHamiltonJacobiFields);
 
-        const Plato::Scalar tRelativeSpeed = 1.0;
-        const Plato::Scalar tDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
-        const Plato::Scalar tDeltaTau = static_cast<Plato::Scalar>(0.2) * tDeltaX / tRelativeSpeed; // Units of time
-        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * tDeltaX / tRelativeSpeed; // Should have same units as level set
-
-        compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, tDeltaTau);
+        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
     }
 
     /******************************************************************************//**
@@ -319,6 +316,10 @@ private:
                                    tNumCellY,
                                    tNumCellZ);
         declare_fields(mMesh, mHamiltonJacobiFields);
+
+        mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
+        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
+        mReIninitializationDeltaTime = 0.2 * mDeltaX;
     }
 
     /******************************************************************************//**
@@ -326,7 +327,7 @@ private:
      **********************************************************************************/
     void outputLevelSetField()
     {
-        const size_t tPrintInterval = 1000; // How often do you want to output mesh?
+        const size_t tPrintInterval = 100; // How often do you want to output mesh?
         if(mStep % tPrintInterval == 0)
         {
             write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
@@ -346,10 +347,11 @@ private:
     ScalarType mPropellantDensity = 0.0;
     ScalarType mRefBurnRate = 0.0;
     ScalarType mRefBurnRateSlopeWithRadius = 0.0;
-    ScalarType mSpeedScale = 0.0;
     ScalarType mInterfaceWidth = 0.0;
+    ScalarType mReIninitializationDeltaTime = 0.0;
     ScalarType mTime = 0.0;
     size_t mStep = 0;
+    ScalarType mDeltaX = 0.0;
 };
 // class LevelSetCylinderInBox
 
