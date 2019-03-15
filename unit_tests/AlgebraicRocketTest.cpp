@@ -11,6 +11,7 @@
 #include "plato/Plato_RocketMocks.hpp"
 #include "plato/Plato_AlgebraicRocketModel.hpp"
 #include "plato/Plato_LevelSetCylinderInBox.hpp"
+#include "plato/Plato_LevelSetOnExternalMesh.hpp"
 
 namespace AlgebraicRocketTest
 {
@@ -65,5 +66,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRa
   Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }
+
+//TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetOnExternalMesh)
+//{
+//  auto tLevelSetGeometry = std::make_shared<Plato::LevelSetOnExternalMesh<Plato::Scalar>>("tetWithAllFields.vtu");
+//  tLevelSetGeometry->initialize();
+//
+//  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
+//  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tLevelSetGeometry);
+//  tDriver.solve();
+//}
 
 } // namespace AlgebraicRocketTest
