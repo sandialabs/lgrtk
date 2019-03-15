@@ -47,4 +47,23 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   tDriver.solve();
 }
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRate)
+{
+  const Plato::Scalar tInitialRadius = 0.025; // m (1in)
+  const Plato::Scalar tLength = 0.65; // m
+  const Plato::Scalar tMaxRadius = 0.1524; // m (6in)
+  const Plato::Scalar tMaxRefBurnRate = 0.015;  // meters/seconds
+  const Plato::Scalar tMinRefBurnRate = 0.015/6.;  // meters/seconds
+  const Plato::Scalar tRefBurnRateSlopeWithRadius = (tMinRefBurnRate-tMaxRefBurnRate)/(tMaxRadius-tInitialRadius);
+  const Plato::Scalar tCenterBurnRate = tMaxRefBurnRate - tRefBurnRateSlopeWithRadius*tInitialRadius;
+  Plato::ProblemParams tParams = Plato::RocketMocks::setupLinearBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tCenterBurnRate, tRefBurnRateSlopeWithRadius);
+
+  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>();
+  tCylinder->initialize(tParams);
+
+  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
+  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
+  tDriver.solve();
+}
+
 } // namespace AlgebraicRocketTest
