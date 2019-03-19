@@ -69,8 +69,6 @@ namespace Plato
 template<typename ScalarType = double>
 struct AlgebraicRocketInputs
 {
-    size_t mMaxNumNewtonItr;
-
     ScalarType mAlpha;
     ScalarType mDeltaTime;                // seconds
     ScalarType mRefPressure;              // Pascal
@@ -80,11 +78,13 @@ struct AlgebraicRocketInputs
     ScalarType mAmbientPressure;          // Pascal
     ScalarType mCharacteristicVelocity;   // meters/seconds
 
+    size_t mNumTimeSteps;                 /*!< number of simulation time steps */
+    size_t mMaxNumNewtonItr;              /*!< number of Newton iterations */
+
     /******************************************************************************//**
      * @brief Default constructor
     **********************************************************************************/
     AlgebraicRocketInputs() :
-            mMaxNumNewtonItr(1000),
             mAlpha(0.38),
             mDeltaTime(0.1),
             mRefPressure(3.5e6),
@@ -92,7 +92,9 @@ struct AlgebraicRocketInputs
             mThroatDiameter(0.04),
             mNewtonTolerance(1.e-8),
             mAmbientPressure(101.325),
-            mCharacteristicVelocity(1554.5)
+            mCharacteristicVelocity(1554.5),
+            mNumTimeSteps(mTotalBurnTime/mDeltaTime),
+            mMaxNumNewtonItr(1000)
     {
     }
 };
@@ -254,9 +256,22 @@ public:
      *        from the optimizer.
      * @param aParam Problem database
     **********************************************************************************/
-    void initialize(const Plato::ProblemParams & aParams)
+    void initialize(Plato::ProblemParams & aParams)
     {
+        aParams.mNumTimeSteps = mTotalBurnTime / mDeltaTime;
         mImmersedGeomModel->initialize(aParams);
+    }
+
+    /******************************************************************************//**
+     * @brief Output geometry and field data
+     * @param [in] aOutput output flag (true = output, false = do not output)
+    **********************************************************************************/
+    void output(bool aOutput = false)
+    {
+        if(aOutput == true)
+        {
+            mImmersedGeomModel->output(aOutput);
+        }
     }
 
     /******************************************************************************//**

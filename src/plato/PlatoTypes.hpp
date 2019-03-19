@@ -13,6 +13,7 @@ namespace Plato
 {
 
 using Scalar = double;
+using OrdinalType = int;
 using ExecSpace = Kokkos::DefaultExecutionSpace;
 using MemSpace = typename ExecSpace::memory_space;
 using Layout = Kokkos::LayoutRight;

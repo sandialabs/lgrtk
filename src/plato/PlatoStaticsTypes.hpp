@@ -15,7 +15,6 @@
 namespace Plato
 {
 
-using OrdinalType     = int;
 using RowMapEntryType = int;
 
 using CrsMatrixType      = typename lgr::CrsMatrix<Plato::OrdinalType, Plato::RowMapEntryType>;

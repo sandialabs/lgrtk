@@ -44,6 +44,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   tCylinder->initialize(tParams);
 
   const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
+  assert(tRocketInputs.mNumTimeSteps == tParams.mNumTimeSteps);
   Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }

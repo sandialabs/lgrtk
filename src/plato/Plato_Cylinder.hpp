@@ -105,26 +105,26 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
     **********************************************************************************/
-    ScalarType area()
+    ScalarType area() override
     {
         const ScalarType tArea = static_cast<ScalarType>(2) * M_PI * mRadius * mLength;
         return (tArea);
     }
 
     /******************************************************************************//**
-	 * @brief Compute the reference rate that gas mass is begin produced
-	 * @return mass production rate
-	**********************************************************************************/
-	ScalarType referencMassProductionRate()
-	{
-		return mRefBurnRate * mPropellantDensity * area();
-	}
+     * @brief Compute the reference rate that gas mass is begin produced
+     * @return mass production rate
+     **********************************************************************************/
+    ScalarType referencMassProductionRate()  override
+    {
+        return mRefBurnRate * mPropellantDensity * area();
+    }
 
     /******************************************************************************//**
      * @brief compute the gradient with respect to geometric parameters
      * @param aOutput gradient
     **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput)
+    void gradient(std::vector<ScalarType>& aOutput)  override
     {
         assert(aOutput.size() == static_cast<size_t>(2));
         aOutput[0] = static_cast<ScalarType>(2) * M_PI * mLength;
@@ -132,19 +132,19 @@ public:
     }
 
     /******************************************************************************//**
-	 * @brief Update geometry
-	 * @param [in] aParam optimization parameters
-	**********************************************************************************/
-	void initialize(const Plato::ProblemParams & aParam)
-	{
-		updateGeometry(aParam);
-	}
+     * @brief Update geometry
+     * @param [in] aParam optimization parameters
+     **********************************************************************************/
+    void initialize(const Plato::ProblemParams & aParam)  override
+    {
+        updateGeometry(aParam);
+    }
 
     /******************************************************************************//**
      * @brief Update geometry
      * @param [in] aParam optimization parameters
     **********************************************************************************/
-    void updateGeometry(const Plato::ProblemParams & aParam)
+    void updateGeometry(const Plato::ProblemParams & aParam) override
     {
     	assert(aParam.mGeometry.size() == static_cast<size_t>(3));
     	mLength = aParam.mGeometry[1];
@@ -155,13 +155,22 @@ public:
     }
 
     /******************************************************************************//**
-	 * @brief Evolve geometry in time
-	 * @param [in] aDeltaTime time step
-	 * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
-	**********************************************************************************/
-	virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+     * @brief Evolve geometry in time
+     * @param [in] aDeltaTime time step
+     * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
+     **********************************************************************************/
+    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
     {
         mRadius += aBurnRateMultiplier * mRefBurnRate * aDeltaTime;
+    }
+
+    /******************************************************************************//**
+     * @brief Output geometry and field data
+     * @param [in] aOutput output flag (true = output, false = do not output)
+    **********************************************************************************/
+    void output(bool aOutput = false) override
+    {
+        return;
     }
 
 private:

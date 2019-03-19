@@ -56,12 +56,14 @@ struct ProblemFields
   typename Plato::ScalarVector mElementSpeed;
   typename Plato::ScalarVector mNodalSpeed;
   typename Plato::ScalarMultiVector mLevelSet;
+  typename Plato::ScalarMultiVector mLevelSetHistory;
+  Plato::OrdinalType mNumTimeSteps = 0;
   Plato::OrdinalType mCurrentState = 0;
-  bool useElementSpeed = true;
+  bool mUseElementSpeed = true;
 };
 
 template<int SpatialDim>
-void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields, const bool useElementSpeed = true)
+void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields, const bool aUseElementSpeed = true)
 {
     constexpr Plato::OrdinalType tNumStates = 2;
     const Plato::OrdinalType tElemCount = aOmegaH_Mesh.nelems();
@@ -69,17 +71,22 @@ void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aF
     aFields.mRHS = Plato::ScalarVector("nodal RHS", tNodeCount);
     aFields.mRHSNorm = Plato::ScalarVector("nodal RHS norm", tNodeCount);
     aFields.mLevelSet = Plato::ScalarMultiVector("nodal levelSet", tNodeCount, tNumStates);
-    aFields.useElementSpeed = useElementSpeed;
-    if (useElementSpeed)
+    aFields.mLevelSetHistory = Plato::ScalarMultiVector("nodal LevelSetHistory", tNodeCount, aFields.mNumTimeSteps);
+    aFields.mUseElementSpeed = aUseElementSpeed;
+    if (aUseElementSpeed == true)
+    {
     	aFields.mElementSpeed = Plato::ScalarVector("element speed", tElemCount);
+    }
     else
+    {
     	aFields.mNodalSpeed = Plato::ScalarVector("nodal speed", tNodeCount);
+    }
 }
 
 template<int SpatialDim>
 void initialize_constant_speed(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar speed)
 {
-  if (fields.useElementSpeed)
+  if (fields.mUseElementSpeed)
   {
 	  auto elementSpeed = fields.mElementSpeed;
 	  auto f = LAMBDA_EXPRESSION(int elem) {
@@ -160,7 +167,7 @@ Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, Prob
     }
 
     Plato::Scalar elemSpeed = 0.;
-    if (fields.useElementSpeed)
+    if (fields.mUseElementSpeed)
     {
       elemSpeed = fields.mElementSpeed[elem];
     }
@@ -396,7 +403,7 @@ inline void initialize_interface_speed(Omega_h::Mesh & aOmega_h_Mesh,
                                  ProblemFields<SpatialDim> & aFields,
                                  const Lambda & aSpeedFunction)
 {
-      if (aFields.useElementSpeed)
+      if (aFields.mUseElementSpeed)
       {
     	  initialize_element_speed(aOmega_h_Mesh, aFields, aSpeedFunction);
       }
@@ -417,11 +424,11 @@ template<int SpatialDim>
 inline Plato::Scalar normalize_interface_speed(Omega_h::Mesh & aOmega_h_Mesh,
                                  ProblemFields<SpatialDim> & aFields)
 {
-	  Plato::Scalar max_speed = (aFields.useElementSpeed) ?
+	  Plato::Scalar max_speed = (aFields.mUseElementSpeed) ?
 			  max_element_speed(aOmega_h_Mesh, aFields) :
 			  max_nodal_speed(aOmega_h_Mesh, aFields);
 
-      if (aFields.useElementSpeed)
+      if (aFields.mUseElementSpeed)
       {
     	  scale_field(1./max_speed, aOmega_h_Mesh, aFields.mElementSpeed, aOmega_h_Mesh.nelems());
       }
@@ -466,7 +473,7 @@ private:
   DEVICE_TYPE inline
   Plato::Scalar get_element_speed(const ProblemFields<SpatialDim> & fields, int elem) const
   {
-	if (fields.useElementSpeed) return fields.mElementSpeed[elem];
+	if (fields.mUseElementSpeed) return fields.mElementSpeed[elem];
 
 	constexpr int nodesPerElem = SpatialDim + 1;
 	Plato::Scalar elementSpeed = 0.;
@@ -573,7 +580,7 @@ private:
     const Plato::Scalar LSOld = fields.mLevelSet(node, fields.mCurrentState);
     const Plato::Scalar sign = LSOld/sqrt(LSOld*LSOld + eps*eps);
     return (mComputeTimeOfArrival) ?
-    		(fields.useElementSpeed ? sign*fields.mElementSpeed[elem] : sign*fields.mNodalSpeed(node)) :
+    		(fields.mUseElementSpeed ? sign*fields.mElementSpeed[elem] : sign*fields.mNodalSpeed(node)) :
     		sign;
   }
 public:

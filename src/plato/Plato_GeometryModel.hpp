@@ -48,6 +48,8 @@
 
 #pragma once
 
+#include "plato/PlatoTypes.hpp"
+
 namespace Plato
 {
 
@@ -56,9 +58,10 @@ namespace Plato
  **********************************************************************************/
 struct ProblemParams
 {
+    Plato::OrdinalType mNumTimeSteps {100};  /*!< number of time steps for algebraic rocket simulation */
     Plato::Scalar mPropellantDensity {1744}; /*!< propellant density */
     std::vector<Plato::Scalar> mRefBurnRate; /*!< define burn rate spatial distribution */
-    std::vector<Plato::Scalar> mGeometry; /*!< define chambers configuration/geometry */
+    std::vector<Plato::Scalar> mGeometry;    /*!< define chambers configuration/geometry */
 };
 // struct ProblemParams
 
@@ -87,6 +90,12 @@ public:
      * @return mass production rate
      **********************************************************************************/
     virtual ScalarType referencMassProductionRate() = 0;
+
+    /******************************************************************************//**
+     * @brief Output geometry and field data
+     * @param [in] aOutput output flag (true = output, false = do not output)
+    **********************************************************************************/
+    virtual void output(bool aOutput = false) = 0;
 
     /******************************************************************************//**
      * @brief Compute the gradient with respect to geometry-based parameters

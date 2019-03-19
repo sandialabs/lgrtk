@@ -64,6 +64,7 @@
 #include <cstdlib>
 
 #include "Plato_GeometryModel.hpp"
+#include "plato/PlatoMathHelpers.hpp"
 
 namespace Plato
 {
@@ -154,13 +155,14 @@ template<typename ScalarType = double>
 class LevelSetCylinderInBox : public Plato::GeometryModel<ScalarType>
 {
 public:
-    static constexpr int mSpatialDim = 3;
+    static constexpr Plato::OrdinalType mSpatialDim = 3;
 
     /******************************************************************************//**
      * @brief Default constructor
      **********************************************************************************/
     explicit LevelSetCylinderInBox(MPI_Comm aComm = MPI_COMM_WORLD) :
-            mComm(aComm)
+            mComm(aComm),
+            mTimes()
     {
     }
 
@@ -192,7 +194,7 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
      **********************************************************************************/
-    ScalarType area()
+    ScalarType area() override
     {
         const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return (tArea);
@@ -202,7 +204,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    ScalarType referencMassProductionRate()
+    ScalarType referencMassProductionRate() override
     {
         const ScalarType tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
@@ -210,10 +212,32 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Output geometry and field data
+     * @param [in] aOutput output flag (true = output, false = do not output)
+     **********************************************************************************/
+    void output(bool aOutput = false) override
+    {
+        if(aOutput == true)
+        {
+            auto tNodeCount = mMesh.nverts();
+            Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
+            const Plato::OrdinalType tNumTimeSteps = mTimes.size();
+            for(Plato::OrdinalType tIndex = 0; tIndex < tNumTimeSteps; tIndex++)
+            {
+                auto tSubView = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), tIndex);
+                Kokkos::deep_copy(tOutput, tSubView);
+                mMesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
+                auto tTags = Omega_h::vtk::get_all_vtk_tags(&mMesh, mSpatialDim);
+                mWriter.write(static_cast<Omega_h::Real>(mTimes[tIndex]), tTags);
+            }
+        }
+    }
+
+    /******************************************************************************//**
      * @brief compute the gradient of a cylinder with respect to parameters that define geometry.
      * @param aOutput gradient with respect to the parameters that defined a geometry
      **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput)
+    void gradient(std::vector<ScalarType>& aOutput) override
     {
         return;
     }
@@ -223,7 +247,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
     {
         this->updateLevelSetCylinder(aDeltaTime, aBurnRateMultiplier);
     }
@@ -232,7 +256,7 @@ public:
      * @brief Update immersed geometry
      * @param [in] aParam optimization parameters
      **********************************************************************************/
-    void updateGeometry(const Plato::ProblemParams & aParam)
+    void updateGeometry(const Plato::ProblemParams & aParam) override
     {
         assert(aParam.mGeometry.size() == static_cast<size_t>(3));
         mMaxRadius = aParam.mGeometry[0];
@@ -243,6 +267,7 @@ public:
         mRefBurnRateSlopeWithRadius = aParam.mRefBurnRate[1];
         mPropellantDensity = aParam.mPropellantDensity;
 
+        mHamiltonJacobiFields.mNumTimeSteps = aParam.mNumTimeSteps;
         this->initializeLevelSetCylinder();
     }
 
@@ -250,12 +275,19 @@ public:
      * @brief Initialize level set cylinder
      * @param [in] aParam parameters associated with the geometry and fields
      **********************************************************************************/
-    void initialize(const Plato::ProblemParams & aParam)
+    void initialize(const Plato::ProblemParams & aParam) override
     {
         this->updateGeometry(aParam);
     }
 
 private:
+    void cacheData()
+    {
+        auto tMyLevelSet = Kokkos::subview(mHamiltonJacobiFields.mLevelSet, Kokkos::ALL(), mHamiltonJacobiFields.mCurrentState);
+        auto tMyOutput = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), mStep);
+        Plato::copy(tMyLevelSet, tMyOutput);
+    }
+
     /******************************************************************************//**
      * @brief Update immersed cylinder
      * @param [in] aParam optimization parameters
@@ -264,11 +296,12 @@ private:
     {
         evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
+        mTimes.push_back(mTime);
 
         reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
 
         ++mStep;
-        outputLevelSetField();
+        this->cacheData();
     }
 
     /******************************************************************************//**
@@ -278,9 +311,9 @@ private:
     {
         if(mLength != mMeshLength || mMaxRadius != mMeshMaxRadius)
         {
-            build_mesh(mMaxRadius, mLength);
+            this->build_mesh(mMaxRadius, mLength);
             mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, mSpatialDim);
-            write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+            this->cacheData();
         }
 
         LevelSetInitialCondition tInitialCondition(mRadius, mMaxRadius);
@@ -294,6 +327,8 @@ private:
 
     /******************************************************************************//**
      * @brief Build bounding box and fields on computational mesh
+     * @param [in] aMeshMaxRadius maximum radius for bounding box
+     * @param [in] aMeshLength maximum bounding box length
      **********************************************************************************/
     void build_mesh(const ScalarType aMeshMaxRadius, const ScalarType aMeshLength)
     {
@@ -322,18 +357,6 @@ private:
         mReIninitializationDeltaTime = 0.2 * mDeltaX;
     }
 
-    /******************************************************************************//**
-     * @brief Write level set field on mesh every N number of time steps
-     **********************************************************************************/
-    void outputLevelSetField()
-    {
-        const size_t tPrintInterval = 100; // How often do you want to output mesh?
-        if(mStep % tPrintInterval == 0)
-        {
-            write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
-        }
-    }
-
 private:
     MPI_Comm mComm;
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
@@ -350,8 +373,9 @@ private:
     ScalarType mInterfaceWidth = 0.0;
     ScalarType mReIninitializationDeltaTime = 0.0;
     ScalarType mTime = 0.0;
-    size_t mStep = 0;
     ScalarType mDeltaX = 0.0;
+    Plato::OrdinalType mStep = 0;
+    std::vector<ScalarType> mTimes;
 };
 // class LevelSetCylinderInBox
 
