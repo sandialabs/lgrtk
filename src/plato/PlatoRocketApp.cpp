@@ -20,7 +20,7 @@ namespace Plato
 RocketApp::RocketApp() :
         mComm(MPI_COMM_NULL),
         mLength(0.65),
-        mMaxRadius(0.15),
+        mMaxRadius(0.1524),
         mNumDesigVariables(2),
         mDefinedOperations(),
         mSharedDataMap(),
@@ -218,9 +218,10 @@ void RocketApp::inputData(const std::string & aArgumentName, const Plato::Shared
 **********************************************************************************/
 void RocketApp::setRocketDriver()
 {
-    const Plato::Scalar tRadius = 0.075; // meters
     const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-    Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(mMaxRadius /* meters */, mLength /* meters */, tRadius, tRefBurnRate);
+    const Plato::Scalar tInitialRadius = 0.075; // meters
+    Plato::ProblemParams tParams =
+            Plato::RocketMocks::setupConstantBurnRateCylinder(mMaxRadius /* meters */, mLength /* meters */, tInitialRadius, tRefBurnRate);
 
     std::shared_ptr<Plato::LevelSetCylinderInBox> tGeometry =
             std::make_shared<Plato::LevelSetCylinderInBox>(mComm);

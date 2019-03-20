@@ -801,33 +801,36 @@ void reinitialize_level_set (
     const Plato::Scalar dtau,
     const Plato::Scalar convergedTol = 0.01)
 {
-  if (!domain_contains_interface(omega_h_mesh, fields))
-  {
-    return;
-  }
-
-  bool converged = false;
-  const int maxIters = 5000;
-  const int printFreq = 100;
-  for (int iter = 0; iter<maxIters; ++iter)
-  {
-    const Plato::Scalar averageNodalResidual = assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, false);
-
-    if ((iter+1) % printFreq == 0)
+    if(!domain_contains_interface(omega_h_mesh, fields))
     {
-      std::cout << "After " << iter+1 << " iterations in reinitialize_level_set, the relative error is " << averageNodalResidual << std::endl;
+        return;
     }
 
-    if (averageNodalResidual < convergedTol)
+    bool converged = false;
+    const int maxIters = 5000;
+    const int printFreq = 100;
+    for(int iter = 0; iter < maxIters; ++iter)
     {
-      converged = true;
-      std::cout << "At time " << time << ", reinitialize_level_set converged after " << iter+1 << " iterations  with relative error of " << averageNodalResidual << std::endl;
-      break;
+        const Plato::Scalar averageNodalResidual = assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, false);
+
+        if((iter + 1) % printFreq == 0)
+        {
+            std::cout << "After " << iter + 1 << " iterations in reinitialize_level_set, the relative error is "
+            << averageNodalResidual << std::endl;
+        }
+
+        if(averageNodalResidual < convergedTol)
+        {
+            converged = true;
+            std::cout << "At time " << time << ", reinitialize_level_set converged after " << iter + 1
+            << " iterations  with relative error of " << averageNodalResidual << std::endl;
+            break;
+        }
     }
-  }
-  if (!converged)
-  {
-    std::cout << "At time " << time << ", reinitialize_level_set failed to converge after " << maxIters << " iterations." << std::endl;
-  }
+    if(!converged)
+    {
+        std::cout << "At time " << time << ", reinitialize_level_set failed to converge after " << maxIters
+        << " iterations." << std::endl;
+    }
 }
 #endif

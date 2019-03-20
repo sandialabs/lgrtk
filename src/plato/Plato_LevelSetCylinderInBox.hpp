@@ -76,15 +76,14 @@ struct LevelSetInitialCondition
 {
     /******************************************************************************//**
      * @brief Constructor
-     * @param [in] aRadius cylinder's radius
-     * @param [in] aLength cylinder's length
+     * @param [in] aParams parameters associated with the geometry and fields
     **********************************************************************************/
-    LevelSetInitialCondition(const Plato::Scalar & aRadius, const Plato::Scalar & aMaxRadius) :
+    explicit LevelSetInitialCondition(const Plato::ProblemParams & aParams) :
             mNlobes(5),
-            mRmid(aRadius),
+            mRmid(aParams.mGeometry[2]),
             mRdelta(0),
-            mXCenter(aMaxRadius),
-            mYCenter(aMaxRadius)
+            mXCenter(aParams.mGeometry[0]),
+            mYCenter(aParams.mGeometry[0])
     {
     }
 
@@ -106,7 +105,8 @@ struct LevelSetInitialCondition
         const Plato::Scalar tRadius = std::sqrt((aX - mXCenter) * (aX - mXCenter) + (aY - mYCenter) * (aY - mYCenter));
         const Plato::Scalar tTheta = atan2(aY - mYCenter, aX - mXCenter);
         const Plato::Scalar tRSurf = mRmid + mRdelta * sin(mNlobes * tTheta);
-        return tRadius - tRSurf;
+        const Plato::Scalar tOutput = tRadius - tRSurf;
+        return (tOutput);
     }
 };
 // struct LevelSetInitialCondition
@@ -118,15 +118,13 @@ struct BurnRateInitialCondition
 {
     /******************************************************************************//**
      * @brief Constructor
-     * @param [in] aRefBurnRate constant burn rate
+     * @param [in] aParams parameters associated with the geometry and fields
     **********************************************************************************/
-    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate,
-                             const Plato::Scalar & aRefBurnRateSlopeWithRadius,
-                             const Plato::Scalar & aMaxRadius) :
-            mRefBurnRate(aRefBurnRate),
-            mRefBurnRateSlopeWithRadius(aRefBurnRateSlopeWithRadius),
-            mXCenter(aMaxRadius),
-            mYCenter(aMaxRadius)
+    explicit BurnRateInitialCondition(const Plato::ProblemParams & aParams) :
+            mRefBurnRate(aParams.mRefBurnRate[0]),
+            mRefBurnRateSlopeWithRadius(aParams.mRefBurnRate[1]),
+            mXCenter(aParams.mGeometry[0]),
+            mYCenter(aParams.mGeometry[0])
     {
     }
 
@@ -175,24 +173,6 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Return cylinder's radius
-     * @return radius
-     **********************************************************************************/
-    Plato::Scalar radius() const
-    {
-        return (mRadius);
-    }
-
-    /******************************************************************************//**
-     * @brief Return cylinder's length
-     * @return length
-     **********************************************************************************/
-    Plato::Scalar length() const
-    {
-        return (mLength);
-    }
-
-    /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
      **********************************************************************************/
     Plato::Scalar area() override
@@ -220,7 +200,7 @@ public:
     {
         if(aOutput == true)
         {
-            this->outputLevelSet();
+            this->outputLevelSetField();
         }
     }
 
@@ -240,44 +220,36 @@ public:
      **********************************************************************************/
     void evolveGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier) override
     {
-        this->updateLevelSetCylinder(aDeltaTime, aBurnRateMultiplier);
+        this->updateImmersedGeometry(aDeltaTime, aBurnRateMultiplier);
     }
 
     /******************************************************************************//**
      * @brief Update immersed geometry
-     * @param [in] aParam optimization parameters
+     * @param [in] aParams optimization parameters
      **********************************************************************************/
-    void updateGeometry(const Plato::ProblemParams & aParam) override
+    void updateGeometry(const Plato::ProblemParams & aParams) override
     {
-        assert(aParam.mGeometry.size() == static_cast<size_t>(3));
-        mMaxRadius = aParam.mGeometry[0];
-        mLength = aParam.mGeometry[1];
-        mRadius = aParam.mGeometry[2];
-        assert(aParam.mRefBurnRate.size() == static_cast<size_t>(2));
-        mRefBurnRate = aParam.mRefBurnRate[0];
-        mRefBurnRateSlopeWithRadius = aParam.mRefBurnRate[1];
-        mPropellantDensity = aParam.mPropellantDensity;
-
-        mHamiltonJacobiFields.mNumTimeSteps = aParam.mNumTimeSteps;
-        this->initializeLevelSetCylinder();
+        mPropellantDensity = aParams.mPropellantDensity;
+        mHamiltonJacobiFields.mNumTimeSteps = aParams.mNumTimeSteps;
+        this->initializeImmersedGeometry(aParams);
     }
 
     /******************************************************************************//**
      * @brief Initialize level set cylinder
-     * @param [in] aParam parameters associated with the geometry and fields
+     * @param [in] aParams parameters associated with the geometry and fields
      **********************************************************************************/
-    void initialize(const Plato::ProblemParams & aParam) override
+    void initialize(const Plato::ProblemParams & aParams) override
     {
         mTime = 0.;
         mTimes.clear();
-        this->updateGeometry(aParam);
+        this->updateGeometry(aParams);
     }
 
 private:
     /******************************************************************************//**
      * @brief Output level set time history to visualization file
     **********************************************************************************/
-    void outputLevelSet()
+    void outputLevelSetField()
     {
         auto tNodeCount = mMesh.nverts();
         Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
@@ -304,9 +276,9 @@ private:
 
     /******************************************************************************//**
      * @brief Update immersed cylinder
-     * @param [in] aParam optimization parameters
+     * @param [in] aParams optimization parameters
      **********************************************************************************/
-    void updateLevelSetCylinder(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier)
+    void updateImmersedGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier)
     {
         evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
@@ -319,21 +291,25 @@ private:
     }
 
     /******************************************************************************//**
-     * @brief Initialize immersed cylinder
+     * @brief Initialize immersed geometry
+     * @param [in] aParams parameters associated with the geometry and fields
      **********************************************************************************/
-    void initializeLevelSetCylinder()
+    void initializeImmersedGeometry(const Plato::ProblemParams & aParams)
     {
-        if(mLength != mMeshLength || mMaxRadius != mMeshMaxRadius)
+        if(mBuiltMesh == false)
         {
-            this->build_mesh(mMaxRadius, mLength);
+            const Plato::Scalar tLength = aParams.mGeometry[1];
+            const Plato::Scalar tMaxRadius = aParams.mGeometry[0];
+            this->buildMesh(tMaxRadius, tLength);
+            mBuiltMesh = true;
             mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, mSpatialDim);
             this->cacheData();
         }
 
-        LevelSetInitialCondition tInitialCondition(mRadius, mMaxRadius);
+        LevelSetInitialCondition tInitialCondition(aParams);
         initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
 
-        BurnRateInitialCondition tSpeedInitialCondition(mRefBurnRate, mRefBurnRateSlopeWithRadius, mMaxRadius);
+        BurnRateInitialCondition tSpeedInitialCondition(aParams);
         initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
 
         reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
@@ -344,18 +320,18 @@ private:
      * @param [in] aMeshMaxRadius maximum radius for bounding box
      * @param [in] aMeshLength maximum bounding box length
      **********************************************************************************/
-    void build_mesh(const Plato::Scalar aMeshMaxRadius, const Plato::Scalar aMeshLength)
+    void buildMesh(const Plato::Scalar & aMeshMaxRadius, const Plato::Scalar & aMeshLength)
     {
         mMeshMaxRadius = aMeshMaxRadius;
         mMeshLength = aMeshLength;
-        auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
-        const Plato::Scalar tLengthX = 2.*mMeshMaxRadius;
-        const Plato::Scalar tLengthY = 2.*mMeshMaxRadius;
         const Plato::Scalar tLengthZ = mMeshLength;
+        const Plato::Scalar tLengthX = static_cast<Plato::Scalar>(2) * mMeshMaxRadius;
+        const Plato::Scalar tLengthY = static_cast<Plato::Scalar>(2) * mMeshMaxRadius;
         const size_t tNumCellsPerSide = 64;
         const size_t tNumCellX = tNumCellsPerSide;
         const size_t tNumCellY = tNumCellsPerSide;
         const size_t tNumCellZ = tNumCellsPerSide;
+        auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
         mMesh = Omega_h::build_box(tLibOmegaH->world(),
                                    OMEGA_H_SIMPLEX,
                                    tLengthX,
@@ -368,17 +344,15 @@ private:
 
         mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
         mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
-        mReIninitializationDeltaTime = 0.2 * mDeltaX;
+        mReIninitializationDeltaTime = static_cast<Plato::Scalar>(0.2) * mDeltaX;
     }
 
 private:
     MPI_Comm mComm;
+    bool mBuiltMesh = false;
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
-    Plato::Scalar mMaxRadius = 0.0;
-    Plato::Scalar mLength = 0.0;
-    Plato::Scalar mRadius = 0.0;
     Plato::Scalar mMeshLength = 0.0;
     Plato::Scalar mMeshMaxRadius = 0.0;
     Plato::Scalar mPropellantDensity = 0.0;
