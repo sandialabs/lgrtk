@@ -165,7 +165,7 @@ private:
     Plato::Scalar mMaxRadius; /*!< cylinder's max radius */
     size_t mNumDesigVariables; /*!< import/export parameter map */
 
-    std::shared_ptr<Plato::AlgebraicRocketModel<Plato::Scalar>> mRocketDriver; /*!< rocket driver */
+    std::shared_ptr<Plato::AlgebraicRocketModel> mRocketDriver; /*!< rocket driver */
     std::vector<std::string> mDefinedOperations; /*!< valid operations recognized by app */
     std::map<std::string, Plato::data::layout_t> mDefinedDataLayout; /*!< valid data layouts */
     std::map<std::string, std::vector<Plato::Scalar>> mSharedDataMap; /*!< import/export shared data map */

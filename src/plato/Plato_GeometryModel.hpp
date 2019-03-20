@@ -68,7 +68,6 @@ struct ProblemParams
 /******************************************************************************//**
  * @brief Abstract geometry model class
  **********************************************************************************/
-template<typename ScalarType = Plato::Scalar>
 class GeometryModel
 {
 public:
@@ -83,13 +82,13 @@ public:
      * @brief Compute the surface area of a geometry
      * @return surface area
      **********************************************************************************/
-    virtual ScalarType area() = 0;
+    virtual Plato::Scalar area() = 0;
 
     /******************************************************************************//**
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    virtual ScalarType referencMassProductionRate() = 0;
+    virtual Plato::Scalar referencMassProductionRate() = 0;
 
     /******************************************************************************//**
      * @brief Output geometry and field data
@@ -101,7 +100,7 @@ public:
      * @brief Compute the gradient with respect to geometry-based parameters
      * @param [in/out] aOutput gradient with respect to geometry-based parameters
      **********************************************************************************/
-    virtual void gradient(std::vector<ScalarType> & aOutput) = 0;
+    virtual void gradient(std::vector<Plato::Scalar> & aOutput) = 0;
 
     /******************************************************************************//**
      * @brief Initialize immersed geometry
@@ -120,7 +119,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) = 0;
+    virtual void evolveGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier) = 0;
 };
 // class GeometryModel
 

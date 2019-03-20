@@ -120,7 +120,9 @@ struct BurnRateInitialCondition
      * @brief Constructor
      * @param [in] aRefBurnRate constant burn rate
     **********************************************************************************/
-    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate, const Plato::Scalar & aRefBurnRateSlopeWithRadius, const Plato::Scalar & aMaxRadius) :
+    BurnRateInitialCondition(const Plato::Scalar & aRefBurnRate,
+                             const Plato::Scalar & aRefBurnRateSlopeWithRadius,
+                             const Plato::Scalar & aMaxRadius) :
             mRefBurnRate(aRefBurnRate),
             mRefBurnRateSlopeWithRadius(aRefBurnRateSlopeWithRadius),
             mXCenter(aMaxRadius),
@@ -151,8 +153,7 @@ struct BurnRateInitialCondition
 /******************************************************************************//**
  * @brief Cylinder geometry model class
 **********************************************************************************/
-template<typename ScalarType = double>
-class LevelSetCylinderInBox : public Plato::GeometryModel<ScalarType>
+class LevelSetCylinderInBox : public Plato::GeometryModel
 {
 public:
     static constexpr Plato::OrdinalType mSpatialDim = 3;
@@ -177,7 +178,7 @@ public:
      * @brief Return cylinder's radius
      * @return radius
      **********************************************************************************/
-    ScalarType radius() const
+    Plato::Scalar radius() const
     {
         return (mRadius);
     }
@@ -186,7 +187,7 @@ public:
      * @brief Return cylinder's length
      * @return length
      **********************************************************************************/
-    ScalarType length() const
+    Plato::Scalar length() const
     {
         return (mLength);
     }
@@ -194,9 +195,9 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
      **********************************************************************************/
-    ScalarType area() override
+    Plato::Scalar area() override
     {
-        const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
+        const Plato::Scalar tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return (tArea);
     }
 
@@ -204,9 +205,9 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    ScalarType referencMassProductionRate() override
+    Plato::Scalar referencMassProductionRate() override
     {
-        const ScalarType tRefMassProdRate =
+        const Plato::Scalar tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return tRefMassProdRate;
     }
@@ -227,7 +228,7 @@ public:
      * @brief compute the gradient of a cylinder with respect to parameters that define geometry.
      * @param aOutput gradient with respect to the parameters that defined a geometry
      **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput) override
+    void gradient(std::vector<Plato::Scalar>& aOutput) override
     {
         return;
     }
@@ -237,7 +238,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
+    void evolveGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier) override
     {
         this->updateLevelSetCylinder(aDeltaTime, aBurnRateMultiplier);
     }
@@ -267,6 +268,8 @@ public:
      **********************************************************************************/
     void initialize(const Plato::ProblemParams & aParam) override
     {
+        mTime = 0.;
+        mTimes.clear();
         this->updateGeometry(aParam);
     }
 
@@ -303,7 +306,7 @@ private:
      * @brief Update immersed cylinder
      * @param [in] aParam optimization parameters
      **********************************************************************************/
-    void updateLevelSetCylinder(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+    void updateLevelSetCylinder(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier)
     {
         evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
@@ -341,7 +344,7 @@ private:
      * @param [in] aMeshMaxRadius maximum radius for bounding box
      * @param [in] aMeshLength maximum bounding box length
      **********************************************************************************/
-    void build_mesh(const ScalarType aMeshMaxRadius, const ScalarType aMeshLength)
+    void build_mesh(const Plato::Scalar aMeshMaxRadius, const Plato::Scalar aMeshLength)
     {
         mMeshMaxRadius = aMeshMaxRadius;
         mMeshLength = aMeshLength;
@@ -373,20 +376,20 @@ private:
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
-    ScalarType mMaxRadius = 0.0;
-    ScalarType mLength = 0.0;
-    ScalarType mRadius = 0.0;
-    ScalarType mMeshLength = 0.0;
-    ScalarType mMeshMaxRadius = 0.0;
-    ScalarType mPropellantDensity = 0.0;
-    ScalarType mRefBurnRate = 0.0;
-    ScalarType mRefBurnRateSlopeWithRadius = 0.0;
-    ScalarType mInterfaceWidth = 0.0;
-    ScalarType mReIninitializationDeltaTime = 0.0;
-    ScalarType mTime = 0.0;
-    ScalarType mDeltaX = 0.0;
+    Plato::Scalar mMaxRadius = 0.0;
+    Plato::Scalar mLength = 0.0;
+    Plato::Scalar mRadius = 0.0;
+    Plato::Scalar mMeshLength = 0.0;
+    Plato::Scalar mMeshMaxRadius = 0.0;
+    Plato::Scalar mPropellantDensity = 0.0;
+    Plato::Scalar mRefBurnRate = 0.0;
+    Plato::Scalar mRefBurnRateSlopeWithRadius = 0.0;
+    Plato::Scalar mInterfaceWidth = 0.0;
+    Plato::Scalar mReIninitializationDeltaTime = 0.0;
+    Plato::Scalar mTime = 0.0;
+    Plato::Scalar mDeltaX = 0.0;
     Plato::OrdinalType mStep = 0;
-    std::vector<ScalarType> mTimes;
+    std::vector<Plato::Scalar> mTimes;
 };
 // class LevelSetCylinderInBox
 

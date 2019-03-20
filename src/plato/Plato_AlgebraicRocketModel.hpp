@@ -66,17 +66,16 @@ namespace Plato
 /******************************************************************************//**
  * @brief Data structure for rocket problem input parameters.
 **********************************************************************************/
-template<typename ScalarType = double>
 struct AlgebraicRocketInputs
 {
-    ScalarType mAlpha;
-    ScalarType mDeltaTime;                // seconds
-    ScalarType mRefPressure;              // Pascal
-    ScalarType mTotalBurnTime;            // seconds
-    ScalarType mThroatDiameter;           // meters
-    ScalarType mNewtonTolerance;          // Pascal
-    ScalarType mAmbientPressure;          // Pascal
-    ScalarType mCharacteristicVelocity;   // meters/seconds
+    Plato::Scalar mAlpha;
+    Plato::Scalar mDeltaTime;                // seconds
+    Plato::Scalar mRefPressure;              // Pascal
+    Plato::Scalar mTotalBurnTime;            // seconds
+    Plato::Scalar mThroatDiameter;           // meters
+    Plato::Scalar mNewtonTolerance;          // Pascal
+    Plato::Scalar mAmbientPressure;          // Pascal
+    Plato::Scalar mCharacteristicVelocity;   // meters/seconds
 
     size_t mNumTimeSteps;                 /*!< number of simulation time steps */
     size_t mMaxNumNewtonItr;              /*!< number of Newton iterations */
@@ -110,7 +109,6 @@ struct AlgebraicRocketInputs
  * Pa - Pascal
  * kg - kilograms
  **********************************************************************************/
-template<typename ScalarType = double>
 class AlgebraicRocketModel
 {
 public:
@@ -119,8 +117,8 @@ public:
      * @param aInputs input parameters for simulation
      * @param aGeomModel geometry model used for the rocket chamber
      **********************************************************************************/
-    explicit AlgebraicRocketModel(const Plato::AlgebraicRocketInputs<ScalarType>& aInputs,
-                                  const std::shared_ptr<Plato::GeometryModel<ScalarType>>& aChamberGeomModel) :
+    explicit AlgebraicRocketModel(const Plato::AlgebraicRocketInputs& aInputs,
+                                  const std::shared_ptr<Plato::GeometryModel>& aChamberGeomModel) :
             mPrint(true),
             mNumNewtonItr(0),
             mMaxNumNewtonItr(aInputs.mMaxNumNewtonItr),
@@ -168,7 +166,7 @@ public:
      * @brief set propellant's reference pressure.
      * @param aInput propellant's reference pressure
      **********************************************************************************/
-    void setRefPressure(const ScalarType& aInput)
+    void setRefPressure(const Plato::Scalar& aInput)
     {
         mRefPressure = aInput;
     }
@@ -177,7 +175,7 @@ public:
      * @brief set exponent in burn rate equation.
      * @param aInput burn rate exponent
      **********************************************************************************/
-    void setBurnRateExponent(const ScalarType& aInput)
+    void setBurnRateExponent(const Plato::Scalar& aInput)
     {
         mAlpha = aInput;
     }
@@ -186,7 +184,7 @@ public:
      * @brief set throat diameter.
      * @param aInput throat diameter
      **********************************************************************************/
-    void setThroatDiameter(const ScalarType& aInput)
+    void setThroatDiameter(const Plato::Scalar& aInput)
     {
         mThroatDiameter = aInput;
     }
@@ -195,7 +193,7 @@ public:
      * @brief set characteristic velocity.
      * @param aInput characteristic velocity
      **********************************************************************************/
-    void setCharacteristicVelocity(const ScalarType& aInput)
+    void setCharacteristicVelocity(const Plato::Scalar& aInput)
     {
         mCharacteristicVelocity = aInput;
     }
@@ -204,7 +202,7 @@ public:
      * @brief set ambient pressure.
      * @param aInput ambient pressure
      **********************************************************************************/
-    void setAmbientPressure(const ScalarType& aInput)
+    void setAmbientPressure(const Plato::Scalar& aInput)
     {
         mAmbientPressure = aInput;
     }
@@ -213,7 +211,7 @@ public:
      * @brief set burn time step.
      * @param aInput time step
      **********************************************************************************/
-    void setBurnTimeStep(const ScalarType& aInput)
+    void setBurnTimeStep(const Plato::Scalar& aInput)
     {
         mDeltaTime = aInput;
     }
@@ -222,7 +220,7 @@ public:
      * @brief set total burn time.
      * @param aInput total burn time
      **********************************************************************************/
-    void setTotalBurnTime(const ScalarType& aInput)
+    void setTotalBurnTime(const Plato::Scalar& aInput)
     {
         mTotalBurnTime = aInput;
     }
@@ -230,7 +228,7 @@ public:
     /******************************************************************************//**
      * @brief returns time steps.
      **********************************************************************************/
-    std::vector<ScalarType> getTimeProfile() const
+    std::vector<Plato::Scalar> getTimeProfile() const
     {
         return (mTimes);
     }
@@ -238,7 +236,7 @@ public:
     /******************************************************************************//**
      * @brief returns thrust values for each time snapshot.
      **********************************************************************************/
-    std::vector<ScalarType> getThrustProfile() const
+    std::vector<Plato::Scalar> getThrustProfile() const
     {
         return (mThrustProfile);
     }
@@ -246,7 +244,7 @@ public:
     /******************************************************************************//**
      * @brief returns pressure values for each time snapshot.
      **********************************************************************************/
-    std::vector<ScalarType> getPressuresProfile() const
+    std::vector<Plato::Scalar> getPressuresProfile() const
     {
         return (mPressureProfile);
     }
@@ -287,13 +285,13 @@ public:
         assert(mPressureProfile.empty() == true);
 
         // circular chamber parameterization
-        mInvPrefAlpha = static_cast<ScalarType>(1.0) / std::pow(mRefPressure, mAlpha);
-        ScalarType tThroatArea = M_PI * mThroatDiameter * mThroatDiameter / static_cast<ScalarType>(4.0);
+        mInvPrefAlpha = static_cast<Plato::Scalar>(1.0) / std::pow(mRefPressure, mAlpha);
+        Plato::Scalar tThroatArea = M_PI * mThroatDiameter * mThroatDiameter / static_cast<Plato::Scalar>(4.0);
 
         // initialize variables
-        ScalarType tTime = 0.0;
-        ScalarType tThrust = 0.0;
-        ScalarType tTotalPressure = mRefPressure; // initial guess
+        Plato::Scalar tTime = 0.0;
+        Plato::Scalar tThrust = 0.0;
+        Plato::Scalar tTotalPressure = mRefPressure; // initial guess
 
         bool tBurning = true;
         while(tBurning == true)
@@ -306,15 +304,15 @@ public:
             mTimes.push_back(tTime);
             mThrustProfile.push_back(tThrust);
             mPressureProfile.push_back(tTotalPressure);
-            ScalarType tMassProductionRate = mImmersedGeomModel->referencMassProductionRate();
+            Plato::Scalar tMassProductionRate = mImmersedGeomModel->referencMassProductionRate();
 
             tTotalPressure = this->newton(tMassProductionRate, tTotalPressure, tThroatArea);
 
-            tThrust = static_cast<ScalarType>(269.0) * static_cast<ScalarType>(9.8)
+            tThrust = static_cast<Plato::Scalar>(269.0) * static_cast<Plato::Scalar>(9.8)
                     * tThroatArea * (tTotalPressure - mAmbientPressure)
                     / mCharacteristicVelocity;
 
-            ScalarType tBurnRateMultiplier = std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
+            Plato::Scalar tBurnRateMultiplier = std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
             mImmersedGeomModel->evolveGeometry(mDeltaTime, tBurnRateMultiplier);
             tTime += mDeltaTime;
 
@@ -329,17 +327,17 @@ private:
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType newton(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    Plato::Scalar newton(const Plato::Scalar& aRefMassProductionRate, const Plato::Scalar& aTotalPressure, const Plato::Scalar& aThroatArea)
     {
         bool tDone = false;
-        ScalarType tNewTotalPressure = aTotalPressure;
+        Plato::Scalar tNewTotalPressure = aTotalPressure;
 
         mNumNewtonItr = 0;
         while(tDone == false)
         {
-            ScalarType tMyResidualEvaluation = this->residual(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
-            ScalarType tMyJacobianEvaluation = this->jacobian(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
-            ScalarType tDeltaPressure = static_cast<ScalarType>(-1.0) * tMyResidualEvaluation / tMyJacobianEvaluation;
+            Plato::Scalar tMyResidualEvaluation = this->residual(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
+            Plato::Scalar tMyJacobianEvaluation = this->jacobian(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
+            Plato::Scalar tDeltaPressure = static_cast<Plato::Scalar>(-1.0) * tMyResidualEvaluation / tMyJacobianEvaluation;
             tNewTotalPressure += tDeltaPressure;
 
             mNumNewtonItr += static_cast<size_t>(1);
@@ -355,10 +353,10 @@ private:
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType jacobian(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    Plato::Scalar jacobian(const Plato::Scalar& aRefMassProductionRate, const Plato::Scalar& aTotalPressure, const Plato::Scalar& aThroatArea)
     {
-        ScalarType tPower = mAlpha - static_cast<ScalarType>(1);
-        ScalarType tValue = aRefMassProductionRate * mAlpha * mInvPrefAlpha
+        Plato::Scalar tPower = mAlpha - static_cast<Plato::Scalar>(1);
+        Plato::Scalar tValue = aRefMassProductionRate * mAlpha * mInvPrefAlpha
                             * std::pow(aTotalPressure, tPower)
                             - aThroatArea / mCharacteristicVelocity;
         return tValue;
@@ -370,9 +368,9 @@ private:
      * @param aTotalPressure total pressure at current time step
      * @param aThroatArea current throat area
      **********************************************************************************/
-    ScalarType residual(const ScalarType& aRefMassProductionRate, const ScalarType& aTotalPressure, const ScalarType& aThroatArea)
+    Plato::Scalar residual(const Plato::Scalar& aRefMassProductionRate, const Plato::Scalar& aTotalPressure, const Plato::Scalar& aThroatArea)
     {
-        ScalarType tValue = aRefMassProductionRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
+        Plato::Scalar tValue = aRefMassProductionRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
                 - aThroatArea * aTotalPressure / mCharacteristicVelocity;
         return tValue;
     }
@@ -382,22 +380,22 @@ private:
     size_t mNumNewtonItr;
     size_t mMaxNumNewtonItr;
 
-    ScalarType mRefPressure; // Pa
-    ScalarType mAlpha;
-    ScalarType mThroatDiameter; // m
-    ScalarType mCharacteristicVelocity; // m/sec
-    ScalarType mAmbientPressure; // Pa
-    ScalarType mDeltaTime; // sec
-    ScalarType mTotalBurnTime; // sec
-    ScalarType mNewtonTolerance; // Pa
+    Plato::Scalar mRefPressure; // Pa
+    Plato::Scalar mAlpha;
+    Plato::Scalar mThroatDiameter; // m
+    Plato::Scalar mCharacteristicVelocity; // m/sec
+    Plato::Scalar mAmbientPressure; // Pa
+    Plato::Scalar mDeltaTime; // sec
+    Plato::Scalar mTotalBurnTime; // sec
+    Plato::Scalar mNewtonTolerance; // Pa
 
-    ScalarType mInvPrefAlpha;
+    Plato::Scalar mInvPrefAlpha;
 
-    std::vector<ScalarType> mTimes;
-    std::vector<ScalarType> mThrustProfile;
-    std::vector<ScalarType> mPressureProfile;
+    std::vector<Plato::Scalar> mTimes;
+    std::vector<Plato::Scalar> mThrustProfile;
+    std::vector<Plato::Scalar> mPressureProfile;
 
-    std::shared_ptr<Plato::GeometryModel<ScalarType>> mImmersedGeomModel;
+    std::shared_ptr<Plato::GeometryModel> mImmersedGeomModel;
 };
 // class AlgebraicRocketModel
 

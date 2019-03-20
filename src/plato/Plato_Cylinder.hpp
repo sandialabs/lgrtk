@@ -66,8 +66,7 @@ namespace Plato
 /******************************************************************************//**
  * @brief Cylinder geometry model class
 **********************************************************************************/
-template<typename ScalarType = double>
-class Cylinder : public Plato::GeometryModel<ScalarType>
+class Cylinder : public Plato::GeometryModel
 {
 public:
     /******************************************************************************//**
@@ -88,7 +87,7 @@ public:
      * @brief Return cylinder's radius
      * @return radius
     **********************************************************************************/
-    ScalarType radius() const
+    Plato::Scalar radius() const
     {
         return (mRadius);
     }
@@ -97,7 +96,7 @@ public:
      * @brief Return cylinder's length
      * @return length
     **********************************************************************************/
-    ScalarType length() const
+    Plato::Scalar length() const
     {
         return (mLength);
     }
@@ -105,9 +104,9 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
     **********************************************************************************/
-    ScalarType area() override
+    Plato::Scalar area() override
     {
-        const ScalarType tArea = static_cast<ScalarType>(2) * M_PI * mRadius * mLength;
+        const Plato::Scalar tArea = static_cast<Plato::Scalar>(2) * M_PI * mRadius * mLength;
         return (tArea);
     }
 
@@ -115,7 +114,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    ScalarType referencMassProductionRate()  override
+    Plato::Scalar referencMassProductionRate()  override
     {
         return mRefBurnRate * mPropellantDensity * area();
     }
@@ -124,11 +123,11 @@ public:
      * @brief compute the gradient with respect to geometric parameters
      * @param aOutput gradient
     **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput)  override
+    void gradient(std::vector<Plato::Scalar>& aOutput)  override
     {
         assert(aOutput.size() == static_cast<size_t>(2));
-        aOutput[0] = static_cast<ScalarType>(2) * M_PI * mLength;
-        aOutput[1] = static_cast<ScalarType>(2) * M_PI * mRadius;
+        aOutput[0] = static_cast<Plato::Scalar>(2) * M_PI * mLength;
+        aOutput[1] = static_cast<Plato::Scalar>(2) * M_PI * mRadius;
     }
 
     /******************************************************************************//**
@@ -159,7 +158,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
+    void evolveGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier) override
     {
         mRadius += aBurnRateMultiplier * mRefBurnRate * aDeltaTime;
     }
@@ -174,10 +173,10 @@ public:
     }
 
 private:
-    ScalarType mRadius{0}; /*!< cylinder's radius */
-    ScalarType mLength{0}; /*!< cylinder's length */
-    ScalarType mPropellantDensity{0}; /*!< propellant density */
-    ScalarType mRefBurnRate{0}; /*!< constant reference burn rate */
+    Plato::Scalar mRadius{0}; /*!< cylinder's radius */
+    Plato::Scalar mLength{0}; /*!< cylinder's length */
+    Plato::Scalar mPropellantDensity{0}; /*!< propellant density */
+    Plato::Scalar mRefBurnRate{0}; /*!< constant reference burn rate */
 };
 // class Cylinder
 

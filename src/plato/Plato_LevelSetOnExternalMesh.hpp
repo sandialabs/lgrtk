@@ -71,8 +71,7 @@ namespace Plato
 /******************************************************************************//**
  * @brief Cylinder geometry model class
 **********************************************************************************/
-template<typename ScalarType = double>
-class LevelSetOnExternalMesh : public Plato::GeometryModel<ScalarType>
+class LevelSetOnExternalMesh : public Plato::GeometryModel
 {
 public:
     static constexpr int mSpatialDim = 3;
@@ -100,9 +99,9 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
      **********************************************************************************/
-    ScalarType area() override
+    Plato::Scalar area() override
     {
-        const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
+        const Plato::Scalar tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return (tArea);
     }
 
@@ -110,9 +109,9 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    ScalarType referencMassProductionRate() override
+    Plato::Scalar referencMassProductionRate() override
     {
-        const ScalarType tRefMassProdRate =
+        const Plato::Scalar tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return tRefMassProdRate;
     }
@@ -121,7 +120,7 @@ public:
      * @brief compute the gradient of a cylinder with respect to parameters that define geometry.
      * @param aOutput gradient with respect to the parameters that defined a geometry
      **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput) override
+    void gradient(std::vector<Plato::Scalar>& aOutput) override
     {
         return;
     }
@@ -131,7 +130,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
+    void evolveGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier) override
     {
         this->updateLevelSetCylinder(aDeltaTime, aBurnRateMultiplier);
     }
@@ -210,7 +209,7 @@ private:
      * @brief Update immersed cylinder
      * @param [in] aParam optimization parameters
      **********************************************************************************/
-    void updateLevelSetCylinder(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+    void updateLevelSetCylinder(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier)
     {
         evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
@@ -245,13 +244,13 @@ private:
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
-    ScalarType mPropellantDensity = 0.0;
-    ScalarType mInterfaceWidth = 0.0;
-    ScalarType mReIninitializationDeltaTime = 0.0;
-    ScalarType mTime = 0.0;
+    Plato::Scalar mPropellantDensity = 0.0;
+    Plato::Scalar mInterfaceWidth = 0.0;
+    Plato::Scalar mReIninitializationDeltaTime = 0.0;
+    Plato::Scalar mTime = 0.0;
     size_t mStep = 0;
-    ScalarType mDeltaX = 0.0;
-    std::vector<ScalarType> mTimes;
+    Plato::Scalar mDeltaX = 0.0;
+    std::vector<Plato::Scalar> mTimes;
 };
 // class LevelSetOnExternalMesh
 

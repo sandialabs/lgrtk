@@ -4,6 +4,9 @@
  *  Created on: Oct 25, 2018
  */
 
+#include <iostream>
+#include <fstream>
+
 #include "PlatoTestHelpers.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
 
@@ -24,11 +27,11 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketAnalyticalCylinder)
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
   Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
-  auto tCylinder = std::make_shared<Plato::Cylinder<Plato::Scalar>>();
+  auto tCylinder = std::make_shared<Plato::Cylinder>();
   tCylinder->initialize(tParams);
 
-  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
-  Plato::AlgebraicRocketModel<double> tDriver(tRocketInputs, tCylinder);
+  const Plato::AlgebraicRocketInputs tRocketInputs;
+  Plato::AlgebraicRocketModel tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }
 
@@ -40,13 +43,22 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
   Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
-  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>();
+  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox>();
   tCylinder->initialize(tParams);
 
-  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
+  const Plato::AlgebraicRocketInputs tRocketInputs;
   assert(tRocketInputs.mNumTimeSteps == tParams.mNumTimeSteps);
-  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
+  Plato::AlgebraicRocketModel tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
+
+  std::ofstream tFile;
+  tFile.open("example.txt");
+  auto tOutput = tDriver.getThrustProfile();
+  for(size_t i = 0; i < tOutput.size(); i++)
+  {
+      tFile << std::setprecision(18) << tOutput[i] << "\n";
+  }
+  tFile.close();
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRate)
@@ -60,21 +72,21 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRa
   const Plato::Scalar tCenterBurnRate = tMaxRefBurnRate - tRefBurnRateSlopeWithRadius*tInitialRadius;
   Plato::ProblemParams tParams = Plato::RocketMocks::setupLinearBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tCenterBurnRate, tRefBurnRateSlopeWithRadius);
 
-  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox<Plato::Scalar>>();
+  auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox>();
   tCylinder->initialize(tParams);
 
-  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
-  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tCylinder);
+  const Plato::AlgebraicRocketInputs tRocketInputs;
+  Plato::AlgebraicRocketModel tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
 }
 
 //TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetOnExternalMesh)
 //{
-//  auto tLevelSetGeometry = std::make_shared<Plato::LevelSetOnExternalMesh<Plato::Scalar>>("tetWithAllFields.vtu");
+//  auto tLevelSetGeometry = std::make_shared<Plato::LevelSetOnExternalMesh>("tetWithAllFields.vtu");
 //  tLevelSetGeometry->initialize();
 //
-//  const Plato::AlgebraicRocketInputs<Plato::Scalar> tRocketInputs;
-//  Plato::AlgebraicRocketModel<Plato::Scalar> tDriver(tRocketInputs, tLevelSetGeometry);
+//  const Plato::AlgebraicRocketInputs tRocketInputs;
+//  Plato::AlgebraicRocketModel tDriver(tRocketInputs, tLevelSetGeometry);
 //  tDriver.solve();
 //}
 
