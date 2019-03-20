@@ -556,4 +556,28 @@ private:
     }
 };
 
+#include "Thermal.hpp"
+#include "Mechanics.hpp"
+#include "Electromechanics.hpp"
+#include "Thermomechanics.hpp"
+
+#ifdef PLATO_1D
+extern template class Problem<::Plato::Thermal<1>>;
+extern template class Problem<::Plato::Mechanics<1>>;
+extern template class Problem<::Plato::Electromechanics<1>>;
+extern template class Problem<::Plato::Thermomechanics<1>>;
+#endif
+#ifdef PLATO_2D
+extern template class Problem<::Plato::Thermal<2>>;
+extern template class Problem<::Plato::Mechanics<2>>;
+extern template class Problem<::Plato::Electromechanics<2>>;
+extern template class Problem<::Plato::Thermomechanics<2>>;
+#endif
+#ifdef PLATO_3D
+extern template class Problem<::Plato::Thermal<3>>;
+extern template class Problem<::Plato::Mechanics<3>>;
+extern template class Problem<::Plato::Electromechanics<3>>;
+extern template class Problem<::Plato::Thermomechanics<3>>;
+#endif
+
 #endif // PLATO_PROBLEM_HPP

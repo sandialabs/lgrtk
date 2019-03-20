@@ -13,9 +13,16 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/CellForcing.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
+#include "plato/ToMap.hpp"
+
 #include "plato/LinearElasticMaterial.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/BodyLoads.hpp"
+
+#include "plato/ExpInstMacros.hpp"
 
 namespace Plato {
 
@@ -106,7 +113,8 @@ public:
 
     }
 
-    /**************************************************************************/
+
+/*
     ElastostaticResidual(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Plato::DataMap aDataMap) :
             AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
             m_indicatorFunction(3.0, 0.0),
@@ -115,7 +123,6 @@ public:
             m_boundaryLoads(nullptr),
             m_cellForcing(nullptr),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
-    /**************************************************************************/
     {
         // Create material model and get stiffness
         Teuchos::ParameterList tParamList;
@@ -124,6 +131,7 @@ public:
         Plato::IsotropicLinearElasticMaterial<EvaluationType::SpatialDim> tDefaultMaterialModel(tParamList);
         m_cellStiffness = tDefaultMaterialModel.getStiffnessMatrix();
     }
+*/
 
     /**************************************************************************/
     void evaluate(const Plato::ScalarMultiVectorT<StateScalarType> & state,
@@ -205,5 +213,18 @@ public:
 };
 // class ElastostaticResidual
 
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 3)
+#endif
+
 } // namespace Plato
+
 #endif

@@ -4,6 +4,7 @@
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
+#include "plato/StateValues.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"

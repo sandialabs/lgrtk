@@ -6,6 +6,9 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+#include <Omega_h_assoc.hpp>
+#include <Teuchos_ParameterList.hpp>
+
 namespace Plato {
 
   /******************************************************************************/

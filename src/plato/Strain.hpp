@@ -4,6 +4,8 @@
 #include "plato/SimplexMechanics.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
+#include <Omega_h_vector.hpp>
+
 /******************************************************************************/
 /*! Strain functor.
   

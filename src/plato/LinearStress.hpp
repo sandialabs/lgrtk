@@ -3,6 +3,8 @@
 
 #include "plato/SimplexMechanics.hpp"
 
+#include <Omega_h_matrix.hpp>
+
 /******************************************************************************/
 /*! Stress functor.
   

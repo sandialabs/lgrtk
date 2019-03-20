@@ -85,24 +85,36 @@ createProblem(ProblemDefinition& aDefinition){
 
   if (m_numSpatialDims == 3)
   {
+    #ifdef PLATO_3D
     Plato::ProblemFactory<3> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("3D physics is not compiled.");
+    #endif
   } else
   if (m_numSpatialDims == 2)
   {
+    #ifdef PLATO_2D
     Plato::ProblemFactory<2> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("2D physics is not compiled.");
+    #endif
   } else
   if (m_numSpatialDims == 1)
   {
+    #ifdef PLATO_1D
     Plato::ProblemFactory<1> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("1D physics is not compiled.");
+    #endif
   }
 
   aDefinition.modified = false;

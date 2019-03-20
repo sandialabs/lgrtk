@@ -19,6 +19,30 @@
 
 #include "Teuchos_UnitTestHarness.hpp"
 
+    // create material model
+    //
+    Teuchos::RCP<Teuchos::ParameterList> params =
+      Teuchos::getParametersFromXmlString(
+      "<ParameterList name='Plato Problem'>                                          \n"
+      "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+      "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
+      "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
+      "  <ParameterList name='Elastostatics'>                                        \n"
+      "    <ParameterList name='Penalty Function'>                                   \n"
+      "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
+      "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
+      "    </ParameterList>                                                          \n"
+      "  </ParameterList>                                                            \n"
+      "  <ParameterList name='Material Model'>                                       \n"
+      "    <ParameterList name='Isotropic Linear Elastic'>                           \n"
+      "      <Parameter name='Poissons Ratio' type='double' value='0.3'/>            \n"
+      "      <Parameter name='Youngs Modulus' type='double' value='1.0e6'/>          \n"
+      "    </ParameterList>                                                          \n"
+      "  </ParameterList>                                                            \n"
+      "</ParameterList>                                                              \n"
+    );
+ 
+
 namespace PlatoUnitTests
 {
 
@@ -43,9 +67,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ComputeStateWorkset)
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
 
     // SET PROBLEM-RELATED DIMENSIONS
@@ -158,9 +182,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStrainsToComplexStrains)
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
 
     // SET PROBLEM-RELATED DIMENSIONS
@@ -307,9 +331,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStressToComplexStress)
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
     
     // SET PROBLEM-RELATED DIMENSIONS
@@ -475,9 +499,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearElasticForcesToComplexElasticF
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
 
     // SET PROBLEM-RELATED DIMENSIONS
@@ -661,9 +685,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsResidua
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
 
     // SET PROBLEM-RELATED DIMENSIONS
@@ -785,9 +809,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsGradU)
     // ALLOCATE ELASTOSTATICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
     tElastostatics.allocateResidual(tResidual, tJacobianState);
 
     // SET PROBLEM-RELATED DIMENSIONS

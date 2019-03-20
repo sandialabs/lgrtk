@@ -11,6 +11,9 @@
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/StateValues.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractVectorFunctionInc.hpp"
@@ -18,6 +21,8 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/SimplexFadTypes.hpp"
+
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -198,5 +203,17 @@ class HeatEquationResidual :
       }
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 3)
+#endif
 
 #endif

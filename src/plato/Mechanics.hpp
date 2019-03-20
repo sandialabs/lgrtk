@@ -314,6 +314,7 @@ class Mechanics: public Plato::SimplexMechanics<SpaceDimParam>
 {
 public:
     using FunctionFactory = typename Plato::MechanicsFactory::FunctionFactory;
+    using SimplexT = SimplexMechanics<SpaceDimParam>;
     static constexpr int SpaceDim = SpaceDimParam;
 };
 // class Mechanics

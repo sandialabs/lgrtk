@@ -15,6 +15,7 @@
 #include "plato/Thermal.hpp"
 #include "plato/Mechanics.hpp"
 #include "plato/VectorFunctionInc.hpp"
+#include "plato/ScalarFunction.hpp"
 #include "plato/ScalarFunctionInc.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
@@ -549,5 +550,17 @@ private:
         tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }
 };
+
+// JR HACK: explicit instantiation
+// compile time: (no effect)
+#ifdef PLATO_1D
+extern template class HeatEquationProblem<::Plato::Thermal<1>>;
+#endif
+#ifdef PLATO_2D
+extern template class HeatEquationProblem<::Plato::Thermal<2>>;
+#endif
+#ifdef PLATO_3D
+extern template class HeatEquationProblem<::Plato::Thermal<3>>;
+#endif
 
 #endif // PLATO_PROBLEM_HPP

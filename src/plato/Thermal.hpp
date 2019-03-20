@@ -2,6 +2,7 @@
 #define PLATO_THERMAL_HPP
 
 #include "plato/Simplex.hpp"
+#include "plato/SimplexThermal.hpp"
 #include "plato/AbstractVectorFunction.hpp"
 #include "plato/AbstractVectorFunctionInc.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
@@ -189,6 +190,7 @@ template <Plato::OrdinalType SpaceDimParam>
 class Thermal : public SimplexThermal<SpaceDimParam> {
   public:
     using FunctionFactory = typename Plato::ThermalFactory::FunctionFactory<SpaceDimParam>;
+    using SimplexT = SimplexThermal<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };
 

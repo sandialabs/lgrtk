@@ -163,6 +163,7 @@ class Thermomechanics: public Plato::SimplexThermomechanics<SpaceDimParam>
 {
 public:
     using FunctionFactory = typename Plato::ThermomechanicsFactory::FunctionFactory;
+    using SimplexT = SimplexThermomechanics<SpaceDimParam>;
     static constexpr int SpaceDim = SpaceDimParam;
 };
 

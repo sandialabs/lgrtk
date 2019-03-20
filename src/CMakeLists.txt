@@ -14,6 +14,11 @@ SET(SOURCES
   plato/LinearElasticMaterial.cpp
   plato/LinearElectroelasticMaterial.cpp
   plato/LinearThermoelasticMaterial.cpp
+  plato/HeatEquationResidual.cpp
+  plato/ThermostaticResidual.cpp
+  plato/ElastostaticResidual.cpp
+  plato/HeatEquationProblem.cpp
+  plato/PlatoProblem.cpp
   VizOutput.cpp
   CmdLineOutput.cpp
   Basis.cpp

@@ -184,15 +184,27 @@ void driver(Omega_h::Library* aLibOmegaH,
     // Run Plato problem
     if(tSpaceDim == static_cast<Plato::OrdinalType>(3))
     {
+        #ifdef PLATO_3D
         driver<3>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("3D physics is not compiled.");
+        #endif
     }
     else if(tSpaceDim == static_cast<Plato::OrdinalType>(2))
     {
+        #ifdef PLATO_2D
         driver<2>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("2D physics is not compiled.");
+        #endif
     }
     else if(tSpaceDim == static_cast<Plato::OrdinalType>(1))
     {
+        #ifdef PLATO_1D
         driver<1>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("1D physics is not compiled.");
+        #endif
     }
 }
 

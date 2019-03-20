@@ -2,6 +2,7 @@
 #define THERMAL_FLUX_HPP
 
 #include "plato/PlatoStaticsTypes.hpp"
+#include <Omega_h_matrix.hpp>
 
 /******************************************************************************/
 /*! Thermal flux functor.
