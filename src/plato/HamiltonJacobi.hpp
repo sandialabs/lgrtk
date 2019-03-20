@@ -364,33 +364,32 @@ inline void initialize_nodal_speed(Omega_h::Mesh & aOmega_h_Mesh,
 **********************************************************************************/
 template<int SpatialDim, class Lambda>
 inline void initialize_element_speed(Omega_h::Mesh & aOmega_h_Mesh,
-                                 ProblemFields<SpatialDim> & aFields,
-                                 const Lambda & aSpeedFunction)
+                                     ProblemFields<SpatialDim> & aFields,
+                                     const Lambda & aSpeedFunction)
 {
-	constexpr int nodesPerElem = SpatialDim + 1;
-    constexpr Plato::Scalar invNPE = 1./nodesPerElem;
+    constexpr int nodesPerElem = SpatialDim + 1;
+    constexpr Plato::Scalar invNPE = 1. / nodesPerElem;
 
     auto elementSpeed = aFields.mElementSpeed;
     auto elems2Verts = aOmega_h_Mesh.ask_elem_verts();
     const Omega_h::Reals tCoords = aOmega_h_Mesh.coords();
     auto tLambdaExp = LAMBDA_EXPRESSION(int tElem)
     {
-		Plato::Scalar tX = 0.;
-		Plato::Scalar tY = 0.;
-		Plato::Scalar tZ = 0.;
-		for (unsigned n=0; n<nodesPerElem; ++n)
-		{
-			auto node = elems2Verts[tElem * nodesPerElem + n];
-			tX += invNPE*tCoords[node*SpatialDim+0];
-			tY += invNPE*tCoords[node*SpatialDim+1];
-			tZ += (SpatialDim > 2) ? invNPE*tCoords[node*SpatialDim+2] : 0.0;
-		}
+        Plato::Scalar tX = 0.;
+        Plato::Scalar tY = 0.;
+        Plato::Scalar tZ = 0.;
+        for (unsigned n=0; n<nodesPerElem; ++n)
+        {
+            auto node = elems2Verts[tElem * nodesPerElem + n];
+            tX += invNPE*tCoords[node*SpatialDim+0];
+            tY += invNPE*tCoords[node*SpatialDim+1];
+            tZ += (SpatialDim > 2) ? invNPE*tCoords[node*SpatialDim+2] : 0.0;
+        }
         elementSpeed(tElem) = aSpeedFunction(tX,tY,tZ);
     };
     Kokkos::parallel_for(aOmega_h_Mesh.nelems(), tLambdaExp);
 }
 // function initialize_element_speed
-
 
 /******************************************************************************//**
  * @brief Initialize speed field

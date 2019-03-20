@@ -79,11 +79,14 @@ public:
 
     /******************************************************************************//**
      * @brief Default constructor
+     * @param [in] aInputFileName name of input file with initial geometry and field data
+     * @param [in] aComm MPI communicator
      **********************************************************************************/
-    explicit LevelSetOnExternalMesh(const std::string & filename, MPI_Comm aComm = MPI_COMM_WORLD) :
-    		mFilename(filename),
+    explicit LevelSetOnExternalMesh(const std::string & aInputFileName, MPI_Comm aComm = MPI_COMM_WORLD) :
+            mFilename(aInputFileName),
             mComm(aComm),
-            mPropellantDensity(1744)
+            mPropellantDensity(1744),
+            mTimes()
     {
     }
 
@@ -97,7 +100,7 @@ public:
     /******************************************************************************//**
      * @brief compute the area of the side of a cylinder.
      **********************************************************************************/
-    ScalarType area()
+    ScalarType area() override
     {
         const ScalarType tArea = level_set_area(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return (tArea);
@@ -107,7 +110,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    ScalarType referencMassProductionRate()
+    ScalarType referencMassProductionRate() override
     {
         const ScalarType tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
@@ -118,7 +121,7 @@ public:
      * @brief compute the gradient of a cylinder with respect to parameters that define geometry.
      * @param aOutput gradient with respect to the parameters that defined a geometry
      **********************************************************************************/
-    void gradient(std::vector<ScalarType>& aOutput)
+    void gradient(std::vector<ScalarType>& aOutput) override
     {
         return;
     }
@@ -128,7 +131,7 @@ public:
      * @param [in] aDeltaTime time step
      * @param [in] aBurnRateMultiplier actual burn rate divided by the reference burn rate
      **********************************************************************************/
-    virtual void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier)
+    void evolveGeometry(const ScalarType aDeltaTime, const ScalarType aBurnRateMultiplier) override
     {
         this->updateLevelSetCylinder(aDeltaTime, aBurnRateMultiplier);
     }
@@ -137,7 +140,7 @@ public:
      * @brief Update immersed geometry
      * @param [in] aParam optimization parameters
      **********************************************************************************/
-    void updateGeometry(const Plato::ProblemParams & aParam)
+    void updateGeometry(const Plato::ProblemParams & aParam) override
     {
     }
 
@@ -145,19 +148,64 @@ public:
      * @brief Initialize level set cylinder
      * @param [in] aParam parameters associated with the geometry and fields
      **********************************************************************************/
-    void initialize(const Plato::ProblemParams & aParam)
+    void initialize(const Plato::ProblemParams & aParam) override
     {
+        mPropellantDensity = aParam.mPropellantDensity;
     }
 
     /******************************************************************************//**
-     * @brief Initialize level set cylinder
+     * @brief Output geometry and field data
+     * @param [in] aOutput output flag (true = output, false = do not output)
+    **********************************************************************************/
+    void output(bool aOutput = false) override
+    {
+        if(aOutput == true)
+        {
+            this->outputLevelSet();
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Read level set based geometry from file
      **********************************************************************************/
     void initialize()
     {
-    	initializeLevelSetCylinder();
+        this->readMesh();
+        this->cacheData();
+        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
+        mWriter = Omega_h::vtk::Writer("LevelSetOnExternalMesh", &mMesh, mSpatialDim);
+        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
     }
 
 private:
+    /******************************************************************************//**
+     * @brief Cache level set field at this time snapshot
+    **********************************************************************************/
+    void cacheData()
+    {
+        auto tMyLevelSet = Kokkos::subview(mHamiltonJacobiFields.mLevelSet, Kokkos::ALL(), mHamiltonJacobiFields.mCurrentState);
+        auto tMyOutput = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), mStep);
+        Plato::copy(tMyLevelSet, tMyOutput);
+    }
+
+    /******************************************************************************//**
+     * @brief Output level set time history to visualization file
+    **********************************************************************************/
+    void outputLevelSet()
+    {
+        auto tNodeCount = mMesh.nverts();
+        Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
+        const Plato::OrdinalType tNumTimeSteps = mTimes.size();
+        for(Plato::OrdinalType tIndex = 0; tIndex < tNumTimeSteps; tIndex++)
+        {
+            auto tSubView = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), tIndex);
+            Kokkos::deep_copy(tOutput, tSubView);
+            mMesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
+            auto tTags = Omega_h::vtk::get_all_vtk_tags(&mMesh, mSpatialDim);
+            mWriter.write(static_cast<Omega_h::Real>(mTimes[tIndex]), tTags);
+        }
+    }
+
     /******************************************************************************//**
      * @brief Update immersed cylinder
      * @param [in] aParam optimization parameters
@@ -166,30 +214,18 @@ private:
     {
         evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
         mTime += aDeltaTime;
+        mTimes.push_back(mTime);
 
         reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
 
         ++mStep;
-        outputLevelSetField();
-    }
-
-    /******************************************************************************//**
-     * @brief Initialize immersed cylinder
-     **********************************************************************************/
-    void initializeLevelSetCylinder()
-    {
-        read_mesh();
-
-        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
-
-        mWriter = Omega_h::vtk::Writer("LevelSetOnExternalMesh", &mMesh, mSpatialDim);
-        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+        this->cacheData();
     }
 
     /******************************************************************************//**
      * @brief Build bounding box and fields on computational mesh
      **********************************************************************************/
-    void read_mesh()
+    void readMesh()
     {
     	auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
     	Omega_h::read_mesh_file(mFilename, tLibOmegaH->world());
@@ -201,18 +237,6 @@ private:
         mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
         mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
         mReIninitializationDeltaTime = 0.2 * mDeltaX;
-    }
-
-    /******************************************************************************//**
-     * @brief Write level set field on mesh every N number of time steps
-     **********************************************************************************/
-    void outputLevelSetField()
-    {
-        const size_t tPrintInterval = 100; // How often do you want to output mesh?
-        if(mStep % tPrintInterval == 0)
-        {
-            write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
-        }
     }
 
 private:
@@ -227,6 +251,7 @@ private:
     ScalarType mTime = 0.0;
     size_t mStep = 0;
     ScalarType mDeltaX = 0.0;
+    std::vector<ScalarType> mTimes;
 };
 // class LevelSetOnExternalMesh
 

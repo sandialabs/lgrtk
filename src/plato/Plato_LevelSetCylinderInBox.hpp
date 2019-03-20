@@ -219,17 +219,7 @@ public:
     {
         if(aOutput == true)
         {
-            auto tNodeCount = mMesh.nverts();
-            Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
-            const Plato::OrdinalType tNumTimeSteps = mTimes.size();
-            for(Plato::OrdinalType tIndex = 0; tIndex < tNumTimeSteps; tIndex++)
-            {
-                auto tSubView = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), tIndex);
-                Kokkos::deep_copy(tOutput, tSubView);
-                mMesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
-                auto tTags = Omega_h::vtk::get_all_vtk_tags(&mMesh, mSpatialDim);
-                mWriter.write(static_cast<Omega_h::Real>(mTimes[tIndex]), tTags);
-            }
+            this->outputLevelSet();
         }
     }
 
@@ -281,6 +271,27 @@ public:
     }
 
 private:
+    /******************************************************************************//**
+     * @brief Output level set time history to visualization file
+    **********************************************************************************/
+    void outputLevelSet()
+    {
+        auto tNodeCount = mMesh.nverts();
+        Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
+        const Plato::OrdinalType tNumTimeSteps = mTimes.size();
+        for(Plato::OrdinalType tIndex = 0; tIndex < tNumTimeSteps; tIndex++)
+        {
+            auto tSubView = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), tIndex);
+            Kokkos::deep_copy(tOutput, tSubView);
+            mMesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
+            auto tTags = Omega_h::vtk::get_all_vtk_tags(&mMesh, mSpatialDim);
+            mWriter.write(static_cast<Omega_h::Real>(mTimes[tIndex]), tTags);
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Cache level set field at this time snapshot
+    **********************************************************************************/
     void cacheData()
     {
         auto tMyLevelSet = Kokkos::subview(mHamiltonJacobiFields.mLevelSet, Kokkos::ALL(), mHamiltonJacobiFields.mCurrentState);
