@@ -296,15 +296,7 @@ private:
      **********************************************************************************/
     void initializeImmersedGeometry(const Plato::ProblemParams & aParams)
     {
-        if(mBuiltMesh == false)
-        {
-            const Plato::Scalar tLength = aParams.mGeometry[1];
-            const Plato::Scalar tMaxRadius = aParams.mGeometry[0];
-            this->buildMesh(tMaxRadius, tLength);
-            mBuiltMesh = true;
-            mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, mSpatialDim);
-            this->cacheData();
-        }
+        this->buildBoundingBox(aParams);
 
         LevelSetInitialCondition tInitialCondition(aParams);
         initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
@@ -347,9 +339,26 @@ private:
         mReIninitializationDeltaTime = static_cast<Plato::Scalar>(0.2) * mDeltaX;
     }
 
+    /******************************************************************************//**
+     * @brief Build bounding box
+     * @param [in] aParams parameters associated with the geometry and fields
+    **********************************************************************************/
+    void buildBoundingBox(const Plato::ProblemParams & aParams)
+    {
+        if(mBuiltBoundingBox == false)
+        {
+            const Plato::Scalar tLength = aParams.mGeometry[1];
+            const Plato::Scalar tMaxRadius = aParams.mGeometry[0];
+            this->buildMesh(tMaxRadius, tLength);
+            mBuiltBoundingBox = true;
+            mWriter = Omega_h::vtk::Writer("LevelSetCylinderInBox", &mMesh, mSpatialDim);
+            this->cacheData();
+        }
+    }
+
 private:
     MPI_Comm mComm;
-    bool mBuiltMesh = false;
+    bool mBuiltBoundingBox = false;
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
