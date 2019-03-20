@@ -333,7 +333,6 @@ if (LGR_ENABLE_PLATO_MPMD)
   )
 
   set(LGRApp_SOURCES
-    ${CMAKE_SOURCE_DIR}/src/plato/LGR_App.cpp
     LGRAppIntxTests.cpp
     LGRTestHelpers.cpp
     Teuchos_LGRAppUnitTestMain.cpp
@@ -348,6 +347,7 @@ if (LGR_ENABLE_PLATO_MPMD)
   )
 
   target_link_libraries(LGRAppIntxTests 
+    LGR_App
     lgrtk
     ${PLATO_LIBS}
     ${Trilinos_LIBRARIES} 

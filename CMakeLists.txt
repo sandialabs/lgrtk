@@ -211,7 +211,7 @@ option(LGR_ENABLE_PLATO "Enable LGR Plato driver" OFF)
 option(LGR_ENABLE_PLATO_MPMD "Enable the Plato interface MPMD executable" OFF)
 
 option(LGR_ENABLE_PLATO_1D "Compile with 1D physics" OFF)
-option(LGR_ENABLE_PLATO_2D "Compile with 2D physics" OFF)
+option(LGR_ENABLE_PLATO_2D "Compile with 2D physics" ON )
 option(LGR_ENABLE_PLATO_3D "Compile with 3D physics" ON )
 if (LGR_ENABLE_PLATO_1D)
   add_definitions(-DPLATO_1D)

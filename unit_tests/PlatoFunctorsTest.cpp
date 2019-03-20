@@ -54,10 +54,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ComputeStateWorkset)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -99,10 +99,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ComputeStateWorkset)
     tElastostatics.worksetState(tStateImag, tStateImagWS);
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
@@ -169,10 +169,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStrainsToComplexStrains)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
     
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -237,10 +237,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStrainsToComplexStrains)
     }, "UnitTest::LinearStrains");
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
     
@@ -318,10 +318,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStressToComplexStress)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -399,10 +399,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStressToComplexStress)
     }, "UnitTest::LinearStress");
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
@@ -486,10 +486,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearElasticForcesToComplexElasticF
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -576,10 +576,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearElasticForcesToComplexElasticF
     }, "UnitTest::ElasticForces");
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
@@ -672,10 +672,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsResidua
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
    
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -729,10 +729,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsResidua
     TEST_EQUALITY(tTotalNumDofs, tSize);
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
@@ -796,10 +796,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsGradU)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<Plato::Mechanics<tSpaceDim>>::GradientZ;
+    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
+    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
     using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 
     // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
@@ -838,10 +838,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsGradU)
     auto tElastostaticsJacobianU = tElastostatics.gradient_u(tLinearStates, tControl);
 
     // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
+    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
+    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     using SD_StrainT = typename
         Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
 

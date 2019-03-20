@@ -1081,8 +1081,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsResidual)
 
     // ALLOCATE ELASTODYNAMICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
@@ -1163,8 +1163,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsResidual)
 
     // ALLOCATE ADJOINT ELASTODYNAMICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
@@ -1549,8 +1549,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsSolve)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     const Plato::OrdinalType tSpaceDim = 2;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>> tResidual;
     tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
@@ -1635,8 +1635,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsSolve)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     const Plato::OrdinalType tSpaceDim = 2;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>> tResidual;
     tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
