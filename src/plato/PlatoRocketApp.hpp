@@ -107,6 +107,24 @@ private:
     void updateProblem(const std::vector<Plato::Scalar> & aControls);
 
     /******************************************************************************//**
+    * @brief Compute maximum thrust from target thrust profile and set value on shared data map
+    * @param [in] aThrustProfile target thrust profile
+    **********************************************************************************/
+    void setMaxTargetThrust(const std::vector<Plato::Scalar> & aThrustProfile);
+
+    /******************************************************************************//**
+    * @brief Compute the norm of the target thrust profile and set value on shared data map
+    * @param [in] aThrustProfile target thrust profile
+    **********************************************************************************/
+    void setNormTargetThrustProfile(const std::vector<Plato::Scalar> & aThrustProfile);
+
+    /******************************************************************************//**
+    * @brief Normalized target thrust profile and set values on shared data map
+    * @param [in/out] aThrustProfile target thrust profile
+    **********************************************************************************/
+    void setNormalizedTargetThrustProfile(std::vector<Plato::Scalar> & aThrustProfile);
+
+    /******************************************************************************//**
      * @brief Set rocket driver - runs rocket simulation given a define geometry.
     **********************************************************************************/
     void setRocketDriver();
@@ -140,6 +158,18 @@ private:
      * @brief Set normalization constants for objective function
     **********************************************************************************/
     void setNormalizationConstants();
+
+    /******************************************************************************//**
+     * @brief Return maximum target thrust
+     * @return maximum target thrust
+    **********************************************************************************/
+    Plato::Scalar getMaxTargetThrust() const;
+
+    /******************************************************************************//**
+     * @brief Return the norm of the target thrust profile
+     * @return norm of the target thrust profile
+    **********************************************************************************/
+    Plato::Scalar getNormTargetThrustProfile() const;
 
     /******************************************************************************//**
      * @brief Evaluate thrust profile misfit given target thrust profile

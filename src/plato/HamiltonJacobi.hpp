@@ -799,6 +799,7 @@ void reinitialize_level_set (
     const Plato::Scalar time,
     const Plato::Scalar eps,
     const Plato::Scalar dtau,
+    const Plato::OrdinalType aMaxIters = 100,
     const Plato::Scalar convergedTol = 0.01)
 {
     if(!domain_contains_interface(omega_h_mesh, fields))
@@ -807,9 +808,8 @@ void reinitialize_level_set (
     }
 
     bool converged = false;
-    const int maxIters = 5000;
     const int printFreq = 100;
-    for(int iter = 0; iter < maxIters; ++iter)
+    for(int iter = 0; iter < aMaxIters; ++iter)
     {
         const Plato::Scalar averageNodalResidual = assemble_and_update_Eikonal(omega_h_mesh, fields, eps, dtau, false);
 
@@ -829,7 +829,7 @@ void reinitialize_level_set (
     }
     if(!converged)
     {
-        std::cout << "At time " << time << ", reinitialize_level_set failed to converge after " << maxIters
+        std::cout << "At time " << time << ", reinitialize_level_set failed to converge after " << aMaxIters
         << " iterations." << std::endl;
     }
 }

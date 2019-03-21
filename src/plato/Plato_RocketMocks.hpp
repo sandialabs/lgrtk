@@ -19,10 +19,10 @@ namespace RocketMocks
  * @param [in] aInitialRadius initial chamber radius
  * @param [in] aRefBurnRate reference burn rate
  **********************************************************************************/
-Plato::ProblemParams setupConstantBurnRateCylinder(Plato::Scalar aMaxRadius,
-                                                   Plato::Scalar aLength,
-                                                   Plato::Scalar aInitialRadius,
-                                                   Plato::Scalar aRefBurnRate)
+Plato::ProblemParams set_constant_burn_rate_problem(Plato::Scalar aMaxRadius,
+                                                    Plato::Scalar aLength,
+                                                    Plato::Scalar aInitialRadius,
+                                                    Plato::Scalar aRefBurnRate)
 {
     Plato::ProblemParams tParams;
     tParams.mGeometry.push_back(aMaxRadius);
@@ -42,11 +42,11 @@ Plato::ProblemParams setupConstantBurnRateCylinder(Plato::Scalar aMaxRadius,
  * @param [in] aRefBurnRate reference burn rate
  * @param [in] aRefBurnRateSlopeWithRadius reference burn rate dependence on radius
  **********************************************************************************/
-Plato::ProblemParams setupLinearBurnRateCylinder(Plato::Scalar aMaxRadius,
-                                                 Plato::Scalar aLength,
-                                                 Plato::Scalar aInitialRadius,
-                                                 Plato::Scalar aRefBurnRate,
-                                                 Plato::Scalar aRefBurnRateSlopeWithRadius)
+Plato::ProblemParams set_linear_burn_rate_problem(Plato::Scalar aMaxRadius,
+                                                  Plato::Scalar aLength,
+                                                  Plato::Scalar aInitialRadius,
+                                                  Plato::Scalar aRefBurnRate,
+                                                  Plato::Scalar aRefBurnRateSlopeWithRadius)
 {
     Plato::ProblemParams tParams;
     tParams.mGeometry.push_back(aMaxRadius);

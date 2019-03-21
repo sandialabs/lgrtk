@@ -25,7 +25,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketAnalyticalCylinder)
   const Plato::Scalar tMaxRadius = 0.15; // m
   const Plato::Scalar tLength = 0.65; // m
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
+  Plato::ProblemParams tParams =
+          Plato::RocketMocks::set_constant_burn_rate_problem(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
   auto tCylinder = std::make_shared<Plato::Cylinder>();
   tCylinder->initialize(tParams);
@@ -41,7 +42,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   const Plato::Scalar tMaxRadius = 0.15; // m
   const Plato::Scalar tLength = 0.65; // m
   const Plato::Scalar tRefBurnRate = 0.005;  // meters/seconds
-  Plato::ProblemParams tParams = Plato::RocketMocks::setupConstantBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
+  Plato::ProblemParams tParams =
+          Plato::RocketMocks::set_constant_burn_rate_problem(tMaxRadius, tLength, tInitialRadius, tRefBurnRate);
 
   auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox>();
   tCylinder->initialize(tParams);
@@ -70,7 +72,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRa
   const Plato::Scalar tMinRefBurnRate = 0.015/6.;  // meters/seconds
   const Plato::Scalar tRefBurnRateSlopeWithRadius = (tMinRefBurnRate-tMaxRefBurnRate)/(tMaxRadius-tInitialRadius);
   const Plato::Scalar tCenterBurnRate = tMaxRefBurnRate - tRefBurnRateSlopeWithRadius*tInitialRadius;
-  Plato::ProblemParams tParams = Plato::RocketMocks::setupLinearBurnRateCylinder(tMaxRadius, tLength, tInitialRadius, tCenterBurnRate, tRefBurnRateSlopeWithRadius);
+  Plato::ProblemParams tParams =
+          Plato::RocketMocks::set_linear_burn_rate_problem(tMaxRadius, tLength, tInitialRadius, tCenterBurnRate, tRefBurnRateSlopeWithRadius);
 
   auto tCylinder = std::make_shared<Plato::LevelSetCylinderInBox>();
   tCylinder->initialize(tParams);
