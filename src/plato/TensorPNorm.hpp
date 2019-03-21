@@ -1,7 +1,11 @@
 #ifndef TENSOR_P_NORM_HPP
 #define TENSOR_P_NORM_HPP
 
+#include <Teuchos_ParameterList.hpp>
+
 #include "plato/PlatoStaticsTypes.hpp"
+#include "plato/SimplexFadTypes.hpp"
+
 
 /******************************************************************************/
 /*! Tensor p-norm functor.

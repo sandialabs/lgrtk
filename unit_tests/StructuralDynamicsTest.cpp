@@ -512,7 +512,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicCompliance)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -559,7 +559,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradZ)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -618,7 +618,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradX)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
+    using JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -676,7 +676,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradU)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -750,7 +750,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeValue)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -797,7 +797,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradZ)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -853,7 +853,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradU)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -905,7 +905,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradX)
 {
     // SET EVALUATION TYPES FOR UNIT TEST
     const Plato::OrdinalType tSpaceDim = 3;
-    using JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
+    using JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
 
     // BUILD OMEGA_H MESH
     const Plato::OrdinalType tMeshWidth = 2;
@@ -1320,7 +1320,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfitValue)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::vector<Plato::Scalar> tFreqArray = {15.0};
-    using ResidualT = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Residual;
+    using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     std::shared_ptr<AbstractScalarFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::FrequencyResponseMisfit<ResidualT>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
     
@@ -1376,7 +1376,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradZ)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::vector<Plato::Scalar> tFreqArray = {15.0};
-    using JacobianZ = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientZ;
+    using JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
     std::shared_ptr<AbstractScalarFunction<JacobianZ>> tGradControl;
     tGradControl = std::make_shared<Plato::FrequencyResponseMisfit<JacobianZ>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
@@ -1410,7 +1410,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradX)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // SET EVALUATION TYPES FOR UNIT TEST
-    using JacobianX = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::GradientX;
+    using JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
 
     // SET PROBLEM-RELATED DIMENSIONS
     const Plato::OrdinalType tNumCells = tMesh->nelems();
@@ -1472,7 +1472,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradU)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // SET EVALUATION TYPES FOR UNIT TEST
-    using JacobianU = typename Plato::Evaluation<Plato::StructuralDynamics<tSpaceDim>>::Jacobian;
+    using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
 
     // SET PROBLEM-RELATED DIMENSIONS
     const Plato::OrdinalType tNumCells = tMesh->nelems();

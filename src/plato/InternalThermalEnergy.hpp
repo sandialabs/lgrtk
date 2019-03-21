@@ -7,8 +7,15 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/SimplexFadTypes.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include "plato/AbstractScalarFunctionInc.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
+
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -229,4 +236,21 @@ class InternalThermalEnergyInc :
       },"energy gradient");
     }
 };
+
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(InternalThermalEnergy, SimplexThermal, 1)
+PLATO_EXPL_DEC(InternalThermalEnergyInc, SimplexThermal, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(InternalThermalEnergy, SimplexThermal, 2)
+PLATO_EXPL_DEC(InternalThermalEnergyInc, SimplexThermal, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(InternalThermalEnergy, SimplexThermal, 3)
+PLATO_EXPL_DEC(InternalThermalEnergyInc, SimplexThermal, 3)
+#endif
+
 #endif

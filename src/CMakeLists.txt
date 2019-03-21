@@ -15,6 +15,15 @@ SET(SOURCES
   plato/LinearElectroelasticMaterial.cpp
   plato/LinearThermoelasticMaterial.cpp
   plato/HeatEquationResidual.cpp
+  plato/InternalThermalEnergy.cpp
+  plato/InternalThermoelasticEnergy.cpp
+  plato/InternalElectroelasticEnergy.cpp
+  plato/InternalElasticEnergy.cpp
+  plato/TemperatureAverage.cpp
+  plato/FluxPNorm.cpp
+  plato/StressPNorm.cpp
+  plato/EMStressPNorm.cpp
+  plato/EffectiveEnergy.cpp
   plato/ThermostaticResidual.cpp
   plato/ElastostaticResidual.cpp
   plato/HeatEquationProblem.cpp

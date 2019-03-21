@@ -1,13 +1,23 @@
 #ifndef INTERNAL_ELECTROELASTIC_ENERGY_HPP
 #define INTERNAL_ELECTROELASTIC_ENERGY_HPP
 
+#include "plato/SimplexElectromechanics.hpp"
+#include "plato/LinearElectroelasticMaterial.hpp"
+#include "plato/SimplexFadTypes.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/ScalarProduct.hpp"
+#include "plato/EMKinematics.hpp"
+#include "plato/EMKinetics.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/Strain.hpp"
 #include "plato/LinearStress.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/ToMap.hpp"
+#include "plato/ExpInstMacros.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -130,5 +140,17 @@ class InternalElectroelasticEnergy :
 
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(InternalElectroelasticEnergy, Plato::SimplexElectromechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(InternalElectroelasticEnergy, Plato::SimplexElectromechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(InternalElectroelasticEnergy, Plato::SimplexElectromechanics, 3)
+#endif
 
 #endif

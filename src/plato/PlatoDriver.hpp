@@ -1,9 +1,3 @@
-
-/*!
- *  todo:
- *   1.  Organize source.  what goes in plato directory?
- **/
-
 #ifndef PLATO_DRIVER_HPP
 #define PLATO_DRIVER_HPP
 

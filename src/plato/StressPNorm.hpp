@@ -6,7 +6,13 @@
 #include "plato/Strain.hpp"
 #include "plato/LinearStress.hpp"
 #include "plato/TensorPNorm.hpp"
+#include "plato/LinearElasticMaterial.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include "plato/ExpInstMacros.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -140,5 +146,18 @@ class StressPNorm :
       m_norm->postEvaluate(resultValue);
     }
 };
+
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 3)
+#endif
 
 #endif

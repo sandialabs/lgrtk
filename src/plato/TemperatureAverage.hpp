@@ -5,9 +5,15 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/StateValues.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/SimplexFadTypes.hpp"
-#include "plato/AbstractScalarFunction.hpp"
+#include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
+
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -91,4 +97,17 @@ class TemperatureAverageInc :
       },"temperature");
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 3)
+#endif
+
 #endif

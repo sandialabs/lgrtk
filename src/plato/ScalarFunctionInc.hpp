@@ -36,11 +36,11 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
     using WorksetBase<PhysicsT>::m_controlEntryOrdinal;
     using WorksetBase<PhysicsT>::m_configEntryOrdinal;
 
-    using Residual  = typename Plato::Evaluation<PhysicsT>::Residual;
-    using Jacobian  = typename Plato::Evaluation<PhysicsT>::Jacobian;
-    using JacobianP = typename Plato::Evaluation<PhysicsT>::JacobianP;
-    using GradientX = typename Plato::Evaluation<PhysicsT>::GradientX;
-    using GradientZ = typename Plato::Evaluation<PhysicsT>::GradientZ;
+    using Residual  = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Residual;
+    using Jacobian  = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Jacobian;
+    using JacobianP = typename Plato::Evaluation<typename PhysicsT::SimplexT>::JacobianP;
+    using GradientX = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientX;
+    using GradientZ = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientZ;
 
     static constexpr Plato::OrdinalType m_numConfigDofsPerCell = m_numSpatialDims*m_numNodesPerCell;
 

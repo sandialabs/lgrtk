@@ -287,7 +287,7 @@ if (LGR_ENABLE_PLATO_MPMD)
 
   option(LGR_ENABLE_PLATO_PYTHON "Enable the Plato Python interface" OFF)
   if (LGR_ENABLE_PLATO_PYTHON)
-      find_package(PythonLibs)
+      find_package(PythonLibs 2 REQUIRED)
       include_directories( ${PYTHON_INCLUDE_DIRS} )
       add_library( Plato SHARED src/plato/PlatoPythonModule.cpp )
       target_include_directories( Plato PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -380,7 +380,11 @@ function(build_mpi_test_string RESULT_NAME num_mpi_proc)
   set(${RESULT_NAME} ${LGR_MPIEXEC} ${LGR_RANKS_PER_NODE_FLAG} ${LGR_RANKS_PER_NODE} ${LGR_RANKS_FLAG} ${num_mpi_proc} ${VALGRIND} ${ARGN} PARENT_SCOPE)
 endfunction(build_mpi_test_string)
 
-ADD_SUBDIRECTORY(unit_tests)
+option( LGR_UNIT_TEST "Flag to enable LGR unit tests" OFF)
+if( LGR_UNIT_TEST)
+  ADD_SUBDIRECTORY(unit_tests)
+endif()
+
 ADD_SUBDIRECTORY(tests)
 
 set(LGR_KEY_INTS

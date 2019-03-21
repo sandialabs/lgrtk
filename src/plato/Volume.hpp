@@ -2,8 +2,15 @@
 #define VOLUME_HPP
 
 #include "plato/ApplyWeighting.hpp"
+#include "plato/Simplex.hpp"
+#include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename PenaltyFunctionType>
@@ -75,5 +82,4 @@ class Volume : public AbstractScalarFunction<EvaluationType>
       },"volume");
     }
 };
-
 #endif
