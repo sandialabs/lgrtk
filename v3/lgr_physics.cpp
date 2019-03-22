@@ -566,13 +566,15 @@ static void LGR_NOINLINE update_e(state& s, double const dt)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_nu_art(input const& in, state& s) {
-  auto const elements_to_nu_art = s.nu_art.begin();
+static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const elements_to_c = s.c.cbegin();
   auto const c1 = in.linear_artificial_viscosity;
   auto const c2 = in.quadratic_artificial_viscosity;
+  auto const elements_to_rho = s.rho.cbegin();
+  auto const elements_to_sigma = s.sigma.begin();
+  auto const elements_to_nu_art = s.nu_art.begin();
   auto functor = [=] (int const element) {
     symmetric3x3<double> const symm_grad_v = elements_to_symm_grad_v[element];
     double const div_v = trace(symm_grad_v);
@@ -584,6 +586,11 @@ static void LGR_NOINLINE update_nu_art(input const& in, state& s) {
     double const c = elements_to_c[element];
     double const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
     elements_to_nu_art[element] = nu_art;
+    double const rho = elements_to_rho[element];
+    auto const sigma_art = (-rho * nu_art) * symm_grad_v;
+    symmetric3x3<double> const sigma = elements_to_sigma[element];
+    auto const sigma_tilde = sigma + sigma_art;
+    elements_to_sigma[element] = sigma_tilde;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -687,7 +694,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_h_min(in, s);
     update_material_state(in, s);
     update_c(s);
-    if (in.enable_viscosity) update_nu_art(in, s);
+    if (in.enable_viscosity) apply_viscosity(in, s);
     if (last_pc) update_element_dt(s);
     if (last_pc) find_max_stable_dt(s.element_dt, &s.max_stable_dt);
     update_a_from_material_state(in, s);
@@ -750,7 +757,7 @@ void run(input const& in) {
   update_h_min(in, s);
   update_material_state(in, s);
   update_c(s);
-  if (in.enable_viscosity) update_nu_art(in, s);
+  if (in.enable_viscosity) apply_viscosity(in, s);
   else lgr::fill(s.nu_art, double(0.0));
   update_element_dt(s);
   find_max_stable_dt(s.element_dt, &s.max_stable_dt);
