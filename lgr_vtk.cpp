@@ -97,9 +97,7 @@ void file_writer::operator()(
   write_vtk_cell_data(stream, s.elements);
   write_vtk_scalars(stream, "specific_internal_energy", s.e);
   write_vtk_scalars(stream, "pressure", s.p);
-  if (in.enable_nodal_pressure) {
-    write_vtk_vectors(stream, "v_prime", s.v_prime);
-  }
+  write_vtk_scalars(stream, "density", s.rho);
   stream.close();
 }
 
