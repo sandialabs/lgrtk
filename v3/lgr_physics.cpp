@@ -275,6 +275,7 @@ static void LGR_NOINLINE find_max_stable_dt(
   double const init = std::numeric_limits<double>::max();
   *max_stable_dt = lgr::reduce(
       element_dt_vector.begin(), element_dt_vector.end(), init, lgr::minimum<double>());
+  //print(std::cerr, "max_stable_dt ", *max_stable_dt, "\n");
 }
 
 static void LGR_NOINLINE update_v_prime(input const& in, state& s)
@@ -425,6 +426,7 @@ static void LGR_NOINLINE neo_Hookean(
     auto const Jm53 = (Jm23 * Jm23) * Jm13;
     auto const B = self_times_transpose(F);
     auto const devB = deviator(B);
+    //print(std::cerr, "p[", element, "] = ", (half_K0 * (J - Jinv)), "\n");
     auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
     elements_to_sigma[element] = sigma;
     auto const K = half_K0 * (J + Jinv);
@@ -446,7 +448,8 @@ static void LGR_NOINLINE nodal_neo_Hookean(
     auto const J = nodes_to_J_h[node];
     auto const Jinv = 1.0 / J;
     auto const half_K0 = 0.5 * K0;
-    auto const p = half_K0 * (J - Jinv);
+    auto const p = -half_K0 * (J - Jinv);
+    //print(std::cerr, "p_h[", node, "] = ", p, "\n");
     nodes_to_p_h[node] = p;
   };
   lgr::for_each(nodes, functor);
@@ -747,7 +750,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
-  if (in.enable_nodal_pressure || in.enable_nodal_volume) {
+  if (in.enable_nodal_pressure) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,
         s.elements_to_nodes, s.p_h, &s.sigma);
   }

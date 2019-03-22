@@ -36,6 +36,7 @@ class state {
   host_vector<double> W; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<double> p_h_dot; // time derivative of stabilized nodal pressure
   host_vector<double> p_h; // stabilized nodal pressure
+  host_vector<double> p_h2; // debug
   host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
   host_vector<double> V_h_dot; // time derivative of stabilized nodal volume
   host_vector<double> V_h; // stabilized nodal volume

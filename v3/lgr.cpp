@@ -137,8 +137,8 @@ static void LGR_NOINLINE Cooks_membrane() {
   input in;
   in.name = "Cooks_membrane";
   in.element = TRIANGLE;
-  in.end_time = 10.0;
-  in.num_file_outputs = 100;
+  in.end_time = 40.0;
+  in.num_file_outputs = 200;
   in.elements_along_x = 8;
   in.x_domain_size = 1.0;
   in.elements_along_y = 8;
@@ -156,8 +156,9 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.zero_acceleration_conditions.push_back({"x_min", y_axis});
   in.x_transform = Cooks_membrane_x;
-  in.enable_nodal_pressure = true;
-  in.c_tau = 0.5;
+  in.enable_nodal_pressure = false;
+  in.enable_nodal_volume = true;
+  in.c_tau = 1.0;
   run(in);
 }
 
@@ -417,7 +418,7 @@ static void LGR_NOINLINE bending_beam() {
 
 static void LGR_NOINLINE twisting_column() {
   input in;
-  in.name = "twisting_column";
+  in.name = "twisting_column_V";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
@@ -459,6 +460,7 @@ static void LGR_NOINLINE twisting_column() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"y_min", z_axis});
   in.enable_nodal_pressure = true;
+  in.enable_nodal_volume = true;
   in.c_tau = 0.15;
   run(in);
 }
@@ -469,12 +471,12 @@ int main() {
   if ((0)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
-  if ((0)) lgr::Cooks_membrane();
+  if ((1)) lgr::Cooks_membrane();
   if ((0)) lgr::swinging_plate();
   if ((0)) lgr::spinning_cube();
   if ((0)) lgr::run_elastic_wave_2d();
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
 }
