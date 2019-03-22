@@ -712,6 +712,48 @@ static void LGR_NOINLINE update_e(state& s, double const dt)
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE interpolate_e(state& s)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_e_h = s.e_h.cbegin();
+  auto const elements_to_e = s.e.begin();
+  auto const N = 1.0 / double(s.nodes_in_element.size());
+  auto functor = [=] (int const element) {
+    double e = 0.0;
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const element_node : element_nodes) {
+      int const node = element_nodes_to_nodes[element_node];
+      double const e_h = nodes_to_e_h[node];
+      e = e + e_h;
+    }
+    e = e * N;
+    elements_to_e[element] = e;
+  };
+  lgr::for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE interpolate_rho(state& s)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_rho_h = s.rho_h.cbegin();
+  auto const elements_to_rho = s.rho.begin();
+  auto const N = 1.0 / double(s.nodes_in_element.size());
+  auto functor = [=] (int const element) {
+    double rho = 0.0;
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const element_node : element_nodes) {
+      int const node = element_nodes_to_nodes[element_node];
+      double const rho_h = nodes_to_rho_h[node];
+      rho = rho + rho_h;
+    }
+    rho = rho * N;
+    elements_to_rho[element] = rho;
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 static void LGR_NOINLINE update_e_h(state& s, double const dt)
 {
   auto const nodes_to_e_h_dot = s.e_h_dot.cbegin();
@@ -815,7 +857,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
       nodal_ideal_gas(s.nodes, in.gamma, s.rho_h, s.e_h, &s.p_h);
     }
   }
-  if (in.enable_nodal_pressure) {
+  if (in.enable_nodal_pressure || in.enable_nodal_energy) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,
         s.elements_to_nodes, s.p_h, &s.sigma);
   }
@@ -864,18 +906,23 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_p_h(s.nodes, half_dt, s.p_h_dot, s.old_p_h, &s.p_h);
     }
     update_rho_e_dot(s);
-    update_e(s, half_dt);
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
       update_e_h(s, half_dt);
+      interpolate_e(s);
+    } else {
+      update_e(s, half_dt);
     }
     update_u(s.nodes, half_dt, s.v, &s.u);
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s.nodes, s.u, &s.x);
     update_reference(s.elements, s.nodes_in_element, s.elements_to_nodes,
         s.u, &s.F_total, &s.grad_N, &s.V, &s.rho);
+    if (in.enable_nodal_energy) {
+      update_nodal_density(s);
+      interpolate_rho(s);
+    }
     if (in.enable_viscosity) update_h_art(in, s);
-    if (in.enable_nodal_energy) update_nodal_density(s);
     update_symm_grad_v(s);
     update_h_min(in, s);
     update_material_state(in, s);
