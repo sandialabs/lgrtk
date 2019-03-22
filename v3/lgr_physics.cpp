@@ -365,7 +365,7 @@ static void LGR_NOINLINE update_e_h_W(state& s)
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      double const rho_e_h_dot = -(N * rho_e_dot) + (grad_N * q);
+      double const rho_e_h_dot = (N * rho_e_dot) - (grad_N * q);
       double const W = rho_e_h_dot * V;
       element_nodes_to_W[element_node] = W;
     }
