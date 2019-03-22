@@ -546,17 +546,28 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_e(state& s, double const dt)
+static void LGR_NOINLINE update_rho_e_dot(state& s)
 {
   auto const elements_to_sigma = s.sigma.cbegin();
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_old_e = s.old_e.cbegin();
   auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
-  auto const elements_to_e = s.e.begin();
+  auto const elements_to_rho_e_dot = s.rho_e_dot.begin();
   auto functor = [=] (int const element) {
     symmetric3x3<double> const symm_grad_v = elements_to_symm_grad_v[element];
     symmetric3x3<double> const sigma = elements_to_sigma[element];
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
+    elements_to_rho_e_dot[element] = rho_e_dot;
+  };
+  lgr::for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE update_e(state& s, double const dt)
+{
+  auto const elements_to_rho_e_dot = s.rho_e_dot.cbegin();
+  auto const elements_to_rho = s.rho.cbegin();
+  auto const elements_to_old_e = s.old_e.cbegin();
+  auto const elements_to_e = s.e.begin();
+  auto functor = [=] (int const element) {
+    auto const rho_e_dot = elements_to_rho_e_dot[element];
     double const rho = elements_to_rho[element];
     auto const e_dot = rho_e_dot / rho;
     double const old_e = elements_to_old_e[element];
@@ -613,6 +624,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.rho.resize(s.elements.size());
   s.e.resize(s.elements.size());
   s.old_e.resize(s.elements.size());
+  s.rho_e_dot.resize(s.elements.size());
   s.m.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());
@@ -683,6 +695,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_nodal_pressure) {
       update_p_h(s.nodes, half_dt, s.p_h_dot, s.old_p_h, &s.p_h);
     }
+    update_rho_e_dot(s);
     update_e(s, half_dt);
     update_u(s.nodes, half_dt, s.v, &s.u);
     if (last_pc) update_v(s, s.dt, s.old_v);
