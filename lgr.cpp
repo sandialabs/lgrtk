@@ -460,7 +460,7 @@ static void LGR_NOINLINE twisting_column() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"y_min", z_axis});
   in.enable_nodal_pressure = true;
-  in.enable_nodal_volume = false;
+  in.enable_nodal_volume = true;
   in.c_tau = 0.15;
   run(in);
 }
