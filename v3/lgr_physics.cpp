@@ -339,7 +339,6 @@ static void LGR_NOINLINE update_p_h_W(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-#if 0
 static void LGR_NOINLINE update_V_h_W(state& s)
 {
   auto const elements_to_v_prime = s.v_prime.cbegin();
@@ -365,7 +364,6 @@ static void LGR_NOINLINE update_V_h_W(state& s)
   };
   lgr::for_each(s.elements, functor);
 }
-#endif
 
 static void LGR_NOINLINE update_any_h_dot(
     int_range const nodes,
@@ -704,6 +702,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.W.resize(s.elements.size() * s.nodes_in_element.size());
   }
   if (in.enable_nodal_volume) {
+    s.p_h.resize(s.nodes.size());
     s.J_h.resize(s.nodes.size());
     s.V_h.resize(s.nodes.size());
     s.V_h_dot.resize(s.nodes.size());
@@ -749,6 +748,17 @@ static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
   }
 }
 
+static void LGR_NOINLINE update_V_h_dot_from_a(input const& in, state& s) {
+  if (in.enable_nodal_volume) {
+    update_v_prime(in, s);
+    update_V_h_W(s);
+    update_any_h_dot(s.nodes, s.elements, s.nodes_in_element,
+        s.nodes_to_node_elements, s.node_elements_to_elements,
+        s.node_elements_to_nodes_in_element,
+        s.W, s.V, &s.V_h_dot);
+  }
+}
+
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
   if (in.enable_nodal_volume) {
@@ -789,6 +799,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) find_max_stable_dt(s.element_dt, &s.max_stable_dt);
     update_a_from_material_state(in, s);
     update_p_h_dot_from_a(in, s);
+    update_V_h_dot_from_a(in, s);
     if (last_pc) update_p(s.elements, s.sigma, &s.p);
   }
 }
@@ -856,6 +867,7 @@ void run(input const& in) {
   find_max_stable_dt(s.element_dt, &s.max_stable_dt);
   update_a_from_material_state(in, s);
   update_p_h_dot_from_a(in, s);
+  update_V_h_dot_from_a(in, s);
   update_p(s.elements, s.sigma, &s.p);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
