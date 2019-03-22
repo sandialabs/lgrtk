@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <iomanip>
 
 #include <lgr_state.hpp>
 #include <lgr_run.hpp>
@@ -762,10 +763,11 @@ void run(input const& in) {
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
+  std::cout << std::scientific << std::setprecision(17);
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
-        print(std::cout, "outputting file n ", file_output_index, " time ", s.time, "\n");
+        std::cout << "outputting file n " << file_output_index << " time " << s.time << "\n";
       }
       output_file(in, file_output_index, s);
       ++file_output_index;
@@ -774,7 +776,7 @@ void run(input const& in) {
     }
     while (s.time < s.next_file_output_time) {
       if (in.output_to_command_line) {
-        print(std::cout, "step ", s.n, " time ", s.time, " dt ", s.max_stable_dt, "\n");
+        std::cout << "step " << s.n << " time " << s.time << " dt " << s.max_stable_dt << "\n";
       }
       time_integrator_step(in, s);
       ++s.n;
@@ -782,12 +784,12 @@ void run(input const& in) {
   }
   if (num_file_outputs) {
     if (in.output_to_command_line) {
-      print(std::cout, "outputting last file n ", file_output_index, " time ", s.time, "\n");
+      std::cout << "outputting last file n " << file_output_index << " time " << s.time << "\n";
     }
     output_file(in, file_output_index, s);
   }
   if (in.output_to_command_line) {
-    print(std::cout, "final time ", s.time, "\n");
+    std::cout << "final time " << s.time << "\n";
   }
 }
 
