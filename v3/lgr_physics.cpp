@@ -435,6 +435,24 @@ static void LGR_NOINLINE neo_Hookean(
   lgr::for_each(elements, functor);
 }
 
+static void LGR_NOINLINE nodal_neo_Hookean(
+    int_range const nodes,
+    double const K0,
+    host_vector<double> const& J_h_vector,
+    host_vector<double>* p_h_vector
+    ) {
+  auto const nodes_to_J_h = J_h_vector.cbegin();
+  auto const nodes_to_p_h = p_h_vector->begin();
+  auto functor = [=] (int const node) {
+    auto const J = nodes_to_J_h[node];
+    auto const Jinv = 1.0 / J;
+    auto const half_K0 = 0.5 * K0;
+    auto const p = half_K0 * (J - Jinv);
+    nodes_to_p_h[node] = p;
+  };
+  lgr::for_each(nodes, functor);
+}
+
 static void LGR_NOINLINE ideal_gas(
     int_range const elements,
     double const gamma,
@@ -713,7 +731,12 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
-  if (in.enable_neo_Hookean) neo_Hookean(s.elements, in.K0, in.G0, s.F_total, &s.sigma, &s.K, &s.G);
+  if (in.enable_neo_Hookean) {
+    neo_Hookean(s.elements, in.K0, in.G0, s.F_total, &s.sigma, &s.K, &s.G);
+    if (in.enable_nodal_volume) {
+      nodal_neo_Hookean(s.nodes, in.K0, s.J_h, &s.p_h);
+    }
+  }
   else {
     lgr::fill(s.sigma, symmetric3x3<double>::zero());
     lgr::fill(s.K, double(0.0));
@@ -725,7 +748,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
-  if (in.enable_nodal_pressure) {
+  if (in.enable_nodal_pressure || in.enable_nodal_volume) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,
         s.elements_to_nodes, s.p_h, &s.sigma);
   }
