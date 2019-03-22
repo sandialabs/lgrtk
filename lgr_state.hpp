@@ -33,6 +33,7 @@ class state {
   host_vector<symmetric3x3<double>> symm_grad_v; // symmetrized gradient of velocity
   host_vector<double> p; // pressure at elements (output only!)
   host_vector<vector3<double>> v_prime; // fine-scale velocity
+  host_vector<vector3<double>> v_prime2; // fine-scale velocity
   host_vector<double> W; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<double> p_h_dot; // time derivative of stabilized nodal pressure
   host_vector<double> p_h; // stabilized nodal pressure
