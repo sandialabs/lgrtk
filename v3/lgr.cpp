@@ -594,7 +594,7 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
-  in.enable_nodal_energy = true;
+  in.enable_nodal_energy = false;
   in.c_tau = 3.5;
   run(in);
 }
