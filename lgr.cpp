@@ -157,7 +157,6 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.zero_acceleration_conditions.push_back({"x_min", y_axis});
   in.x_transform = Cooks_membrane_x;
   in.enable_nodal_pressure = true;
-  in.enable_nodal_volume = false;
   in.c_tau = 0.5;
   run(in);
 }
@@ -461,7 +460,6 @@ static void LGR_NOINLINE twisting_column() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"y_min", z_axis});
   in.enable_nodal_pressure = true;
-  in.enable_nodal_volume = true;
   in.c_tau = 0.5;
   in.CFL = 0.9;
   run(in);
@@ -515,7 +513,6 @@ static void LGR_NOINLINE tet_piston() {
   in.zero_acceleration_conditions.push_back({"y_max", y_axis});
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.enable_nodal_pressure = true;
-  in.enable_nodal_volume = false;
   in.c_tau = 0.5;
   in.CFL = 0.9;
   run(in);
@@ -534,6 +531,6 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((0)) lgr::twisting_column();
-  if ((1)) lgr::tet_piston();
+  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::tet_piston();
 }
