@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 
 #include <lgr_state.hpp>
 #include <lgr_run.hpp>
@@ -741,6 +742,7 @@ void run(input const& in) {
   resize_physics(in, s);
   lgr::fill(s.rho, in.rho0);
   lgr::fill(s.e, in.e0);
+  if (in.enable_nodal_pressure) lgr::fill(s.p_h, double(0.0));
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
