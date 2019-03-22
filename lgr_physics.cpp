@@ -506,6 +506,31 @@ static void LGR_NOINLINE update_nodal_mass(
   lgr::for_each(nodes, functor);
 }
 
+static void LGR_NOINLINE initialize_V_h(
+    int_range const nodes,
+    int_range const nodes_in_element,
+    int_range_sum<host_allocator<int>> const& nodes_to_node_elements_vector,
+    host_vector<int> const& node_elements_to_elements_vector,
+    host_vector<double> const& V_vector,
+    host_vector<double>* V_h_vector) {
+  auto const nodes_to_node_elements = nodes_to_node_elements_vector.cbegin();
+  auto const node_elements_to_elements = node_elements_to_elements_vector.cbegin();
+  auto const elements_to_V = V_vector.cbegin();
+  auto const nodes_to_V_h = V_h_vector->begin();
+  auto const lumping_factor = 1.0 / double(nodes_in_element.size());
+  auto functor = [=] (int const node) {
+    double V_h(0.0);
+    auto const range = nodes_to_node_elements[node];
+    for (auto const node_element : range) {
+      auto const element = node_elements_to_elements[node_element];
+      auto const V = elements_to_V[element];
+      V_h = V_h + V * lumping_factor;
+    }
+    nodes_to_V_h[node] = V_h;
+  };
+  lgr::for_each(nodes, functor);
+}
+
 static void LGR_NOINLINE collect_domain_entities(
     int_range const nodes,
     domain const& domain,
@@ -640,6 +665,14 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.v_prime.resize(s.elements.size());
     s.W.resize(s.elements.size() * s.nodes_in_element.size());
   }
+  if (in.enable_nodal_volume) {
+    s.J_h.resize(s.nodes.size());
+    s.V_h.resize(s.nodes.size());
+    s.V_h_dot.resize(s.nodes.size());
+    s.old_V_h.resize(s.nodes.size());
+    s.v_prime.resize(s.elements.size());
+    s.W.resize(s.elements.size() * s.nodes_in_element.size());
+  }
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
@@ -761,6 +794,10 @@ void run(input const& in) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(s.nodes, s.nodes_in_element, s.nodes_to_node_elements, s.node_elements_to_elements, s.rho, s.V, &s.m);
+  if (in.enable_nodal_volume) {
+    initialize_V_h(s.nodes, s.nodes_in_element, s.nodes_to_node_elements, s.node_elements_to_elements, s.V, &s.V_h);
+    lgr::fill(s.J_h, double(1.0));
+  }
   initialize_grad_N(in, s);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
   update_symm_grad_v(s);

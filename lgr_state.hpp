@@ -32,11 +32,15 @@ class state {
   host_vector<symmetric3x3<double>> sigma; // Cauchy stress tensor
   host_vector<symmetric3x3<double>> symm_grad_v; // symmetrized gradient of velocity
   host_vector<double> p; // pressure at elements (output only!)
-  host_vector<double> p_h; // stabilized nodal pressure
-  host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
   host_vector<vector3<double>> v_prime; // fine-scale velocity
   host_vector<double> W; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<double> p_h_dot; // time derivative of stabilized nodal pressure
+  host_vector<double> p_h; // stabilized nodal pressure
+  host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
+  host_vector<double> V_h_dot; // time derivative of stabilized nodal volume
+  host_vector<double> V_h; // stabilized nodal volume
+  host_vector<double> old_V_h; // stabilized nodal volume at previous time state
+  host_vector<double> J_h; // stabilized nodal deformation gradient determinant
   host_vector<double> K; // (tangent/effective) bulk modulus
   host_vector<double> G; // (tangent/effective) shear modulus
   host_vector<double> c; // sound speed / plane wave speed
