@@ -750,7 +750,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
-  if (in.enable_nodal_pressure) {
+  if (in.enable_nodal_pressure || in.enable_nodal_volume) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,
         s.elements_to_nodes, s.p_h, &s.sigma);
   }
