@@ -354,9 +354,11 @@ static void LGR_NOINLINE update_V_h_W(state& s)
     double const div_v = trace(symm_grad_v);
     double const V = elements_to_V[element];
     vector3<double> const v_prime = elements_to_v_prime[element];
+    (void)v_prime;
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
+      (void)grad_N;
       double const V_h_dot = (N * div_v) - (grad_N * v_prime);
       double const W = V_h_dot * V;
       element_nodes_to_W[element_node] = W;
@@ -383,6 +385,7 @@ static void LGR_NOINLINE update_any_h_dot(
   auto const elements_to_V = V_vector.cbegin();
   auto const nodes_to_any_h_dot = any_h_dot_vector->begin();
   auto const elements_to_element_nodes = elements * nodes_in_element;
+  double const N = 1.0 / double(nodes_in_element.size());
   auto functor = [=] (int const node) {
     double node_W = 0.0;
     double node_V = 0.0;
@@ -395,7 +398,7 @@ static void LGR_NOINLINE update_any_h_dot(
       double const W = element_nodes_to_W[element_node];
       double const V = elements_to_V[element];
       node_W = node_W + W;
-      node_V = node_V + V;
+      node_V = node_V + (N * V);
     }
     auto const any_h_dot = node_W / node_V;
     nodes_to_any_h_dot[node] = any_h_dot;
