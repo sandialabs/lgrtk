@@ -218,13 +218,18 @@ static void LGR_NOINLINE update_c(state& s)
 static void LGR_NOINLINE update_element_dt(state& s) {
   auto const elements_to_c = s.c.cbegin();
   auto const elements_to_h_min = s.h_min.cbegin();
+  auto const elements_to_nu_art = s.nu_art.cbegin();
   auto const elements_to_dt = s.element_dt.begin();
   auto functor = [=] (int const element) {
     double const h_min = elements_to_h_min[element];
     auto const c = elements_to_c[element];
-    auto const element_dt = h_min / c;
-    assert(element_dt > 0.0);
-    elements_to_dt[element] = element_dt;
+    auto const nu_art = elements_to_nu_art[element];
+    auto const h_sq = h_min * h_min;
+    auto const c_sq = c * c;
+    auto const nu_art_sq = nu_art * nu_art;
+    auto const dt = h_sq / (nu_art + std::sqrt(nu_art_sq + (c_sq * h_sq)));
+    assert(dt > 0.0);
+    elements_to_dt[element] = dt;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -745,7 +750,8 @@ void run(input const& in) {
   update_h_min(in, s);
   update_material_state(in, s);
   update_c(s);
-  lgr::fill(s.nu_art, double(0.0));
+  if (in.enable_viscosity) update_nu_art(in, s);
+  else lgr::fill(s.nu_art, double(0.0));
   update_element_dt(s);
   find_max_stable_dt(s.element_dt, &s.max_stable_dt);
   update_a_from_material_state(in, s);
