@@ -94,12 +94,6 @@ void file_writer::operator()(
   if (in.enable_nodal_pressure) {
     write_vtk_scalars(stream, "nodal_pressure", s.p_h);
   }
-  if (in.enable_nodal_volume) {
-    write_vtk_scalars(stream, "nodal_volume", s.V_h);
-    write_vtk_scalars(stream, "ref_nodal_volume", s.V_h_ref);
-    write_vtk_scalars(stream, "nodal_J", s.J_h);
-    write_vtk_scalars(stream, "nodal_pressure2", s.p_h2);
-  }
   write_vtk_cell_data(stream, s.elements);
   write_vtk_scalars(stream, "specific_internal_energy", s.e);
   write_vtk_scalars(stream, "pressure", s.p);

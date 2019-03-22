@@ -55,7 +55,6 @@ class input {
   bool enable_ideal_gas = false;
   double gamma;
   bool enable_nodal_pressure = false;
-  bool enable_nodal_volume = false;
   double c_tau = 0.5;
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
