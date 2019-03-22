@@ -56,6 +56,7 @@ class state {
   host_vector<double> e_h; // nodal specific internal energy
   host_vector<double> old_e_h; // nodal specific internal energy at previous time state
   host_vector<double> e_h_dot; // time derivative of nodal specific internal energy
+  host_vector<double> rho_h; // nodal density
   std::map<std::string, host_vector<int>> node_sets;
   double next_file_output_time;
   double dt = 0.0;

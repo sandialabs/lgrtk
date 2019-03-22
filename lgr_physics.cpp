@@ -498,6 +498,28 @@ static void LGR_NOINLINE ideal_gas(
   lgr::for_each(elements, functor);
 }
 
+static void LGR_NOINLINE nodal_ideal_gas(
+    int_range const nodes,
+    double const gamma,
+    host_vector<double> const& rho_vector,
+    host_vector<double> const& e_vector,
+    host_vector<double>* p_vector
+    ) {
+  auto const nodes_to_rho = rho_vector.cbegin();
+  auto const nodes_to_e = e_vector.cbegin();
+  auto const nodes_to_p = p_vector->begin();
+  auto functor = [=] (int const node) {
+    double const rho = nodes_to_rho[node];
+    assert(rho > 0.0);
+    double const e = nodes_to_e[node];
+    assert(e > 0.0);
+    auto const p = (gamma - 1.0) * (rho * e);
+    assert(p > 0.0);
+    nodes_to_p[node] = p;
+  };
+  lgr::for_each(nodes, functor);
+}
+
 static void LGR_NOINLINE update_element_force(
     int_range const elements,
     int_range const nodes_in_element,
@@ -582,8 +604,8 @@ static void LGR_NOINLINE update_nodal_density(state& s)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const elements_to_V = s.V.cbegin();
   auto const nodes_to_m = s.m.cbegin();
-  auto const nodes_to_rho = s.rho_h.begin();
-  auto const N = 1.0 / double(nodes_in_element.size());
+  auto const nodes_to_rho_h = s.rho_h.begin();
+  auto const N = 1.0 / double(s.nodes_in_element.size());
   auto functor = [=] (int const node) {
     double node_V(0.0);
     auto const range = nodes_to_node_elements[node];
@@ -770,6 +792,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.e_h.resize(s.nodes.size());
     s.old_e_h.resize(s.nodes.size());
     s.e_h_dot.resize(s.nodes.size());
+    s.rho_h.resize(s.nodes.size());
     s.q.resize(s.elements.size());
     s.W.resize(s.elements.size() * s.nodes_in_element.size());
   }
@@ -785,7 +808,12 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
     lgr::fill(s.G, double(0.0));
   }
   if (in.enable_ideal_gas) {
-    ideal_gas(s.elements, in.gamma, s.rho, s.e, &s.sigma, &s.K);
+    if (in.enable_nodal_energy) {
+      if ((0)) nodal_ideal_gas(s.nodes, in.gamma, s.rho_h, s.e_h, &s.p_h);
+      else s.p_h.resize(0);
+    } else {
+      ideal_gas(s.elements, in.gamma, s.rho, s.e, &s.sigma, &s.K);
+    }
   }
   if (in.enable_nodal_pressure) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,

@@ -96,6 +96,7 @@ void file_writer::operator()(
   }
   if (in.enable_nodal_energy) {
     write_vtk_scalars(stream, "nodal_energy", s.e_h);
+    write_vtk_scalars(stream, "nodal_density", s.rho_h);
   }
   write_vtk_cell_data(stream, s.elements);
   write_vtk_scalars(stream, "energy", s.e);
