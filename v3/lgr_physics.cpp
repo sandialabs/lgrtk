@@ -301,7 +301,35 @@ static void LGR_NOINLINE update_p_h_W(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_p_h_dot(
+#if 0
+static void LGR_NOINLINE update_V_h_W(state& s)
+{
+  auto const elements_to_v_prime = s.v_prime.cbegin();
+  auto const elements_to_V = s.V.cbegin();
+  auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const element_nodes_to_W = s.W.begin();
+  double const N = 1.0 / double(s.nodes_in_element.size());
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto functor = [=] (int const element) {
+    symmetric3x3<double> symm_grad_v = elements_to_symm_grad_v[element];
+    double const div_v = trace(symm_grad_v);
+    double const V = elements_to_V[element];
+    vector3<double> const v_prime = elements_to_v_prime[element];
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const element_node : element_nodes) {
+      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
+      double const V_h_dot =
+        -(N * div_v) + (grad_N * v_prime);
+      double const W = V_h_dot * V;
+      element_nodes_to_W[element_node] = W;
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+#endif
+
+static void LGR_NOINLINE update_any_h_dot(
     int_range const nodes,
     int_range const elements,
     int_range const nodes_in_element,
@@ -310,14 +338,14 @@ static void LGR_NOINLINE update_p_h_dot(
     host_vector<int> const& node_elements_to_nodes_in_element_vector,
     host_vector<double> const& W_vector,
     host_vector<double> const& V_vector,
-    host_vector<double>* p_h_dot_vector)
+    host_vector<double>* any_h_dot_vector)
 {
   auto const nodes_to_node_elements = nodes_to_node_elements_vector.cbegin();
   auto const node_elements_to_elements = node_elements_to_elements_vector.cbegin();
   auto const node_elements_to_nodes_in_element = node_elements_to_nodes_in_element_vector.cbegin();
   auto const element_nodes_to_W = W_vector.cbegin();
   auto const elements_to_V = V_vector.cbegin();
-  auto const nodes_to_p_h_dot = p_h_dot_vector->begin();
+  auto const nodes_to_any_h_dot = any_h_dot_vector->begin();
   auto const elements_to_element_nodes = elements * nodes_in_element;
   auto functor = [=] (int const node) {
     double node_W = 0.0;
@@ -333,8 +361,8 @@ static void LGR_NOINLINE update_p_h_dot(
       node_W = node_W + W;
       node_V = node_V + V;
     }
-    auto const p_h_dot = node_W / node_V;
-    nodes_to_p_h_dot[node] = p_h_dot;
+    auto const any_h_dot = node_W / node_V;
+    nodes_to_any_h_dot[node] = any_h_dot;
   };
   lgr::for_each(nodes, functor);
 }
@@ -643,7 +671,7 @@ static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
     update_v_prime(in, s);
     update_p_h_W(s);
-    update_p_h_dot(s.nodes, s.elements, s.nodes_in_element,
+    update_any_h_dot(s.nodes, s.elements, s.nodes_in_element,
         s.nodes_to_node_elements, s.node_elements_to_elements,
         s.node_elements_to_nodes_in_element,
         s.W, s.V, &s.p_h_dot);
