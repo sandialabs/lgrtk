@@ -1,3 +1,5 @@
+#include <cassert>
+
 #include <lgr_meshing.hpp>
 #include <lgr_macros.hpp>
 #include <lgr_state.hpp>

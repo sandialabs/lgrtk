@@ -7,6 +7,7 @@
 #include <lgr_vector3.hpp>
 #include <lgr_host_vector.hpp>
 #include <lgr_int_range.hpp>
+#include <lgr_for_each.hpp>
 
 namespace lgr {
 
@@ -102,7 +103,7 @@ class clipped_domain : public domain {
         markers_begin[i] = marker;
       }
     };
-    std::for_each(range.begin(), range.end(), functor);
+    lgr::for_each(range, functor);
   }
 };
 
