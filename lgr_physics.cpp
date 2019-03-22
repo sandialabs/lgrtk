@@ -237,7 +237,6 @@ static void LGR_NOINLINE find_max_stable_dt(
   double const init = std::numeric_limits<double>::max();
   *max_stable_dt = lgr::reduce(
       element_dt_vector.begin(), element_dt_vector.end(), init, lgr::minimum<double>());
-  //print(std::cerr, "max_stable_dt ", *max_stable_dt, "\n");
 }
 
 static void LGR_NOINLINE update_v_prime(input const& in, state& s,
@@ -367,7 +366,6 @@ static void LGR_NOINLINE neo_Hookean(
     auto const Jm53 = (Jm23 * Jm23) * Jm13;
     auto const B = self_times_transpose(F);
     auto const devB = deviator(B);
-    //print(std::cerr, "p[", element, "] = ", (half_K0 * (J - Jinv)), "\n");
     auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
     elements_to_sigma[element] = sigma;
     auto const K = half_K0 * (J + Jinv);
