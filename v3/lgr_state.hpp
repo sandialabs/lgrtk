@@ -40,8 +40,10 @@ class state {
   host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
   host_vector<double> V_h_dot; // time derivative of stabilized nodal volume
   host_vector<double> V_h; // stabilized nodal volume
-  host_vector<double> V_h_incr; // change in stabilized nodal volume since previous intermediate state
+  host_vector<double> old_V_h;
+  host_vector<double> V_h_ref; // stabilized nodal volume
   host_vector<double> J_h; // stabilized nodal deformation gradient determinant
+  host_vector<double> old_J_h;
   host_vector<double> K; // (tangent/effective) bulk modulus
   host_vector<double> G; // (tangent/effective) shear modulus
   host_vector<double> c; // sound speed / plane wave speed
