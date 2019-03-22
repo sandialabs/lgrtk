@@ -810,11 +810,9 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
     lgr::fill(s.G, double(0.0));
   }
   if (in.enable_ideal_gas) {
+    ideal_gas(s.elements, in.gamma, s.rho, s.e, &s.sigma, &s.K);
     if (in.enable_nodal_energy) {
-      if ((0)) nodal_ideal_gas(s.nodes, in.gamma, s.rho_h, s.e_h, &s.p_h);
-      else s.p_h.resize(0);
-    } else {
-      ideal_gas(s.elements, in.gamma, s.rho, s.e, &s.sigma, &s.K);
+      nodal_ideal_gas(s.nodes, in.gamma, s.rho_h, s.e_h, &s.p_h);
     }
   }
   if (in.enable_nodal_pressure) {
@@ -935,7 +933,8 @@ void run(input const& in) {
   resize_physics(in, s);
   lgr::fill(s.rho, in.rho0);
   lgr::fill(s.e, in.e0);
-  if (in.enable_nodal_pressure) lgr::fill(s.p_h, double(0.0));
+  lgr::fill(s.p_h, double(0.0));
+  lgr::fill(s.e_h, in.e0);
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
