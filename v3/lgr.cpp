@@ -518,6 +518,42 @@ static void LGR_NOINLINE tet_piston() {
   run(in);
 }
 
+static void LGR_NOINLINE run_Noh_1D() {
+  input in;
+  in.name = "Noh_1D";
+  in.element = BAR;
+  in.end_time = 0.6;
+  in.num_file_outputs = 60;
+  in.elements_along_x = 44;
+  in.x_domain_size = 1.1;
+  in.rho0 = 1.0;
+  in.enable_ideal_gas = true;
+  in.gamma = 5.0 / 3.0;
+  in.e0 = 1.0e-14;
+  auto inward_v = [=] (
+    int_range const nodes,
+    host_vector<vector3<double>> const& x_vector,
+    host_vector<vector3<double>>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](int const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const v = vector3<double>(x(0) == 0 ? 0.0 : -1.0, 0.0, 0.0);
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = inward_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 1.5;
+  in.quadratic_artificial_viscosity = 0.25;
+  run(in);
+}
+
 }
 
 int main() {
@@ -531,6 +567,7 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
+  if ((1)) lgr::run_Noh_1D();
 }

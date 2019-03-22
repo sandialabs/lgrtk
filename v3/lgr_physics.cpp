@@ -587,7 +587,7 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
     double const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
     elements_to_nu_art[element] = nu_art;
     double const rho = elements_to_rho[element];
-    auto const sigma_art = (-rho * nu_art) * symm_grad_v;
+    auto const sigma_art = (rho * nu_art) * symm_grad_v;
     symmetric3x3<double> const sigma = elements_to_sigma[element];
     auto const sigma_tilde = sigma + sigma_art;
     elements_to_sigma[element] = sigma_tilde;
