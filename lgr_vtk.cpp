@@ -91,11 +91,14 @@ void file_writer::operator()(
   write_vtk_point_data(stream, s.nodes);
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
-  if (in.enable_nodal_pressure) {
+  if (in.enable_nodal_pressure || in.enable_nodal_energy) {
     write_vtk_scalars(stream, "nodal_pressure", s.p_h);
   }
+  if (in.enable_nodal_energy) {
+    write_vtk_scalars(stream, "nodal_energy", s.e_h);
+  }
   write_vtk_cell_data(stream, s.elements);
-  write_vtk_scalars(stream, "specific_internal_energy", s.e);
+  write_vtk_scalars(stream, "energy", s.e);
   write_vtk_scalars(stream, "pressure", s.p);
   write_vtk_scalars(stream, "density", s.rho);
   stream.close();
