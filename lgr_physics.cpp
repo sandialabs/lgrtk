@@ -792,7 +792,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     if (in.enable_nodal_pressure) {
-      update_p_h(s.nodes, half_dt / 2.0, s.p_h_dot, s.old_p_h, &s.p_h);
+      update_p_h(s.nodes, half_dt, s.p_h_dot, s.old_p_h, &s.p_h);
     }
     update_e(s, half_dt);
     update_u(s.nodes, half_dt, s.v, &s.u);
