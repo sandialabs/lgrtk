@@ -33,6 +33,7 @@ class state {
   host_vector<symmetric3x3<double>> symm_grad_v; // symmetrized gradient of velocity
   host_vector<double> p; // pressure at elements (output only!)
   host_vector<vector3<double>> v_prime; // fine-scale velocity
+  host_vector<vector3<double>> q; // nodal heat flux
   host_vector<double> W; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<double> p_h_dot; // time derivative of stabilized nodal pressure
   host_vector<double> p_h; // stabilized nodal pressure
@@ -52,6 +53,9 @@ class state {
   host_vector<double> h_art; // characteristic element length used for artificial viscosity
   host_vector<double> nu_art; // artificial kinematic viscosity scalar
   host_vector<double> element_dt; // stable time step of each element
+  host_vector<double> e_h; // nodal specific internal energy
+  host_vector<double> old_e_h; // nodal specific internal energy at previous time state
+  host_vector<double> e_h_dot; // time derivative of nodal specific internal energy
   std::map<std::string, host_vector<int>> node_sets;
   double next_file_output_time;
   double dt = 0.0;
