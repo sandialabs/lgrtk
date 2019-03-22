@@ -239,7 +239,10 @@ static void LGR_NOINLINE find_max_stable_dt(
       element_dt_vector.begin(), element_dt_vector.end(), init, lgr::minimum<double>());
 }
 
-static void LGR_NOINLINE update_v_prime(input const& in, state& s)
+static void LGR_NOINLINE update_v_prime(input const& in, state& s,
+    host_vector<double> const& p_h_vector,
+    host_vector<vector3<double>>* v_prime_vector
+    )
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
@@ -247,8 +250,8 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s)
   auto const elements_to_dt = s.element_dt.cbegin();
   auto const elements_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
-  auto const nodes_to_p_h = s.p_h.cbegin();
-  auto const elements_to_v_prime = s.v_prime.begin();
+  auto const nodes_to_p_h = p_h_vector.cbegin();
+  auto const elements_to_v_prime = v_prime_vector->begin();
   auto const c_tau = in.c_tau;
   auto const inv_nodes_per_element = 1.0 / double(s.nodes_in_element.size());
   auto functor = [=] (int const element) {
@@ -301,7 +304,7 @@ static void LGR_NOINLINE update_p_h_W(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_p_h_dot(
+static void LGR_NOINLINE update_any_h_dot(
     int_range const nodes,
     int_range const elements,
     int_range const nodes_in_element,
@@ -310,15 +313,16 @@ static void LGR_NOINLINE update_p_h_dot(
     host_vector<int> const& node_elements_to_nodes_in_element_vector,
     host_vector<double> const& W_vector,
     host_vector<double> const& V_vector,
-    host_vector<double>* p_h_dot_vector)
+    host_vector<double>* any_h_dot_vector)
 {
   auto const nodes_to_node_elements = nodes_to_node_elements_vector.cbegin();
   auto const node_elements_to_elements = node_elements_to_elements_vector.cbegin();
   auto const node_elements_to_nodes_in_element = node_elements_to_nodes_in_element_vector.cbegin();
   auto const element_nodes_to_W = W_vector.cbegin();
   auto const elements_to_V = V_vector.cbegin();
-  auto const nodes_to_p_h_dot = p_h_dot_vector->begin();
+  auto const nodes_to_any_h_dot = any_h_dot_vector->begin();
   auto const elements_to_element_nodes = elements * nodes_in_element;
+  double const N = 1.0 / double(nodes_in_element.size());
   auto functor = [=] (int const node) {
     double node_W = 0.0;
     double node_V = 0.0;
@@ -331,10 +335,10 @@ static void LGR_NOINLINE update_p_h_dot(
       double const W = element_nodes_to_W[element_node];
       double const V = elements_to_V[element];
       node_W = node_W + W;
-      node_V = node_V + V;
+      node_V = node_V + (N * V);
     }
-    auto const p_h_dot = node_W / node_V;
-    nodes_to_p_h_dot[node] = p_h_dot;
+    auto const any_h_dot = node_W / node_V;
+    nodes_to_any_h_dot[node] = any_h_dot;
   };
   lgr::for_each(nodes, functor);
 }
@@ -615,7 +619,9 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
-  if (in.enable_neo_Hookean) neo_Hookean(s.elements, in.K0, in.G0, s.F_total, &s.sigma, &s.K, &s.G);
+  if (in.enable_neo_Hookean) {
+    neo_Hookean(s.elements, in.K0, in.G0, s.F_total, &s.sigma, &s.K, &s.G);
+  }
   else {
     lgr::fill(s.sigma, symmetric3x3<double>::zero());
     lgr::fill(s.K, double(0.0));
@@ -624,13 +630,13 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   if (in.enable_ideal_gas) {
     ideal_gas(s.elements, in.gamma, s.rho, s.e, &s.sigma, &s.K);
   }
-}
-
-static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
     update_sigma_with_p_h(s.elements, s.nodes_in_element,
         s.elements_to_nodes, s.p_h, &s.sigma);
   }
+}
+
+static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
   update_element_force(s.elements, s.nodes_in_element, s.sigma, s.V, s.grad_N, &s.element_f);
   update_nodal_force(s);
   update_a(s.nodes, s.f, s.m, &s.a);
@@ -641,9 +647,9 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
 
 static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
-    update_v_prime(in, s);
+    update_v_prime(in, s, s.p_h, &s.v_prime);
     update_p_h_W(s);
-    update_p_h_dot(s.nodes, s.elements, s.nodes_in_element,
+    update_any_h_dot(s.nodes, s.elements, s.nodes_in_element,
         s.nodes_to_node_elements, s.node_elements_to_elements,
         s.node_elements_to_nodes_in_element,
         s.W, s.V, &s.p_h_dot);
@@ -657,14 +663,14 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
   if (in.enable_nodal_pressure) lgr::copy(s.p_h, s.old_p_h);
   constexpr int npc = 2;
   for (int pc = 0; pc < npc; ++pc) {
-    if (in.enable_nodal_pressure) {
-      update_p_h(s.nodes, (s.dt / 2.0), s.p_h_dot, s.old_p_h, &s.p_h);
-    }
     if (pc == 0) advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
     update_v(s, s.dt / 2.0, s.old_v);
     update_symm_grad_v(s);
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
+    if (in.enable_nodal_pressure) {
+      update_p_h(s.nodes, half_dt, s.p_h_dot, s.old_p_h, &s.p_h);
+    }
     update_e(s, half_dt);
     update_u(s.nodes, half_dt, s.v, &s.u);
     if (last_pc) update_v(s, s.dt, s.old_v);
