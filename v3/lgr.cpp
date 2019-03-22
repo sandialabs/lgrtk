@@ -462,7 +462,7 @@ static void LGR_NOINLINE twisting_column() {
   in.enable_nodal_pressure = true;
   in.enable_nodal_volume = true;
   in.c_tau = 0.5;
-  in.CFL = 0.45;
+  in.CFL = 0.9;
   run(in);
 }
 
