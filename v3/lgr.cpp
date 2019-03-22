@@ -549,8 +549,8 @@ static void LGR_NOINLINE run_Noh_1D() {
   in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 1.5;
-  in.quadratic_artificial_viscosity = 0.25;
+  in.linear_artificial_viscosity = 1.0;
+  in.quadratic_artificial_viscosity = 1.0;
   run(in);
 }
 
