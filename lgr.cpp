@@ -156,9 +156,9 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.zero_acceleration_conditions.push_back({"x_min", y_axis});
   in.x_transform = Cooks_membrane_x;
-  in.enable_nodal_pressure = false;
-  in.enable_nodal_volume = true;
-  in.c_tau = 1.0;
+  in.enable_nodal_pressure = true;
+  in.enable_nodal_volume = false;
+  in.c_tau = 0.5;
   run(in);
 }
 
