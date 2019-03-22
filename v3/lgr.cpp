@@ -364,7 +364,8 @@ static void LGR_NOINLINE swinging_cube() {
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.zero_acceleration_conditions.push_back({"z_max", z_axis});
   in.enable_nodal_pressure = true;
-  in.c_tau = 0.15;
+  in.c_tau = 0.5;
+  in.CFL = 0.45;
   run(in);
 }
 
@@ -466,6 +467,60 @@ static void LGR_NOINLINE twisting_column() {
   run(in);
 }
 
+static void LGR_NOINLINE tet_piston() {
+  input in;
+  in.name = "tet_piston";
+  in.element = TETRAHEDRON;
+  in.end_time = 10.0;
+  in.num_file_outputs = 100;
+  in.elements_along_x = 1;
+  in.x_domain_size = 1.0;
+  in.elements_along_y = 1;
+  in.y_domain_size = 1.0;
+  in.elements_along_z = 1;
+  in.z_domain_size = 1.0;
+  double const rho = 1.0;
+  in.rho0 = rho;
+  in.enable_neo_Hookean = true;
+  double const K = 1.0;
+  double const G = 1.0;
+  in.K0 = K;
+  in.G0 = G;
+  auto tet_piston_v = [=] (
+    int_range const nodes,
+    host_vector<vector3<double>> const& x_vector,
+    host_vector<vector3<double>>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](int const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const v = 0.6 * (x(2) / 1.0) * vector3<double>(0.0, 0.0, 1.0);
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = tet_piston_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
+  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
+  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.enable_nodal_pressure = true;
+  in.enable_nodal_volume = false;
+  in.c_tau = 0.5;
+  in.CFL = 0.9;
+  run(in);
+}
+
 }
 
 int main() {
@@ -479,5 +534,6 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
+  if ((1)) lgr::tet_piston();
 }
