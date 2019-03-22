@@ -45,6 +45,7 @@ class state {
   host_vector<double> rho; // element density
   host_vector<double> e; // element specific internal energy
   host_vector<double> old_e; // specific internal energy at previous time state
+  host_vector<double> rho_e_dot; // time derivative of internal energy density
   host_vector<double> m; // nodal mass
   host_vector<vector3<double>> a; // nodal acceleration
   host_vector<double> h_min; // minimum characteristic element length, used for stable time step

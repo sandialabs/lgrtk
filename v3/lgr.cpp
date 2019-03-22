@@ -561,9 +561,9 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
-  in.elements_along_x = 11;
+  in.elements_along_x = 44;
   in.x_domain_size = 1.1;
-  in.elements_along_y = 11;
+  in.elements_along_y = 44;
   in.y_domain_size = 1.1;
   in.rho0 = 1.0;
   in.enable_ideal_gas = true;
@@ -612,6 +612,6 @@ int main() {
   if ((0)) lgr::bending_beam();
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
-  if ((1)) lgr::run_Noh_1D();
-  if ((0)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_1D();
+  if ((1)) lgr::run_Noh_2D();
 }
