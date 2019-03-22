@@ -77,7 +77,7 @@ class HeatEquationResidual :
      m_boundaryLoads(nullptr)
     /**************************************************************************/
     {
-      lgr::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
+      Plato::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
       auto materialModel = mmfactory.create();
       m_cellConductivity = materialModel->getConductivityMatrix();
       m_cellDensity      = materialModel->getMassDensity();

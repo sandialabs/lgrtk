@@ -24,7 +24,7 @@
 #include "Mechanics.hpp"
 #include "Thermal.hpp"
 #include "PlatoProblem.hpp"
-#include "ParseInput.hpp"
+#include "plato/alg/ParseInput.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
 
@@ -411,7 +411,7 @@ private:
     Omega_h::Assoc mAssoc;
     Omega_h::Library m_lib_osh;
     Omega_h::MeshSets mMeshSets;
-    lgr::comm::Machine m_machine;
+    Plato::comm::Machine m_machine;
 
     std::string m_currentProblemName;
     Teuchos::RCP<ProblemDefinition> m_defaultProblem;

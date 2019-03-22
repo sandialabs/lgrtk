@@ -13,6 +13,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_array.hpp>
 #include <Omega_h_assoc.hpp>
+#include <Omega_h_teuchos.hpp>
 
 #include "plato/PlatoUtilities.hpp"
 #include "plato/PlatoProblemFactory.hpp"

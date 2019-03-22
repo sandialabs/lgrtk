@@ -279,7 +279,7 @@ public:
             this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-            using AmgXLinearProblem = lgr::AmgXSparseLinearProblem<Plato::OrdinalType, mNumDofsPerNode>;
+            using AmgXLinearProblem = Plato::AmgXSparseLinearProblem<Plato::OrdinalType, mNumDofsPerNode>;
             auto tConfigString = AmgXLinearProblem::getConfigString(mNumIterationsAmgX);
             auto tSolver = std::make_shared<AmgXLinearProblem>(*mJacobian, tMyStatesSubView, mResidual, tConfigString);
             tSolver->solve();
@@ -767,7 +767,7 @@ private:
             Plato::ScalarVector tAdjoint = Kokkos::subview(mMyAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
             Plato::fill(static_cast<Plato::Scalar>(0.0), tAdjoint);
 #ifdef HAVE_AMGX
-            using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, mNumDofsPerNode>;
+            using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, mNumDofsPerNode>;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = std::make_shared<AmgXLinearProblem>(*mJacobian, tAdjoint, mGradState, tConfigString);
             tSolver->solve();

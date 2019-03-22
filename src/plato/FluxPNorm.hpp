@@ -58,7 +58,7 @@ class FluxPNorm :
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
     {
-      lgr::ThermalModelFactory<SpaceDim> mmfactory(aProblemParams);
+      Plato::ThermalModelFactory<SpaceDim> mmfactory(aProblemParams);
       auto materialModel = mmfactory.create();
       m_cellConductivity = materialModel->getConductivityMatrix();
 

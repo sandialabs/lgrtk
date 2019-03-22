@@ -89,7 +89,7 @@ void ElastostaticSolve<SpaceDim>::initialize()
 template<int SpaceDim>
 ElastostaticSolve<SpaceDim>::ElastostaticSolve(Teuchos::ParameterList const& paramList,
                                                Teuchos::RCP<DefaultFields> meshFields,
-                                               lgr::comm::Machine machine) :
+                                               Plato::comm::Machine machine) :
         m_machine(machine),
         m_meshFields(meshFields),
         m_useBlockMatrix(paramList.get<bool>("Use Block Matrix"))
@@ -178,7 +178,7 @@ void ElastostaticSolve<SpaceDim>::computeGlobalStiffness()
                          "grad-grad integration");
 }
 
-typedef lgr::CrsLinearProblem<Plato::OrdinalType> CrsLinearSolver;
+typedef Plato::CrsLinearProblem<Plato::OrdinalType> CrsLinearSolver;
 
 template<int spaceDim>
 Teuchos::RCP<CrsLinearSolver>
@@ -214,18 +214,18 @@ ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
         }
         else
         {
-            typedef lgr::AmgXSparseLinearProblem<Plato::OrdinalType> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem<Plato::OrdinalType> AmgXLinearProblem;
             configString = AmgXLinearProblem::configurationString(AmgXLinearProblem::PCG_NOPREC,tol,maxIters);
         }
 
         if( m_useBlockMatrix )
         {
-            typedef lgr::AmgXSparseLinearProblem<Plato::OrdinalType, spaceDim> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem<Plato::OrdinalType, spaceDim> AmgXLinearProblem;
             solver = Teuchos::rcp(new AmgXLinearProblem(*m_matrix,m_lhs,m_rhs, configString));
         }
         else
         {
-            typedef lgr::AmgXSparseLinearProblem<Plato::OrdinalType> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem<Plato::OrdinalType> AmgXLinearProblem;
             solver = Teuchos::rcp(new AmgXLinearProblem(*m_matrix,m_lhs,m_rhs, configString));
         }
     }
@@ -256,7 +256,7 @@ ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
     if(solver == Teuchos::null)
     {
         std::cout
-                << "WARNING: it looks like lgr was built without any compatible solvers (AmgX, ViennaCL).  Returning a null solver...\n";
+                << "WARNING: it looks like Plato was built without any compatible solvers (AmgX, ViennaCL).  Returning a null solver...\n";
     }
     return solver;
 

@@ -49,16 +49,12 @@
 #include <Kokkos_Core.hpp>
 
 #include "LGRConfig.hpp"
-#include "Run.hpp"
+#include "plato/alg/Run.hpp"
 
-#include "ErrorHandling.hpp"
-#include "Driver.hpp"
-
-#ifdef LGR_ENABLE_PLATO
+#include "plato/alg/ErrorHandling.hpp"
 #include "plato/PlatoDriver.hpp"
-#endif
 
-namespace lgr {
+namespace Plato {
 
 #if defined(KOKKOS_HAVE_CUDA)
 void run_cuda_query(comm::Machine machine) {
@@ -102,21 +98,14 @@ void run(
                 << " PU[" << threads_per_core << "] }" << std::endl;
     }
 #if defined(KOKKOS_HAVE_CUDA)
-    lgr::run_cuda_query(machine);
+    Plato::run_cuda_query(machine);
 #endif
   } else {
-#ifdef USE_LGRV1
-    if(physicsString == "Default"){
-      ::lgr::driver(lib_osh, problem, machine, input_mesh, output_viz);
-    } else
-#endif
-#ifdef USE_PLATO
     if(physicsString == "Plato Driver"){
       ::Plato::driver(lib_osh, problem, input_mesh, output_viz);
     } else
-#endif
     {
-      LGR_THROW_IF(true, "Unrecognized Physics " << physicsString);
+      PLATO_THROW_IF(true, "Unrecognized Physics " << physicsString);
     }
   }
 }

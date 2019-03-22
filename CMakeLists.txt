@@ -140,14 +140,27 @@ else()
   message("-- Building without FPE checking.")
 endif()
 
-add_executable(
-  lgr
-  src/LGR.cpp
-)
+option(LGR_ENABLE_LGRV1 "Enable LGR Version 1" OFF)
+if(LGR_ENABLE_LGRV1)
+  add_definitions(-DUSE_LGRV1)
+  add_executable(
+    lgr
+    src/Run.cpp
+    src/LGR.cpp
+  )
+else()
+  add_executable(
+    lgr
+    src/plato/alg/Run.cpp
+    src/plato/alg/LGR.cpp
+  )
+endif()
+
 if( CMAKE_INSTALL_PREFIX )
   install( TARGETS lgr DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
 endif()
 target_include_directories(lgr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(lgr lgrtk)
 
 IF (DEFINED AMGX_PREFIX)
   ADD_DEFINITIONS(-DHAVE_AMGX)
@@ -201,14 +214,11 @@ IF( VIENNACL_FOUND )
      )
 ENDIF()
 
-if (DEFINED Enable_MPMD)
-  message(FATAL_ERROR "Enable_MPMD was renamed LGR_ENABLE_PLATO")
-endif()
-if (DEFINED PlatoEngine_INSTALL_DIR)
-  message(FATAL_ERROR "PlatoEngine_INSTALL_DIR was renamed PLATO_PREFIX")
-endif()
 option(LGR_ENABLE_PLATO "Enable LGR Plato driver" OFF)
-option(LGR_ENABLE_PLATO_MPMD "Enable the Plato interface MPMD executable" OFF)
+if(LGR_ENABLE_PLATO)
+  add_definitions(-DUSE_PLATO)
+endif()
+
 
 option(LGR_ENABLE_PLATO_1D "Compile with 1D physics" OFF)
 option(LGR_ENABLE_PLATO_2D "Compile with 2D physics" ON )
@@ -230,6 +240,7 @@ ADD_SUBDIRECTORY(src)
 
 
 ###### PLATO ANALYZE APP + PLATO ENGINE EXECUTABLE ######
+option(LGR_ENABLE_PLATO_MPMD "Enable the Plato interface MPMD executable" OFF)
 if (LGR_ENABLE_PLATO_MPMD)
   FIND_PACKAGE(Epetra REQUIRED)
   set(PLATO_PREFIX "" CACHE STRING "Path to Plato install")
@@ -362,10 +373,8 @@ endif()
 list(REVERSE Trilinos_TPL_LIBRARIES)
 list(REMOVE_DUPLICATES Trilinos_TPL_LIBRARIES)
 list(REVERSE Trilinos_TPL_LIBRARIES)
-message(STATUS "Trilinos_TPL_LIBRARIES: ${Trilinos_TPL_LIBRARIES}")
 message(STATUS "Trilinos_EXTRA_LD_FLAGS: ${Trilinos_EXTRA_LD_FLAGS}")
 
-target_link_libraries(lgr lgrtk)
 
 ENABLE_TESTING()
 INCLUDE(CTest)

@@ -19,7 +19,7 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
   Plato::Parser* parser = new Plato::PugiParser();
   m_inputData = parser->parseFile(tInputChar);
 
-  auto tInputParams = lgr::input_file_parsing(aArgc, aArgv, m_machine);
+  auto tInputParams = Plato::input_file_parsing(aArgc, aArgv, m_machine);
 
   auto problemName = tInputParams.sublist("Runtime").get<std::string>("Input Config");
   m_defaultProblem = Teuchos::rcp(new ProblemDefinition(problemName));

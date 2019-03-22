@@ -1,7 +1,6 @@
 #ifndef NATURAL_BC_HPP
 #define NATURAL_BC_HPP
 
-#include "ErrorHandling.hpp"
 #include "ImplicitFunctors.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
@@ -277,7 +276,8 @@ namespace Plato {
       const Teuchos::ParameterEntry &entry = params.entry(i);
       const std::string             &name  = params.name(i);
   
-      LGR_THROW_IF(!entry.isList(),
+      TEUCHOS_TEST_FOR_EXCEPTION(!entry.isList(),
+         std::logic_error,
          "Parameter in Boundary Conditions block not valid.  Expect lists only.");
   
       Teuchos::ParameterList& sublist = params.sublist(name);
@@ -287,7 +287,9 @@ namespace Plato {
         bool b_Values = sublist.isType<Teuchos::Array<double>>("Values");
         bool b_Value  = sublist.isType<double>("Value");
         if ( b_Values && b_Value ) {
-          LGR_THROW_IF(true, " Natural Boundary Condition: provide EITHER 'Values' OR 'Value' Parameter.");
+          TEUCHOS_TEST_FOR_EXCEPTION(true, 
+             std::logic_error,
+             " Natural Boundary Condition: provide EITHER 'Values' OR 'Value' Parameter.");
         } else 
         if ( b_Values ) {
           auto values = sublist.get<Teuchos::Array<double>>("Values");
@@ -299,7 +301,9 @@ namespace Plato {
           fluxVector[0] = value;
           sublist.set("Vector", fluxVector);
         } else {
-          LGR_THROW_IF(true, " Natural Boundary Condition: provide either 'Values' or 'Value' Parameter.");
+          TEUCHOS_TEST_FOR_EXCEPTION(true, 
+             std::logic_error,
+             " Natural Boundary Condition: provide either 'Values' or 'Value' Parameter.");
         }
         bc.reset(new NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(name, sublist));
       }
@@ -315,7 +319,9 @@ namespace Plato {
         sublist.set("Vector", fluxVector);
         bc.reset(new NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(name, sublist));
       } else {
-        LGR_THROW_IF(true, " Natural Boundary Condition type invalid");
+        TEUCHOS_TEST_FOR_EXCEPTION(true, 
+           std::logic_error,
+           " Natural Boundary Condition type invalid");
       }
       BCs.push_back(bc);
     }
