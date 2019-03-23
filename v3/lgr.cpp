@@ -561,10 +561,10 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
-  in.elements_along_x = 44;
-  in.x_domain_size = 1.1;
-  in.elements_along_y = 44;
-  in.y_domain_size = 1.1;
+  in.elements_along_x = 136;
+  in.x_domain_size = 0.85;
+  in.elements_along_y = 136;
+  in.y_domain_size = 0.85;
   in.rho0 = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
