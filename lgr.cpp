@@ -624,7 +624,7 @@ int main() {
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
   if ((1)) {
-    lgr::counting_range<lgr::node_index> range(lgr::node_index(12));
+    lgr::counting_range<lgr::node> range(lgr::node(12));
     for (auto const i : range) {
       std::cout << int(i) << '\n';
     }
