@@ -30,4 +30,26 @@ class node : public index<int, node> {
     constexpr explicit inline node(int const i) : base_type(i) {}
 };
 
+class node_in_element : public index<int, node_in_element> {
+  public:
+    using base_type = index<int, node_in_element>;
+    constexpr explicit inline node_in_element(int const i) : base_type(i) {}
+};
+
+class element : public index<int, element> {
+  public:
+    using base_type = index<int, element>;
+    constexpr explicit inline element(int const i) : base_type(i) {}
+};
+
+class element_node : public index<int, element_node> {
+  public:
+    using base_type = index<int, element_node>;
+    constexpr explicit inline element_node(int const i) : base_type(i) {}
+};
+
+inline element_node operator*(element const& e, node_in_element const& n) {
+  return element_node(int(e) * int(n));
+}
+
 }
