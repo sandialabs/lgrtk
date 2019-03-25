@@ -6,9 +6,6 @@
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 
-// DEBUG
-#include <iostream>
-
 namespace lgr {
 
 static std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) {
