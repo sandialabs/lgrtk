@@ -4,9 +4,9 @@
 
 namespace lgr {
 
-template <class T, layout L>
+template <class T, layout L, class Index>
 class struct_in_vector {
-  array_in_vector<T, 1, L> m_array;
+  array_in_vector<T, 1, L, Index> m_array;
 public:
   using fundamental_type = T;
   static constexpr int fundamental_array_size = 1;
@@ -21,9 +21,9 @@ public:
   }
 };
 
-template <class T, layout L>
-class struct_in_vector<T const, L> {
-  array_in_vector<T const, 1, L> m_array;
+template <class T, layout L, class Index>
+class struct_in_vector<T const, L, Index> {
+  array_in_vector<T const, 1, L, Index> m_array;
 public:
   using fundamental_type = T const;
   static constexpr int fundamental_array_size = 1;

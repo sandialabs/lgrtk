@@ -5,14 +5,14 @@
 
 namespace lgr {
 
-template <class T, layout L>
+template <class T, layout L, class Index>
 class struct_vector_iterator {
-  using fundamental_type = typename struct_in_vector<T, L>::fundamental_type;
-  outer_iterator<vector_iterator<fundamental_type>, L, int, int> m_array_iterator;
+  using fundamental_type = typename struct_in_vector<T, L, Index>::fundamental_type;
+  outer_iterator<vector_iterator<fundamental_type>, L, Index, int> m_array_iterator;
 public:
   using value_type = std::remove_const_t<T>;
-  using difference_type = int;
-  using reference = struct_in_vector<T, L>;
+  using difference_type = Index;
+  using reference = struct_in_vector<T, L, Index>;
   using iterator_category = std::random_access_iterator_tag;
   using pointer = void*;
   explicit inline struct_vector_iterator(
@@ -84,24 +84,24 @@ public:
   }
 };
 
-template <class T, layout L, class Allocator>
+template <class T, layout L, class Allocator, class Index = int>
 class struct_vector {
 protected:
-  using fundamental_type = typename struct_in_vector<T, L>::fundamental_type;
+  using fundamental_type = typename struct_in_vector<T, L, Index>::fundamental_type;
 public:
   using allocator_type = typename Allocator::template rebind<fundamental_type>::other;
 protected:
-  static constexpr int array_size = struct_in_vector<T, L>::fundamental_array_size;
-  array_vector<fundamental_type, array_size, L, allocator_type>
+  static constexpr int array_size = struct_in_vector<T, L, Index>::fundamental_array_size;
+  array_vector<fundamental_type, array_size, L, allocator_type, Index, int>
     m_array_vector;
 public:
   using value_type = T;
-  using size_type = int;
-  using difference_type = int;
-  using reference = struct_in_vector<T, L>;
-  using const_reference = struct_in_vector<T const, L>;
-  using iterator = struct_vector_iterator<T, L>;
-  using const_iterator = struct_vector_iterator<T const, L>;
+  using size_type = Index;
+  using difference_type = Index;
+  using reference = struct_in_vector<T, L, Index>;
+  using const_reference = struct_in_vector<T const, L, Index>;
+  using iterator = struct_vector_iterator<T, L, Index>;
+  using const_iterator = struct_vector_iterator<T const, L, Index>;
   explicit struct_vector(Allocator const& allocator_in) noexcept
     :m_array_vector(allocator_in)
   {}
