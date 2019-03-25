@@ -5,17 +5,17 @@
 
 namespace lgr {
 
-template <class Iterator, layout L, class InnerIndex, class OuterIndex>
+template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class inner_iterator; 
 
-template <class Iterator, layout L, class InnerIndex, class OuterIndex>
+template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class outer_iterator; 
 
-template <class Iterator, layout L, class InnerIndex, class OuterIndex>
+template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class product_range; 
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class inner_iterator<Iterator, AOS, InnerIndex, OuterIndex> : public Iterator {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class inner_iterator<Iterator, AOS, OuterIndex, InnerIndex> : public Iterator {
   public:
   explicit inline inner_iterator(Iterator const& begin_in)
     :Iterator(begin_in)
@@ -23,8 +23,8 @@ class inner_iterator<Iterator, AOS, InnerIndex, OuterIndex> : public Iterator {
   }
 };
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class inner_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class inner_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   public:
@@ -98,12 +98,12 @@ class inner_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
   }
 };
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class outer_iterator<Iterator, AOS, InnerIndex, OuterIndex> {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class outer_iterator<Iterator, AOS, OuterIndex, InnerIndex> {
   Iterator m_begin;
   InnerIndex m_inner_size;
   public:
-  using inner_iterator_type = inner_iterator<Iterator, AOS, InnerIndex, OuterIndex>;
+  using inner_iterator_type = inner_iterator<Iterator, AOS, OuterIndex, InnerIndex>;
   using value_type = iterator_range<inner_iterator_type>;
   using difference_type = OuterIndex;
   using reference = value_type;
@@ -175,13 +175,13 @@ class outer_iterator<Iterator, AOS, InnerIndex, OuterIndex> {
   }
 };
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class outer_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class outer_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   InnerIndex m_inner_size;
   public:
-  using inner_iterator_type = inner_iterator<Iterator, SOA, InnerIndex, OuterIndex>;
+  using inner_iterator_type = inner_iterator<Iterator, SOA, OuterIndex, InnerIndex>;
   using value_type = iterator_range<inner_iterator_type>;
   using difference_type = OuterIndex;
   using reference = value_type;
@@ -254,13 +254,13 @@ class outer_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
   }
 };
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class product_range<Iterator, AOS, InnerIndex, OuterIndex> {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class product_range<Iterator, AOS, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   InnerIndex m_inner_size;
   public:
-  using iterator = outer_iterator<Iterator, AOS, InnerIndex, OuterIndex>;
+  using iterator = outer_iterator<Iterator, AOS, OuterIndex, InnerIndex>;
   using const_iterator = iterator;
   using value_type = typename iterator::value_type;
   using size_type = OuterIndex;
@@ -297,13 +297,13 @@ class product_range<Iterator, AOS, InnerIndex, OuterIndex> {
   }
 };
 
-template <class Iterator, class InnerIndex, class OuterIndex>
-class product_range<Iterator, SOA, InnerIndex, OuterIndex> {
+template <class Iterator, class OuterIndex, class InnerIndex>
+class product_range<Iterator, SOA, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   InnerIndex m_inner_size;
   public:
-  using iterator = outer_iterator<Iterator, SOA, InnerIndex, OuterIndex>;
+  using iterator = outer_iterator<Iterator, SOA, OuterIndex, InnerIndex>;
   using const_iterator = iterator;
   using value_type = typename iterator::value_type;
   using size_type = OuterIndex;
