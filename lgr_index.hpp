@@ -68,6 +68,12 @@ public:
   explicit inline operator size_t_std() const noexcept {
     return size_t_std(i);
   }
+  constexpr inline Tag operator*(Integral const n) const noexcept {
+    return Tag(i * n);
+  }
+  constexpr inline Tag operator/(Integral const n) const noexcept {
+    return Tag(i / n);
+  }
 };
 
 }
