@@ -8,7 +8,8 @@ namespace lgr {
 
 template <class T, int N, layout L, class Allocator, class OuterIndex = int, class InnerIndex = int>
 class array_vector {
-  vector<T, Allocator> m_vector;
+  using product_index = decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>());
+  vector<T, Allocator, product_index> m_vector;
   product_range<vector_iterator<T>, L, OuterIndex, InnerIndex> array_range() noexcept {
     return product_range<vector_iterator<T>, L, OuterIndex, InnerIndex>(m_vector.begin(), size(), N);
   }
@@ -28,7 +29,7 @@ public:
     :m_vector(allocator_in)
   {}
   explicit array_vector(size_type count, Allocator const& allocator_in)
-    :m_vector(count * N, allocator_in)
+    :m_vector(count * InnerIndex(N), allocator_in)
   {}
   array_vector(array_vector&&) noexcept = default;
   array_vector(array_vector const&) = delete;

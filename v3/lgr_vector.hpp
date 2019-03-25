@@ -120,14 +120,14 @@ public:
   bool empty() const noexcept { return m_size == 0; }
   size_type size() const noexcept { return m_size; }
   void clear() {
-    if (m_data) allocator_traits_type::deallocate(m_allocator, m_data, std::size_t(m_size - size_type(0)));
+    if (m_data) allocator_traits_type::deallocate(m_allocator, m_data, std::size_t(m_size));
     m_data = nullptr;
-    m_size = 0;
+    m_size = size_type(0);
   }
   void resize(size_type count) {
     if (m_size == count) return;
     clear();
-    m_data = allocator_traits_type::allocate(m_allocator, std::size_t(count - size_type(0)));
+    m_data = allocator_traits_type::allocate(m_allocator, std::size_t(count));
     m_size = count;
   }
   void swap(vector& other) {
