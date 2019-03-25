@@ -5,7 +5,6 @@
 #include <lgr_vtk.hpp>
 #include <lgr_print.hpp>
 #include <lgr_int_range_product.hpp>
-#include <lgr_host_vector.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
 

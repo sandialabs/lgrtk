@@ -2,6 +2,7 @@
 
 #include <lgr_struct_vector.hpp>
 #include <lgr_allocator.hpp>
+#include <lgr_index.hpp>
 
 namespace lgr {
 
@@ -21,6 +22,12 @@ public:
   host_vector& operator=(host_vector const&) = delete;
   host_vector& operator=(host_vector&&) = delete;
   ~host_vector() = default;
+};
+
+class node_index : public index<int, node_index> {
+  public:
+    using base_type = index<int, node_index>;
+    constexpr explicit inline node_index(int const i) : base_type(i) {}
 };
 
 }
