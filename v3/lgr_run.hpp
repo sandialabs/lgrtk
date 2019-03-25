@@ -1,8 +1,8 @@
 #pragma once
 
-#include <lgr_input.hpp>
-
 namespace lgr {
+
+class input;
 
 void run(input const& in);
 

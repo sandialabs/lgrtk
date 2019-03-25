@@ -19,6 +19,7 @@
 #include <lgr_copy.hpp>
 #include <lgr_element_specific.hpp>
 #include <lgr_meshing.hpp>
+#include <lgr_input.hpp>
 
 namespace lgr {
 
