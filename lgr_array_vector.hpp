@@ -10,11 +10,15 @@ template <class T, int N, layout L, class Allocator, class OuterIndex = int, cla
 class array_vector {
   using product_index = decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>());
   vector<T, Allocator, product_index> m_vector;
-  product_range<vector_iterator<T>, L, OuterIndex, InnerIndex> array_range() noexcept {
-    return product_range<vector_iterator<T>, L, OuterIndex, InnerIndex>(m_vector.begin(), size(), N);
+  using product_iterator = typename decltype(m_vector)::iterator;
+  using const_product_iterator = typename decltype(m_vector)::const_iterator;
+  using range_type = product_range<product_iterator, L, OuterIndex, InnerIndex>;
+  using const_range_type = product_range<const_product_iterator, L, OuterIndex, InnerIndex>;
+  range_type array_range() noexcept {
+    return range_type(m_vector.begin(), size(), InnerIndex(N));
   }
-  product_range<vector_iterator<T const>, L, OuterIndex, InnerIndex> const_array_range() const noexcept {
-    return product_range<vector_iterator<T const>, L, OuterIndex, InnerIndex>(m_vector.begin(), size(), N);
+  const_range_type const_array_range() const noexcept {
+    return const_range_type(m_vector.begin(), size(), InnerIndex(N));
   }
 public:
   using value_type = array_in_vector<T, N, L>;
@@ -23,14 +27,18 @@ public:
   using difference_type = OuterIndex;
   using reference = array_in_vector<T, N, L>;
   using const_reference = array_in_vector<T const, N, L>;
-  using iterator = outer_iterator<vector_iterator<T>, L, OuterIndex, InnerIndex>;
-  using const_iterator = outer_iterator<vector_iterator<T const>, L, OuterIndex, InnerIndex>;
+  using iterator = typename range_type::iterator;
+  using const_iterator = typename const_range_type::iterator;
   explicit array_vector(Allocator const& allocator_in) noexcept
     :m_vector(allocator_in)
   {}
   explicit array_vector(size_type count, Allocator const& allocator_in)
     :m_vector(count * InnerIndex(N), allocator_in)
-  {}
+  {
+    if (m_vector.size() != count * InnerIndex(N)) {
+      m_vector.clear();
+    }
+  }
   array_vector(array_vector&&) noexcept = default;
   array_vector(array_vector const&) = delete;
   array_vector& operator=(array_vector const&) = delete;
@@ -58,7 +66,7 @@ public:
     return m_vector.empty();
   }
   size_type size() const noexcept {
-    return m_vector.size() / N;
+    return m_vector.size() / InnerIndex(N);
   }
   void clear() {
     m_vector.clear();
