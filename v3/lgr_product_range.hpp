@@ -203,7 +203,7 @@ class outer_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
   }
   inline reference operator*() const noexcept {
     return reference(inner_iterator_type(m_begin, m_outer_size),
-        inner_iterator_type(m_begin + m_inner_size * m_outer_size, m_outer_size));
+        inner_iterator_type(m_begin + m_outer_size * m_inner_size, m_outer_size));
   }
   inline outer_iterator& operator++() noexcept {
     m_begin += (OuterIndex(1) * InnerIndex(1));

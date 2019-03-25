@@ -624,7 +624,7 @@ int main() {
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
   if ((1)) {
-    lgr::product_range<lgr::counting_iterator<lgr::element_node>, lgr::AOS, lgr::node_in_element, lgr::element>
+    lgr::product_range<lgr::counting_iterator<lgr::element_node>, lgr::SOA, lgr::node_in_element, lgr::element>
       range(lgr::counting_iterator<lgr::element_node>(lgr::element_node(0)),
             lgr::element(10),
             lgr::node_in_element(3));
