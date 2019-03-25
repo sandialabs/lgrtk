@@ -50,39 +50,39 @@ class inner_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
     return *m_begin;
   }
   inline inner_iterator& operator++() noexcept {
-    m_begin += (difference_type(1) * m_outer_size);
+    m_begin += (m_outer_size * difference_type(1));
     return *this;
   }
   inline inner_iterator operator++(int) noexcept {
     auto ret = *this;
-    m_begin += (difference_type(1) * m_outer_size);
+    m_begin += (m_outer_size * difference_type(1));
     return ret;
   }
   inline inner_iterator& operator--() noexcept {
-    m_begin -= (difference_type(1) * m_outer_size);
+    m_begin -= (m_outer_size * difference_type(1));
     return *this;
   }
   inline inner_iterator operator--(int) noexcept {
     auto ret = *this;
-    m_begin -= (difference_type(1) * m_outer_size);
+    m_begin -= (m_outer_size * difference_type(1));
     return ret;
   }
   inline inner_iterator& operator+=(difference_type const n) noexcept {
-    m_begin += (n * m_outer_size);
+    m_begin += (m_outer_size * n);
     return *this;
   }
   inline inner_iterator& operator-=(difference_type const n) noexcept {
-    m_begin -= (n * m_outer_size);
+    m_begin -= (m_outer_size * n);
     return *this;
   }
   inline inner_iterator operator+(difference_type const n) const noexcept {
-    return inner_iterator(m_begin + (n * m_outer_size), m_outer_size);
+    return inner_iterator(m_begin + (m_outer_size * n), m_outer_size);
   }
   inline inner_iterator operator-(difference_type const n) const noexcept {
-    return inner_iterator(m_begin - (n * m_outer_size), m_outer_size);
+    return inner_iterator(m_begin - (m_outer_size * n), m_outer_size);
   }
   inline reference operator[](difference_type const n) const noexcept {
-    return m_begin[n * m_outer_size];
+    return m_begin[m_outer_size * n];
   }
   inline bool operator<(inner_iterator const& other) const noexcept {
     return m_begin < other.m_begin;
