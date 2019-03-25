@@ -347,7 +347,8 @@ public:
             // Compute relaxed Von Mises stress constraint
             Plato::Scalar tLambdaOverPenalty =
                     static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
-            ResultT tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
+            ResultT tRelaxedStressConstraint = (tPenalizedStressConstraint > tLambdaOverPenalty) ?
+                                                tPenalizedStressConstraint : tLambdaOverPenalty;
 
             // Compute Von Mises stress contribution to augmented Lagrangian function
             ResultT tStressContribution = ( tLagrangeMultipliers(tCellOrdinal) +
@@ -422,7 +423,7 @@ public:
             const Plato::Scalar tOptionTwo =
                     static_cast<Plato::Scalar>(2.5) * tMassMultipliers(tCellOrdinal) + static_cast<Plato::Scalar>(0.5);
             tMassMultipliers(tCellOrdinal) = tMassMultiplierMeasures(tCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
-                    max(tOptionOne, tMassMultiplierLowerBound) : min(tOptionTwo, tMassMultiplierUpperBound);
+                    Omega_h::max2(tOptionOne, tMassMultiplierLowerBound) : Omega_h::min2(tOptionTwo, tMassMultiplierUpperBound);
 
             // Compute Von Mises stress constraint residual
             const Plato::Scalar tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
@@ -435,12 +436,12 @@ public:
             // Compute relaxed stress constraint
             const Plato::Scalar tLambdaOverPenalty =
                     static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
-            const Plato::Scalar tRelaxedStressConstraint = max(tPenalizedStressConstraint, tLambdaOverPenalty);
+            const Plato::Scalar tRelaxedStressConstraint = Omega_h::max2(tPenalizedStressConstraint, tLambdaOverPenalty);
 
             // Update Lagrange multipliers
             const Plato::Scalar tSuggestedLagrangeMultiplier =
                     tLagrangeMultipliers(tCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
-            tLagrangeMultipliers(tCellOrdinal) = max(tSuggestedLagrangeMultiplier, 0.0);
+            tLagrangeMultipliers(tCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
         }, "Update Multipliers");
     }
 };

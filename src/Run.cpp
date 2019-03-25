@@ -49,9 +49,9 @@
 #include <Kokkos_Core.hpp>
 
 #include "LGRConfig.hpp"
-#include "ErrorHandling.hpp"
-#include "plato/LinearElastostatics.hpp"
 #include "Run.hpp"
+
+#include "ErrorHandling.hpp"
 #include "Driver.hpp"
 
 #ifdef LGR_ENABLE_PLATO
@@ -105,13 +105,12 @@ void run(
     lgr::run_cuda_query(machine);
 #endif
   } else {
+#ifdef USE_LGRV1
     if(physicsString == "Default"){
       ::lgr::driver(lib_osh, problem, machine, input_mesh, output_viz);
     } else
-    if(physicsString == "Linear Elastostatics"){
-      lgr::LinearElastostatics::driver(lib_osh, problem, machine, input_mesh, output_viz);
-    } else
-#ifdef LGR_ENABLE_PLATO
+#endif
+#ifdef USE_PLATO
     if(physicsString == "Plato Driver"){
       ::Plato::driver(lib_osh, problem, input_mesh, output_viz);
     } else

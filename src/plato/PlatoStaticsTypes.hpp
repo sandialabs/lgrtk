@@ -9,7 +9,7 @@
 
 #include <map>
 
-#include "CrsMatrix.hpp"
+#include "alg/CrsMatrix.hpp"
 #include "PlatoTypes.hpp"
 
 namespace Plato
@@ -17,7 +17,7 @@ namespace Plato
 
 using RowMapEntryType = int;
 
-using CrsMatrixType      = typename lgr::CrsMatrix<Plato::OrdinalType, Plato::RowMapEntryType>;
+using CrsMatrixType      = typename Plato::CrsMatrix<Plato::OrdinalType, Plato::RowMapEntryType>;
 using LocalOrdinalVector = typename Kokkos::View<Plato::OrdinalType*, Plato::MemSpace>;
 
 template <typename ScalarType>

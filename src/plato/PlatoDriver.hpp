@@ -1,9 +1,3 @@
-
-/*!
- *  todo:
- *   1.  Organize source.  what goes in plato directory?
- **/
-
 #ifndef PLATO_DRIVER_HPP
 #define PLATO_DRIVER_HPP
 
@@ -19,6 +13,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_array.hpp>
 #include <Omega_h_assoc.hpp>
+#include <Omega_h_teuchos.hpp>
 
 #include "plato/PlatoUtilities.hpp"
 #include "plato/PlatoProblemFactory.hpp"
@@ -184,15 +179,27 @@ void driver(Omega_h::Library* aLibOmegaH,
     // Run Plato problem
     if(tSpaceDim == static_cast<Plato::OrdinalType>(3))
     {
+        #ifdef PLATO_3D
         driver<3>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("3D physics is not compiled.");
+        #endif
     }
     else if(tSpaceDim == static_cast<Plato::OrdinalType>(2))
     {
+        #ifdef PLATO_2D
         driver<2>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("2D physics is not compiled.");
+        #endif
     }
     else if(tSpaceDim == static_cast<Plato::OrdinalType>(1))
     {
+        #ifdef PLATO_1D
         driver<1>(aLibOmegaH, aProblemSpec, aInputFilename, aVizFilePath);
+        #else
+        throw std::runtime_error("1D physics is not compiled.");
+        #endif
     }
 }
 

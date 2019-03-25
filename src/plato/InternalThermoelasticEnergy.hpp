@@ -1,15 +1,22 @@
 #ifndef INTERNAL_THERMOELASTIC_ENERGY_HPP
 #define INTERNAL_THERMOELASTIC_ENERGY_HPP
 
+#include "plato/SimplexFadTypes.hpp"
+#include "plato/SimplexThermomechanics.hpp"
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/TMKinematics.hpp"
 #include "plato/TMKinetics.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/InterpolateFromNodal.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/LinearThermoelasticMaterial.hpp"
 #include "plato/ToMap.hpp"
+#include "plato/ExpInstMacros.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -134,5 +141,17 @@ class InternalThermoelasticEnergy :
       },"energy gradient");
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(InternalThermoelasticEnergy, Plato::SimplexThermomechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(InternalThermoelasticEnergy, Plato::SimplexThermomechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(InternalThermoelasticEnergy, Plato::SimplexThermomechanics, 3)
+#endif
 
 #endif

@@ -8,6 +8,13 @@
 #include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include "plato/LinearThermalMaterial.hpp"
+#include "plato/ImplicitFunctors.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
+
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -51,7 +58,7 @@ class FluxPNorm :
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
     {
-      lgr::ThermalModelFactory<SpaceDim> mmfactory(aProblemParams);
+      Plato::ThermalModelFactory<SpaceDim> mmfactory(aProblemParams);
       auto materialModel = mmfactory.create();
       m_cellConductivity = materialModel->getConductivityMatrix();
 
@@ -146,5 +153,17 @@ class FluxPNorm :
       resultValue = pow(resultValue, 1.0/m_exponent);
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 3)
+#endif
 
 #endif

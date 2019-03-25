@@ -19,7 +19,7 @@
 #include "plato/PlatoAbstractProblem.hpp"
 
 #ifdef HAVE_AMGX
-#include "AmgXSparseLinearProblem.hpp"
+#include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
 /******************************************************************************//**
@@ -147,7 +147,7 @@ public:
         this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-        using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+        using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
         auto tConfigString = AmgXLinearProblem::getConfigString();
         auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tStatesSubView, mResidual, tConfigString));
         tSolver->solve();
@@ -302,7 +302,7 @@ public:
             Plato::ScalarVector
               tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
-            typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -366,7 +366,7 @@ public:
             Plato::ScalarVector
               tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
-            typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -555,5 +555,29 @@ private:
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
     }
 };
+
+#include "Thermal.hpp"
+#include "Mechanics.hpp"
+#include "Electromechanics.hpp"
+#include "Thermomechanics.hpp"
+
+#ifdef PLATO_1D
+extern template class Problem<::Plato::Thermal<1>>;
+extern template class Problem<::Plato::Mechanics<1>>;
+extern template class Problem<::Plato::Electromechanics<1>>;
+extern template class Problem<::Plato::Thermomechanics<1>>;
+#endif
+#ifdef PLATO_2D
+extern template class Problem<::Plato::Thermal<2>>;
+extern template class Problem<::Plato::Mechanics<2>>;
+extern template class Problem<::Plato::Electromechanics<2>>;
+extern template class Problem<::Plato::Thermomechanics<2>>;
+#endif
+#ifdef PLATO_3D
+extern template class Problem<::Plato::Thermal<3>>;
+extern template class Problem<::Plato::Mechanics<3>>;
+extern template class Problem<::Plato::Electromechanics<3>>;
+extern template class Problem<::Plato::Thermomechanics<3>>;
+#endif
 
 #endif // PLATO_PROBLEM_HPP

@@ -159,6 +159,7 @@ class Electromechanics: public Plato::SimplexElectromechanics<SpaceDimParam>
 {
 public:
     using FunctionFactory = typename Plato::ElectromechanicsFactory::FunctionFactory;
+    using SimplexT = SimplexElectromechanics<SpaceDimParam>;
     static constexpr int SpaceDim = SpaceDimParam;
 };
 

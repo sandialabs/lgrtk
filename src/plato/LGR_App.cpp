@@ -19,7 +19,7 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
   Plato::Parser* parser = new Plato::PugiParser();
   m_inputData = parser->parseFile(tInputChar);
 
-  auto tInputParams = lgr::input_file_parsing(aArgc, aArgv, m_machine);
+  auto tInputParams = Plato::input_file_parsing(aArgc, aArgv, m_machine);
 
   auto problemName = tInputParams.sublist("Runtime").get<std::string>("Input Config");
   m_defaultProblem = Teuchos::rcp(new ProblemDefinition(problemName));
@@ -85,24 +85,36 @@ createProblem(ProblemDefinition& aDefinition){
 
   if (m_numSpatialDims == 3)
   {
+    #ifdef PLATO_3D
     Plato::ProblemFactory<3> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("3D physics is not compiled.");
+    #endif
   } else
   if (m_numSpatialDims == 2)
   {
+    #ifdef PLATO_2D
     Plato::ProblemFactory<2> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("2D physics is not compiled.");
+    #endif
   } else
   if (m_numSpatialDims == 1)
   {
+    #ifdef PLATO_1D
     Plato::ProblemFactory<1> tProblemFactory;
     m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
     m_adjoint = m_problem->getAdjoint();
     m_state = m_problem->getState();
+    #else
+    throw Plato::ParsingException("1D physics is not compiled.");
+    #endif
   }
 
   aDefinition.modified = false;

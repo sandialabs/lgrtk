@@ -15,6 +15,7 @@
 #include "plato/Thermal.hpp"
 #include "plato/Mechanics.hpp"
 #include "plato/VectorFunctionInc.hpp"
+#include "plato/ScalarFunction.hpp"
 #include "plato/ScalarFunctionInc.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
@@ -22,7 +23,7 @@
 #include "plato/ComputedField.hpp"
 
 #ifdef HAVE_AMGX
-#include "AmgXSparseLinearProblem.hpp"
+#include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
 /**********************************************************************************/
@@ -159,7 +160,7 @@ public:
           this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-          using AmgXLinearProblem = lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+          using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
           auto tConfigString = AmgXLinearProblem::getConfigString();
           Plato::ScalarVector deltaT("increment", tState.extent(0));
           Plato::fill(static_cast<Plato::Scalar>(0.0), deltaT);
@@ -305,7 +306,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -373,7 +374,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef lgr::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -549,5 +550,17 @@ private:
         tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }
 };
+
+// JR HACK: explicit instantiation
+// compile time: (no effect)
+#ifdef PLATO_1D
+extern template class HeatEquationProblem<::Plato::Thermal<1>>;
+#endif
+#ifdef PLATO_2D
+extern template class HeatEquationProblem<::Plato::Thermal<2>>;
+#endif
+#ifdef PLATO_3D
+extern template class HeatEquationProblem<::Plato::Thermal<3>>;
+#endif
 
 #endif // PLATO_PROBLEM_HPP

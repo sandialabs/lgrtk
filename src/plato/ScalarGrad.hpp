@@ -2,6 +2,7 @@
 #define SCALAR_GRAD_HPP
 
 #include "plato/PlatoStaticsTypes.hpp"
+#include <Omega_h_vector.hpp>
 
 /******************************************************************************/
 /*! Scalar gradient functor.

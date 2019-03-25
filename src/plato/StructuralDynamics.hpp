@@ -174,6 +174,7 @@ class StructuralDynamics: public SimplexStructuralDynamics<SpaceDimParam, NumCon
 {
 public:
     using FunctionFactory = typename Plato::StructuralDynamicsFactory::FunctionFactory;
+    using SimplexT = SimplexStructuralDynamics<SpaceDimParam, NumControls>;
     static constexpr int SpaceDim = SpaceDimParam;
 }; // class StructuralDynamics
 

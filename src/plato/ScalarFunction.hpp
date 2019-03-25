@@ -36,10 +36,10 @@ private:
     using WorksetBase<PhysicsT>::m_controlEntryOrdinal; /*!< number of degree of freedom per cell/element */
     using WorksetBase<PhysicsT>::m_configEntryOrdinal; /*!< number of degree of freedom per cell/element */
 
-    using Residual = typename Plato::Evaluation<PhysicsT>::Residual; /*!< result variables automatic differentiation type */
-    using Jacobian = typename Plato::Evaluation<PhysicsT>::Jacobian; /*!< state variables automatic differentiation type */
-    using GradientX = typename Plato::Evaluation<PhysicsT>::GradientX; /*!< configuration variables automatic differentiation type */
-    using GradientZ = typename Plato::Evaluation<PhysicsT>::GradientZ; /*!< control variables automatic differentiation type */
+    using Residual = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Residual; /*!< result variables automatic differentiation type */
+    using Jacobian = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Jacobian; /*!< state variables automatic differentiation type */
+    using GradientX = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientX; /*!< configuration variables automatic differentiation type */
+    using GradientZ = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientZ; /*!< control variables automatic differentiation type */
 
     std::shared_ptr<AbstractScalarFunction<Residual>> mScalarFunctionValue; /*!< scalar function value interface */
     std::shared_ptr<AbstractScalarFunction<Jacobian>> mScalarFunctionGradientU; /*!< scalar function value partial wrt states */

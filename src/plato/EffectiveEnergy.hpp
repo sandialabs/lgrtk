@@ -1,11 +1,19 @@
 #ifndef EFFECTIVE_ELASTIC_ENERGY_HPP
 #define EFFECTIVE_ELASTIC_ENERGY_HPP
 
+#include "plato/SimplexMechanics.hpp"
+#include "plato/SimplexFadTypes.hpp"
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/Strain.hpp"
+#include "plato/LinearElasticMaterial.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/HomogenizedStress.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include "plato/ExpInstMacros.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -138,5 +146,18 @@ class EffectiveEnergy :
       },"energy gradient");
     }
 };
+
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(EffectiveEnergy, Plato::SimplexMechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(EffectiveEnergy, Plato::SimplexMechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(EffectiveEnergy, Plato::SimplexMechanics, 3)
+#endif
 
 #endif

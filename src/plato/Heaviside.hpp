@@ -6,6 +6,8 @@
 #endif
 
 #include <stdio.h>
+#include <Teuchos_ParameterList.hpp>
+
 
 #include "plato/PlatoStaticsTypes.hpp"
 

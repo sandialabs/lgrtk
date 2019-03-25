@@ -8,12 +8,18 @@
 #include "plato/FluxDivergence.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoMathHelpers.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 #include "plato/LinearThermalMaterial.hpp"
+#include "plato/AbstractVectorFunction.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/SimplexFadTypes.hpp"
+
+#include "plato/ExpInstMacros.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -63,7 +69,7 @@ class ThermostaticResidual :
      m_boundaryLoads(nullptr)
     /**************************************************************************/
     {
-      lgr::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
+      Plato::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
       auto materialModel = mmfactory.create();
       m_cellConductivity = materialModel->getConductivityMatrix();
 
@@ -150,5 +156,17 @@ class ThermostaticResidual :
       }
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 3)
+#endif
 
 #endif

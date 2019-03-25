@@ -6,9 +6,8 @@
 
 #include <Teuchos_ParameterList.hpp>
 
-#include "Basis.hpp"
-#include "Cubature.hpp"
-#include "ErrorHandling.hpp"
+#include "plato/alg/Basis.hpp"
+#include "plato/alg/Cubature.hpp"
 #include "ImplicitFunctors.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
@@ -132,19 +131,19 @@ class BodyLoad
   //
   Plato::OrdinalType quadratureDegree = 1;
 
-  Plato::OrdinalType numPoints = lgr::Cubature::getNumCubaturePoints(SpaceDim, quadratureDegree);
+  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(SpaceDim, quadratureDegree);
 
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
     refCellQuadraturePoints("ref quadrature points", numPoints, SpaceDim);
   Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>
     quadratureWeights("quadrature weights", numPoints);
   
-  lgr::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
+  Plato::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
 
 
   // get basis values
   //
-  lgr::Basis basis(SpaceDim);
+  Plato::Basis basis(SpaceDim);
   Plato::OrdinalType numFields = basis.basisCardinality();
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
     refCellBasisValues("ref basis values", numFields, numPoints);
@@ -206,19 +205,19 @@ class BodyLoad
   //
   Plato::OrdinalType quadratureDegree = 1;
 
-  Plato::OrdinalType numPoints = lgr::Cubature::getNumCubaturePoints(SpaceDim,quadratureDegree);
+  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(SpaceDim,quadratureDegree);
 
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
     refCellQuadraturePoints("ref quadrature points", numPoints, SpaceDim);
   Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>
     quadratureWeights("quadrature weights", numPoints);
   
-  lgr::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
+  Plato::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
 
 
   // get basis values
   //
-  lgr::Basis basis(SpaceDim);
+  Plato::Basis basis(SpaceDim);
   Plato::OrdinalType numFields = basis.basisCardinality();
   Kokkos::View<Scalar**, Kokkos::LayoutRight, MemSpace>    
     refCellBasisValues("ref basis values", numFields, numPoints);
@@ -296,7 +295,9 @@ class BodyLoads
         const Teuchos::ParameterEntry &entry = params.entry(i);
         const std::string             &name  = params.name(i);
   
-        LGR_THROW_IF(!entry.isList(), "Parameter in Body Loads block not valid.  Expect lists only.");
+        TEUCHOS_TEST_FOR_EXCEPTION(!entry.isList(), 
+           std::logic_error,
+           "Parameter in Body Loads block not valid.  Expect lists only.");
   
         Teuchos::ParameterList& sublist = params.sublist(name);
         std::shared_ptr<Plato::BodyLoad<SpaceDim,NumDofsPerNode>> bl;

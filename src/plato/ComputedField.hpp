@@ -117,7 +117,7 @@ class ComputedFields
         const Teuchos::ParameterEntry &entry = params.entry(i);
         const std::string             &name  = params.name(i);
   
-        LGR_THROW_IF(!entry.isList(), "Parameter in Computed Fields block not valid.  Expect lists only.");
+        TEUCHOS_TEST_FOR_EXCEPTION(!entry.isList(), std::logic_error, "Parameter in Computed Fields block not valid.  Expect lists only.");
   
         std::string function = params.sublist(name).get<std::string>("Function");
         auto newCF = std::make_shared<Plato::ComputedField<SpaceDim>>(aMesh, name, function);
@@ -140,7 +140,7 @@ class ComputedFields
           return;
         }
       }
-      LGR_THROW_IF(true, "Requested a Computed Field that doesn't exist.");
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Requested a Computed Field that doesn't exist.");
   }
   /****************************************************************************/
   /*!
@@ -157,7 +157,7 @@ class ComputedFields
           return;
         }
       }
-      LGR_THROW_IF(true, "Requested a Computed Field that doesn't exist.");
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Requested a Computed Field that doesn't exist.");
   }
 };
 } // end Plato namespace

@@ -1,6 +1,10 @@
 #ifndef TM_STRESS_P_NORM_HPP
 #define TM_STRESS_P_NORM_HPP
 
+#include "plato/SimplexElectromechanics.hpp"
+#include "plato/LinearElectroelasticMaterial.hpp"
+#include "plato/SimplexFadTypes.hpp"
+#include "plato/ImplicitFunctors.hpp"
 #include "plato/ScalarProduct.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/EMKinematics.hpp"
@@ -8,6 +12,10 @@
 #include "plato/TensorPNorm.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "plato/ExpInstMacros.hpp"
+#include "plato/Simp.hpp"
+#include "plato/Ramp.hpp"
+#include "plato/Heaviside.hpp"
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
@@ -131,5 +139,17 @@ class EMStressPNorm :
       m_norm->postEvaluate(resultValue);
     }
 };
+
+#ifdef PLATO_1D
+PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 1)
+#endif
+
+#ifdef PLATO_2D
+PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 2)
+#endif
+
+#ifdef PLATO_3D
+PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 3)
+#endif
 
 #endif

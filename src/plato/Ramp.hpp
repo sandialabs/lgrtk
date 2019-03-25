@@ -1,6 +1,8 @@
 #ifndef RAMP_HPP
 #define RAMP_HPP
 
+#include <Teuchos_ParameterList.hpp>
+
 #include "plato/PlatoStaticsTypes.hpp"
 
 /******************************************************************************/

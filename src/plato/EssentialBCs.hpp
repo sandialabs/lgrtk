@@ -3,7 +3,6 @@
 
 #include <Omega_h_assoc.hpp>
 
-#include "ErrorHandling.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
 namespace Plato
@@ -149,7 +148,7 @@ EssentialBCs<SimplexPhysicsType>::EssentialBCs(Teuchos::ParameterList & aParams)
         const Teuchos::ParameterEntry & tEntry = aParams.entry(tIndex);
         const std::string & tMyName = aParams.name(tIndex);
 
-        LGR_THROW_IF(!tEntry.isList(), "Parameter in Boundary Conditions block not valid.  Expect lists only.");
+        TEUCHOS_TEST_FOR_EXCEPTION(!tEntry.isList(), std::logic_error, " Parameter in Boundary Conditions block not valid.  Expect lists only.");
 
         Teuchos::ParameterList& tSublist = aParams.sublist(tMyName);
         const std::string tType = tSublist.get < std::string > ("Type");
@@ -163,7 +162,7 @@ EssentialBCs<SimplexPhysicsType>::EssentialBCs(Teuchos::ParameterList & aParams)
         else if("Fixed Value" == tType)
             tMyBC.reset(new EssentialBC<SimplexPhysicsType>(tMyName, tSublist));
         else
-            LGR_THROW_IF(true, " Boundary Condition type invalid: Not 'Zero Value' or 'Fixed Value'.");
+            TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, " Boundary Condition type invalid: Not 'Zero Value' or 'Fixed Value'.");
         BCs.push_back(tMyBC);
     }
 }

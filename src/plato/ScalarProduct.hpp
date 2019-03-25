@@ -1,6 +1,8 @@
 #ifndef SCALAR_PRODUCT_HPP
 #define SCALAR_PRODUCT_HPP
 
+#include <Omega_h_vector.hpp>
+
 #include "plato/PlatoStaticsTypes.hpp"
 
 /******************************************************************************/

@@ -45,7 +45,7 @@ endif()
 
 MESSAGE("-- BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 
-SET(CMAKE_CXX_FLAGS ${Trilinos_CXX_COMPILER_FLAGS} )
+SET(CMAKE_CXX_FLAGS ${Trilinos_CXX_COMPILER_FLAGS})
 SET(CMAKE_C_FLAGS ${Trilinos_C_COMPILER_FLAGS} )
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CUSTOM_CXX_FLAGS}")
 
@@ -140,14 +140,27 @@ else()
   message("-- Building without FPE checking.")
 endif()
 
-add_executable(
-  lgr
-  src/LGR.cpp
-)
+option(LGR_ENABLE_LGRV1 "Enable LGR Version 1" OFF)
+if(LGR_ENABLE_LGRV1)
+  add_definitions(-DUSE_LGRV1)
+  add_executable(
+    lgr
+    src/Run.cpp
+    src/LGR.cpp
+  )
+else()
+  add_executable(
+    lgr
+    src/plato/alg/Run.cpp
+    src/plato/alg/LGR.cpp
+  )
+endif()
+
 if( CMAKE_INSTALL_PREFIX )
   install( TARGETS lgr DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
 endif()
 target_include_directories(lgr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(lgr lgrtk)
 
 IF (DEFINED AMGX_PREFIX)
   ADD_DEFINITIONS(-DHAVE_AMGX)
@@ -201,18 +214,33 @@ IF( VIENNACL_FOUND )
      )
 ENDIF()
 
+option(LGR_ENABLE_PLATO "Enable LGR Plato driver" OFF)
+if(LGR_ENABLE_PLATO)
+  add_definitions(-DUSE_PLATO)
+endif()
+
+
+option(LGR_ENABLE_PLATO_1D "Compile with 1D physics" OFF)
+option(LGR_ENABLE_PLATO_2D "Compile with 2D physics" ON )
+option(LGR_ENABLE_PLATO_3D "Compile with 3D physics" ON )
+if (LGR_ENABLE_PLATO_1D)
+  add_definitions(-DPLATO_1D)
+  message("1d added")
+endif()
+if (LGR_ENABLE_PLATO_2D)
+  add_definitions(-DPLATO_2D)
+  message("2d added")
+endif()
+if (LGR_ENABLE_PLATO_3D)
+  add_definitions(-DPLATO_3D)
+  message("3d added")
+endif()
+
 ADD_SUBDIRECTORY(src)
 
-if (DEFINED Enable_MPMD)
-  message(FATAL_ERROR "Enable_MPMD was renamed LGR_ENABLE_PLATO")
-endif()
-if (DEFINED PlatoEngine_INSTALL_DIR)
-  message(FATAL_ERROR "PlatoEngine_INSTALL_DIR was renamed PLATO_PREFIX")
-endif()
-option(LGR_ENABLE_PLATO "Enable LGR Plato driver" OFF)
-option(LGR_ENABLE_PLATO_MPMD "Enable the Plato interface MPMD executable" OFF)
 
 ###### PLATO ANALYZE APP + PLATO ENGINE EXECUTABLE ######
+option(LGR_ENABLE_PLATO_MPMD "Enable the Plato interface MPMD executable" OFF)
 if (LGR_ENABLE_PLATO_MPMD)
   FIND_PACKAGE(Epetra REQUIRED)
   set(PLATO_PREFIX "" CACHE STRING "Path to Plato install")
@@ -228,11 +256,16 @@ if (LGR_ENABLE_PLATO_MPMD)
   find_package(Shards REQUIRED)
   find_package(Intrepid REQUIRED)
   find_package(TeuchosCore REQUIRED)
-  add_executable(
-    LGR_MPMD
-    src/plato/LGR_App.cpp
-    src/plato/LGR_MPMD.cpp
-  )
+
+  add_library( LGR_App src/plato/LGR_App.cpp )
+  target_include_directories(LGR_App PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  target_include_directories(LGR_App PRIVATE "${PLATO_PREFIX}/include")
+  target_link_libraries(LGR_App ${PLATO_LIBS} ${PLATO_LIBS} lgrtk)
+  if( CMAKE_INSTALL_PREFIX )
+    install( TARGETS LGR_App DESTINATION ${CMAKE_INSTALL_PREFIX}/lib )
+  endif()
+
+  add_executable( LGR_MPMD src/plato/LGR_MPMD.cpp)
   if( CMAKE_INSTALL_PREFIX )
     install( TARGETS LGR_MPMD DESTINATION ${CMAKE_INSTALL_PREFIX}/bin )
   endif()
@@ -261,16 +294,16 @@ if (LGR_ENABLE_PLATO_MPMD)
     set(PLATO_LIBS ${PLATO_LIBS} ${PLATO_GEOMETRY_MLS_LIB} ${PLATO_GEOMETRY_COGENT_LIB} pamgen)
   endif()
 
-  target_link_libraries(LGR_MPMD ${PLATO_LIBS} ${PLATO_LIBS} lgrtk)
+  target_link_libraries(LGR_MPMD LGR_App ${PLATO_LIBS} ${PLATO_LIBS} lgrtk)
 
   option(LGR_ENABLE_PLATO_PYTHON "Enable the Plato Python interface" OFF)
   if (LGR_ENABLE_PLATO_PYTHON)
-      find_package(PythonLibs)
+      find_package(PythonLibs 2 REQUIRED)
       include_directories( ${PYTHON_INCLUDE_DIRS} )
-      add_library( Plato SHARED src/plato/LGR_App.cpp src/plato/PlatoPythonModule.cpp )
+      add_library( Plato SHARED src/plato/PlatoPythonModule.cpp )
       target_include_directories( Plato PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
       target_include_directories( Plato PRIVATE "${PLATO_PREFIX}/include")
-      target_link_libraries( Plato lgrtk ${PLATO_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${PYTHON_LIBRARIES} )
+      target_link_libraries( Plato LGR_App lgrtk ${PLATO_LIBS} ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} ${PYTHON_LIBRARIES} )
       set_target_properties( Plato PROPERTIES PREFIX "" )
       target_compile_options( Plato PRIVATE "-lmpi" )
       if( CMAKE_INSTALL_PREFIX )
@@ -340,10 +373,8 @@ endif()
 list(REVERSE Trilinos_TPL_LIBRARIES)
 list(REMOVE_DUPLICATES Trilinos_TPL_LIBRARIES)
 list(REVERSE Trilinos_TPL_LIBRARIES)
-message(STATUS "Trilinos_TPL_LIBRARIES: ${Trilinos_TPL_LIBRARIES}")
 message(STATUS "Trilinos_EXTRA_LD_FLAGS: ${Trilinos_EXTRA_LD_FLAGS}")
 
-target_link_libraries(lgr lgrtk)
 
 ENABLE_TESTING()
 INCLUDE(CTest)
@@ -358,7 +389,11 @@ function(build_mpi_test_string RESULT_NAME num_mpi_proc)
   set(${RESULT_NAME} ${LGR_MPIEXEC} ${LGR_RANKS_PER_NODE_FLAG} ${LGR_RANKS_PER_NODE} ${LGR_RANKS_FLAG} ${num_mpi_proc} ${VALGRIND} ${ARGN} PARENT_SCOPE)
 endfunction(build_mpi_test_string)
 
-ADD_SUBDIRECTORY(unit_tests)
+option( LGR_UNIT_TEST "Flag to enable LGR unit tests" OFF)
+if( LGR_UNIT_TEST)
+  ADD_SUBDIRECTORY(unit_tests)
+endif()
+
 ADD_SUBDIRECTORY(tests)
 
 set(LGR_KEY_INTS
