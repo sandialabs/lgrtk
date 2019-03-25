@@ -29,7 +29,8 @@ class inner_iterator<Iterator, SOA, InnerIndex, OuterIndex> {
   OuterIndex m_outer_size;
   public:
   using value_type = typename Iterator::value_type;
-  using difference_type = InnerIndex;
+  using size_type = InnerIndex;
+  using difference_type = decltype(InnerIndex(0) - InnerIndex(0));
   using reference = typename Iterator::reference;
   using pointer = typename Iterator::pointer;
   using iterator_category = std::random_access_iterator_tag;
