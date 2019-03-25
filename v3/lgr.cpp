@@ -6,6 +6,9 @@
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 
+// DEBUG
+#include <iostream>
+
 namespace lgr {
 
 static std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) {
@@ -619,5 +622,11 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((1)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_2D();
+  if ((1)) {
+    lgr::counting_range<lgr::node_index> range(lgr::node_index(12));
+    for (auto const i : range) {
+      std::cout << int(i) << '\n';
+    }
+  }
 }
