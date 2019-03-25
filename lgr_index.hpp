@@ -11,55 +11,58 @@ public:
   inline index(index&&) noexcept = default;
   inline index& operator=(index const&) noexcept = default;
   inline index& operator=(index&&) noexcept = default;
-  constexpr inline index operator+(Integral const n) const noexcept {
-    return index(i + n);
+  constexpr inline Tag operator+(Tag const& other) const noexcept {
+    return Tag(i + other.i);
   }
-  constexpr inline Integral operator-(index const& other) const noexcept {
+  constexpr inline Tag operator-(Tag const& other) const noexcept {
     return i - other.i;
   }
-  inline index& operator++() noexcept {
+  inline Tag& operator++() noexcept {
     ++i;
-    return *this;
+    return *static_cast<Tag*>(this);
   }
-  inline index operator++(int) const noexcept {
+  inline Tag operator++(int) const noexcept {
     auto const old = *this;
     ++i;
     return old;
   }
-  inline index& operator--() noexcept {
+  inline Tag& operator--() noexcept {
     --i;
-    return *this;
+    return *static_cast<Tag*>(this);
   }
-  inline index operator--(int) const noexcept {
+  inline Tag operator--(int) const noexcept {
     auto const old = *this;
     --i;
     return old;
   }
-  constexpr inline bool operator==(index const& other) const noexcept {
+  constexpr inline bool operator==(Tag const& other) const noexcept {
     return i == other.i;
   }
-  constexpr inline bool operator!=(index const& other) const noexcept {
+  constexpr inline bool operator!=(Tag const& other) const noexcept {
     return i != other.i;
   }
-  constexpr inline bool operator>(index const& other) const noexcept {
+  constexpr inline bool operator>(Tag const& other) const noexcept {
     return i > other.i;
   }
-  constexpr inline bool operator<(index const& other) const noexcept {
+  constexpr inline bool operator<(Tag const& other) const noexcept {
     return i < other.i;
   }
-  constexpr inline bool operator>=(index const& other) const noexcept {
+  constexpr inline bool operator>=(Tag const& other) const noexcept {
     return i >= other.i;
   }
-  constexpr inline bool operator<=(index const& other) const noexcept {
+  constexpr inline bool operator<=(Tag const& other) const noexcept {
     return i <= other.i;
   }
-  inline index& operator+=(Integral const n) noexcept {
-    i += n;
-    return *this;
+  inline Tag& operator+=(Tag const& other) noexcept {
+    i += other.i;
+    return *static_cast<Tag*>(this);
   }
-  inline index& operator-=(Integral const n) noexcept {
-    i -= n;
-    return *this;
+  inline Tag& operator-=(Tag const& other) noexcept {
+    i -= other.i;
+    return *static_cast<Tag*>(this);
+  }
+  explicit inline operator Integral() const noexcept {
+    return i;
   }
 };
 
