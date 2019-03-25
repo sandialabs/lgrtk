@@ -6,24 +6,24 @@
 
 namespace lgr {
 
-template <class T, int N, layout L, class Allocator>
+template <class T, int N, layout L, class Allocator, class OuterIndex = int, class InnerIndex = int>
 class array_vector {
   vector<T, Allocator> m_vector;
-  product_range<vector_iterator<T>, L, int, int> array_range() noexcept {
-    return product_range<vector_iterator<T>, L, int, int>(m_vector.begin(), size(), N);
+  product_range<vector_iterator<T>, L, OuterIndex, InnerIndex> array_range() noexcept {
+    return product_range<vector_iterator<T>, L, OuterIndex, InnerIndex>(m_vector.begin(), size(), N);
   }
-  product_range<vector_iterator<T const>, L, int, int> const_array_range() const noexcept {
-    return product_range<vector_iterator<T const>, L, int, int>(m_vector.begin(), size(), N);
+  product_range<vector_iterator<T const>, L, OuterIndex, InnerIndex> const_array_range() const noexcept {
+    return product_range<vector_iterator<T const>, L, OuterIndex, InnerIndex>(m_vector.begin(), size(), N);
   }
 public:
   using value_type = array_in_vector<T, N, L>;
   using allocator_type = Allocator;
-  using size_type = int;
-  using difference_type = int;
+  using size_type = OuterIndex;
+  using difference_type = OuterIndex;
   using reference = array_in_vector<T, N, L>;
   using const_reference = array_in_vector<T const, N, L>;
-  using iterator = outer_iterator<vector_iterator<T>, L, int, int>;
-  using const_iterator = outer_iterator<vector_iterator<T const>, L, int, int>;
+  using iterator = outer_iterator<vector_iterator<T>, L, OuterIndex, InnerIndex>;
+  using const_iterator = outer_iterator<vector_iterator<T const>, L, OuterIndex, InnerIndex>;
   explicit array_vector(Allocator const& allocator_in) noexcept
     :m_vector(allocator_in)
   {}
