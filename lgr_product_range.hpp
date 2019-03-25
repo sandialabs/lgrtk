@@ -15,11 +15,77 @@ template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class product_range; 
 
 template <class Iterator, class OuterIndex, class InnerIndex>
-class inner_iterator<Iterator, AOS, OuterIndex, InnerIndex> : public Iterator {
+class inner_iterator<Iterator, AOS, OuterIndex, InnerIndex> {
+  Iterator m_begin;
   public:
-  explicit inline inner_iterator(Iterator const& begin_in)
-    :Iterator(begin_in)
+  using value_type = typename Iterator::value_type;
+  using size_type = InnerIndex;
+  using difference_type = InnerIndex;
+  using reference = typename Iterator::reference;
+  using pointer = typename Iterator::pointer;
+  using iterator_category = std::random_access_iterator_tag;
+  explicit inline inner_iterator(Iterator const& impl_in)
+    :m_begin(impl_in)
   {
+  }
+  inline bool operator==(inner_iterator const& other) const noexcept {
+    return m_begin == other.m_begin;
+  }
+  inline bool operator!=(inner_iterator const& other) const noexcept {
+    return m_begin != other.m_begin;
+  }
+  inline reference operator*() const noexcept {
+    return *m_begin;
+  }
+  inline inner_iterator& operator++() noexcept {
+    ++m_begin;
+    return *this;
+  }
+  inline inner_iterator operator++(int) noexcept {
+    auto ret = *this;
+    ++m_begin;
+    return ret;
+  }
+  inline inner_iterator& operator--() noexcept {
+    --m_begin;
+    return *this;
+  }
+  inline inner_iterator operator--(int) noexcept {
+    auto ret = *this;
+    --m_begin;
+    return ret;
+  }
+  inline inner_iterator& operator+=(difference_type const n) noexcept {
+    m_begin += OuterIndex(1) * n;
+    return *this;
+  }
+  inline inner_iterator& operator-=(difference_type const n) noexcept {
+    m_begin -= OuterIndex(1) * n;
+    return *this;
+  }
+  inline inner_iterator operator+(difference_type const n) const noexcept {
+    return inner_iterator(m_begin + (OuterIndex(1) * n));
+  }
+  inline inner_iterator operator-(difference_type const n) const noexcept {
+    return inner_iterator(m_begin - (OuterIndex(1) * n));
+  }
+  inline difference_type operator-(inner_iterator const& other) const noexcept {
+    return difference_type(m_begin - other.m_begin);
+  }
+  inline reference operator[](difference_type const n) const noexcept {
+    return m_begin[OuterIndex(1) * n];
+  }
+  inline bool operator<(inner_iterator const& other) const noexcept {
+    return m_begin < other.m_begin;
+  }
+  inline bool operator>(inner_iterator const& other) const noexcept {
+    return m_begin > other.m_begin;
+  }
+  inline bool operator<=(inner_iterator const& other) const noexcept {
+    return m_begin <= other.m_begin;
+  }
+  inline bool operator>=(inner_iterator const& other) const noexcept {
+    return m_begin >= other.m_begin;
   }
 };
 
@@ -30,7 +96,7 @@ class inner_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
   public:
   using value_type = typename Iterator::value_type;
   using size_type = InnerIndex;
-  using difference_type = decltype(InnerIndex(0) - InnerIndex(0));
+  using difference_type = InnerIndex;
   using reference = typename Iterator::reference;
   using pointer = typename Iterator::pointer;
   using iterator_category = std::random_access_iterator_tag;

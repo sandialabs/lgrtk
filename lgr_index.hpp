@@ -15,7 +15,7 @@ public:
     return Tag(i + other.i);
   }
   constexpr inline Tag operator-(Tag const& other) const noexcept {
-    return i - other.i;
+    return Tag(i - other.i);
   }
   inline Tag& operator++() noexcept {
     ++i;
@@ -63,6 +63,10 @@ public:
   }
   explicit inline operator Integral() const noexcept {
     return i;
+  }
+  using size_t_std = std::size_t;
+  explicit inline operator size_t_std() const noexcept {
+    return size_t_std(i);
   }
 };
 
