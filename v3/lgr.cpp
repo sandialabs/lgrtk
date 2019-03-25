@@ -624,13 +624,14 @@ int main() {
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
   if ((1)) {
-    lgr::array_vector<int, 3, lgr::AOS, lgr::host_allocator<int>, lgr::element, lgr::node_in_element>
-      array(lgr::element(10), lgr::host_allocator<int>());
+    lgr::struct_vector<lgr::vector3<double>, lgr::AOS, lgr::host_allocator<int>, lgr::element_node>
+      array(lgr::element_node(30), lgr::host_allocator<int>());
     lgr::product_range<lgr::counting_iterator<lgr::element_node>, lgr::AOS, lgr::element, lgr::node_in_element>
-      aos_range(lgr::counting_iterator<lgr::element_node>(lgr::element_node(0)), lgr::element(10), lgr::node_in_element(3));
-    for (lgr::element i(0); i < lgr::element(10); ++i) {
-      for (lgr::node_in_element j(0); j < lgr::node_in_element(3); ++j) {
-        array.begin()[i][j] = 42;
+      range(lgr::counting_iterator<lgr::element_node>(lgr::element_node(0)), lgr::element(10), lgr::node_in_element(3));
+    for (auto const element_nodes : range) {
+      for (auto const element_node : element_nodes) {
+        std::cout << "zeroing element node " << int(element_node) << '\n';
+        array.begin()[element_node] = lgr::vector3<double>::zero();
       }
     }
   }
