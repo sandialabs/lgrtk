@@ -1,6 +1,10 @@
+#include <memory>
+
 #include <lgr_run.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_fill.hpp>
+#include <lgr_domain.hpp>
+#include <lgr_input.hpp>
 
 namespace lgr {
 
