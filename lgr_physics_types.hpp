@@ -52,4 +52,8 @@ constexpr inline element_node operator*(element const& e, node_in_element const&
   return element_node(int(e) * int(n));
 }
 
+constexpr inline element operator*(element_node const& en, node_in_element const& n) noexcept {
+  return element(int(en) / int(n));
+}
+
 }
