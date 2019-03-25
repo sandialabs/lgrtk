@@ -8,7 +8,6 @@ namespace lgr {
 template <class T, class Index = int>
 class vector_iterator {
   T* m_ptr;
-
  public:
   using value_type = std::remove_const_t<T>;
   using difference_type = decltype(Index(0) - Index(0));
@@ -75,18 +74,18 @@ class vector_iterator {
   }
 };
 
-template <class T, class Allocator>
+template <class T, class Allocator, class Index = int>
 class vector {
 protected:
   using allocator_traits_type = std::allocator_traits<Allocator>;
   Allocator m_allocator;
   T* m_data;
-  std::size_t m_size;
+  Index m_size;
 public:
   using value_type = T;
   using allocator_type = Allocator;
-  using size_type = int;
-  using difference_type = int;
+  using size_type = Index;
+  using difference_type = decltype(m_size - m_size);
   using reference = value_type&;
   using const_reference = value_type const&;
   using pointer = typename allocator_traits_type::pointer;
@@ -119,17 +118,17 @@ public:
   const_iterator end() const noexcept { return const_iterator(m_data + m_size); }
   const_iterator cend() const noexcept { return const_iterator(m_data + m_size); }
   bool empty() const noexcept { return m_size == 0; }
-  size_type size() const noexcept { return size_type(m_size); }
+  size_type size() const noexcept { return m_size; }
   void clear() {
-    if (m_data) allocator_traits_type::deallocate(m_allocator, m_data, m_size);
+    if (m_data) allocator_traits_type::deallocate(m_allocator, m_data, std::size_t(m_size - size_type(0)));
     m_data = nullptr;
     m_size = 0;
   }
   void resize(size_type count) {
-    if (m_size == std::size_t(count)) return;
+    if (m_size == count) return;
     clear();
-    m_data = allocator_traits_type::allocate(m_allocator, std::size_t(count));
-    m_size = std::size_t(count);
+    m_data = allocator_traits_type::allocate(m_allocator, std::size_t(count - size_type(0)));
+    m_size = count;
   }
   void swap(vector& other) {
     using std::swap;
