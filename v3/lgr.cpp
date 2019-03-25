@@ -137,8 +137,8 @@ static void LGR_NOINLINE Cooks_membrane() {
   input in;
   in.name = "Cooks_membrane";
   in.element = TRIANGLE;
-  in.end_time = 10.0;
-  in.num_file_outputs = 100;
+  in.end_time = 40.0;
+  in.num_file_outputs = 200;
   in.elements_along_x = 8;
   in.x_domain_size = 1.0;
   in.elements_along_y = 8;
@@ -363,7 +363,8 @@ static void LGR_NOINLINE swinging_cube() {
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.zero_acceleration_conditions.push_back({"z_max", z_axis});
   in.enable_nodal_pressure = true;
-  in.c_tau = 0.15;
+  in.c_tau = 0.5;
+  in.CFL = 0.45;
   run(in);
 }
 
@@ -459,7 +460,142 @@ static void LGR_NOINLINE twisting_column() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"y_min", z_axis});
   in.enable_nodal_pressure = true;
-  in.c_tau = 0.15;
+  in.c_tau = 0.5;
+  in.CFL = 0.9;
+  run(in);
+}
+
+static void LGR_NOINLINE tet_piston() {
+  input in;
+  in.name = "tet_piston";
+  in.element = TETRAHEDRON;
+  in.end_time = 10.0;
+  in.num_file_outputs = 100;
+  in.elements_along_x = 1;
+  in.x_domain_size = 1.0;
+  in.elements_along_y = 1;
+  in.y_domain_size = 1.0;
+  in.elements_along_z = 1;
+  in.z_domain_size = 1.0;
+  double const rho = 1.0;
+  in.rho0 = rho;
+  in.enable_neo_Hookean = true;
+  double const K = 1.0;
+  double const G = 1.0;
+  in.K0 = K;
+  in.G0 = G;
+  auto tet_piston_v = [=] (
+    int_range const nodes,
+    host_vector<vector3<double>> const& x_vector,
+    host_vector<vector3<double>>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](int const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const v = 0.6 * (x(2) / 1.0) * vector3<double>(0.0, 0.0, 1.0);
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = tet_piston_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
+  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
+  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.enable_nodal_pressure = true;
+  in.c_tau = 0.5;
+  in.CFL = 0.9;
+  run(in);
+}
+
+static void LGR_NOINLINE run_Noh_1D() {
+  input in;
+  in.name = "Noh_1D";
+  in.element = BAR;
+  in.end_time = 0.6;
+  in.num_file_outputs = 60;
+  in.elements_along_x = 44;
+  in.x_domain_size = 1.1;
+  in.rho0 = 1.0;
+  in.enable_ideal_gas = true;
+  in.gamma = 5.0 / 3.0;
+  in.e0 = 1.0e-14;
+  auto inward_v = [=] (
+    int_range const nodes,
+    host_vector<vector3<double>> const& x_vector,
+    host_vector<vector3<double>>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](int const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const n = norm(x);
+      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = inward_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 1.0;
+  in.quadratic_artificial_viscosity = 1.0;
+  run(in);
+}
+
+static void LGR_NOINLINE run_Noh_2D() {
+  input in;
+  in.name = "Noh_2D";
+  in.element = TRIANGLE;
+  in.end_time = 0.6;
+  in.num_file_outputs = 60;
+  in.elements_along_x = 34;
+  in.x_domain_size = 0.85;
+  in.elements_along_y = 34;
+  in.y_domain_size = 0.85;
+  in.rho0 = 1.0;
+  in.enable_ideal_gas = true;
+  in.gamma = 5.0 / 3.0;
+  in.e0 = 1.0e-14;
+  auto inward_v = [=] (
+    int_range const nodes,
+    host_vector<vector3<double>> const& x_vector,
+    host_vector<vector3<double>>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](int const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const n = norm(x);
+      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = inward_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 0.5;
+  in.quadratic_artificial_viscosity = 1.0;
+  in.enable_nodal_energy = true;
+  in.c_tau = 1.0;
   run(in);
 }
 
@@ -476,5 +612,8 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
+  if ((0)) lgr::tet_piston();
+  if ((0)) lgr::run_Noh_1D();
+  if ((1)) lgr::run_Noh_2D();
 }

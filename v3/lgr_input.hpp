@@ -59,6 +59,7 @@ class input {
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
+  bool enable_nodal_energy = false;
   std::function<void(int_range const, host_vector<vector3<double>> const&, host_vector<vector3<double>>*)> initial_v;
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
   std::map<std::string, std::unique_ptr<domain>> node_sets;

@@ -32,11 +32,12 @@ class state {
   host_vector<symmetric3x3<double>> sigma; // Cauchy stress tensor
   host_vector<symmetric3x3<double>> symm_grad_v; // symmetrized gradient of velocity
   host_vector<double> p; // pressure at elements (output only!)
-  host_vector<double> p_h; // stabilized nodal pressure
-  host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
   host_vector<vector3<double>> v_prime; // fine-scale velocity
+  host_vector<vector3<double>> q; // nodal heat flux
   host_vector<double> W; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<double> p_h_dot; // time derivative of stabilized nodal pressure
+  host_vector<double> p_h; // stabilized nodal pressure
+  host_vector<double> old_p_h; // stabilized nodal pressure at previous time state
   host_vector<double> K; // (tangent/effective) bulk modulus
   host_vector<double> G; // (tangent/effective) shear modulus
   host_vector<double> c; // sound speed / plane wave speed
@@ -45,12 +46,17 @@ class state {
   host_vector<double> rho; // element density
   host_vector<double> e; // element specific internal energy
   host_vector<double> old_e; // specific internal energy at previous time state
+  host_vector<double> rho_e_dot; // time derivative of internal energy density
   host_vector<double> m; // nodal mass
   host_vector<vector3<double>> a; // nodal acceleration
   host_vector<double> h_min; // minimum characteristic element length, used for stable time step
   host_vector<double> h_art; // characteristic element length used for artificial viscosity
   host_vector<double> nu_art; // artificial kinematic viscosity scalar
   host_vector<double> element_dt; // stable time step of each element
+  host_vector<double> e_h; // nodal specific internal energy
+  host_vector<double> old_e_h; // nodal specific internal energy at previous time state
+  host_vector<double> e_h_dot; // time derivative of nodal specific internal energy
+  host_vector<double> rho_h; // nodal density
   std::map<std::string, host_vector<int>> node_sets;
   double next_file_output_time;
   double dt = 0.0;
