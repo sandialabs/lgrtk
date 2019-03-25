@@ -561,9 +561,9 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
-  in.elements_along_x = 136;
+  in.elements_along_x = 34;
   in.x_domain_size = 0.85;
-  in.elements_along_y = 136;
+  in.elements_along_y = 34;
   in.y_domain_size = 0.85;
   in.rho0 = 1.0;
   in.enable_ideal_gas = true;
@@ -592,10 +592,10 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 1.0;
+  in.linear_artificial_viscosity = 0.5;
   in.quadratic_artificial_viscosity = 1.0;
   in.enable_nodal_energy = true;
-  in.c_tau = -1.0;
+  in.c_tau = 1.0;
   run(in);
 }
 

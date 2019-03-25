@@ -294,7 +294,7 @@ static void LGR_NOINLINE update_q(input const& in, state& s)
   auto const nodes_to_p_h = s.p_h.cbegin();
   auto const elements_to_q = s.q.begin();
   auto const c_tau = in.c_tau;
-  auto const inv_nodes_per_element = 1.0 / double(s.nodes_in_element.size());
+  auto const N = 1.0 / double(s.nodes_in_element.size());
   auto functor = [=] (int const element) {
     double const dt = elements_to_dt[element];
     auto const tau = c_tau * dt;
@@ -311,8 +311,8 @@ static void LGR_NOINLINE update_q(input const& in, state& s)
       vector3<double> const a_of_node = nodes_to_a[node];
       a = a + a_of_node;
     }
-    a = a * inv_nodes_per_element;
-    p_h = p_h * inv_nodes_per_element;
+    a = a * N;
+    p_h = p_h * N;
     double const rho = elements_to_rho[element];
     auto const v_prime = -(tau / rho) * (rho * a + grad_p);
     auto const q = p_h * v_prime;
@@ -365,7 +365,7 @@ static void LGR_NOINLINE update_e_h_W(state& s)
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      double const rho_e_h_dot = (N * rho_e_dot) - (grad_N * q);
+      double const rho_e_h_dot = (N * rho_e_dot) + (grad_N * q);
       double const W = rho_e_h_dot * V;
       element_nodes_to_W[element_node] = W;
     }
