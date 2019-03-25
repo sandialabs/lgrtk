@@ -5,13 +5,13 @@
 
 namespace lgr {
 
-template <class T>
+template <class T, class Index = int>
 class vector_iterator {
   T* m_ptr;
 
  public:
   using value_type = std::remove_const_t<T>;
-  using difference_type = int;
+  using difference_type = decltype(Index(0) - Index(0));
   using reference = T&;
   using pointer = T*;
   using iterator_category = std::random_access_iterator_tag;
@@ -58,8 +58,8 @@ class vector_iterator {
   inline difference_type operator-(vector_iterator const& other) const noexcept {
     return difference_type(m_ptr - other.m_ptr);
   }
-  inline reference operator[](difference_type const n) const noexcept {
-    return *(m_ptr + n);
+  inline reference operator[](Index const i) const noexcept {
+    return *(m_ptr + (i - Index(0)));
   }
   inline bool operator<(vector_iterator const& other) const noexcept {
     return m_ptr < other.m_ptr;
@@ -91,8 +91,8 @@ public:
   using const_reference = value_type const&;
   using pointer = typename allocator_traits_type::pointer;
   using const_pointer = typename allocator_traits_type::const_pointer;
-  using iterator = vector_iterator<T>;
-  using const_iterator = vector_iterator<T const>;
+  using iterator = vector_iterator<T, size_type>;
+  using const_iterator = vector_iterator<T const, size_type>;
   explicit vector(Allocator const& allocator_in) noexcept
     :m_allocator(allocator_in)
     ,m_data(nullptr)
