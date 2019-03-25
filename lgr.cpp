@@ -622,17 +622,5 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((0)) lgr::run_Noh_2D();
-  if ((1)) {
-    lgr::struct_vector<lgr::vector3<double>, lgr::AOS, lgr::host_allocator<int>, lgr::element_node>
-      array(lgr::element_node(30), lgr::host_allocator<int>());
-    lgr::product_range<lgr::counting_iterator<lgr::element_node>, lgr::AOS, lgr::element, lgr::node_in_element>
-      range(lgr::counting_iterator<lgr::element_node>(lgr::element_node(0)), lgr::element(10), lgr::node_in_element(3));
-    for (auto const element_nodes : range) {
-      for (auto const element_node : element_nodes) {
-        std::cout << "zeroing element node " << int(element_node) << '\n';
-        array.begin()[element_node] = lgr::vector3<double>::zero();
-      }
-    }
-  }
+  if ((1)) lgr::run_Noh_2D();
 }
