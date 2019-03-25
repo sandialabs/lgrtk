@@ -21,12 +21,12 @@ class array_vector {
     return const_range_type(m_vector.begin(), size(), InnerIndex(N));
   }
 public:
-  using value_type = array_in_vector<T, N, L>;
+  using value_type = array_in_vector<T, N, L, OuterIndex, InnerIndex>;
   using allocator_type = Allocator;
   using size_type = OuterIndex;
   using difference_type = OuterIndex;
-  using reference = array_in_vector<T, N, L>;
-  using const_reference = array_in_vector<T const, N, L>;
+  using reference = array_in_vector<T, N, L, OuterIndex, InnerIndex>;
+  using const_reference = array_in_vector<T const, N, L, OuterIndex, InnerIndex>;
   using iterator = typename range_type::iterator;
   using const_iterator = typename const_range_type::iterator;
   explicit array_vector(Allocator const& allocator_in) noexcept

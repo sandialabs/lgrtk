@@ -114,9 +114,9 @@ normalize(vector3<Scalar> const v) noexcept {
   return v / norm(v);
 }
 
-template <class T, layout L>
-class struct_in_vector<vector3<T>, L> {
-  array_in_vector<T, 3, L> m_array;
+template <class T, layout L, class Index>
+class struct_in_vector<vector3<T>, L, Index> {
+  array_in_vector<T, 3, L, Index> m_array;
 public:
   using fundamental_type = T;
   static constexpr int fundamental_array_size = 3;
@@ -136,9 +136,9 @@ public:
   }
 };
 
-template <class T, layout L>
-class struct_in_vector<vector3<T> const, L> {
-  array_in_vector<T const, 3, L> m_array;
+template <class T, layout L, class Index>
+class struct_in_vector<vector3<T> const, L, Index> {
+  array_in_vector<T const, 3, L, Index> m_array;
 public:
   using fundamental_type = T const;
   static constexpr int fundamental_array_size = 3;
