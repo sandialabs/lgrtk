@@ -49,16 +49,16 @@ class vector_iterator {
     return *this;
   }
   inline vector_iterator operator+(difference_type const n) const noexcept {
-    return vector_iterator(m_ptr + n);
+    return vector_iterator(m_ptr + int(n));
   }
   inline vector_iterator operator-(difference_type const n) const noexcept {
-    return vector_iterator(m_ptr - n);
+    return vector_iterator(m_ptr - int(n));
   }
   inline difference_type operator-(vector_iterator const& other) const noexcept {
     return difference_type(m_ptr - other.m_ptr);
   }
   inline reference operator[](Index const i) const noexcept {
-    return *(m_ptr + (i - Index(0)));
+    return *(m_ptr + int(i));
   }
   inline bool operator<(vector_iterator const& other) const noexcept {
     return m_ptr < other.m_ptr;

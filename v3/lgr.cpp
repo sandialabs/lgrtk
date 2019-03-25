@@ -630,9 +630,7 @@ int main() {
       aos_range(lgr::counting_iterator<lgr::element_node>(lgr::element_node(0)), lgr::element(10), lgr::node_in_element(3));
     for (lgr::element i(0); i < lgr::element(10); ++i) {
       for (lgr::node_in_element j(0); j < lgr::node_in_element(3); ++j) {
-        auto const aos_inner = aos_range[i];
-        auto const en = aos_inner[j];
-        std::cout << int(en) << '\n';
+        array.begin()[i][j] = 42;
       }
     }
   }
