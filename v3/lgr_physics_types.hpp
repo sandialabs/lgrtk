@@ -24,10 +24,10 @@ public:
   ~host_vector() = default;
 };
 
-class node_index : public index<int, node_index> {
+class node : public index<int, node> {
   public:
-    using base_type = index<int, node_index>;
-    constexpr explicit inline node_index(int const i) : base_type(i) {}
+    using base_type = index<int, node>;
+    constexpr explicit inline node(int const i) : base_type(i) {}
 };
 
 }
