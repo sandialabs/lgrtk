@@ -243,8 +243,7 @@ static void LGR_NOINLINE find_max_stable_dt(
     )
 {
   double const init = std::numeric_limits<double>::max();
-  *max_stable_dt = lgr::reduce(
-      element_dt_vector.begin(), element_dt_vector.end(), init, lgr::minimum<double>());
+  *max_stable_dt = lgr::reduce(element_dt_vector, init, lgr::minimum<double>());
 }
 
 static void LGR_NOINLINE update_v_prime(input const& in, state& s,
