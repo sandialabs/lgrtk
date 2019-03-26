@@ -11,4 +11,11 @@ struct minimum {
   }
 };
 
+template <class T>
+struct plus {
+  inline constexpr T operator()(T const& a, T const& b) noexcept {
+    return a + b;
+  }
+};
+
 }
