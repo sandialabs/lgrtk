@@ -1,5 +1,6 @@
 #include <lgr_domain.hpp>
 #include <lgr_fill.hpp>
+#include <lgr_inclusive_scan.hpp>
 
 // TEMPORARY
 #include <numeric>
@@ -28,7 +29,7 @@ void collect_domain_entities(
   lgr::fill(is_on, int(0));
   domain.mark(x_vector, int(1), &is_on);
   host_vector<int> offsets(nodes.size());
-  std::partial_sum(is_on.cbegin(), is_on.cend(), offsets.begin());
+  lgr::inclusive_scan(is_on, offsets);
   int const domain_size = std::accumulate(is_on.cbegin(), is_on.cend(), 0);
   entities->resize(domain_size);
   auto const domain_ents_to_ents = entities->begin();
