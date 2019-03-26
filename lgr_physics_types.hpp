@@ -26,7 +26,7 @@ public:
 
 static constexpr layout device_layout = AOS;
 
-template <class T, class Index>
+template <class T, class Index = int>
 class device_vector : public struct_vector<T, device_layout, device_allocator<T>, Index> {
   using base_type = struct_vector<T, device_layout, device_allocator<T>, Index>;
 public:
