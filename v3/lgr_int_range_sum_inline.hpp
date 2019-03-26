@@ -58,7 +58,7 @@ void int_range_sum<Allocator>::assign_sizes(vector<int, Allocator> const& sizes)
   typename decltype(m_vector)::iterator offsets_iterator = m_vector.begin();
   *offsets_iterator = 0;
   ++offsets_iterator;
-  offsets_iterator = lgr::inclusive_scan(sizes.cbegin(), sizes.cend(), offsets_iterator);
+  lgr::inclusive_scan(sizes, iterator_range<decltype(offsets_iterator)>(offsets_iterator, m_vector.end()));
 }
 
 template <class Allocator>
