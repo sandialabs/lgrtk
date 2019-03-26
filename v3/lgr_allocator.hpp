@@ -15,7 +15,10 @@ struct concurrent_pooled_allocator {
   using propagate_on_container_swap = std::true_type;
   concurrent_memory_pool* m_pool;
   concurrent_pooled_allocator() = delete;
-  explicit concurrent_pooled_allocator(concurrent_memory_pool& pool_in) noexcept;
+  explicit concurrent_pooled_allocator(concurrent_memory_pool& pool_in) noexcept
+    :m_pool(&pool_in)
+  {
+  }
   ~concurrent_pooled_allocator() noexcept = default;
   concurrent_pooled_allocator(concurrent_pooled_allocator const&) noexcept = default;
   concurrent_pooled_allocator& operator=(concurrent_pooled_allocator const&) noexcept = default;
@@ -23,10 +26,20 @@ struct concurrent_pooled_allocator {
   concurrent_pooled_allocator(concurrent_pooled_allocator<U> const& other) noexcept
   :m_pool(other.m_pool)
   {}
-  bool operator==(concurrent_pooled_allocator const&) noexcept;
-  bool operator!=(concurrent_pooled_allocator const&) noexcept;
-  T* allocate(std::size_t n);
-  void deallocate(T* p, std::size_t n);
+  bool operator==(concurrent_pooled_allocator const& other) noexcept
+  {
+    return m_pool == other.m_pool;
+  }
+  bool operator!=(concurrent_pooled_allocator const& other) noexcept
+  {
+    return m_pool != other.m_pool;
+  }
+  T* allocate(std::size_t n) {
+    return static_cast<T*>(m_pool->allocate(n * sizeof(T)));
+  }
+  void deallocate(T* p, std::size_t n) {
+    m_pool->deallocate(p, n * sizeof(T));
+  }
 };
 
 template <class T>
@@ -35,7 +48,10 @@ using host_allocator = std::allocator<T>;
 template <class T>
 struct device_allocator : public concurrent_pooled_allocator<T> {
   template <class U> struct rebind { using other = device_allocator<U>; };
-  explicit device_allocator(device_memory_pool& pool_in) noexcept;
+  explicit device_allocator(device_memory_pool& pool_in) noexcept
+    :concurrent_pooled_allocator<T>(pool_in)
+  {
+  }
   template <class U>
   device_allocator(device_allocator<U> const& other) noexcept
   :concurrent_pooled_allocator<T>(other)
@@ -45,7 +61,10 @@ struct device_allocator : public concurrent_pooled_allocator<T> {
 template <class T>
 struct pinned_allocator : public concurrent_pooled_allocator<T> {
   template <class U> struct rebind { using other = pinned_allocator<U>; };
-  explicit pinned_allocator(pinned_memory_pool& pool_in) noexcept;
+  explicit pinned_allocator(pinned_memory_pool& pool_in) noexcept
+    :concurrent_pooled_allocator<T>(pool_in)
+  {
+  }
   template <class U>
   pinned_allocator(pinned_allocator<U> const& other) noexcept
   :concurrent_pooled_allocator<T>(other)
