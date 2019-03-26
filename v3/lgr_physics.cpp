@@ -623,30 +623,6 @@ static void LGR_NOINLINE update_nodal_density(state& s)
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE collect_domain_entities(
-    int_range const nodes,
-    domain const& domain,
-    decltype(state::x) const& x_vector,
-    host_vector<int>* entities)
-{
-  host_vector<int> is_on(nodes.size());
-  lgr::fill(is_on, int(0));
-  domain.mark(x_vector, int(1), &is_on);
-  host_vector<int> offsets(nodes.size());
-  std::partial_sum(is_on.cbegin(), is_on.cend(), offsets.begin());
-  int const domain_size = std::accumulate(is_on.cbegin(), is_on.cend(), 0);
-  entities->resize(domain_size);
-  auto const domain_ents_to_ents = entities->begin();
-  auto const nodes_to_offsets = offsets.cbegin();
-  auto const nodes_are_on = is_on.cbegin();
-  auto functor2 = [=] (int const node) {
-    if (nodes_are_on[node]) {
-      domain_ents_to_ents[nodes_to_offsets[node] - 1] = node;
-    }
-  };
-  lgr::for_each(nodes, functor2);
-}
-
 static void LGR_NOINLINE zero_acceleration(
     host_vector<int> const& domain,
     vector3<double> const axis,
