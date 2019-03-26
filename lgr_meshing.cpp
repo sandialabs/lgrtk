@@ -104,16 +104,21 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
   int const nt = nq * 2;
   s.elements.resize(nt);
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
-  auto const elements_to_nodes = s.elements_to_nodes.begin();
+  auto const element_nodes_to_nodes = s.elements_to_nodes.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto connectivity_functor = [=] (int const quad) {
     int const i = quad % nx;
     int const j = quad / nx;
-    elements_to_nodes[(quad * 2 + 0) * 3 + 0] = (j + 0) * nvx + (i + 0);
-    elements_to_nodes[(quad * 2 + 0) * 3 + 1] = (j + 0) * nvx + (i + 1);
-    elements_to_nodes[(quad * 2 + 0) * 3 + 2] = (j + 1) * nvx + (i + 1);
-    elements_to_nodes[(quad * 2 + 1) * 3 + 0] = (j + 1) * nvx + (i + 1);
-    elements_to_nodes[(quad * 2 + 1) * 3 + 1] = (j + 1) * nvx + (i + 0);
-    elements_to_nodes[(quad * 2 + 1) * 3 + 2] = (j + 0) * nvx + (i + 0);
+    auto tri = quad * 2 + 0;
+    auto element_nodes = elements_to_element_nodes[tri];
+    element_nodes_to_nodes[element_nodes[0]] = (j + 0) * nvx + (i + 0);
+    element_nodes_to_nodes[element_nodes[1]] = (j + 0) * nvx + (i + 1);
+    element_nodes_to_nodes[element_nodes[2]] = (j + 1) * nvx + (i + 1);
+    tri = quad * 2 + 1;
+    element_nodes = elements_to_element_nodes[tri];
+    element_nodes_to_nodes[element_nodes[0]] = (j + 1) * nvx + (i + 1);
+    element_nodes_to_nodes[element_nodes[1]] = (j + 1) * nvx + (i + 0);
+    element_nodes_to_nodes[element_nodes[2]] = (j + 0) * nvx + (i + 0);
   };
   int_range quads(nq);
   lgr::for_each(quads, connectivity_functor);
