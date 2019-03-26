@@ -4,10 +4,10 @@
 
 namespace lgr {
 
-template <class ForwardIt, class T, class BinaryOp>
-T reduce(
-    ForwardIt first, ForwardIt last,
-    T init, BinaryOp binary_op) {
+template <class Range, class T, class BinaryOp>
+T reduce(Range&& range, T init, BinaryOp binary_op) {
+  auto first = range.begin();
+  auto const last = range.end();
   for (; first != last; ++first) {
     init = binary_op(std::move(init), *first);
   }
