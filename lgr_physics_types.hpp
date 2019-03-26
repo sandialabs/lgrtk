@@ -44,36 +44,36 @@ public:
   ~device_vector() = default;
 };
 
-class node : public index<int, node> {
+class node_index : public index<int, node_index> {
   public:
-    using base_type = index<int, node>;
-    constexpr explicit inline node(int const i) noexcept : base_type(i) {}
+    using base_type = index<int, node_index>;
+    constexpr explicit inline node_index(int const i) noexcept : base_type(i) {}
 };
 
-class node_in_element : public index<int, node_in_element> {
+class node_in_element_index : public index<int, node_in_element_index> {
   public:
-    using base_type = index<int, node_in_element>;
-    constexpr explicit inline node_in_element(int const i) noexcept : base_type(i) {}
+    using base_type = index<int, node_in_element_index>;
+    constexpr explicit inline node_in_element_index(int const i) noexcept : base_type(i) {}
 };
 
-class element : public index<int, element> {
+class element_index : public index<int, element_index> {
   public:
-    using base_type = index<int, element>;
-    constexpr explicit inline element(int const i) noexcept : base_type(i) {}
+    using base_type = index<int, element_index>;
+    constexpr explicit inline element_index(int const i) noexcept : base_type(i) {}
 };
 
-class element_node : public index<int, element_node> {
+class element_node_index : public index<int, element_node_index> {
   public:
-    using base_type = index<int, element_node>;
-    constexpr explicit inline element_node(int const i) noexcept : base_type(i) {}
+    using base_type = index<int, element_node_index>;
+    constexpr explicit inline element_node_index(int const i) noexcept : base_type(i) {}
 };
 
-constexpr inline element_node operator*(element const& e, node_in_element const& n) noexcept {
-  return element_node(int(e) * int(n));
+constexpr inline element_node_index operator*(element_index const& e, node_in_element_index const& n) noexcept {
+  return element_node_index(int(e) * int(n));
 }
 
-constexpr inline element operator/(element_node const& en, node_in_element const& n) noexcept {
-  return element(int(en) / int(n));
+constexpr inline element_index operator/(element_node_index const& en, node_in_element_index const& n) noexcept {
+  return element_index(int(en) / int(n));
 }
 
 }
