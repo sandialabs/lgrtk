@@ -71,7 +71,7 @@ void device_free(void* ptr, std::size_t) {
 }
 
 device_memory_pool::device_memory_pool()
-  :concurrent_memory_pool(
+  :memory_pool_base(
       device_malloc, device_free)
 {
 }
@@ -89,9 +89,25 @@ void pinned_free(void* ptr, std::size_t) {
 }
 
 pinned_memory_pool::pinned_memory_pool()
-  :concurrent_memory_pool(
+  :memory_pool_base(
       pinned_malloc, pinned_free)
 {
+}
+
+memory_pool_facade::memory_pool_facade(
+    decltype(m_malloc) const& malloc_in,
+    decltype(m_free) const& free_in)
+  :m_malloc(malloc_in)
+  ,m_free(free_in)
+{
+}
+
+void* memory_pool_facade::allocate(std::size_t size) {
+  return m_malloc(size);
+}
+
+void memory_pool_facade::deallocate(void* ptr, std::size_t size) {
+  m_free(ptr, size);
 }
 
 }
