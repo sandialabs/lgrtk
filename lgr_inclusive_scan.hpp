@@ -4,18 +4,20 @@
 
 namespace lgr {
 
-template<class InputIt, class OutputIt>
-OutputIt inclusive_scan(InputIt first, InputIt last, 
-                     OutputIt d_first)
+template<class InputRange, class OutputRange>
+void inclusive_scan(InputRange&& input, OutputRange&& output)
 {
-	if (first == last) return d_first;
-	typename std::iterator_traits<InputIt>::value_type sum = *first;
+  auto first = input.begin();
+  auto last = input.end();
+  auto d_first = output.begin();
+	if (first == last) return;
+	typename std::iterator_traits<decltype(first)>::value_type sum = *first;
 	*d_first = sum;
 	while (++first != last) {
 		sum = std::move(sum) + *first;
 		*(++d_first) = sum;
 	}
-	return ++d_first;
+	return;
 }
 
 }
