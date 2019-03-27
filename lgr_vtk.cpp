@@ -50,11 +50,13 @@ static void write_vtk_cells(std::ostream& stream, input const& in, state const& 
   }
 }
 
-static void write_vtk_point_data(std::ostream& stream, int_range const& nodes) {
-  stream << "POINT_DATA " << nodes.size() << "\n";
+static void write_vtk_point_data(std::ostream& stream, state const& s) {
+  stream << "POINT_DATA " << int(s.nodes.size()) << "\n";
 }
 
-static void write_vtk_scalars(std::ostream& stream, char const* name, host_vector<double> const& vec) {
+template <class Index>
+static void write_vtk_scalars(std::ostream& stream, char const* name,
+    device_vector<double, Index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
   for (double const val : vec) {
@@ -62,15 +64,17 @@ static void write_vtk_scalars(std::ostream& stream, char const* name, host_vecto
   }
 }
 
-static void write_vtk_vectors(std::ostream& stream, char const* name, host_vector<vector3<double>> const& vec) {
+template <class Index>
+static void write_vtk_vectors(std::ostream& stream, char const* name,
+    device_vector<vector3<double>, Index> const& vec) {
   stream << "VECTORS " << name << " double\n";
   for (vector3<double> const val : vec) {
     stream << val << "\n";
   }
 }
 
-static void write_vtk_cell_data(std::ostream& stream, int_range const& elements) {
-  stream << "CELL_DATA " << elements.size() << "\n";
+static void write_vtk_cell_data(std::ostream& stream, state const& s) {
+  stream << "CELL_DATA " << int(s.elements.size()) << "\n";
 }
 
 void file_writer::operator()(
@@ -86,7 +90,7 @@ void file_writer::operator()(
   start_vtk_file(stream);
   write_vtk_points(stream, s.x);
   write_vtk_cells(stream, in, s);
-  write_vtk_point_data(stream, s.nodes);
+  write_vtk_point_data(stream, s);
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
@@ -96,7 +100,7 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "nodal_energy", s.e_h);
     write_vtk_scalars(stream, "nodal_density", s.rho_h);
   }
-  write_vtk_cell_data(stream, s.elements);
+  write_vtk_cell_data(stream, s);
   write_vtk_scalars(stream, "energy", s.e);
   write_vtk_scalars(stream, "pressure", s.p);
   write_vtk_scalars(stream, "density", s.rho);
