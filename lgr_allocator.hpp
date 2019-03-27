@@ -13,9 +13,9 @@ struct concurrent_pooled_allocator {
   template <class U> struct rebind { using other = concurrent_pooled_allocator<U>; };
   using is_always_equal = std::false_type;
   using propagate_on_container_swap = std::true_type;
-  concurrent_memory_pool* m_pool;
+  memory_pool_base* m_pool;
   concurrent_pooled_allocator() = delete;
-  explicit concurrent_pooled_allocator(concurrent_memory_pool& pool_in) noexcept
+  explicit concurrent_pooled_allocator(memory_pool_base& pool_in) noexcept
     :m_pool(&pool_in)
   {
   }
