@@ -41,11 +41,11 @@ class vector_iterator {
     return ret;
   }
   inline vector_iterator& operator+=(difference_type const n) noexcept {
-    m_ptr += n;
+    m_ptr += int(n);
     return *this;
   }
   inline vector_iterator& operator-=(difference_type const n) noexcept {
-    m_ptr -= n;
+    m_ptr -= int(n);
     return *this;
   }
   inline vector_iterator operator+(difference_type const n) const noexcept {
