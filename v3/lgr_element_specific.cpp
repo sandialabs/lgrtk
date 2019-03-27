@@ -189,7 +189,7 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
     double min_height = std::numeric_limits<double>::max();
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
-      vector3<double> grad_N = element_nodes_to_grad_N[element_node];
+      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
       auto const height = 1.0 / norm(grad_N);
       min_height = lgr::min(min_height, height);
     }
@@ -201,6 +201,8 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
 static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
   auto const element_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
+  auto const elements_to_element_nodes =
+    s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
     /* find the radius of the inscribed circle.
        first fun fact: the area of a triangle equals one half
@@ -213,9 +215,10 @@ static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
        third fun fact: when solving for the radius, area cancels out
        of the top and bottom of the division.
      */
+    auto const element_nodes = elements_to_element_nodes[element];
     double perimeter_over_twice_area = 0.0;
     for (int i = 0; i < 3; ++i) {
-      vector3<double> grad_N = element_nodes_to_grad_N[element * 3 + i];
+      vector3<double> const grad_N = element_nodes_to_grad_N[element_nodes[i]];
       auto const edge_length_over_twice_area = norm(grad_N);
       perimeter_over_twice_area += edge_length_over_twice_area;
     }
@@ -235,6 +238,8 @@ static void LGR_NOINLINE update_triangle_h_min(input const& in, state& s) {
 static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s) {
   auto const element_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
+  auto const elements_to_element_nodes =
+    s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
     /* find the radius of the inscribed sphere.
        first fun fact: the volume of a tetrahedron equals one third
@@ -247,9 +252,10 @@ static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
        third fun fact: when solving for the radius, volume cancels out
        of the top and bottom of the division.
      */
+    auto const element_nodes = elements_to_element_nodes[element];
     double surface_area_over_thrice_volume = 0.0;
     for (int i = 0; i < 4; ++i) {
-      vector3<double> grad_N = element_nodes_to_grad_N[element * 4 + i];
+      vector3<double> const grad_N = element_nodes_to_grad_N[element_nodes[i]];
       auto const face_area_over_thrice_volume = norm(grad_N);
       surface_area_over_thrice_volume += face_area_over_thrice_volume;
     }
