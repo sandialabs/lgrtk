@@ -103,6 +103,54 @@ public:
   }
 };
 
+template <class T, layout L, class Index>
+class struct_in_vector<symmetric3x3<T>, L, Index> {
+  array_in_vector<T, 6, L, Index> m_array;
+public:
+  using fundamental_type = T;
+  static constexpr int fundamental_array_size = 6;
+  inline struct_in_vector(decltype(m_array) const& array_in) noexcept
+    :m_array(array_in)
+  {}
+  inline operator symmetric3x3<T>() const noexcept {
+    T const a = m_array[0];
+    T const b = m_array[1];
+    T const c = m_array[2];
+    T const d = m_array[3];
+    T const e = m_array[4];
+    T const f = m_array[5];
+    return symmetric3x3<T>(a, b, c, d, e, f);
+  }
+  inline void operator=(symmetric3x3<T> const value) const noexcept {
+    m_array[0] = value(symmetric3x3<T>::XX);
+    m_array[1] = value(symmetric3x3<T>::YY);
+    m_array[2] = value(symmetric3x3<T>::ZZ);
+    m_array[3] = value(symmetric3x3<T>::XY);
+    m_array[4] = value(symmetric3x3<T>::YZ);
+    m_array[5] = value(symmetric3x3<T>::XZ);
+  }
+};
+
+template <class T, layout L, class Index>
+class struct_in_vector<symmetric3x3<T> const, L, Index> {
+  array_in_vector<T const, 6, L, Index> m_array;
+public:
+  using fundamental_type = T const;
+  static constexpr int fundamental_array_size = 6;
+  inline struct_in_vector(decltype(m_array) const& array_in) noexcept
+    :m_array(array_in)
+  {}
+  inline operator symmetric3x3<T>() const noexcept {
+    T const a = m_array[0];
+    T const b = m_array[1];
+    T const c = m_array[2];
+    T const d = m_array[3];
+    T const e = m_array[4];
+    T const f = m_array[5];
+    return symmetric3x3<T>(a, b, c, d, e, f);
+  }
+};
+
 template <class T>
 class host_vector : public struct_vector<T, AOS, host_allocator<T>> {
   using base_type = struct_vector<T, AOS, host_allocator<T>>;
