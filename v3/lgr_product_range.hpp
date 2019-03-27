@@ -70,7 +70,7 @@ class inner_iterator<Iterator, AOS, OuterIndex, InnerIndex> {
     return inner_iterator(m_begin - (OuterIndex(1) * n));
   }
   inline difference_type operator-(inner_iterator const& other) const noexcept {
-    return difference_type(m_begin - other.m_begin);
+    return difference_type(int(m_begin - other.m_begin));
   }
   inline reference operator[](difference_type const n) const noexcept {
     return m_begin[OuterIndex(1) * n];

@@ -20,7 +20,7 @@ static void start_vtk_file(std::ostream& stream) {
 template <class Index>
 static void write_vtk_points(std::ostream& stream,
     device_vector<vector3<double>, Index> const& x) {
-  stream << "POINTS " << x.size() << " double\n";
+  stream << "POINTS " << int(x.size()) << " double\n";
   for (vector3<double> p : x) {
     stream << p << "\n";
   }
