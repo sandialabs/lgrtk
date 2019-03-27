@@ -99,20 +99,17 @@ static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_triangle_grad_N(
-    int_range const elements,
-    host_vector<int> const& elements_to_nodes_vector,
-    decltype(state::x) const& x_vector,
-    host_vector<double> const& V_vector,
-    host_vector<vector3<double>>* grad_N_vector) {
-  auto const element_nodes_to_nodes = elements_to_nodes_vector.cbegin();
-  auto const nodes_to_x = x_vector.cbegin();
-  auto const elements_to_V = V_vector.cbegin();
-  auto const element_nodes_to_grad_N = grad_N_vector->begin();
+static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const elements_to_V = s.V.cbegin();
+  auto const element_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
-    auto const node0 = element_nodes_to_nodes[element * 3 + 0];
-    auto const node1 = element_nodes_to_nodes[element * 3 + 1];
-    auto const node2 = element_nodes_to_nodes[element * 3 + 2];
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
     vector3<double> node_coords[3];
     node_coords[0] = nodes_to_x[node0];
     node_coords[1] = nodes_to_x[node1];
@@ -124,11 +121,11 @@ static void LGR_NOINLINE initialize_triangle_grad_N(
     constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
     double const area = elements_to_V[element];
     double const factor = 0.5 * (1.0 / area);
-    element_nodes_to_grad_N[element * 3 + 0] = cross(z_axis, edge_vectors[2]) * factor;
-    element_nodes_to_grad_N[element * 3 + 1] = -cross(z_axis, edge_vectors[1]) * factor;
-    element_nodes_to_grad_N[element * 3 + 2] = cross(z_axis, edge_vectors[0]) * factor;
+    element_nodes_to_grad_N[element_nodes[0]] = cross(z_axis, edge_vectors[2]) * factor;
+    element_nodes_to_grad_N[element_nodes[1]] = -cross(z_axis, edge_vectors[1]) * factor;
+    element_nodes_to_grad_N[element_nodes[2]] = cross(z_axis, edge_vectors[0]) * factor;
   };
-  lgr::for_each(elements, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE initialize_tetrahedron_grad_N(
@@ -177,7 +174,7 @@ void initialize_grad_N(
     state& s) {
   switch (in.element) {
     case BAR: initialize_bar_grad_N(s); break;
-    case TRIANGLE: initialize_triangle_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
+    case TRIANGLE: initialize_triangle_grad_N(s); break;
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
   }
 }
