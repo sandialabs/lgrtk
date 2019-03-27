@@ -66,7 +66,7 @@ class input {
         device_vector<vector3<double>, node_index>*)> initial_v;
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
   std::map<std::string, std::unique_ptr<domain>> node_sets;
-  std::function<void(host_vector<vector3<double>>*)> x_transform;
+  std::function<void(device_vector<vector3<double>, node_index>*)> x_transform;
 };
 
 }

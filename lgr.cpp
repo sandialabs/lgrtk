@@ -121,10 +121,10 @@ static void LGR_NOINLINE quadratic_in_x_v(
 }
 
 static void LGR_NOINLINE Cooks_membrane_x(
-    host_vector<vector3<double>>* x_vector) {
-  int_range const nodes(x_vector->size());
+    device_vector<vector3<double>, node_index>* x_vector) {
+  counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
-  auto functor = [=](int const node) {
+  auto functor = [=](node_index const node) {
     vector3<double> const unit_x = nodes_to_x[node];
     vector3<double> const new_x(
         unit_x(0) * 48.0,
