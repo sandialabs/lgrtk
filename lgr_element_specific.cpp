@@ -15,9 +15,11 @@ static void LGR_NOINLINE initialize_bar_V(state& s) {
   auto const elems_to_nodes_iterator = s.elements_to_nodes.cbegin();
   auto const x_iterator = s.x.cbegin();
   auto const V_iterator = s.V.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
-    auto const node0 = elems_to_nodes_iterator[element * 2 + 0];
-    auto const node1 = elems_to_nodes_iterator[element * 2 + 1];
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const node0 = elems_to_nodes_iterator[element_nodes[0]];
+    auto const node1 = elems_to_nodes_iterator[element_nodes[1]];
     vector3<double> const x0 = x_iterator[node0];
     vector3<double> const x1 = x_iterator[node1];
     double const V = x1(0) - x0(0);
@@ -32,10 +34,12 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_V = s.V.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
-    auto const node0 = element_nodes_to_nodes[element * 3 + 0];
-    auto const node1 = element_nodes_to_nodes[element * 3 + 1];
-    auto const node2 = element_nodes_to_nodes[element * 3 + 2];
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
     vector3<double> const x0 = nodes_to_x[node0];
     vector3<double> const x1 = nodes_to_x[node1];
     vector3<double> const x2 = nodes_to_x[node2];
@@ -51,11 +55,13 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_V = s.V.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
-    auto const node0 = element_nodes_to_nodes[element * 4 + 0];
-    auto const node1 = element_nodes_to_nodes[element * 4 + 1];
-    auto const node2 = element_nodes_to_nodes[element * 4 + 2];
-    auto const node3 = element_nodes_to_nodes[element * 4 + 3];
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
+    auto const node3 = element_nodes_to_nodes[element_nodes[3]];
     vector3<double> const x0 = nodes_to_x[node0];
     vector3<double> const x1 = nodes_to_x[node1];
     vector3<double> const x2 = nodes_to_x[node2];
