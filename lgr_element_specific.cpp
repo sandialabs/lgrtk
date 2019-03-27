@@ -128,21 +128,18 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_tetrahedron_grad_N(
-    int_range const elements,
-    host_vector<int> const& elements_to_nodes_vector,
-    decltype(state::x) const& x_vector,
-    host_vector<double> const& V_vector,
-    host_vector<vector3<double>>* grad_N_vector) {
-  auto const element_nodes_to_nodes = elements_to_nodes_vector.cbegin();
-  auto const nodes_to_x = x_vector.cbegin();
-  auto const elements_to_V = V_vector.cbegin();
-  auto const enodes_to_grad_N = grad_N_vector->begin();
+static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const elements_to_V = s.V.cbegin();
+  auto const element_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
-    auto const node0 = element_nodes_to_nodes[element * 4 + 0];
-    auto const node1 = element_nodes_to_nodes[element * 4 + 1];
-    auto const node2 = element_nodes_to_nodes[element * 4 + 2];
-    auto const node3 = element_nodes_to_nodes[element * 4 + 3];
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
+    auto const node3 = element_nodes_to_nodes[element_nodes[3]];
     vector3<double> node_coords[4];
     node_coords[0] = nodes_to_x[node0];
     node_coords[1] = nodes_to_x[node1];
@@ -161,12 +158,12 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(
     grad_N[1] = cross(ev[1], ev[2]) * factor;
     grad_N[2] = cross(ev[2], ev[0]) * factor;
     grad_N[3] = cross(ev[0], ev[1]) * factor;
-    enodes_to_grad_N[element * 4 + 0] = grad_N[0];
-    enodes_to_grad_N[element * 4 + 1] = grad_N[1];
-    enodes_to_grad_N[element * 4 + 2] = grad_N[2];
-    enodes_to_grad_N[element * 4 + 3] = grad_N[3];
+    element_nodes_to_grad_N[element_nodes[0]] = grad_N[0];
+    element_nodes_to_grad_N[element_nodes[1]] = grad_N[1];
+    element_nodes_to_grad_N[element_nodes[2]] = grad_N[2];
+    element_nodes_to_grad_N[element_nodes[3]] = grad_N[3];
   };
-  lgr::for_each(elements, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 void initialize_grad_N(
@@ -175,7 +172,7 @@ void initialize_grad_N(
   switch (in.element) {
     case BAR: initialize_bar_grad_N(s); break;
     case TRIANGLE: initialize_triangle_grad_N(s); break;
-    case TETRAHEDRON: initialize_tetrahedron_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
+    case TETRAHEDRON: initialize_tetrahedron_grad_N(s); break;
   }
 }
 
