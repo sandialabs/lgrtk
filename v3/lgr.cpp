@@ -16,12 +16,12 @@ static std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, doubl
 }
 
 static void LGR_NOINLINE set_exponential_wave_v(
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](int const node) {
+  auto functor = [=](node_index const node) {
     vector3<double> const x = nodes_to_x[node];
     auto const d = x(0) - 0.5;
     auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
@@ -31,19 +31,19 @@ static void LGR_NOINLINE set_exponential_wave_v(
 }
 
 static void LGR_NOINLINE zero_v(
-    int_range const /*nodes*/,
-    host_vector<vector3<double>> const& /*x_vector*/,
-    host_vector<vector3<double>>* v) {
+    counting_range<node_index> const /*nodes*/,
+    device_vector<vector3<double>, node_index> const& /*x_vector*/,
+    device_vector<vector3<double>, node_index>* v) {
   lgr::fill(*v, vector3<double>::zero());
 }
 
 static void LGR_NOINLINE spin_v(
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](int const node) {
+  auto functor = [=](node_index const node) {
     vector3<double> const x = nodes_to_x[node];
     nodes_to_v[node] = 100.0 * vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
   };
@@ -106,12 +106,12 @@ static void LGR_NOINLINE spinning_square() {
 }
 
 static void LGR_NOINLINE quadratic_in_x_v(
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](int const node) {
+  auto functor = [=](node_index const node) {
     vector3<double> const x = nodes_to_x[node];
     auto const norm_x = x(0) / 48.0;
     auto const v_y = norm_x * norm_x;
@@ -186,13 +186,13 @@ static void LGR_NOINLINE swinging_plate() {
   in.K0 = K;
   in.G0 = G;
   auto swinging_plate_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 0.001;
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const v = (U0 * w) * vector3<double>(
           -std::sin((pi * x(0)) / 2.0) * std::cos((pi * x(1)) / 2.0),
@@ -332,13 +332,13 @@ static void LGR_NOINLINE swinging_cube() {
   in.K0 = K;
   in.G0 = G;
   auto swinging_cube_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       constexpr double half_pi = pi / 2.0;
       vector3<double> const x = nodes_to_x[node];
       auto const v = (U0 * w) * vector3<double>(
@@ -394,12 +394,12 @@ static void LGR_NOINLINE bending_beam() {
   in.K0 = K;
   in.G0 = G;
   auto bending_beam_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const v = vector3<double>((5.0 / 3.0) * x(1), 0.0, 0.0);
       nodes_to_v[node] = v;
@@ -442,12 +442,12 @@ static void LGR_NOINLINE twisting_column() {
   in.K0 = K;
   in.G0 = G;
   auto twisting_column_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
@@ -489,12 +489,12 @@ static void LGR_NOINLINE tet_piston() {
   in.K0 = K;
   in.G0 = G;
   auto tet_piston_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const v = 0.6 * (x(2) / 1.0) * vector3<double>(0.0, 0.0, 1.0);
       nodes_to_v[node] = v;
@@ -535,12 +535,12 @@ static void LGR_NOINLINE run_Noh_1D() {
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
   auto inward_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const n = norm(x);
       auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
@@ -574,12 +574,12 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
   auto inward_v = [=] (
-    int_range const nodes,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<vector3<double>>* v_vector) {
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](int const node) {
+    auto functor = [=](node_index const node) {
       vector3<double> const x = nodes_to_x[node];
       auto const n = norm(x);
       auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
