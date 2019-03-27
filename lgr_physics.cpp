@@ -36,19 +36,15 @@ static void LGR_NOINLINE advance_time(
   *dt = new_time - old_time;
 }
 
-static void LGR_NOINLINE update_u(
-    int_range const nodes,
-    double const dt,
-    host_vector<vector3<double>> const& v_vector,
-    host_vector<vector3<double>>* u_vector) {
-  auto const u_iterator = u_vector->begin();
-  auto const v_iterator = v_vector.cbegin();
-  auto functor = [=] (int const node) {
-    vector3<double> const old_u = u_iterator[node];
-    vector3<double> const v = v_iterator[node];
-    u_iterator[node] = (dt * v) - old_u;
+static void LGR_NOINLINE update_u(state& s, double const dt) {
+  auto const nodes_to_u = s.u.begin();
+  auto const nodes_to_v = s.v.cbegin();
+  auto functor = [=] (node_index const node) {
+    vector3<double> const old_u = nodes_to_u[node];
+    vector3<double> const v = nodes_to_v[node];
+    nodes_to_u[node] = (dt * v) - old_u;
   };
-  lgr::for_each(nodes, functor);
+  lgr::for_each(s.nodes, functor);
 }
 
 static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vector3<double>, node_index> const& old_v_vector) {
@@ -64,22 +60,17 @@ static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vecto
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p_h(
-    int_range const nodes,
-    double const dt,
-    host_vector<double> const& p_h_dot_vector,
-    host_vector<double> const& old_p_h_vector,
-    host_vector<double>* p_h_vector) {
-  auto const nodes_to_p_h = p_h_vector->begin();
-  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
-  auto const nodes_to_p_h_dot = p_h_dot_vector.cbegin();
-  auto functor = [=] (int const node) {
+static void LGR_NOINLINE update_p_h(state& s, double const dt) {
+  auto const nodes_to_p_h = s.p_h.begin();
+  auto const nodes_to_old_p_h = s.old_p_h.cbegin();
+  auto const nodes_to_p_h_dot = s.p_h_dot.cbegin();
+  auto functor = [=] (node_index const node) {
     double const old_p_h = nodes_to_old_p_h[node];
     double const p_h_dot = nodes_to_p_h_dot[node];
     double const p_h = old_p_h + dt * p_h_dot;
     nodes_to_p_h[node] = p_h;
   };
-  lgr::for_each(nodes, functor);
+  lgr::for_each(s.nodes, functor);
 }
 
 static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
@@ -358,29 +349,20 @@ static void LGR_NOINLINE update_e_h_W(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_p_h_dot(
-    int_range const nodes,
-    int_range const elements,
-    int_range const nodes_in_element,
-    int_range_sum<host_allocator<int>> const& nodes_to_node_elements_vector,
-    host_vector<int> const& node_elements_to_elements_vector,
-    host_vector<int> const& node_elements_to_nodes_in_element_vector,
-    host_vector<double> const& W_vector,
-    host_vector<double> const& V_vector,
-    host_vector<double>* p_h_dot_vector)
+static void LGR_NOINLINE update_p_h_dot(state& s)
 {
-  auto const nodes_to_node_elements = nodes_to_node_elements_vector.cbegin();
-  auto const node_elements_to_elements = node_elements_to_elements_vector.cbegin();
-  auto const node_elements_to_nodes_in_element = node_elements_to_nodes_in_element_vector.cbegin();
-  auto const element_nodes_to_W = W_vector.cbegin();
-  auto const elements_to_V = V_vector.cbegin();
-  auto const nodes_to_p_h_dot = p_h_dot_vector->begin();
-  auto const elements_to_element_nodes = elements * nodes_in_element;
-  double const N = 1.0 / double(nodes_in_element.size());
-  auto functor = [=] (int const node) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto const element_nodes_to_W = s.W.cbegin();
+  auto const elements_to_V = s.V.cbegin();
+  auto const nodes_to_p_h_dot = s.p_h_dot.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto functor = [=] (node_index const node) {
     double node_W = 0.0;
     double node_V = 0.0;
-    auto const node_elements = nodes_to_node_elements[node];
+    auto const node_elements = nodes_to_node_elements[int(node)];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
@@ -394,7 +376,7 @@ static void LGR_NOINLINE update_p_h_dot(
     auto const p_h_dot = node_W / node_V;
     nodes_to_p_h_dot[node] = p_h_dot;
   };
-  lgr::for_each(nodes, functor);
+  lgr::for_each(s.nodes, functor);
 }
 
 static void LGR_NOINLINE update_e_h_dot(state& s)
@@ -812,10 +794,7 @@ static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
     update_v_prime(in, s);
     update_p_h_W(s);
-    update_p_h_dot(s.nodes, s.elements, s.nodes_in_element,
-        s.nodes_to_node_elements, s.node_elements_to_elements,
-        s.node_elements_to_nodes_in_element,
-        s.W, s.V, &s.p_h_dot);
+    update_p_h_dot(s);
   }
 }
 
@@ -839,7 +818,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     if (in.enable_nodal_pressure) {
-      update_p_h(s.nodes, half_dt, s.p_h_dot, s.old_p_h, &s.p_h);
+      update_p_h(s, half_dt);
     }
     update_rho_e_dot(s);
     if (in.enable_nodal_energy) {
@@ -849,7 +828,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     } else {
       update_e(s, half_dt);
     }
-    update_u(s.nodes, half_dt, s.v, &s.u);
+    update_u(s, half_dt);
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
     update_reference(s.elements, s.nodes_in_element, s.elements_to_nodes,
@@ -876,7 +855,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
-  update_u(s.nodes, s.dt, s.v, &s.u);
+  update_u(s, s.dt);
   update_x(s);
   update_reference(s.elements, s.nodes_in_element, s.elements_to_nodes,
       s.u, &s.F_total, &s.grad_N, &s.V, &s.rho);
