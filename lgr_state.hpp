@@ -15,10 +15,10 @@ class state {
   public:
   int n = 0;
   double time = 0.0;
-  counting_range<element_index> elements{0};
-  counting_range<node_in_element_index> nodes_in_element{0};
-  counting_range<node_index> nodes{0};
-  host_vector<node_index, element_node_index> elements_to_nodes;
+  counting_range<element_index> elements{element_index(0)};
+  counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
+  counting_range<node_index> nodes{node_index(0)};
+  device_vector<node_index, element_node_index> elements_to_nodes;
   int_range_sum<host_allocator<int>> nodes_to_node_elements{host_allocator<int>{}};
   device_vector<element_index, int> node_elements_to_elements;
   device_vector<node_in_element_index, int> node_elements_to_nodes_in_element;

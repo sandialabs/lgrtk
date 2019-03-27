@@ -17,38 +17,35 @@ static void start_vtk_file(std::ostream& stream) {
   stream << "DATASET UNSTRUCTURED_GRID\n";
 }
 
+template <class Index>
 static void write_vtk_points(std::ostream& stream,
-    host_vector<vector3<double>> const& x) {
+    device_vector<vector3<double>, Index> const& x) {
   stream << "POINTS " << x.size() << " double\n";
   for (vector3<double> p : x) {
     stream << p << "\n";
   }
 }
 
-static void write_vtk_cells(std::ostream& stream,
-    input const& in,
-    int_range const& elements,
-    int_range const& nodes_in_element,
-    host_vector<int> const& element_nodes_to_nodes_vector) {
-  stream << "CELLS " << elements.size() << " " << (elements.size() * (nodes_in_element.size() + 1)) << "\n";
-  auto const elements_to_element_nodes = elements * nodes_in_element;
-  auto const element_nodes_to_nodes = element_nodes_to_nodes_vector.cbegin();
+static void write_vtk_cells(std::ostream& stream, input const& in, state const& s) {
+  stream << "CELLS " << int(s.elements.size()) << " " << (int(s.elements.size()) * (int(s.nodes_in_element.size()) + 1)) << "\n";
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
-    stream << element_nodes.size();
+    stream << int(element_nodes.size());
     for (auto const element_node : element_nodes) {
-      int const node = element_nodes_to_nodes[element_node];
-      stream << " " << node;
+      node_index const node = element_nodes_to_nodes[element_node];
+      stream << " " << int(node);
     }
     stream << "\n";
   }
-  stream << "CELL_TYPES " << elements.size() << "\n";
+  stream << "CELL_TYPES " << int(s.elements.size()) << "\n";
   int cell_type = -1;
   switch (in.element) {
     case BAR: cell_type = 3; break;
     case TRIANGLE: cell_type = 5; break;
     case TETRAHEDRON: cell_type = 10; break;
   }
-  for (int i = 0; i < elements.size(); ++i) {
+  for (element_index i(0); i < s.elements.size(); ++i) {
     stream << cell_type << "\n";
   }
 }
@@ -88,7 +85,7 @@ void file_writer::operator()(
   stream << std::scientific << std::setprecision(17);
   start_vtk_file(stream);
   write_vtk_points(stream, s.x);
-  write_vtk_cells(stream, in, s.elements, s.nodes_in_element, s.elements_to_nodes);
+  write_vtk_cells(stream, in, s);
   write_vtk_point_data(stream, s.nodes);
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
