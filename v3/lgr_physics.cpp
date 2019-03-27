@@ -119,37 +119,26 @@ static void LGR_NOINLINE update_x(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p(
-    int_range const elements,
-    host_vector<symmetric3x3<double>> const& sigma_vector,
-    host_vector<double>* p_vector) {
-  auto const elements_to_sigma = sigma_vector.cbegin();
-  auto const elements_to_p = p_vector->begin();
-  auto functor = [=] (int const element) {
+static void LGR_NOINLINE update_p(state& s) {
+  auto const elements_to_sigma = s.sigma.cbegin();
+  auto const elements_to_p = s.p.begin();
+  auto functor = [=] (element_index const element) {
     symmetric3x3<double> const sigma = elements_to_sigma[element];
     auto const p = -(1.0 / 3.0) * trace(sigma);
     elements_to_p[element] = p;
   };
-  lgr::for_each(elements, functor);
+  lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_reference(
-    int_range const elements,
-    int_range const nodes_in_element,
-    host_vector<int> const& elements_to_nodes_vector,
-    host_vector<vector3<double>> const& u_vector,
-    host_vector<matrix3x3<double>>* F_total_vector,
-    host_vector<vector3<double>>* grad_N_vector,
-    host_vector<double>* V_vector,
-    host_vector<double>* rho_vector) {
-  auto const elements_to_element_nodes = elements * nodes_in_element;
-  auto const element_nodes_to_nodes = elements_to_nodes_vector.cbegin();
-  auto const nodes_to_u = u_vector.cbegin();
-  auto const elements_to_F_total = F_total_vector->begin();
-  auto const element_nodes_to_grad_N = grad_N_vector->begin();
-  auto const elements_to_V = V_vector->begin();
-  auto const elements_to_rho = rho_vector->begin();
-  auto functor = [=] (int const element) {
+static void LGR_NOINLINE update_reference(state& s) {
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_u = s.u.cbegin();
+  auto const elements_to_F_total = s.F_total.begin();
+  auto const element_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_V = s.V.begin();
+  auto const elements_to_rho = s.rho.begin();
+  auto functor = [=] (element_index const element) {
     auto F_incr = matrix3x3<double>::identity();
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
@@ -177,7 +166,7 @@ static void LGR_NOINLINE update_reference(
     auto const new_rho = old_rho / J;
     elements_to_rho[element] = new_rho;
   };
-  lgr::for_each(elements, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE update_c(state& s)
@@ -216,13 +205,10 @@ static void LGR_NOINLINE update_element_dt(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE find_max_stable_dt(
-    host_vector<double> const& element_dt_vector,
-    double* max_stable_dt
-    )
+static void LGR_NOINLINE find_max_stable_dt(state& s)
 {
   double const init = std::numeric_limits<double>::max();
-  *max_stable_dt = lgr::reduce(element_dt_vector, init, lgr::minimum<double>());
+  s.max_stable_dt = lgr::reduce(s.element_dt, init, lgr::minimum<double>());
 }
 
 static void LGR_NOINLINE update_v_prime(input const& in, state& s)
@@ -831,8 +817,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_u(s, half_dt);
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
-    update_reference(s.elements, s.nodes_in_element, s.elements_to_nodes,
-        s.u, &s.F_total, &s.grad_N, &s.V, &s.rho);
+    update_reference(s);
     if (in.enable_nodal_energy) {
       update_nodal_density(s);
       interpolate_rho(s);
@@ -844,10 +829,10 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
     if (last_pc) update_element_dt(s);
-    if (last_pc) find_max_stable_dt(s.element_dt, &s.max_stable_dt);
+    if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
     update_p_h_dot_from_a(in, s);
-    if (last_pc) update_p(s.elements, s.sigma, &s.p);
+    if (last_pc) update_p(s);
   }
 }
 
@@ -857,16 +842,15 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
   update_u(s, s.dt);
   update_x(s);
-  update_reference(s.elements, s.nodes_in_element, s.elements_to_nodes,
-      s.u, &s.F_total, &s.grad_N, &s.V, &s.rho);
+  update_reference(s);
   update_h_min(in, s);
   update_material_state(in, s);
   update_c(s);
   update_element_dt(s);
-  find_max_stable_dt(s.element_dt, &s.max_stable_dt);
+  find_max_stable_dt(s);
   update_a_from_material_state(in, s);
   update_p_h_dot_from_a(in, s);
-  update_p(s.elements, s.sigma, &s.p);
+  update_p(s);
   update_v(s, s.dt / 2.0, s.v);
 }
 
@@ -914,7 +898,7 @@ void run(input const& in) {
   find_max_stable_dt(s.element_dt, &s.max_stable_dt);
   update_a_from_material_state(in, s);
   update_p_h_dot_from_a(in, s);
-  update_p(s.elements, s.sigma, &s.p);
+  update_p(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
