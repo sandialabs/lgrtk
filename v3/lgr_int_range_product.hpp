@@ -14,12 +14,14 @@ inline product_range<
   OuterIndex,
   InnerIndex>
 operator*(counting_range<OuterIndex> const& a, counting_range<InnerIndex> const& b) {
+  using ProductIndex = decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>());
+  using ProductIterator = counting_iterator<ProductIndex>;
   return product_range<
-    counting_iterator<decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>())>,
+    ProductIterator,
     product_layout,
     OuterIndex,
     InnerIndex>(
-      counting_iterator<decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>())>(0),
+      ProductIterator(ProductIndex(0)),
       a.size(), b.size());
 }
 
