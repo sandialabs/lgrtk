@@ -83,23 +83,20 @@ void initialize_V(
   }
 }
 
-static void LGR_NOINLINE initialize_bar_grad_N(
-    int_range const elements,
-    host_vector<int> const& /*elements_to_nodes_vector*/,
-    decltype(state::x) const& /*x_vector*/,
-    host_vector<double> const& V_vector,
-    host_vector<vector3<double>>* grad_N_vector) {
-  auto const V_iterator = V_vector.cbegin();
-  auto const grad_N_iterator = grad_N_vector->begin();
+static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
+  auto const V_iterator = s.V.cbegin();
+  auto const grad_N_iterator = s.grad_N.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (int const element) {
     double const length = V_iterator[element];
     double const inv_length = 1.0 / length;
     vector3<double> const grad_N0 = vector3<double>(-inv_length, 0.0, 0.0);
     vector3<double> const grad_N1 = vector3<double>(inv_length, 0.0, 0.0);
-    grad_N_iterator[element * 2 + 0] = grad_N0;
-    grad_N_iterator[element * 2 + 1] = grad_N1;
+    auto const element_nodes = elements_to_element_nodes[element];
+    grad_N_iterator[element_nodes[0]] = grad_N0;
+    grad_N_iterator[element_nodes[1]] = grad_N1;
   };
-  lgr::for_each(elements, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE initialize_triangle_grad_N(
@@ -179,7 +176,7 @@ void initialize_grad_N(
     input const& in,
     state& s) {
   switch (in.element) {
-    case BAR: initialize_bar_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
+    case BAR: initialize_bar_grad_N(s); break;
     case TRIANGLE: initialize_triangle_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s.elements, s.elements_to_nodes, s.x, s.V, &s.grad_N); break;
   }
