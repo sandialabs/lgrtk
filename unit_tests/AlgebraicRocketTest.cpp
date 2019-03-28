@@ -11,6 +11,7 @@
 #include "Teuchos_UnitTestHarness.hpp"
 
 #include "plato/Plato_Cylinder.hpp"
+#include "plato/Plato_BuildMesh.hpp"
 #include "plato/Plato_RocketMocks.hpp"
 #include "plato/Plato_AlgebraicRocketModel.hpp"
 #include "plato/Plato_LevelSetCylinderInBox.hpp"
@@ -52,15 +53,6 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinder)
   assert(tRocketInputs.mNumTimeSteps == tParams.mNumTimeSteps);
   Plato::AlgebraicRocketModel tDriver(tRocketInputs, tCylinder);
   tDriver.solve();
-
-  std::ofstream tFile;
-  tFile.open("example.txt");
-  auto tOutput = tDriver.getThrustProfile();
-  for(size_t i = 0; i < tOutput.size(); i++)
-  {
-      tFile << std::setprecision(18) << tOutput[i] << "\n";
-  }
-  tFile.close();
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRate)
@@ -83,14 +75,50 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetCylinderLinearBurnRa
   tDriver.solve();
 }
 
-//TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetOnExternalMesh)
-//{
-//  auto tLevelSetGeometry = std::make_shared<Plato::LevelSetOnExternalMesh>("tetWithAllFields.vtu");
-//  tLevelSetGeometry->initialize();
-//
-//  const Plato::AlgebraicRocketInputs tRocketInputs;
-//  Plato::AlgebraicRocketModel tDriver(tRocketInputs, tLevelSetGeometry);
-//  tDriver.solve();
-//}
+/*
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ReadData)
+{
+    Omega_h::Library tOmega_h_Lib(nullptr, nullptr, MPI_COMM_WORLD);
+    Omega_h::Mesh tMesh(&tOmega_h_Lib);
+    constexpr Plato::OrdinalType tSpatialDim = 3;
+    std::string tConnInputFile("./ParcMesh/tetTT.txt");
+    std::string tCoordsInputFile("./ParcMesh/tetV.txt");
+    constexpr Plato::Scalar tSharpCornerAngle = Omega_h::PI / static_cast<Plato::Scalar>(4);
+    Plato::build_mesh_from_text_files<tSpatialDim>(tConnInputFile, tCoordsInputFile, tSharpCornerAngle, tMesh);
+
+    const Plato::OrdinalType tNumNodes = tMesh.nverts();
+    auto tReadSignDistField = Plato::read_data("./ParcMesh/nodalInnerDistanceField.txt", tNumNodes);
+    auto tSignDistField = Plato::transform(tReadSignDistField);
+    const Plato::OrdinalType tNumElems = tMesh.nelems();
+    auto tReadBurnRate = Plato::read_data("./ParcMesh/elementalMaterialField.txt", tNumElems);
+    auto tBurnRate = Plato::transform(tReadBurnRate);
+
+    Omega_h::vtk::Writer tWriter("parc_mesh", &tMesh, tSpatialDim);
+    tMesh.add_tag(Omega_h::VERT, "LevelSet", 1 NUM_COMPONENTS, Omega_h::Reals(tSignDistField.write()));
+    tMesh.add_tag(Omega_h::REGION, "BurnRate", 1 NUM_COMPONENTS, Omega_h::Reals(tBurnRate.write()));
+    auto tTags = Omega_h::vtk::get_all_vtk_tags(&tMesh, tSpatialDim);
+    tWriter.write(0.0 time, tTags);
+}
+*/
+
+/*
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AlgebraicRocketLevelSetOnExternalMesh)
+{
+    std::string tConnInputFile("./ParcMesh/tetTT.txt");
+    std::string tCoordsInputFile("./ParcMesh/tetV.txt");
+    auto tGeometry = std::make_shared < Plato::LevelSetOnExternalMesh > (tCoordsInputFile, tConnInputFile);
+    Plato::ProblemParams tParams;
+    tGeometry->initialize(tParams);
+
+    std::string tLevelSetFile("./ParcMesh/nodalInnerDistanceField.txt");
+    tGeometry->readNodalLevelSet(tLevelSetFile);
+    std::string tBurnRateFile("./ParcMesh/elementalMaterialField.txt");
+    tGeometry->readElementBurnRate(tBurnRateFile);
+
+    const Plato::AlgebraicRocketInputs tRocketInputs;
+    Plato::AlgebraicRocketModel tDriver(tRocketInputs, tGeometry);
+    tDriver.solve();
+}
+*/
 
 } // namespace AlgebraicRocketTest

@@ -304,7 +304,7 @@ public:
             mTimes.push_back(tTime);
             mThrustProfile.push_back(tThrust);
             mPressureProfile.push_back(tTotalPressure);
-            Plato::Scalar tMassProductionRate = mImmersedGeomModel->referencMassProductionRate();
+            Plato::Scalar tMassProductionRate = mImmersedGeomModel->referenceMassProductionRate();
 
             tTotalPressure = this->newton(tMassProductionRate, tTotalPressure, tThroatArea);
 

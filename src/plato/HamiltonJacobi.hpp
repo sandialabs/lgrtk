@@ -63,11 +63,11 @@ struct ProblemFields
 };
 
 template<int SpatialDim>
-void declare_fields(Omega_h::Mesh & aOmegaH_Mesh, ProblemFields<SpatialDim> & aFields, const bool aUseElementSpeed = true)
+void declare_fields(Omega_h::Mesh & aMesh, ProblemFields<SpatialDim> & aFields, const bool aUseElementSpeed = true)
 {
     constexpr Plato::OrdinalType tNumStates = 2;
-    const Plato::OrdinalType tElemCount = aOmegaH_Mesh.nelems();
-    const Plato::OrdinalType tNodeCount = aOmegaH_Mesh.nverts();
+    const Plato::OrdinalType tElemCount = aMesh.nelems();
+    const Plato::OrdinalType tNodeCount = aMesh.nverts();
     aFields.mRHS = Plato::ScalarVector("nodal RHS", tNodeCount);
     aFields.mRHSNorm = Plato::ScalarVector("nodal RHS norm", tNodeCount);
     aFields.mLevelSet = Plato::ScalarMultiVector("nodal levelSet", tNodeCount, tNumStates);
@@ -726,6 +726,7 @@ void evolve_level_set(
 
   const int currentState = fields.mCurrentState;
   const int nextState = (currentState+1)%2;
+  std::cout << "nextState = " << nextState << "\n";
   auto levelSet = fields.mLevelSet;
   auto updateLevelSet = LAMBDA_EXPRESSION(int n) {
     const Plato::Scalar Hamiltonian = (fields.mRHSNorm(n) > 0.) ? (fields.mRHS(n)/fields.mRHSNorm(n)) : 0.;
@@ -799,7 +800,7 @@ void reinitialize_level_set (
     const Plato::Scalar time,
     const Plato::Scalar eps,
     const Plato::Scalar dtau,
-    const Plato::OrdinalType aMaxIters = 100,
+    const Plato::OrdinalType aMaxIters = 10,
     const Plato::Scalar convergedTol = 0.01)
 {
     if(!domain_contains_interface(omega_h_mesh, fields))

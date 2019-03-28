@@ -119,10 +119,10 @@ private:
     void setNormTargetThrustProfile(const std::vector<Plato::Scalar> & aThrustProfile);
 
     /******************************************************************************//**
-    * @brief Normalized target thrust profile and set values on shared data map
-    * @param [in/out] aThrustProfile target thrust profile
+    * @brief Set target thrust profile values on shared data map
+    * @param [in] aThrustProfile target thrust profile
     **********************************************************************************/
-    void setNormalizedTargetThrustProfile(std::vector<Plato::Scalar> & aThrustProfile);
+    void setTargetThrustProfile(const std::vector<Plato::Scalar> & aThrustProfile);
 
     /******************************************************************************//**
      * @brief Set rocket driver - runs rocket simulation given a define geometry.
