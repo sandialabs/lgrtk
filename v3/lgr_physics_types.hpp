@@ -220,4 +220,10 @@ constexpr inline element_node_index operator*(element_index const& e, node_in_el
   return element_node_index(int(e) * int(n));
 }
 
+class node_element_index : public index<int, node_element_index> {
+  public:
+    using base_type = index<int, node_element_index>;
+    constexpr explicit inline node_element_index(int const i) noexcept : base_type(i) {}
+};
+
 }

@@ -20,9 +20,9 @@ class state {
   counting_range<node_index> nodes{node_index(0)};
   device_memory_pool mempool;
   device_vector<node_index, element_node_index> elements_to_nodes{mempool};
-  range_sum<int, device_allocator<int>, node_index> nodes_to_node_elements{device_allocator<int>{mempool}};
-  device_vector<element_index, int> node_elements_to_elements{mempool};
-  device_vector<node_in_element_index, int> node_elements_to_nodes_in_element{mempool};
+  range_sum<node_element_index, device_allocator<node_element_index>, node_index> nodes_to_node_elements{device_allocator<node_element_index>{mempool}};
+  device_vector<element_index, node_element_index> node_elements_to_elements{mempool};
+  device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element{mempool};
   device_vector<vector3<double>, node_index> x{mempool}; // current nodal positions
   device_vector<vector3<double>, node_index> u{mempool}; // nodal displacements since previous time state
   device_vector<vector3<double>, node_index> v{mempool}; // nodal velocities

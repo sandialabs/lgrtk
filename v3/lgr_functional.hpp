@@ -18,4 +18,11 @@ struct plus {
   }
 };
 
+template <class T>
+struct identity {
+  inline constexpr T operator()(T const& a) noexcept {
+    return a;
+  }
+};
+
 }
