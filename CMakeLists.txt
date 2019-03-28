@@ -14,6 +14,7 @@ add_executable(lgr
     lgr_physics.cpp
     lgr_element_specific.cpp
     lgr_meshing.cpp
+    lgr_memory_pool.cpp
     )
 set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
