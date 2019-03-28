@@ -33,6 +33,7 @@ static void LGR_NOINLINE invert_connectivity(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.begin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.begin();
+  auto const nodes_in_element = s.nodes_in_element;
   auto fill_functor = [=](element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const node_in_element : nodes_in_element) {
@@ -45,8 +46,8 @@ static void LGR_NOINLINE invert_connectivity(state& s) {
       }
       auto const node_elements_range = nodes_to_node_elements[node];
       auto const node_element = node_elements_range[offset];
-      node_elements_to_elements_iterator[node_element] = element;
-      node_elements_to_nodes_in_element_iterator[node_element] = node_in_element;
+      node_elements_to_elements[node_element] = element;
+      node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
   };
   lgr::for_each(s.elements, fill_functor);
@@ -235,12 +236,10 @@ void build_mesh(input const& in, state& s) {
     case TRIANGLE: build_triangle_mesh(in, s); break;
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
   }
-  s.nodes_to_node_elements.resize(int(s.nodes.size()));
+  s.nodes_to_node_elements.resize(s.nodes.size());
   s.node_elements_to_elements.resize(int(s.elements.size() * s.nodes_in_element.size()));
   s.node_elements_to_nodes_in_element.resize(int(s.elements.size() * s.nodes_in_element.size()));
-  invert_connectivity(s.nodes, s.elements, s.nodes_in_element, 
-      s.elements_to_nodes, &s.nodes_to_node_elements,
-      &s.node_elements_to_elements, &s.node_elements_to_nodes_in_element);
+  invert_connectivity(s);
 }
 
 }
