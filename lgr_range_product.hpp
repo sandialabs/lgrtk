@@ -407,12 +407,10 @@ class range_product<Iterator, SOA, OuterIndex, InnerIndex> {
   }
 };
 
-static constexpr layout product_layout = AOS;
-
 template <class OuterIndex, class InnerIndex>
 inline range_product<
   counting_iterator<decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>())>,
-  product_layout,
+  device_layout,
   OuterIndex,
   InnerIndex>
 operator*(counting_range<OuterIndex> const& a, counting_range<InnerIndex> const& b) {
@@ -420,7 +418,7 @@ operator*(counting_range<OuterIndex> const& a, counting_range<InnerIndex> const&
   using ProductIterator = counting_iterator<ProductIndex>;
   return range_product<
     ProductIterator,
-    product_layout,
+    device_layout,
     OuterIndex,
     InnerIndex>(
       ProductIterator(ProductIndex(0)),
