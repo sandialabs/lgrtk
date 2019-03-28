@@ -142,6 +142,7 @@ public:
   decltype(m_array_vector) const& get_array_vector() const {
     return m_array_vector;
   }
+  allocator_type get_allocator() const noexcept { return m_array_vector.get_allocator(); }
 };
 
 }
