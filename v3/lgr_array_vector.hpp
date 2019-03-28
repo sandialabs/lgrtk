@@ -2,7 +2,7 @@
 
 #include <lgr_vector.hpp>
 #include <lgr_array_in_vector.hpp>
-#include <lgr_product_range.hpp>
+#include <lgr_range_product.hpp>
 
 namespace lgr {
 
@@ -12,8 +12,8 @@ class array_vector {
   vector<T, Allocator, product_index> m_vector;
   using product_iterator = typename decltype(m_vector)::iterator;
   using const_product_iterator = typename decltype(m_vector)::const_iterator;
-  using range_type = product_range<product_iterator, L, OuterIndex, InnerIndex>;
-  using const_range_type = product_range<const_product_iterator, L, OuterIndex, InnerIndex>;
+  using range_type = range_product<product_iterator, L, OuterIndex, InnerIndex>;
+  using const_range_type = range_product<const_product_iterator, L, OuterIndex, InnerIndex>;
   range_type array_range() noexcept {
     return range_type(m_vector.begin(), size(), InnerIndex(N));
   }

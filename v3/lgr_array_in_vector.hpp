@@ -2,7 +2,7 @@
 
 #include <lgr_layout.hpp>
 #include <lgr_vector.hpp>
-#include <lgr_product_range.hpp>
+#include <lgr_range_product.hpp>
 
 namespace lgr {
 

@@ -13,7 +13,7 @@ template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class outer_iterator; 
 
 template <class Iterator, layout L, class OuterIndex, class InnerIndex>
-class product_range; 
+class range_product;
 
 template <class Iterator, class OuterIndex, class InnerIndex>
 class inner_iterator<Iterator, AOS, OuterIndex, InnerIndex> {
@@ -322,7 +322,7 @@ class outer_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
 };
 
 template <class Iterator, class OuterIndex, class InnerIndex>
-class product_range<Iterator, AOS, OuterIndex, InnerIndex> {
+class range_product<Iterator, AOS, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   InnerIndex m_inner_size;
@@ -336,7 +336,7 @@ class product_range<Iterator, AOS, OuterIndex, InnerIndex> {
   using const_reference = typename iterator::reference;
   using pointer = typename iterator::pointer;
   using const_pointer = typename iterator::pointer;
-  explicit inline product_range(
+  explicit inline range_product(
       Iterator const& begin_in,
       OuterIndex outer_size_in,
       InnerIndex inner_size_in)
@@ -365,7 +365,7 @@ class product_range<Iterator, AOS, OuterIndex, InnerIndex> {
 };
 
 template <class Iterator, class OuterIndex, class InnerIndex>
-class product_range<Iterator, SOA, OuterIndex, InnerIndex> {
+class range_product<Iterator, SOA, OuterIndex, InnerIndex> {
   Iterator m_begin;
   OuterIndex m_outer_size;
   InnerIndex m_inner_size;
@@ -379,7 +379,7 @@ class product_range<Iterator, SOA, OuterIndex, InnerIndex> {
   using const_reference = typename iterator::reference;
   using pointer = typename iterator::pointer;
   using const_pointer = typename iterator::pointer;
-  explicit inline product_range(
+  explicit inline range_product(
       Iterator const& begin_in,
       OuterIndex outer_size_in,
       InnerIndex inner_size_in)
@@ -410,7 +410,7 @@ class product_range<Iterator, SOA, OuterIndex, InnerIndex> {
 static constexpr layout product_layout = AOS;
 
 template <class OuterIndex, class InnerIndex>
-inline product_range<
+inline range_product<
   counting_iterator<decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>())>,
   product_layout,
   OuterIndex,
@@ -418,7 +418,7 @@ inline product_range<
 operator*(counting_range<OuterIndex> const& a, counting_range<InnerIndex> const& b) {
   using ProductIndex = decltype(std::declval<OuterIndex>() * std::declval<InnerIndex>());
   using ProductIterator = counting_iterator<ProductIndex>;
-  return product_range<
+  return range_product<
     ProductIterator,
     product_layout,
     OuterIndex,
