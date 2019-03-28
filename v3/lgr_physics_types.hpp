@@ -220,8 +220,4 @@ constexpr inline element_node_index operator*(element_index const& e, node_in_el
   return element_node_index(int(e) * int(n));
 }
 
-constexpr inline element_index operator/(element_node_index const& en, node_in_element_index const& n) noexcept {
-  return element_index(int(en) / int(n));
-}
-
 }
