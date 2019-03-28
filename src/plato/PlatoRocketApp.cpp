@@ -7,6 +7,7 @@
 #include <numeric>
 #include <fstream>
 
+#include "plato/Plato_Cylinder.hpp"
 #include "plato/PlatoRocketApp.hpp"
 #include "plato/Plato_RocketMocks.hpp"
 #include "plato/Plato_LevelSetCylinderInBox.hpp"
@@ -174,6 +175,7 @@ void RocketApp::setRocketDriver()
 
     std::shared_ptr<Plato::LevelSetCylinderInBox> tGeometry =
             std::make_shared<Plato::LevelSetCylinderInBox>(mComm);
+    //std::shared_ptr<Plato::Cylinder> tGeometry = std::make_shared<Plato::Cylinder>();
     tGeometry->initialize(tParams);
 
     Plato::AlgebraicRocketInputs tDefaulRocketParams;
@@ -224,7 +226,7 @@ void RocketApp::setDefaultTargetThrustProfile()
                                                  16546.4189302997438, 16731.4158687006748, 16895.771919135972};
 
     this->setMaxTargetThrust(tThrustProfile);
-    this->setNormalizedTargetThrustProfile(tThrustProfile);
+    this->setTargetThrustProfile(tThrustProfile);
     this->setNormTargetThrustProfile(tThrustProfile);
 }
 
@@ -245,13 +247,8 @@ void RocketApp::setNormTargetThrustProfile(const std::vector<Plato::Scalar> & aT
     mDefinedDataLayout[tArgumentName] = Plato::data::SCALAR;
 }
 
-void RocketApp::setNormalizedTargetThrustProfile(std::vector<Plato::Scalar> & aThrustProfile)
+void RocketApp::setTargetThrustProfile(const std::vector<Plato::Scalar> & aThrustProfile)
 {
-    Plato::Scalar tMaxThrust = this->getMaxTargetThrust();
-    for(size_t tIndex = 0; tIndex < aThrustProfile.size(); tIndex++)
-    {
-        aThrustProfile[tIndex] /= tMaxThrust;
-    }
     std::string tArgumentName = "TargetThrustProfile";
     mSharedDataMap[tArgumentName] = aThrustProfile;
     mDefinedDataLayout[tArgumentName] = Plato::data::SCALAR;
@@ -373,7 +370,7 @@ Plato::Scalar RocketApp::getMaxTargetThrust() const
 
 Plato::Scalar RocketApp::getNormTargetThrustProfile() const
 {
-    std::string     tArgumentName = "NormThrustProfile";
+    std::string tArgumentName = "NormThrustProfile";
     auto tIterator = mSharedDataMap.find(tArgumentName);
     assert(tIterator != mSharedDataMap.end());
     return ((tIterator->second)[0]);
@@ -388,11 +385,9 @@ Plato::Scalar RocketApp::computeObjFuncValue(const std::vector<Plato::Scalar> & 
     assert(tTrialThrustProfile.size() == aTargetProfile.size());
 
     Plato::Scalar tObjFuncValue = 0;
-    const Plato::Scalar tMaxThrust = this->getMaxTargetThrust();
     for(Plato::OrdinalType tIndex = 0; tIndex < aTargetProfile.size(); tIndex++)
     {
-        Plato::Scalar tDeltaThrust =
-                (tTrialThrustProfile[tIndex] / tMaxThrust) - aTargetProfile[tIndex];
+        Plato::Scalar tDeltaThrust = tTrialThrustProfile[tIndex] - aTargetProfile[tIndex];
         tObjFuncValue += tDeltaThrust * tDeltaThrust;
     }
 

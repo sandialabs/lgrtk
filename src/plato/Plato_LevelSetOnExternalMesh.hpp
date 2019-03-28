@@ -51,6 +51,7 @@
 #include "HamiltonJacobi.hpp"
 #include "Omega_h_vector.hpp"
 #include "Omega_h_build.hpp"
+#include "Omega_h_class.hpp"
 #include "Omega_h_file.hpp"
 
 #define _USE_MATH_DEFINES
@@ -65,6 +66,7 @@
 #include <cstdlib>
 
 #include "Plato_GeometryModel.hpp"
+#include "plato/Plato_BuildMesh.hpp"
 
 namespace Plato
 {
@@ -89,8 +91,20 @@ public:
             mComm(aComm),
             mCoordsInputFile(aCoordsInputFile),
             mConnInputFile(aConnInputFile),
+            mTimes(),
+            mNodeFields(),
+            mElementFields(),
+            mStep(0),
+            mNumNodes(0),
+            mNumElems(0),
+            mTime(0),
+            mDeltaX(0),
+            mInterfaceWidth(0),
             mPropellantDensity(1744),
-            mTimes()
+            mSharpCornerAngle(Omega_h::PI/static_cast<Plato::Scalar>(4.0)),
+            mReIninitializationDeltaTime(0),
+            mOmegaLib(nullptr, nullptr, mComm),
+            mMesh(&mOmegaLib)
     {
     }
 
@@ -114,11 +128,11 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    Plato::Scalar referencMassProductionRate() override
+    Plato::Scalar referenceMassProductionRate() override
     {
         const Plato::Scalar tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
-        return tRefMassProdRate;
+        return (tRefMassProdRate);
     }
 
     /******************************************************************************//**
@@ -144,12 +158,15 @@ public:
     void updateGeometry(const Plato::ProblemParams & aParam) override { return; }
 
     /******************************************************************************//**
-     * @brief Initialize level set cylinder
+     * @brief Set initial level set based geometry configuration
      * @param [in] aParam parameters associated with the geometry and fields
      **********************************************************************************/
     void initialize(const Plato::ProblemParams & aParam) override
     {
         mPropellantDensity = aParam.mPropellantDensity;
+        mHamiltonJacobiFields.mNumTimeSteps = aParam.mNumTimeSteps;
+        this->build();
+        declare_fields(mMesh, mHamiltonJacobiFields);
     }
 
     /******************************************************************************//**
@@ -165,18 +182,58 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Read level set based geometry from file
-     **********************************************************************************/
-    void initialize()
+     * @brief Read node-based level set field from text file
+     * @param [in] aInputFile path to input file
+    **********************************************************************************/
+    void readNodalLevelSet(const std::string & aInputFile)
     {
-        this->readMesh();
+        auto tNumNodes = mMesh.nverts();
+        auto tReadNodeField = Plato::read_data(aInputFile.c_str(), tNumNodes);
+        auto tNodeField = Plato::transform(tReadNodeField);
+        auto tHostNodeField = Kokkos::create_mirror(mHamiltonJacobiFields.mLevelSet);
+        for(Plato::OrdinalType tIndex = 0; tIndex < tNumNodes; tIndex++)
+        {
+            tHostNodeField(tIndex, mHamiltonJacobiFields.mCurrentState) = tNodeField[tIndex];
+        }
+        Kokkos::deep_copy(mHamiltonJacobiFields.mLevelSet, tHostNodeField);
+
         this->cacheData();
         reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
-        mWriter = Omega_h::vtk::Writer("LevelSetOnExternalMesh", &mMesh, mSpatialDim);
-        write_mesh(mWriter, mMesh, mHamiltonJacobiFields, mTime);
+    }
+
+    /******************************************************************************//**
+     * @brief Read element-based level set field from text file
+     * @param [in] aInputFile path to input file
+    **********************************************************************************/
+    void readElementBurnRate(const std::string & aInputFile)
+    {
+        auto tNumElems = mMesh.nelems();
+        auto tReadElemField = Plato::read_data(aInputFile.c_str(), tNumElems);
+        auto tElemField = Plato::transform(tReadElemField);
+        auto tHostElemField = Kokkos::create_mirror(mHamiltonJacobiFields.mElementSpeed);
+        assert(tHostElemField.size() == tNumElems);
+        for(Plato::OrdinalType tIndex = 0; tIndex < tNumElems; tIndex++)
+        {
+            tHostElemField(tIndex) = tElemField[tIndex];
+        }
+        Kokkos::deep_copy(mHamiltonJacobiFields.mElementSpeed, tHostElemField);
+        mHamiltonJacobiFields.mUseElementSpeed = true;
     }
 
 private:
+    /******************************************************************************//**
+     * @brief Build computational geometry (i.e. mesh) from text files
+    **********************************************************************************/
+    void build()
+    {
+        Plato::build_mesh_from_text_files<mSpatialDim>(mConnInputFile, mCoordsInputFile, mSharpCornerAngle, mMesh);
+        mWriter = Omega_h::vtk::Writer("output", &mMesh, mSpatialDim);
+
+        mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
+        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
+        mReIninitializationDeltaTime = 0.2 * mDeltaX;
+    }
+
     /******************************************************************************//**
      * @brief Cache level set field at this time snapshot
     **********************************************************************************/
@@ -221,105 +278,6 @@ private:
         this->cacheData();
     }
 
-    /******************************************************************************//**
-     * @brief Build bounding box and fields on computational mesh from input files
-     **********************************************************************************/
-    void readMesh()
-    {
-
-        declare_fields(mMesh, mHamiltonJacobiFields);
-
-        // TODO: Copy levelset and burn rate fields to the ones expected by H-J routines
-
-        mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
-        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
-        mReIninitializationDeltaTime = 0.2 * mDeltaX;
-    }
-
-    Omega_h::HostWrite<Plato::Scalar> readCoordinates()
-    {
-        Omega_h::Vector<mSpatialDim> tVector;
-        std::vector<Omega_h::Vector<mSpatialDim>> tCoordinates;
-
-        Plato::Scalar tValue = 0;
-        Plato::OrdinalType tCount = 0;
-        Plato::OrdinalType tIndex = 0;
-        std::ifstream tInputFile(mCoordsInputFile, std::ios_base::in);
-        while(tInputFile >> tValue)
-        {
-            tVector[tIndex] = tValue;
-            tIndex++;
-
-            tCount++;
-            if(tCount % mSpatialDim == 0)
-            {
-                tIndex = 0;
-                tCoordinates.push_back(tVector);
-            }
-        }
-
-        mNumNodes = tCount / mSpatialDim;
-        tInputFile.close();
-
-        Omega_h::HostWrite<Plato::Scalar> tHostCoords(tCount);
-        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodes; ++tNodeIndex)
-        {
-            for(Plato::OrdinalType tDimIndex = 0; tDimIndex < mSpatialDim; ++tDimIndex)
-            {
-                tHostCoords[tNodeIndex * mSpatialDim + tDimIndex] =
-                        tCoordinates[static_cast<std::size_t>(tNodeIndex)][tDimIndex];
-            }
-        }
-
-        return (tHostCoords);
-    }
-
-    Omega_h::HostWrite<Omega_h::LO> readConnectivity()
-    {
-        const Plato::OrdinalType tNumNodesPerCell = mSpatialDim + 1;
-        Omega_h::Vector<tNumNodesPerCell> tVector;
-        std::vector<Omega_h::Vector<tNumNodesPerCell>> tCoonectivity;
-
-        Plato::OrdinalType tValue = 0;
-        Plato::OrdinalType tCount = 0;
-        Plato::OrdinalType tIndex = 0;
-        std::ifstream tInputFile(mConnInputFile, std::ios_base::in);
-        while(tInputFile >> tValue)
-        {
-            tVector[tIndex] = tValue - 1;
-            tIndex++;
-
-            tCount++;
-            if(tCount % tNumNodesPerCell == 0)
-            {
-                tIndex = 0;
-                tCoonectivity.push_back(tVector);
-            }
-        }
-
-        mNumElems = tCount / tNumNodesPerCell;
-        tInputFile.close();
-
-        Omega_h::HostWrite<Omega_h::LO> tHostConn(tCount);
-        for(Plato::OrdinalType tElemIndex = 0; tElemIndex < mNumElems; ++tElemIndex)
-        {
-            for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < tNumNodesPerCell; ++tNodeIndex)
-            {
-                tHostConn[tElemIndex * tNumNodesPerCell + tNodeIndex] = tCoonectivity[tElemIndex][tNodeIndex];
-            }
-        }
-
-        return (tHostConn);
-    }
-
-    void buildMesh()
-    {
-        Omega_h::HostWrite<Omega_h::LO> tHostConn = this->readConnectivity();
-        Omega_h::HostWrite<Plato::Scalar> tHostCoords = this->readCoordinates();
-        auto tConnMap = Omega_h::Read<Omega_h::LO>(tHostConn.write());
-        Omega_h::build_from_elems_and_coords(&mMesh, OMEGA_H_SIMPLEX, mSpatialDim, tConnMap, tHostCoords.write());
-    }
-
 private:
     MPI_Comm mComm;
 
@@ -327,16 +285,21 @@ private:
     std::string mCoordsInputFile;
     std::vector<Plato::Scalar> mTimes;
 
-    size_t mStep = 0;
-    size_t mNumNodes = 0;
-    size_t mNumElems = 0;
+    std::map<std::string, Omega_h::HostWrite<Plato::Scalar>> mNodeFields;
+    std::map<std::string, Omega_h::HostWrite<Plato::Scalar>> mElementFields;
 
-    Plato::Scalar mTime = 0.0;
-    Plato::Scalar mDeltaX = 0.0;
-    Plato::Scalar mInterfaceWidth = 0.0;
-    Plato::Scalar mPropellantDensity = 0.0;
-    Plato::Scalar mReIninitializationDeltaTime = 0.0;
+    size_t mStep;
+    size_t mNumNodes;
+    size_t mNumElems;
 
+    Plato::Scalar mTime;
+    Plato::Scalar mDeltaX;
+    Plato::Scalar mInterfaceWidth;
+    Plato::Scalar mPropellantDensity;
+    Plato::Scalar mSharpCornerAngle;
+    Plato::Scalar mReIninitializationDeltaTime;
+
+    Omega_h::Library mOmegaLib;
     Omega_h::Mesh mMesh;
     Omega_h::vtk::Writer mWriter;
 

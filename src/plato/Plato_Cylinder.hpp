@@ -114,7 +114,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    Plato::Scalar referencMassProductionRate()  override
+    Plato::Scalar referenceMassProductionRate()  override
     {
         return mRefBurnRate * mPropellantDensity * area();
     }
@@ -136,7 +136,7 @@ public:
      **********************************************************************************/
     void initialize(const Plato::ProblemParams & aParam)  override
     {
-        updateGeometry(aParam);
+        this->updateGeometry(aParam);
     }
 
     /******************************************************************************//**

@@ -88,7 +88,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    virtual Plato::Scalar referencMassProductionRate() = 0;
+    virtual Plato::Scalar referenceMassProductionRate() = 0;
 
     /******************************************************************************//**
      * @brief Output geometry and field data

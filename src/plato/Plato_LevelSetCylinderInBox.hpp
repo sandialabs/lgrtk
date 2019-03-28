@@ -185,7 +185,7 @@ public:
      * @brief Compute the reference rate that gas mass is begin produced
      * @return mass production rate
      **********************************************************************************/
-    Plato::Scalar referencMassProductionRate() override
+    Plato::Scalar referenceMassProductionRate() override
     {
         const Plato::Scalar tRefMassProdRate =
                 mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
@@ -237,7 +237,7 @@ public:
     /******************************************************************************//**
      * @brief Initialize level set cylinder
      * @param [in] aParams parameters associated with the geometry and fields
-     **********************************************************************************/
+    **********************************************************************************/
     void initialize(const Plato::ProblemParams & aParams) override
     {
         mTime = 0.;
@@ -254,11 +254,12 @@ private:
         auto tNodeCount = mMesh.nverts();
         Kokkos::View<Omega_h::Real*> tOutput("into", tNodeCount);
         const Plato::OrdinalType tNumTimeSteps = mTimes.size();
+        const Plato::OrdinalType tNUM_COMPONENTS = 1;
         for(Plato::OrdinalType tIndex = 0; tIndex < tNumTimeSteps; tIndex++)
         {
             auto tSubView = Kokkos::subview(mHamiltonJacobiFields.mLevelSetHistory, Kokkos::ALL(), tIndex);
             Kokkos::deep_copy(tOutput, tSubView);
-            mMesh.add_tag(Omega_h::VERT, "LevelSet", 1, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
+            mMesh.add_tag(Omega_h::VERT, "LevelSet", tNUM_COMPONENTS, Omega_h::Reals(Omega_h::Write<Omega_h::Real>(tOutput)));
             auto tTags = Omega_h::vtk::get_all_vtk_tags(&mMesh, mSpatialDim);
             mWriter.write(static_cast<Omega_h::Real>(mTimes[tIndex]), tTags);
         }
@@ -298,13 +299,15 @@ private:
     {
         this->buildBoundingBox(aParams);
 
+        declare_fields(mMesh, mHamiltonJacobiFields);
+
         LevelSetInitialCondition tInitialCondition(aParams);
         initialize_level_set(mMesh, mHamiltonJacobiFields, tInitialCondition);
 
         BurnRateInitialCondition tSpeedInitialCondition(aParams);
         initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
 
-        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0, mInterfaceWidth, mReIninitializationDeltaTime);
+        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0 /* time */, mInterfaceWidth, mReIninitializationDeltaTime);
     }
 
     /******************************************************************************//**
@@ -332,7 +335,6 @@ private:
                                    tNumCellX,
                                    tNumCellY,
                                    tNumCellZ);
-        declare_fields(mMesh, mHamiltonJacobiFields);
 
         mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
         mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set

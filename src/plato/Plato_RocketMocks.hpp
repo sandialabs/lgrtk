@@ -29,7 +29,7 @@ Plato::ProblemParams set_constant_burn_rate_problem(Plato::Scalar aMaxRadius,
     tParams.mGeometry.push_back(aLength);
     tParams.mGeometry.push_back(aInitialRadius);
     tParams.mRefBurnRate.push_back(aRefBurnRate);
-    tParams.mRefBurnRate.push_back(0.0);
+    tParams.mRefBurnRate.push_back(0.0); /* reference burn rate slope with radius */
     return tParams;
 }
 // function setupConstantBurnRateCylinder
