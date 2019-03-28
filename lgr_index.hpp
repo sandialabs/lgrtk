@@ -61,7 +61,7 @@ public:
     i -= other.i;
     return *static_cast<Tag*>(this);
   }
-  explicit inline operator Integral() const noexcept {
+  explicit constexpr inline operator Integral() const noexcept {
     return i;
   }
   using size_t_std = std::size_t;
