@@ -31,7 +31,7 @@ static void write_vtk_cells(std::ostream& stream, input const& in, state const& 
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
-    stream << int(element_nodes.size());
+    stream << int(s.nodes_in_element.size());
     for (auto const element_node : element_nodes) {
       node_index const node = element_nodes_to_nodes[element_node];
       stream << " " << int(node);

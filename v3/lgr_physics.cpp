@@ -76,6 +76,7 @@ static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_p_h = s.p_h.cbegin();
   auto const elements_to_sigma = s.sigma.begin();
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     double element_p_h = 0.0;
@@ -84,7 +85,7 @@ static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
       double const p_h = nodes_to_p_h[node];
       element_p_h = element_p_h + p_h;
     }
-    element_p_h = element_p_h / double(int(element_nodes.size()));
+    element_p_h = element_p_h * N;
     symmetric3x3<double> const old_sigma = elements_to_sigma[element];
     auto const new_sigma = deviator(old_sigma) - element_p_h;
     elements_to_sigma[element] = new_sigma;
