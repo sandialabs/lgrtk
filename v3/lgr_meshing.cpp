@@ -118,7 +118,7 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
     element_nodes_to_nodes[element_nodes[l_t(1)]] = g_t((j + 1) * nvx + (i + 0));
     element_nodes_to_nodes[element_nodes[l_t(2)]] = g_t((j + 0) * nvx + (i + 0));
   };
-  int_range quads(nq);
+  counting_range<int> quads(nq);
   lgr::for_each(quads, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
@@ -210,7 +210,7 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
     elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[3];
     elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[0];
   };
-  int_range hexes(nh);
+  counting_range<int> hexes(nh);
   lgr::for_each(hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
