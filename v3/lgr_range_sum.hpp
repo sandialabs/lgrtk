@@ -5,6 +5,7 @@
 #include <lgr_counting_range.hpp>
 #include <lgr_vector.hpp>
 #include <lgr_inclusive_scan.hpp>
+#include <lgr_binary_ops.hpp>
 
 namespace lgr {
 
@@ -62,7 +63,7 @@ class range_sum_iterator {
     return difference_type(int(m_ptr - other.m_ptr));
   }
   inline reference operator[](difference_type const n) const noexcept {
-    return value_type(m_ptr[n], m_ptr[n + 1]);
+    return value_type(m_ptr[int(n)], m_ptr[int(n) + 1]);
   }
   inline bool operator<(range_sum_iterator const& other) const noexcept {
     return m_ptr < other.m_ptr;
@@ -90,9 +91,9 @@ public:
   using const_reference = value_type;
   using pointer = value_type*;
   using const_pointer = value_type const*;
-  using iterator = range_sum_iterator;
-  using const_iterator = range_sum_iterator;
-  explicit range_sum(Allocator const&)
+  using iterator = range_sum_iterator<SourceIndex, TargetIndex>;
+  using const_iterator = range_sum_iterator<SourceIndex, TargetIndex>;
+  explicit range_sum(Allocator const& allocator_in)
   :m_vector(allocator_in)
   {
   }
@@ -125,7 +126,7 @@ public:
   void swap(range_sum& other) {
     m_vector.swap(other.m_vector);
   }
-  void assign_sizes(vector<int, Allocator> const& sizes) {
+  void assign_sizes(vector<int, typename Allocator::template rebind<int>::other, SourceIndex> const& sizes) {
     assert(m_vector.size() == sizes.size() + 1);
     typename decltype(m_vector)::iterator offsets_iterator = m_vector.begin();
     *offsets_iterator = 0;
@@ -133,7 +134,7 @@ public:
     lgr::inclusive_scan(sizes, iterator_range<decltype(offsets_iterator)>(offsets_iterator, m_vector.end()));
   }
   void resize(size_type count) {
-    m_vector.resize(count + 1);
+    m_vector.resize(count + size_type(1));
   }
 };
 

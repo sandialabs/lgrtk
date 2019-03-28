@@ -4,7 +4,7 @@
 
 #include <lgr_int_range.hpp>
 #include <lgr_physics_types.hpp>
-#include <lgr_int_range_sum.hpp>
+#include <lgr_range_sum.hpp>
 #include <lgr_vector3.hpp>
 #include <lgr_matrix3x3.hpp>
 #include <lgr_symmetric3x3.hpp>
@@ -20,7 +20,7 @@ class state {
   counting_range<node_index> nodes{node_index(0)};
   device_memory_pool mempool;
   device_vector<node_index, element_node_index> elements_to_nodes{mempool};
-  int_range_sum<host_allocator<int>> nodes_to_node_elements{host_allocator<int>{}};
+  range_sum<node_index, int, device_allocator<int>> nodes_to_node_elements{device_allocator<int>{mempool}};
   device_vector<element_index, int> node_elements_to_elements{mempool};
   device_vector<node_in_element_index, int> node_elements_to_nodes_in_element{mempool};
   device_vector<vector3<double>, node_index> x{mempool}; // current nodal positions

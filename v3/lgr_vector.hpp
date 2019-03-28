@@ -114,9 +114,9 @@ public:
   iterator begin() noexcept { return iterator(m_data); }
   const_iterator begin() const noexcept { return const_iterator(m_data); }
   const_iterator cbegin() const noexcept { return const_iterator(m_data); }
-  iterator end() noexcept { return iterator(m_data + m_size); }
-  const_iterator end() const noexcept { return const_iterator(m_data + m_size); }
-  const_iterator cend() const noexcept { return const_iterator(m_data + m_size); }
+  iterator end() noexcept { return iterator(m_data + int(m_size)); }
+  const_iterator end() const noexcept { return const_iterator(m_data + int(m_size)); }
+  const_iterator cend() const noexcept { return const_iterator(m_data + int(m_size)); }
   bool empty() const noexcept { return m_size == 0; }
   size_type size() const noexcept { return m_size; }
   void clear() {
