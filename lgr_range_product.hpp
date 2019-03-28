@@ -299,10 +299,10 @@ class outer_iterator<Iterator, SOA, OuterIndex, InnerIndex> {
     return *this;
   }
   inline outer_iterator operator+(difference_type const n) const noexcept {
-    return outer_iterator(m_begin + (n * InnerIndex(1)), m_outer_size);
+    return outer_iterator(m_begin + (n * InnerIndex(1)), m_outer_size, m_inner_size);
   }
   inline outer_iterator operator-(difference_type const n) const noexcept {
-    return outer_iterator(m_begin - (n * InnerIndex(1)), m_outer_size);
+    return outer_iterator(m_begin - (n * InnerIndex(1)), m_outer_size, m_inner_size);
   }
   inline reference operator[](difference_type const n) const noexcept {
     return *(operator+(n));
