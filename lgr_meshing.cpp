@@ -61,10 +61,11 @@ static void LGR_NOINLINE invert_connectivity(
 static void LGR_NOINLINE initialize_bars_to_nodes(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const begin = s.elements_to_nodes.begin();
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    begin[element_nodes[0]] = element;
-    begin[element_nodes[1]] = element + 1;
+    using l_t = node_in_element_index;
+    begin[element_nodes[l_t(0)]] = node_index(int(element));
+    begin[element_nodes[l_t(1)]] = node_index(int(element) + 1);
   };
   lgr::for_each(s.elements, functor);
 }
@@ -73,15 +74,15 @@ static void LGR_NOINLINE initialize_x_1D(input const& in, int_range const nodes,
   auto const nodes_to_x = x_vector->begin();
   auto const num_nodes = nodes.size();
   auto const l = in.x_domain_size;
-  auto functor = [=](int const node) {
-    nodes_to_x[node] = vector3<double>(l * (double(node) / double(num_nodes - 1)), 0.0, 0.0);
+  auto functor = [=](node_index const node) {
+    nodes_to_x[node] = vector3<double>(l * (double(int(node)) / double(int(num_nodes) - 1)), 0.0, 0.0);
   };
   lgr::for_each(nodes, functor);
 }
 
 static void build_bar_mesh(input const& in, state& s) {
-  s.elements.resize(in.elements_along_x);
-  s.nodes_in_element.resize(2);
+  s.elements.resize(element_index(in.elements_along_x));
+  s.nodes_in_element.resize(node_in_element_index(2));
   s.nodes.resize(s.elements.size() + 1);
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   initialize_bars_to_nodes(s);

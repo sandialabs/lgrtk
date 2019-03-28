@@ -765,7 +765,7 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   update_nodal_force(s);
   update_a(s);
   for (auto const& cond : in.zero_acceleration_conditions) {
-    zero_acceleration(s.node_sets[cond.node_set_name], cond.axis, &s.a);
+    zero_acceleration(s.node_sets.find(cond.node_set_name)->second, cond.axis, &s.a);
   }
 }
 
@@ -867,7 +867,8 @@ void run(input const& in) {
   for (auto const& pair : in.node_sets) {
     auto const& domain_name = pair.first;
     auto const& domain_ptr = pair.second;
-    collect_domain_entities(s.nodes, *domain_ptr, s.x, &s.node_sets[domain_name]);
+    s.node_sets.emplace(domain_name, s.mempool);
+    collect_domain_entities(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
   }
   resize_physics(in, s);
   lgr::fill(s.rho, in.rho0);

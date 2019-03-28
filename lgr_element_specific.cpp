@@ -16,10 +16,11 @@ static void LGR_NOINLINE initialize_bar_V(state& s) {
   auto const x_iterator = s.x.cbegin();
   auto const V_iterator = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    auto const node0 = elems_to_nodes_iterator[element_nodes[0]];
-    auto const node1 = elems_to_nodes_iterator[element_nodes[1]];
+    using l_t = node_in_element_index;
+    auto const node0 = elems_to_nodes_iterator[element_nodes[l_t(0)]];
+    auto const node1 = elems_to_nodes_iterator[element_nodes[l_t(1)]];
     vector3<double> const x0 = x_iterator[node0];
     vector3<double> const x1 = x_iterator[node1];
     double const V = x1(0) - x0(0);
@@ -35,11 +36,12 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_V = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
+    using l_t = node_in_element_index;
+    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
     vector3<double> const x0 = nodes_to_x[node0];
     vector3<double> const x1 = nodes_to_x[node1];
     vector3<double> const x2 = nodes_to_x[node2];
@@ -56,12 +58,13 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_V = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
-    auto const node3 = element_nodes_to_nodes[element_nodes[3]];
+    using l_t = node_in_element_index;
+    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
+    auto const node3 = element_nodes_to_nodes[element_nodes[l_t(3)]];
     vector3<double> const x0 = nodes_to_x[node0];
     vector3<double> const x1 = nodes_to_x[node1];
     vector3<double> const x2 = nodes_to_x[node2];
@@ -87,14 +90,15 @@ static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
   auto const V_iterator = s.V.cbegin();
   auto const grad_N_iterator = s.grad_N.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     double const length = V_iterator[element];
     double const inv_length = 1.0 / length;
     vector3<double> const grad_N0 = vector3<double>(-inv_length, 0.0, 0.0);
     vector3<double> const grad_N1 = vector3<double>(inv_length, 0.0, 0.0);
     auto const element_nodes = elements_to_element_nodes[element];
-    grad_N_iterator[element_nodes[0]] = grad_N0;
-    grad_N_iterator[element_nodes[1]] = grad_N1;
+    using l_t = node_in_element_index;
+    grad_N_iterator[element_nodes[l_t(0)]] = grad_N0;
+    grad_N_iterator[element_nodes[l_t(1)]] = grad_N1;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -105,11 +109,12 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
   auto const elements_to_V = s.V.cbegin();
   auto const element_nodes_to_grad_N = s.grad_N.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
+    using l_t = node_in_element_index;
+    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
     vector3<double> node_coords[3];
     node_coords[0] = nodes_to_x[node0];
     node_coords[1] = nodes_to_x[node1];
@@ -121,9 +126,9 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
     constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
     double const area = elements_to_V[element];
     double const factor = 0.5 * (1.0 / area);
-    element_nodes_to_grad_N[element_nodes[0]] = cross(z_axis, edge_vectors[2]) * factor;
-    element_nodes_to_grad_N[element_nodes[1]] = -cross(z_axis, edge_vectors[1]) * factor;
-    element_nodes_to_grad_N[element_nodes[2]] = cross(z_axis, edge_vectors[0]) * factor;
+    element_nodes_to_grad_N[element_nodes[l_t(0)]] = cross(z_axis, edge_vectors[2]) * factor;
+    element_nodes_to_grad_N[element_nodes[l_t(1)]] = -cross(z_axis, edge_vectors[1]) * factor;
+    element_nodes_to_grad_N[element_nodes[l_t(2)]] = cross(z_axis, edge_vectors[0]) * factor;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -134,12 +139,13 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   auto const elements_to_V = s.V.cbegin();
   auto const element_nodes_to_grad_N = s.grad_N.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    auto const node0 = element_nodes_to_nodes[element_nodes[0]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[1]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[2]];
-    auto const node3 = element_nodes_to_nodes[element_nodes[3]];
+    using l_t = node_in_element_index;
+    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
+    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
+    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
+    auto const node3 = element_nodes_to_nodes[element_nodes[l_t(3)]];
     vector3<double> node_coords[4];
     node_coords[0] = nodes_to_x[node0];
     node_coords[1] = nodes_to_x[node1];
@@ -158,10 +164,10 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
     grad_N[1] = cross(ev[1], ev[2]) * factor;
     grad_N[2] = cross(ev[2], ev[0]) * factor;
     grad_N[3] = cross(ev[0], ev[1]) * factor;
-    element_nodes_to_grad_N[element_nodes[0]] = grad_N[0];
-    element_nodes_to_grad_N[element_nodes[1]] = grad_N[1];
-    element_nodes_to_grad_N[element_nodes[2]] = grad_N[2];
-    element_nodes_to_grad_N[element_nodes[3]] = grad_N[3];
+    element_nodes_to_grad_N[element_nodes[l_t(0)]] = grad_N[0];
+    element_nodes_to_grad_N[element_nodes[l_t(1)]] = grad_N[1];
+    element_nodes_to_grad_N[element_nodes[l_t(2)]] = grad_N[2];
+    element_nodes_to_grad_N[element_nodes[l_t(3)]] = grad_N[3];
   };
   lgr::for_each(s.elements, functor);
 }
@@ -185,7 +191,7 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
   auto const elements_to_h_min = s.h_min.begin();
   auto const elements_to_element_nodes =
     s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     double min_height = std::numeric_limits<double>::max();
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
@@ -203,7 +209,8 @@ static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
   auto const elements_to_h_min = s.h_min.begin();
   auto const elements_to_element_nodes =
     s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto const nodes_in_element = s.nodes_in_element;
+  auto functor = [=] (element_index const element) {
     /* find the radius of the inscribed circle.
        first fun fact: the area of a triangle equals one half
        times the radius of the inscribed circle times the perimeter
@@ -217,7 +224,7 @@ static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
      */
     auto const element_nodes = elements_to_element_nodes[element];
     double perimeter_over_twice_area = 0.0;
-    for (int i = 0; i < 3; ++i) {
+    for (auto const i : nodes_in_element) {
       vector3<double> const grad_N = element_nodes_to_grad_N[element_nodes[i]];
       auto const edge_length_over_twice_area = norm(grad_N);
       perimeter_over_twice_area += edge_length_over_twice_area;
@@ -240,7 +247,8 @@ static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
   auto const elements_to_h_min = s.h_min.begin();
   auto const elements_to_element_nodes =
     s.elements * s.nodes_in_element;
-  auto functor = [=] (int const element) {
+  auto const nodes_in_element = s.nodes_in_element;
+  auto functor = [=] (element_index const element) {
     /* find the radius of the inscribed sphere.
        first fun fact: the volume of a tetrahedron equals one third
        times the radius of the inscribed sphere times the surface area
@@ -254,7 +262,7 @@ static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
      */
     auto const element_nodes = elements_to_element_nodes[element];
     double surface_area_over_thrice_volume = 0.0;
-    for (int i = 0; i < 4; ++i) {
+    for (auto const i : nodes_in_element) {
       vector3<double> const grad_N = element_nodes_to_grad_N[element_nodes[i]];
       auto const face_area_over_thrice_volume = norm(grad_N);
       surface_area_over_thrice_volume += face_area_over_thrice_volume;
@@ -289,7 +297,7 @@ static void LGR_NOINLINE update_triangle_h_art(state& s) {
   double const C_geom = std::sqrt(4.0 / std::sqrt(3.0));
   auto const elements_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     double const area = elements_to_V[element];
     double const h_art = C_geom * std::sqrt(area);
     elements_to_h_art[element] = h_art;
@@ -301,7 +309,7 @@ static void LGR_NOINLINE update_tetrahedron_h_art(state& s) {
   double const C_geom = std::cbrt(12.0 / std::sqrt(2.0));
   auto const elements_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
-  auto functor = [=] (int const element) {
+  auto functor = [=] (element_index const element) {
     double const volume = elements_to_V[element];
     double const h_art = C_geom * std::cbrt(volume);
     elements_to_h_art[element] = h_art;
