@@ -182,6 +182,9 @@ public:
   explicit device_vector(size_type count, device_memory_pool& pool_in)
     :base_type(count, device_allocator<T>(pool_in))
   {}
+  explicit device_vector(size_type count, device_allocator<T> const& alloc_in)
+    :base_type(count, alloc_in)
+  {}
   device_vector(device_vector&&) noexcept = default;
   device_vector(device_vector const&) = delete;
   device_vector& operator=(device_vector const&) = delete;

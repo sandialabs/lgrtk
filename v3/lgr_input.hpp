@@ -60,10 +60,13 @@ class input {
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
   bool enable_nodal_energy = false;
-  std::function<void(int_range const, host_vector<vector3<double>> const&, host_vector<vector3<double>>*)> initial_v;
+  std::function<
+    void(counting_range<node_index> const,
+        device_vector<vector3<double>, node_index> const&,
+        device_vector<vector3<double>, node_index>*)> initial_v;
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
   std::map<std::string, std::unique_ptr<domain>> node_sets;
-  std::function<void(host_vector<vector3<double>>*)> x_transform;
+  std::function<void(device_vector<vector3<double>, node_index>*)> x_transform;
 };
 
 }

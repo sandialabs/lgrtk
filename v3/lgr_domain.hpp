@@ -72,7 +72,7 @@ class domain {
     domain() = default;
     domain(domain&&) = default;
     virtual ~domain();
-    virtual void mark(host_vector<vector3<double>> const& points, int const marker, host_vector<int>* markers) const = 0;
+    virtual void mark(device_vector<vector3<double>, node_index> const& points, int const marker, device_vector<int, int>* markers) const = 0;
 };
 
 template <class SourceDomain>
@@ -86,21 +86,21 @@ class clipped_domain : public domain {
   void clip(plane const& p) {
     m_host_clips.push_back(p);
   }
-  void mark(host_vector<vector3<double>> const& points, int const marker, host_vector<int>* markers) const override {
-    int_range const range(points.size());
+  void mark(device_vector<vector3<double>, node_index> const& points, int const marker, device_vector<int, int>* markers) const override {
+    counting_range<node_index> const range(points.size());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
     auto const clips_begin = m_host_clips.cbegin();
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
-    auto functor = [=] (int const i) {
+    auto functor = [=] (node_index const i) {
       vector3<double> const pt = points_begin[i];
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
         is_in &= (distance(*clips_it, pt) >= 0.0);
       }
       if (is_in) {
-        markers_begin[i] = marker;
+        markers_begin[int(i)] = marker;
       }
     };
     lgr::for_each(range, functor);
@@ -111,13 +111,13 @@ class union_domain : public domain {
   std::vector<std::unique_ptr<domain>> m_domains;
   public:
   void add(std::unique_ptr<domain>&& uptr);
-  void mark(host_vector<vector3<double>> const& points, int const marker, host_vector<int>* markers) const override;
+  void mark(device_vector<vector3<double>, node_index> const& points, int const marker, device_vector<int, int>* markers) const override;
 };
 
 void collect_domain_entities(
-    int_range const nodes,
+    counting_range<node_index> const nodes,
     domain const& domain,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<int>* entities);
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<node_index, int>* entities);
 
 }

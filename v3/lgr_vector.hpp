@@ -41,11 +41,11 @@ class vector_iterator {
     return ret;
   }
   inline vector_iterator& operator+=(difference_type const n) noexcept {
-    m_ptr += n;
+    m_ptr += int(n);
     return *this;
   }
   inline vector_iterator& operator-=(difference_type const n) noexcept {
-    m_ptr -= n;
+    m_ptr -= int(n);
     return *this;
   }
   inline vector_iterator operator+(difference_type const n) const noexcept {
@@ -114,9 +114,9 @@ public:
   iterator begin() noexcept { return iterator(m_data); }
   const_iterator begin() const noexcept { return const_iterator(m_data); }
   const_iterator cbegin() const noexcept { return const_iterator(m_data); }
-  iterator end() noexcept { return iterator(m_data + m_size); }
-  const_iterator end() const noexcept { return const_iterator(m_data + m_size); }
-  const_iterator cend() const noexcept { return const_iterator(m_data + m_size); }
+  iterator end() noexcept { return iterator(m_data + int(m_size)); }
+  const_iterator end() const noexcept { return const_iterator(m_data + int(m_size)); }
+  const_iterator cend() const noexcept { return const_iterator(m_data + int(m_size)); }
   bool empty() const noexcept { return m_size == 0; }
   size_type size() const noexcept { return m_size; }
   void clear() {
@@ -138,8 +138,5 @@ public:
   }
   allocator_type get_allocator() const { return m_allocator; }
 };
-
-template <class T, class Allocator>
-void swap(vector<T, Allocator>&, vector<T, Allocator>&);
 
 }
