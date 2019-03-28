@@ -501,23 +501,16 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_nodal_mass(
-    int_range const nodes,
-    int_range const nodes_in_element,
-    int_range_sum<host_allocator<int>> const& nodes_to_node_elements_vector,
-    host_vector<int> const& node_elements_to_elements_vector,
-    host_vector<double> const& rho_vector,
-    host_vector<double> const& V_vector,
-    host_vector<double>* m_vector) {
-  auto const nodes_to_node_elements = nodes_to_node_elements_vector.cbegin();
-  auto const node_elements_to_elements = node_elements_to_elements_vector.cbegin();
-  auto const elements_to_rho = rho_vector.cbegin();
-  auto const elements_to_V = V_vector.cbegin();
-  auto const nodes_to_m = m_vector->begin();
-  auto const lumping_factor = 1.0 / double(nodes_in_element.size());
-  auto functor = [=] (int const node) {
+static void LGR_NOINLINE update_nodal_mass(state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_rho = s.rho.cbegin();
+  auto const elements_to_V = s.V.cbegin();
+  auto const nodes_to_m = s.m.begin();
+  auto const lumping_factor = 1.0 / double(int(s.nodes_in_element.size()));
+  auto functor = [=] (node_index const node) {
     double m(0.0);
-    auto const range = nodes_to_node_elements[node];
+    auto const range = nodes_to_node_elements[int(node)];
     for (auto const node_element : range) {
       auto const element = node_elements_to_elements[node_element];
       auto const rho = elements_to_rho[element];
@@ -526,7 +519,7 @@ static void LGR_NOINLINE update_nodal_mass(
     }
     nodes_to_m[node] = m;
   };
-  lgr::for_each(nodes, functor);
+  lgr::for_each(s.nodes, functor);
 }
 
 static void LGR_NOINLINE update_nodal_density(state& s)
@@ -884,7 +877,7 @@ void run(input const& in) {
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
-  update_nodal_mass(s.nodes, s.nodes_in_element, s.nodes_to_node_elements, s.node_elements_to_elements, s.rho, s.V, &s.m);
+  update_nodal_mass(s);
   if (in.enable_nodal_energy) update_nodal_density(s);
   initialize_grad_N(in, s);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
@@ -895,7 +888,7 @@ void run(input const& in) {
   if (in.enable_viscosity) apply_viscosity(in, s);
   else lgr::fill(s.nu_art, double(0.0));
   update_element_dt(s);
-  find_max_stable_dt(s.element_dt, &s.max_stable_dt);
+  find_max_stable_dt(s);
   update_a_from_material_state(in, s);
   update_p_h_dot_from_a(in, s);
   update_p(s);
