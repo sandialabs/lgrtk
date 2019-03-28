@@ -44,7 +44,7 @@ static void LGR_NOINLINE invert_connectivity(state& s) {
       nodes_to_count[node] = offset + 1;
       }
       auto const node_elements_range = nodes_to_node_elements[node];
-      auto const node_element = node_elements_range[offset];
+      auto const node_element = node_elements_range[node_element_index(offset)];
       node_elements_to_elements[node_element] = element;
       node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
@@ -236,8 +236,8 @@ void build_mesh(input const& in, state& s) {
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
   }
   s.nodes_to_node_elements.resize(s.nodes.size());
-  s.node_elements_to_elements.resize(int(s.elements.size() * s.nodes_in_element.size()));
-  s.node_elements_to_nodes_in_element.resize(int(s.elements.size() * s.nodes_in_element.size()));
+  s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
+  s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
   invert_connectivity(s);
 }
 

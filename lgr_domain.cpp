@@ -28,7 +28,7 @@ void collect_domain_entities(
   lgr::fill(is_on, int(0));
   domain.mark(x_vector, int(1), &is_on);
   device_vector<int, int> offsets(int(nodes.size()), alloc);
-  lgr::inclusive_scan(is_on, offsets);
+  lgr::transform_inclusive_scan(is_on, offsets, lgr::plus<int>(), lgr::identity<int>());
   int const domain_size = lgr::reduce(is_on, int(0), lgr::plus<int>());
   entities->resize(domain_size);
   auto const domain_ents_to_ents = entities->begin();

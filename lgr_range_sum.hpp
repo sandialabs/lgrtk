@@ -6,6 +6,7 @@
 #include <lgr_vector.hpp>
 #include <lgr_inclusive_scan.hpp>
 #include <lgr_binary_ops.hpp>
+#include <lgr_functional.hpp>
 
 namespace lgr {
 
@@ -128,10 +129,13 @@ public:
   }
   void assign_sizes(vector<int, typename Allocator::template rebind<int>::other, SourceIndex> const& sizes) {
     assert(m_vector.size() == sizes.size() + 1);
-    typename decltype(m_vector)::iterator offsets_iterator = m_vector.begin();
-    *offsets_iterator = 0;
+    auto offsets_iterator = m_vector.begin();
+    *offsets_iterator = TargetIndex(0);
     ++offsets_iterator;
-    lgr::inclusive_scan(sizes, iterator_range<decltype(offsets_iterator)>(offsets_iterator, m_vector.end()));
+    auto const output = iterator_range<decltype(offsets_iterator)>(offsets_iterator, m_vector.end());
+    lgr::plus<TargetIndex> const binop;
+    auto const unop = [] (int const i) -> TargetIndex { return TargetIndex(i); };
+    lgr::transform_inclusive_scan(sizes, output, binop, unop);
   }
   void resize(size_type count) {
     m_vector.resize(count + size_type(1));
