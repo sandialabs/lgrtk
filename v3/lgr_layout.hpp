@@ -7,4 +7,6 @@ enum layout {
   SOA,
 };
 
+static constexpr layout device_layout = AOS;
+
 }
