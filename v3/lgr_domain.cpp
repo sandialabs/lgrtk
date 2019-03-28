@@ -11,31 +11,32 @@ void union_domain::add(std::unique_ptr<domain>&& uptr) {
   m_domains.push_back(std::move(uptr));
 }
 
-void union_domain::mark(host_vector<vector3<double>> const& points, int const marker, host_vector<int>* markers) const {
+void union_domain::mark(device_vector<vector3<double>, node_index> const& points, int const marker, device_vector<int, int>* markers) const {
   for (auto const& uptr : m_domains) {
     uptr->mark(points, marker, markers);
   }
 }
 
 void collect_domain_entities(
-    int_range const nodes,
+    counting_range<node_index> const nodes,
     domain const& domain,
-    host_vector<vector3<double>> const& x_vector,
-    host_vector<int>* entities)
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<node_index, int>* entities)
 {
-  host_vector<int> is_on(nodes.size());
+  device_allocator<int> alloc(x_vector.get_allocator());
+  device_vector<int, int> is_on(int(nodes.size()), alloc);
   lgr::fill(is_on, int(0));
   domain.mark(x_vector, int(1), &is_on);
-  host_vector<int> offsets(nodes.size());
+  device_vector<int, int> offsets(int(nodes.size()), alloc);
   lgr::inclusive_scan(is_on, offsets);
   int const domain_size = lgr::reduce(is_on, int(0), lgr::plus<int>());
   entities->resize(domain_size);
   auto const domain_ents_to_ents = entities->begin();
   auto const nodes_to_offsets = offsets.cbegin();
   auto const nodes_are_on = is_on.cbegin();
-  auto functor2 = [=] (int const node) {
-    if (nodes_are_on[node]) {
-      domain_ents_to_ents[nodes_to_offsets[node] - 1] = node;
+  auto functor2 = [=] (node_index const node) {
+    if (nodes_are_on[int(node)]) {
+      domain_ents_to_ents[nodes_to_offsets[int(node)] - 1] = node;
     }
   };
   lgr::for_each(nodes, functor2);
