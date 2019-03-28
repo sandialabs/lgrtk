@@ -139,7 +139,4 @@ public:
   allocator_type get_allocator() const { return m_allocator; }
 };
 
-template <class T, class Allocator>
-void swap(vector<T, Allocator>&, vector<T, Allocator>&);
-
 }
