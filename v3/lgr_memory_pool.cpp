@@ -1,5 +1,6 @@
+#include <cassert>
+
 #include <lgr_memory_pool.hpp>
-#include <lgr_fail.hpp>
 
 namespace lgr {
 
@@ -41,8 +42,8 @@ void memory_pool::deallocate(void* ptr, std::size_t size) {
 }
 
 concurrent_memory_pool::concurrent_memory_pool(
-      memory_pool::malloc_type const& malloc_in,
-      memory_pool::free_type const& free_in)
+      malloc_type const& malloc_in,
+      free_type const& free_in)
   :m_pool(malloc_in, free_in)
   ,m_mutex()
 {
@@ -60,9 +61,7 @@ void concurrent_memory_pool::deallocate(void* ptr, std::size_t size) {
 
 void* device_malloc(std::size_t size) {
   void* const data = std::malloc(size);
-  if (!data) {
-    fail("failed to allocate ", size, " bytes in device memory\n");
-  }
+  assert(data != nullptr);
   return data;
 }
 
@@ -78,9 +77,7 @@ device_memory_pool::device_memory_pool()
 
 void* pinned_malloc(std::size_t size) {
   void* const data = std::malloc(size);
-  if (!data) {
-    fail("failed to allocate ", size, " bytes in pinned memory\n");
-  }
+  assert(data != nullptr);
   return data;
 }
 
