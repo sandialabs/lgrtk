@@ -79,7 +79,7 @@ class range_sum_iterator {
   }
 };
 
-template <class SourceIndex, class TargetIndex, class Allocator>
+template <class TargetIndex, class Allocator, class SourceIndex>
 class range_sum {
   vector<TargetIndex, Allocator, SourceIndex> m_vector;
 public:
