@@ -4,7 +4,6 @@
 #include <lgr_macros.hpp>
 #include <lgr_state.hpp>
 #include <lgr_fill.hpp>
-#include <lgr_int_range_product.hpp>
 #include <lgr_input.hpp>
 
 namespace lgr {

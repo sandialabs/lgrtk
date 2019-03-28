@@ -12,7 +12,6 @@
 #include <lgr_print.hpp>
 #include <lgr_vtk.hpp>
 #include <lgr_for_each.hpp>
-#include <lgr_int_range_product.hpp>
 #include <lgr_reduce.hpp>
 #include <lgr_fill.hpp>
 #include <lgr_copy.hpp>

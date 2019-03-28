@@ -6,7 +6,6 @@
 #include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
 #include <lgr_binary_ops.hpp>
-#include <lgr_int_range_product.hpp>
 #include <lgr_copy.hpp>
 
 namespace lgr {
