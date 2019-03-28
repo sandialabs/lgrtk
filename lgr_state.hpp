@@ -2,7 +2,7 @@
 
 #include <map>
 
-#include <lgr_int_range.hpp>
+#include <lgr_counting_range.hpp>
 #include <lgr_physics_types.hpp>
 #include <lgr_range_sum.hpp>
 #include <lgr_vector3.hpp>
