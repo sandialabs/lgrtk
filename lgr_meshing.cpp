@@ -239,6 +239,7 @@ void build_mesh(input const& in, state& s) {
   s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
   s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
   invert_connectivity(s);
+  s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
 }
