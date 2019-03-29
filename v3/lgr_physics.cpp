@@ -562,8 +562,8 @@ static void LGR_NOINLINE update_nodal_mass(state& s) {
   auto const lumping_factor = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (node_index const node) {
     double m(0.0);
-    auto const range = nodes_to_node_elements[node];
-    for (auto const node_element : range) {
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const rho = elements_to_rho[element];
       auto const V = elements_to_V[element];
