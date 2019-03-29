@@ -69,6 +69,8 @@ static void LGR_NOINLINE run_elastic_wave() {
   x_minmax->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
   in.node_sets["x_minmax"] = std::move(x_minmax);
   in.zero_acceleration_conditions.push_back({"x_minmax", x_axis});
+  in.enable_nodal_pressure = true;
+  in.c_tau = 0.5;
   run(in);
 }
 
@@ -561,7 +563,7 @@ static void LGR_NOINLINE run_Noh_1D() {
 
 static void LGR_NOINLINE run_Noh_2D() {
   input in;
-  in.name = "Noh_2D";
+  in.name = "Noh_2D_new";
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
@@ -607,7 +609,7 @@ static void LGR_NOINLINE run_Noh_2D() {
 }
 
 int main() {
-  if ((0)) lgr::run_elastic_wave();
+  if ((1)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -620,5 +622,5 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((1)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_2D();
 }
