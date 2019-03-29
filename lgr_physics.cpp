@@ -87,8 +87,38 @@ static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
     }
     element_p_h = element_p_h * N;
     symmetric3x3<double> const old_sigma = elements_to_sigma[element];
+  //auto const old_p = -(1.0 / 3.0) * trace(old_sigma);
+  //std::cout << "old_p " << old_p << " new_p " << element_p_h << '\n';
     auto const new_sigma = deviator(old_sigma) - element_p_h;
     elements_to_sigma[element] = new_sigma;
+  };
+  lgr::for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE update_J_with_p_h(input const& in, state& s) {
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_p_h = s.p_h.cbegin();
+  auto const elements_to_F_total = s.F_total.begin();
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const K0 = in.K0;
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    double element_p_h = 0.0;
+    for (auto const element_node : element_nodes) {
+      auto const node = element_nodes_to_nodes[element_node];
+      double const p_h = nodes_to_p_h[node];
+      element_p_h = element_p_h + p_h;
+    }
+    element_p_h = element_p_h * N;
+    matrix3x3<double> const old_F = elements_to_F_total[element];
+    auto const old_J = determinant(old_F);
+    auto const new_J = (-element_p_h + std::sqrt((K0 * K0) + (element_p_h * element_p_h))) / K0;
+  //std::cout << "new pressure " << element_p_h << " new J " << new_J << '\n';
+    auto const new_F = std::cbrt(new_J / old_J) * old_F;
+  //auto const bak_J = determinant(new_F);
+  //std::cout << "backtracked new pressure " << (-K0 / 2.0) * (bak_J - (1.0 / bak_J)) << '\n';
+    if ((1)) elements_to_F_total[element] = new_F;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -741,6 +771,9 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   if (in.enable_neo_Hookean) {
+    if (in.enable_nodal_pressure) {
+      if ((1)) update_J_with_p_h(in, s);
+    }
     neo_Hookean(in, s);
   }
   else {
