@@ -63,7 +63,7 @@
 #include <cstddef>
 #include <cstdlib>
 
-#include "Plato_GeometryModel.hpp"
+#include "plato/Plato_GeometryModel.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 
 namespace Plato
