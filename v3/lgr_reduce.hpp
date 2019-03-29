@@ -4,12 +4,12 @@
 
 namespace lgr {
 
-template <class Range, class T, class BinaryOp>
-T reduce(Range&& range, T init, BinaryOp binary_op) {
+template <class Range, class T, class BinaryOp, class UnaryOp>
+T transform_reduce(Range&& range, T init, BinaryOp binary_op, UnaryOp unary_op) {
   auto first = range.begin();
   auto const last = range.end();
   for (; first != last; ++first) {
-    init = binary_op(std::move(init), *first);
+    init = binary_op(std::move(init), unary_op(*first));
   }
   return init;
 }
