@@ -128,7 +128,7 @@ public:
     m_vector.swap(other.m_vector);
   }
   void assign_sizes(vector<int, typename Allocator::template rebind<int>::other, SourceIndex> const& sizes) {
-    assert(m_vector.size() == sizes.size() + 1);
+    assert(m_vector.size() == sizes.size() + SourceIndex(1));
     auto offsets_iterator = m_vector.begin();
     *offsets_iterator = TargetIndex(0);
     ++offsets_iterator;

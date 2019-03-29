@@ -207,7 +207,7 @@ static void LGR_NOINLINE update_element_dt(state& s) {
 static void LGR_NOINLINE find_max_stable_dt(state& s)
 {
   double const init = std::numeric_limits<double>::max();
-  s.max_stable_dt = lgr::reduce(s.element_dt, init, lgr::minimum<double>());
+  s.max_stable_dt = lgr::transform_reduce(s.element_dt, init, lgr::minimum<double>(), lgr::identity<double>());
 }
 
 static void LGR_NOINLINE update_v_prime(input const& in, state& s)
@@ -874,6 +874,7 @@ void run(input const& in) {
   lgr::fill(s.e, in.e0);
   lgr::fill(s.p_h, double(0.0));
   lgr::fill(s.e_h, in.e0);
+  assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
