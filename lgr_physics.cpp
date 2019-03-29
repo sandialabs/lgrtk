@@ -795,7 +795,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   if (in.enable_neo_Hookean) {
     if (in.enable_nodal_pressure) {
-      update_J_with_p_h(in, s);
+      if ((0)) update_J_with_p_h(in, s);
     }
     neo_Hookean(in, s);
   }
@@ -814,7 +814,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
     }
   }
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
-    if ((0)) update_sigma_with_p_h(s);
+    if ((1)) update_sigma_with_p_h(s);
   }
 }
 
