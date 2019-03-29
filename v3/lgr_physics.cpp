@@ -539,8 +539,8 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto functor = [=] (node_index const node) {
     auto node_f = vector3<double>::zero();
-    auto const range = nodes_to_node_elements[node];
-    for (auto const node_element : range) {
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
@@ -584,8 +584,8 @@ static void LGR_NOINLINE update_nodal_density(state& s)
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (node_index const node) {
     double node_V(0.0);
-    auto const range = nodes_to_node_elements[node];
-    for (auto const node_element : range) {
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const V = elements_to_V[element];
       node_V = node_V + (N * V);
