@@ -422,7 +422,7 @@ static void LGR_NOINLINE bending_beam() {
 
 static void LGR_NOINLINE twisting_column() {
   input in;
-  in.name = "twisting_column";
+  in.name = "twisting_column_new";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
@@ -606,7 +606,7 @@ static void LGR_NOINLINE run_Noh_2D() {
 }
 
 int main() {
-  if ((1)) lgr::run_elastic_wave();
+  if ((0)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -619,5 +619,5 @@ int main() {
   if ((1)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((1)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_2D();
 }
