@@ -18,6 +18,8 @@ class state {
   counting_range<element_index> elements{element_index(0)};
   counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
   counting_range<node_index> nodes{node_index(0)};
+  counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
+  counting_range<point_index> points{point_index(0)};
   device_memory_pool mempool;
   device_vector<node_index, element_node_index> elements_to_nodes{mempool};
   range_sum<node_element_index, device_allocator<node_element_index>, node_index> nodes_to_node_elements{device_allocator<node_element_index>{mempool}};
