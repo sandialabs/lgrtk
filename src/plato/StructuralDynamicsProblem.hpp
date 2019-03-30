@@ -17,9 +17,9 @@
 #include <Teuchos_Array.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-#include "EssentialBCs.hpp"
-#include "ImplicitFunctors.hpp"
-#include "ApplyConstraints.hpp"
+#include "plato/EssentialBCs.hpp"
+#include "plato/ImplicitFunctors.hpp"
+#include "plato/ApplyConstraints.hpp"
 
 #include "plato/ScalarFunction.hpp"
 #include "plato/VectorFunction.hpp"
@@ -28,7 +28,7 @@
 #include "plato/SimplexStructuralDynamics.hpp"
 
 #ifdef HAVE_AMGX
-#include "AmgXSparseLinearProblem.hpp"
+#include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
 namespace Plato
