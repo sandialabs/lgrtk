@@ -640,52 +640,55 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
 
 static void LGR_NOINLINE update_rho_e_dot(state& s)
 {
-  auto const elements_to_sigma = s.sigma.cbegin();
-  auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
-  auto const elements_to_rho_e_dot = s.rho_e_dot.begin();
-  auto functor = [=] (element_index const element) {
-    symmetric3x3<double> const symm_grad_v = elements_to_symm_grad_v[element];
-    symmetric3x3<double> const sigma = elements_to_sigma[element];
+  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const points_to_rho_e_dot = s.rho_e_dot.begin();
+  auto functor = [=] (point_index const point) {
+    symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
+    symmetric3x3<double> const sigma = points_to_sigma[point];
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
-    elements_to_rho_e_dot[element] = rho_e_dot;
+    points_to_rho_e_dot[point] = rho_e_dot;
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE update_e(state& s, double const dt)
 {
-  auto const elements_to_rho_e_dot = s.rho_e_dot.cbegin();
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_old_e = s.old_e.cbegin();
-  auto const elements_to_e = s.e.begin();
-  auto functor = [=] (element_index const element) {
-    auto const rho_e_dot = elements_to_rho_e_dot[element];
-    double const rho = elements_to_rho[element];
+  auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_old_e = s.old_e.cbegin();
+  auto const points_to_e = s.e.begin();
+  auto functor = [=] (point_index const point) {
+    auto const rho_e_dot = points_to_rho_e_dot[point];
+    double const rho = points_to_rho[point];
     auto const e_dot = rho_e_dot / rho;
-    double const old_e = elements_to_old_e[element];
+    double const old_e = points_to_old_e[point];
     auto const e = old_e + dt * e_dot;
-    elements_to_e[element] = e;
+    points_to_e[point] = e;
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE interpolate_e(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_e_h = s.e_h.cbegin();
-  auto const elements_to_e = s.e.begin();
+  auto const points_to_e = s.e.begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
-    double e = 0.0;
     auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      node_index const node = element_nodes_to_nodes[element_node];
-      double const e_h = nodes_to_e_h[node];
-      e = e + e_h;
+    for (auto const point : elements_to_points[element]) {
+      double e = 0.0;
+      for (auto const element_node : element_nodes) {
+        node_index const node = element_nodes_to_nodes[element_node];
+        double const e_h = nodes_to_e_h[node];
+        e = e + e_h;
+      }
+      e = e * N;
+      points_to_e[point] = e;
     }
-    e = e * N;
-    elements_to_e[element] = e;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -694,19 +697,22 @@ static void LGR_NOINLINE interpolate_rho(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto const nodes_to_rho_h = s.rho_h.cbegin();
-  auto const elements_to_rho = s.rho.begin();
+  auto const points_to_rho = s.rho.begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
-    double rho = 0.0;
     auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      node_index const node = element_nodes_to_nodes[element_node];
-      double const rho_h = nodes_to_rho_h[node];
-      rho = rho + rho_h;
+    for (auto const point : elements_to_points[element]) {
+      double rho = 0.0;
+      for (auto const element_node : element_nodes) {
+        node_index const node = element_nodes_to_nodes[element_node];
+        double const rho_h = nodes_to_rho_h[node];
+        rho = rho + rho_h;
+      }
+      rho = rho * N;
+      points_to_rho[point] = rho;
     }
-    rho = rho * N;
-    elements_to_rho[element] = rho;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -726,30 +732,33 @@ static void LGR_NOINLINE update_e_h(state& s, double const dt)
 }
 
 static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
-  auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
-  auto const elements_to_c = s.c.cbegin();
+  auto const points_to_c = s.c.cbegin();
   auto const c1 = in.linear_artificial_viscosity;
   auto const c2 = in.quadratic_artificial_viscosity;
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_sigma = s.sigma.begin();
-  auto const elements_to_nu_art = s.nu_art.begin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_nu_art = s.nu_art.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
-    symmetric3x3<double> const symm_grad_v = elements_to_symm_grad_v[element];
-    double const div_v = trace(symm_grad_v);
-    if (div_v >= 0.0) {
-      elements_to_nu_art[element] = 0.0;
-      return;
-    }
     double const h_art = elements_to_h_art[element];
-    double const c = elements_to_c[element];
-    double const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
-    elements_to_nu_art[element] = nu_art;
-    double const rho = elements_to_rho[element];
-    auto const sigma_art = (rho * nu_art) * symm_grad_v;
-    symmetric3x3<double> const sigma = elements_to_sigma[element];
-    auto const sigma_tilde = sigma + sigma_art;
-    elements_to_sigma[element] = sigma_tilde;
+    for (auto const point : elements_to_points[element]) {
+      symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
+      double const div_v = trace(symm_grad_v);
+      if (div_v >= 0.0) {
+        points_to_nu_art[point] = 0.0;
+      } else {
+        double const c = points_to_c[point];
+        double const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
+        points_to_nu_art[point] = nu_art;
+        double const rho = points_to_rho[point];
+        auto const sigma_art = (rho * nu_art) * symm_grad_v;
+        symmetric3x3<double> const sigma = points_to_sigma[point];
+        auto const sigma_tilde = sigma + sigma_art;
+        points_to_sigma[point] = sigma_tilde;
+      }
+    }
   };
   lgr::for_each(s.elements, functor);
 }
