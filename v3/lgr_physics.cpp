@@ -524,19 +524,22 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
-  auto const element_nodes_to_f = s.element_f.cbegin();
+  auto const point_nodes_to_f = s.element_f.cbegin();
   auto const nodes_to_f = s.f.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (node_index const node) {
     auto node_f = vector3<double>::zero();
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
-      auto const element_nodes = elements_to_element_nodes[element];
-      auto const element_node = element_nodes[node_in_element];
-      vector3<double> const element_f = element_nodes_to_f[element_node];
-      node_f = node_f + element_f;
+      for (auto const point : elements_to_points[element]) {
+        auto const point_nodes = points_to_point_nodes[point];
+        auto const point_node = point_nodes[node_in_element];
+        vector3<double> const point_f = point_nodes_to_f[point_node];
+        node_f = node_f + point_f;
+      }
     }
     nodes_to_f[node] = node_f;
   };
@@ -546,18 +549,21 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
 static void LGR_NOINLINE update_nodal_mass(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_V = s.V.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_V = s.V.cbegin();
   auto const nodes_to_m = s.m.begin();
-  auto const lumping_factor = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (node_index const node) {
     double m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
-      auto const rho = elements_to_rho[element];
-      auto const V = elements_to_V[element];
-      m = m + (rho * V) * lumping_factor;
+      for (auto const point : elements_to_points[element]) {
+        double const rho = points_to_rho[point];
+        double const V = points_to_V[point];
+        m = m + (rho * V) * N;
+      }
     }
     nodes_to_m[node] = m;
   };
@@ -568,17 +574,20 @@ static void LGR_NOINLINE update_nodal_density(state& s)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
-  auto const elements_to_V = s.V.cbegin();
+  auto const points_to_V = s.V.cbegin();
   auto const nodes_to_m = s.m.cbegin();
   auto const nodes_to_rho_h = s.rho_h.begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (node_index const node) {
     double node_V(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
-      auto const V = elements_to_V[element];
-      node_V = node_V + (N * V);
+      for (auto const point : elements_to_points[element]) {
+        auto const V = points_to_V[point];
+        node_V = node_V + (N * V);
+      }
     }
     double const m = nodes_to_m[node];
     nodes_to_rho_h[node] = m / node_V;
@@ -602,21 +611,29 @@ static void LGR_NOINLINE zero_acceleration(
 static void LGR_NOINLINE update_symm_grad_v(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const nodes_to_v = s.v.cbegin();
-  auto const elements_to_symm_grad_v = s.symm_grad_v.begin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.begin();
+  auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (element_index const element) {
-    auto grad_v = matrix3x3<double>::zero();
-    auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      auto const node = element_nodes_to_nodes[element_node];
-      vector3<double> const v = nodes_to_v[node];
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      grad_v = grad_v + outer_product(v, grad_N);
+    for (auto const point : elements_to_points[element]) {
+      auto grad_v = matrix3x3<double>::zero();
+      auto const element_nodes = elements_to_element_nodes[element];
+      auto const point_nodes = points_to_point_nodes[point];
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node = point_nodes[node_in_element];
+        auto const node = element_nodes_to_nodes[element_node];
+        vector3<double> const v = nodes_to_v[node];
+        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        grad_v = grad_v + outer_product(v, grad_N);
+      }
+      symmetric3x3<double> const symm_grad_v(grad_v);
+      points_to_symm_grad_v[point] = symm_grad_v;
     }
-    symmetric3x3<double> const symm_grad_v(grad_v);
-    elements_to_symm_grad_v[element] = symm_grad_v;
   };
   lgr::for_each(s.elements, functor);
 }
