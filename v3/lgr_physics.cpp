@@ -188,36 +188,39 @@ static void LGR_NOINLINE update_reference(state& s) {
 
 static void LGR_NOINLINE update_c(state& s)
 {
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_K = s.K.cbegin();
-  auto const elements_to_G = s.G.cbegin();
-  auto const elements_to_c = s.c.begin();
-  auto functor = [=] (element_index const element) {
-    double const rho = elements_to_rho[element];
-    double const K = elements_to_K[element];
-    double const G = elements_to_G[element];
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_K = s.K.cbegin();
+  auto const points_to_G = s.G.cbegin();
+  auto const points_to_c = s.c.begin();
+  auto functor = [=] (point_index const point) {
+    double const rho = points_to_rho[point];
+    double const K = points_to_K[point];
+    double const G = points_to_G[point];
     auto const M = K + (4.0 / 3.0) * G;
     auto const c = std::sqrt(M / rho);
-    elements_to_c[element] = c;
+    points_to_c[point] = c;
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE update_element_dt(state& s) {
-  auto const elements_to_c = s.c.cbegin();
+  auto const points_to_c = s.c.cbegin();
   auto const elements_to_h_min = s.h_min.cbegin();
-  auto const elements_to_nu_art = s.nu_art.cbegin();
-  auto const elements_to_dt = s.element_dt.begin();
+  auto const points_to_nu_art = s.nu_art.cbegin();
+  auto const points_to_dt = s.element_dt.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
     double const h_min = elements_to_h_min[element];
-    auto const c = elements_to_c[element];
-    auto const nu_art = elements_to_nu_art[element];
-    auto const h_sq = h_min * h_min;
-    auto const c_sq = c * c;
-    auto const nu_art_sq = nu_art * nu_art;
-    auto const dt = h_sq / (nu_art + std::sqrt(nu_art_sq + (c_sq * h_sq)));
-    assert(dt > 0.0);
-    elements_to_dt[element] = dt;
+    for (auto const point : elements_to_points[element]) {
+      auto const c = points_to_c[point];
+      auto const nu_art = points_to_nu_art[point];
+      auto const h_sq = h_min * h_min;
+      auto const c_sq = c * c;
+      auto const nu_art_sq = nu_art * nu_art;
+      auto const dt = h_sq / (nu_art + std::sqrt(nu_art_sq + (c_sq * h_sq)));
+      assert(dt > 0.0);
+      points_to_dt[point] = dt;
+    }
   };
   lgr::for_each(s.elements, functor);
 }
@@ -231,33 +234,41 @@ static void LGR_NOINLINE find_max_stable_dt(state& s)
 static void LGR_NOINLINE update_v_prime(input const& in, state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_dt = s.element_dt.cbegin();
-  auto const elements_to_rho = s.rho.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const points_to_dt = s.element_dt.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
   auto const nodes_to_p_h = s.p_h.cbegin();
-  auto const elements_to_v_prime = s.v_prime.begin();
+  auto const points_to_v_prime = s.v_prime.begin();
   auto const c_tau = in.c_tau;
-  auto const inv_nodes_per_element = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
-    double const dt = elements_to_dt[element];
-    auto const tau = c_tau * dt;
-    auto grad_p = vector3<double>::zero();
     auto const element_nodes = elements_to_element_nodes[element];
-    auto a = vector3<double>::zero();
-    for (auto const element_node : element_nodes) {
-      node_index const node = element_nodes_to_nodes[element_node];
-      double const p_h = nodes_to_p_h[node];
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      grad_p = grad_p + (grad_N * p_h);
-      vector3<double> const a_of_node = nodes_to_a[node];
-      a = a + a_of_node;
+    for (auto const point : elements_to_points[element]) {
+      auto const point_nodes = points_to_point_nodes[point];
+      double const dt = points_to_dt[point];
+      auto const tau = c_tau * dt;
+      auto grad_p = vector3<double>::zero();
+      auto a = vector3<double>::zero();
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node = point_nodes[node_in_element];
+        node_index const node = element_nodes_to_nodes[element_node];
+        double const p_h = nodes_to_p_h[node];
+        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        grad_p = grad_p + (grad_N * p_h);
+        vector3<double> const a_of_node = nodes_to_a[node];
+        a = a + a_of_node;
+      }
+      a = a * N;
+      double const rho = points_to_rho[point];
+      auto const v_prime = -(tau / rho) * (rho * a + grad_p);
+      points_to_v_prime[point] = v_prime;
     }
-    a = a * inv_nodes_per_element;
-    double const rho = elements_to_rho[element];
-    auto const v_prime = -(tau / rho) * (rho * a + grad_p);
-    elements_to_v_prime[element] = v_prime;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -265,91 +276,99 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s)
 static void LGR_NOINLINE update_q(input const& in, state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_dt = s.element_dt.cbegin();
-  auto const elements_to_rho = s.rho.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const points_to_dt = s.element_dt.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
   auto const nodes_to_p_h = s.p_h.cbegin();
-  auto const elements_to_q = s.q.begin();
+  auto const points_to_q = s.q.begin();
   auto const c_tau = in.c_tau;
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
-    double const dt = elements_to_dt[element];
-    auto const tau = c_tau * dt;
-    auto grad_p = vector3<double>::zero();
     auto const element_nodes = elements_to_element_nodes[element];
-    auto a = vector3<double>::zero();
-    double p_h = 0.0;
-    for (auto const element_node : element_nodes) {
-      node_index const node = element_nodes_to_nodes[element_node];
-      double const p_h_of_node = nodes_to_p_h[node];
-      p_h = p_h + p_h_of_node;
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      grad_p = grad_p + (grad_N * p_h_of_node);
-      vector3<double> const a_of_node = nodes_to_a[node];
-      a = a + a_of_node;
+    for (auto const point : elements_to_points[element]) {
+      double const dt = points_to_dt[point];
+      auto const tau = c_tau * dt;
+      auto grad_p = vector3<double>::zero();
+      auto a = vector3<double>::zero();
+      double p_h = 0.0;
+      auto const point_nodes = points_to_point_nodes[point];
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node = point_nodes[node_in_element];
+        node_index const node = element_nodes_to_nodes[element_node];
+        double const p_h_of_node = nodes_to_p_h[node];
+        p_h = p_h + p_h_of_node;
+        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        grad_p = grad_p + (grad_N * p_h_of_node);
+        vector3<double> const a_of_node = nodes_to_a[node];
+        a = a + a_of_node;
+      }
+      a = a * N;
+      p_h = p_h * N;
+      double const rho = points_to_rho[point];
+      auto const v_prime = -(tau / rho) * (rho * a + grad_p);
+      auto const q = p_h * v_prime;
+      points_to_q[point] = q;
     }
-    a = a * N;
-    p_h = p_h * N;
-    double const rho = elements_to_rho[element];
-    auto const v_prime = -(tau / rho) * (rho * a + grad_p);
-    auto const q = p_h * v_prime;
-    elements_to_q[element] = q;
   };
   lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE update_p_h_W(state& s)
 {
-  auto const elements_to_K = s.K.cbegin();
-  auto const elements_to_v_prime = s.v_prime.cbegin();
-  auto const elements_to_V = s.V.cbegin();
-  auto const elements_to_symm_grad_v = s.symm_grad_v.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const element_nodes_to_W = s.W.begin();
+  auto const points_to_K = s.K.cbegin();
+  auto const points_to_v_prime = s.v_prime.cbegin();
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const point_nodes_to_W = s.W.begin();
   double const N = 1.0 / double(int(s.nodes_in_element.size()));
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
-    symmetric3x3<double> symm_grad_v = elements_to_symm_grad_v[element];
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto functor = [=] (point_index const point) {
+    symmetric3x3<double> symm_grad_v = points_to_symm_grad_v[point];
     double const div_v = trace(symm_grad_v);
-    double const K = elements_to_K[element];
-    double const V = elements_to_V[element];
-    vector3<double> const v_prime = elements_to_v_prime[element];
-    auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
+    double const K = points_to_K[point];
+    double const V = points_to_V[point];
+    vector3<double> const v_prime = points_to_v_prime[point];
+    auto const point_nodes = points_to_point_nodes[point];
+    for (auto const point_node : point_nodes) {
+      vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
       double const p_h_dot =
         -(N * (K * div_v)) + (grad_N * (K * v_prime));
       double const W = p_h_dot * V;
-      element_nodes_to_W[element_node] = W;
+      point_nodes_to_W[point_node] = W;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE update_e_h_W(state& s)
 {
-  auto const elements_to_q = s.q.cbegin();
-  auto const elements_to_V = s.V.cbegin();
-  auto const elements_to_rho_e_dot = s.rho_e_dot.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const element_nodes_to_W = s.W.begin();
+  auto const points_to_q = s.q.cbegin();
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const point_nodes_to_W = s.W.begin();
   double const N = 1.0 / double(int(s.nodes_in_element.size()));
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
-    double const rho_e_dot = elements_to_rho_e_dot[element];
-    double const V = elements_to_V[element];
-    vector3<double> const q = elements_to_q[element];
-    auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto functor = [=] (point_index const point) {
+    double const rho_e_dot = points_to_rho_e_dot[point];
+    double const V = points_to_V[point];
+    vector3<double> const q = points_to_q[point];
+    auto const point_nodes = points_to_point_nodes[point];
+    for (auto const point_node : point_nodes) {
+      vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
       double const rho_e_h_dot = (N * rho_e_dot) + (grad_N * q);
       double const W = rho_e_h_dot * V;
-      element_nodes_to_W[element_node] = W;
+      point_nodes_to_W[point_node] = W;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE update_p_h_dot(state& s)
