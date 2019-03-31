@@ -376,10 +376,11 @@ static void LGR_NOINLINE update_p_h_dot(state& s)
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
-  auto const element_nodes_to_W = s.W.cbegin();
-  auto const elements_to_V = s.V.cbegin();
+  auto const point_nodes_to_W = s.W.cbegin();
+  auto const points_to_V = s.V.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   double const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (node_index const node) {
     double node_W = 0.0;
@@ -388,12 +389,14 @@ static void LGR_NOINLINE update_p_h_dot(state& s)
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
-      auto const element_nodes = elements_to_element_nodes[element];
-      auto const element_node = element_nodes[node_in_element];
-      double const W = element_nodes_to_W[element_node];
-      double const V = elements_to_V[element];
-      node_W = node_W + W;
-      node_V = node_V + (N * V);
+      for (auto const point : elements_to_points[element]) {
+        auto const point_nodes = points_to_point_nodes[point];
+        auto const point_node = point_nodes[node_in_element];
+        double const W = point_nodes_to_W[point_node];
+        double const V = points_to_V[point];
+        node_W = node_W + W;
+        node_V = node_V + (N * V);
+      }
     }
     auto const p_h_dot = node_W / node_V;
     nodes_to_p_h_dot[node] = p_h_dot;
@@ -406,9 +409,10 @@ static void LGR_NOINLINE update_e_h_dot(state& s)
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
-  auto const element_nodes_to_W = s.W.cbegin();
+  auto const point_nodes_to_W = s.W.cbegin();
   auto const nodes_to_e_h_dot = s.e_h_dot.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_to_m = s.m.cbegin();
   auto functor = [=] (node_index const node) {
     double node_W = 0.0;
@@ -416,10 +420,12 @@ static void LGR_NOINLINE update_e_h_dot(state& s)
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
-      auto const element_nodes = elements_to_element_nodes[element];
-      auto const element_node = element_nodes[node_in_element];
-      double const W = element_nodes_to_W[element_node];
-      node_W = node_W + W;
+      for (auto const point : elements_to_points[element]) {
+        auto const point_nodes = points_to_point_nodes[point];
+        auto const point_node = point_nodes[node_in_element];
+        double const W = point_nodes_to_W[point_node];
+        node_W = node_W + W;
+      }
     }
     double const m = nodes_to_m[node];
     auto const e_h_dot = node_W / m;
@@ -429,14 +435,14 @@ static void LGR_NOINLINE update_e_h_dot(state& s)
 }
 
 static void LGR_NOINLINE neo_Hookean(input const& in, state& s) {
-  auto const elements_to_F_total = s.F_total.cbegin();
-  auto const elements_to_sigma = s.sigma.begin();
-  auto const elements_to_K = s.K.begin();
-  auto const elements_to_G = s.G.begin();
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
   auto const K0 = in.K0;
   auto const G0 = in.G0;
-  auto functor = [=] (element_index const element) {
-    matrix3x3<double> const F = elements_to_F_total[element];
+  auto functor = [=] (point_index const point) {
+    matrix3x3<double> const F = points_to_F_total[point];
     auto const J = determinant(F);
     auto const Jinv = 1.0 / J;
     auto const half_K0 = 0.5 * K0;
@@ -446,35 +452,35 @@ static void LGR_NOINLINE neo_Hookean(input const& in, state& s) {
     auto const B = self_times_transpose(F);
     auto const devB = deviator(B);
     auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
-    elements_to_sigma[element] = sigma;
+    points_to_sigma[point] = sigma;
     auto const K = half_K0 * (J + Jinv);
-    elements_to_K[element] = K;
-    elements_to_G[element] = G0;
+    points_to_K[point] = K;
+    points_to_G[point] = G0;
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
-  auto const elements_to_rho = s.rho.cbegin();
-  auto const elements_to_e = s.e.cbegin();
-  auto const elements_to_sigma = s.sigma.begin();
-  auto const elements_to_K = s.K.begin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_e = s.e.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_K = s.K.begin();
   auto const gamma = in.gamma;
-  auto functor = [=] (element_index const element) {
-    double const rho = elements_to_rho[element];
+  auto functor = [=] (point_index const point) {
+    double const rho = points_to_rho[point];
     assert(rho > 0.0);
-    double const e = elements_to_e[element];
+    double const e = points_to_e[point];
     assert(e > 0.0);
     auto const p = (gamma - 1.0) * (rho * e);
     assert(p > 0.0);
-    symmetric3x3<double> const old_sigma = elements_to_sigma[element];
+    symmetric3x3<double> const old_sigma = points_to_sigma[point];
     auto const new_sigma = deviator(old_sigma) - p;
-    elements_to_sigma[element] = new_sigma;
+    points_to_sigma[point] = new_sigma;
     auto const K = gamma * p;
     assert(K > 0.0);
-    elements_to_K[element] = K;
+    points_to_K[point] = K;
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE nodal_ideal_gas(input const& in, state& s) {
@@ -496,22 +502,22 @@ static void LGR_NOINLINE nodal_ideal_gas(input const& in, state& s) {
 
 static void LGR_NOINLINE update_element_force(state& s)
 {
-  auto const sigma_iterator = s.sigma.cbegin();
-  auto const V_iterator = s.V.cbegin();
-  auto const element_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const element_nodes_to_f = s.element_f.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
-    symmetric3x3<double> const sigma = sigma_iterator[element];
-    double const V = V_iterator[element];
-    auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      vector3<double> const grad_N = element_nodes_to_grad_N[element_node];
-      auto const element_f = -(sigma * grad_N) * V;
-      element_nodes_to_f[element_node] = element_f;
+  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_V = s.V.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const point_nodes_to_f = s.element_f.begin();
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto functor = [=] (point_index const point) {
+    symmetric3x3<double> const sigma = points_to_sigma[point];
+    double const V = points_to_V[point];
+    auto const point_nodes = points_to_point_nodes[point];
+    for (auto const point_node : point_nodes) {
+      vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+      auto const f = -(sigma * grad_N) * V;
+      point_nodes_to_f[point_node] = f;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.points, functor);
 }
 
 static void LGR_NOINLINE update_nodal_force(state& s) {
