@@ -140,39 +140,48 @@ static void LGR_NOINLINE update_p(state& s) {
 
 static void LGR_NOINLINE update_reference(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_element_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_u = s.u.cbegin();
-  auto const elements_to_F_total = s.F_total.begin();
-  auto const element_nodes_to_grad_N = s.grad_N.begin();
-  auto const elements_to_V = s.V.begin();
-  auto const elements_to_rho = s.rho.begin();
+  auto const points_to_F_total = s.F_total.begin();
+  auto const point_nodes_to_grad_N = s.grad_N.begin();
+  auto const points_to_V = s.V.begin();
+  auto const points_to_rho = s.rho.begin();
+  auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (element_index const element) {
-    auto F_incr = matrix3x3<double>::identity();
     auto const element_nodes = elements_to_element_nodes[element];
-    for (auto const element_node : element_nodes) {
-      auto const node = element_nodes_to_nodes[element_node];
-      vector3<double> const u = nodes_to_u[node];
-      vector3<double> const old_grad_N = element_nodes_to_grad_N[element_node];
-      F_incr = F_incr + outer_product(u, old_grad_N);
+    auto const element_points = elements_to_element_points[element];
+    for (auto const point : element_points) {
+      auto const point_nodes = points_to_point_nodes[point];
+      auto F_incr = matrix3x3<double>::identity();
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node = point_nodes[node_in_element];
+        auto const node = element_nodes_to_nodes[element_node];
+        vector3<double> const u = nodes_to_u[node];
+        vector3<double> const old_grad_N = point_nodes_to_grad_N[point_node];
+        F_incr = F_incr + outer_product(u, old_grad_N);
+      }
+      auto const F_inverse_transpose = transpose(inverse(F_incr));
+      for (auto const point_node : point_nodes) {
+        vector3<double> const old_grad_N = point_nodes_to_grad_N[point_node];
+        auto const new_grad_N = F_inverse_transpose * old_grad_N;
+        point_nodes_to_grad_N[point_node] = new_grad_N;
+      }
+      matrix3x3<double> const old_F_total = points_to_F_total[point];
+      matrix3x3<double> const new_F_total = F_incr * old_F_total;
+      points_to_F_total[point] = new_F_total;
+      auto const J = determinant(F_incr);
+      assert(J > 0.0);
+      double const old_V = points_to_V[point];
+      auto const new_V = J * old_V;
+      assert(new_V > 0.0);
+      points_to_V[point] = new_V;
+      auto const old_rho = points_to_rho[point];
+      auto const new_rho = old_rho / J;
+      points_to_rho[point] = new_rho;
     }
-    auto const F_inverse_transpose = transpose(inverse(F_incr));
-    for (auto const element_node : element_nodes) {
-      vector3<double> const old_grad_N = element_nodes_to_grad_N[element_node];
-      auto const new_grad_N = F_inverse_transpose * old_grad_N;
-      element_nodes_to_grad_N[element_node] = new_grad_N;
-    }
-    matrix3x3<double> const old_F_total = elements_to_F_total[element];
-    matrix3x3<double> const new_F_total = F_incr * old_F_total;
-    elements_to_F_total[element] = new_F_total;
-    auto const J = determinant(F_incr);
-    assert(J > 0.0);
-    double const old_V = elements_to_V[element];
-    auto const new_V = J * old_V;
-    assert(new_V > 0.0);
-    elements_to_V[element] = new_V;
-    auto const old_rho = elements_to_rho[element];
-    auto const new_rho = old_rho / J;
-    elements_to_rho[element] = new_rho;
   };
   lgr::for_each(s.elements, functor);
 }
