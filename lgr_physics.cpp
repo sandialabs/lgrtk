@@ -99,7 +99,7 @@ static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
       points_to_sigma[point] = new_sigma;
     }
   };
-  lgr::for_each(s.points, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE update_a(state& s) {
@@ -767,35 +767,35 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
   s.old_v.resize(s.nodes.size());
-  s.V.resize(s.elements.size());
-  s.grad_N.resize(s.elements.size() * s.nodes_in_element.size());
-  s.F_total.resize(s.elements.size());
-  s.sigma.resize(s.elements.size());
-  s.symm_grad_v.resize(s.elements.size());
-  s.p.resize(s.elements.size());
-  s.K.resize(s.elements.size());
-  s.G.resize(s.elements.size());
-  s.c.resize(s.elements.size());
-  s.element_f.resize(s.elements.size() * s.nodes_in_element.size());
+  s.V.resize(s.points.size());
+  s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
+  s.F_total.resize(s.points.size());
+  s.sigma.resize(s.points.size());
+  s.symm_grad_v.resize(s.points.size());
+  s.p.resize(s.points.size());
+  s.K.resize(s.points.size());
+  s.G.resize(s.points.size());
+  s.c.resize(s.points.size());
+  s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
-  s.rho.resize(s.elements.size());
-  s.e.resize(s.elements.size());
-  s.old_e.resize(s.elements.size());
-  s.rho_e_dot.resize(s.elements.size());
+  s.rho.resize(s.points.size());
+  s.e.resize(s.points.size());
+  s.old_e.resize(s.points.size());
+  s.rho_e_dot.resize(s.points.size());
   s.m.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());
   if (in.enable_viscosity) {
     s.h_art.resize(s.elements.size());
   }
-  s.nu_art.resize(s.elements.size());
-  s.element_dt.resize(s.elements.size());
+  s.nu_art.resize(s.points.size());
+  s.element_dt.resize(s.points.size());
   if (in.enable_nodal_pressure) {
     s.p_h.resize(s.nodes.size());
     s.p_h_dot.resize(s.nodes.size());
     s.old_p_h.resize(s.nodes.size());
-    s.v_prime.resize(s.elements.size());
-    s.W.resize(s.elements.size() * s.nodes_in_element.size());
+    s.v_prime.resize(s.points.size());
+    s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
   if (in.enable_nodal_energy) {
     s.p_h.resize(s.nodes.size());
@@ -803,8 +803,8 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.old_e_h.resize(s.nodes.size());
     s.e_h_dot.resize(s.nodes.size());
     s.rho_h.resize(s.nodes.size());
-    s.q.resize(s.elements.size());
-    s.W.resize(s.elements.size() * s.nodes_in_element.size());
+    s.q.resize(s.points.size());
+    s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
 }
 
