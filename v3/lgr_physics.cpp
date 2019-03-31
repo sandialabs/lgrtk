@@ -74,24 +74,20 @@ static void LGR_NOINLINE update_p_h(state& s, double const dt) {
 static void LGR_NOINLINE update_sigma_with_p_h(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
-  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_p_h = s.p_h.cbegin();
-  auto const point_nodes_to_N = s.N.cbegin();
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const points_to_sigma = s.sigma.begin();
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
     for (auto const point : element_points) {
-      auto const point_nodes = points_to_point_nodes[point];
       double point_p_h = 0.0;
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
-        auto const point_node = point_nodes[node_in_element];
         auto const node = element_nodes_to_nodes[element_node];
         double const p_h = nodes_to_p_h[node];
-        double const N = point_nodes_to_N[point_node];
         point_p_h = point_p_h + N * p_h;
       }
       symmetric3x3<double> const old_sigma = points_to_sigma[point];
