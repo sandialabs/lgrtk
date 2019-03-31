@@ -18,11 +18,11 @@
 
 #include "plato/RayleighDamping.hpp"
 
-#include "BodyLoads.hpp"
-#include "NaturalBCs.hpp"
-#include "EssentialBCs.hpp"
-#include "ApplyConstraints.hpp"
-#include "LinearElasticMaterial.hpp"
+#include "plato/BodyLoads.hpp"
+#include "plato/NaturalBCs.hpp"
+#include "plato/EssentialBCs.hpp"
+#include "plato/ApplyConstraints.hpp"
+#include "plato/LinearElasticMaterial.hpp"
 
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
@@ -47,7 +47,7 @@
 #include "plato/HyperbolicTangentProjection.hpp"
 
 #ifdef HAVE_AMGX
-#include "AmgXSparseLinearProblem.hpp"
+#include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
 namespace Plato

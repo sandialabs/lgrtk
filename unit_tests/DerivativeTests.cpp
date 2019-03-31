@@ -4,7 +4,6 @@
 */
 
 #include "PlatoTestHelpers.hpp"
-#include "LGRTestHelpers.hpp"
 #include "Omega_h_build.hpp"
 #include "Omega_h_map.hpp"
 #include "Omega_h_matrix.hpp"
@@ -14,21 +13,12 @@
 #include "Teuchos_UnitTestHarness.hpp"
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
-#include "FEMesh.hpp"
-#include "MatrixIO.hpp"
-#include "VizOutput.hpp"
-#include "MeshFixture.hpp"
-#include "StaticsTypes.hpp"
-
+#include "plato/alg/StaticsTypes.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/LinearElasticMaterial.hpp"
 
-#ifdef HAVE_VIENNA_CL
-#include "ViennaSparseLinearProblem.hpp"
-#endif
-
 #ifdef HAVE_AMGX
-#include "AmgXSparseLinearProblem.hpp"
+#include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
 #include <sstream>
@@ -37,11 +27,8 @@
 #include <type_traits>
 
 #include <Sacado.hpp>
-#include <CrsLinearProblem.hpp>
-#include <Fields.hpp>
-#include <ParallelComm.hpp>
-
-#include <impl/Kokkos_Timer.hpp>
+#include <plato/alg/CrsLinearProblem.hpp>
+#include <plato/alg/ParallelComm.hpp>
 
 #include <plato/Simp.hpp>
 #include <plato/ApplyWeighting.hpp>

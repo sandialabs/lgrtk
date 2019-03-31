@@ -70,7 +70,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src)
 
 set(SOURCES)
 if(LGR_ENABLE_PLATO)
-message("adding plato sources")
+message("-- Plato: adding plato to lgrtk library")
 set(SOURCES ${SOURCES} ${PLATO_SOURCES})
 endif()
 

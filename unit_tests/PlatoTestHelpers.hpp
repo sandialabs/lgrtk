@@ -14,16 +14,19 @@
 #include "Omega_h_matrix.hpp"
 #include "Omega_h_file.hpp"
 #include "Omega_h_teuchos.hpp"
+#include "Omega_h_library.hpp"
 
 #include "FEMesh.hpp"
 #include "Fields.hpp"
-
-#include "LGRTestHelpers.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
 
 namespace PlatoUtestHelpers
 {
+
+void finalizeOmegaH();
+void initializeOmegaH(int *argc , char ***argv);
+Teuchos::RCP<Omega_h::Library> getLibraryOmegaH();
 
 /******************************************************************************/
 //! returns all nodes matching x=0 on the boundary of the provided mesh
@@ -102,7 +105,7 @@ Teuchos::RCP<Omega_h::Mesh> getBoxMesh(Omega_h::Int aSpaceDim,
         tNumZ = aMeshWidth;
     }
 
-    Teuchos::RCP<Omega_h::Library> tLibOmegaH = lgr::getLibraryOmegaH();
+    Teuchos::RCP<Omega_h::Library> tLibOmegaH = getLibraryOmegaH();
     auto tOmegaH_mesh = Teuchos::rcp(new Omega_h::Mesh(Omega_h::build_box(tLibOmegaH->world(),
                                                                           OMEGA_H_SIMPLEX,
                                                                           aX_scaling,
@@ -130,7 +133,6 @@ lgr::FEMesh<SpaceDim> createFEMesh(const Teuchos::RCP<Omega_h::Mesh> & aMeshOmeg
         // hopefully the following is enough to get things set up in the FEMesh
 
         tMesh.omega_h_mesh = aMeshOmegaH.get();
-        tMesh.machine = lgr::getCommMachine();
 
         tMesh.resetSizes();
 
@@ -222,7 +224,7 @@ void writeMesh(const Teuchos::RCP<Omega_h::Mesh> & aMeshOmegaH,
 **********************************************************************************/
 inline std::shared_ptr<Omega_h::Mesh> build_1d_box_mesh(Omega_h::Real aX, Omega_h::LO aNx)
 {
-    Teuchos::RCP<Omega_h::Library> tLibrary = lgr::getLibraryOmegaH();
+    Teuchos::RCP<Omega_h::Library> tLibrary = getLibraryOmegaH();
     std::shared_ptr<Omega_h::Mesh> tMesh =
         std::make_shared<Omega_h::Mesh>(Omega_h::build_box(tLibrary->world(), Omega_h_Family::OMEGA_H_SIMPLEX, aX, 0., 0., aNx, 0, 0));
     return (tMesh);
@@ -240,7 +242,7 @@ inline std::shared_ptr<Omega_h::Mesh> build_1d_box_mesh(Omega_h::Real aX, Omega_
 **********************************************************************************/
 inline std::shared_ptr<Omega_h::Mesh> build_2d_box_mesh(Omega_h::Real aX, Omega_h::Real aY, Omega_h::LO aNx, Omega_h::LO aNy)
 {
-    Teuchos::RCP<Omega_h::Library> tLibrary = lgr::getLibraryOmegaH();
+    Teuchos::RCP<Omega_h::Library> tLibrary = getLibraryOmegaH();
     std::shared_ptr<Omega_h::Mesh> tMesh =
         std::make_shared<Omega_h::Mesh>(Omega_h::build_box(tLibrary->world(), Omega_h_Family::OMEGA_H_SIMPLEX, aX, aY, 0., aNx, aNy, 0));
     return (tMesh);
@@ -265,7 +267,7 @@ inline std::shared_ptr<Omega_h::Mesh> build_3d_box_mesh(Omega_h::Real aX,
                                                         Omega_h::LO aNy,
                                                         Omega_h::LO aNz)
 {
-    Teuchos::RCP<Omega_h::Library> tLibrary = lgr::getLibraryOmegaH();
+    Teuchos::RCP<Omega_h::Library> tLibrary = getLibraryOmegaH();
     std::shared_ptr<Omega_h::Mesh> tMesh =
         std::make_shared<Omega_h::Mesh>(Omega_h::build_box(tLibrary->world(), Omega_h_Family::OMEGA_H_SIMPLEX, aX, aY, aZ, aNx, aNy, aNz));
     return (tMesh);

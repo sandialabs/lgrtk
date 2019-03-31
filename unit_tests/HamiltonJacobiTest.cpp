@@ -7,13 +7,13 @@
 
 #include "plato/HamiltonJacobi.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
-#include "LGRTestHelpers.hpp"
+#include "PlatoTestHelpers.hpp"
 
 typename Omega_h::Mesh
 build_2D_box(const Plato::Scalar Lx, const Plato::Scalar Ly, const size_t nx,
     const size_t ny)
 {
-  auto libOmegaH = lgr::getLibraryOmegaH();
+  auto libOmegaH = PlatoUtestHelpers::getLibraryOmegaH();
   return Omega_h::build_box(libOmegaH->world(), OMEGA_H_SIMPLEX, Lx, Ly, 0, nx,
       ny, 0);
 }
@@ -22,7 +22,7 @@ typename Omega_h::Mesh
 build_3D_box(const Plato::Scalar Lx, const Plato::Scalar Ly,
     const Plato::Scalar Lz, const size_t nx, const size_t ny, const size_t nz)
 {
-  auto libOmegaH = lgr::getLibraryOmegaH();
+  auto libOmegaH = PlatoUtestHelpers::getLibraryOmegaH();
   return Omega_h::build_box(libOmegaH->world(), OMEGA_H_SIMPLEX, Lx, Ly, Lz, nx,
       ny, nz);
 }

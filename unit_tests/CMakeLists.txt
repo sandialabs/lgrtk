@@ -52,21 +52,15 @@ if (NOT LGR_ENABLE_PLATO)
 endif()
 
 if (LGR_ENABLE_PLATO)
-  set(Elastostatics_SOURCES
-    LGRTestHelpers.cpp
-    ElastostaticSolveTests.cpp
-    Teuchos_StandardUnitTestMain.cpp
-  )
 
 #begin: Structural dynamics unit test
   set(StructuralDynamics_SOURCES
-    LGRTestHelpers.cpp
     StructuralDynamicsTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(StructuralDynamics_HEADERS
-    LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
@@ -88,13 +82,13 @@ if (LGR_ENABLE_PLATO)
 
 #begin: Hamilton-Jacobi unit test
   set(HamiltonJacobi_SOURCES
-    LGRTestHelpers.cpp
     HamiltonJacobiTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(HamiltonJacobi_HEADERS
-    LGRTestHelpers.hpp
+    PlatoTestHelpers.hpp
   )
 
   add_executable(HamiltonJacobiUnitTests
@@ -115,13 +109,12 @@ if (LGR_ENABLE_PLATO)
 
 #begin: Algebraic rocket model unit test
   set(AlgebraicRocket_SOURCES
-    LGRTestHelpers.cpp
     AlgebraicRocketTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(AlgebraicRocket_HEADERS
-    LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
@@ -143,13 +136,12 @@ if (LGR_ENABLE_PLATO)
 
 #begin: AugLagStressTest unit test
   set(AugLagStressTest_SOURCES
-    LGRTestHelpers.cpp
     PlatoAugLagStressTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(AugLagStressTest_HEADERS
-    LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
@@ -171,13 +163,12 @@ if (LGR_ENABLE_PLATO)
 
 #begin: PlatoMathHelpers unit test
   set(PlatoMathHelpers_SOURCES
-    LGRTestHelpers.cpp
     PlatoMathHelpersTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(PlatoMathHelpers_HEADERS
-    LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
@@ -198,13 +189,12 @@ if (LGR_ENABLE_PLATO)
 #end: PlatoMathHelpers unit test
 
   set(PlatoFunctors_SOURCES
-    LGRTestHelpers.cpp
     PlatoFunctorsTest.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(PlatoFunctors_HEADERS
-    LGRTestHelpers.hpp
     PlatoTestHelpers.hpp
   )
 
@@ -224,43 +214,33 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runPlatoFunctorsUnitTests COMMAND ${ES_MPI_TEST})
 
   set(Derivatives_SOURCES
-    LGRTestHelpers.cpp
     DerivativeTests.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(HeatEquationTests_SOURCES
-    LGRTestHelpers.cpp
     HeatEquationTests.cpp
-    Teuchos_StandardUnitTestMain.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(ElectroelasticTests_SOURCES
-    LGRTestHelpers.cpp
     ElectroelasticTests.cpp
-    Teuchos_StandardUnitTestMain.cpp
-  )
-
-  set(Elastostatics_HEADERS
-    LGRTestHelpers.hpp
-    PlatoTestHelpers.hpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
   )
 
   set(Derivatives_HEADERS
-    LGRTestHelpers.hpp
+    PlatoTestHelpers.hpp
   )
 
   set(HeatEquationTests_HEADERS
-    LGRTestHelpers.hpp
+    PlatoTestHelpers.hpp
   )
 
   set(ElectroelasticTests_HEADERS
-    LGRTestHelpers.hpp
-  )
-
-  add_executable(ElastostaticsUnitTests
-    ${Elastostatics_SOURCES}
-    ${Elastostatics_HEADERS}
+    PlatoTestHelpers.hpp
   )
 
   add_executable(DerivativeUnitTests
@@ -277,12 +257,6 @@ if (LGR_ENABLE_PLATO)
     ${ElectroelasticTests_SOURCES}
     ${ElectroelasticTests_HEADERS}
   )
-
-  target_link_libraries(ElastostaticsUnitTests ${Trilinos_LIBRARIES} ${Trilinos_TPL_LIBRARIES} lgrtk)
-  target_include_directories(ElastostaticsUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ElastostaticsUnitTests)
-  add_test(NAME runElastostaticsUnitTests COMMAND ${ES_MPI_TEST})
 
   target_link_libraries(DerivativeUnitTests 
     lgrtk
@@ -329,13 +303,12 @@ endif()
 if (LGR_ENABLE_PLATO_MPMD)
   set(LGRApp_HEADERS
     ${CMAKE_SOURCE_DIR}/src/plato/LGR_App.hpp
-    LGRTestHelpers.hpp
+    PlatoTestHelpers.hpp
   )
 
   set(LGRApp_SOURCES
     LGRAppIntxTests.cpp
-    LGRTestHelpers.cpp
-    Teuchos_LGRAppUnitTestMain.cpp
+    LGRAppUnitTestMain.cpp
   )
   file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/IntxTests
        DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
