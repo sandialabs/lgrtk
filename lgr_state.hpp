@@ -30,7 +30,6 @@ class state {
   device_vector<vector3<double>, node_index> v{mempool}; // nodal velocities
   device_vector<vector3<double>, node_index> old_v{mempool}; // nodal velocities at previous time state
   device_vector<double, point_index> V{mempool}; // measures (volume/area/length)
-  device_vector<double, point_node_index> N{mempool}; // values of basis functions
   device_vector<vector3<double>, point_node_index> grad_N{mempool}; // gradients of basis functions
   device_vector<matrix3x3<double>, point_index> F_total{mempool}; // deformation gradient since simulation start
   device_vector<symmetric3x3<double>, point_index> sigma{mempool}; // Cauchy stress tensor
