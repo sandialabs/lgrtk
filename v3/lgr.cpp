@@ -608,7 +608,7 @@ static void LGR_NOINLINE run_Noh_2D() {
 }
 
 int main() {
-  if ((1)) lgr::run_elastic_wave();
+  if ((0)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -618,7 +618,7 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
   if ((1)) lgr::run_Noh_2D();
