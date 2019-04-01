@@ -44,6 +44,7 @@ static void write_vtk_cells(std::ostream& stream, input const& in, state const& 
     case BAR: cell_type = 3; break;
     case TRIANGLE: cell_type = 5; break;
     case TETRAHEDRON: cell_type = 10; break;
+    case COMPOSITE_TETRAHEDRON: cell_type = 24; break;
   }
   for (element_index i(0); i < s.elements.size(); ++i) {
     stream << cell_type << "\n";
