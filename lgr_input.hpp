@@ -13,6 +13,7 @@ enum element_kind {
   BAR,
   TRIANGLE,
   TETRAHEDRON,
+  COMPOSITE_TETRAHEDRON,
 };
 
 enum time_integrator_kind {
