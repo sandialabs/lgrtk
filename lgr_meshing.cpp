@@ -238,6 +238,7 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
   assert(in.elements_along_z >= 1);
   int const nz = in.elements_along_z;
   s.nodes_in_element.resize(node_in_element_index(10));
+  s.points_in_element.resize(point_in_element_index(4));
   int const nvx = nx * 2 + 1;
   int const nvy = ny * 2 + 1;
   int const nvz = nz * 2 + 1;
