@@ -609,8 +609,8 @@ static void LGR_NOINLINE spinning_composite_cube() {
   input in;
   in.name = "spinning_composite_cube";
   in.element = COMPOSITE_TETRAHEDRON;
-  in.end_time = 0.0;
-  in.num_file_outputs = 1;
+  in.end_time = 1.0e-2;
+  in.num_file_outputs = 400;
   in.elements_along_x = 1;
   in.x_domain_size = 1.0;
   in.elements_along_y = 1;
