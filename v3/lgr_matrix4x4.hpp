@@ -12,20 +12,10 @@ public:
   constexpr inline matrix4x4(
       Scalar const a, Scalar const b, Scalar const c, Scalar const d,
       Scalar const e, Scalar const f, Scalar const g, Scalar const h,
-      Scalar const i, Scalar const j, Scalar const k, Scalar const l) noexcept
+      Scalar const i, Scalar const j, Scalar const k, Scalar const l,
+      Scalar const m, Scalar const n, Scalar const o, Scalar const p) noexcept
+    :raw{{a, b, c, d}, {e, f, g, h}, {i, j, k, l}, {m, n, o, p}}
   {
-    raw[0][0] = a;
-    raw[0][1] = b;
-    raw[0][2] = c;
-    raw[0][3] = d;
-    raw[1][0] = e;
-    raw[1][1] = f;
-    raw[1][2] = g;
-    raw[1][3] = h;
-    raw[2][0] = i;
-    raw[2][1] = j;
-    raw[2][2] = k;
-    raw[2][3] = l;
   }
   inline matrix4x4() noexcept = default;
   static constexpr inline matrix4x4 identity() noexcept {
@@ -43,6 +33,9 @@ public:
         0.0, 0.0, 0.0, 0.0);
   }
   constexpr inline Scalar operator()(int const i, int const j) const noexcept {
+    return raw[i][j];
+  }
+  inline Scalar& operator()(int const i, int const j) noexcept {
     return raw[i][j];
   }
 };
@@ -66,7 +59,7 @@ operator/(matrix4x4<Scalar> const left,
 }
 
 template <class Scalar>
-constexpr inline Scalar determinant(matrix4x4 const a) {
+constexpr inline Scalar determinant(matrix4x4<Scalar> const a) {
   return a(0, 3) * a(1, 2) * a(2, 1) * a(3, 0) -
          a(0, 2) * a(1, 3) * a(2, 1) * a(3, 0) -
          a(0, 3) * a(1, 1) * a(2, 2) * a(3, 0) +
@@ -93,8 +86,9 @@ constexpr inline Scalar determinant(matrix4x4 const a) {
          a(0, 0) * a(1, 1) * a(2, 2) * a(3, 3);
 }
 
-constexpr inline matrix4x4 inverse(matrix4x4 const a) {
-  return matrix4x4(
+template <class Scalar>
+constexpr inline matrix4x4<Scalar> inverse(matrix4x4<Scalar> const a) {
+  return matrix4x4<Scalar>(
       (-a(1, 3) * a(2, 2) * a(3, 1) + a(1, 2) * a(2, 3) * a(3, 1) +
           a(1, 3) * a(2, 1) * a(3, 2) - a(1, 1) * a(2, 3) * a(3, 2) -
           a(1, 2) * a(2, 1) * a(3, 3) + a(1, 1) * a(2, 2) * a(3, 3)),

@@ -18,6 +18,7 @@ class array {
     using const_iterator = pointer_iterator<T, Index>;
   private:
     T m_impl[N];
+  public:
     reference operator[](Index const i) noexcept {
       return m_impl[int(i)];
     }
