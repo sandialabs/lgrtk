@@ -345,9 +345,9 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
   double const x = in.x_domain_size;
   double const y = in.y_domain_size;
   double const z = in.z_domain_size;
-  double const dx = x / nx;
-  double const dy = y / ny;
-  double const dz = z / nz;
+  double const dx = x / (nx * 2.0);
+  double const dy = y / (ny * 2.0);
+  double const dz = z / (nz * 2.0);
   auto coordinates_functor = [=] (node_index const node) {
     int const ij = int(node) % nvxy;
     int const k = int(node) / nvxy;
