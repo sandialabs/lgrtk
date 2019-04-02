@@ -9,6 +9,9 @@
 #include <lgr_copy.hpp>
 #include <lgr_composite_tetrahedron.hpp>
 
+// REMOVE
+#include <iostream>
+
 namespace lgr {
 
 static void LGR_NOINLINE initialize_bar_V(state& s) {
@@ -101,6 +104,7 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
     auto const volumes = composite_tetrahedron::get_volumes(node_coords);
 #ifndef NDEBUG
     for (auto const volume : volumes) {
+      std::cout << "volume " << volume << '\n';
       assert(volume > 0.0);
     }
 #endif

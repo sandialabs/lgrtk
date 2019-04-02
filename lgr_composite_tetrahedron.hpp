@@ -6,6 +6,10 @@
 #include <lgr_matrix4x4.hpp>
 #include <lgr_array.hpp>
 
+// REMOVE
+#include <iostream>
+#include <lgr_print.hpp>
+
 namespace lgr {
 
 namespace composite_tetrahedron {
@@ -13,12 +17,14 @@ namespace composite_tetrahedron {
 using S_t = array<array<vector3<double>, 10>, 12>;
 using gamma_t = array<array<array<double, 10>, 10>, 12>;
 using subtet_proj_t = array<matrix4x4<double>, 12>;
-using subtet_int_t = array<array<double, 12>, 4>;
+using subtet_int_t = array<array<double, 4>, 12>;
 using O_t = array<matrix3x3<double>, 12>;
 using SOL_t = array<array<vector3<double>, 10>, 4>;
 
 inline S_t get_S() noexcept {
   S_t S;
+  assert(S.size() == 12);
+  assert(S[0].size() == 10);
   for (auto& a : S) {
     for (auto& b : a) {
       b = vector3<double>::zero();
@@ -710,6 +716,8 @@ inline subtet_proj_t get_subtet_proj_M() noexcept {
 
 inline subtet_int_t get_subtet_int() noexcept {
   subtet_int_t subtet_int;
+  assert(subtet_int.size() == 12);
+  assert(subtet_int[0].size() == 4);
   subtet_int[0][0] = 0.013020833333333334;
   subtet_int[0][1] = 0.0026041666666666665;
   subtet_int[0][2] = 0.0026041666666666665;
@@ -1066,13 +1074,13 @@ inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
     }
   }
   auto const ref_points = get_ref_points();
-  auto const sub_tet_int = get_subtet_int();
+  auto const subtet_int = get_subtet_int();
   auto const S = get_S();
   auto const O = get_O(node_coords, S);
   auto const O_inv = get_O_inv(O);
   auto const O_det = get_O_det(O);
   auto const M_inv = get_M_inv_from_O_det(O_det);
-  auto const SOL = get_SOL(O_det, O_inv, sub_tet_int, S);
+  auto const SOL = get_SOL(O_det, O_inv, subtet_int, S);
   for (int node = 0; node < 10; ++node) {
     for (int pt = 0; pt < 4; ++pt) {
       auto const lambda = get_barycentric(ref_points[pt]);
@@ -1092,6 +1100,7 @@ inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
 inline array<double, 4> get_volumes(
     array<vector3<double>, 10> const node_coords) noexcept
 {
+  for (auto const node_coord : node_coords) std::cout << "node_coord " << node_coord << '\n';
   // compute the projected |J| times integration weights
   constexpr double ip_weight = 1.0 / 24.0;
   array<double, 4> volumes;
@@ -1101,6 +1110,7 @@ inline array<double, 4> get_volumes(
   auto const S = get_S();
   auto const O = get_O(node_coords, S);
   auto const O_det = get_O_det(O);
+  for (auto const O_det_tet : O_det) std::cout << "O_det " << O_det_tet << '\n';
   auto const DOL = get_DOL(O_det, sub_tet_int);
   auto const parent_M_inv = get_parent_M_inv();
   for (int pt = 0; pt < 4; ++pt) {
