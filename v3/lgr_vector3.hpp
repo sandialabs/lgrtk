@@ -17,6 +17,7 @@ public:
   }
   inline vector3() noexcept = default;
   constexpr inline scalar_type operator()(int const i) const noexcept { return raw[i]; }
+  inline scalar_type& operator()(int const i) noexcept { return raw[i]; }
   static constexpr inline vector3 zero() noexcept { return vector3(0.0, 0.0, 0.0); }
 };
 
