@@ -883,40 +883,76 @@ inline array<vector3<double>, 4> get_subtet_coords(array<vector3<double>, 11> in
   array<vector3<double>, 4> out;
   switch (subtet) {
     case 0:
-      out = {in[0], in[4], in[6], in[7]};
+      out[0] = in[0];
+      out[1] = in[4];
+      out[2] = in[6];
+      out[3] = in[7];
       break;
     case 1:
-      out = {in[1], in[5], in[4], in[8]};
+      out[0] = in[1];
+      out[1] = in[5];
+      out[2] = in[4];
+      out[3] = in[8];
       break;
     case 2:
-      out = {in[2], in[6], in[5], in[9]};
+      out[0] = in[2];
+      out[1] = in[6];
+      out[2] = in[5];
+      out[3] = in[9];
       break;
     case 3:
-      out = {in[3], in[8], in[7], in[9]};
+      out[0] = in[3];
+      out[1] = in[8];
+      out[2] = in[7];
+      out[3] = in[9];
       break;
     case 4:
-      out = {in[4], in[8], in[5], in[10]};
+      out[0] = in[4];
+      out[1] = in[8];
+      out[2] = in[5];
+      out[3] = in[10];
       break;
     case 5:
-      out = {in[5], in[8], in[9], in[10]};
+      out[0] = in[5];
+      out[1] = in[8];
+      out[2] = in[9];
+      out[3] = in[10];
       break;
     case 6:
-      out = {in[9], in[8], in[7], in[10]};
+      out[0] = in[9];
+      out[1] = in[8];
+      out[2] = in[7];
+      out[3] = in[10];
       break;
     case 7:
-      out = {in[7], in[8], in[4], in[10]};
+      out[0] = in[7];
+      out[1] = in[8];
+      out[2] = in[4];
+      out[3] = in[10];
       break;
     case 8:
-      out = {in[4], in[5], in[6], in[10]};
+      out[0] = in[4];
+      out[1] = in[5];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 9:
-      out = {in[5], in[9], in[6], in[10]};
+      out[0] = in[5];
+      out[1] = in[9];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 10:
-      out = {in[9], in[7], in[6], in[10]};
+      out[0] = in[9];
+      out[1] = in[7];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 11:
-      out = {in[7], in[4], in[6], in[10]};
+      out[0] = in[7];
+      out[1] = in[4];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
   }
   return out;
