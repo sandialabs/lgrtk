@@ -973,7 +973,7 @@ inline double get_tet_diameter(array<vector3<double>, 4> const x) noexcept {
   return (sa > 0.0) ? (vol / sa) : 0.0;
 }
 
-inline double get_char_length(array<vector3<double>, 10> in) noexcept {
+inline double get_length(array<vector3<double>, 10> in) noexcept {
   array<vector3<double>, 11> node_coords_with_center;
   for (int i = 0; i < 10; ++i) node_coords_with_center[i] = in[i];
   node_coords_with_center[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
@@ -983,7 +983,8 @@ inline double get_char_length(array<vector3<double>, 10> in) noexcept {
     auto const length = get_tet_diameter(x);
     min_length = lgr::min(min_length, length);
   }
-  return min_length;
+  constexpr double magic_number = 2.3;
+  return min_length * magic_number;
 }
 
 inline array<vector3<double>, 12> get_centroids() noexcept {
@@ -1055,7 +1056,7 @@ inline array<double, 10> lump_mass_matrix(array<array<double, 10>, 10> const mas
   return lumped;
 }
 
-inline array<array<vector3<double>, 4>, 4> get_basis_gradients(
+inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
     array<vector3<double>, 10> const node_coords) noexcept
 {
   array<array<vector3<double>, 4>, 4> grad_N;

@@ -55,13 +55,28 @@ static void write_vtk_point_data(std::ostream& stream, state const& s) {
   stream << "POINT_DATA " << int(s.nodes.size()) << "\n";
 }
 
-template <class Index>
 static void write_vtk_scalars(std::ostream& stream, char const* name,
-    device_vector<double, Index> const& vec) {
+    device_vector<double, node_index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
   for (double const val : vec) {
     stream << val << "\n";
+  }
+}
+
+static void write_vtk_scalars(std::ostream& stream, char const* name,
+    counting_range<element_index> const elements,
+    counting_range<point_in_element_index> const points_in_element,
+    device_vector<double, point_index> const& vec) {
+  auto const elements_to_points = elements * points_in_element;
+  for (auto const qp : points_in_element) {
+    std::string suffix = (int(points_in_element.size()) == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
+    stream << "SCALARS " << name << suffix << " double 1\n";
+    stream << "LOOKUP_TABLE default\n";
+    for (auto const e : elements) {
+      auto const p = elements_to_points[e][qp];
+      stream << double(vec.begin()[p]) << "\n";
+    }
   }
 }
 

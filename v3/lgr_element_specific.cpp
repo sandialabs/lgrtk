@@ -7,6 +7,7 @@
 #include <lgr_input.hpp>
 #include <lgr_binary_ops.hpp>
 #include <lgr_copy.hpp>
+#include <lgr_composite_tetrahedron.hpp>
 
 namespace lgr {
 
@@ -81,6 +82,36 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
+{
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const points_to_V = s.V.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const points_in_element = s.nodes_in_element;
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    array<vector3<double>, 10> node_coords;
+    for (auto const node_in_element : nodes_in_element) {
+      auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
+      node_coords[int(node_in_element)] = nodes_to_x[node];
+    }
+    auto const volumes = composite_tetrahedron::get_volumes(node_coords);
+#ifndef NDEBUG
+    for (auto const volume : volumes) {
+      assert(volume > 0.0);
+    }
+#endif
+    auto const element_points = elements_to_points[element];
+    for (auto const qp : points_in_element) {
+      points_to_V[element_points[qp]] = volumes[int(qp)];
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 void initialize_V(
     input const& in,
     state& s) {
@@ -88,6 +119,7 @@ void initialize_V(
     case BAR: initialize_bar_V(s); break;
     case TRIANGLE: initialize_triangle_V(s); break;
     case TETRAHEDRON: initialize_tetrahedron_V(s); break;
+    case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_V(s); break;
   }
 }
 
@@ -187,6 +219,36 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const points_in_element = s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    array<vector3<double>, 10> node_coords;
+    for (auto const node_in_element : nodes_in_element) {
+      auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
+      node_coords[int(node_in_element)] = nodes_to_x[node];
+    }
+    auto const grad_N = composite_tetrahedron::get_basis_gradients(node_coords);
+    auto const element_points = elements_to_points[element];
+    for (auto const qp : points_in_element) {
+      auto const point = element_points[qp];
+      auto const point_nodes = points_to_point_nodes[point];
+      for (auto const a : nodes_in_element) {
+        auto const point_node = point_nodes[a];
+        point_nodes_to_grad_N[point_node] = grad_N[int(qp)][int(a)];
+      }
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 void initialize_grad_N(
     input const& in,
     state& s) {
@@ -194,6 +256,7 @@ void initialize_grad_N(
     case BAR: initialize_bar_grad_N(s); break;
     case TRIANGLE: initialize_triangle_grad_N(s); break;
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s); break;
+    case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_grad_N(s); break;
   }
 }
 
@@ -312,12 +375,35 @@ static void LGR_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
   }
 }
 
+static void LGR_NOINLINE update_composite_tetrahedron_h_min(input const& in, state& s) {
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const points_in_element = s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    array<vector3<double>, 10> node_coords;
+    for (auto const node_in_element : nodes_in_element) {
+      auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
+      node_coords[int(node_in_element)] = nodes_to_x[node];
+    }
+    auto const h_min = composite_tetrahedron::get_length(node_coords);
+    elements_to_h_min[element] = h_min;
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 void update_h_min(input const& in, state& s)
 {
   switch (in.element) {
     case BAR: update_bar_h_min(in, s); break;
     case TRIANGLE: update_triangle_h_min(in, s); break;
     case TETRAHEDRON: update_tetrahedron_h_min(in, s); break;
+    case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_min(in, s); break;
   }
 }
 
@@ -331,7 +417,6 @@ static void LGR_NOINLINE update_bar_h_art(state& s) {
     elements_to_h_art[element] = double(points_to_V[point]);
   };
   lgr::for_each(s.elements, functor);
-
 }
 
 static void LGR_NOINLINE update_triangle_h_art(state& s) {
@@ -364,11 +449,16 @@ static void LGR_NOINLINE update_tetrahedron_h_art(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE update_composite_tetrahedron_h_art(state& s) {
+  copy(s.h_min, s.h_art);
+}
+
 void update_h_art(input const& in, state& s) {
   switch (in.element) {
     case BAR: update_bar_h_art(s); break;
     case TRIANGLE: update_triangle_h_art(s); break;
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
+    case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
   }
 }
 
