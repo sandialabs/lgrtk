@@ -4,7 +4,7 @@
 
 #include <lgr_counting_range.hpp>
 #include <lgr_vector.hpp>
-#include <lgr_inclusive_scan.hpp>
+#include <lgr_scan.hpp>
 #include <lgr_binary_ops.hpp>
 #include <lgr_functional.hpp>
 

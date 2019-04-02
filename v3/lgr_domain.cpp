@@ -1,6 +1,6 @@
 #include <lgr_domain.hpp>
 #include <lgr_fill.hpp>
-#include <lgr_inclusive_scan.hpp>
+#include <lgr_scan.hpp>
 #include <lgr_reduce.hpp>
 
 namespace lgr {
