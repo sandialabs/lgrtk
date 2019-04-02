@@ -144,6 +144,24 @@ void update(const Plato::Scalar & aAlpha, const VecT & aInput, const Plato::Scal
 // function update
 
 /******************************************************************************//**
+ * @brief Reduced operation: sum all the elements in input array and return local sum
+ * @param [in] aInput 1D container
+ * @param [out] aOutput local sum
+**********************************************************************************/
+template<typename VecT, typename ScalarT>
+void local_sum(const VecT & aInput, ScalarT & aOutput)
+{
+    ScalarT tOutput = 0.0;
+    const Plato::OrdinalType tNumLocalElems = aInput.size();
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0, tNumLocalElems), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal, ScalarT & aLocalSum)
+    {
+      aLocalSum += aInput(aCellOrdinal);
+    }, tOutput);
+    aOutput = tOutput;
+}
+// function local_sum
+
+/******************************************************************************//**
  * @brief Matrix times vector plus vector
  * @param [in] aMatrix multiplier of 1D container A
  * @param [in] aInput input 1D container

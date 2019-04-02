@@ -13,6 +13,7 @@
 
 #include "plato/Simp.hpp"
 #include "plato/Strain.hpp"
+#include "plato/WorksetBase.hpp"
 #include "plato/LinearStress.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoMathHelpers.hpp"
@@ -53,7 +54,7 @@ private:
     Plato::Scalar mStressLimit; /*!< stress limit/upper bound */
     Plato::Scalar mAugLagPenalty; /*!< augmented Lagrangian penalty */
     Plato::Scalar mMinErsatzValue; /*!< minimum ersatz material value in SIMP model */
-    Plato::Scalar mMaterialDensity; /*!< material density */
+    Plato::Scalar mCellMaterialDensity; /*!< material density */
     Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
     Plato::Scalar mMassMultipliersLowerBound; /*!< lower bound on mass multipliers */
     Plato::Scalar mMassMultipliersUpperBound; /*!< upper bound on mass multipliers */
@@ -79,7 +80,7 @@ private:
         mCellStiffMatrix = tMaterialModel->getStiffnessMatrix();
 
         auto tMaterialModelInputs = aInputParams.get<Teuchos::ParameterList>("Material Model");
-        mMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
+        mCellMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
 
         this->readInputs(aInputParams);
 
@@ -113,9 +114,11 @@ private:
     **********************************************************************************/
     void updateAugLagPenaltyMultipliers()
     {
+        printf("\n****** UPDATE PENALTY MULTIPLIER ******\n");
         mAugLagPenalty = mAugLagPenaltyExpansionMultiplier * mAugLagPenalty;
         mAugLagPenalty = std::min(mAugLagPenalty, mAugLagPenaltyUpperBound);
         mMassMultipliersUpperBound = mMassMultipliersUpperBound * mMassMultiplierUpperBoundReductionParam;
+        printf("\n****** PENALTY MULTIPLIER = %e ******\n", mAugLagPenalty);
     }
 
 public:
@@ -135,7 +138,7 @@ public:
             mStressLimit(1),
             mAugLagPenalty(0.1),
             mMinErsatzValue(0.0),
-            mMaterialDensity(1.0),
+            mCellMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -148,6 +151,7 @@ public:
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
         this->initialize(aInputParams);
+        this->computeStructuralMass();
     }
 
     /******************************************************************************//**
@@ -162,7 +166,7 @@ public:
             mStressLimit(1),
             mAugLagPenalty(0.1),
             mMinErsatzValue(0.0),
-            mMaterialDensity(1.0),
+            mCellMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
@@ -204,6 +208,15 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Return multiplier used to normalized mass contribution to the objective function
+     * @return upper mass normalization multiplier
+    **********************************************************************************/
+    Plato::Scalar getMassNormalizationMultiplier() const
+    {
+        return (mMassNormalizationMultiplier);
+    }
+
+    /******************************************************************************//**
      * @brief Return mass multipliers
      * @return 1D view of mass multipliers
     **********************************************************************************/
@@ -237,6 +250,15 @@ public:
     void setAugLagPenalty(const Plato::Scalar & aInput)
     {
         mAugLagPenalty = aInput;
+    }
+
+    /******************************************************************************//**
+     * @brief Set cell material density
+     * @param [in] aInput material density
+     **********************************************************************************/
+    void setCellMaterialDensity(const Plato::Scalar & aInput)
+    {
+        mCellMaterialDensity = aInput;
     }
 
     /******************************************************************************//**
@@ -314,8 +336,8 @@ public:
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tStressLimit = mStressLimit;
         auto tAugLagPenalty = mAugLagPenalty;
-        auto tMaterialDensity = mMaterialDensity;
         auto tMassMultipliers = mMassMultipliers;
+        auto tCellMaterialDensity = mCellMaterialDensity;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
         auto tMassNormalizationMultiplier = mMassNormalizationMultiplier;
 
@@ -323,22 +345,22 @@ public:
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
         auto tCubWeight = tCubatureRule.getCubWeight();
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
-            tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tCellVolume);
-            tCellVolume(tCellOrdinal) *= tCubWeight;
-            tCauchyStrain(tCellOrdinal, tCellCauchyStrain, aStateWS, tGradient);
-            tCauchyStress(tCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
+            tComputeGradient(aCellOrdinal, tGradient, aConfigWS, tCellVolume);
+            tCellVolume(aCellOrdinal) *= tCubWeight;
+            tCauchyStrain(aCellOrdinal, tCellCauchyStrain, aStateWS, tGradient);
+            tCauchyStress(aCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
 
             // Compute 3D Von Mises Yield Criterion
-            tVonMises(tCellOrdinal, tCellCauchyStress, tCellVonMises);
+            tVonMises(aCellOrdinal, tCellCauchyStress, tCellVonMises);
 
             // Compute Von Mises stress constraint residual
-            ResultT tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
+            ResultT tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
             ResultT tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
             ResultT tCellConstraintValue = tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
 
-            ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(tCellOrdinal, aControlWS);
+            ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tPenalizedCellDensity = tSIMP(tCellDensity);
             ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tCellConstraintValue;
             ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
@@ -346,21 +368,21 @@ public:
 
             // Compute relaxed Von Mises stress constraint
             Plato::Scalar tLambdaOverPenalty =
-                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
+                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(aCellOrdinal) / tAugLagPenalty;
             ResultT tRelaxedStressConstraint = (tPenalizedStressConstraint > tLambdaOverPenalty) ?
                                                 tPenalizedStressConstraint : tLambdaOverPenalty;
 
             // Compute Von Mises stress contribution to augmented Lagrangian function
-            ResultT tStressContribution = ( tLagrangeMultipliers(tCellOrdinal) +
+            ResultT tStressContribution = ( tLagrangeMultipliers(aCellOrdinal) +
                     static_cast<Plato::Scalar>(0.5) * tAugLagPenalty * tRelaxedStressConstraint ) * tRelaxedStressConstraint;
 
             // Compute mass contribution to augmented Lagrangian function
-            ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(tCellOrdinal, tBasisFunc, aControlWS);
-            tCellMass *= tCellVolume(tCellOrdinal);
-            ResultT tMassContribution = (tMassMultipliers(tCellOrdinal) * tMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
+            ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
+            tCellMass *= tCellVolume(aCellOrdinal);
+            ResultT tMassContribution = (tMassMultipliers(aCellOrdinal) * tCellMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
 
             // Compute augmented Lagrangian
-            aResultWS(tCellOrdinal) = tMassContribution + tStressContribution;
+            aResultWS(aCellOrdinal) = tMassContribution + ( static_cast<Plato::Scalar>(1.0 / tNumCells) * tStressContribution );
         },"Compute Augmented Lagrangian Function");
     }
 
@@ -374,6 +396,8 @@ public:
                            const Plato::ScalarMultiVector & aControlWS,
                            const Plato::ScalarArray3D & aConfigWS)
     {
+        printf("\n****** UPDATE LAGRANGE MULTIPLIERS ******\n");
+
         // Create Cauchy stress functors
         Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
@@ -401,28 +425,28 @@ public:
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
         auto tCubWeight = tCubatureRule.getCubWeight();
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
             // Compute 3D Cauchy Stress
-            tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tCellVolume);
-            tCellVolume(tCellOrdinal) *= tCubWeight;
-            tCauchyStrain(tCellOrdinal, tCellCauchyStrain, aStateWS, tGradient);
-            tCauchyStress(tCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
+            tComputeGradient(aCellOrdinal, tGradient, aConfigWS, tCellVolume);
+            tCellVolume(aCellOrdinal) *= tCubWeight;
+            tCauchyStrain(aCellOrdinal, tCellCauchyStrain, aStateWS, tGradient);
+            tCauchyStress(aCellOrdinal, tCellCauchyStress, tCellCauchyStrain);
 
             // Compute 3D Von Mises Yield Criterion
-            tVonMises(tCellOrdinal, tCellCauchyStress, tCellVonMises);
-            const Plato::Scalar tVonMisesOverStressLimit = tCellVonMises(tCellOrdinal) / tStressLimit;
+            tVonMises(aCellOrdinal, tCellCauchyStress, tCellVonMises);
+            const Plato::Scalar tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
 
             // Compute mass multiplier measure
-            Plato::Scalar tCellDensity = Plato::cell_density<mNumNodesPerCell>(tCellOrdinal, aControlWS);
-            tMassMultiplierMeasures(tCellOrdinal) = tVonMisesOverStressLimit * pow(tCellDensity, static_cast<Plato::Scalar>(0.5));
+            Plato::Scalar tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
+            tMassMultiplierMeasures(aCellOrdinal) = tVonMisesOverStressLimit * pow(tCellDensity, static_cast<Plato::Scalar>(0.5));
 
             // Update mass multipliers
             const Plato::Scalar tOptionOne =
-                    static_cast<Plato::Scalar>(0.7) * tMassMultipliers(tCellOrdinal) - static_cast<Plato::Scalar>(0.1);
+                    static_cast<Plato::Scalar>(0.7) * tMassMultipliers(aCellOrdinal) - static_cast<Plato::Scalar>(0.1);
             const Plato::Scalar tOptionTwo =
-                    static_cast<Plato::Scalar>(2.5) * tMassMultipliers(tCellOrdinal) + static_cast<Plato::Scalar>(0.5);
-            tMassMultipliers(tCellOrdinal) = tMassMultiplierMeasures(tCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
+                    static_cast<Plato::Scalar>(2.5) * tMassMultipliers(aCellOrdinal) + static_cast<Plato::Scalar>(0.5);
+            tMassMultipliers(aCellOrdinal) = tMassMultiplierMeasures(aCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
                     Omega_h::max2(tOptionOne, tMassMultiplierLowerBound) : Omega_h::min2(tOptionTwo, tMassMultiplierUpperBound);
 
             // Compute Von Mises stress constraint residual
@@ -435,16 +459,72 @@ public:
 
             // Compute relaxed stress constraint
             const Plato::Scalar tLambdaOverPenalty =
-                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(tCellOrdinal) / tAugLagPenalty;
+                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(aCellOrdinal) / tAugLagPenalty;
             const Plato::Scalar tRelaxedStressConstraint = Omega_h::max2(tPenalizedStressConstraint, tLambdaOverPenalty);
 
             // Update Lagrange multipliers
             const Plato::Scalar tSuggestedLagrangeMultiplier =
-                    tLagrangeMultipliers(tCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
-            tLagrangeMultipliers(tCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
+                    tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
+            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
         }, "Update Multipliers");
+    }
+
+    /******************************************************************************//**
+     * @brief Compute structural mass (i.e. structural mass with ersatz densities set to one)
+    **********************************************************************************/
+    void computeStructuralMass()
+    {
+        printf("\n****** COMPUTE STRUCTURAL MASS ******\n");
+
+        auto tNumCells = mMesh.nelems();
+        Plato::NodeCoordinate<mSpaceDim> tCoordinates(&mMesh);
+        Plato::ScalarArray3D tConfig("configuration", tNumCells, mNumNodesPerCell, mSpaceDim);
+        Plato::workset_config_scalar<mSpaceDim, mNumNodesPerCell>(tNumCells, tCoordinates, tConfig);
+        Plato::ComputeCellVolume<mSpaceDim> tComputeCellVolume;
+
+        Plato::ScalarVector tTotalMass("total mass", tNumCells);
+        Plato::ScalarMultiVector tDensities("densities", tNumCells, mNumNodesPerCell);
+        Kokkos::deep_copy(tDensities, 1.0);
+
+        Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
+        auto tCellMaterialDensity = mCellMaterialDensity;
+        auto tCubWeight = tCubatureRule.getCubWeight();
+        auto tBasisFunc = tCubatureRule.getBasisFunctions();
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+        {
+            Plato::Scalar tCellVolume = 0;
+            tComputeCellVolume(aCellOrdinal, tConfig, tCellVolume);
+            auto tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, tDensities);
+            tTotalMass(aCellOrdinal) = tCellMass * tCellMaterialDensity * tCellVolume * tCubWeight;
+        },"Compute Structural Mass");
+
+        Plato::local_sum(tTotalMass, mMassNormalizationMultiplier);
+        printf("\n****** TOTAL STRUCTURAL MASS = %f ******\n", mMassNormalizationMultiplier);
     }
 };
 // class AugLagStressCriterion
 
 }// namespace Plato
+
+#include "plato/Mechanics.hpp"
+
+#ifdef PLATO_1D
+extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
+#endif
+
+#ifdef PLATO_2D
+extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
+#endif
+
+#ifdef PLATO_3D
+extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
+#endif
