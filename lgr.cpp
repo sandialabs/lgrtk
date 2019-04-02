@@ -424,7 +424,7 @@ static void LGR_NOINLINE bending_beam() {
 
 static void LGR_NOINLINE twisting_column() {
   input in;
-  in.name = "twisting_column_new";
+  in.name = "twisting_column";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
@@ -563,7 +563,7 @@ static void LGR_NOINLINE run_Noh_1D() {
 
 static void LGR_NOINLINE run_Noh_2D() {
   input in;
-  in.name = "Noh_2D_new";
+  in.name = "Noh_2D";
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
