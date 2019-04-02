@@ -2,77 +2,9 @@
 
 #include <memory>
 #include <type_traits>
+#include <lgr_pointer_iterator.hpp>
 
 namespace lgr {
-
-template <class T, class Index = int>
-class vector_iterator {
-  T* m_ptr;
- public:
-  using value_type = std::remove_const_t<T>;
-  using difference_type = decltype(Index(0) - Index(0));
-  using reference = T&;
-  using pointer = T*;
-  using iterator_category = std::random_access_iterator_tag;
-  explicit inline vector_iterator(T* ptr_in) noexcept : m_ptr(ptr_in) {}
-  inline bool operator==(vector_iterator const& other) const noexcept {
-    return m_ptr == other.m_ptr;
-  }
-  inline bool operator!=(vector_iterator const& other) const noexcept {
-    return m_ptr != other.m_ptr;
-  }
-  inline reference operator*() const noexcept { return *m_ptr; }
-  inline vector_iterator& operator++() noexcept {
-    ++m_ptr;
-    return *this;
-  }
-  inline vector_iterator operator++(int) noexcept {
-    auto ret = *this;
-    ++m_ptr;
-    return ret;
-  }
-  inline vector_iterator& operator--() noexcept {
-    --m_ptr;
-    return *this;
-  }
-  inline vector_iterator operator--(int) noexcept {
-    auto ret = *this;
-    --m_ptr;
-    return ret;
-  }
-  inline vector_iterator& operator+=(difference_type const n) noexcept {
-    m_ptr += int(n);
-    return *this;
-  }
-  inline vector_iterator& operator-=(difference_type const n) noexcept {
-    m_ptr -= int(n);
-    return *this;
-  }
-  inline vector_iterator operator+(difference_type const n) const noexcept {
-    return vector_iterator(m_ptr + int(n));
-  }
-  inline vector_iterator operator-(difference_type const n) const noexcept {
-    return vector_iterator(m_ptr - int(n));
-  }
-  inline difference_type operator-(vector_iterator const& other) const noexcept {
-    return difference_type(m_ptr - other.m_ptr);
-  }
-  inline reference operator[](Index const i) const noexcept {
-    return *(m_ptr + int(i));
-  }
-  inline bool operator<(vector_iterator const& other) const noexcept {
-    return m_ptr < other.m_ptr;
-  }
-  inline bool operator>(vector_iterator const& other) const noexcept {
-    return m_ptr > other.m_ptr;
-  }
-  inline bool operator<=(vector_iterator const& other) const noexcept {
-    return m_ptr <= other.m_ptr;
-  }
-  inline bool operator>=(vector_iterator const& other) const noexcept {
-    return m_ptr >= other.m_ptr;
-  }
-};
 
 template <class T, class Allocator, class Index = int>
 class vector {
@@ -90,8 +22,8 @@ public:
   using const_reference = value_type const&;
   using pointer = typename allocator_traits_type::pointer;
   using const_pointer = typename allocator_traits_type::const_pointer;
-  using iterator = vector_iterator<T, size_type>;
-  using const_iterator = vector_iterator<T const, size_type>;
+  using iterator = pointer_iterator<T, size_type>;
+  using const_iterator = pointer_iterator<T const, size_type>;
   explicit vector(Allocator const& allocator_in) noexcept
     :m_allocator(allocator_in)
     ,m_data(nullptr)

@@ -7,6 +7,7 @@ class index {
   Integral i;
 public:
   constexpr explicit inline index(Integral const& i_in) noexcept : i(i_in) {}
+  inline index() noexcept = default;
   inline index(index const&) noexcept = default;
   inline index(index&&) noexcept = default;
   inline index& operator=(index const&) noexcept = default;

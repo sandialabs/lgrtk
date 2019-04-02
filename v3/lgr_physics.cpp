@@ -879,9 +879,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_nodal_density(s);
       interpolate_rho(s);
     }
-    if (in.enable_viscosity) update_h_art(in, s);
     update_symm_grad_v(s);
     update_h_min(in, s);
+    if (in.enable_viscosity) update_h_art(in, s);
     update_material_state(in, s);
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
