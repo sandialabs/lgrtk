@@ -27,16 +27,29 @@ namespace PlatoUnitTests
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_dot)
 {
-  constexpr Plato::OrdinalType numVerts = 10;
-  Plato::ScalarVector tVecA("Vec A", numVerts);
+  constexpr Plato::OrdinalType tNumElems = 10;
+  Plato::ScalarVector tVecA("Vec A", tNumElems);
   Plato::fill(1.0, tVecA);
-  Plato::ScalarVector tVecB("Vec B", numVerts);
+  Plato::ScalarVector tVecB("Vec B", tNumElems);
   Plato::fill(2.0, tVecB);
 
   const Plato::Scalar tOutput = Plato::dot(tVecA, tVecB);
 
   constexpr Plato::Scalar tTolerance = 1e-4;
   TEST_FLOATING_EQUALITY(20., tOutput, tTolerance);
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_sum)
+{
+  constexpr Plato::OrdinalType tNumElems = 10;
+  Plato::ScalarVector tVecA("Vec", tNumElems);
+  Plato::fill(1.0, tVecA);
+
+  Plato::Scalar tOutput = 0.0;
+  Plato::local_sum(tVecA, tOutput);
+
+  constexpr Plato::Scalar tTolerance = 1e-4;
+  TEST_FLOATING_EQUALITY(10., tOutput, tTolerance);
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_fill)
