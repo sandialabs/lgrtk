@@ -239,13 +239,16 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
       node_coords[int(node_in_element)] = nodes_to_x[node];
     }
+    std::cout << "element " << int(element) << '\n';
     auto const grad_N = composite_tetrahedron::get_basis_gradients(node_coords);
     auto const element_points = elements_to_points[element];
     for (auto const qp : points_in_element) {
+      std::cout << "qp " << int(qp) << '\n';
       auto const point = element_points[qp];
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const a : nodes_in_element) {
         auto const point_node = point_nodes[a];
+        std::cout << "grad_N " << grad_N[int(qp)][int(a)] << '\n';
         point_nodes_to_grad_N[point_node] = grad_N[int(qp)][int(a)];
       }
     }

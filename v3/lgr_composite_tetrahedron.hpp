@@ -23,8 +23,6 @@ using SOL_t = array<array<vector3<double>, 10>, 4>;
 
 inline S_t get_S() noexcept {
   S_t S;
-  assert(S.size() == 12);
-  assert(S[0].size() == 10);
   for (auto& a : S) {
     for (auto& b : a) {
       b = vector3<double>::zero();
@@ -810,7 +808,7 @@ inline array<double, 12> get_O_det(O_t const O) noexcept {
   return det_O;
 }
 
-inline matrix4x4<double> get_M_inv_from_O_det(array<double, 12> const O_det) noexcept {
+inline matrix4x4<double> get_M_inv(array<double, 12> const O_det) noexcept {
   auto M = matrix4x4<double>::zero();
   auto const sub_tet_int_proj_M = get_subtet_proj_M();
   for (int tet = 0; tet < 12; ++tet) {
@@ -881,10 +879,6 @@ inline array<double, 4> get_barycentric(vector3<double> const x) noexcept {
   xi[2] = x(1);
   xi[3] = x(2);
   return xi;
-}
-
-inline matrix4x4<double> get_M_inv(array<vector3<double>, 10> node_coords) noexcept {
-  return get_M_inv_from_O_det(get_O_det(get_O(node_coords, get_S())));
 }
 
 inline array<vector3<double>, 4> get_subtet_coords(array<vector3<double>, 11> in, int subtet) noexcept {
@@ -1079,7 +1073,7 @@ inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
   auto const O = get_O(node_coords, S);
   auto const O_inv = get_O_inv(O);
   auto const O_det = get_O_det(O);
-  auto const M_inv = get_M_inv_from_O_det(O_det);
+  auto const M_inv = get_M_inv(O_det);
   auto const SOL = get_SOL(O_det, O_inv, subtet_int, S);
   for (int node = 0; node < 10; ++node) {
     for (int pt = 0; pt < 4; ++pt) {

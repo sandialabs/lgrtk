@@ -148,6 +148,7 @@ static void LGR_NOINLINE update_reference(state& s) {
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
+  //std::cout << "ref update element " << int(element) << '\n';
     for (auto const point : element_points) {
       auto const point_nodes = points_to_point_nodes[point];
       auto F_incr = matrix3x3<double>::identity();
@@ -169,6 +170,7 @@ static void LGR_NOINLINE update_reference(state& s) {
       matrix3x3<double> const new_F_total = F_incr * old_F_total;
       points_to_F_total[point] = new_F_total;
       auto const J = determinant(F_incr);
+    //std::cout << "J_incr " << J << '\n';
       assert(J > 0.0);
       double const old_V = points_to_V[point];
       auto const new_V = J * old_V;
