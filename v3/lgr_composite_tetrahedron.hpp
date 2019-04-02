@@ -1065,18 +1065,51 @@ inline array<array<vector3<double>, 4>, 4> get_basis_gradients(
     }
   }
   auto const ref_points = get_ref_points();
+  auto const sub_tet_int = compute_sub_tet_int();
+  auto const S = compute_S();
+  auto const O = compute_O(node_coords, S);
+  auto const O_inv = compute_O_inv(O);
+  auto const O_det = compute_O_det(O);
+  auto const M_inv = compute_M_inv(O_det);
+  auto const SOL = compute_SOL(O_det, O_inv, sub_tet_int, S);
   for (int node = 0; node < 10; ++node) {
     for (int pt = 0; pt < 4; ++pt) {
       auto const lambda = get_barycentric(ref_points[pt]);
       for (int d = 0; d < 3; ++d) {
         for (int l1 = 0; l1 < 4; ++l1) {
           for (int l2 = 0; l2 < 4; ++l2) {
-            out.basis_gradients[pt](d, node) +=
-                lambda[l1] * M_inv(l1, l2) * SOL[l2](node, d);
+            grad_N[pt][node](d) +=
+                lambda[l1] * M_inv(l1, l2) * SOL[l2][node](d);
           }
         }
       }
     }
+  }
+  return grad_N;
+}
+
+inline array<double, 4> get_volumes(
+    array<vector3<double>, 10> const node_coords) noexcept
+{
+  // compute the projected |J| times integration weights
+  constexpr double ip_weight = 1.0 / 24.0;
+  array<double, 4> volumes;
+  for (auto& a : volumes) a = 0.0;
+  auto const ref_points = get_ref_points();
+  auto const sub_tet_int = compute_sub_tet_int();
+  auto const S = compute_S();
+  auto const O = compute_O(node_coords, S);
+  auto const O_det = compute_O_det(O);
+  auto const DOL = compute_DOL(O_det, sub_tet_int);
+  for (int pt = 0; pt < 4; ++pt) {
+    auto const lambda = get_barycentric_coord(ref_points[pt]);
+    for (int l1 = 0; l1 < 4; ++l1) {
+      for (int l2 = 0; l2 < 4; ++l2) {
+        volumes[pt] +=
+          lambda[l1] * parent_M_inv(l1, l2) * DOL[l2];
+      }
+    }
+    volumes[pt] *= ip_weight;
   }
 }
 
