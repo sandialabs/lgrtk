@@ -6,10 +6,6 @@
 #include <lgr_matrix4x4.hpp>
 #include <lgr_array.hpp>
 
-// REMOVE
-#include <iostream>
-#include <lgr_print.hpp>
-
 namespace lgr {
 
 namespace composite_tetrahedron {
@@ -1094,7 +1090,6 @@ inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
 inline array<double, 4> get_volumes(
     array<vector3<double>, 10> const node_coords) noexcept
 {
-  for (auto const node_coord : node_coords) std::cout << "node_coord " << node_coord << '\n';
   // compute the projected |J| times integration weights
   constexpr double ip_weight = 1.0 / 24.0;
   array<double, 4> volumes;
@@ -1104,7 +1099,6 @@ inline array<double, 4> get_volumes(
   auto const S = get_S();
   auto const O = get_O(node_coords, S);
   auto const O_det = get_O_det(O);
-  for (auto const O_det_tet : O_det) std::cout << "O_det " << O_det_tet << '\n';
   auto const DOL = get_DOL(O_det, sub_tet_int);
   auto const parent_M_inv = get_parent_M_inv();
   for (int pt = 0; pt < 4; ++pt) {
