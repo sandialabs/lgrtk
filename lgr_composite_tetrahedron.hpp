@@ -149,7 +149,7 @@ inline S_t get_S() noexcept {
 
 inline gamma_t get_gamma() noexcept {
   gamma_t gamma;
-  for (auto& a : S) {
+  for (auto& a : gamma) {
     for (auto& b : a) {
       for (auto& c : b) {
         c = 0.0;
@@ -761,15 +761,15 @@ inline subtet_int_t get_subtet_int() noexcept {
   return subtet_int;
 }
 
-constexpr inline matrix4x4 get_parent_M_inv() noexcept {
-  return matrix4x4(
+constexpr inline matrix4x4<double> get_parent_M_inv() noexcept {
+  return matrix4x4<double>(
       96.0,-24.0,-24.0,-24.0,
      -24.0, 96.0,-24.0,-24.0,
      -24.0,-24.0, 96.0,-24.0,
      -24.0,-24.0,-24.0, 96.0);
 }
 
-inline O_t get_O(array<vector3<double>, 4> const x, S_t const S) noexcept {
+inline O_t get_O(array<vector3<double>, 10> const x, S_t const S) noexcept {
   O_t O;
   for (int tet = 0; tet < 12; ++tet) {
     O[tet] = matrix3x3<double>::zero();
@@ -778,7 +778,7 @@ inline O_t get_O(array<vector3<double>, 4> const x, S_t const S) noexcept {
     for (int node = 0; node < 10; ++node) {
       for (int dim1 = 0; dim1 < 3; ++dim1) {
         for (int dim2 = 0; dim2 < 3; ++dim2) {
-          O[tet](dim1, dim2) += x[node](dim1) * S[tet](node, dim2);
+          O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2);
         }
       }
     }
@@ -787,7 +787,7 @@ inline O_t get_O(array<vector3<double>, 4> const x, S_t const S) noexcept {
 }
 
 inline O_t get_O_inv(O_t const O) noexcept {
-  OType O_inv;
+  O_t O_inv;
   for (int tet = 0; tet < 12; ++tet) {
     O_inv[tet] = inverse(O[tet]);
   }
@@ -802,8 +802,8 @@ inline array<double, 12> get_O_det(O_t const O) noexcept {
   return det_O;
 }
 
-inline matrix4x4 get_M_inv_from_O_det(array<double, 12> const O_det) noexcept {
-  auto M = matrix4x4::zero();
+inline matrix4x4<double> get_M_inv_from_O_det(array<double, 12> const O_det) noexcept {
+  auto M = matrix4x4<double>::zero();
   auto const sub_tet_int_proj_M = get_subtet_proj_M();
   for (int tet = 0; tet < 12; ++tet) {
     for (int i = 0; i < 4; ++i) {
@@ -819,7 +819,7 @@ inline SOL_t get_SOL(array<double, 12> O_det, O_t O_inv,
     subtet_int_t subtet_int, S_t S) noexcept {
   SOL_t SOL;
   for (auto& a : SOL)
-  for (auto& b : SOL)
+  for (auto& b : a)
     b = vector3<double>::zero();
   for (int tet = 0; tet < 12; ++tet) {
     for (int node = 0; node < 10; ++node) {
@@ -841,16 +841,16 @@ inline array<double, 4> get_DOL(
     array<double, 12> O_det, subtet_int_t subtet_int) noexcept {
   array<double, 4> DOL;
   for (auto& a : DOL) a = 0.0;
-  for (int tet = 0; tet < nsub_tets; ++tet) {
-    for (int pt = 0; pt < nbarycentric_coords; ++pt) {
-      DOL[pt] += O_det[tet] * sub_tet_int[tet][pt];
+  for (int tet = 0; tet < 12; ++tet) {
+    for (int pt = 0; pt < 4; ++pt) {
+      DOL[pt] += O_det[tet] * subtet_int[tet][pt];
     }
   }
   return DOL;
 }
 
 inline array<vector3<double>, 4> get_ref_points() noexcept {
-  array<vector3<double, 4> pts;
+  array<vector3<double>, 4> pts;
   pts[0](0) = 0.1381966011250105151795413165634361882280;
   pts[0](1) = 0.1381966011250105151795413165634361882280;
   pts[0](2) = 0.1381966011250105151795413165634361882280;
@@ -868,10 +868,10 @@ inline array<vector3<double>, 4> get_ref_points() noexcept {
 
 inline array<double, 4> get_barycentric(vector3<double> const x) noexcept {
   array<double, 4> xi;
-  xi[0] = 1.0 - x[0] - x[1] - x[2];
-  xi[1] = x[0];
-  xi[2] = x[1];
-  xi[3] = x[2];
+  xi[0] = 1.0 - x(0) - x(1) - x(2);
+  xi[1] = x(0);
+  xi[2] = x(1);
+  xi[3] = x(2);
   return xi;
 }
 
@@ -1010,10 +1010,10 @@ inline double get_q(double const x) noexcept {
 
 inline vector4<double> get_Q(vector3<double> const xi) noexcept {
   return vector4<double>(
-    get_q(1.0 - xi[0] - xi[1] - xi[2]),
-    get_q(xi[0]),
-    get_q(xi[1]),
-    get_q(xi[2]));
+    get_q(1.0 - xi(0) - xi(1) - xi(2)),
+    get_q(xi(0)),
+    get_q(xi(1)),
+    get_q(xi(2)));
 }
 
 inline array<array<double, 10>, 10> get_consistent_mass_matrix(
@@ -1030,7 +1030,7 @@ inline array<array<double, 10>, 10> get_consistent_mass_matrix(
       mass[i][j] = 0.0;
     }
   }
-  for (int tet = 0; tet < nsub_tets; ++tet) {
+  for (int tet = 0; tet < 12; ++tet) {
     auto const c_s = C[tet];
     auto const Q_s = get_Q(c_s);
     auto const rho_s = Q_s * point_densities;
@@ -1047,9 +1047,9 @@ inline array<array<double, 10>, 10> get_consistent_mass_matrix(
 
 inline array<double, 10> lump_mass_matrix(array<array<double, 10>, 10> const mass) noexcept {
   array<double, 10> lumped;
-  for (int i = 0; i < nodes; ++i) {
+  for (int i = 0; i < 10; ++i) {
     lumped[i] = 0.0;
-    for (int j = 0; j < nodes; ++j) {
+    for (int j = 0; j < 10; ++j) {
       lumped[i] += mass[i][j];
     }
   }
@@ -1059,20 +1059,20 @@ inline array<double, 10> lump_mass_matrix(array<array<double, 10>, 10> const mas
 inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
     array<vector3<double>, 10> const node_coords) noexcept
 {
-  array<array<vector3<double>, 4>, 4> grad_N;
+  array<array<vector3<double>, 10>, 4> grad_N;
   for (auto& a : grad_N) {
     for (auto& b : a) {
       b = vector3<double>::zero();
     }
   }
   auto const ref_points = get_ref_points();
-  auto const sub_tet_int = compute_sub_tet_int();
-  auto const S = compute_S();
-  auto const O = compute_O(node_coords, S);
-  auto const O_inv = compute_O_inv(O);
-  auto const O_det = compute_O_det(O);
-  auto const M_inv = compute_M_inv(O_det);
-  auto const SOL = compute_SOL(O_det, O_inv, sub_tet_int, S);
+  auto const sub_tet_int = get_subtet_int();
+  auto const S = get_S();
+  auto const O = get_O(node_coords, S);
+  auto const O_inv = get_O_inv(O);
+  auto const O_det = get_O_det(O);
+  auto const M_inv = get_M_inv_from_O_det(O_det);
+  auto const SOL = get_SOL(O_det, O_inv, sub_tet_int, S);
   for (int node = 0; node < 10; ++node) {
     for (int pt = 0; pt < 4; ++pt) {
       auto const lambda = get_barycentric(ref_points[pt]);
@@ -1097,13 +1097,14 @@ inline array<double, 4> get_volumes(
   array<double, 4> volumes;
   for (auto& a : volumes) a = 0.0;
   auto const ref_points = get_ref_points();
-  auto const sub_tet_int = compute_sub_tet_int();
-  auto const S = compute_S();
-  auto const O = compute_O(node_coords, S);
-  auto const O_det = compute_O_det(O);
-  auto const DOL = compute_DOL(O_det, sub_tet_int);
+  auto const sub_tet_int = get_subtet_int();
+  auto const S = get_S();
+  auto const O = get_O(node_coords, S);
+  auto const O_det = get_O_det(O);
+  auto const DOL = get_DOL(O_det, sub_tet_int);
+  auto const parent_M_inv = get_parent_M_inv();
   for (int pt = 0; pt < 4; ++pt) {
-    auto const lambda = get_barycentric_coord(ref_points[pt]);
+    auto const lambda = get_barycentric(ref_points[pt]);
     for (int l1 = 0; l1 < 4; ++l1) {
       for (int l2 = 0; l2 < 4; ++l2) {
         volumes[pt] +=
@@ -1112,6 +1113,7 @@ inline array<double, 4> get_volumes(
     }
     volumes[pt] *= ip_weight;
   }
+  return volumes;
 }
 
-}
+}}

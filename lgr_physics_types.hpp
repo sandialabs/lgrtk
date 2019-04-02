@@ -176,6 +176,7 @@ class node_index : public index<int, node_index> {
   public:
     using base_type = index<int, node_index>;
     constexpr explicit inline node_index(int const i) noexcept : base_type(i) {}
+    inline node_index() noexcept = default;
 };
 
 class node_in_element_index : public index<int, node_in_element_index> {

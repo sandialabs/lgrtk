@@ -90,7 +90,7 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const nodes_in_element = s.nodes_in_element;
-  auto const points_in_element = s.nodes_in_element;
+  auto const points_in_element = s.points_in_element;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     array<vector3<double>, 10> node_coords;
@@ -375,15 +375,12 @@ static void LGR_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE update_composite_tetrahedron_h_min(input const& in, state& s) {
+static void LGR_NOINLINE update_composite_tetrahedron_h_min(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  auto const point_nodes_to_grad_N = s.grad_N.begin();
+  auto const elements_to_h_min = s.h_min.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto const elements_to_points = s.elements * s.points_in_element;
-  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
-  auto const points_in_element = s.points_in_element;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     array<vector3<double>, 10> node_coords;
@@ -403,7 +400,7 @@ void update_h_min(input const& in, state& s)
     case BAR: update_bar_h_min(in, s); break;
     case TRIANGLE: update_triangle_h_min(in, s); break;
     case TETRAHEDRON: update_tetrahedron_h_min(in, s); break;
-    case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_min(in, s); break;
+    case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_min(s); break;
   }
 }
 
@@ -458,7 +455,7 @@ void update_h_art(input const& in, state& s) {
     case BAR: update_bar_h_art(s); break;
     case TRIANGLE: update_triangle_h_art(s); break;
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
-    case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
+    case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_art(s); break;
   }
 }
 

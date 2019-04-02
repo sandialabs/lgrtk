@@ -259,10 +259,10 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
     int const j = ij / nx;
     using g_t = node_index;
     node_index hex_nodes[3][3][3];
-    for (int const li = 0; li < 3; ++li) {
-    for (int const lj = 0; lj < 3; ++lj) {
-    for (int const lk = 0; lk < 3; ++lk) {
-      hex_nodes[li][lj][lk] = g_t(((k * 2 + lk) * nvy + (j * 2 + lj)) * nvx + (i * 2 + li)),
+    for (int li = 0; li < 3; ++li) {
+    for (int lj = 0; lj < 3; ++lj) {
+    for (int lk = 0; lk < 3; ++lk) {
+      hex_nodes[li][lj][lk] = g_t(((k * 2 + lk) * nvy + (j * 2 + lj)) * nvx + (i * 2 + li));
     }}}
     auto tet = element_index(hex * 6 + 0);
     auto element_nodes = elements_to_element_nodes[tet];
