@@ -15,7 +15,7 @@ class array {
     using pointer = value_type*;
     using const_pointer = value_type const*;
     using iterator = pointer_iterator<T, Index>;
-    using const_iterator = pointer_iterator<T, Index>;
+    using const_iterator = pointer_iterator<T const, Index>;
   private:
     T m_impl[N];
   public:
