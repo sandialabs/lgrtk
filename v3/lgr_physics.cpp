@@ -475,7 +475,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
     auto const K = gamma * p;
     assert(K > 0.0);
     points_to_K[point] = K;
-    if (point < point_index(6)) std::cout << "element " << int(point) << " rho " << rho << " e " << e << " p " << p << " K " << K << '\n';
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho " << rho << " e " << e << " p " << p << " K " << K << '\n';
   };
   lgr::for_each(s.points, functor);
 }
