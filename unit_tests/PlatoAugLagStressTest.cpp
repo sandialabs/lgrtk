@@ -148,6 +148,26 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_VonMises1D)
     }
 }
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_ComputeStructuralMass_3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    using Residual = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual;
+    Plato::AugLagStressCriterion<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    tCriterion.setCellMaterialDensity(0.5);
+    tCriterion.computeStructuralMass();
+
+    // TEST STRUCTURAL MASS CALCULATION
+    auto tStructMass = tCriterion.getMassNormalizationMultiplier();
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    TEST_FLOATING_EQUALITY(0.5, tStructMass, tTolerance);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
@@ -211,7 +231,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold = {0.00166667, 0.0121221, 0.00166667, 0.0426097, 0.26095, 0.383705};
+    std::vector<Plato::Scalar> tGold = {0.00166667, 0.00340925, 0.00166667, 0.00849051, 0.0448806, 0.0653398};
     auto tHostResultWS = Kokkos::create_mirror(tResultWS);
     Kokkos::deep_copy(tHostResultWS, tResultWS);
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
@@ -221,7 +241,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 
     // ****** TEST GLOBAL SUM ******
     auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
-    TEST_FLOATING_EQUALITY(0.702721, tObjFuncVal, tTolerance);
+    TEST_FLOATING_EQUALITY(0.125453, tObjFuncVal, tTolerance);
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradZ_2D)

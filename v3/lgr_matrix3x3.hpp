@@ -42,6 +42,9 @@ public:
   constexpr inline Scalar operator()(int const i, int const j) const noexcept {
     return raw[i][j];
   }
+  inline Scalar& operator()(int const i, int const j) noexcept {
+    return raw[i][j];
+  }
 };
 
 template <typename Scalar>

@@ -424,7 +424,7 @@ static void LGR_NOINLINE bending_beam() {
 
 static void LGR_NOINLINE twisting_column() {
   input in;
-  in.name = "twisting_column_new";
+  in.name = "twisting_column";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
@@ -563,7 +563,7 @@ static void LGR_NOINLINE run_Noh_1D() {
 
 static void LGR_NOINLINE run_Noh_2D() {
   input in;
-  in.name = "Noh_2D_new";
+  in.name = "Noh_2D";
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
@@ -605,10 +605,32 @@ static void LGR_NOINLINE run_Noh_2D() {
   run(in);
 }
 
+static void LGR_NOINLINE spinning_composite_cube() {
+  input in;
+  in.name = "spinning_composite_cube";
+  in.element = COMPOSITE_TETRAHEDRON;
+  in.end_time = 1.0e-2;
+  in.num_file_outputs = 400;
+  in.elements_along_x = 1;
+  in.x_domain_size = 1.0;
+  in.elements_along_y = 1;
+  in.y_domain_size = 1.0;
+  in.elements_along_z = 1;
+  in.z_domain_size = 1.0;
+  in.rho0 = 7800.0;
+  in.enable_neo_Hookean = true;
+  in.K0 = 200.0e9;
+  in.G0 = 75.0e9;
+  in.initial_v = spin_v;
+  in.CFL = 0.9;
+  in.time_integrator = VELOCITY_VERLET;
+  run(in);
+}
+
 }
 
 int main() {
-  if ((1)) lgr::run_elastic_wave();
+  if ((0)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -618,8 +640,9 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((1)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((1)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_2D();
+  if ((1)) lgr::spinning_composite_cube();
 }

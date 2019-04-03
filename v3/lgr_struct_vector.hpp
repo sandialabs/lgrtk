@@ -8,7 +8,7 @@ namespace lgr {
 template <class T, layout L, class Index>
 class struct_vector_iterator {
   using fundamental_type = typename struct_in_vector<T, L, Index>::fundamental_type;
-  outer_iterator<vector_iterator<fundamental_type, Index>, L, Index, int> m_array_iterator;
+  outer_iterator<pointer_iterator<fundamental_type, Index>, L, Index, int> m_array_iterator;
 public:
   using value_type = std::remove_const_t<T>;
   using difference_type = Index;

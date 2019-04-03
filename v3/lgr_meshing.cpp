@@ -229,11 +229,141 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
   lgr::for_each(s.nodes, coordinates_functor);
 }
 
+static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& s)
+{
+  assert(in.elements_along_x >= 1);
+  int const nx = in.elements_along_x;
+  assert(in.elements_along_y >= 1);
+  int const ny = in.elements_along_y;
+  assert(in.elements_along_z >= 1);
+  int const nz = in.elements_along_z;
+  s.nodes_in_element.resize(node_in_element_index(10));
+  s.points_in_element.resize(point_in_element_index(4));
+  int const nvx = nx * 2 + 1;
+  int const nvy = ny * 2 + 1;
+  int const nvz = nz * 2 + 1;
+  int const nvxy = nvx * nvy;
+  int const nv = nvxy * nvz;
+  s.nodes.resize(node_index(nv));
+  int const nxy = nx * ny;
+  int const nh = nxy * nz;
+  int const nt = nh * 6;
+  s.elements.resize(element_index(nt));
+  s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
+  auto const elements_to_nodes = s.elements_to_nodes.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto connectivity_functor = [=] (int const hex) {
+    int const ij = hex % nxy;
+    int const k = hex / nxy;
+    int const i = ij % nx;
+    int const j = ij / nx;
+    using g_t = node_index;
+    node_index hex_nodes[3][3][3];
+    for (int li = 0; li < 3; ++li) {
+    for (int lj = 0; lj < 3; ++lj) {
+    for (int lk = 0; lk < 3; ++lk) {
+      hex_nodes[li][lj][lk] = g_t(((k * 2 + lk) * nvy + (j * 2 + lj)) * nvx + (i * 2 + li));
+    }}}
+    auto tet = element_index(hex * 6 + 0);
+    auto element_nodes = elements_to_element_nodes[tet];
+    using l_t = node_in_element_index;
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[2][0][0];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[2][2][0];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[1][0][0];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[2][1][0];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[1][1][0];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[2][1][1];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][2][1];
+    tet = element_index(hex * 6 + 1);
+    element_nodes = elements_to_element_nodes[tet];
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[2][2][0];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[0][2][0];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[1][1][0];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[1][2][0];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[0][1][0];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[2][2][1];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[1][2][1];
+    tet = element_index(hex * 6 + 2);
+    element_nodes = elements_to_element_nodes[tet];
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[0][2][0];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[0][2][2];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[0][1][0];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[0][2][1];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[0][1][1];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[1][2][1];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[1][2][2];
+    tet = element_index(hex * 6 + 3);
+    element_nodes = elements_to_element_nodes[tet];
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[0][2][2];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[0][0][2];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[0][1][1];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[0][1][2];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[0][0][1];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[1][2][2];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[1][1][2];
+    tet = element_index(hex * 6 + 4);
+    element_nodes = elements_to_element_nodes[tet];
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[0][0][2];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[2][0][2];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[0][0][1];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[1][0][2];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[1][0][1];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[1][1][2];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][1][2];
+    tet = element_index(hex * 6 + 5);
+    element_nodes = elements_to_element_nodes[tet];
+    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0][0][0];
+    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[2][0][2];
+    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[2][0][0];
+    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[2][2][2];
+    elements_to_nodes[element_nodes[l_t(4)]] = hex_nodes[1][0][1];
+    elements_to_nodes[element_nodes[l_t(5)]] = hex_nodes[2][0][1];
+    elements_to_nodes[element_nodes[l_t(6)]] = hex_nodes[1][0][0];
+    elements_to_nodes[element_nodes[l_t(7)]] = hex_nodes[1][1][1];
+    elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[2][1][2];
+    elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][1][1];
+  };
+  counting_range<int> hexes(nh);
+  lgr::for_each(hexes, connectivity_functor);
+  s.x.resize(s.nodes.size());
+  auto const nodes_to_x = s.x.begin();
+  double const x = in.x_domain_size;
+  double const y = in.y_domain_size;
+  double const z = in.z_domain_size;
+  double const dx = x / (nx * 2.0);
+  double const dy = y / (ny * 2.0);
+  double const dz = z / (nz * 2.0);
+  auto coordinates_functor = [=] (node_index const node) {
+    int const ij = int(node) % nvxy;
+    int const k = int(node) / nvxy;
+    int const i = ij % nvx;
+    int const j = ij / nvx;
+    nodes_to_x[node] = vector3<double>(i * dx, j * dy, k * dz);
+  };
+  lgr::for_each(s.nodes, coordinates_functor);
+}
+
 void build_mesh(input const& in, state& s) {
   switch (in.element) {
     case BAR: build_bar_mesh(in, s); break;
     case TRIANGLE: build_triangle_mesh(in, s); break;
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
+    case COMPOSITE_TETRAHEDRON: build_10_node_tetrahedron_mesh(in, s); break;
   }
   s.nodes_to_node_elements.resize(s.nodes.size());
   s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));

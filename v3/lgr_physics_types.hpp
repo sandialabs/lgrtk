@@ -176,6 +176,7 @@ class node_index : public index<int, node_index> {
   public:
     using base_type = index<int, node_index>;
     constexpr explicit inline node_index(int const i) noexcept : base_type(i) {}
+    inline node_index() noexcept = default;
 };
 
 class node_in_element_index : public index<int, node_in_element_index> {
@@ -220,6 +221,16 @@ class point_in_element_index : public index<int, point_in_element_index> {
 
 constexpr inline point_index operator*(element_index const& e, point_in_element_index const& qp) noexcept {
   return point_index(int(e) * int(qp));
+}
+
+class point_node_index : public index<int, point_node_index> {
+  public:
+    using base_type = index<int, point_node_index>;
+    constexpr explicit inline point_node_index(int const i) noexcept : base_type(i) {}
+};
+
+constexpr inline point_node_index operator*(point_index const& p, node_in_element_index const& n) noexcept {
+  return point_node_index(int(p) * int(n));
 }
 
 }
