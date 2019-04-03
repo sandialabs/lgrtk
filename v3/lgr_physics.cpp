@@ -749,8 +749,8 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const points_to_c = s.c.cbegin();
-  auto const c1 = in.linear_artificial_viscosity;
-  auto const c2 = in.quadratic_artificial_viscosity;
+  auto const c1 = in.quadratic_artificial_viscosity;
+  auto const c2 = in.linear_artificial_viscosity;
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_nu_art = s.nu_art.begin();
