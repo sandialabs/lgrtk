@@ -173,6 +173,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
 
         // evaluate function
         //
+        Kokkos::deep_copy(tResult, 0.0);
         mScalarFunctionValue->evaluate( tStateWS, tPrevStateWS, tControlWS, tConfigWS, tResult, aTimeStep );
 
         // sum across elements
@@ -240,6 +241,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
 
         // evaluate function
         //
+        Kokkos::deep_copy(tResult, 0.0);
         mScalarFunctionGradientX->evaluate( tStateWS, tPrevStateWS, tControlWS, tConfigWS, tResult, aTimeStep );
 
         Plato::assemble_vector_gradient<m_numNodesPerCell, m_numSpatialDims>(m_numCells, m_configEntryOrdinal, tResult, tObjGradientX);
@@ -317,6 +319,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
   
         // evaluate function
         //
+        Kokkos::deep_copy(tResult, 0.0);
         mScalarFunctionGradientP->evaluate( tNextStateWS, tStateWS, tControlWS, tConfigWS, tResult, aTimeStep );
   
         // create and assemble to return view
@@ -387,6 +390,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
 
         // evaluate function
         //
+        Kokkos::deep_copy(tResult, 0.0);
         mScalarFunctionGradientZ->evaluate( tStateWS, tPrevStateWS, tControlWS, tConfigWS, tResult, aTimeStep );
 
         Plato::assemble_scalar_gradient<m_numNodesPerCell>(m_numCells, m_controlEntryOrdinal, tResult, tObjGradientZ);
