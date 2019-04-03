@@ -148,7 +148,6 @@ static void LGR_NOINLINE update_reference(state& s) {
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
-  //std::cout << "ref update element " << int(element) << '\n';
     for (auto const point : element_points) {
       auto const point_nodes = points_to_point_nodes[point];
       auto F_incr = matrix3x3<double>::identity();
@@ -170,7 +169,6 @@ static void LGR_NOINLINE update_reference(state& s) {
       matrix3x3<double> const new_F_total = F_incr * old_F_total;
       points_to_F_total[point] = new_F_total;
       auto const J = determinant(F_incr);
-    //std::cout << "J_incr " << J << '\n';
       assert(J > 0.0);
       double const old_V = points_to_V[point];
       auto const new_V = J * old_V;
@@ -477,6 +475,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
     auto const K = gamma * p;
     assert(K > 0.0);
     points_to_K[point] = K;
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho " << rho << " e " << e << " p " << p << " K " << K << '\n';
   };
   lgr::for_each(s.points, functor);
 }
@@ -619,17 +618,23 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto grad_v = matrix3x3<double>::zero();
+//    if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v calc:\n";
       auto const element_nodes = elements_to_element_nodes[element];
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
-        auto const node = element_nodes_to_nodes[element_node];
+        node_index const node = element_nodes_to_nodes[element_node];
+//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " ID " << int(node) << '\n'; 
         vector3<double> const v = nodes_to_v[node];
+//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " v " << v << '\n'; 
         vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " grad_N " << grad_N << '\n'; 
         grad_v = grad_v + outer_product(v, grad_N);
       }
+//    if (point < point_index(6)) std::cout << "grad_v:\n" << grad_v;
       symmetric3x3<double> const symm_grad_v(grad_v);
+//    if (point < point_index(6)) std::cout << "symm_grad_v:\n" << symm_grad_v;
       points_to_symm_grad_v[point] = symm_grad_v;
     }
   };
@@ -643,8 +648,19 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
   auto const points_to_rho_e_dot = s.rho_e_dot.begin();
   auto functor = [=] (point_index const point) {
     symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot calc:\n";
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v\n" << symm_grad_v;
     symmetric3x3<double> const sigma = points_to_sigma[point];
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " sigma\n" << sigma;
+//  if (point < point_index(6)) std::cout << "diagonal inner product " <<
+//    (sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) << '\n';
+//  if (point < point_index(6)) std::cout << "off-diagonal inner product " <<
+//    (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2)) << '\n';
+//  if (point < point_index(6)) std::cout << "expected inner_product " <<
+//    ((sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) + 2.0 *
+//     (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2))) << '\n';
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
+//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot " << rho_e_dot << '\n';
     points_to_rho_e_dot[point] = rho_e_dot;
   };
   lgr::for_each(s.points, functor);
@@ -733,8 +749,8 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const points_to_c = s.c.cbegin();
-  auto const c1 = in.linear_artificial_viscosity;
-  auto const c2 = in.quadratic_artificial_viscosity;
+  auto const c1 = in.quadratic_artificial_viscosity;
+  auto const c2 = in.linear_artificial_viscosity;
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_nu_art = s.nu_art.begin();
@@ -756,6 +772,32 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
         auto const sigma_tilde = sigma + sigma_art;
         points_to_sigma[point] = sigma_tilde;
       }
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE volume_average_J(state& s) {
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_F = s.F_total.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    double total_V0 = 0.0;
+    double total_V = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const F = points_to_F[point];
+      auto const J = determinant(F);
+      double const V = points_to_V[point];
+      auto const V0 = V / J;
+      total_V0 += V0;
+      total_V += V;
+    }
+    auto const average_J = total_V / total_V0;
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const old_F = points_to_F[point];
+      auto const old_J = determinant(old_F);
+      auto const new_F = std::cbrt(average_J / old_J) * old_F;
+      points_to_F[point] = new_F;
     }
   };
   lgr::for_each(s.elements, functor);
@@ -877,6 +919,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
     update_reference(s);
+    if (in.enable_J_averaging) volume_average_J(s);
     if (in.enable_nodal_energy) {
       update_nodal_density(s);
       interpolate_rho(s);
@@ -902,6 +945,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_u(s, s.dt);
   update_x(s);
   update_reference(s);
+  if (in.enable_J_averaging) volume_average_J(s);
   update_h_min(in, s);
   update_material_state(in, s);
   update_c(s);
@@ -925,6 +969,7 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
 }
 
 void run(input const& in) {
+  std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
   double const file_output_period = num_file_outputs ? in.end_time / num_file_outputs : 0.0;
   state s;
@@ -963,7 +1008,6 @@ void run(input const& in) {
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
-  std::cout << std::scientific << std::setprecision(17);
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {

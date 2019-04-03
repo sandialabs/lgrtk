@@ -2,6 +2,8 @@
 
 #include <lgr_matrix3x3.hpp>
 
+#include <iostream>
+
 namespace lgr {
 
 template <typename Scalar>
@@ -9,12 +11,12 @@ struct symmetric3x3 {
 public:
   using scalar_type = Scalar;
   enum slot_type {
-    XX,
-    YY,
-    ZZ,
-    XY,
-    YZ,
-    XZ,
+    XX = 0,
+    YY = 1,
+    ZZ = 2,
+    XY = 3,
+    YZ = 4,
+    XZ = 5,
   };
 private:
   scalar_type raw[6];
@@ -147,16 +149,21 @@ operator*(symmetric3x3<Scalar> const left,
 }
 
 template <typename Scalar>
-constexpr inline Scalar
+inline Scalar
 inner_product(symmetric3x3<Scalar> const left,
     symmetric3x3<Scalar> const right) noexcept {
   using st = symmetric3x3<Scalar>;
-  return left(st::XX) * right(st::XX) +
-         left(st::YY) * right(st::YY) +
-         left(st::XX) * right(st::ZZ) +
-         2.0 * left(st::XY) * right(st::XY) +
-         2.0 * left(st::YZ) * right(st::YZ) +
-         2.0 * left(st::XZ) * right(st::XZ);
+  Scalar const diagonal_inner_product =
+    (left(st::XX) * right(st::XX)) +
+    (left(st::YY) * right(st::YY)) +
+    (left(st::ZZ) * right(st::ZZ));
+  Scalar const triangular_inner_product =
+    (left(st::XY) * right(st::XY)) +
+    (left(st::YZ) * right(st::YZ)) +
+    (left(st::XZ) * right(st::XZ));
+//std::cout << "diagonal_inner_product " << diagonal_inner_product << '\n';
+//std::cout << "triangular_inner_product " << triangular_inner_product << '\n';
+  return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
 template <typename Scalar>
