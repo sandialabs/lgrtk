@@ -680,7 +680,7 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.name = "Noh_3D";
   in.element = TETRAHEDRON;
   in.end_time = 5.0e-3;
-  in.num_file_outputs = 60;
+  in.num_file_outputs = 2;
   in.elements_along_x = 22;
   in.x_domain_size = 1.1;
   in.elements_along_y = 22;
