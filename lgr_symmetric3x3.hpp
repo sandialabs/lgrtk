@@ -161,8 +161,8 @@ inner_product(symmetric3x3<Scalar> const left,
     (left(st::XY) * right(st::XY)) +
     (left(st::YZ) * right(st::YZ)) +
     (left(st::XZ) * right(st::XZ));
-  std::cout << "diagonal_inner_product " << diagonal_inner_product << '\n';
-  std::cout << "triangular_inner_product " << triangular_inner_product << '\n';
+//std::cout << "diagonal_inner_product " << diagonal_inner_product << '\n';
+//std::cout << "triangular_inner_product " << triangular_inner_product << '\n';
   return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
