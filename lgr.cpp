@@ -766,7 +766,7 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 2.0;
+  in.linear_artificial_viscosity = 4.0;
   in.quadratic_artificial_viscosity = 0.5;
   run(in);
 }
