@@ -598,8 +598,8 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 0.5;
-  in.quadratic_artificial_viscosity = 1.0;
+  in.linear_artificial_viscosity = 1.0;
+  in.quadratic_artificial_viscosity = 0.5;
   in.enable_nodal_energy = true;
   in.c_tau = 1.0;
   run(in);
@@ -680,6 +680,55 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.name = "Noh_3D";
   in.element = TETRAHEDRON;
   in.end_time = 0.6;
+  in.num_file_outputs = 6;
+  in.elements_along_x = 22;
+  in.x_domain_size = 1.1;
+  in.elements_along_y = 22;
+  in.y_domain_size = 1.1;
+  in.elements_along_z = 22;
+  in.z_domain_size = 1.1;
+  in.rho0 = 1.0;
+  in.enable_ideal_gas = true;
+  in.gamma = 5.0 / 3.0;
+  in.e0 = 1.0e-14;
+  auto inward_v = [=] (
+    counting_range<node_index> const nodes,
+    device_vector<vector3<double>, node_index> const& x_vector,
+    device_vector<vector3<double>, node_index>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=](node_index const node) {
+      vector3<double> const x = nodes_to_x[node];
+      auto const n = norm(x);
+      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      nodes_to_v[node] = v;
+    };
+    lgr::for_each(nodes, functor);
+  };
+  in.initial_v = inward_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 1.0;
+  in.quadratic_artificial_viscosity = 0.1;
+  in.enable_nodal_energy = false;
+  in.c_tau = 4.0;
+  run(in);
+}
+
+static void LGR_NOINLINE run_composite_Noh_3D() {
+  input in;
+  in.name = "composite_Noh_3D";
+  in.element = COMPOSITE_TETRAHEDRON;
+  in.end_time = 0.6;
   in.num_file_outputs = 60;
   in.elements_along_x = 22;
   in.x_domain_size = 1.1;
@@ -717,8 +766,8 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 0.5;
-  in.quadratic_artificial_viscosity = 0.2;
+  in.linear_artificial_viscosity = 2.0;
+  in.quadratic_artificial_viscosity = 0.5;
   run(in);
 }
 
@@ -739,7 +788,8 @@ int main() {
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
-  if ((1)) lgr::run_Noh_3D();
+  if ((0)) lgr::run_Noh_3D();
+  if ((1)) lgr::run_composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
 }
