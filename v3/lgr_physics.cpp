@@ -632,7 +632,9 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
         if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " grad_N " << grad_N << '\n'; 
         grad_v = grad_v + outer_product(v, grad_N);
       }
+      if (point < point_index(6)) std::cout << "grad_v:\n" << grad_v;
       symmetric3x3<double> const symm_grad_v(grad_v);
+      if (point < point_index(6)) std::cout << "symm_grad_v:\n" << symm_grad_v;
       points_to_symm_grad_v[point] = symm_grad_v;
     }
   };
@@ -650,6 +652,13 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
     if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v\n" << symm_grad_v;
     symmetric3x3<double> const sigma = points_to_sigma[point];
     if (point < point_index(6)) std::cout << "element " << int(point) << " sigma\n" << sigma;
+    if (point < point_index(6)) std::cout << "diagonal inner product " <<
+      (sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) << '\n';
+    if (point < point_index(6)) std::cout << "off-diagonal inner product " <<
+      (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2)) << '\n';
+    if (point < point_index(6)) std::cout << "expected inner_product " <<
+      ((sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) + 2.0 *
+       (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2))) << '\n';
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
     if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot " << rho_e_dot << '\n';
     points_to_rho_e_dot[point] = rho_e_dot;
