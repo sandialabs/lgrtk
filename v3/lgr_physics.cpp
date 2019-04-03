@@ -765,15 +765,16 @@ static void LGR_NOINLINE volume_average_J(state& s) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
     double average_J = 0.0;
-    double element_V = 0.0;
+    double element_V0 = 0.0;
     for (auto const point : elements_to_points[element]) {
       matrix3x3<double> const F = points_to_F[point];
       auto const J = determinant(F);
       double const V = points_to_V[point];
-      average_J += J * V;
-      element_V += V;
+      auto const V0 = V / J;
+      average_J += J * V0;
+      element_V0 += V0;
     }
-    average_J /= element_V;
+    average_J /= element_V0;
     for (auto const point : elements_to_points[element]) {
       matrix3x3<double> const old_F = points_to_F[point];
       auto const old_J = determinant(old_F);
