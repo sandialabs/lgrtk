@@ -2,8 +2,6 @@
 
 #include <lgr_matrix3x3.hpp>
 
-#include <iostream>
-
 namespace lgr {
 
 template <typename Scalar>

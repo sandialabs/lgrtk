@@ -728,8 +728,8 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   input in;
   in.name = "composite_Noh_3D";
   in.element = COMPOSITE_TETRAHEDRON;
-  in.end_time = 0.6;
-  in.num_file_outputs = 60;
+  in.end_time = 0.05;
+  in.num_file_outputs = 5;
   in.elements_along_x = 22;
   in.x_domain_size = 1.1;
   in.elements_along_y = 22;
