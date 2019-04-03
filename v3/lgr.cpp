@@ -629,7 +629,7 @@ static void LGR_NOINLINE spinning_composite_cube() {
 
 static void LGR_NOINLINE twisting_composite_column() {
   input in;
-  in.name = "twisting_composite_column";
+  in.name = "twisting_composite_column_J";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
@@ -670,6 +670,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   in.zero_acceleration_conditions.push_back({"y_min", x_axis});
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"y_min", z_axis});
+  in.enable_J_averaging = true;
   in.CFL = 0.9;
   run(in);
 }
@@ -687,7 +688,7 @@ int main() {
   if ((0)) lgr::run_elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
-  if ((0)) lgr::twisting_column();
+  if ((1)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
