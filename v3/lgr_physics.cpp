@@ -475,7 +475,6 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
     auto const K = gamma * p;
     assert(K > 0.0);
     points_to_K[point] = K;
-//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho " << rho << " e " << e << " p " << p << " K " << K << '\n';
   };
   lgr::for_each(s.points, functor);
 }
@@ -618,23 +617,17 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto grad_v = matrix3x3<double>::zero();
-//    if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v calc:\n";
       auto const element_nodes = elements_to_element_nodes[element];
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
         node_index const node = element_nodes_to_nodes[element_node];
-//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " ID " << int(node) << '\n'; 
         vector3<double> const v = nodes_to_v[node];
-//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " v " << v << '\n'; 
         vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
-//      if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " grad_N " << grad_N << '\n'; 
         grad_v = grad_v + outer_product(v, grad_N);
       }
-//    if (point < point_index(6)) std::cout << "grad_v:\n" << grad_v;
       symmetric3x3<double> const symm_grad_v(grad_v);
-//    if (point < point_index(6)) std::cout << "symm_grad_v:\n" << symm_grad_v;
       points_to_symm_grad_v[point] = symm_grad_v;
     }
   };
@@ -648,19 +641,8 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
   auto const points_to_rho_e_dot = s.rho_e_dot.begin();
   auto functor = [=] (point_index const point) {
     symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
-//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot calc:\n";
-//  if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v\n" << symm_grad_v;
     symmetric3x3<double> const sigma = points_to_sigma[point];
-//  if (point < point_index(6)) std::cout << "element " << int(point) << " sigma\n" << sigma;
-//  if (point < point_index(6)) std::cout << "diagonal inner product " <<
-//    (sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) << '\n';
-//  if (point < point_index(6)) std::cout << "off-diagonal inner product " <<
-//    (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2)) << '\n';
-//  if (point < point_index(6)) std::cout << "expected inner_product " <<
-//    ((sigma(0,0) * symm_grad_v(0,0) + sigma(1,1) * symm_grad_v(1,1) + sigma(2,2) * symm_grad_v(2,2)) + 2.0 *
-//     (sigma(0,1) * symm_grad_v(0,1) + sigma(1,2) * symm_grad_v(1,2) + sigma(0,2) * symm_grad_v(0,2))) << '\n';
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
-//  if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot " << rho_e_dot << '\n';
     points_to_rho_e_dot[point] = rho_e_dot;
   };
   lgr::for_each(s.points, functor);
