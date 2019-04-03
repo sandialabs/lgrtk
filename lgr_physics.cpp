@@ -475,6 +475,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
     auto const K = gamma * p;
     assert(K > 0.0);
     points_to_K[point] = K;
+    if (point < point_index(6)) std::cout << "element " << int(point) << " rho " << rho << " e " << e << " p " << p << " K " << K << '\n';
   };
   lgr::for_each(s.points, functor);
 }
@@ -951,6 +952,7 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
 }
 
 void run(input const& in) {
+  std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
   double const file_output_period = num_file_outputs ? in.end_time / num_file_outputs : 0.0;
   state s;
@@ -989,7 +991,6 @@ void run(input const& in) {
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
-  std::cout << std::scientific << std::setprecision(17);
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
