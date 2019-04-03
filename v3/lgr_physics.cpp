@@ -618,14 +618,18 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto grad_v = matrix3x3<double>::zero();
+      if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v calc:\n";
       auto const element_nodes = elements_to_element_nodes[element];
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
-        auto const node = element_nodes_to_nodes[element_node];
+        node_index const node = element_nodes_to_nodes[element_node];
+        if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " ID " << int(node) << '\n'; 
         vector3<double> const v = nodes_to_v[node];
+        if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " v " << v << '\n'; 
         vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        if (point < point_index(6)) std::cout << "node " << int(node_in_element) << " grad_N " << grad_N << '\n'; 
         grad_v = grad_v + outer_product(v, grad_N);
       }
       symmetric3x3<double> const symm_grad_v(grad_v);
@@ -642,8 +646,12 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
   auto const points_to_rho_e_dot = s.rho_e_dot.begin();
   auto functor = [=] (point_index const point) {
     symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
+    if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot calc:\n";
+    if (point < point_index(6)) std::cout << "element " << int(point) << " symm_grad_v\n" << symm_grad_v;
     symmetric3x3<double> const sigma = points_to_sigma[point];
+    if (point < point_index(6)) std::cout << "element " << int(point) << " sigma\n" << sigma;
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
+    if (point < point_index(6)) std::cout << "element " << int(point) << " rho_e_dot " << rho_e_dot << '\n';
     points_to_rho_e_dot[point] = rho_e_dot;
   };
   lgr::for_each(s.points, functor);
