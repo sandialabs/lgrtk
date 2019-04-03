@@ -148,7 +148,6 @@ static void LGR_NOINLINE update_reference(state& s) {
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
-  //std::cout << "ref update element " << int(element) << '\n';
     for (auto const point : element_points) {
       auto const point_nodes = points_to_point_nodes[point];
       auto F_incr = matrix3x3<double>::identity();
@@ -170,7 +169,6 @@ static void LGR_NOINLINE update_reference(state& s) {
       matrix3x3<double> const new_F_total = F_incr * old_F_total;
       points_to_F_total[point] = new_F_total;
       auto const J = determinant(F_incr);
-    //std::cout << "J_incr " << J << '\n';
       assert(J > 0.0);
       double const old_V = points_to_V[point];
       auto const new_V = J * old_V;
@@ -761,6 +759,31 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE volume_average_J(state& s) {
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_F = s.F_total.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    double average_J = 0.0;
+    double element_V = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const F = points_to_F[point];
+      auto const J = determinant(F);
+      double const V = points_to_V[point];
+      average_J += J * V;
+      element_V += V;
+    }
+    average_J /= element_V;
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const old_F = points_to_F[point];
+      auto const old_J = determinant(old_F);
+      auto const new_F = std::cbrt(average_J / old_J) * old_F;
+      points_to_F[point] = new_F;
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
@@ -877,6 +900,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
     update_reference(s);
+    if (in.enable_J_averaging) volume_average_J(s);
     if (in.enable_nodal_energy) {
       update_nodal_density(s);
       interpolate_rho(s);
@@ -902,6 +926,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_u(s, s.dt);
   update_x(s);
   update_reference(s);
+  if (in.enable_J_averaging) volume_average_J(s);
   update_h_min(in, s);
   update_material_state(in, s);
   update_c(s);
