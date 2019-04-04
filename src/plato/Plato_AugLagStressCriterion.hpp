@@ -114,11 +114,9 @@ private:
     **********************************************************************************/
     void updateAugLagPenaltyMultipliers()
     {
-        printf("\n****** UPDATE PENALTY MULTIPLIER ******\n");
         mAugLagPenalty = mAugLagPenaltyExpansionMultiplier * mAugLagPenalty;
         mAugLagPenalty = std::min(mAugLagPenalty, mAugLagPenaltyUpperBound);
         mMassMultipliersUpperBound = mMassMultipliersUpperBound * mMassMultiplierUpperBoundReductionParam;
-        printf("\n****** PENALTY MULTIPLIER = %e ******\n", mAugLagPenalty);
     }
 
 public:
@@ -396,8 +394,6 @@ public:
                            const Plato::ScalarMultiVector & aControlWS,
                            const Plato::ScalarArray3D & aConfigWS)
     {
-        printf("\n****** UPDATE LAGRANGE MULTIPLIERS ******\n");
-
         // Create Cauchy stress functors
         Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
@@ -474,8 +470,6 @@ public:
     **********************************************************************************/
     void computeStructuralMass()
     {
-        printf("\n****** COMPUTE STRUCTURAL MASS ******\n");
-
         auto tNumCells = mMesh.nelems();
         Plato::NodeCoordinate<mSpaceDim> tCoordinates(&mMesh);
         Plato::ScalarArray3D tConfig("configuration", tNumCells, mNumNodesPerCell, mSpaceDim);
@@ -499,7 +493,6 @@ public:
         },"Compute Structural Mass");
 
         Plato::local_sum(tTotalMass, mMassNormalizationMultiplier);
-        printf("\n****** TOTAL STRUCTURAL MASS = %f ******\n", mMassNormalizationMultiplier);
     }
 };
 // class AugLagStressCriterion

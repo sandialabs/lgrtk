@@ -43,7 +43,7 @@ inline void random(const Plato::Scalar & aLowerBound, const Plato::Scalar & aUpp
  * @return inner product
 **********************************************************************************/
 template<typename VecOneT, typename VecTwoT>
-inline Plato::Scalar dot(VecOneT & aVec1, VecTwoT & aVec2)
+inline Plato::Scalar dot(const VecOneT & aVec1, const VecTwoT & aVec2)
 {
     assert(aVec2.size() == aVec1.size());
     Plato::Scalar tOutput = 0.;
@@ -56,6 +56,20 @@ inline Plato::Scalar dot(VecOneT & aVec1, VecTwoT & aVec2)
     return (tOutput);
 }
 // function dot
+
+/******************************************************************************//**
+ * @brief Compute the norm/length of a vector
+ * @param [in] aVector 1D container
+ * @return norm/length
+**********************************************************************************/
+template<typename VecOneT>
+inline Plato::Scalar norm(const VecOneT & aVector)
+{
+    const Plato::Scalar tDot = Plato::dot(aVector, aVector);
+    const Plato::Scalar tOutput = std::sqrt(tDot);
+    return (tOutput);
+}
+// function norm
 
 /******************************************************************************//**
  * @brief Set all the elements to a scalar value
