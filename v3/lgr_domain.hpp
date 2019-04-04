@@ -144,6 +144,9 @@ class union_domain : public domain {
       device_vector<material_index, element_index>* markers) const override;
 };
 
+std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);
+std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius);
+
 void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,

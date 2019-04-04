@@ -8,13 +8,6 @@
 
 namespace lgr {
 
-static std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) {
-  auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
-  out->clip({p.normal, p.origin - eps});
-  out->clip({-p.normal, -p.origin - eps});
-  return out;
-}
-
 static void LGR_NOINLINE set_exponential_wave_v(
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -602,6 +595,8 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.quadratic_artificial_viscosity = 0.5;
 //in.enable_nodal_energy = true;
   in.c_tau = 1.0;
+  auto sphere_uptr = sphere_domain(vector3<double>{0.5, 0.5, 0.0}, 0.25);
+  in.material_domains.emplace_back(material_index(1), std::move(sphere_uptr));
   run(in);
 }
 
