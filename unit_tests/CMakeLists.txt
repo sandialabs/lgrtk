@@ -310,9 +310,6 @@ if (LGR_ENABLE_PLATO_MPMD)
     LGRAppIntxTests.cpp
     LGRAppUnitTestMain.cpp
   )
-  file(COPY        ${CMAKE_CURRENT_SOURCE_DIR}/IntxTests
-       DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
 
   add_executable(LGRAppIntxTests
     ${LGRApp_SOURCES}
