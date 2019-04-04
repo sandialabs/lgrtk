@@ -233,4 +233,10 @@ constexpr inline point_node_index operator*(point_index const& p, node_in_elemen
   return point_node_index(int(p) * int(n));
 }
 
+class material_index : public index<int, material_index> {
+  public:
+    using base_type = index<int, material_index>;
+    constexpr explicit inline material_index(int const i) noexcept : base_type(i) {}
+};
+
 }
