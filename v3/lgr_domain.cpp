@@ -23,6 +23,16 @@ void union_domain::mark(
   }
 }
 
+void union_domain::mark(
+    device_vector<vector3<double>,
+    element_index> const& points,
+    material_index const marker,
+    device_vector<material_index, element_index>* markers) const {
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
+}
+
 void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
@@ -48,7 +58,7 @@ void collect_node_set(
   lgr::for_each(nodes, functor2);
 }
 
-void set_materials(input const& /*in*/, state& s) {
+void set_materials(input const& in, state& s) {
   device_vector<vector3<double>, element_index>
     centroid_vector(s.elements.size(), s.mempool);
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
@@ -67,11 +77,11 @@ void set_materials(input const& /*in*/, state& s) {
     elements_to_centroids[element] = centroid;
   };
   lgr::for_each(s.elements, centroid_functor);
-//for (auto const& pair : in.material_domains) {
-//  auto const material = pair.first;
-//  auto const& domain = pair.second;
-//  domain->mark(centroid_vector, material, &s.material);
-//}
+  for (auto const& pair : in.material_domains) {
+    auto const material = pair.first;
+    auto const& domain = pair.second;
+    domain->mark(centroid_vector, material, &s.material);
+  }
 }
 
 }
