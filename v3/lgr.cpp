@@ -595,8 +595,6 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.quadratic_artificial_viscosity = 0.5;
 //in.enable_nodal_energy = true;
   in.c_tau = 1.0;
-  auto sphere_uptr = sphere_domain(vector3<double>{0.5, 0.5, 0.0}, 0.25);
-  in.material_domains.emplace_back(material_index(1), std::move(sphere_uptr));
   run(in);
 }
 
