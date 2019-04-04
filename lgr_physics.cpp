@@ -642,7 +642,7 @@ void run(input const& in) {
     auto const& domain_name = pair.first;
     auto const& domain_ptr = pair.second;
     s.node_sets.emplace(domain_name, s.mempool);
-    collect_domain_entities(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
+    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
   }
   resize_physics(in, s);
   lgr::fill(s.rho, in.rho0);

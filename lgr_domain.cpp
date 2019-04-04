@@ -17,11 +17,11 @@ void union_domain::mark(device_vector<vector3<double>, node_index> const& points
   }
 }
 
-void collect_domain_entities(
+void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
     device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<node_index, int>* entities)
+    device_vector<node_index, int>* node_set_nodes)
 {
   device_allocator<int> alloc(x_vector.get_allocator());
   device_vector<int, int> is_on(int(nodes.size()), alloc);
@@ -30,13 +30,13 @@ void collect_domain_entities(
   device_vector<int, int> offsets(int(nodes.size()), alloc);
   lgr::transform_inclusive_scan(is_on, offsets, lgr::plus<int>(), lgr::identity<int>());
   int const domain_size = lgr::transform_reduce(is_on, int(0), lgr::plus<int>(), lgr::identity<int>());
-  entities->resize(domain_size);
-  auto const domain_ents_to_ents = entities->begin();
+  node_set_nodes->resize(domain_size);
+  auto const domain_nodes_to_nodes = node_set_nodes->begin();
   auto const nodes_to_offsets = offsets.cbegin();
   auto const nodes_are_on = is_on.cbegin();
   auto functor2 = [=] (node_index const node) {
     if (nodes_are_on[int(node)]) {
-      domain_ents_to_ents[nodes_to_offsets[int(node)] - 1] = node;
+      domain_nodes_to_nodes[nodes_to_offsets[int(node)] - 1] = node;
     }
   };
   lgr::for_each(nodes, functor2);

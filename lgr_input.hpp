@@ -69,6 +69,7 @@ class input {
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
   std::map<std::string, std::unique_ptr<domain>> node_sets;
   std::function<void(device_vector<vector3<double>, node_index>*)> x_transform;
+  std::vector<std::pair<material_index, std::unique_ptr<domain>>> material_domains;
 };
 
 }
