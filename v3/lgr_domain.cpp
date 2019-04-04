@@ -17,29 +17,39 @@ void union_domain::mark(device_vector<vector3<double>, node_index> const& points
   }
 }
 
+template <class Index>
+static void LGR_NOINLINE collect_entities(
+    counting_range<Index> const all_entities,
+    domain const& domain,
+    device_vector<vector3<double>, Index> const& x_vector,
+    device_vector<Index, int>* domain_entities)
+{
+  device_allocator<int> alloc(x_vector.get_allocator());
+  device_vector<int, int> is_on(int(all_entities.size()), alloc);
+  lgr::fill(is_on, int(0));
+  domain.mark(x_vector, int(1), &is_on);
+  device_vector<int, int> offsets(int(all_entities.size()), alloc);
+  lgr::transform_inclusive_scan(is_on, offsets, lgr::plus<int>(), lgr::identity<int>());
+  int const domain_size = lgr::transform_reduce(is_on, int(0), lgr::plus<int>(), lgr::identity<int>());
+  domain_entities->resize(domain_size);
+  auto const domain_entities_to_entities = domain_entities->begin();
+  auto const entities_to_offsets = offsets.cbegin();
+  auto const entities_are_on = is_on.cbegin();
+  auto functor = [=] (Index const e) {
+    if (entities_are_on[int(e)]) {
+      domain_entities_to_entities[entities_to_offsets[int(e)] - 1] = e;
+    }
+  };
+  lgr::for_each(all_entities, functor);
+}
+
 void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
     device_vector<vector3<double>, node_index> const& x_vector,
     device_vector<node_index, int>* node_set_nodes)
 {
-  device_allocator<int> alloc(x_vector.get_allocator());
-  device_vector<int, int> is_on(int(nodes.size()), alloc);
-  lgr::fill(is_on, int(0));
-  domain.mark(x_vector, int(1), &is_on);
-  device_vector<int, int> offsets(int(nodes.size()), alloc);
-  lgr::transform_inclusive_scan(is_on, offsets, lgr::plus<int>(), lgr::identity<int>());
-  int const domain_size = lgr::transform_reduce(is_on, int(0), lgr::plus<int>(), lgr::identity<int>());
-  node_set_nodes->resize(domain_size);
-  auto const domain_nodes_to_nodes = node_set_nodes->begin();
-  auto const nodes_to_offsets = offsets.cbegin();
-  auto const nodes_are_on = is_on.cbegin();
-  auto functor2 = [=] (node_index const node) {
-    if (nodes_are_on[int(node)]) {
-      domain_nodes_to_nodes[nodes_to_offsets[int(node)] - 1] = node;
-    }
-  };
-  lgr::for_each(nodes, functor2);
+  collect_entities<node_index>(nodes, domain, x_vector, node_set_nodes);
 }
 
 }
