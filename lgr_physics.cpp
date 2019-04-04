@@ -509,6 +509,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.q.resize(s.points.size());
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
+  s.material.resize(s.elements.size());
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
