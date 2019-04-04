@@ -422,9 +422,10 @@ static void LGR_NOINLINE update_triangle_h_art(state& s) {
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
-    constexpr point_in_element_index fp(0);
-    auto const point = elements_to_points[element][fp];
-    double const area = points_to_V[point];
+    double area = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      area += points_to_V[point];
+    }
     double const h_art = C_geom * std::sqrt(area);
     elements_to_h_art[element] = h_art;
   };
@@ -437,17 +438,14 @@ static void LGR_NOINLINE update_tetrahedron_h_art(state& s) {
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
-    constexpr point_in_element_index fp(0);
-    auto const point = elements_to_points[element][fp];
-    double const volume = points_to_V[point];
+    double volume = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      volume += points_to_V[point];
+    }
     double const h_art = C_geom * std::cbrt(volume);
     elements_to_h_art[element] = h_art;
   };
   lgr::for_each(s.elements, functor);
-}
-
-static void LGR_NOINLINE update_composite_tetrahedron_h_art(state& s) {
-  copy(s.h_min, s.h_art);
 }
 
 void update_h_art(input const& in, state& s) {
@@ -455,7 +453,7 @@ void update_h_art(input const& in, state& s) {
     case BAR: update_bar_h_art(s); break;
     case TRIANGLE: update_triangle_h_art(s); break;
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
-    case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_art(s); break;
+    case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
   }
 }
 
