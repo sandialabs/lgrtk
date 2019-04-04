@@ -108,10 +108,4 @@ norm(vector3<Scalar> const v) noexcept {
   return std::sqrt(v * v);
 }
 
-template <typename Scalar>
-inline Scalar
-normalize(vector3<Scalar> const v) noexcept {
-  return v / norm(v);
-}
-
 }
