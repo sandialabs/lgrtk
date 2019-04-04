@@ -60,6 +60,7 @@ class state {
   device_vector<double, node_index> old_e_h{mempool}; // nodal specific internal energy at previous time state
   device_vector<double, node_index> e_h_dot{mempool}; // time derivative of nodal specific internal energy
   device_vector<double, node_index> rho_h{mempool}; // nodal density
+  device_vector<material_index, element_index> material{mempool}; // element material
   std::map<std::string, device_vector<node_index, int>> node_sets;
   double next_file_output_time;
   double dt = 0.0;

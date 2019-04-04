@@ -114,10 +114,10 @@ class union_domain : public domain {
   void mark(device_vector<vector3<double>, node_index> const& points, int const marker, device_vector<int, int>* markers) const override;
 };
 
-void collect_domain_entities(
+void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
     device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<node_index, int>* entities);
+    device_vector<node_index, int>* node_set_nodes);
 
 }
