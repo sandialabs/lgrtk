@@ -76,6 +76,10 @@ class domain {
         device_vector<vector3<double>, node_index> const& points,
         int const marker,
         device_vector<int, node_index>* markers) const = 0;
+    virtual void mark(
+        device_vector<vector3<double>, element_index> const& points,
+        material_index const marker,
+        device_vector<material_index, element_index>* markers) const = 0;
 };
 
 template <class SourceDomain>
@@ -118,6 +122,12 @@ class clipped_domain : public domain {
       device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
+  void mark(
+      device_vector<vector3<double>, element_index> const& points,
+      material_index const marker,
+      device_vector<material_index, element_index>* markers) const override {
+    this->mark_tmpl<element_index, material_index>(points, marker, markers);
+  }
 };
 
 class union_domain : public domain {
@@ -128,6 +138,10 @@ class union_domain : public domain {
       device_vector<vector3<double>, node_index> const& points,
       int const marker,
       device_vector<int, node_index>* markers) const override;
+  void mark(
+      device_vector<vector3<double>, element_index> const& points,
+      material_index const marker,
+      device_vector<material_index, element_index>* markers) const override;
 };
 
 void collect_node_set(
