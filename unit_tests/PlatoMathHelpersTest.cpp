@@ -39,6 +39,17 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_dot)
   TEST_FLOATING_EQUALITY(20., tOutput, tTolerance);
 }
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_norm)
+{
+  constexpr Plato::OrdinalType tNumElems = 10;
+  Plato::ScalarVector tVecA("Vec A", tNumElems);
+  Plato::fill(1.0, tVecA);
+
+  const Plato::Scalar tOutput = Plato::norm(tVecA);
+  constexpr Plato::Scalar tTolerance = 1e-6;
+  TEST_FLOATING_EQUALITY(3.16227766016838, tOutput, tTolerance);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_sum)
 {
   constexpr Plato::OrdinalType tNumElems = 10;
