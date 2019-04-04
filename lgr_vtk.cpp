@@ -64,6 +64,15 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
   }
 }
 
+static void write_vtk_materials(std::ostream& stream,
+    device_vector<material_index, element_index> const& vec) {
+  stream << "SCALARS material int 1\n";
+  stream << "LOOKUP_TABLE default\n";
+  for (material_index const val : vec) {
+    stream << int(val) << "\n";
+  }
+}
+
 static void write_vtk_scalars(std::ostream& stream, char const* name,
     counting_range<element_index> const elements,
     counting_range<point_in_element_index> const points_in_element,
@@ -120,6 +129,7 @@ void file_writer::operator()(
   write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
   write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
   write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
+  write_vtk_materials(stream, s.material);
   stream.close();
 }
 
