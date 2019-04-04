@@ -646,6 +646,7 @@ void run(input const& in) {
     collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
   }
   resize_physics(in, s);
+  set_materials(in, s);
   lgr::fill(s.rho, in.rho0);
   lgr::fill(s.e, in.e0);
   lgr::fill(s.p_h, double(0.0));
