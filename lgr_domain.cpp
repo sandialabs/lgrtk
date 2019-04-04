@@ -85,4 +85,17 @@ void set_materials(input const& in, state& s) {
   }
 }
 
+std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) {
+  auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
+  out->clip({p.normal, p.origin - eps});
+  out->clip({-p.normal, -p.origin - eps});
+  return out;
+}
+
+std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius) {
+  lgr::sphere const s{origin, radius};
+  auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
+  return out;
+}
+
 }
