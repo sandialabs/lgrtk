@@ -33,7 +33,7 @@ struct sphere {
 };
 
 inline double distance(sphere const s, vector3<double> const pt) {
-  return norm(pt - s.origin) - s.radius;
+  return s.radius - norm(pt - s.origin);
 };
 
 struct cylinder {
