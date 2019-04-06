@@ -152,24 +152,21 @@ public:
 };
 
 template <class T, class Index = int>
-class host_vector : public struct_vector<T, device_layout, host_allocator<T>, Index> {
-  using base_type = struct_vector<T, device_layout, host_allocator<T>, Index>;
+class pinned_vector : public struct_vector<T, device_layout, pinned_allocator<T>, Index> {
+  using base_type = struct_vector<T, device_layout, pinned_allocator<T>, Index>;
 public:
   using typename base_type::size_type;
-  explicit host_vector() noexcept
-    :base_type(host_allocator<T>())
+  explicit pinned_vector(pinned_memory_pool& pool_in) noexcept
+    :base_type(pinned_allocator<T>(pool_in))
   {}
-  explicit host_vector(size_type count)
-    :base_type(count, host_allocator<T>())
+  explicit pinned_vector(size_type count, pinned_memory_pool& pool_in)
+    :base_type(count, pinned_allocator<T>(pool_in))
   {}
-  explicit host_vector(size_type count, host_allocator<T> const& alloc_in)
-    :base_type(count, alloc_in)
-  {}
-  host_vector(host_vector&&) noexcept = default;
-  host_vector(host_vector const&) = delete;
-  host_vector& operator=(host_vector const&) = delete;
-  host_vector& operator=(host_vector&&) = delete;
-  ~host_vector() = default;
+  pinned_vector(pinned_vector&&) noexcept = default;
+  pinned_vector(pinned_vector const&) = delete;
+  pinned_vector& operator=(pinned_vector const&) = delete;
+  pinned_vector& operator=(pinned_vector&&) = delete;
+  ~pinned_vector() = default;
   typename base_type::reference operator[](Index const i) { return this->begin()[i]; }
   typename base_type::const_reference operator[](Index const i) const { return this->cbegin()[i]; }
 };
@@ -196,7 +193,7 @@ public:
 };
 
 template <class T, class Index>
-void copy(host_vector<T, Index> const& left, device_vector<T, Index>& right) {
+void copy(pinned_vector<T, Index> const& left, device_vector<T, Index>& right) {
   // change for CUDA!
   lgr::copy(left, right);
 }
