@@ -34,6 +34,7 @@ class zero_acceleration_condition {
 
 class input {
   public:
+  pinned_memory_pool pinpool;
   std::string name;
   element_kind element;
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
@@ -49,7 +50,7 @@ class input {
   int elements_along_z = 0;
   double z_domain_size = 1.0;
   bool output_to_command_line = true;
-  host_vector<double, material_index> rho0;
+  pinned_vector<double, material_index> rho0;
   double e0 = 0.0;
   bool enable_neo_Hookean = false;
   double K0;
@@ -74,7 +75,7 @@ class input {
   input() = delete;
   input(material_index material_count_in)
     :material_count(material_count_in)
-    ,rho0(material_count_in)
+    ,rho0(material_count_in, pinpool)
   {}
 };
 
