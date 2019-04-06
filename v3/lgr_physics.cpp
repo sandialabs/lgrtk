@@ -642,7 +642,7 @@ void run(input const& in) {
   for (auto const& pair : in.node_sets) {
     auto const& domain_name = pair.first;
     auto const& domain_ptr = pair.second;
-    s.node_sets.emplace(domain_name, s.mempool);
+    s.node_sets.emplace(domain_name, s.devpool);
     collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
   }
   resize_physics(in, s);
