@@ -157,5 +157,6 @@ class input;
 class state;
 
 void set_materials(input const& in, state& s);
+void collect_element_sets(input const& in, state& s);
 
 }
