@@ -38,6 +38,7 @@ class input {
   element_kind element;
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
   h_min_kind h_min = INBALL_DIAMETER;
+  material_index material_count;
   double end_time;
   double CFL = 0.9;
   int num_file_outputs;
@@ -48,7 +49,7 @@ class input {
   int elements_along_z = 0;
   double z_domain_size = 1.0;
   bool output_to_command_line = true;
-  double rho0;
+  host_vector<double, material_index> rho0;
   double e0 = 0.0;
   bool enable_neo_Hookean = false;
   double K0;
@@ -70,6 +71,11 @@ class input {
   std::map<std::string, std::unique_ptr<domain>> node_sets;
   std::function<void(device_vector<vector3<double>, node_index>*)> x_transform;
   std::vector<std::pair<material_index, std::unique_ptr<domain>>> material_domains;
+  input() = delete;
+  input(material_index material_count_in)
+    :material_count(material_count_in)
+    ,rho0(material_count_in)
+  {}
 };
 
 }

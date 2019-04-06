@@ -44,13 +44,15 @@ static void LGR_NOINLINE spin_v(
 }
 
 static void LGR_NOINLINE run_elastic_wave() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "elastic_wave";
   in.element = BAR;
   in.end_time = 4.0e-3;
   in.num_file_outputs = 200;
   in.elements_along_x = 1000;
-  in.rho0 = 1000.0;
+  in.rho0[body] = 1000.0;
   in.enable_neo_Hookean = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
@@ -68,13 +70,15 @@ static void LGR_NOINLINE run_elastic_wave() {
 }
 
 static void LGR_NOINLINE run_gas_expansion() {
-  input in;
+  constexpr material_index gas(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "gas_expansion";
   in.element = BAR;
   in.end_time = 10.0;
   in.num_file_outputs = 100;
   in.elements_along_x = 160;
-  in.rho0 = 1.0;
+  in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 1.4;
   in.e0 = 1.0;
@@ -83,7 +87,9 @@ static void LGR_NOINLINE run_gas_expansion() {
 }
 
 static void LGR_NOINLINE spinning_square() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "spinning_square";
   in.element = TRIANGLE;
   in.end_time = 1.0e-2;
@@ -92,7 +98,7 @@ static void LGR_NOINLINE spinning_square() {
   in.x_domain_size = 1.0;
   in.elements_along_y = 1;
   in.y_domain_size = 1.0;
-  in.rho0 = 1000.0;
+  in.rho0[body] = 1000.0;
   in.enable_neo_Hookean = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
@@ -133,7 +139,9 @@ static void LGR_NOINLINE Cooks_membrane_x(
 }
 
 static void LGR_NOINLINE Cooks_membrane() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "Cooks_membrane";
   in.element = TRIANGLE;
   in.end_time = 40.0;
@@ -142,7 +150,7 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.x_domain_size = 1.0;
   in.elements_along_y = 8;
   in.y_domain_size = 1.0;
-  in.rho0 = 1.0;
+  in.rho0[body] = 1.0;
   in.enable_neo_Hookean = true;
   in.K0 = 833333.0;
   in.G0 = 83.0;
@@ -161,7 +169,9 @@ static void LGR_NOINLINE Cooks_membrane() {
 }
 
 static void LGR_NOINLINE swinging_plate() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "swinging_plate";
   in.element = TRIANGLE;
   in.num_file_outputs = 200;
@@ -170,7 +180,7 @@ static void LGR_NOINLINE swinging_plate() {
   in.elements_along_y = 8;
   in.y_domain_size = 2.0;
   double const rho = 1.1e3;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const nu = 0.45;
   double const E = 1.7e7;
@@ -215,7 +225,9 @@ static void LGR_NOINLINE swinging_plate() {
 }
 
 static void LGR_NOINLINE spinning_cube() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "spinning_cube";
   in.element = TETRAHEDRON;
   in.end_time = 1.0e-2;
@@ -226,7 +238,7 @@ static void LGR_NOINLINE spinning_cube() {
   in.y_domain_size = 1.0;
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
-  in.rho0 = 7800.0;
+  in.rho0[body] = 7800.0;
   in.enable_neo_Hookean = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
@@ -237,7 +249,9 @@ static void LGR_NOINLINE spinning_cube() {
 }
 
 static void LGR_NOINLINE run_elastic_wave_2d() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "elastic_wave_2d";
   in.element = TRIANGLE;
   in.end_time = 2.0e-3;
@@ -245,7 +259,7 @@ static void LGR_NOINLINE run_elastic_wave_2d() {
   in.elements_along_x = 1000;
   in.elements_along_y = 1;
   in.y_domain_size = 1.0e-3;
-  in.rho0 = 1000.0;
+  in.rho0[body] = 1000.0;
   in.enable_neo_Hookean = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
@@ -267,7 +281,9 @@ static void LGR_NOINLINE run_elastic_wave_2d() {
 }
 
 static void LGR_NOINLINE run_elastic_wave_3d() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "elastic_wave_3d";
   in.element = TETRAHEDRON;
   in.end_time = 2.0e-3;
@@ -277,7 +293,7 @@ static void LGR_NOINLINE run_elastic_wave_3d() {
   in.y_domain_size = 1.0e-3;
   in.elements_along_z = 1;
   in.z_domain_size = 1.0e-3;
-  in.rho0 = 1000.0;
+  in.rho0[body] = 1000.0;
   in.enable_neo_Hookean = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
@@ -305,7 +321,9 @@ static void LGR_NOINLINE run_elastic_wave_3d() {
 }
 
 static void LGR_NOINLINE swinging_cube() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "swinging_cube";
   in.element = TETRAHEDRON;
   in.num_file_outputs = 100;
@@ -316,7 +334,7 @@ static void LGR_NOINLINE swinging_cube() {
   in.elements_along_z = 8;
   in.z_domain_size = 2.0;
   double const rho = 1.1e3;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const nu = 0.45;
   double const E = 1.7e7;
@@ -368,7 +386,9 @@ static void LGR_NOINLINE swinging_cube() {
 }
 
 static void LGR_NOINLINE bending_beam() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "bending_beam";
   in.element = TETRAHEDRON;
   in.num_file_outputs = 100;
@@ -379,7 +399,7 @@ static void LGR_NOINLINE bending_beam() {
   in.elements_along_z = 3;
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const nu = 0.499;
   double const E = 1.7e7;
@@ -416,7 +436,9 @@ static void LGR_NOINLINE bending_beam() {
 }
 
 static void LGR_NOINLINE twisting_column() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "twisting_column";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
@@ -428,7 +450,7 @@ static void LGR_NOINLINE twisting_column() {
   in.elements_along_z = 3;
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const nu = 0.499;
   double const E = 1.7e7;
@@ -465,7 +487,9 @@ static void LGR_NOINLINE twisting_column() {
 }
 
 static void LGR_NOINLINE tet_piston() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "tet_piston";
   in.element = TETRAHEDRON;
   in.end_time = 10.0;
@@ -477,7 +501,7 @@ static void LGR_NOINLINE tet_piston() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
   double const rho = 1.0;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const K = 1.0;
   double const G = 1.0;
@@ -518,14 +542,16 @@ static void LGR_NOINLINE tet_piston() {
 }
 
 static void LGR_NOINLINE run_Noh_1D() {
-  input in;
+  constexpr material_index gas(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "Noh_1D";
   in.element = BAR;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
   in.elements_along_x = 44;
   in.x_domain_size = 1.1;
-  in.rho0 = 1.0;
+  in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
@@ -555,7 +581,9 @@ static void LGR_NOINLINE run_Noh_1D() {
 }
 
 static void LGR_NOINLINE run_Noh_2D() {
-  input in;
+  constexpr material_index gas(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "Noh_2D";
   in.element = TRIANGLE;
   in.end_time = 0.6;
@@ -564,7 +592,7 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.x_domain_size = 0.85;
   in.elements_along_y = 34;
   in.y_domain_size = 0.85;
-  in.rho0 = 1.0;
+  in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
@@ -599,7 +627,9 @@ static void LGR_NOINLINE run_Noh_2D() {
 }
 
 static void LGR_NOINLINE spinning_composite_cube() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "spinning_composite_cube";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 1.0e-2;
@@ -610,7 +640,7 @@ static void LGR_NOINLINE spinning_composite_cube() {
   in.y_domain_size = 1.0;
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
-  in.rho0 = 7800.0;
+  in.rho0[body] = 7800.0;
   in.enable_neo_Hookean = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
@@ -621,7 +651,9 @@ static void LGR_NOINLINE spinning_composite_cube() {
 }
 
 static void LGR_NOINLINE twisting_composite_column() {
-  input in;
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "twisting_composite_column_J";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
@@ -633,7 +665,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   in.elements_along_z = 3;
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
-  in.rho0 = rho;
+  in.rho0[body] = rho;
   in.enable_neo_Hookean = true;
   double const nu = 0.499;
   double const E = 1.7e7;
@@ -669,7 +701,9 @@ static void LGR_NOINLINE twisting_composite_column() {
 }
 
 static void LGR_NOINLINE run_Noh_3D() {
-  input in;
+  constexpr material_index gas(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "Noh_3D";
   in.element = TETRAHEDRON;
   in.end_time = 0.6;
@@ -680,7 +714,7 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.y_domain_size = 1.1;
   in.elements_along_z = 22;
   in.z_domain_size = 1.1;
-  in.rho0 = 1.0;
+  in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
@@ -718,7 +752,9 @@ static void LGR_NOINLINE run_Noh_3D() {
 }
 
 static void LGR_NOINLINE run_composite_Noh_3D() {
-  input in;
+  constexpr material_index gas(0);
+  constexpr material_index nmaterials(1);
+  input in(nmaterials);
   in.name = "composite_Noh_3D";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.05;
@@ -729,7 +765,7 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   in.y_domain_size = 1.1;
   in.elements_along_z = 22;
   in.z_domain_size = 1.1;
-  in.rho0 = 1.0;
+  in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
   in.e0 = 1.0e-14;
@@ -767,7 +803,7 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
 }
 
 int main() {
-  if ((0)) lgr::run_elastic_wave();
+  if ((1)) lgr::run_elastic_wave();
   if ((0)) lgr::run_gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -784,5 +820,5 @@ int main() {
   if ((0)) lgr::run_Noh_3D();
   if ((0)) lgr::run_composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
-  if ((0)) lgr::twisting_composite_column();
+  if ((1)) lgr::twisting_composite_column();
 }
