@@ -9,16 +9,16 @@ class host_vector {
   using impl_type = vector<T, host_allocator<T>, Index>;
   impl_type m_impl;
 public:
-  using typename impl_type::value_type;
-  using typename impl_type::allocator_type;
-  using typename impl_type::size_type;
-  using typename impl_type::difference_type;
-  using typename impl_type::reference;
-  using typename impl_type::const_reference;
-  using typename impl_type::pointer;
-  using typename impl_type::const_pointer;
-  using typename impl_type::iterator;
-  using typename impl_type::const_iterator;
+  using value_type = typename impl_type::value_type;
+  using allocator_type = typename impl_type::allocator_type;
+  using size_type = typename impl_type::size_type;
+  using difference_type = typename impl_type::difference_type;
+  using reference = typename impl_type::reference;
+  using const_reference = typename impl_type::const_reference;
+  using pointer = typename impl_type::pointer;
+  using const_pointer = typename impl_type::const_pointer;
+  using iterator = typename impl_type::iterator;
+  using const_iterator = typename impl_type::const_iterator;
   explicit host_vector() noexcept
     :m_impl(host_allocator<T>())
   {}

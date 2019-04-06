@@ -8,6 +8,7 @@
 #include <lgr_vector3.hpp>
 #include <lgr_matrix3x3.hpp>
 #include <lgr_symmetric3x3.hpp>
+#include <lgr_host_vector.hpp>
 
 namespace lgr {
 
@@ -62,6 +63,7 @@ class state {
   device_vector<double, node_index> rho_h{devpool}; // nodal density
   device_vector<material_index, element_index> material{devpool}; // element material
   std::map<std::string, device_vector<node_index, int>> node_sets;
+  host_vector<device_vector<element_index, int>, material_index> element_sets;
   double next_file_output_time;
   double dt = 0.0;
   double max_stable_dt;
