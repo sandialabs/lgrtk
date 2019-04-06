@@ -95,6 +95,22 @@ void set_materials(input const& in, state& s) {
   }
 }
 
+void collect_element_sets(input const& in, state& s)
+{
+  s.element_sets.resize(in.material_count, s.devpool);
+  device_vector<int, element_index> is_in(s.elements.size(), s.devpool);
+  auto const elements_to_material = s.material.cbegin();
+  auto const elements_are_in = is_in.begin();
+  for (material_index material(0); material < in.material_count; ++material) {
+    auto functor = [=](element_index const element) {
+      material_index const element_material = elements_to_material[element];
+      elements_are_in[element] = int(element_material == material);
+    };
+    for_each(s.elements, functor);
+    collect_set(s.elements, is_in, s.element_sets[material]);
+  }
+}
+
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({p.normal, p.origin - eps});

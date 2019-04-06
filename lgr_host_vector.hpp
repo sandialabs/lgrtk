@@ -23,7 +23,7 @@ public:
     :m_impl(host_allocator<T>())
   {}
   template <class ... Args>
-  explicit host_vector(size_type count, Args ... args)
+  explicit host_vector(size_type count, Args&& ... args)
     :m_impl(host_allocator<T>())
   {
     resize(count, args...);
@@ -48,7 +48,7 @@ public:
   reference operator[](Index const i) { return m_impl.begin()[i]; }
   const_reference operator[](Index const i) const { return m_impl.cbegin()[i]; }
   template <class ... Args>
-  void resize(size_type count, Args ... args) {
+  void resize(size_type count, Args&& ... args) {
     clear();
     m_impl.resize(count);
     T* const ptr = data();
