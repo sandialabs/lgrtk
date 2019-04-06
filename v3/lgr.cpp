@@ -800,6 +800,41 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   run(in);
 }
 
+static void LGR_NOINLINE Sod_1D() {
+  constexpr material_index left(0);
+  constexpr material_index right(1);
+  constexpr material_index nmaterials(2);
+  input in(nmaterials);
+  in.name = "Sod_1D";
+  in.element = BAR;
+  in.end_time = 0.14;
+  in.num_file_outputs = 14;
+  in.elements_along_x = 100;
+  in.x_domain_size = 1.0;
+  in.rho0[left] = 1.0;
+  in.rho0[right] = 0.125;
+  in.enable_ideal_gas = true;
+  in.gamma[left] = 1.4;
+  in.gamma[right] = 1.4;
+  in.e0[left] = 1.0 / ((1.4 - 1.0) * 1.0);
+  in.e0[right] = 0.1 / ((1.4 - 1.0) * 0.125);
+  in.initial_v = zero_v;
+  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 1.0;
+  in.quadratic_artificial_viscosity = 0.0;
+  auto right_domain = half_space_domain(plane{vector3<double>{1.0, 0.0, 0.0}, 0.5});
+  auto left_domain = half_space_domain(plane{vector3<double>{-1.0, 0.0, 0.0}, -0.5});
+  in.material_domains.emplace_back(left, std::move(left_domain));
+  in.material_domains.emplace_back(right, std::move(right_domain));
+  run(in);
+}
+
 }
 
 int main() {
@@ -816,9 +851,10 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::run_Noh_1D();
-  if ((1)) lgr::run_Noh_2D();
+  if ((0)) lgr::run_Noh_2D();
   if ((0)) lgr::run_Noh_3D();
   if ((0)) lgr::run_composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
+  if ((1)) lgr::Sod_1D();
 }

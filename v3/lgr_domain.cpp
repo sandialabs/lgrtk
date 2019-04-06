@@ -124,4 +124,10 @@ std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const
   return out;
 }
 
+std::unique_ptr<domain> half_space_domain(plane const& p) {
+  auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
+  out->clip(p);
+  return out;
+}
+
 }
