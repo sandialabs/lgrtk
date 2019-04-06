@@ -153,12 +153,6 @@ public:
   }
 };
 
-template <class T, class Index>
-void copy(pinned_vector<T, Index> const& left, device_vector<T, Index>& right) {
-  // change for CUDA!
-  lgr::copy(left, right);
-}
-
 class node_index : public index<int, node_index> {
   public:
     using base_type = index<int, node_index>;

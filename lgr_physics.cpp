@@ -632,6 +632,23 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
   }
 }
 
+static void LGR_NOINLINE initialize_rho(input const& in, state& s) {
+  device_vector<double, material_index> rho0(in.rho0.size(), s.devpool);
+  copy(in.rho0, rho0);
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const elements_to_material = s.material.cbegin();
+  auto const points_to_rho = s.rho.begin();
+  auto const materials_to_rho = rho0.cbegin();
+  auto functor = [=] (element_index const element) {
+    material_index const material = elements_to_material[element];
+    double const rho = materials_to_rho[material];
+    for (auto const point : elements_to_points[element]) {
+      points_to_rho[point] = rho;
+    }
+  };
+  for_each(s.elements, functor);
+}
+
 void run(input const& in) {
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
@@ -647,7 +664,7 @@ void run(input const& in) {
   }
   resize_physics(in, s);
   set_materials(in, s);
-  lgr::fill(s.rho, in.rho0[material_index(0)]);
+  initialize_rho(in, s);
   lgr::fill(s.e, in.e0);
   lgr::fill(s.p_h, double(0.0));
   lgr::fill(s.e_h, in.e0);
