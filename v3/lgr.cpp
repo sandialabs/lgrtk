@@ -81,7 +81,7 @@ static void LGR_NOINLINE run_gas_expansion() {
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 1.4;
-  in.e0 = 1.0;
+  in.e0[gas] = 1.0;
   in.initial_v = zero_v;
   run(in);
 }
@@ -554,7 +554,7 @@ static void LGR_NOINLINE run_Noh_1D() {
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
-  in.e0 = 1.0e-14;
+  in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -595,7 +595,7 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
-  in.e0 = 1.0e-14;
+  in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -717,7 +717,7 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
-  in.e0 = 1.0e-14;
+  in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -768,7 +768,7 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma = 5.0 / 3.0;
-  in.e0 = 1.0e-14;
+  in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
