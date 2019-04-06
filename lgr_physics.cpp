@@ -512,9 +512,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.material.resize(s.elements.size());
 }
 
-static void LGR_NOINLINE update_material_state(input const& in, state& s) {
-  lgr::fill(s.sigma, symmetric3x3<double>::zero());
-  lgr::fill(s.G, double(0.0));
+static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index) {
   if (in.enable_neo_Hookean) {
     neo_Hookean(in, s);
   }
@@ -526,6 +524,14 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   }
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
     update_sigma_with_p_h(s);
+  }
+}
+
+static void LGR_NOINLINE update_material_state(input const& in, state& s) {
+  lgr::fill(s.sigma, symmetric3x3<double>::zero());
+  lgr::fill(s.G, double(0.0));
+  for (material_index material(0); material < in.material_count; ++material) {
+    update_single_material_state(in, s, material);
   }
 }
 
