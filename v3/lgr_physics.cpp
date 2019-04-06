@@ -513,13 +513,10 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
+  lgr::fill(s.sigma, symmetric3x3<double>::zero());
+  lgr::fill(s.G, double(0.0));
   if (in.enable_neo_Hookean) {
     neo_Hookean(in, s);
-  }
-  else {
-    lgr::fill(s.sigma, symmetric3x3<double>::zero());
-    lgr::fill(s.K, double(0.0));
-    lgr::fill(s.G, double(0.0));
   }
   if (in.enable_ideal_gas) {
     ideal_gas(in, s);
