@@ -33,6 +33,28 @@ void union_domain::mark(
   }
 }
 
+template <class Index>
+static void collect_set(
+  counting_range<Index> const range,
+  device_vector<int, Index> const& is_in,
+  device_vector<Index, int>& set_items
+  )
+{
+  device_vector<int, Index> offsets(range.size(), is_in.get_allocator());
+  lgr::transform_inclusive_scan(is_in, offsets, lgr::plus<int>(), lgr::identity<int>());
+  int const set_size = lgr::transform_reduce(is_in, int(0), lgr::plus<int>(), lgr::identity<int>());
+  set_items.resize(set_size);
+  auto const set_items_to_items = set_items.begin();
+  auto const items_to_offsets = offsets.cbegin();
+  auto const items_are_in = is_in.cbegin();
+  auto functor2 = [=] (Index const item) {
+    if (items_are_in[item]) {
+      set_items_to_items[items_to_offsets[item] - 1] = item;
+    }
+  };
+  lgr::for_each(range, functor2);
+}
+
 void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
@@ -40,22 +62,10 @@ void collect_node_set(
     device_vector<node_index, int>* node_set_nodes)
 {
   device_allocator<int> alloc(x_vector.get_allocator());
-  device_vector<int, node_index> is_on(nodes.size(), alloc);
-  lgr::fill(is_on, int(0));
-  domain.mark(x_vector, int(1), &is_on);
-  device_vector<int, node_index> offsets(nodes.size(), alloc);
-  lgr::transform_inclusive_scan(is_on, offsets, lgr::plus<int>(), lgr::identity<int>());
-  int const domain_size = lgr::transform_reduce(is_on, int(0), lgr::plus<int>(), lgr::identity<int>());
-  node_set_nodes->resize(domain_size);
-  auto const domain_nodes_to_nodes = node_set_nodes->begin();
-  auto const nodes_to_offsets = offsets.cbegin();
-  auto const nodes_are_on = is_on.cbegin();
-  auto functor2 = [=] (node_index const node) {
-    if (nodes_are_on[node]) {
-      domain_nodes_to_nodes[nodes_to_offsets[node] - 1] = node;
-    }
-  };
-  lgr::for_each(nodes, functor2);
+  device_vector<int, node_index> is_in(nodes.size(), alloc);
+  lgr::fill(is_in, int(0));
+  domain.mark(x_vector, int(1), &is_in);
+  collect_set(nodes, is_in, *node_set_nodes);
 }
 
 void set_materials(input const& in, state& s) {
