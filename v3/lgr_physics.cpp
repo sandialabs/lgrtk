@@ -227,7 +227,7 @@ static void LGR_NOINLINE neo_Hookean(input const& in, state& s) {
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
+static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.cbegin();
   auto const points_to_sigma = s.sigma.begin();
@@ -250,7 +250,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
       points_to_K[point] = K;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
 static void LGR_NOINLINE update_element_force(state& s)
@@ -515,12 +515,12 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.material.resize(s.elements.size());
 }
 
-static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index) {
+static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
   if (in.enable_neo_Hookean) {
     neo_Hookean(in, s);
   }
   if (in.enable_ideal_gas) {
-    ideal_gas(in, s);
+    ideal_gas(in, s, material);
     if (in.enable_nodal_energy) {
       nodal_ideal_gas(in, s);
     }
