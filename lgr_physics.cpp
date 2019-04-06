@@ -632,21 +632,32 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE initialize_rho(input const& in, state& s) {
-  device_vector<double, material_index> rho0(in.rho0.size(), s.devpool);
-  copy(in.rho0, rho0);
+static void LGR_NOINLINE initialize_material_scalar(
+    pinned_vector<double, material_index> const& in,
+    state& s,
+    device_vector<double, point_index>& out) {
+  device_vector<double, material_index> dev_in(in.size(), out.get_allocator().get_pool());
+  copy(in, dev_in);
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
-  auto const points_to_rho = s.rho.begin();
-  auto const materials_to_rho = rho0.cbegin();
+  auto const points_to_scalar = out.begin();
+  auto const materials_to_scalar = dev_in.cbegin();
   auto functor = [=] (element_index const element) {
     material_index const material = elements_to_material[element];
-    double const rho = materials_to_rho[material];
+    double const scalar = materials_to_scalar[material];
     for (auto const point : elements_to_points[element]) {
-      points_to_rho[point] = rho;
+      points_to_scalar[point] = scalar;
     }
   };
   for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE initialize_rho(input const& in, state& s) {
+  initialize_material_scalar(in.rho0, s, s.rho);
+}
+
+static void LGR_NOINLINE initialize_e(input const& in, state& s) {
+  initialize_material_scalar(in.e0, s, s.e);
 }
 
 void run(input const& in) {
@@ -665,9 +676,9 @@ void run(input const& in) {
   resize_physics(in, s);
   set_materials(in, s);
   initialize_rho(in, s);
-  lgr::fill(s.e, in.e0);
+  initialize_e(in, s);
   lgr::fill(s.p_h, double(0.0));
-  lgr::fill(s.e_h, in.e0);
+  lgr::fill(s.e_h, in.e0[material_index(0)]);
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);

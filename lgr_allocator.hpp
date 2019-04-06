@@ -40,6 +40,7 @@ struct concurrent_pooled_allocator {
   void deallocate(T* p, std::size_t n) {
     m_pool->deallocate(p, n * sizeof(T));
   }
+  memory_pool_base& get_pool() { return *m_pool; }
 };
 
 template <class T>
@@ -56,6 +57,7 @@ struct device_allocator : public concurrent_pooled_allocator<T> {
   device_allocator(device_allocator<U> const& other) noexcept
   :concurrent_pooled_allocator<T>(other)
   {}
+  device_memory_pool& get_pool() { return *static_cast<device_memory_pool*>(this->m_pool); }
 };
 
 template <class T>

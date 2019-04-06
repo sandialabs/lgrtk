@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lgr_struct_vector.hpp>
+#include <lgr_fill.hpp>
 
 namespace lgr {
 
@@ -15,6 +16,11 @@ public:
   explicit pinned_vector(size_type count, pinned_memory_pool& pool_in)
     :base_type(count, pinned_allocator<T>(pool_in))
   {}
+  explicit pinned_vector(size_type count, T const& v, pinned_memory_pool& pool_in)
+    :base_type(count, pinned_allocator<T>(pool_in))
+  {
+    fill(*this, v);
+  }
   pinned_vector(pinned_vector&&) noexcept = default;
   pinned_vector(pinned_vector const&) = delete;
   pinned_vector& operator=(pinned_vector const&) = delete;
