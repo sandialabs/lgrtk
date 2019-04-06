@@ -233,21 +233,24 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s) {
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
   auto const gamma = in.gamma;
-  auto functor = [=] (point_index const point) {
-    double const rho = points_to_rho[point];
-    assert(rho > 0.0);
-    double const e = points_to_e[point];
-    assert(e > 0.0);
-    auto const p = (gamma - 1.0) * (rho * e);
-    assert(p > 0.0);
-    symmetric3x3<double> const old_sigma = points_to_sigma[point];
-    auto const new_sigma = deviator(old_sigma) - p;
-    points_to_sigma[point] = new_sigma;
-    auto const K = gamma * p;
-    assert(K > 0.0);
-    points_to_K[point] = K;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    for (auto const point : elements_to_points[element]) {
+      double const rho = points_to_rho[point];
+      assert(rho > 0.0);
+      double const e = points_to_e[point];
+      assert(e > 0.0);
+      auto const p = (gamma - 1.0) * (rho * e);
+      assert(p > 0.0);
+      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      auto const new_sigma = deviator(old_sigma) - p;
+      points_to_sigma[point] = new_sigma;
+      auto const K = gamma * p;
+      assert(K > 0.0);
+      points_to_K[point] = K;
+    }
   };
-  lgr::for_each(s.points, functor);
+  lgr::for_each(s.elements, functor);
 }
 
 static void LGR_NOINLINE update_element_force(state& s)
