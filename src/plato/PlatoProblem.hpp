@@ -181,7 +181,8 @@ public:
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
         auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-        return mObjective->value(tStatesSubView, aControl);
+        auto tObjFuncValue = mObjective->value(tStatesSubView, aControl);
+        return tObjFuncValue;
     }
 
     /******************************************************************************//**
@@ -280,7 +281,6 @@ public:
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
         auto tStatesSubView = Kokkos::subview(mStates, tTIME_STEP_INDEX, Kokkos::ALL());
         auto tPartialObjectiveWRT_Control = mObjective->gradient_z(tStatesSubView, aControl);
-        
         if(mIsSelfAdjoint)
         {
             Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_Control);
