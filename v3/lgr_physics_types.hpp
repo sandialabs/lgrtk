@@ -4,6 +4,8 @@
 #include <lgr_symmetric3x3.hpp>
 #include <lgr_allocator.hpp>
 #include <lgr_index.hpp>
+#include <lgr_pinned_vector.hpp>
+#include <lgr_device_vector.hpp>
 
 namespace lgr {
 
@@ -149,47 +151,6 @@ public:
     T const f = m_array[5];
     return symmetric3x3<T>(a, b, c, d, e, f);
   }
-};
-
-template <class T, class Index = int>
-class pinned_vector : public struct_vector<T, device_layout, pinned_allocator<T>, Index> {
-  using base_type = struct_vector<T, device_layout, pinned_allocator<T>, Index>;
-public:
-  using typename base_type::size_type;
-  explicit pinned_vector(pinned_memory_pool& pool_in) noexcept
-    :base_type(pinned_allocator<T>(pool_in))
-  {}
-  explicit pinned_vector(size_type count, pinned_memory_pool& pool_in)
-    :base_type(count, pinned_allocator<T>(pool_in))
-  {}
-  pinned_vector(pinned_vector&&) noexcept = default;
-  pinned_vector(pinned_vector const&) = delete;
-  pinned_vector& operator=(pinned_vector const&) = delete;
-  pinned_vector& operator=(pinned_vector&&) = delete;
-  ~pinned_vector() = default;
-  typename base_type::reference operator[](Index const i) { return this->begin()[i]; }
-  typename base_type::const_reference operator[](Index const i) const { return this->cbegin()[i]; }
-};
-
-template <class T, class Index = int>
-class device_vector : public struct_vector<T, device_layout, device_allocator<T>, Index> {
-  using base_type = struct_vector<T, device_layout, device_allocator<T>, Index>;
-public:
-  using typename base_type::size_type;
-  explicit device_vector(device_memory_pool& pool_in) noexcept
-    :base_type(device_allocator<T>(pool_in))
-  {}
-  explicit device_vector(size_type count, device_memory_pool& pool_in)
-    :base_type(count, device_allocator<T>(pool_in))
-  {}
-  explicit device_vector(size_type count, device_allocator<T> const& alloc_in)
-    :base_type(count, alloc_in)
-  {}
-  device_vector(device_vector&&) noexcept = default;
-  device_vector(device_vector const&) = delete;
-  device_vector& operator=(device_vector const&) = delete;
-  device_vector& operator=(device_vector&&) = delete;
-  ~device_vector() = default;
 };
 
 template <class T, class Index>
