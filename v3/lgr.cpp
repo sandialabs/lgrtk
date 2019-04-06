@@ -826,8 +826,8 @@ static void LGR_NOINLINE Sod_1D() {
   in.zero_acceleration_conditions.push_back({"x_min", x_axis});
   in.zero_acceleration_conditions.push_back({"x_max", x_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 1.0;
-  in.quadratic_artificial_viscosity = 0.0;
+  in.linear_artificial_viscosity = 0.25;
+  in.quadratic_artificial_viscosity = 0.5;
   auto right_domain = half_space_domain(plane{vector3<double>{1.0, 0.0, 0.0}, 0.5});
   auto left_domain = half_space_domain(plane{vector3<double>{-1.0, 0.0, 0.0}, -0.5});
   in.material_domains.emplace_back(left, std::move(left_domain));
