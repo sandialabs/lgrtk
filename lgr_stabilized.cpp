@@ -239,7 +239,7 @@ void nodal_ideal_gas(input const& in, state& s) {
   auto const nodes_to_rho = s.rho_h.cbegin();
   auto const nodes_to_e = s.e_h.cbegin();
   auto const nodes_to_p = s.p_h.begin();
-  auto const gamma = in.gamma;
+  auto const gamma = in.gamma[material_index(0)];
   auto functor = [=] (node_index const node) {
     double const rho = nodes_to_rho[node];
     assert(rho > 0.0);
