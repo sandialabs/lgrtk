@@ -152,6 +152,29 @@ public:
 };
 
 template <class T, class Index = int>
+class host_vector : public struct_vector<T, device_layout, host_allocator<T>, Index> {
+  using base_type = struct_vector<T, device_layout, host_allocator<T>, Index>;
+public:
+  using typename base_type::size_type;
+  explicit host_vector() noexcept
+    :base_type(host_allocator<T>())
+  {}
+  explicit host_vector(size_type count)
+    :base_type(count, host_allocator<T>())
+  {}
+  explicit host_vector(size_type count, host_allocator<T> const& alloc_in)
+    :base_type(count, alloc_in)
+  {}
+  host_vector(host_vector&&) noexcept = default;
+  host_vector(host_vector const&) = delete;
+  host_vector& operator=(host_vector const&) = delete;
+  host_vector& operator=(host_vector&&) = delete;
+  ~host_vector() = default;
+  typename base_type::reference operator[](Index const i) { return this->begin()[i]; }
+  typename base_type::const_reference operator[](Index const i) const { return this->cbegin()[i]; }
+};
+
+template <class T, class Index = int>
 class device_vector : public struct_vector<T, device_layout, device_allocator<T>, Index> {
   using base_type = struct_vector<T, device_layout, device_allocator<T>, Index>;
 public:
@@ -171,6 +194,12 @@ public:
   device_vector& operator=(device_vector&&) = delete;
   ~device_vector() = default;
 };
+
+template <class T, class Index>
+void copy(host_vector<T, Index> const& left, device_vector<T, Index>& right) {
+  // change for CUDA!
+  lgr::copy(left, right);
+}
 
 class node_index : public index<int, node_index> {
   public:

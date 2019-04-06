@@ -647,7 +647,7 @@ void run(input const& in) {
   }
   resize_physics(in, s);
   set_materials(in, s);
-  lgr::fill(s.rho, in.rho0);
+  lgr::fill(s.rho, in.rho0[material_index(0)]);
   lgr::fill(s.e, in.e0);
   lgr::fill(s.p_h, double(0.0));
   lgr::fill(s.e_h, in.e0);
