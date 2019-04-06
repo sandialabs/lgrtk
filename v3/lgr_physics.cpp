@@ -232,7 +232,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index con
   auto const points_to_e = s.e.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
-  auto const gamma = in.gamma;
+  auto const gamma = in.gamma[material];
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {

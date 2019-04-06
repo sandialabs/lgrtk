@@ -56,7 +56,7 @@ class input {
   double K0;
   double G0 = 0.0;
   bool enable_ideal_gas = false;
-  double gamma;
+  pinned_vector<double, material_index> gamma;
   bool enable_nodal_pressure = false;
   double c_tau = 0.5;
   bool enable_viscosity = false;
@@ -77,6 +77,7 @@ class input {
     :material_count(material_count_in)
     ,rho0(material_count_in, pinpool)
     ,e0(material_count_in, double(0.0), pinpool)
+    ,gamma(material_count_in, pinpool)
   {}
 };
 

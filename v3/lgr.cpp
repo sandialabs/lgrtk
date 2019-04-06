@@ -80,7 +80,7 @@ static void LGR_NOINLINE run_gas_expansion() {
   in.elements_along_x = 160;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma = 1.4;
+  in.gamma[gas] = 1.4;
   in.e0[gas] = 1.0;
   in.initial_v = zero_v;
   run(in);
@@ -553,7 +553,7 @@ static void LGR_NOINLINE run_Noh_1D() {
   in.x_domain_size = 1.1;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma = 5.0 / 3.0;
+  in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
@@ -594,7 +594,7 @@ static void LGR_NOINLINE run_Noh_2D() {
   in.y_domain_size = 0.85;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma = 5.0 / 3.0;
+  in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
@@ -716,7 +716,7 @@ static void LGR_NOINLINE run_Noh_3D() {
   in.z_domain_size = 1.1;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma = 5.0 / 3.0;
+  in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
@@ -767,7 +767,7 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   in.z_domain_size = 1.1;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma = 5.0 / 3.0;
+  in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
