@@ -654,7 +654,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
-  in.name = "twisting_composite_column_J";
+  in.name = "twisting_composite_column";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
   in.num_file_outputs = 100;
