@@ -469,6 +469,50 @@ static void LGR_NOINLINE volume_average_J(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE volume_average_rho(state& s) {
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_rho = s.rho.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    double mass = 0.0;
+    double total_V = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      double const rho = points_to_rho[point];
+      double const V = points_to_V[point];
+      mass += V * rho;
+      total_V += V;
+    }
+    auto const average_rho = mass / total_V;
+    for (auto const point : elements_to_points[element]) {
+      points_to_rho[point] = average_rho;
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
+static void LGR_NOINLINE volume_average_e(state& s) {
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_e = s.e.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    double energy = 0.0;
+    double mass = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      double const rho = points_to_rho[point];
+      double const e = points_to_e[point];
+      double const V = points_to_V[point];
+      energy += V * (rho * e);
+      mass += V * rho;
+    }
+    auto const average_e = energy / mass;
+    for (auto const point : elements_to_points[element]) {
+      points_to_e[point] = average_e;
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
@@ -584,12 +628,14 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       interpolate_e(s);
     } else {
       update_e(s, half_dt);
+      if (in.enable_e_averaging) volume_average_e(s);
     }
     update_u(s, half_dt);
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
+    if (in.enable_rho_averaging) volume_average_rho(s);
     if (in.enable_nodal_energy) {
       update_nodal_density(s);
       interpolate_rho(s);
