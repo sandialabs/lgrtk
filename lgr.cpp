@@ -757,14 +757,14 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   input in(nmaterials);
   in.name = "composite_Noh_3D";
   in.element = COMPOSITE_TETRAHEDRON;
-  in.end_time = 0.05;
-  in.num_file_outputs = 5;
-  in.elements_along_x = 22;
-  in.x_domain_size = 1.1;
-  in.elements_along_y = 22;
-  in.y_domain_size = 1.1;
-  in.elements_along_z = 22;
-  in.z_domain_size = 1.1;
+  in.end_time = 0.6;
+  in.num_file_outputs = 10;
+  in.elements_along_x = 20;
+  in.x_domain_size = 0.9;
+  in.elements_along_y = 20;
+  in.y_domain_size = 0.9;
+  in.elements_along_z = 20;
+  in.z_domain_size = 0.9;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas = true;
   in.gamma[gas] = 5.0 / 3.0;
@@ -795,8 +795,8 @@ static void LGR_NOINLINE run_composite_Noh_3D() {
   in.zero_acceleration_conditions.push_back({"y_min", y_axis});
   in.zero_acceleration_conditions.push_back({"z_min", z_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 4.0;
-  in.quadratic_artificial_viscosity = 0.5;
+  in.linear_artificial_viscosity = 0.5;
+  in.quadratic_artificial_viscosity = 0.25;
   run(in);
 }
 
@@ -853,8 +853,8 @@ int main() {
   if ((0)) lgr::run_Noh_1D();
   if ((0)) lgr::run_Noh_2D();
   if ((0)) lgr::run_Noh_3D();
-  if ((0)) lgr::run_composite_Noh_3D();
+  if ((1)) lgr::run_composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
-  if ((1)) lgr::Sod_1D();
+  if ((0)) lgr::Sod_1D();
 }
