@@ -64,6 +64,8 @@ class input {
   double quadratic_artificial_viscosity = 0.0;
   bool enable_nodal_energy = false;
   bool enable_J_averaging = false;
+  bool enable_rho_averaging = false;
+  bool enable_e_averaging = false;
   std::function<
     void(counting_range<node_index> const,
         device_vector<vector3<double>, node_index> const&,
