@@ -5,35 +5,61 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
-namespace Plato {
-
-template <typename InputType>
-inline void toMap(Plato::DataMap& aDataMap, InputType aInput, std::string aEntryName)
+namespace Plato
 {
-  // don't add to map
-}
 
-template <>
-inline void 
-toMap(Plato::DataMap& aDataMap, Plato::ScalarVector aInput, std::string aEntryName)
+/******************************************************************************//**
+ * @brief Null operation for Sacado Types
+ * @param [in/out] aDataMap output data storage
+ * @param [in] aInput Sacado-type container
+ * @param [in] aEntryName output data name
+ **********************************************************************************/
+template<typename InputType>
+inline void toMap(Plato::DataMap& aDataMap, const InputType aInput, const std::string & aEntryName)
+{
+    // don't add to map
+}
+// function toMap
+
+/******************************************************************************//**
+ * @brief Store 1D container in data map. The data map is used for output purposes
+ * @param [in/out] aDataMap output data storage
+ * @param [in] aInput 1D container
+ * @param [in] aEntryName output data name
+ **********************************************************************************/
+template<>
+inline void toMap(Plato::DataMap& aDataMap, const Plato::ScalarVector aInput, const std::string & aEntryName)
 {
     aDataMap.scalarVectors[aEntryName] = aInput;
 }
+// function toMap
 
-template <>
-inline void 
-toMap(Plato::DataMap& aDataMap, Plato::ScalarMultiVector aInput, std::string aEntryName)
+/******************************************************************************//**
+ * @brief Store 2D container in data map. The data map is used for output purposes
+ * @param [in/out] aDataMap output data storage
+ * @param [in] aInput 2D container
+ * @param [in] aEntryName output data name
+ **********************************************************************************/
+template<>
+inline void toMap(Plato::DataMap& aDataMap, const Plato::ScalarMultiVector aInput, const std::string & aEntryName)
 {
     aDataMap.scalarMultiVectors[aEntryName] = aInput;
 }
+// function toMap
 
-template <>
-inline void 
-toMap(Plato::DataMap& aDataMap, Plato::ScalarArray3D aInput, std::string aEntryName)
+/******************************************************************************//**
+ * @brief Store 3D container in data map. The data map is used for output purposes
+ * @param [in/out] aDataMap output data storage
+ * @param [in] aInput 3D container
+ * @param [in] aEntryName output data name
+ **********************************************************************************/
+template<>
+inline void toMap(Plato::DataMap& aDataMap, const Plato::ScalarArray3D aInput, const std::string & aEntryName)
 {
     aDataMap.scalarArray3Ds[aEntryName] = aInput;
 }
+// function toMap
 
-} // end namespace Plato
+}// end namespace Plato
 
 #endif

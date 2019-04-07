@@ -100,19 +100,55 @@ public:
     };
     LocalOp* getOperation(const std::string & opName);
 
+    /******************************************************************************//**
+     * @brief Multiple Program, Multiple Data (MPMD) application destructor
+    **********************************************************************************/
     virtual ~MPMD_App();
+
+    /******************************************************************************//**
+     * @brief Safely allocate PLATO Analyze data
+    **********************************************************************************/
     void initialize();
+
+    /******************************************************************************//**
+     * @brief Compute this operation
+     * @param [in] aOperationName operation name
+    **********************************************************************************/
     void compute(const std::string & aOperationName);
+
+    /******************************************************************************//**
+     * @brief Safely deallocate PLATO Analyze data
+    **********************************************************************************/
     void finalize();
 
+    /******************************************************************************//**
+     * @brief Import shared data from PLATO Engine
+     * @param [in] aName shared data name
+     * @param [in] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     void importData(const std::string & aName, const Plato::SharedData& aSharedField);
+
+    /******************************************************************************//**
+     * @brief Export shared data from PLATO Analyze
+     * @param [in] aName shared data name
+     * @param [in/out] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     void exportData(const std::string & aName, Plato::SharedData& aSharedField);
+
+    /******************************************************************************//**
+     * @brief Export processor's owned global IDs from PLATO Analyze
+     * @param [in] aDataLayout data layout (e.g. node or element based data)
+     * @param [in/out] aMyOwnedGlobalIDs owned global IDs
+    **********************************************************************************/
     void exportDataMap(const Plato::data::layout_t & aDataLayout, std::vector<int> & aMyOwnedGlobalIDs);
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Import shared data from PLATO Engine
+     * @param [in] aName shared data name
+     * @param [in] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void importDataT(const std::string& aName, const SharedDataT& aSharedData)
-    /******************************************************************************/
     {
         if(aSharedData.myLayout() == Plato::data::layout_t::SCALAR_FIELD)
         {
@@ -127,10 +163,14 @@ public:
             this->importScalarValue(aName, aSharedData);
         }
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Import scalar field from PLATO Engine
+     * @param [in] aName shared data name
+     * @param [in] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void importScalarField(const std::string& aName, SharedDataT& aSharedField)
-    /******************************************************************************/
     {
         if(aName == "Topology")
         {
@@ -143,10 +183,14 @@ public:
             this->copyFieldIntolgr(tStatesSubView, aSharedField);
         }
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Import scalar parameters from PLATO Engine
+     * @param [in] aName shared data name
+     * @param [in] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void importScalarParameter(const std::string& aName, SharedDataT& aSharedData)
-    /******************************************************************************/
     {
         std::string strOperation = aSharedData.myContext();
 
@@ -158,10 +202,14 @@ public:
 
         // Note: The problem isn't recreated until the operation is called.
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Import scalar value
+     * @param [in] aName shared data name
+     * @param [in] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void importScalarValue(const std::string& aName, SharedDataT& aSharedData)
-    /******************************************************************************/
     {
         auto tIterator = mValuesMap.find(aName);
         if(tIterator == mValuesMap.end())
@@ -174,10 +222,14 @@ public:
         tValues.resize(aSharedData.size());
         aSharedData.getData(tValues);
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Export data from PLATO Analyze
+     * @param [in] aName shared data name
+     * @param [in/out] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void exportDataT(const std::string& aName, SharedDataT& aSharedField)
-    /******************************************************************************/
     {
         // parse input name
         auto tTokens = split(aName, '@');
@@ -189,36 +241,21 @@ public:
         }
         else if(aSharedField.myLayout() == Plato::data::layout_t::ELEMENT_FIELD)
         {
-            auto tDataMap = m_problem->getDataMap();
-            // element ScalarVector?
-            if(tDataMap.scalarVectors.count(tFieldName))
-            {
-                auto tData = tDataMap.scalarVectors.at(tFieldName);
-                this->copyFieldFromlgr(tData, aSharedField);
-            }
-            else if(tDataMap.scalarMultiVectors.count(tFieldName))
-            {
-                auto tData = tDataMap.scalarMultiVectors.at(tFieldName);
-                int tComponentIndex = 0;
-                if(tTokens.size() > 1)
-                {
-                    tComponentIndex = std::atoi(tTokens[1].c_str());
-                }
-                this->copyFieldFromlgr(tData, tComponentIndex, aSharedField);
-            }
-            else if(tDataMap.scalarArray3Ds.count(tFieldName))
-            {
-            }
+            this->exportElementField(aName, aSharedField);
         }
         else if(aSharedField.myLayout() == Plato::data::layout_t::SCALAR)
         {
             this->exportScalarValue(tFieldName, aSharedField);
         }
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Export scalar value (i.e. global value) from PLATO Analyze
+     * @param [in] aName shared data name
+     * @param [in/out] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void exportScalarValue(const std::string& aName, SharedDataT& aSharedField)
-    /******************************************************************************/
     {
         if(aName == "Objective Value")
         {
@@ -244,10 +281,47 @@ public:
             aSharedField.setData(tValues);
         }
     }
-    /******************************************************************************/
+
+    /******************************************************************************//**
+     * @brief Export element field (i.e. element-based data) from PLATO Analyze
+     * @param [in] aTokens element-based shared field name
+     * @param [in/out] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
+    template<typename SharedDataT>
+    void exportElementField(const std::string& aName, SharedDataT& aSharedField)
+    {
+        auto tTokens = split(aName, '@');
+        auto tFieldName = tTokens[0];
+
+        auto tDataMap = m_problem->getDataMap();
+        // element ScalarVector?
+        if(tDataMap.scalarVectors.count(tFieldName))
+        {
+            auto tData = tDataMap.scalarVectors.at(tFieldName);
+            this->copyFieldFromlgr(tData, aSharedField);
+        }
+        else if(tDataMap.scalarMultiVectors.count(tFieldName))
+        {
+            auto tData = tDataMap.scalarMultiVectors.at(tFieldName);
+            Plato::OrdinalType tComponentIndex = 0;
+            if(tTokens.size() > 1)
+            {
+                tComponentIndex = std::atoi(tTokens[1].c_str());
+            }
+            this->copyFieldFromlgr(tData, tComponentIndex, aSharedField);
+        }
+        else if(tDataMap.scalarArray3Ds.count(tFieldName))
+        {
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Export scalar field (i.e. node-based data) from PLATO Analyze
+     * @param [in] aName node-based shared field name
+     * @param [in/out] aSharedData shared data (i.e. data from PLATO Engine)
+    **********************************************************************************/
     template<typename SharedDataT>
     void exportScalarField(const std::string& aName, SharedDataT& aSharedField)
-    /******************************************************************************/
     {
         if(aName == "Objective Gradient")
         {
@@ -345,6 +419,10 @@ public:
         }
     }
 
+    /******************************************************************************//**
+     * @brief Return 2D container of coordinates (Node ID, Dimension)
+     * @return 2D container of coordinates
+    **********************************************************************************/
     Plato::ScalarMultiVector getCoords();
 
 private:
@@ -375,9 +453,9 @@ private:
     /******************************************************************************/
     {
         // create kokkos::view around std::vector
-        std::vector<Plato::Scalar> tHostData(aSharedField.size());
-        Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> tDataHostView(tHostData.data(),
-                                                                                               tHostData.size());
+        auto tLength = aSharedField.size();
+        std::vector<Plato::Scalar> tHostData(tLength);
+        Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> tDataHostView(tHostData.data(), tLength);
 
         // copy to host from device
         Kokkos::deep_copy(tDataHostView, aDeviceData);

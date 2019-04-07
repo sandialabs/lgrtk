@@ -12,6 +12,7 @@
 #include "LinearElasticMaterial.hpp"
 
 #include "plato/Simp.hpp"
+#include "plato/ToMap.hpp"
 #include "plato/Strain.hpp"
 #include "plato/WorksetBase.hpp"
 #include "plato/LinearStress.hpp"
@@ -44,6 +45,7 @@ private:
     static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
 
     using AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
+    using AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
@@ -327,6 +329,7 @@ public:
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVectorT<ResultT> tCellVonMises("von mises", tNumCells);
         Plato::ScalarVectorT<ConfigT> tCellVolume("cell volume", tNumCells);
+        Plato::ScalarVectorT<ResultT> tOutputCellVonMises("output von mises", tNumCells);
         Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
         Plato::ScalarMultiVectorT<StrainT> tCellCauchyStrain("strain", tNumCells, mNumVoigtTerms);
         Plato::ScalarMultiVectorT<ResultT> tCellCauchyStress("stress", tNumCells, mNumVoigtTerms);
@@ -360,6 +363,7 @@ public:
 
             ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tPenalizedCellDensity = tSIMP(tCellDensity);
+            tOutputCellVonMises(aCellOrdinal) = tPenalizedCellDensity * tCellVonMises(aCellOrdinal);
             ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tCellConstraintValue;
             ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
@@ -382,6 +386,8 @@ public:
             // Compute augmented Lagrangian
             aResultWS(aCellOrdinal) = tMassContribution + ( static_cast<Plato::Scalar>(1.0 / tNumCells) * tStressContribution );
         },"Compute Augmented Lagrangian Function");
+
+        Plato::toMap(m_dataMap, tOutputCellVonMises, "Vonmises");
     }
 
     /******************************************************************************//**

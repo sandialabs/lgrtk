@@ -608,7 +608,7 @@ void MPMD_App::finalize() { }
 void MPMD_App::importData(const std::string& aName, const Plato::SharedData& aSharedField)
 /******************************************************************************/
 {
-  importDataT(aName, aSharedField);
+    this->importDataT(aName, aSharedField);
 }
 
 
@@ -616,35 +616,35 @@ void MPMD_App::importData(const std::string& aName, const Plato::SharedData& aSh
 void MPMD_App::exportData(const std::string& aName, Plato::SharedData& aSharedField)
 /******************************************************************************/
 {
-  exportDataT(aName, aSharedField);
+    this->exportDataT(aName, aSharedField);
 }
 
-
 /******************************************************************************/
-void MPMD_App::exportDataMap(const Plato::data::layout_t & aDataLayout, 
-                             std::vector<int> & aMyOwnedGlobalIDs)
+void MPMD_App::exportDataMap(const Plato::data::layout_t & aDataLayout, std::vector<int> & aMyOwnedGlobalIDs)
 /******************************************************************************/
 {
     if(aDataLayout == Plato::data::layout_t::SCALAR_FIELD)
     {
-      int tNumLocalVals = mMesh.nverts();
-      aMyOwnedGlobalIDs.resize(tNumLocalVals);
-      for(int tLocalID=0; tLocalID<tNumLocalVals; tLocalID++){
-        aMyOwnedGlobalIDs[tLocalID] = tLocalID+1;
-      }
-    } else
-    if(aDataLayout == Plato::data::layout_t::ELEMENT_FIELD)
+        Plato::OrdinalType tNumLocalVals = mMesh.nverts();
+        aMyOwnedGlobalIDs.resize(tNumLocalVals);
+        for(Plato::OrdinalType tLocalID = 0; tLocalID < tNumLocalVals; tLocalID++)
+        {
+            aMyOwnedGlobalIDs[tLocalID] = tLocalID + 1;
+        }
+    }
+    else if(aDataLayout == Plato::data::layout_t::ELEMENT_FIELD)
     {
-      int tNumLocalVals = mMesh.nelems();
-      aMyOwnedGlobalIDs.resize(tNumLocalVals);
-      for(int tLocalID=0; tLocalID<tNumLocalVals; tLocalID++){
-        aMyOwnedGlobalIDs[tLocalID] = tLocalID+1;
-      }
+        Plato::OrdinalType tNumLocalVals = mMesh.nelems();
+        aMyOwnedGlobalIDs.resize(tNumLocalVals);
+        for(Plato::OrdinalType tLocalID = 0; tLocalID < tNumLocalVals; tLocalID++)
+        {
+            aMyOwnedGlobalIDs[tLocalID] = tLocalID + 1;
+        }
     }
     else
     {
-      Plato::ParsingException tParsingException("lgrMPMD currently only supports SCALAR_FIELD and ELEMENT_FIELD data layout");
-      throw tParsingException;
+        Plato::ParsingException tParsingException("lgrMPMD currently only supports SCALAR_FIELD and ELEMENT_FIELD data layout");
+        throw tParsingException;
     }
 }
 
