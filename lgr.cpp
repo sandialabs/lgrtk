@@ -43,7 +43,7 @@ static void LGR_NOINLINE spin_v(
   lgr::for_each(nodes, functor);
 }
 
-static void LGR_NOINLINE run_elastic_wave() {
+static void LGR_NOINLINE elastic_wave() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -69,7 +69,7 @@ static void LGR_NOINLINE run_elastic_wave() {
   run(in);
 }
 
-static void LGR_NOINLINE run_gas_expansion() {
+static void LGR_NOINLINE gas_expansion() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -248,7 +248,7 @@ static void LGR_NOINLINE spinning_cube() {
   run(in);
 }
 
-static void LGR_NOINLINE run_elastic_wave_2d() {
+static void LGR_NOINLINE elastic_wave_2d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -280,7 +280,7 @@ static void LGR_NOINLINE run_elastic_wave_2d() {
   run(in);
 }
 
-static void LGR_NOINLINE run_elastic_wave_3d() {
+static void LGR_NOINLINE elastic_wave_3d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -541,7 +541,7 @@ static void LGR_NOINLINE tet_piston() {
   run(in);
 }
 
-static void LGR_NOINLINE run_Noh_1D() {
+static void LGR_NOINLINE Noh_1D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -580,7 +580,7 @@ static void LGR_NOINLINE run_Noh_1D() {
   run(in);
 }
 
-static void LGR_NOINLINE run_Noh_2D() {
+static void LGR_NOINLINE Noh_2D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -700,7 +700,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   run(in);
 }
 
-static void LGR_NOINLINE run_Noh_3D() {
+static void LGR_NOINLINE Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -751,7 +751,7 @@ static void LGR_NOINLINE run_Noh_3D() {
   run(in);
 }
 
-static void LGR_NOINLINE run_composite_Noh_3D() {
+static void LGR_NOINLINE composite_Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   input in(nmaterials);
@@ -838,22 +838,22 @@ static void LGR_NOINLINE Sod_1D() {
 }
 
 int main() {
-  if ((0)) lgr::run_elastic_wave();
-  if ((0)) lgr::run_gas_expansion();
+  if ((0)) lgr::elastic_wave();
+  if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
   if ((0)) lgr::swinging_plate();
   if ((0)) lgr::spinning_cube();
-  if ((0)) lgr::run_elastic_wave_2d();
-  if ((0)) lgr::run_elastic_wave_3d();
+  if ((0)) lgr::elastic_wave_2d();
+  if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::bending_beam();
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
-  if ((0)) lgr::run_Noh_1D();
-  if ((0)) lgr::run_Noh_2D();
-  if ((0)) lgr::run_Noh_3D();
-  if ((1)) lgr::run_composite_Noh_3D();
+  if ((0)) lgr::Noh_1D();
+  if ((0)) lgr::Noh_2D();
+  if ((0)) lgr::Noh_3D();
+  if ((1)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
