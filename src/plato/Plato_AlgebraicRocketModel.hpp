@@ -57,6 +57,7 @@
 #include <memory>
 #include <cassert>
 #include <cstddef>
+#include <fstream>
 
 #include "Plato_GeometryModel.hpp"
 
@@ -269,6 +270,7 @@ public:
         if(aOutput == true)
         {
             mImmersedGeomModel->output(aOutput);
+            this->outputThrustProfile();
         }
     }
 
@@ -373,6 +375,20 @@ private:
         Plato::Scalar tValue = aRefMassProductionRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
                 - aThroatArea * aTotalPressure / mCharacteristicVelocity;
         return tValue;
+    }
+
+    /******************************************************************************//**
+     * @brief Output thrust profile to text file.
+     **********************************************************************************/
+    void outputThrustProfile()
+    {
+        std::ofstream tFile;
+        tFile.open("thrust_profile.txt");
+        for(size_t tIndex =0; tIndex < mThrustProfile.size(); tIndex++)
+        {
+            tFile << mThrustProfile[tIndex] << "\n";
+        }
+        tFile.close();
     }
 
 private:
