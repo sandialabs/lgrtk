@@ -513,6 +513,30 @@ static void LGR_NOINLINE volume_average_e(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+static void LGR_NOINLINE volume_average_p(state& s) {
+  auto const points_to_V = s.V.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    double total_V = 0.0;
+    double average_p = 0.0;
+    for (auto const point : elements_to_points[element]) {
+      symmetric3x3<double> const sigma = points_to_sigma[point];
+      double const p = -(1.0 / 3.0) * trace(sigma);
+      double const V = points_to_V[point];
+      average_p += V * p;
+      total_V += V;
+    }
+    average_p /= total_V;
+    for (auto const point : elements_to_points[element]) {
+      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      auto const new_sigma = deviator(old_sigma) - average_p;
+      points_to_sigma[point] = new_sigma;
+    }
+  };
+  lgr::for_each(s.elements, functor);
+}
+
 static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
@@ -646,6 +670,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_material_state(in, s);
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
+    if (in.enable_p_averaging) volume_average_p(s);
     if (last_pc) update_element_dt(s);
     if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
