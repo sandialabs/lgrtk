@@ -130,4 +130,15 @@ std::unique_ptr<domain> half_space_domain(plane const& p) {
   return out;
 }
 
+std::unique_ptr<domain> box_domain(vector3<double> const lower_left, vector3<double> const upper_right) {
+  auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
+  out->clip({vector3<double>::x_axis(), lower_left(0)});
+  out->clip({-vector3<double>::x_axis(), -upper_right(0)});
+  out->clip({vector3<double>::y_axis(), lower_left(1)});
+  out->clip({-vector3<double>::y_axis(), -upper_right(1)});
+  out->clip({vector3<double>::z_axis(), lower_left(2)});
+  out->clip({-vector3<double>::z_axis(), -upper_right(2)});
+  return out;
+}
+
 }
