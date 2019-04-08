@@ -43,6 +43,7 @@ class state {
   device_vector<double, node_index> p_h{devpool}; // stabilized nodal pressure
   device_vector<double, node_index> old_p_h{devpool}; // stabilized nodal pressure at previous time state
   device_vector<double, point_index> K{devpool}; // (tangent/effective) bulk modulus
+  device_vector<double, node_index> K_h{devpool}; // (tangent/effective) bulk modulus at nodes
   device_vector<double, point_index> G{devpool}; // (tangent/effective) shear modulus
   device_vector<double, point_index> c{devpool}; // sound speed / plane wave speed
   device_vector<vector3<double>, point_node_index> element_f{devpool}; // (internal) force per element-node pair (contribution to a node's force by an element)

@@ -546,15 +546,15 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
   s.F_total.resize(s.points.size());
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
-  s.p.resize(s.points.size());
+  if (!in.enable_nodal_energy) s.p.resize(s.points.size());
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
   s.c.resize(s.points.size());
   s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
-  s.e.resize(s.points.size());
-  s.old_e.resize(s.points.size());
+  if (!in.enable_nodal_energy) s.e.resize(s.points.size());
+  if (!in.enable_nodal_energy) s.old_e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
   s.m.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
@@ -572,6 +572,7 @@ static void LGR_NOINLINE resize_physics(input const& in, state& s) {
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
   if (in.enable_nodal_energy) {
+    s.K_h.resize(s.nodes.size());
     s.p_h.resize(s.nodes.size());
     s.e_h.resize(s.nodes.size());
     s.old_e_h.resize(s.nodes.size());
@@ -588,9 +589,10 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
     neo_Hookean(in, s);
   }
   if (in.enable_ideal_gas) {
-    ideal_gas(in, s, material);
     if (in.enable_nodal_energy) {
       nodal_ideal_gas(in, s);
+    } else {
+      ideal_gas(in, s, material);
     }
   }
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
@@ -649,7 +651,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
       update_e_h(s, half_dt);
-      interpolate_e(s);
+    //interpolate_e(s);
     } else {
       update_e(s, half_dt);
     }
@@ -668,6 +670,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
     update_material_state(in, s);
+    if (in.enable_nodal_energy) interpolate_K(s);
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
     if (in.enable_p_averaging) volume_average_p(s);
@@ -675,7 +678,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
     update_p_h_dot_from_a(in, s);
-    if (last_pc) update_p(s);
+    if (last_pc && (!(in.enable_nodal_pressure || in.enable_nodal_energy))) update_p(s);
   }
 }
 
@@ -754,7 +757,7 @@ void run(input const& in) {
   set_materials(in, s);
   collect_element_sets(in, s);
   initialize_rho(in, s);
-  initialize_e(in, s);
+  if (!in.enable_nodal_energy) initialize_e(in, s);
   lgr::fill(s.p_h, double(0.0));
   lgr::fill(s.e_h, in.e0[material_index(0)]);
   assert(in.initial_v);
@@ -768,6 +771,7 @@ void run(input const& in) {
   update_symm_grad_v(s);
   update_h_min(in, s);
   update_material_state(in, s);
+  if (in.enable_nodal_energy) interpolate_K(s);
   update_c(s);
   if (in.enable_viscosity) apply_viscosity(in, s);
   else lgr::fill(s.nu_art, double(0.0));
@@ -775,7 +779,7 @@ void run(input const& in) {
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
   update_p_h_dot_from_a(in, s);
-  update_p(s);
+  if (!in.enable_nodal_energy) update_p(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;

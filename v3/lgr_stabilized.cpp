@@ -239,6 +239,7 @@ void nodal_ideal_gas(input const& in, state& s) {
   auto const nodes_to_rho = s.rho_h.cbegin();
   auto const nodes_to_e = s.e_h.cbegin();
   auto const nodes_to_p = s.p_h.begin();
+  auto const nodes_to_K = s.K_h.begin();
   auto const gamma = in.gamma[material_index(0)];
   auto functor = [=] (node_index const node) {
     double const rho = nodes_to_rho[node];
@@ -248,6 +249,8 @@ void nodal_ideal_gas(input const& in, state& s) {
     auto const p = (gamma - 1.0) * (rho * e);
     assert(p > 0.0);
     nodes_to_p[node] = p;
+    auto const K = gamma * p;
+    nodes_to_K[node] = K;
   };
   lgr::for_each(s.nodes, functor);
 }
@@ -277,25 +280,23 @@ void update_nodal_density(state& s)
   lgr::for_each(s.nodes, functor);
 }
 
-void interpolate_e(state& s)
+void interpolate_K(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_e_h = s.e_h.cbegin();
-  auto const points_to_e = s.e.begin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const nodes_to_K_h = s.K_h.cbegin();
+  auto const points_to_K = s.K.begin();
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      double e = 0.0;
+      double K = 0.0;
       for (auto const element_node : element_nodes) {
         node_index const node = element_nodes_to_nodes[element_node];
-        double const e_h = nodes_to_e_h[node];
-        e = e + e_h;
+        double const K_h = nodes_to_K_h[node];
+        K = lgr::max(K, K_h);
       }
-      e = e * N;
-      points_to_e[point] = e;
+      points_to_K[point] = K;
     }
   };
   lgr::for_each(s.elements, functor);
