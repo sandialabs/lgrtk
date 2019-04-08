@@ -126,9 +126,13 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "nodal_density", s.rho_h);
   }
   write_vtk_cell_data(stream, s);
-  write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
-  write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
-  write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
+  if (!(in.enable_nodal_pressure || in.enable_nodal_energy)) {
+    write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
+  }
+  if (!in.enable_nodal_energy) {
+    write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
+    write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
+  }
   write_vtk_materials(stream, s.material);
   stream.close();
 }

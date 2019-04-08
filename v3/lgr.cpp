@@ -621,7 +621,7 @@ static void LGR_NOINLINE Noh_2D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.5;
-//in.enable_nodal_energy = true;
+  in.enable_nodal_energy = true;
   in.c_tau = 1.0;
   run(in);
 }
@@ -899,11 +899,11 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::Noh_1D();
-  if ((0)) lgr::Noh_2D();
+  if ((1)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((0)) lgr::triple_point();
 }
