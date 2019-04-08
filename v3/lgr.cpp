@@ -797,8 +797,7 @@ static void LGR_NOINLINE composite_Noh_3D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.25;
   in.quadratic_artificial_viscosity = 0.5;
-  in.enable_rho_averaging = true;
-  in.enable_e_averaging = false;
+  in.enable_p_averaging = true;
   run(in);
 }
 
@@ -854,8 +853,8 @@ int main() {
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
-  if ((1)) lgr::Noh_3D();
-  if ((0)) lgr::composite_Noh_3D();
+  if ((0)) lgr::Noh_3D();
+  if ((1)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
