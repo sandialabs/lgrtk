@@ -11,7 +11,7 @@ public:
 private:
   scalar_type raw[3];
 public:
-  explicit constexpr inline vector3(Scalar const x, Scalar const y, Scalar const z) noexcept
+  constexpr inline vector3(Scalar const x, Scalar const y, Scalar const z) noexcept
     :raw{x, y, z}
   {
   }

@@ -836,6 +836,51 @@ static void LGR_NOINLINE Sod_1D() {
   run(in);
 }
 
+static void LGR_NOINLINE triple_point() {
+  constexpr material_index left(0);
+  constexpr material_index right_bottom(1);
+  constexpr material_index right_top(2);
+  constexpr material_index nmaterials(3);
+  input in(nmaterials);
+  in.name = "triple_point";
+  in.element = TRIANGLE;
+  in.end_time = 6.0;
+  in.num_file_outputs = 60;
+  in.elements_along_x = 14;
+  in.x_domain_size = 7.0;
+  in.elements_along_y = 6;
+  in.y_domain_size = 3.0;
+  in.rho0[right_bottom] = 0.1;
+  in.rho0[right_top] = 1.0;
+  in.rho0[left] = 1.0;
+  in.enable_ideal_gas = true;
+  in.gamma[right_bottom] = 1.5;
+  in.gamma[left] = 1.5;
+  in.gamma[right_top] = 1.4;
+  in.e0[right_bottom] = 2.5;
+  in.e0[right_top] = 0.3125;
+  in.e0[left] = 2.0;
+  in.initial_v = zero_v;
+  constexpr auto x_axis = vector3<double>::x_axis();
+  constexpr auto y_axis = vector3<double>::y_axis();
+  constexpr double eps = 1.0e-10;
+  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
+  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
+  auto left_domain = box_domain({0.0, 0.0, -eps}, {1.0, 3.0, eps});
+  auto right_bottom_domain = box_domain({1.0, 0.0, -eps}, {7.0, 1.5, eps});
+  auto right_top_domain = box_domain({1.0, 1.5, -eps}, {7.0, 3.0, eps});
+  in.material_domains.emplace_back(left, std::move(left_domain));
+  in.material_domains.emplace_back(right_bottom, std::move(right_bottom_domain));
+  in.material_domains.emplace_back(right_top, std::move(right_top_domain));
+  run(in);
+}
+
 }
 
 int main() {
@@ -854,8 +899,9 @@ int main() {
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
-  if ((1)) lgr::composite_Noh_3D();
+  if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
+  if ((1)) lgr::triple_point();
 }
