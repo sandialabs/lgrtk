@@ -846,9 +846,9 @@ static void LGR_NOINLINE triple_point() {
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 14;
+  in.elements_along_x = 56;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 6;
+  in.elements_along_y = 24;
   in.y_domain_size = 3.0;
   in.rho0[right_bottom] = 0.1;
   in.rho0[right_top] = 1.0;
@@ -878,6 +878,8 @@ static void LGR_NOINLINE triple_point() {
   in.material_domains.emplace_back(left, std::move(left_domain));
   in.material_domains.emplace_back(right_bottom, std::move(right_bottom_domain));
   in.material_domains.emplace_back(right_top, std::move(right_top_domain));
+  in.enable_viscosity = true;
+  in.linear_artificial_viscosity = 0.5;
   run(in);
 }
 
