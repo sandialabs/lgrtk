@@ -57,7 +57,7 @@ static void LGR_NOINLINE elastic_wave() {
   in.K0 = 1.0e9;
   in.G0 = 0.0;
   in.initial_v = set_exponential_wave_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  constexpr auto x_axis = vector3<double>::x_axis();
   static constexpr double eps = 1.0e-10;
   auto x_minmax = std::make_unique<union_domain>();
   x_minmax->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));

@@ -19,6 +19,9 @@ public:
   constexpr inline scalar_type operator()(int const i) const noexcept { return raw[i]; }
   inline scalar_type& operator()(int const i) noexcept { return raw[i]; }
   static constexpr inline vector3 zero() noexcept { return vector3(0.0, 0.0, 0.0); }
+  static constexpr inline vector3 x_axis() noexcept { return vector3(1.0, 0.0, 0.0); }
+  static constexpr inline vector3 y_axis() noexcept { return vector3(0.0, 1.0, 0.0); }
+  static constexpr inline vector3 z_axis() noexcept { return vector3(0.0, 0.0, 1.0); }
 };
 
 template <typename Scalar>
