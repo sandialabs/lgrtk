@@ -628,8 +628,8 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       interpolate_e(s);
     } else {
       update_e(s, half_dt);
-      if (in.enable_e_averaging) volume_average_e(s);
     }
+    if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
     if (last_pc) update_v(s, s.dt, s.old_v);
     update_x(s);
