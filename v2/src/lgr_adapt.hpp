@@ -20,7 +20,8 @@ struct Adapter {
   bool should_coarsen_with_expansion;
   Adapter(Simulation& sim);
   void setup(Omega_h::InputMap& pl);
-  bool adapt();
+  bool needs_adapt();
+  void adapt();
   void coarsen_metric_with_expansion();
   double old_quality;
   double old_length;

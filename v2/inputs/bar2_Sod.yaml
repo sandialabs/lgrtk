@@ -1,4 +1,4 @@
-CFL: 0.9
+CFL: 0.5
 end time: 0.14
 element type: Bar2
 initialize with NaN: false
@@ -47,9 +47,3 @@ responses:
       - stress
       - density
       - expected density
-  - 
-    type: comparison
-    scalar: density error
-    expected value: '0.0'
-    tolerance: 0.0
-    floor: 4.0e-2

@@ -10,7 +10,7 @@ common fields:
   velocity: 'vector(1.0)'
 material models:
   - 
-    type: neo-Hookean
+    type: linear elastic
     bulk modulus: 1.0
     shear modulus: 0.0
 scalars:

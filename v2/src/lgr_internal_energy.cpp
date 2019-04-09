@@ -24,7 +24,7 @@ struct InternalEnergy : public Model<Elem> {
   }
   char const* name() override final { return "internal energy"; }
   void before_material_model() override final {
-    if (sim.dt == 0.0 && (!sim.fields.is_allocated(specific_internal_energy_rate))) {
+    if (sim.dt == 0.0 && (!sim.fields.has(specific_internal_energy_rate))) {
       zero_internal_energy_rate();
     }
     compute_internal_energy_predictor();
@@ -119,15 +119,16 @@ struct InternalEnergy : public Model<Elem> {
   }
 };
 
-void setup_internal_energy(Simulation& sim, Omega_h::InputMap&) {
-  if (sim.fields.has("specific internal energy")) {
-#define LGR_EXPL_INST(Elem) \
-    if (sim.elem_name == Elem::name()) { \
-      sim.models.add(new InternalEnergy<Elem>(sim)); \
-    }
+template <class Elem>
+ModelBase* internal_energy_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap&) {
+  return new InternalEnergy<Elem>(sim);
+}
+
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* internal_energy_factory<Elem>(                           \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
-  }
-}
 
 }  // namespace lgr

@@ -6,6 +6,10 @@
 #include <lgr_subset.hpp>
 #include <lgr_subsets.hpp>
 #include <lgr_support.hpp>
+#include <lgr_for.hpp>
+
+// DEBUG!
+#include <iostream>
 
 namespace lgr {
 
@@ -58,9 +62,9 @@ static void check_index(FieldIndex fi) {
   }
 }
 
-bool Fields::is_allocated(FieldIndex fi) {
+bool Fields::has(FieldIndex fi) {
   check_index(fi);
-  return storage[fi.storage_index]->is_allocated();
+  return storage[fi.storage_index]->has();
 }
 
 Field& Fields::operator[](FieldIndex fi) {
@@ -184,79 +188,178 @@ void Fields::learn_disc() {
   }
 }
 
+static void copy_field_on_all_nodes_to_omega_h(Omega_h::Mesh& mesh, std::string const& name, Omega_h::Reals const nodal_data, int num_nodes,
+  bool is_second_order,
+  Omega_h::Few<Omega_h::LOs, 2> p2_nodes)
+{
+  auto const ncomps = divide_no_remainder(nodal_data.size(), num_nodes);
+  if (!is_second_order) {
+    mesh.add_tag(0, name, ncomps, nodal_data);
+    return;
+  }
+  auto const vertex_nodes = p2_nodes[0];
+  Omega_h::Write<double> vertex_data(vertex_nodes.size() * ncomps);
+  auto vertex_functor = OMEGA_H_LAMBDA(int const vertex) {
+    auto const node = vertex_nodes[vertex];
+    for (int comp = 0; comp < ncomps; ++comp) {
+      vertex_data[vertex * ncomps + comp] = nodal_data[node * ncomps + comp];
+    }
+  };
+  Omega_h::parallel_for(mesh.nverts(), std::move(vertex_functor));
+  auto const edge_nodes = p2_nodes[1];
+  OMEGA_H_CHECK(edge_nodes.size() == mesh.nedges());
+  Omega_h::Write<double> edge_data(edge_nodes.size() * ncomps);
+  auto edge_functor = OMEGA_H_LAMBDA(int const edge) {
+    auto const node = edge_nodes[edge];
+    for (int comp = 0; comp < ncomps; ++comp) {
+      double const val = nodal_data[node * ncomps + comp];
+      edge_data[edge * ncomps + comp] = val;
+    }
+  };
+  Omega_h::parallel_for(mesh.nedges(), std::move(edge_functor));
+  mesh.add_tag(0, name, ncomps, read(vertex_data));
+  mesh.add_tag(1, name, ncomps, read(edge_data));
+}
+
+static void copy_field_on_all_nodes_from_omega_h(Omega_h::Mesh& mesh, std::string const& name, Omega_h::Write<double>& nodal_data_out, int num_nodes,
+  bool is_second_order,
+  Omega_h::Few<Omega_h::LOs, 2> p2_nodes)
+{
+  if (!is_second_order) {
+    nodal_data_out = deep_copy(mesh.get_array<double>(0, name));
+    return;
+  }
+  auto const vertex_nodes = p2_nodes[0];
+  auto const vertex_data = mesh.get_array<double>(0, name);
+  auto const ncomps = divide_no_remainder(vertex_data.size(), mesh.nverts());
+  Omega_h::Write<double> nodal_data(num_nodes * ncomps);
+  auto vertex_functor = OMEGA_H_LAMBDA(int const vertex) {
+    auto const node = vertex_nodes[vertex];
+    for (int comp = 0; comp < ncomps; ++comp) {
+      nodal_data[node * ncomps + comp] = vertex_data[vertex * ncomps + comp];
+    }
+  };
+  Omega_h::parallel_for(mesh.nverts(), std::move(vertex_functor));
+  auto const edge_data = mesh.get_array<double>(1, name);
+  auto const edge_nodes = p2_nodes[1];
+  auto edge_functor = OMEGA_H_LAMBDA(int const edge) {
+    auto const node = edge_nodes[edge];
+    for (int comp = 0; comp < ncomps; ++comp) {
+      nodal_data[node * ncomps + comp] = edge_data[edge * ncomps + comp];
+    }
+  };
+  Omega_h::parallel_for(mesh.nedges(), std::move(edge_functor));
+  nodal_data_out = nodal_data;
+}
+
+static void copy_field_on_some_nodes_to_omega_h(Omega_h::Mesh& mesh, Field& field, int num_nodes,
+  bool is_second_order,
+  Omega_h::Few<Omega_h::LOs, 2> p2_nodes)
+{
+  auto data = field.storage;
+  auto& mapping = field.support->subset->mapping;
+  if (!field.support->subset->mapping.is_identity) {
+    auto ncomps = divide_no_remainder(data.size(), mapping.things.size());
+    data = Omega_h::unmap(mapping.things, read(data), ncomps);
+  }
+  copy_field_on_all_nodes_to_omega_h(mesh, field.long_name, data, num_nodes, is_second_order, p2_nodes);
+}
+
+void Fields::copy_field_to_mesh_coordinates(Disc& disc, Field& field) {
+  copy_field_on_all_nodes_to_omega_h(disc.mesh, "coordinates", field.storage, disc.count(NODES),
+      disc.is_second_order_, disc.p2_nodes);
+}
+
+void Fields::copy_field_from_mesh_coordinates(Disc& disc, Field& field) {
+  field.set();
+  copy_field_on_all_nodes_from_omega_h(disc.mesh, "coordinates", field.storage, disc.count(NODES),
+      disc.is_second_order_, disc.p2_nodes);
+}
+
+static void copy_field_on_some_nodes_from_omega_h(Omega_h::Mesh& mesh, Field& field, int num_nodes,
+  bool is_second_order,
+  Omega_h::Few<Omega_h::LOs, 2> p2_nodes)
+{
+  Omega_h::Write<double> data;
+  copy_field_on_all_nodes_from_omega_h(mesh, field.long_name, data, num_nodes, is_second_order, p2_nodes);
+  auto& mapping = field.support->subset->mapping;
+  if (!field.support->subset->mapping.is_identity) {
+    auto ncomps = divide_no_remainder(data.size(), mapping.things.size());
+    data = Omega_h::unmap(mapping.things, read(data), ncomps);
+  }
+  field.storage = data;
+}
+
+static void remove_field_on_nodes_from_omega_h(Omega_h::Mesh& mesh, Field& field,
+  bool is_second_order)
+{
+  mesh.remove_tag(0, field.long_name);
+  if (is_second_order) mesh.remove_tag(1, field.long_name);
+}
+
 void Fields::copy_to_omega_h(
     Disc& disc, std::vector<FieldIndex> field_indices) {
-  // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
-    int entity_dim = -1;
-    if (field.entity_type == NODES) {
-      entity_dim = 0;
-    } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim();
-    }
+    if (field.entity_type != ELEMS) continue;
     auto& mapping = field.support->subset->mapping;
     auto const data = field.get();
     if (field.support->subset->mapping.is_identity) {
       auto ncomps =
-          divide_no_remainder(data.size(), disc.mesh.nents(entity_dim));
-      disc.mesh.add_tag(entity_dim, field.long_name, ncomps, data);
+          divide_no_remainder(data.size(), disc.mesh.nents(disc.dim()));
+      disc.mesh.add_tag(disc.dim(), field.long_name, ncomps, data);
     } else {
       auto ncomps = divide_no_remainder(data.size(), mapping.things.size());
       auto full_data = Omega_h::map_onto(
-          data, mapping.things, disc.mesh.nents(entity_dim), 0.0, ncomps);
-      disc.mesh.add_tag(entity_dim, field.long_name, ncomps, full_data);
+          data, mapping.things, disc.mesh.nents(disc.dim()), 0.0, ncomps);
+      disc.mesh.add_tag(disc.dim(), field.long_name, ncomps, full_data);
     }
+  }
+  for (auto fi : field_indices) {
+    auto& field = operator[](fi);
+    if (field.entity_type != NODES) continue;
+    copy_field_on_some_nodes_to_omega_h(disc.mesh, field, disc.count(NODES), disc.is_second_order_, disc.p2_nodes);
   }
 }
 
 void Fields::copy_from_omega_h(
     Disc& disc, std::vector<FieldIndex> field_indices) {
-  // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
-    int entity_dim = -1;
-    if (field.entity_type == NODES) {
-      entity_dim = 0;
-    } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim();
-    }
+    if (field.entity_type != ELEMS) continue;
     auto& mapping = field.support->subset->mapping;
     if (field.support->subset->mapping.is_identity) {
       field.storage = Omega_h::deep_copy(
-          disc.mesh.get_array<double>(entity_dim, field.long_name),
+          disc.mesh.get_array<double>(disc.dim(), field.long_name),
           field.long_name);
     } else {
-      auto tag = disc.mesh.get_tag<double>(entity_dim, field.long_name);
+      auto tag = disc.mesh.get_tag<double>(disc.dim(), field.long_name);
       auto full_data = tag->array();
       auto ncomps = tag->ncomps();
       auto subset_data = Omega_h::unmap(mapping.things, full_data, ncomps);
       field.storage = subset_data;
     }
   }
+  for (auto fi : field_indices) {
+    auto& field = operator[](fi);
+    if (field.entity_type != NODES) continue;
+    std::cout << "copying " << field.long_name << " from Omega_h\n";
+    copy_field_on_some_nodes_from_omega_h(disc.mesh, field, disc.count(NODES), disc.is_second_order_, disc.p2_nodes);
+  }
 }
 
 void Fields::remove_from_omega_h(
     Disc& disc, std::vector<FieldIndex> field_indices) {
-  // linear specific!
   for (auto fi : field_indices) {
     auto& field = operator[](fi);
-    int entity_dim = -1;
-    if (field.entity_type == NODES) {
-      entity_dim = 0;
-    } else if (field.entity_type == ELEMS) {
-      entity_dim = disc.dim();
-    }
-    disc.mesh.remove_tag(entity_dim, field.long_name);
+    if (field.entity_type != ELEMS) continue;
+    disc.mesh.remove_tag(disc.dim(), field.long_name);
   }
-}
-
-bool Fields::has(std::string const& name) {
-  auto it = std::find_if(
-      storage.begin(), storage.end(), [&](std::unique_ptr<Field> const& f) {
-        return f->long_name == name;
-      });
-  return it != storage.end();
+  for (auto fi : field_indices) {
+    auto& field = operator[](fi);
+    if (field.entity_type != NODES) continue;
+    remove_field_on_nodes_from_omega_h(disc.mesh, field, disc.is_second_order_);
+  }
 }
 
 }  // namespace lgr

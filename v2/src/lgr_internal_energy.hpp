@@ -1,13 +1,21 @@
 #ifndef LGR_INTERNAL_ENERGY_HPP
 #define LGR_INTERNAL_ENERGY_HPP
 
-#include <Omega_h_input.hpp>
+#include <lgr_element_types.hpp>
+#include <lgr_model.hpp>
+#include <string>
 
 namespace lgr {
 
-struct Simulation;
+template <class Elem>
+ModelBase* internal_energy_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap&);
 
-void setup_internal_energy(Simulation& sim, Omega_h::InputMap&);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* internal_energy_factory<Elem>(                    \
+      Simulation&, std::string const&, Omega_h::InputMap&);
+LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
 
 }  // namespace lgr
 

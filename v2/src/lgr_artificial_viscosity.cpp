@@ -24,10 +24,10 @@ struct ArtificialViscosity : public Model<Elem> {
   ArtificialViscosity(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->linear = this->point_define("nu_l", "linear artificial viscosity", 1,
-        RemapType::PER_UNIT_VOLUME, pl, "");
+        RemapType::PICK, pl, "");
     this->quadratic =
         this->point_define("nu_q", "quadratic artificial viscosity", 1,
-            RemapType::PER_UNIT_VOLUME, pl, "");
+            RemapType::PICK, pl, "");
   }
   std::uint64_t exec_stages() override final { return AFTER_MATERIAL_MODEL; }
   char const* name() override final { return "artificial viscosity"; }
@@ -64,19 +64,16 @@ struct ArtificialViscosity : public Model<Elem> {
   }
 };
 
-void setup_artifical_viscosity(Simulation& sim, Omega_h::InputMap& pl) {
-  auto& models_pl = pl.get_list("modifiers");
-  for (int i = 0; i < models_pl.size(); ++i) {
-    auto& model_pl = models_pl.get_map(i);
-    if (model_pl.get<std::string>("type") == "artificial viscosity") {
-#define LGR_EXPL_INST(Elem) \
-      if (sim.elem_name == Elem::name()) { \
-        sim.models.add(new ArtificialViscosity<Elem>(sim, model_pl)); \
-      }
+template <class Elem>
+ModelBase* artificial_viscosity_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+  return new ArtificialViscosity<Elem>(sim, pl);
+}
+
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* artificial_viscosity_factory<Elem>(                      \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
-    }
-  }
-}
 
 }  // namespace lgr

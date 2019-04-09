@@ -3,5 +3,5 @@
 #include <lgr_run.hpp>
 
 int main(int argc, char** argv) {
-  return lgr::run_cmdline(argc, argv, nullptr, nullptr);
+  return lgr::run_cmdline(argc, argv, nullptr);
 }

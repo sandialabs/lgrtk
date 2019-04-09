@@ -10,6 +10,7 @@ enum class RemapType {
   PER_UNIT_VOLUME,
   PER_UNIT_MASS,
   POLAR,
+  PICK,
 };
 
 }

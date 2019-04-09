@@ -35,8 +35,6 @@ ModelBase* stvenant_kirchhoff_factory(
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-void setup_stvenant_kirchoff(Simulation& sim, Omega_h::InputMap& pl);
-
 }  // namespace lgr
 
 #endif

@@ -24,6 +24,9 @@ static void initialize_state(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
   if (sim.time == 0.0) {
     apply_conditions(sim);
+    auto const field_rho0 = sim.fields.set(sim.ref_density);
+    auto const field_rho = sim.fields.get(sim.density);
+    Omega_h::copy_into(field_rho, field_rho0);
   } else {
     std::vector<FieldIndex> field_indices;
     for (auto& field_ptr : sim.fields.storage) {
@@ -66,8 +69,16 @@ static void run_simulation(Simulation& sim) {
   initialize_state<Elem>(sim);
   close_state<Elem>(sim);
   while (sim.time < sim.end_time && sim.step < sim.end_step) {
-    if (sim.adapter.adapt()) {
+    if (sim.adapter.needs_adapt()) {
+      reset_configuration<Elem>(sim);
+      sim.adapter.adapt();
       sim.flooder.flood();
+      auto const field_X = sim.fields.get(sim.ref_coords);
+      auto const field_x = sim.fields.set(sim.position);
+      Omega_h::copy_into(field_X, field_x);
+      initialize_configuration<Elem>(sim);
+      update_configuration<Elem>(sim);
+      sim.models.after_configuration();
       lump_masses<Elem>(sim);
       sim.prev_time = sim.time;
       sim.prev_dt = sim.dt;
@@ -86,21 +97,16 @@ static void run_simulation(Simulation& sim) {
   }
 }
 
-static void run(
-    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Setups const& setups, Factories&& factories_in) {
+void run(
+    Omega_h::CommPtr comm, Omega_h::InputMap& pl, Factories&& factories_in) {
   OMEGA_H_TIME_FUNCTION;
   Factories factories(std::move(factories_in));
   auto elem = pl.get<std::string>("element type");
-  Simulation sim(comm, setups, std::move(factories));
+  Simulation sim(comm, std::move(factories));
 #define LGR_EXPL_INST(Elem)                                                    \
   if (elem == Elem::name()) {                                                  \
     sim.set_elem<Elem>();                                                      \
-  }
-  LGR_EXPL_INST_ELEMS
-#undef LGR_EXPL_INST
-  sim.setup(pl);
-#define LGR_EXPL_INST(Elem)                                                    \
-  if (elem == Elem::name()) {                                                  \
+    sim.setup(pl);                                                             \
     run_simulation<Elem>(sim);                                                 \
     return;                                                                    \
   }
@@ -110,9 +116,7 @@ static void run(
 }
 
 int run_cmdline(int argc, char** argv,
-    std::function<void(lgr::Factories&, std::string const&)> add_factories,
-    std::function<void(lgr::Setups&)> add_other_setups
-    ) {
+    std::function<void(lgr::Factories&, std::string const&)> add_factories) {
   Omega_h::Library lib(&argc, &argv);
   auto const world = lib.world();
   Omega_h::CmdLine cmdline;
@@ -135,10 +139,7 @@ int run_cmdline(int argc, char** argv,
   auto const elem = params.get<std::string>("element type");
   lgr::Factories factories(elem);
   if (add_factories) add_factories(factories, elem);
-  lgr::Setups setups;
-  add_builtin_setups(setups);
-  if (add_other_setups) add_other_setups(setups);
-  lgr::run(world, params, setups, std::move(factories));
+  lgr::run(world, params, std::move(factories));
   return 0;
 }
 

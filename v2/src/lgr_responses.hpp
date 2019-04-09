@@ -15,7 +15,6 @@ struct Responses {
   void setup(Omega_h::InputList& pl);
   void evaluate();
   double next_event(double time);
-  void add(Response* new_response);
 };
 
 ResponseFactories get_builtin_response_factories();

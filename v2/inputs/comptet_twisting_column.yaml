@@ -1,0 +1,47 @@
+CFL: 0.4
+end time: 0.1
+element type: CompTet
+mesh:
+  add mid edge nodes: true
+  box:
+    x elements: 3
+    x size: 1.0
+    y elements: 18
+    y size: 6.0
+    z elements: 3 
+    z size: 1.0
+common fields:
+  density: 1.1e3
+  velocity: '100.0 * sin((pi / 12.0) * x(1)) * vector((x(2) - 0.5), 0.0, -(x(0) - 0.5))'
+material models:
+  - 
+    type: neo-Hookean 
+    bulk modulus: 2833333333.3333306
+    shear modulus: 5670446.964643095
+modifiers:
+  -
+    type: compute pressure
+conditions:
+  acceleration:
+    -
+      sets: ['y-']
+      value: 'vector(0.0, 0.0, 0.0)'
+responses:
+  -
+    type: VTK output
+    path: twisting_column
+    time period: 0.01
+    fields:
+      - velocity
+      - density
+      - stress
+      - pressure
+      - position
+      - deformation gradient
+  -
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt

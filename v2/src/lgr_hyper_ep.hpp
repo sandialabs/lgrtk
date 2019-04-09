@@ -620,7 +620,15 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
 
 }  // namespace hyper_ep
 
-void setup_hyper_ep(Simulation& sim, Omega_h::InputMap& pl);
+template <class Elem>
+ModelBase* hyper_ep_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
+
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* hyper_ep_factory<Elem>(                           \
+      Simulation&, std::string const&, Omega_h::InputMap&);
+LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
 
 }  // namespace lgr
 

@@ -227,11 +227,11 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
 void Disc::update_from_mesh() {
   if (is_second_order_) {
     OMEGA_H_CHECK(is_simplex_);
-    auto nodes = number_p2_nodes(mesh);
-    ents2nodes_[dim_] = build_p2_ents2nodes(mesh, dim_, nodes);
-    nodes2ents_[dim_] = build_p2_nodes2ents(mesh, dim_, nodes);
-    nodes2ents_[dim_ - 1] = build_p2_nodes2ents(mesh, dim_ - 1, nodes);
-    node_coords_ = build_p2_node_coords(mesh, nodes);
+    p2_nodes = number_p2_nodes(mesh);
+    ents2nodes_[dim_] = build_p2_ents2nodes(mesh, dim_, p2_nodes);
+    nodes2ents_[dim_] = build_p2_nodes2ents(mesh, dim_, p2_nodes);
+    nodes2ents_[dim_ - 1] = build_p2_nodes2ents(mesh, dim_ - 1, p2_nodes);
+    node_coords_ = build_p2_node_coords(mesh, p2_nodes);
   } else {
     ents2nodes_[dim_] = mesh.ask_elem_verts();
     nodes2ents_[dim_] = mesh.ask_up(0, mesh.dim());

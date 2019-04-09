@@ -986,40 +986,76 @@ Matrix<3, 4> CompTet::get_subtet_coords(Matrix<dim, 11> in, int subtet) {
   Matrix<3, 4> out;
   switch (subtet) {
     case 0:
-      out = {in[0], in[4], in[6], in[7]};
+      out[0] = in[0];
+      out[1] = in[4];
+      out[2] = in[6];
+      out[3] = in[7];
       break;
     case 1:
-      out = {in[1], in[5], in[4], in[8]};
+      out[0] = in[1];
+      out[1] = in[5];
+      out[2] = in[4];
+      out[3] = in[8];
       break;
     case 2:
-      out = {in[2], in[6], in[5], in[9]};
+      out[0] = in[2];
+      out[1] = in[6];
+      out[2] = in[5];
+      out[3] = in[9];
       break;
     case 3:
-      out = {in[3], in[8], in[7], in[9]};
+      out[0] = in[3];
+      out[1] = in[8];
+      out[2] = in[7];
+      out[3] = in[9];
       break;
     case 4:
-      out = {in[4], in[8], in[5], in[10]};
+      out[0] = in[4];
+      out[1] = in[8];
+      out[2] = in[5];
+      out[3] = in[10];
       break;
     case 5:
-      out = {in[5], in[8], in[9], in[10]};
+      out[0] = in[5];
+      out[1] = in[8];
+      out[2] = in[9];
+      out[3] = in[10];
       break;
     case 6:
-      out = {in[9], in[8], in[7], in[10]};
+      out[0] = in[9];
+      out[1] = in[8];
+      out[2] = in[7];
+      out[3] = in[10];
       break;
     case 7:
-      out = {in[7], in[8], in[4], in[10]};
+      out[0] = in[7];
+      out[1] = in[8];
+      out[2] = in[4];
+      out[3] = in[10];
       break;
     case 8:
-      out = {in[4], in[5], in[6], in[10]};
+      out[0] = in[4];
+      out[1] = in[5];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 9:
-      out = {in[5], in[9], in[6], in[10]};
+      out[0] = in[5];
+      out[1] = in[9];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 10:
-      out = {in[9], in[7], in[6], in[10]};
+      out[0] = in[9];
+      out[1] = in[7];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
     case 11:
-      out = {in[7], in[4], in[6], in[10]};
+      out[0] = in[7];
+      out[1] = in[4];
+      out[2] = in[6];
+      out[3] = in[10];
       break;
   }
   return out;
@@ -1058,12 +1094,20 @@ double CompTet::compute_char_length(Matrix<dim, nodes> in) {
 
 OMEGA_H_INLINE
 Matrix<3, 12> CompTet::get_centroids() {
-  Matrix<12, 3> xi = {0.125, 0.125, 0.125, 0.625, 0.125, 0.125, 0.125, 0.625,
-      0.125, 0.125, 0.125, 0.625, 0.4375, 0.1875, 0.1875, 0.3125, 0.3125,
-      0.3125, 0.1875, 0.1875, 0.4375, 0.3125, 0.0625, 0.3125, 0.3125, 0.3125,
-      0.0625, 0.1875, 0.4375, 0.1875, 0.0625, 0.3125, 0.3125, 0.1875, 0.1875,
-      0.1875};
-  return Omega_h::transpose(xi);
+  Matrix<3, 12> x;
+  x(0, 0) = 0.125;   x(1, 0) = 0.125;   x(2, 0) = 0.125;
+  x(0, 1) = 0.625;   x(1, 1) = 0.125;   x(2, 1) = 0.125;
+  x(0, 2) = 0.125;   x(1, 2) = 0.625;   x(2, 2) = 0.125;
+  x(0, 3) = 0.125;   x(1, 3) = 0.125;   x(2, 3) = 0.625;
+  x(0, 4) = 0.4375;  x(1, 4) = 0.1875;  x(2, 4) = 0.1875;
+  x(0, 5) = 0.3125;  x(1, 5) = 0.3125;  x(2, 5) = 0.3125;
+  x(0, 6) = 0.1875;  x(1, 6) = 0.1875;  x(2, 6) = 0.4375;
+  x(0, 7) = 0.3125;  x(1, 7) = 0.0625;  x(2, 7) = 0.3125;
+  x(0, 8) = 0.3125;  x(1, 8) = 0.3125;  x(2, 8) = 0.0625;
+  x(0, 9) = 0.1875;  x(1, 9) = 0.4375;  x(2, 9) = 0.1875;
+  x(0, 10) = 0.0625; x(1, 10) = 0.3125; x(2, 10) = 0.3125;
+  x(0, 11) = 0.1875; x(1, 11) = 0.1875; x(2, 11) = 0.1875;
+  return x;
 }
 
 OMEGA_H_INLINE
@@ -1099,6 +1143,30 @@ Matrix<CompTet::nodes, CompTet::nodes> CompTet::compute_mass(
     mass += J_s * rho_s * gamma_s;
   }
   return mass;
+}
+
+OMEGA_H_INLINE
+Vector<CompTet::nodes> CompTet::lump_mass(
+    Matrix<dim, nodes> node_coords,
+    Vector<points> density_ips) {
+  auto lumped = Omega_h::zero_vector<nodes>();
+  auto mass = compute_mass(node_coords, density_ips);
+  for (int i = 0; i < nodes; ++i) {
+    for (int j = 0; j < nodes; ++j) {
+      lumped[i] += mass(i, j);
+    }
+  }
+  return lumped;
+}
+
+OMEGA_H_INLINE
+Lengths<CompTet> CompTet::lengths(Matrix<dim, nodes> node_coords) {
+  Lengths<CompTet> out;
+  static constexpr double magic_number = 2.3;
+  out.time_step_length =
+      magic_number * compute_char_length(node_coords);
+  out.viscosity_length = out.time_step_length;
+  return out;
 }
 
 OMEGA_H_INLINE
@@ -1184,6 +1252,7 @@ constexpr double CompTet::lumping_factor(int node) {
 OMEGA_H_INLINE Matrix<CompTet::nodes, CompTet::points> CompTet::basis_values() {
   // need to fill this in
   Matrix<nodes, points> out;
+  out(0, 0) = 0.0;
   return out;
 }
 

@@ -1,3 +1,4 @@
+CFL: 0.5
 end time: 1.0
 max dt: 1.0e-02
 element type: Bar2
@@ -45,10 +46,3 @@ responses:
       - time
       - dt
       - pressure error
-  - 
-    type: comparison
-    at time: 1.0
-    scalar: pressure error
-    expected value: '0.0'
-    tolerance: 0.0
-    floor: 5.0e-3

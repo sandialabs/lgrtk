@@ -26,7 +26,7 @@ void Flooder::setup(Omega_h::InputMap& pl) {
   max_depth = flood_pl.get<int>("max depth", "1");
   flood_priority = sim.fields.define("flood priority", "flood priority", 1,
       ELEMS, false, sim.disc.covering_class_names());
-  sim.fields[flood_priority].remap_type = RemapType::PER_UNIT_VOLUME;
+  sim.fields[flood_priority].remap_type = RemapType::PICK;
 }
 
 void Flooder::flood() {

@@ -1,0 +1,51 @@
+CFL: 0.4
+end time: 8.4
+element type: CompTet
+mesh:
+  add mid edge nodes: true
+  box:
+    x elements: 8
+    x size: 1.0
+    y elements: 8
+    y size: 1.0
+    z elements: 1
+    z size: 1.0
+  transform: |
+    u = 1 - x(1);
+    v = x(0);
+    vector(u * 48, v * 44 + u * 16 * v + u * 44 * (1 - v), 2.0 * x(2))
+common fields:
+  density: 1.0
+  velocity: 'vector(0.0, (x(0) ^ 2) / (48^2), 0.0 )'
+material models:
+  - 
+    type: neo-Hookean 
+    bulk modulus: 833333
+    shear modulus: 83
+modifiers:
+  -
+    type: compute pressure
+conditions:
+  acceleration:
+    - 
+      sets: ['y+']
+      value: 'vector(0.0, 0.0)'
+responses:
+  - 
+    type: VTK output
+    path: Cooks_membrane
+    time period: 0.05
+    fields:
+      - velocity
+      - density
+      - stress
+      - pressure
+      - position
+      - deformation gradient
+  - 
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt

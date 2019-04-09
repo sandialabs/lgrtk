@@ -55,10 +55,10 @@ void Adapter::setup(Omega_h::InputMap& pl) {
   }
 }
 
-bool Adapter::adapt() {
-  Omega_h::ScopedTimer timer("lgr::adapt");
+bool Adapter::needs_adapt() {
+  Omega_h::ScopedTimer timer("lgr::needs_adapt");
   if (!should_adapt) return false;
-  sim.disc.mesh.set_coords(sim.get(sim.position));  // linear specific!
+  sim.fields.copy_field_to_mesh_coordinates(sim.disc, sim.fields[sim.position]);
   if (!sim.disc.mesh.has_tag(0, "metric"))
     Omega_h::add_implied_isos_tag(&sim.disc.mesh);
   auto const minqual = sim.disc.mesh.min_quality();
@@ -74,6 +74,10 @@ bool Adapter::adapt() {
   auto const length_triggered =
       is_long_len && (is_increasing_len || is_really_long_len);
   if ((!quality_triggered) && (!length_triggered)) return false;
+  return true;
+}
+
+void Adapter::adapt() {
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
   {
     auto metric = sim.disc.mesh.get_array<double>(0, "metric");
@@ -92,7 +96,6 @@ bool Adapter::adapt() {
   remap->after_adapt();
   old_quality = sim.disc.mesh.min_quality();
   old_length = sim.disc.mesh.max_length();
-  return true;
 }
 
 void Adapter::coarsen_metric_with_expansion() {

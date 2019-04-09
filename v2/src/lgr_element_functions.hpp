@@ -21,6 +21,15 @@ OMEGA_H_INLINE Vector<Bar2Side::points> Bar2Side::weights(
 
 OMEGA_H_INLINE constexpr double Bar2Side::lumping(int const) { return 1.0; }
 
+OMEGA_H_INLINE
+Lengths<Bar2> Bar2::lengths(Matrix<dim, nodes> node_coords) {
+  Lengths<Bar2> out;
+  auto const len = node_coords[1][0] - node_coords[0][0];
+  out.time_step_length = len;
+  out.viscosity_length = len;
+  return out;
+}
+
 // given the reference positions of the nodes of one element,
 // return the ReferenceShape information
 OMEGA_H_INLINE
@@ -66,6 +75,30 @@ Vector<Tri3Side::points> Tri3Side::weights(Matrix<dim, nodes> node_coords) {
 
 OMEGA_H_INLINE
 constexpr double Tri3Side::lumping(int const /*node*/) { return 1.0 / 2.0; }
+
+OMEGA_H_INLINE
+Lengths<Tri3> Tri3::lengths(Matrix<dim, nodes> node_coords) {
+  Lengths<Tri3> out;
+  Matrix<2, 3> edge_vectors;
+  edge_vectors[0] = node_coords[1] - node_coords[0];
+  edge_vectors[1] = node_coords[2] - node_coords[0];
+  edge_vectors[2] = node_coords[2] - node_coords[1];
+  Vector<3> squared_edge_lengths;
+  for (int i = 0; i < 3; ++i)
+    squared_edge_lengths[i] = Omega_h::norm_squared(edge_vectors[i]);
+  auto const max_squared_edge_length =
+      Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
+  auto const max_edge_length = std::sqrt(max_squared_edge_length);
+  Matrix<2, 3> raw_gradients;
+  raw_gradients[0] = Omega_h::perp(edge_vectors[2]);
+  raw_gradients[1] = -Omega_h::perp(edge_vectors[1]);
+  raw_gradients[2] = Omega_h::perp(edge_vectors[0]);
+  auto const raw_area = edge_vectors[0] * raw_gradients[1];
+  auto const min_height = raw_area / max_edge_length;
+  out.viscosity_length = max_edge_length;
+  out.time_step_length = min_height;
+  return out;
+}
 
 OMEGA_H_INLINE
 Shape<Tri3> Tri3::shape(Matrix<dim, nodes> node_coords) {
@@ -385,6 +418,45 @@ Vector<Tet4Side::points> Tet4Side::weights(Matrix<dim, nodes> node_coords) {
 
 OMEGA_H_INLINE
 constexpr double Tet4Side::lumping(int const) { return 1.0 / 3.0; }
+
+OMEGA_H_INLINE
+Lengths<Tet4> Tet4::lengths(Matrix<dim, nodes> node_coords) {
+  Lengths<Tet4> out;
+  Matrix<3, 6> edge_vectors;
+  edge_vectors[0] = node_coords[1] - node_coords[0];
+  edge_vectors[1] = node_coords[2] - node_coords[0];
+  edge_vectors[2] = node_coords[3] - node_coords[0];
+  edge_vectors[3] = node_coords[2] - node_coords[1];
+  edge_vectors[4] = node_coords[3] - node_coords[1];
+  edge_vectors[5] = node_coords[3] - node_coords[2];
+  Vector<6> squared_edge_lengths;
+  for (int i = 0; i < 6; ++i) {
+    squared_edge_lengths[i] = Omega_h::norm_squared(edge_vectors[i]);
+  }
+  auto const max_squared_edge_length =
+      Omega_h::reduce(squared_edge_lengths, Omega_h::maximum<double>());
+  Matrix<3, 4> raw_gradients;
+  // first compute "raw" gradients (gradients times volume times 6)
+  raw_gradients[0] = Omega_h::cross(edge_vectors[4], edge_vectors[3]);
+  raw_gradients[1] = Omega_h::cross(edge_vectors[1], edge_vectors[2]);
+  raw_gradients[2] = Omega_h::cross(edge_vectors[2], edge_vectors[0]);
+  raw_gradients[3] = Omega_h::cross(edge_vectors[0], edge_vectors[1]);
+  auto const raw_volume = raw_gradients[3] * edge_vectors[2];
+  auto const raw_volume_squared = square(raw_volume);
+  Vector<4> squared_heights;
+  for (int i = 0; i < 4; ++i) {
+    // then convert "raw" gradients to true gradients by "dividing" by raw
+    // volume
+    auto const raw_opposite_area_squared =
+        Omega_h::norm_squared(raw_gradients[i]);
+    squared_heights[i] = raw_volume_squared / raw_opposite_area_squared;
+  }
+  auto const min_height_squared =
+      Omega_h::reduce(squared_heights, Omega_h::minimum<double>());
+  out.viscosity_length = std::sqrt(max_squared_edge_length);
+  out.time_step_length = std::sqrt(min_height_squared);
+  return out;
+}
 
 OMEGA_H_INLINE
 Shape<Tet4> Tet4::shape(Matrix<dim, nodes> node_coords) {

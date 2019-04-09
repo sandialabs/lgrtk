@@ -10,6 +10,8 @@ struct Simulation;
 template <class Elem>
 void initialize_configuration(Simulation& sim);
 template <class Elem>
+void reset_configuration(Simulation& sim);
+template <class Elem>
 void lump_masses(Simulation& sim);
 template <class Elem>
 void update_position(Simulation& sim);
@@ -26,6 +28,7 @@ void compute_point_time_steps(Simulation& sim);
 
 #define LGR_EXPL_INST(Elem)                                                    \
   extern template void initialize_configuration<Elem>(Simulation & sim);       \
+  extern template void reset_configuration<Elem>(Simulation & sim);            \
   extern template void lump_masses<Elem>(Simulation & sim);                    \
   extern template void update_position<Elem>(Simulation & sim);                \
   extern template void update_configuration<Elem>(Simulation & sim);           \

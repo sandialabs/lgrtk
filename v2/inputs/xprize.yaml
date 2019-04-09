@@ -1,0 +1,169 @@
+CFL: 0.5
+end time: 0.2
+element type: CompTet
+mesh:
+  add mid edge nodes: true
+  CUBIT:
+    commands: |
+      reset
+      #{ topRadius = .125 }
+      #{ topCenter = .280 }
+      #{ botRadius = .0625 }
+      #{ botCenter = .2425 }
+      #{ thickness = .124 }
+      #{ botOffset = .0625 }
+      #{ gage = 3.25 }
+      #{ width = 0.5 }
+      #{ notchRadius = 0.125 }
+      #{ eps = .1 }
+      #{ webcutDeltaR = .035 }
+      #{thickness_interval = 15}
+      #{thickness_size = thickness/2./thickness_interval}
+      #{paved_size = 0.004}
+      #{end_size = 3.*paved_size}
+      #{ar = 3}
+      create vertex 0 0 0
+      create vertex 0 {topCenter-topRadius} 0
+      create vertex {topRadius} {topCenter} 0
+      create vertex 0 {topCenter+topRadius} 0
+      create vertex 0 {gage/2} 0
+      create vertex {width/2} {gage/2} 0
+      create vertex {width/2} {notchRadius} 0
+      create vertex {notchRadius} 0 0
+      create vertex {width/2} {-notchRadius} 0
+      create vertex {width/2} {-gage/2} 0
+      create vertex 0 {-gage/2} 0
+      create vertex 0 {-(botCenter+botRadius)} 0
+      create vertex {botOffset} {-(botCenter+botRadius)} 0
+      create vertex {botOffset+botRadius} {-botCenter} 0
+      create vertex {botOffset} {-(botCenter-botRadius)} 0
+      create vertex 0 {-(botCenter-botRadius)} 0
+      create curve vertex 1 2
+      create curve arc three vertex 2 3 4
+      create curve vertex 4 5
+      create curve vertex 5 6
+      create curve vertex 6 7
+      create curve arc three vertex 7 8 9
+      create curve vertex 9 10
+      create curve vertex 10 11
+      create curve vertex 11 12
+      create curve vertex 12 13
+      create curve arc three vertex 13 14 15
+      create curve vertex 15 16
+      create curve vertex 16 1
+      create surface curve 1 to 13
+      sweep surface 1 perpendicular distance {thickness/2}
+      del vert all
+      webcut vol 1 with plane yplane offset {topCenter+topRadius+eps}
+      webcut vol 1 with plane yplane offset {-(botCenter+botRadius+eps)}
+      webcut vol 3 with cylinder radius {topRadius+webcutDeltaR} axis z center 0 {topCenter} 0
+      webcut vol 3 with cylinder radius {notchRadius+webcutDeltaR} axis z center {width/2} 0 0
+      webcut vol 3 with cylinder radius {botRadius+webcutDeltaR} axis z center {botOffset} {-botCenter} 0
+      webcut vol 3 with plane yplane offset {-botCenter+botRadius+webcutDeltaR}
+      webcut vol 3 with plane yplane offset {-botCenter-botRadius-webcutDeltaR} 
+      webcut vol 6 8 with plane xplane offset {botOffset}
+      unite vol 6 9 10 11 12
+      unite vol 3 7 8
+      webcut vol 4 with plane yplane offset {topCenter}
+      webcut vol 5 with plane yplane 
+      webcut vol 6 with plane yplane offset {-botCenter} 
+      webcut vol 6 15 with plane xplane offset {botOffset}
+      imprint all 
+      merge all
+      volume all scheme tetmesh
+      Trimesher surface gradation 1.2
+      Trimesher volume gradation 1.2
+      Set Tetmesher Optimize Level 6 Overconstrained OFF Sliver OFF
+      Set Tetmesher Interior Points On
+      Set Tetmesher Boundary Recovery OFF
+      unite volume 3 4 5 6 13 14 15 16 17
+      composite create surface 2 4 133
+      composite create surface 40 80
+      #{mesh_size = 0.02}
+      #{mesh_size_far_field = 0.03}
+      volume 1 2 size {mesh_size_far_field}
+      volume 3 size {mesh_size}
+      mesh vol all
+      quality vol all
+      block 1 vol all
+      #block 1 element type tetra10
+      sideset 1 surface 25 29 84 ## +z face
+      sideset 1 name "plus_z_face"
+      sideset 2 surface 22 27 82 ## -z face
+      sideset 2 name "minus_z_face"
+      sideset 3 surface 6 ## -y face
+      sideset 3 name "minus_y_face"
+      sideset 4 surface 10 ## +y face
+      sideset 4 name "plus_y_face"
+      sideset 5 surface 30 23 38 85 161 ## -x face
+      sideset 5 name "minus_x_face"
+      vol all scale 0.0254
+      export genesis "xprize.exo"
+    Exodus file: xprize.exo
+
+common fields:
+  density: '8003.6*1000.0'
+
+material models:
+  - 
+    type: Albany J2
+    Poissons ratio: 0.25
+    elastic modulus: 20.0e10
+    hardening modulus: 4.0e8
+    yield strength: 3.49e8
+modifiers:
+  -
+    type: compute pressure
+
+conditions:
+  velocity:
+    -
+      sets: ['plus_y_face']
+      at time: 0.0
+      value: 'vector(0.0,0.0254*0.3/0.2, 0.0)'
+    - 
+      sets: ['minus_y_face']
+      at time: 0.0
+      value: 'vector(0.0, -0.0254*0.3/0.2, 0.0)'
+    -  
+      sets: ['minus_x_face']
+      at time: 0.0
+      value: 'vector(0.0, v(1), v(2))'
+    -
+      sets: ['minus_z_face']
+      at time: 0.0
+      value: 'vector(v(0), v(1), 0.0)'
+
+  acceleration:
+    - 
+      sets: ['plus_y_face', 'minus_y_face']
+      value: 'vector(a(0), 0.0, a(2))'
+    - 
+      sets: ['minus_x_face']
+      value: 'vector(0.0, a(1), a(2))'
+    -
+      sets: ['minus_z_face']
+      value: 'vector(a(0), a(1), 0.0)' 
+
+responses:
+  - 
+    type: VTK output
+    path: xprize
+    time period: 0.0001
+    fields:
+      - acceleration
+      - velocity
+      - density
+      - stress
+      - pressure
+      - position
+      - deformation gradient
+      - equivalent plastic strain
+      - plastic deformation gradient
+  - 
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt

@@ -5,9 +5,11 @@
 
 namespace lgr {
 
+struct Response;
 struct Simulation;
 
-void setup_comparison(Simulation&, Omega_h::InputMap&);
+Response* comparison_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
 }  // namespace lgr
 

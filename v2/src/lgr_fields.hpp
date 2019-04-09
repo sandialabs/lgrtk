@@ -20,7 +20,7 @@ struct Fields {
       int ncomps, Support* support);
   void finalize_definitions(Supports& s);
   Field& operator[](FieldIndex fi);
-  bool is_allocated(FieldIndex fi);
+  bool has(FieldIndex fi);
   Omega_h::Read<double> get(FieldIndex fi);
   Omega_h::Write<double> getset(FieldIndex fi);
   Omega_h::Write<double> set(FieldIndex fi);
@@ -36,7 +36,8 @@ struct Fields {
   void copy_to_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
   void copy_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
   void remove_from_omega_h(Disc& disc, std::vector<FieldIndex> field_indices);
-  bool has(std::string const& name);
+  void copy_field_to_mesh_coordinates(Disc& disc, Field& field);
+  void copy_field_from_mesh_coordinates(Disc& disc, Field& field);
 };
 
 }  // namespace lgr

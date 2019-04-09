@@ -29,6 +29,7 @@ struct Disc {
   int dim_;
   bool is_simplex_;
   bool is_second_order_;
+  Omega_h::Few<Omega_h::LOs, 2> p2_nodes;
   int points_per_ent_[4];
   int nodes_per_ent_[4];
   Omega_h::LOs ents2nodes_[4];

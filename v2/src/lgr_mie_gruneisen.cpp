@@ -16,15 +16,15 @@ struct MieGruneisen : public Model<Elem> {
   MieGruneisen(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->rho0_ = this->point_define(
-        "rho_0", "initial density", 1, RemapType::PER_UNIT_MASS, "");
+        "rho_0", "initial density", 1, RemapType::PICK, "");
     this->gamma0_ = this->point_define(
-        "gamma_0", "Gruneisen parameter", 1, RemapType::PER_UNIT_MASS, "");
+        "gamma_0", "Gruneisen parameter", 1, RemapType::PICK, "");
     this->cs_ = this->point_define(
-        "c_0", "unshocked sound speed", 1, RemapType::PER_UNIT_MASS, "");
+        "c_0", "unshocked sound speed", 1, RemapType::PICK, "");
     this->s1_ = this->point_define(
-        "S1", "Us/Up ratio", 1, RemapType::PER_UNIT_MASS, "");
+        "S1", "Us/Up ratio", 1, RemapType::PICK, "");
     this->specific_internal_energy = this->point_define(
-        "e", "specific internal energy", 1, RemapType::PER_UNIT_MASS, "");
+        "e", "specific internal energy", 1, RemapType::PICK, "");
   }
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }

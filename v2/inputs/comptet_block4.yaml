@@ -1,0 +1,107 @@
+CFL: 0.5
+end time: 2.0
+element type: CompTet
+mesh:
+  add mid edge nodes: true
+  CUBIT:
+    commands: |
+      #{mesh_size = 0.25}
+      reset
+      create surface rectangle width 1.998 height 1.998 yplane 
+      create surface rectangle width 2 height 2 yplane 
+      vol 2 move y 1 
+      create volume loft surface 1 2 
+      imprint all
+      merge all
+      del body 1 
+      del body 2
+      compress
+      webcut volume all  with plane xplane offset 0 noimprint nomerge 
+      webcut volume all  with plane zplane offset 0 noimprint nomerge 
+      del vol 2 3 4 
+      move vertex 18 location 0 0 0 nomerge
+      move vertex 18 location 0 0 0 include_merged
+      compress
+      #
+      block 1 volume 1      
+      volume 1 scheme tetmesh
+      volume 1 size {mesh_size}
+      mesh volume 1
+      #
+      sideset 1 surface 5
+      sideset 1 name "x-"
+      sideset 2 surface 3
+      sideset 2 name "x+"
+      sideset 3 surface 6  
+      sideset 3 name "y-"
+      sideset 4 surface 4  
+      sideset 4 name "y+"
+      sideset 5 surface 2
+      sideset 5 name "z-"
+      sideset 6 surface 1
+      sideset 6 name "z+"
+      export genesis "block4neck.g" dimension 3 block all overwrite
+    Exodus file: block4neck.g
+adapt:
+  gradation rate: 0.6
+common fields:
+  density: 7.8e3
+material models:
+  - 
+    type: Albany J2
+    Poissons ratio: 0.25
+    elastic modulus: 200.0e9
+    hardening modulus: 215.0e6
+    yield strength: 349.0e6
+modifiers:
+  -
+    type: compute pressure
+conditions:
+  velocity:
+    -
+      sets: ['y+']
+      at time: 0.0
+      value: 'vector(0.0, 10.0, 0.0)'
+    -
+      sets: ['y-']
+      at time: 0.0
+      value: 'vector(v(0), 0.0, v(2))'
+    -
+      sets: ['x-']
+      at time: 0.0
+      value: 'vector(0.0, v(1), v(2))'
+    -
+      sets: ['z-']
+      at time: 0.0
+      value: 'vector(v(0), v(1), 0.0)'
+  acceleration:
+    - 
+      sets: ['x-']
+      value: 'vector(0.0, a(1), a(2))'
+    -
+      sets: ['y-', 'y+']
+      value: 'vector(a(0), 0.0, a(2))'
+    - 
+      sets: ['z-']
+      value: 'vector(a(0), a(1), 0.0)'
+responses:
+  - 
+    time period: 1.0e-03
+    type: VTK output
+    fields:
+      - acceleration
+      - velocity
+      - density
+      - stress
+      - pressure
+      - position
+      - deformation gradient
+      - equivalent plastic strain
+      - plastic deformation gradient
+  - 
+    type: command line history
+    minimum column width: 20
+    scalars:
+      - step
+      - time
+      - dt

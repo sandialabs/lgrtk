@@ -30,7 +30,7 @@ common fields:
 
 material models:
   -
-    type: neo-Hookean
+    type: linear elastic
     bulk modulus: 140e9
     shear modulus: 48e9
   -

@@ -23,6 +23,8 @@ void Simulation::finalize_definitions() {
   fields.finalize_definitions(supports);
 }
 
+bool Simulation::has(FieldIndex fi) { return fields.has(fi); }
+
 Omega_h::Read<double> Simulation::get(FieldIndex fi) { return fields.get(fi); }
 
 Omega_h::Write<double> Simulation::set(FieldIndex fi) { return fields.set(fi); }
@@ -85,10 +87,9 @@ MappedPointWrite<Elem> Simulation::points_getset(
 
 void Simulation::del(FieldIndex fi) { fields.del(fi); }
 
-Simulation::Simulation(Omega_h::CommPtr comm_in, Setups const& setups_in, Factories&& factories_in)
+Simulation::Simulation(Omega_h::CommPtr comm_in, Factories&& factories_in)
     : comm(comm_in),
       factories(std::move(factories_in)),
-      setups(setups_in),
       input_variables(*this),
       disc(),
       subsets(disc),
@@ -126,8 +127,19 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields.setup(pl);
   auto& everywhere = disc.covering_class_names();
   ClassNames nowhere;
+  // coords are special
+  ref_coords = fields.define("X", "ref coords", dim(), NODES, false, everywhere);
   position = fields.define("x", "position", dim(), NODES, false, everywhere);
-  // fields[position].remap_type = RemapType::NODAL; // position is special
+  def_grad = fields.define("F", "deformation gradient", square(dim()), ELEMS, true, everywhere);
+  def_grad_init = fields.define(
+      "Fi", "deformation gradient init", square(dim()), ELEMS, true, everywhere);
+  fields[def_grad_init].remap_type = RemapType::PICK;
+  fields[def_grad_init].default_value = "I";
+  det_def_grad = fields.define("J", "det deformation gradient", 1, ELEMS, true, everywhere);
+  first_pk = fields.define("P", "first PK stress", square(dim()), ELEMS, true, everywhere);
+  fields[first_pk].default_value = "matrix(0.0)";
+  ref_density = fields.define("rho0", "reference density", 1, ELEMS, true, everywhere);
+  fields[ref_density].remap_type = RemapType::PICK;
   velocity = fields.define("v", "velocity", dim(), NODES, false, everywhere);
   fields[velocity].remap_type = RemapType::NODAL;
   fields[velocity].default_value = "vector(0.0)";
@@ -139,18 +151,17 @@ void Simulation::setup(Omega_h::InputMap& pl) {
       "sigma", "stress", Omega_h::symm_ncomps(3), ELEMS, true, everywhere);
   gradient = fields.define("grad", "gradient",
       disc.nodes_per_ent(ELEMS) * dim(), ELEMS, true, everywhere);
-  fields[gradient].remap_type = RemapType::SHAPE;
+  fields[gradient].remap_type = RemapType::NONE;
   weight = fields.define("w", "weight", 1, ELEMS, true, everywhere);
-  fields[weight].remap_type = RemapType::SHAPE;
+  fields[weight].remap_type = RemapType::NONE;
   time_step_length =
       fields.define("h", "time step length", 1, ELEMS, false, everywhere);
-  fields[time_step_length].remap_type = RemapType::SHAPE;
+  fields[time_step_length].remap_type = RemapType::NONE;
   viscosity_length =
       fields.define("h_visc", "viscosity length", 1, ELEMS, false, everywhere);
-  fields[viscosity_length].remap_type = RemapType::SHAPE;
+  fields[viscosity_length].remap_type = RemapType::NONE;
   wave_speed = fields.define("c", "wave speed", 1, ELEMS, true, everywhere);
   density = fields.define("rho", "density", 1, ELEMS, true, everywhere);
-  fields[density].remap_type = RemapType::PER_UNIT_VOLUME;
   nodal_mass = fields.define("m", "nodal mass", 1, NODES, false, everywhere);
   point_time_step =
       fields.define("dt", "time step", 1, ELEMS, true, everywhere);
@@ -158,7 +169,7 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   // done defining fields
   models.setup_material_models_and_modifiers(pl);
   flooder.setup(pl);
-  models.setup_field_updates(pl);
+  models.setup_field_updates();
   finalize_definitions();
   // setup conditions
   fields.setup_conditions(*this, pl.get_map("conditions"));
@@ -166,15 +177,14 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields.setup_default_conditions(*this, time);
   // done setting up conditions
   // set coordinates
+  auto const field_X = fields.set(ref_coords);
   auto const field_x = fields.set(position);
   auto const mesh_x = disc.get_node_coords();
+  Omega_h::copy_into(mesh_x, field_X);
   Omega_h::copy_into(mesh_x, field_x);
   // done setting coordinates
   scalars.setup(pl.get_map("scalars"));
   no_output = pl.get<bool>("no output", "false");
-  for (auto& setup : setups.responses) {
-    setup(*this, pl);
-  }
   responses.setup(pl.get_list("responses"));
   adapter.setup(pl);
   // echo parameters

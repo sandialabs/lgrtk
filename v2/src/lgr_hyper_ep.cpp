@@ -292,19 +292,16 @@ struct HyperEP : public Model<Elem> {
   }
 };
 
-void setup_hyper_ep(Simulation& sim, Omega_h::InputMap& pl) {
-  auto& models_pl = pl.get_list("material models");
-  for (int i = 0; i < models_pl.size(); ++i) {
-    auto& model_pl = models_pl.get_map(i);
-    if (model_pl.get<std::string>("type") == "hyper elastic-plastic") {
-#define LGR_EXPL_INST(Elem) \
-      if (sim.elem_name == Elem::name()) { \
-        sim.models.add(new HyperEP<Elem>(sim, model_pl)); \
-      }
+template <class Elem>
+ModelBase* hyper_ep_factory(
+    Simulation& sim, std::string const&, Omega_h::InputMap& pl) {
+  return new HyperEP<Elem>(sim, pl);
+}
+
+#define LGR_EXPL_INST(Elem)                                                    \
+  template ModelBase* hyper_ep_factory<Elem>(                                  \
+      Simulation&, std::string const&, Omega_h::InputMap&);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
-    }
-  }
-}
 
 }  // namespace lgr

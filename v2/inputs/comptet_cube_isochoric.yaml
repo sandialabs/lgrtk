@@ -20,12 +20,8 @@ material models:
     shear modulus: 75.0e9
 conditions:
   velocity:
-    - 
-      sets: ['y-']
-      value: '100.0 * vector(-1.0, 0.0, 0.0)'
     -
-      sets: ['y+']
-      value: '100.0 * vector(1.0, 0.0, 0.0)'
+      value: '100.0 * vector(x(1) * 2.0, 0.0, 0.0)'
   acceleration:
     - 
       value: 'vector(0.0, 0.0, 0.0)'
@@ -45,6 +41,8 @@ responses:
       - deformation gradient
       - force
       - density
+      - position
+      - nodal mass
   - 
     type: command line history
     scalars:
@@ -52,3 +50,9 @@ responses:
       - time
       - dt
       - deformation gradient error
+  - 
+    type: comparison
+    scalar: deformation gradient error
+    expected value: 0.0
+    tolerance: 0.0
+    floor: 1.0e-9

@@ -40,6 +40,7 @@ struct Bar2 {
   static constexpr int nodes = 2;
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
+  static OMEGA_H_INLINE Lengths<Bar2> lengths(Matrix<dim, nodes> node_coords);
   // given the reference positions of the nodes of one element,
   // return the ReferenceShape information
   static OMEGA_H_INLINE Shape<Bar2> shape(Matrix<dim, nodes> node_coords);
@@ -66,6 +67,7 @@ struct Tri3 {
   static constexpr int nodes = 3;
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
+  static OMEGA_H_INLINE Lengths<Tri3> lengths(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE Shape<Tri3> shape(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE constexpr double lumping_factor(int /*node*/);
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
@@ -101,6 +103,7 @@ struct Tri6 {
       Matrix<dim, nodes> node_coords, Shape<Tri6>& shape);
 
  public:
+  static OMEGA_H_INLINE Lengths<Tri6> lengths(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE Shape<Tri6> shape(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE constexpr double lumping_factor(int const node);
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
@@ -137,6 +140,7 @@ struct Quad4 {
       Matrix<2, 4> node_coords, Shape<Quad4>& shape);
 
  public:
+  static OMEGA_H_INLINE Lengths<Quad4> lengths(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE Shape<Quad4> shape(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE constexpr double lumping_factor(int /* node */);
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
@@ -161,6 +165,7 @@ struct Tet4 {
   static constexpr int nodes = 4;
   static constexpr int points = 1;
   static constexpr bool is_simplex = true;
+  static OMEGA_H_INLINE Lengths<Tet4> lengths(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE Shape<Tet4> shape(Matrix<dim, nodes> node_coords);
   static OMEGA_H_INLINE constexpr double lumping_factor(int /*node*/);
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
@@ -182,11 +187,17 @@ struct CompTet {
   static constexpr int nsub_tets = 12;
   static constexpr int nbarycentric_coords = 4;
 
+  static OMEGA_H_INLINE Vector<CompTet::nodes> lump_mass(
+    Matrix<dim, nodes> node_coords, Vector<points> density_ips);
+
+  static OMEGA_H_INLINE Lengths<CompTet> lengths(Matrix<dim, nodes> node_coords);
+
   static OMEGA_H_INLINE Shape<CompTet> shape(Matrix<dim, nodes> node_coords);
 
   static OMEGA_H_INLINE constexpr double lumping_factor(int /* node */);
 
   static OMEGA_H_INLINE Matrix<nodes, points> basis_values();
+
   static constexpr char const* name() { return "CompTet"; }
 
   using side = Tet4Side;  // this is wrong!

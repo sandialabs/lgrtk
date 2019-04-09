@@ -1,8 +1,9 @@
 #ifndef LGR_IDEAL_GAS_HPP
 #define LGR_IDEAL_GAS_HPP
 
-#include <Omega_h_input.hpp>
-#include <lgr_math.hpp>
+#include <lgr_element_types.hpp>
+#include <lgr_model.hpp>
+#include <string>
 
 namespace lgr {
 
@@ -17,9 +18,15 @@ OMEGA_H_INLINE void ideal_gas_update(double const gamma, double const density,
   OMEGA_H_CHECK(wave_speed > 0.0);
 }
 
-struct Simulation;
+template <class Elem>
+ModelBase* ideal_gas_factory(
+    Simulation& sim, std::string const& name, Omega_h::InputMap& pl);
 
-void setup_ideal_gas(Simulation& sim, Omega_h::InputMap& pl);
+#define LGR_EXPL_INST(Elem)                                                    \
+  extern template ModelBase* ideal_gas_factory<Elem>(                          \
+      Simulation&, std::string const&, Omega_h::InputMap&);
+LGR_EXPL_INST_ELEMS
+#undef LGR_EXPL_INST
 
 }  // namespace lgr
 
