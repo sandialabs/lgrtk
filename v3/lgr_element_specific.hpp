@@ -15,5 +15,6 @@ void update_h_min(
     input const& in,
     state& s);
 void update_h_art(input const& in, state& s);
+void update_nodal_mass(input const& in, state& s);
 
 }

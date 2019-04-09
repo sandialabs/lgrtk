@@ -299,30 +299,6 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_nodal_mass(state& s) {
-  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
-  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
-  auto const points_to_rho = s.rho.cbegin();
-  auto const points_to_V = s.V.cbegin();
-  auto const nodes_to_m = s.m.begin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
-  auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (node_index const node) {
-    double m(0.0);
-    auto const node_elements = nodes_to_node_elements[node];
-    for (auto const node_element : node_elements) {
-      auto const element = node_elements_to_elements[node_element];
-      for (auto const point : elements_to_points[element]) {
-        double const rho = points_to_rho[point];
-        double const V = points_to_V[point];
-        m = m + (rho * V) * N;
-      }
-    }
-    nodes_to_m[node] = m;
-  };
-  lgr::for_each(s.nodes, functor);
-}
-
 static void LGR_NOINLINE zero_acceleration(
     device_vector<node_index, int> const& domain,
     vector3<double> const axis,
@@ -764,7 +740,7 @@ void run(input const& in) {
   in.initial_v(s.nodes, s.x, &s.v);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
-  update_nodal_mass(s);
+  update_nodal_mass(in, s);
   if (in.enable_nodal_energy) update_nodal_density(s);
   initialize_grad_N(in, s);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
