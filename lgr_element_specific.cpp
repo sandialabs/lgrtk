@@ -457,4 +457,79 @@ void update_h_art(input const& in, state& s) {
   }
 }
 
+static void LGR_NOINLINE update_nodal_mass_uniform(state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_V = s.V.cbegin();
+  auto const nodes_to_m = s.m.begin();
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (node_index const node) {
+    double m(0.0);
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
+      auto const element = node_elements_to_elements[node_element];
+      for (auto const point : elements_to_points[element]) {
+        double const rho = points_to_rho[point];
+        double const V = points_to_V[point];
+        m = m + (rho * V) * N;
+      }
+    }
+    nodes_to_m[node] = m;
+  };
+  lgr::for_each(s.nodes, functor);
+}
+
+static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+//auto const points_to_V = s.V.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_m = s.m.begin();
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const points_in_element = s.points_in_element;
+  auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto functor = [=] (node_index const node) {
+    double m(0.0);
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
+      element_index const element = node_elements_to_elements[node_element];
+      node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
+      auto const element_nodes = elements_to_element_nodes[element];
+      array<vector3<double>, 10> node_coords;
+      for (auto const node_in_element2 : nodes_in_element) {
+        auto const node2 = element_nodes_to_nodes[element_nodes[node_in_element2]];
+        node_coords[int(node_in_element2)] = nodes_to_x[node2];
+      }
+      vector4<double> point_densities;
+      auto const element_points = elements_to_points[element];
+      for (auto const point_in_element : points_in_element) {
+        auto const point = element_points[point_in_element];
+        point_densities(int(point_in_element)) = points_to_rho[point];
+      }
+      auto const coef = composite_tetrahedron::lump_mass_matrix(
+          composite_tetrahedron::get_consistent_mass_matrix(node_coords, point_densities));
+      m = m + coef[int(node_in_element)];
+    }
+    nodes_to_m[node] = m;
+  };
+  lgr::for_each(s.nodes, functor);
+}
+
+void update_nodal_mass(input const& in, state& s) {
+  switch (in.element) {
+    case BAR:
+    case TRIANGLE:
+    case TETRAHEDRON:
+      update_nodal_mass_uniform(s); break;
+    case COMPOSITE_TETRAHEDRON:
+      update_nodal_mass_composite_tetrahedron(s); break;
+  }
+}
+
 }
