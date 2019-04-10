@@ -133,6 +133,7 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }
+  write_vtk_scalars(stream, "time_step", s.elements, s.points_in_element, s.element_dt);
   write_vtk_materials(stream, s.material);
   stream.close();
 }
