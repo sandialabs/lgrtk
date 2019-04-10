@@ -9,6 +9,18 @@ static void LGR_NOINLINE update_bar_Q(state& s) {
   fill(s.Q, double(1.0));
 }
 
+/* Per:
+   Shewchuk, Jonathan Richard.
+   "What is a good linear finite element?
+    interpolation, conditioning, anisotropy, and quality measures (preprint)."
+   University of California at Berkeley 73 (2002): 137.
+   
+   A scale-invariant quality measure correlated with matrix conditioning
+   (and the stable explicit time step) for triangles is area divided by
+   the square of the (root-mean-squared edge length).
+   We also use the fact that we already have area computed and that basis
+   gradient magnitudes relate to opposite edge lengths.
+  */
 static void LGR_NOINLINE update_triangle_Q(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
@@ -33,6 +45,21 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
+/* Per:
+   Shewchuk, Jonathan Richard.
+   "What is a good linear finite element?
+    interpolation, conditioning, anisotropy, and quality measures (preprint)."
+   University of California at Berkeley 73 (2002): 137.
+   
+   A scale-invariant quality measure correlated with matrix conditioning
+   (and the stable explicit time step) for tetrahedra is volume divided by
+   the (root-mean-squared side area) to the (3/2) power.
+   We also use the fact that we already have volume computed and that basis
+   gradient magnitudes relate to opposite side areas.
+   Furthermore, we raise the entire quantity to the fourth power in order to
+   avoid having to compute any roots, since only relative comparison of
+   qualities is necessary.
+  */
 static void LGR_NOINLINE update_tetrahedron_Q(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
