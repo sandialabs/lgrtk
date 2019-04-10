@@ -55,8 +55,9 @@ static void write_vtk_point_data(std::ostream& stream, state const& s) {
   stream << "POINT_DATA " << int(s.nodes.size()) << "\n";
 }
 
+template <class Index>
 static void write_vtk_scalars(std::ostream& stream, char const* name,
-    device_vector<double, node_index> const& vec) {
+    device_vector<double, Index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
   for (double const val : vec) {
@@ -134,6 +135,7 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }
   write_vtk_scalars(stream, "time_step", s.elements, s.points_in_element, s.element_dt);
+  write_vtk_scalars(stream, "quality", s.Q);
   write_vtk_materials(stream, s.material);
   stream.close();
 }
