@@ -48,6 +48,7 @@ void resize_state(input const& in, state& s) {
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
   s.material.resize(s.elements.size());
+  s.Q.resize(s.elements.size());
 }
 
 }

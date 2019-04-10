@@ -19,6 +19,7 @@
 #include <lgr_meshing.hpp>
 #include <lgr_input.hpp>
 #include <lgr_stabilized.hpp>
+#include <lgr_adapt.hpp>
 
 namespace lgr {
 
@@ -595,6 +596,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_nodal_density(s);
       interpolate_rho(s);
     }
+    update_Q(in, s);
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
@@ -696,6 +698,7 @@ void run(input const& in) {
   update_nodal_mass(in, s);
   if (in.enable_nodal_energy) update_nodal_density(s);
   initialize_grad_N(in, s);
+  update_Q(in, s);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
   update_symm_grad_v(s);
   update_h_min(in, s);
