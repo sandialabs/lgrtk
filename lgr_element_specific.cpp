@@ -485,7 +485,6 @@ static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
-//auto const points_to_V = s.V.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_m = s.m.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
