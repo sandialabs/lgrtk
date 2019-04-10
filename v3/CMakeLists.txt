@@ -8,6 +8,7 @@ endif()
 
 add_executable(lgr
     lgr.cpp
+    lgr_state.cpp
     lgr_print.cpp
     lgr_vtk.cpp
     lgr_domain.cpp

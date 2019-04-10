@@ -71,4 +71,8 @@ class state {
   double max_stable_dt;
 };
 
+class input;
+
+void resize_state(input const& in, state& s);
+
 }
