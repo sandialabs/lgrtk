@@ -170,6 +170,7 @@ class element_index : public index<int, element_index> {
   public:
     using base_type = index<int, element_index>;
     constexpr explicit inline element_index(int const i) noexcept : base_type(i) {}
+    inline element_index() noexcept = default;
 };
 
 class element_node_index : public index<int, element_node_index> {
@@ -218,6 +219,7 @@ class material_index : public index<int, material_index> {
   public:
     using base_type = index<int, material_index>;
     constexpr explicit inline material_index(int const i) noexcept : base_type(i) {}
+    inline material_index() noexcept = default;
 };
 
 }
