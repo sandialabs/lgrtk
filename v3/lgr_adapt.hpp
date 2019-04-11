@@ -6,5 +6,6 @@ class input;
 class state;
 
 void update_Q(input const& in, state& s);
+void consider_2d_swaps(state& s);
 
 }

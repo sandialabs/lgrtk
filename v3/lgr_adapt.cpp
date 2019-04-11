@@ -3,6 +3,7 @@
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>
 #include <lgr_array.hpp>
+#include <lgr_element_specific_inline.hpp>
 
 namespace lgr {
 
@@ -17,6 +18,11 @@ inline double triangle_quality(array<vector3<double>, 3> const grad_N, double co
     sum_g_i_sq += g_i_sq;
   }
   return (area * sum_g_i_sq);
+}
+
+inline double triangle_quality(array<vector3<double>, 3> const x) {
+  double const area = triangle_area(x);
+  return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
 /* Per:
@@ -101,7 +107,6 @@ void update_Q(input const& in, state& s) {
   }
 }
 
-#if 0
 template <int Capacity, class Index>
 static inline int find_or_append(
     int& count,
@@ -116,7 +121,7 @@ static inline int find_or_append(
   return count++;
 }
 
-static void LGR_NOINLINE consider_2d_swaps(state& s)
+void consider_2d_swaps(state& s)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -182,6 +187,5 @@ static void LGR_NOINLINE consider_2d_swaps(state& s)
   };
   for_each(s.nodes, functor);
 }
-#endif
 
 }
