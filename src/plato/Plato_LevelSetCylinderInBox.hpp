@@ -187,8 +187,9 @@ public:
      **********************************************************************************/
     Plato::Scalar referenceMassProductionRate() override
     {
+    	const Plato::Scalar tMultiplier = mComputeArrivalTime ? mInterfaceSpeedNormForUpdatingArrivalTime : 1.0;
         const Plato::Scalar tRefMassProdRate =
-                mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
+                tMultiplier * mPropellantDensity * level_set_volume_rate_of_change(mMesh, mHamiltonJacobiFields, mInterfaceWidth);
         return tRefMassProdRate;
     }
 
@@ -281,13 +282,21 @@ private:
      **********************************************************************************/
     void updateImmersedGeometry(const Plato::Scalar aDeltaTime, const Plato::Scalar aBurnRateMultiplier)
     {
-        evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
-        mTime += aDeltaTime;
-        mTimes.push_back(mTime);
+    	mTime += aDeltaTime;
+    	mTimes.push_back(mTime);
+    	++mStep;
 
-        reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
+    	if (mComputeArrivalTime)
+    	{
+    		const Plato::Scalar tDeltaPseudoTime = aBurnRateMultiplier * mInterfaceSpeedNormForUpdatingArrivalTime * aDeltaTime;
+            offset_level_set(mMesh, mHamiltonJacobiFields, -tDeltaPseudoTime);
+    	}
+    	else
+    	{
+            evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
+            reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
+    	}
 
-        ++mStep;
         this->cacheData();
     }
 
@@ -307,7 +316,22 @@ private:
         BurnRateInitialCondition tSpeedInitialCondition(aParams);
         initialize_interface_speed(mMesh, mHamiltonJacobiFields, tSpeedInitialCondition);
 
-        reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0 /* time */, mInterfaceWidth, mReIninitializationDeltaTime);
+        if (mComputeArrivalTime)
+        {
+        	mInterfaceSpeedNormForUpdatingArrivalTime = normalize_interface_speed(mMesh, mHamiltonJacobiFields);
+        	const Plato::Scalar tRelativeSpeed = 1.0;
+			const Plato::Scalar tDeltaTau = static_cast<Plato::Scalar>(0.2) * mDeltaX / tRelativeSpeed; // Units of time
+			mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX / tRelativeSpeed; // Should have same units as level set
+
+			compute_arrival_time(mMesh, mHamiltonJacobiFields, mInterfaceWidth, tDeltaTau);
+        }
+        else
+        {
+        	mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
+            mReIninitializationDeltaTime = static_cast<Plato::Scalar>(0.2) * mDeltaX;
+
+        	reinitialize_level_set(mMesh, mHamiltonJacobiFields, 0.0 /* time */, mInterfaceWidth, mReIninitializationDeltaTime);
+        }
     }
 
     /******************************************************************************//**
@@ -337,8 +361,6 @@ private:
                                    tNumCellZ);
 
         mDeltaX = mesh_minimum_length_scale<mSpatialDim>(mMesh);
-        mInterfaceWidth = static_cast<Plato::Scalar>(1.5) * mDeltaX; // Should have same units as level set
-        mReIninitializationDeltaTime = static_cast<Plato::Scalar>(0.2) * mDeltaX;
     }
 
     /******************************************************************************//**
@@ -360,6 +382,7 @@ private:
 
 private:
     MPI_Comm mComm;
+    bool mComputeArrivalTime = false;
     bool mBuiltBoundingBox = false;
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
     Omega_h::Mesh mMesh;
@@ -367,8 +390,7 @@ private:
     Plato::Scalar mMeshLength = 0.0;
     Plato::Scalar mMeshMaxRadius = 0.0;
     Plato::Scalar mPropellantDensity = 0.0;
-    Plato::Scalar mRefBurnRate = 0.0;
-    Plato::Scalar mRefBurnRateSlopeWithRadius = 0.0;
+    Plato::Scalar mInterfaceSpeedNormForUpdatingArrivalTime = 0.0;
     Plato::Scalar mInterfaceWidth = 0.0;
     Plato::Scalar mReIninitializationDeltaTime = 0.0;
     Plato::Scalar mTime = 0.0;
