@@ -44,13 +44,12 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
-    vector3<double> const x0 = nodes_to_x[node0];
-    vector3<double> const x1 = nodes_to_x[node1];
-    vector3<double> const x2 = nodes_to_x[node2];
-    double const area = 0.5 * (cross((x1 - x0), (x2 - x0))(2));
+    array<vector3<double>, 3> x;
+    for (int i = 0; i < 3; ++i) {
+      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      x[i] = nodes_to_x[node];
+    }
+    double const area = triangle_area(x);
     assert(area > 0.0);
     points_to_V[elements_to_points[element][fp]] = area;
   };
@@ -152,23 +151,16 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
-    vector3<double> node_coords[3];
-    node_coords[0] = nodes_to_x[node0];
-    node_coords[1] = nodes_to_x[node1];
-    node_coords[2] = nodes_to_x[node2];
-    vector3<double> edge_vectors[3];
-    edge_vectors[0] = node_coords[1] - node_coords[0];
-    edge_vectors[1] = node_coords[2] - node_coords[0];
-    edge_vectors[2] = node_coords[2] - node_coords[1];
-    constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+    array<vector3<double>, 3> x;
+    for (int i = 0; i < 3; ++i) {
+      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      x[i] = nodes_to_x[node];
+    }
     double const area = points_to_V[point];
-    double const factor = 0.5 * (1.0 / area);
-    point_nodes_to_grad_N[point_nodes[l_t(0)]] = cross(z_axis, edge_vectors[2]) * factor;
-    point_nodes_to_grad_N[point_nodes[l_t(1)]] = -cross(z_axis, edge_vectors[1]) * factor;
-    point_nodes_to_grad_N[point_nodes[l_t(2)]] = cross(z_axis, edge_vectors[0]) * factor;
+    auto const grad_N = triangle_basis_gradients(x, area);
+    for (int i = 0; i < 3; ++i) {
+      point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
+    }
   };
   lgr::for_each(s.elements, functor);
 }
