@@ -2,6 +2,7 @@
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>
+#include <lgr_array.hpp>
 
 namespace lgr {
 
@@ -92,5 +93,88 @@ void update_Q(input const& in, state& s) {
     case COMPOSITE_TETRAHEDRON: assert(0); break;
   }
 }
+
+#if 0
+template <int Capacity, class Index>
+static inline int find_or_append(
+    int& count,
+    array<Index, Capacity>& buffer,
+    Index const index)
+{
+  for (int i = 0; i < count; ++i) {
+    if (buffer[i] == index) return i;
+  }
+  assert(count < Capacity);
+  buffer[count] = index;
+  return count++;
+}
+
+static void LGR_NOINLINE consider_2d_swaps(state& s)
+{
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const node_elements_to_node_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const elements_to_materials = s.material.cbegin();
+  auto const elements_to_qualities = s.Q.cbegin();
+  auto functor = [=] (node_index const node) {
+    int num_shell_nodes = 0;
+    int num_shell_elements = 0;
+    constexpr int max_shell_elements = 32;
+    constexpr int max_shell_nodes = 32;
+    constexpr int nodes_per_element = 3;
+    array<node_index, max_shell_nodes> shell_nodes;
+    array<element_index, max_shell_elements> shell_elements;
+    array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
+    array<material_index, max_shell_elements> shell_elements_to_materials;
+    array<double, max_shell_elements> shell_element_qualities;
+    array<int, max_shell_elements> shell_elements_to_node_in_element;
+    int center_node = -1;
+    for (auto const node_element : nodes_to_node_elements[node]) {
+      element_index const element = node_elements_to_elements[node_element]; 
+      int const shell_element = num_shell_elements++;
+      shell_elements[shell_element] = element;
+      auto const element_nodes = elements_to_element_nodes[element];
+      for (node_in_element_index node_in_element(0);
+          node_in_element < node_in_element_index(nodes_per_element);
+          ++node_in_element) {
+        element_node_index const element_node = element_nodes[node_in_element];
+        node_index const node2 = element_nodes_to_nodes[element_node];
+        int const shell_node = find_or_append(num_shell_nodes, shell_nodes, node2);
+        if (node2 == node) center_node = shell_node;
+        shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
+      }
+      material_index const material = elements_to_materials[element];
+      shell_elements_to_materials[shell_element] = material;
+      double const quality = elements_to_qualities[element];
+      shell_element_qualities[shell_element] = quality;
+      node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
+      shell_elements_to_node_in_element[shell_element] = int(node_in_element);
+    }
+    for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
+      if (edge_node == center_node) continue;
+      array<int, 2> loop_elements;
+      loop_elements[0] = loop_elements[1] = -1;
+      array<int, 2> loop_nodes;
+      loop_nodes[0] = loop_nodes[1] = -1;
+      for (int element = 0; element < num_shell_elements; ++element) {
+        int const node_in_element = shell_elements_to_node_in_element[element];
+        if (shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3] == edge_node) {
+          loop_elements[0] = element;
+          loop_nodes[0] = shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3];
+        }
+        if (shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3] == edge_node) {
+          loop_elements[1] = element;
+          loop_nodes[1] = shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
+        }
+      }
+      if (loop_elements[0] == -1 || loop_elements[1] == -1) continue;
+      if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) continue;
+    }
+  };
+  for_each(s.nodes, functor);
+}
+#endif
 
 }
