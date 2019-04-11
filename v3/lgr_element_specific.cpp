@@ -8,6 +8,7 @@
 #include <lgr_binary_ops.hpp>
 #include <lgr_copy.hpp>
 #include <lgr_composite_tetrahedron.hpp>
+#include <lgr_element_specific_inline.hpp>
 
 namespace lgr {
 
@@ -67,15 +68,12 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
-    auto const node3 = element_nodes_to_nodes[element_nodes[l_t(3)]];
-    vector3<double> const x0 = nodes_to_x[node0];
-    vector3<double> const x1 = nodes_to_x[node1];
-    vector3<double> const x2 = nodes_to_x[node2];
-    vector3<double> const x3 = nodes_to_x[node3];
-    double const volume = (1.0 / 6.0) * (cross((x1 - x0), (x2 - x0)) * (x3 - x0));
+    array<vector3<double>, 4> x;
+    for (int i = 0; i < 4; ++i) {
+      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      x[i] = nodes_to_x[node];
+    }
+    double const volume = tetrahedron_volume(x);
     assert(volume > 0.0);
     points_to_V[elements_to_points[element][fp]] = volume;
   };
