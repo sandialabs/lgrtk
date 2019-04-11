@@ -10,6 +10,15 @@ static void LGR_NOINLINE update_bar_Q(state& s) {
   fill(s.Q, double(1.0));
 }
 
+inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
+  double sum_g_i_sq = 0.0;
+  for (int i = 0; i < 4; ++i) {
+    auto const g_i_sq = (grad_N[i] * grad_N[i]);
+    sum_g_i_sq += g_i_sq;
+  }
+  return (area * sum_g_i_sq);
+}
+
 /* Per:
    Shewchuk, Jonathan Richard.
    "What is a good linear finite element?
@@ -34,14 +43,12 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    auto sum_g_i_sq = 0.0;
+    array<vector3<double>, 3> grad_N;
     for (auto const i : nodes_in_element) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_nodes[i]];
-      auto const g_i_sq = (grad_N * grad_N);
-      sum_g_i_sq += g_i_sq;
+      grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
     }
     auto const A = points_to_V[point];
-    elements_to_Q[element] = (A * sum_g_i_sq);
+    elements_to_Q[element] = triangle_quality(grad_N, A);
   };
   lgr::for_each(s.elements, functor);
 }
