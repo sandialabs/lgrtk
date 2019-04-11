@@ -891,7 +891,7 @@ int main() {
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
   if ((0)) lgr::swinging_plate();
-  if ((0)) lgr::spinning_cube();
+  if ((1)) lgr::spinning_cube();
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
