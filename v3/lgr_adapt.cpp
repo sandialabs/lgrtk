@@ -130,6 +130,7 @@ void consider_2d_swaps(state& s)
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const elements_to_materials = s.material.cbegin();
   auto const elements_to_qualities = s.Q.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (node_index const node) {
     int num_shell_nodes = 0;
     int num_shell_elements = 0;
@@ -142,6 +143,7 @@ void consider_2d_swaps(state& s)
     array<material_index, max_shell_elements> shell_elements_to_materials;
     array<double, max_shell_elements> shell_element_qualities;
     array<int, max_shell_elements> shell_elements_to_node_in_element;
+    array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
     int center_node = -1;
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
@@ -155,6 +157,9 @@ void consider_2d_swaps(state& s)
         node_index const node2 = element_nodes_to_nodes[element_node];
         int const shell_node = find_or_append(num_shell_nodes, shell_nodes, node2);
         if (node2 == node) center_node = shell_node;
+        if (shell_node + 1 == num_shell_nodes) {
+          shell_nodes_to_x[shell_node] = nodes_to_x[node2];
+        }
         shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
       }
       material_index const material = elements_to_materials[element];
@@ -183,6 +188,18 @@ void consider_2d_swaps(state& s)
       }
       if (loop_elements[0] == -1 || loop_elements[1] == -1) continue;
       if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) continue;
+      double const quality_before = lgr::min(shell_element_qualities[loop_elements[0]], shell_element_qualities[loop_elements[1]]);
+      array<vector3<double>, 3> proposed_x;
+      proposed_x[0] = shell_nodes_to_x[center_node];
+      proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
+      proposed_x[2] = shell_nodes_to_x[edge_node];
+      double quality_after = triangle_quality(proposed_x);
+      if (quality_after < quality_before) continue;
+      proposed_x[0] = shell_nodes_to_x[center_node];
+      proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
+      proposed_x[2] = shell_nodes_to_x[edge_node];
+      quality_after = lgr::min(quality_after, triangle_quality(proposed_x));
+      if (quality_after < quality_before) continue;
     }
   };
   for_each(s.nodes, functor);
