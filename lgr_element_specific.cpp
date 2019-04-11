@@ -179,32 +179,16 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    auto const node0 = element_nodes_to_nodes[element_nodes[l_t(0)]];
-    auto const node1 = element_nodes_to_nodes[element_nodes[l_t(1)]];
-    auto const node2 = element_nodes_to_nodes[element_nodes[l_t(2)]];
-    auto const node3 = element_nodes_to_nodes[element_nodes[l_t(3)]];
-    vector3<double> node_coords[4];
-    node_coords[0] = nodes_to_x[node0];
-    node_coords[1] = nodes_to_x[node1];
-    node_coords[2] = nodes_to_x[node2];
-    node_coords[3] = nodes_to_x[node3];
-    vector3<double> ev[5];
-    ev[0] = node_coords[1] - node_coords[0];
-    ev[1] = node_coords[2] - node_coords[0];
-    ev[2] = node_coords[3] - node_coords[0];
-    ev[3] = node_coords[2] - node_coords[1];
-    ev[4] = node_coords[3] - node_coords[1];
+    array<vector3<double>, 4> x;
+    for (int i = 0; i < 4; ++i) {
+      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      x[i] = nodes_to_x[node];
+    }
     double const volume = points_to_V[point];
-    double const factor = (1.0 / 6.0) * (1.0 / volume);
-    vector3<double> grad_N[4];
-    grad_N[0] = cross(ev[4], ev[3]) * factor;
-    grad_N[1] = cross(ev[1], ev[2]) * factor;
-    grad_N[2] = cross(ev[2], ev[0]) * factor;
-    grad_N[3] = cross(ev[0], ev[1]) * factor;
-    point_nodes_to_grad_N[point_nodes[l_t(0)]] = grad_N[0];
-    point_nodes_to_grad_N[point_nodes[l_t(1)]] = grad_N[1];
-    point_nodes_to_grad_N[point_nodes[l_t(2)]] = grad_N[2];
-    point_nodes_to_grad_N[point_nodes[l_t(3)]] = grad_N[3];
+    auto const grad_N = tetrahedron_basis_gradients(x, volume);
+    for (int i = 0; i < 4; ++i) {
+      point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
+    }
   };
   lgr::for_each(s.elements, functor);
 }
