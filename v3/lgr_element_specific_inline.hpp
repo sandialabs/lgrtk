@@ -29,4 +29,22 @@ inline auto triangle_basis_gradients(
   return grad_N;
 }
 
+inline auto tetrahedron_basis_gradients(
+    array<vector3<double>, 4> const x,
+    double const volume) {
+  vector3<double> ev[5];
+  ev[0] = x[1] - x[0];
+  ev[1] = x[2] - x[0];
+  ev[2] = x[3] - x[0];
+  ev[3] = x[2] - x[1];
+  ev[4] = x[3] - x[1];
+  double const factor = (1.0 / 6.0) * (1.0 / volume);
+  array<vector3<double>, 4> grad_N;
+  grad_N[0] = cross(ev[4], ev[3]) * factor;
+  grad_N[1] = cross(ev[1], ev[2]) * factor;
+  grad_N[2] = cross(ev[2], ev[0]) * factor;
+  grad_N[3] = cross(ev[0], ev[1]) * factor;
+  return grad_N;
+}
+
 }
