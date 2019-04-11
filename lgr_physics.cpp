@@ -742,6 +742,7 @@ void run(input const& in) {
   if (in.output_to_command_line) {
     std::cout << "final time " << s.time << "\n";
   }
+  consider_2d_swaps(s);
 }
 
 }

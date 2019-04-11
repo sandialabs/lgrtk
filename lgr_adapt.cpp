@@ -5,6 +5,8 @@
 #include <lgr_array.hpp>
 #include <lgr_element_specific_inline.hpp>
 
+#include <iostream>
+
 namespace lgr {
 
 static void LGR_NOINLINE update_bar_Q(state& s) {
@@ -132,6 +134,7 @@ void consider_2d_swaps(state& s)
   auto const elements_to_qualities = s.Q.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (node_index const node) {
+    std::cout << "considering swaps for node " << int(node) << '\n';
     int num_shell_nodes = 0;
     int num_shell_elements = 0;
     constexpr int max_shell_elements = 32;
@@ -169,6 +172,8 @@ void consider_2d_swaps(state& s)
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
+    std::cout << num_shell_elements << " shell elements\n";
+    std::cout << num_shell_nodes << " shell nodes\n";
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       array<int, 2> loop_elements;
@@ -200,6 +205,7 @@ void consider_2d_swaps(state& s)
       proposed_x[2] = shell_nodes_to_x[edge_node];
       quality_after = lgr::min(quality_after, triangle_quality(proposed_x));
       if (quality_after < quality_before) continue;
+      std::cout << "flipping edge " << int(node) << "-" << int(edge_node) << " is beneficial\n";
     }
   };
   for_each(s.nodes, functor);
