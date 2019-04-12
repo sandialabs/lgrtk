@@ -12,8 +12,8 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE update_bar_badness(state& s) {
-  fill(s.badness, double(1.0));
+static void LGR_NOINLINE update_bar_quality(state& s) {
+  fill(s.quality, double(1.0));
 }
 
 /* Per:
@@ -27,27 +27,25 @@ static void LGR_NOINLINE update_bar_badness(state& s) {
    the square of the (root-mean-squared edge length).
    We also use the fact that we already have area computed and that basis
    gradient magnitudes relate to opposite edge lengths.
-
-   our "badness" is the inverse of this quality measure
   */
-inline double triangle_badness(array<vector3<double>, 3> const grad_N, double const area) {
+inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
     sum_g_i_sq += g_i_sq;
   }
-  return (area * sum_g_i_sq);
+  return 1.0 / (area * sum_g_i_sq);
 }
 
-inline double triangle_badness(array<vector3<double>, 3> const x) {
+inline double triangle_quality(array<vector3<double>, 3> const x) {
   double const area = triangle_area(x);
-  return triangle_badness(triangle_basis_gradients(x, area), area);
+  return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
-static void LGR_NOINLINE update_triangle_badness(state& s) {
+static void LGR_NOINLINE update_triangle_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_badness = s.badness.begin();
+  auto const elements_to_quality = s.quality.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
@@ -61,8 +59,8 @@ static void LGR_NOINLINE update_triangle_badness(state& s) {
       grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
     }
     auto const A = points_to_V[point];
-    double const fast_badness = triangle_badness(grad_N, A);
-    elements_to_badness[element] = fast_badness;
+    double const fast_quality = triangle_quality(grad_N, A);
+    elements_to_quality[element] = fast_quality;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -83,12 +81,12 @@ static void LGR_NOINLINE update_triangle_badness(state& s) {
    avoid having to compute any roots, since only relative comparison of
    qualities is necessary.
    
-   As such, our "badness" is the inverse of this quality measure to the fourth power
+   As such, our "quality" is the inverse of this quality measure to the fourth power
   */
-static void LGR_NOINLINE update_tetrahedron_badness(state& s) {
+static void LGR_NOINLINE update_tetrahedron_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_badness = s.badness.begin();
+  auto const elements_to_quality = s.quality.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
@@ -104,16 +102,16 @@ static void LGR_NOINLINE update_tetrahedron_badness(state& s) {
       sum_g_i_sq += g_i_sq;
     }
     auto const V = points_to_V[point];
-    elements_to_badness[element] = (V * V) * (sum_g_i_sq * sum_g_i_sq * sum_g_i_sq);
+    elements_to_quality[element] = (V * V) * (sum_g_i_sq * sum_g_i_sq * sum_g_i_sq);
   };
   lgr::for_each(s.elements, functor);
 }
 
-void update_badness(input const& in, state& s) {
+void update_quality(input const& in, state& s) {
   switch (in.element) {
-    case BAR: update_bar_badness(s); break;
-    case TRIANGLE: update_triangle_badness(s); break;
-    case TETRAHEDRON: update_tetrahedron_badness(s); break;
+    case BAR: update_bar_quality(s); break;
+    case TRIANGLE: update_triangle_quality(s); break;
+    case TETRAHEDRON: update_tetrahedron_quality(s); break;
     case COMPOSITE_TETRAHEDRON: assert(0); break;
   }
 }
@@ -165,7 +163,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const elements_to_materials = s.material.cbegin();
-  auto const elements_to_badnesses = s.badness.cbegin();
+  auto const elements_to_qualityes = s.quality.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_improvement = a.improvement.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
@@ -179,7 +177,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     array<element_index, max_shell_elements> shell_elements;
     array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
     array<material_index, max_shell_elements> shell_elements_to_materials;
-    array<double, max_shell_elements> shell_element_badnesses;
+    array<double, max_shell_elements> shell_element_qualityes;
     array<int, max_shell_elements> shell_elements_to_node_in_element;
     array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
     int center_node = -1;
@@ -202,8 +200,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       }
       material_index const material = elements_to_materials[element];
       shell_elements_to_materials[shell_element] = material;
-      double const badness = elements_to_badnesses[element];
-      shell_element_badnesses[shell_element] = badness;
+      double const quality = elements_to_qualityes[element];
+      shell_element_qualityes[shell_element] = quality;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
@@ -234,26 +232,29 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) {
         continue;
       }
-      double const old_badness1 = shell_element_badnesses[loop_elements[0]];
-      double const old_badness2 = shell_element_badnesses[loop_elements[1]];
-      double const badness_before = lgr::max(old_badness1, old_badness2);
+      double const old_quality1 = shell_element_qualityes[loop_elements[0]];
+      double const old_quality2 = shell_element_qualityes[loop_elements[1]];
+      double const quality_before = min(old_quality1, old_quality2);
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
-      double const new_badness1 = triangle_badness(proposed_x);
+      double const new_quality1 = triangle_quality(proposed_x);
       proposed_x[0] = shell_nodes_to_x[edge_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
-      double const new_badness2 = triangle_badness(proposed_x);
-      double const badness_after = lgr::max(new_badness1, new_badness2);
-      if (badness_after > badness_before) continue;
-      double const improvement = ((badness_before - badness_after) / badness_after);
+      double const new_quality2 = triangle_quality(proposed_x);
+      double const quality_after = min(new_quality1, new_quality2);
+      if (quality_after <= quality_before) continue;
+      double const improvement = ((quality_after - quality_before) / quality_before);
       if (improvement < 0.05) continue;
       if (improvement > best_improvement) {
         best_improvement = improvement;
         best_swap_edge_node = edge_node;
       }
+    }
+    if (best_swap_edge_node != -1) {
+      std::cout << int(node) << "-" << int(shell_nodes[best_swap_edge_node]) << " has improvement " << best_improvement << '\n';
     }
     nodes_to_improvement[node] = best_improvement;
     nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : shell_nodes[best_swap_edge_node];
