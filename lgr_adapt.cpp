@@ -127,7 +127,7 @@ static inline int find_or_append(
 }
 
 struct adapt_state {
-  device_vector<double, node_index> badness;
+  device_vector<double, node_index> improvement;
   device_vector<node_index, node_index> other_node;
   device_vector<int, node_index> chosen;
   device_vector<int, element_index> element_counts;
@@ -135,7 +135,7 @@ struct adapt_state {
 };
 
 adapt_state::adapt_state(state& s)
-  :badness(s.nodes.size(), s.devpool)
+  :improvement(s.nodes.size(), s.devpool)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
@@ -151,7 +151,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
   auto const elements_to_materials = s.material.cbegin();
   auto const elements_to_badnesses = s.Q.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  auto const nodes_to_badness = a.badness.begin();
+  auto const nodes_to_improvement = a.improvement.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto functor = [=] (node_index const node) {
     int num_shell_nodes = 0;
@@ -191,7 +191,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
-    double lowest_swap_badness = std::numeric_limits<double>::max();
+    double best_improvement = 0.0;
     int best_swap_edge_node = -1;
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
@@ -232,14 +232,14 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
       double const new_badness2 = triangle_quality(proposed_x);
       double const badness_after = lgr::max(new_badness1, new_badness2);
       if (badness_after > badness_before) continue;
-      double const benefit_percentage = (100.0 * ((badness_before - badness_after) / badness_after));
-      if (benefit_percentage < 10.0) continue;
-      if (badness_after < lowest_swap_badness) {
-        lowest_swap_badness = badness_after;
+      double const improvement = ((badness_before - badness_after) / badness_after);
+      if (improvement < 0.05) continue;
+      if (improvement > best_improvement) {
+        best_improvement = improvement;
         best_swap_edge_node = edge_node;
       }
     }
-    nodes_to_badness[node] = lowest_swap_badness;
+    nodes_to_improvement[node] = best_improvement;
     nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : shell_nodes[best_swap_edge_node];
   };
   for_each(s.nodes, functor);
@@ -251,7 +251,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_badness = a.badness.cbegin();
+  auto const nodes_to_improvement = a.improvement.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_are_chosen = a.chosen.begin();
@@ -260,7 +260,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
   auto functor = [=] (node_index const node) {
     node_index const target_node = nodes_to_other_nodes[node];
     if (target_node == node_index(-1)) return;
-    double const badness = nodes_to_badness[node];
+    double const improvement = nodes_to_improvement[node];
     std::cout << "candidate " << int(node) << "-" << int(target_node) << '\n';
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
@@ -269,14 +269,14 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node != node) {
-          double const adj_badness = nodes_to_badness[adj_node];
-          if ((adj_badness < badness) ||
-              ((adj_badness == badness) &&
+          double const adj_improvement = nodes_to_improvement[adj_node];
+          if ((adj_improvement > improvement) ||
+              ((adj_improvement == improvement) &&
                (adj_node < node))) {
             node_index const adj_target = nodes_to_other_nodes[adj_node];
             std::cout << "bowing out because " << int(adj_node) << "-" << int(adj_target)
               << " is better\n";
-            std::cout << badness << " vs " << adj_badness << '\n';
+            std::cout << improvement << " vs " << adj_improvement << '\n';
             nodes_are_chosen[node] = 0;
             return;
           }
