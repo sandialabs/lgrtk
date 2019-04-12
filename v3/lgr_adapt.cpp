@@ -174,6 +174,8 @@ void consider_2d_swaps(state& s)
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
+    double lowest_swap_badness = std::numeric_limits<double>::max();
+    int best_swap_edge_node = -1;
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
@@ -215,11 +217,15 @@ void consider_2d_swaps(state& s)
       if (badness_after > badness_before) continue;
       double const benefit_percentage = (100.0 * ((badness_before - badness_after) / badness_after));
       if (benefit_percentage < 10.0) continue;
+      if (badness_after < lowest_swap_badness) {
+        lowest_swap_badness = badness_after;
+        best_swap_edge_node = edge_node;
+      }
+    }
+    if (best_swap_edge_node != -1) {
       std::cout << std::fixed << std::setprecision(1);
-      std::cout << "swapping edge " << int(node) << "-" << int(shell_nodes[edge_node])
-        << " is beneficial by "
-        << benefit_percentage
-        << "%\n";
+      std::cout << "swapping edge " << int(node) << "-" << int(shell_nodes[best_swap_edge_node])
+        << " is beneficial\n";
     }
   };
   for_each(s.nodes, functor);
