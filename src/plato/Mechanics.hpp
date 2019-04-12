@@ -6,6 +6,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
+#include "plato/Plato_AugLagStressCriterionGeneral.hpp"
 #include "plato/Plato_AugLagStressCriterion.hpp"
 #include "plato/SimplexMechanics.hpp"
 #include "plato/ElastostaticResidual.hpp"
@@ -61,7 +62,7 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
 // function elastostatics_residual
 
 /******************************************************************************//**
- * @brief Create augmented Lagrangian stress constraint criterion
+ * @brief Create augmented Lagrangian stress constraint criterion tailored for linear problems
  * @param [in] aMesh mesh database
  * @param [in] aMeshSets side sets database
  * @param [in] aDataMap PLATO Analyze physics-based database
@@ -69,13 +70,32 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
 **********************************************************************************/
 template<typename EvaluationType>
 inline std::shared_ptr<AbstractScalarFunction<EvaluationType>>
-stress_constraint(Omega_h::Mesh& aMesh,
-                  Omega_h::MeshSets& aMeshSets,
-                  Plato::DataMap& aDataMap,
-                  Teuchos::ParameterList & aInputParams)
+stress_constraint_linear(Omega_h::Mesh& aMesh,
+                         Omega_h::MeshSets& aMeshSets,
+                         Plato::DataMap& aDataMap,
+                         Teuchos::ParameterList & aInputParams)
 {
     std::shared_ptr<AbstractScalarFunction<EvaluationType>> tOutput;
     tOutput = std::make_shared< AugLagStressCriterion<EvaluationType> >(aMesh, aMeshSets, aDataMap, aInputParams);
+    return (tOutput);
+}
+
+/******************************************************************************//**
+ * @brief Create augmented Lagrangian stress constraint criterion tailored for general problems
+ * @param [in] aMesh mesh database
+ * @param [in] aMeshSets side sets database
+ * @param [in] aDataMap PLATO Analyze physics-based database
+ * @param [in] aInputParams input parameters
+**********************************************************************************/
+template<typename EvaluationType>
+inline std::shared_ptr<AbstractScalarFunction<EvaluationType>>
+stress_constraint_general(Omega_h::Mesh& aMesh,
+                          Omega_h::MeshSets& aMeshSets,
+                          Plato::DataMap& aDataMap,
+                          Teuchos::ParameterList & aInputParams)
+{
+    std::shared_ptr<AbstractScalarFunction<EvaluationType>> tOutput;
+    tOutput = std::make_shared < AugLagStressCriterionGeneral<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams);
     return (tOutput);
 }
 
@@ -290,7 +310,11 @@ struct FunctionFactory
         }
         else if(aFuncName == "Stress Constraint")
         {
-            return (Plato::MechanicsFactory::stress_constraint<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
+            return (Plato::MechanicsFactory::stress_constraint_linear<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
+        }
+        else if(aFuncName == "Stress Constraint General")
+        {
+            return (Plato::MechanicsFactory::stress_constraint_general<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
         }
         else if(aFuncName == "Volume")
         {

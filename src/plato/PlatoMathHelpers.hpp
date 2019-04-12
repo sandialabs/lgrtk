@@ -17,6 +17,31 @@ namespace Plato
 {
 
 /******************************************************************************//**
+ * @brief Device only function used to compare two values (conditional values)
+ * between themselves and return the decision (consequent value). The conditional
+ * expression evaluated in this function is defined as if(X > Y) A = B.
+ * @param [in] aConditionalValOne conditional value given by X
+ * @param [in] aConditionalValTwo conditional value given by Y
+ * @param [in] aConsequentValOne consequent value given by A
+ * @param [in] aConsequentValTwo consequent value given by B
+ * @return result/decision
+**********************************************************************************/
+DEVICE_TYPE inline Plato::Scalar
+conditional_expression(const Plato::Scalar & aX,
+                       const Plato::Scalar & aY,
+                       const Plato::Scalar & aA,
+                       const Plato::Scalar & aB)
+{
+    auto tConditionalExpression = aX - aY - static_cast<Plato::Scalar>(1.0);
+    tConditionalExpression = exp(tConditionalExpression);
+    Plato::OrdinalType tCoeff = fmin(static_cast<Plato::Scalar>(1.0), tConditionalExpression);
+    Plato::Scalar tScalarCoeff = tCoeff;
+    auto tOutput = tScalarCoeff * aB + (static_cast<Plato::Scalar>(1.0) - tScalarCoeff) * aA;
+    return (tOutput);
+}
+// function conditional_expression
+
+/******************************************************************************//**
  * @brief Fill host 1D container with random numbers
  * @param [in] aLowerBound lower bounds on random numbers
  * @param [in] aUpperBound upper bounds on random numbers
