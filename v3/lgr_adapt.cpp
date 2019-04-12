@@ -133,18 +133,22 @@ struct adapt_state {
   device_vector<int, node_index> chosen;
   device_vector<element_index, element_index> element_counts;
   device_vector<element_index, element_index> old_elements_to_new_elements;
-  adapt_state(state&);
+  device_vector<element_index, element_index> new_elements_to_old_elements;
+  counting_range<element_index> new_elements;
+  adapt_state(state const&);
 };
 
-adapt_state::adapt_state(state& s)
+adapt_state::adapt_state(state const& s)
   :improvement(s.nodes.size(), s.devpool)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
   ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
+  ,new_elements_to_old_elements(s.devpool)
+  ,new_elements(element_index(0))
 {}
 
-static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
+static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -248,7 +252,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
   for_each(s.nodes, functor);
 }
 
-static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
+static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -299,6 +303,19 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
   for_each(s.nodes, functor);
 }
 
+static LGR_NOINLINE void project(state const& s, adapt_state& a) {
+  auto const old_elements_to_new_elements = a.old_elements_to_new_elements.cbegin();
+  auto const new_elements_to_old_elements = a.new_elements_to_old_elements.begin();
+  auto functor = [=] (element_index const old_element) {
+    element_index first = old_elements_to_new_elements[old_element];
+    element_index const last = old_elements_to_new_elements[old_element + element_index(1)];
+    for (; first < last; ++first) {
+      new_elements_to_old_elements[first] = old_element;
+    }
+  };
+  for_each(s.elements, functor);
+}
+
 void adapt(state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
@@ -306,6 +323,9 @@ void adapt(state& s) {
   element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
       plus<element_index>(), identity<element_index>());
   std::cout << int(num_new_elements) << " new elements\n";
+  a.new_elements.resize(num_new_elements);
+  a.new_elements_to_old_elements.resize(num_new_elements);
+  project(s, a);
 }
 
 }
