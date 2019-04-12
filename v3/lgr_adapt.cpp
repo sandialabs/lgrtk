@@ -261,6 +261,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
     node_index const target_node = nodes_to_other_nodes[node];
     if (target_node == node_index(-1)) return;
     double const badness = nodes_to_badness[node];
+    std::cout << "candidate " << int(node) << "-" << int(target_node) << '\n';
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       auto const element_nodes = elements_to_element_nodes[element];
@@ -272,6 +273,10 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
           if ((adj_badness < badness) ||
               ((adj_badness == badness) &&
                (adj_node < node))) {
+            node_index const adj_target = nodes_to_other_nodes[adj_node];
+            std::cout << "bowing out because " << int(adj_node) << "-" << int(adj_target)
+              << " is better\n";
+            std::cout << badness << " vs " << adj_badness << '\n';
             nodes_are_chosen[node] = 0;
             return;
           }
@@ -291,6 +296,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
       }
     }
     nodes_are_chosen[node] = 1;
+    std::cout << "chose to swap " << int(node) << "-" << int(target_node) << '\n';
   };
   for_each(s.nodes, functor);
 }
