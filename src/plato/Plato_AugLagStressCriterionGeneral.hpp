@@ -1,5 +1,5 @@
 /*
- * Plato_AugLagStressCriterion.hpp
+ * Plato_AugLagStressCriterionGeneral.hpp
  *
  *  Created on: Feb 12, 2019
  */
@@ -27,15 +27,10 @@ namespace Plato
 {
 
 /******************************************************************************//**
- * @brief Augmented Lagrangian stress constraint criterion
- *
- * This implementation is based on recent work by Prof. Glaucio Paulino research
- * group at Georgia Institute of Technology. Reference will be provided as soon as
- * it becomes available.
- *
+ * @brief Augmented Lagrangian stress constraint criterion tailored for general problems
 **********************************************************************************/
 template<typename EvaluationType>
-class AugLagStressCriterion :
+class AugLagStressCriterionGeneral :
         public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
         public AbstractScalarFunction<EvaluationType>
 {
@@ -58,15 +53,10 @@ private:
     Plato::Scalar mMinErsatzValue; /*!< minimum ersatz material value in SIMP model */
     Plato::Scalar mCellMaterialDensity; /*!< material density */
     Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
-    Plato::Scalar mMassMultipliersLowerBound; /*!< lower bound on mass multipliers */
-    Plato::Scalar mMassMultipliersUpperBound; /*!< upper bound on mass multipliers */
     Plato::Scalar mMassNormalizationMultiplier; /*!< normalization multipliers for mass criterion */
-    Plato::Scalar mInitialMassMultipliersValue; /*!< initial value for mass multipliers */
     Plato::Scalar mInitialLagrangeMultipliersValue; /*!< initial value for Lagrange multipliers */
     Plato::Scalar mAugLagPenaltyExpansionMultiplier; /*!< expansion parameter for augmented Lagrangian penalty */
-    Plato::Scalar mMassMultiplierUpperBoundReductionParam; /*!< reduction parameter for upper bound on mass multipliers */
 
-    Plato::ScalarVector mMassMultipliers; /*!< mass multipliers */
     Plato::ScalarVector mLagrangeMultipliers; /*!< Lagrange multipliers */
     Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
 
@@ -86,7 +76,6 @@ private:
 
         this->readInputs(aInputParams);
 
-        Plato::fill(mInitialMassMultipliersValue, mMassMultipliers);
         Plato::fill(mInitialLagrangeMultipliersValue, mLagrangeMultipliers);
     }
 
@@ -102,13 +91,9 @@ private:
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
         mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
         mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
-        mMassMultipliersLowerBound = tParams.get<Plato::Scalar>("Mass Multiplier Lower Bound", 0.0);
-        mMassMultipliersUpperBound = tParams.get<Plato::Scalar>("Mass Multiplier Upper Bound", 4.0);
-        mInitialMassMultipliersValue = tParams.get<Plato::Scalar>("Initial Mass Multiplier", 0.0);
         mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
         mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
         mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.05);
-        mMassMultiplierUpperBoundReductionParam = tParams.get<Plato::Scalar>("Mass Multiplier Reduction Multiplier", 0.95);
     }
 
     /******************************************************************************//**
@@ -118,7 +103,6 @@ private:
     {
         mAugLagPenalty = mAugLagPenaltyExpansionMultiplier * mAugLagPenalty;
         mAugLagPenalty = std::min(mAugLagPenalty, mAugLagPenaltyUpperBound);
-        mMassMultipliersUpperBound = mMassMultipliersUpperBound * mMassMultiplierUpperBoundReductionParam;
     }
 
 public:
@@ -129,10 +113,10 @@ public:
      * @param [in] aDataMap PLATO Engine and Analyze data map
      * @param [in] aInputParams input parameters database
      **********************************************************************************/
-    AugLagStressCriterion(Omega_h::Mesh & aMesh,
-                          Omega_h::MeshSets & aMeshSets,
-                          Plato::DataMap & aDataMap,
-                          Teuchos::ParameterList & aInputParams) :
+    AugLagStressCriterionGeneral(Omega_h::Mesh & aMesh,
+                                 Omega_h::MeshSets & aMeshSets,
+                                 Plato::DataMap & aDataMap,
+                                 Teuchos::ParameterList & aInputParams) :
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
             mPenalty(3),
             mStressLimit(1),
@@ -140,14 +124,9 @@ public:
             mMinErsatzValue(0.0),
             mCellMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
-            mMassMultipliersLowerBound(0),
-            mMassMultipliersUpperBound(4),
             mMassNormalizationMultiplier(1.0),
-            mInitialMassMultipliersValue(0.0),
             mInitialLagrangeMultipliersValue(0.01),
             mAugLagPenaltyExpansionMultiplier(1.05),
-            mMassMultiplierUpperBoundReductionParam(0.95),
-            mMassMultipliers("Mass Multipliers", aMesh.nelems()),
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
         this->initialize(aInputParams);
@@ -160,7 +139,7 @@ public:
      * @param [in] aMeshSets side sets database
      * @param [in] aDataMap PLATO Engine and Analyze data map
      **********************************************************************************/
-    AugLagStressCriterion(Omega_h::Mesh & aMesh, Omega_h::MeshSets & aMeshSets, Plato::DataMap & aDataMap) :
+    AugLagStressCriterionGeneral(Omega_h::Mesh & aMesh, Omega_h::MeshSets & aMeshSets, Plato::DataMap & aDataMap) :
             AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
             mPenalty(3),
             mStressLimit(1),
@@ -168,24 +147,18 @@ public:
             mMinErsatzValue(0.0),
             mCellMaterialDensity(1.0),
             mAugLagPenaltyUpperBound(100),
-            mMassMultipliersLowerBound(0),
-            mMassMultipliersUpperBound(4),
             mMassNormalizationMultiplier(1.0),
-            mInitialMassMultipliersValue(0.0),
             mInitialLagrangeMultipliersValue(0.01),
             mAugLagPenaltyExpansionMultiplier(1.05),
-            mMassMultiplierUpperBoundReductionParam(0.95),
-            mMassMultipliers("Mass Multipliers", aMesh.nelems()),
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
-        Plato::fill(mInitialMassMultipliersValue, mMassMultipliers);
         Plato::fill(mInitialLagrangeMultipliersValue, mLagrangeMultipliers);
     }
 
     /******************************************************************************//**
      * @brief Destructor
      **********************************************************************************/
-    virtual ~AugLagStressCriterion()
+    virtual ~AugLagStressCriterionGeneral()
     {
     }
 
@@ -199,30 +172,12 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Return upper bound on mass multipliers
-     * @return upper bound on mass multipliers
-    **********************************************************************************/
-    Plato::Scalar getMassMultipliersUpperBound() const
-    {
-        return (mMassMultipliersUpperBound);
-    }
-
-    /******************************************************************************//**
      * @brief Return multiplier used to normalized mass contribution to the objective function
      * @return upper mass normalization multiplier
     **********************************************************************************/
     Plato::Scalar getMassNormalizationMultiplier() const
     {
         return (mMassNormalizationMultiplier);
-    }
-
-    /******************************************************************************//**
-     * @brief Return mass multipliers
-     * @return 1D view of mass multipliers
-    **********************************************************************************/
-    Plato::ScalarVector getMassMultipliers() const
-    {
-        return (mMassMultipliers);
     }
 
     /******************************************************************************//**
@@ -259,16 +214,6 @@ public:
     void setCellMaterialDensity(const Plato::Scalar & aInput)
     {
         mCellMaterialDensity = aInput;
-    }
-
-    /******************************************************************************//**
-     * @brief Set mass multipliers
-     * @param [in] aInput mass multipliers
-     **********************************************************************************/
-    void setMassMultipliers(const Plato::ScalarVector & aInput)
-    {
-        assert(aInput.size() == mMassMultipliers.size());
-        Plato::copy(aInput, mMassMultipliers);
     }
 
     /******************************************************************************//**
@@ -337,7 +282,6 @@ public:
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tStressLimit = mStressLimit;
         auto tAugLagPenalty = mAugLagPenalty;
-        auto tMassMultipliers = mMassMultipliers;
         auto tCellMaterialDensity = mCellMaterialDensity;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
         auto tMassNormalizationMultiplier = mMassNormalizationMultiplier;
@@ -359,7 +303,8 @@ public:
             // Compute Von Mises stress constraint residual
             ResultT tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
             ResultT tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-            ResultT tCellConstraintValue = tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+            ResultT tCellConstraintValue = tVonMisesOverLimitMinusOne *
+                    (tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne + static_cast<Plato::Scalar>(1.0));
 
             ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tPenalizedCellDensity = tSIMP(tCellDensity);
@@ -368,20 +313,13 @@ public:
             ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
 
-            // Compute relaxed Von Mises stress constraint
-            Plato::Scalar tLambdaOverPenalty =
-                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(aCellOrdinal) / tAugLagPenalty;
-            ResultT tRelaxedStressConstraint = (tPenalizedStressConstraint > tLambdaOverPenalty) ?
-                    tPenalizedStressConstraint : tLambdaOverPenalty;
-
-            // Compute Von Mises stress contribution to augmented Lagrangian function
             ResultT tStressContribution = ( tLagrangeMultipliers(aCellOrdinal) +
-                    static_cast<Plato::Scalar>(0.5) * tAugLagPenalty * tRelaxedStressConstraint ) * tRelaxedStressConstraint;
+                    static_cast<Plato::Scalar>(0.5) * tAugLagPenalty * tPenalizedStressConstraint ) * tPenalizedStressConstraint;
 
             // Compute mass contribution to augmented Lagrangian function
             ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
             tCellMass *= tCellVolume(aCellOrdinal);
-            ResultT tMassContribution = (tMassMultipliers(aCellOrdinal) * tCellMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
+            ResultT tMassContribution = (tCellMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
 
             // Compute augmented Lagrangian
             aResultWS(aCellOrdinal) = tMassContribution + ( static_cast<Plato::Scalar>(1.0 / tNumCells) * tStressContribution );
@@ -419,10 +357,7 @@ public:
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tStressLimit = mStressLimit;
         auto tAugLagPenalty = mAugLagPenalty;
-        auto tMassMultipliers = mMassMultipliers;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
-        auto tMassMultiplierLowerBound = mMassMultipliersLowerBound;
-        auto tMassMultiplierUpperBound = mMassMultipliersUpperBound;
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
@@ -437,37 +372,21 @@ public:
 
             // Compute 3D Von Mises Yield Criterion
             tVonMises(aCellOrdinal, tCellCauchyStress, tCellVonMises);
-            const Plato::Scalar tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
-
-            // Compute mass multiplier measure
-            Plato::Scalar tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
-            tMassMultiplierMeasures(aCellOrdinal) = tVonMisesOverStressLimit * pow(tCellDensity, static_cast<Plato::Scalar>(0.5));
-
-            // Update mass multipliers
-            const Plato::Scalar tOptionOne =
-                    static_cast<Plato::Scalar>(0.7) * tMassMultipliers(aCellOrdinal) - static_cast<Plato::Scalar>(0.1);
-            const Plato::Scalar tOptionTwo =
-                    static_cast<Plato::Scalar>(2.5) * tMassMultipliers(aCellOrdinal) + static_cast<Plato::Scalar>(0.5);
-            tMassMultipliers(aCellOrdinal) = tMassMultiplierMeasures(aCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
-                    Omega_h::max2(tOptionOne, tMassMultiplierLowerBound) : Omega_h::min2(tOptionTwo, tMassMultiplierUpperBound);
+            auto tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
 
             // Compute Von Mises stress constraint residual
-            const Plato::Scalar tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-            const Plato::Scalar tPenalizedCellDensity = tSIMP(tCellDensity);
-            const Plato::Scalar tSuggestedPenalizedStressConstraint =
-                    tPenalizedCellDensity * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
-            const Plato::Scalar tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
+            auto tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
+            auto tPenalizedCellDensity = tSIMP(tCellDensity);
+            auto tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
+            auto tStressConstraint = tVonMisesOverLimitMinusOne * (tVonMisesOverLimitMinusOne *
+                    tVonMisesOverLimitMinusOne + static_cast<Plato::Scalar>(1.0));
+
+            // Compute penalized Von Mises stress constraint
+            auto tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tStressConstraint;
+            auto tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<Plato::Scalar>(0.0);
-
-            // Compute relaxed stress constraint
-            const Plato::Scalar tLambdaOverPenalty =
-                    static_cast<Plato::Scalar>(-1.0) * tLagrangeMultipliers(aCellOrdinal) / tAugLagPenalty;
-            const Plato::Scalar tRelaxedStressConstraint = Omega_h::max2(tPenalizedStressConstraint, tLambdaOverPenalty);
-
-            // Update Lagrange multipliers
-            const Plato::Scalar tSuggestedLagrangeMultiplier =
-                    tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
-            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
+            const Plato::Scalar tSuggestedLagrangeMultiplier = tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tPenalizedStressConstraint;
+            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, static_cast<Plato::Scalar>(0.0));
         }, "Update Multipliers");
     }
 
@@ -501,29 +420,29 @@ public:
         Plato::local_sum(tTotalMass, mMassNormalizationMultiplier);
     }
 };
-// class AugLagStressCriterion
+// class AugLagStressCriterionGeneral
 
 }// namespace Plato
 
 #include "plato/Mechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
 #endif
 
 #ifdef PLATO_2D
-extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
 #endif
 
 #ifdef PLATO_3D
-extern template class Plato::AugLagStressCriterion<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterion<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterion<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
+extern template class Plato::AugLagStressCriterionGeneral<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
 #endif

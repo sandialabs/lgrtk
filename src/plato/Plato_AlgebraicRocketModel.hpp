@@ -311,8 +311,8 @@ public:
 
             tTotalPressure = this->newton(tMassProductionRate, tTotalPressure, tThroatArea);
 
-            tThrust = static_cast<Plato::Scalar>(269.0) * static_cast<Plato::Scalar>(9.8)
-                    * tThroatArea * (tTotalPressure - mAmbientPressure)
+            tThrust = ( static_cast<Plato::Scalar>(269.0) * static_cast<Plato::Scalar>(9.8)
+                    * tThroatArea * (tTotalPressure - mAmbientPressure) )
                     / mCharacteristicVelocity;
 
             Plato::Scalar tBurnRateMultiplier = std::pow(tTotalPressure, mAlpha) * mInvPrefAlpha;
@@ -340,11 +340,12 @@ private:
         {
             Plato::Scalar tMyResidualEvaluation = this->residual(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
             Plato::Scalar tMyJacobianEvaluation = this->jacobian(aRefMassProductionRate, tNewTotalPressure, aThroatArea);
-            Plato::Scalar tDeltaPressure = static_cast<Plato::Scalar>(-1.0) * tMyResidualEvaluation / tMyJacobianEvaluation;
+            Plato::Scalar tDeltaPressure = (static_cast<Plato::Scalar>(-1.0) * tMyResidualEvaluation) / tMyJacobianEvaluation;
             tNewTotalPressure += tDeltaPressure;
 
             mNumNewtonItr += static_cast<size_t>(1);
-            tDone = std::abs(tDeltaPressure) < mNewtonTolerance || mNumNewtonItr > mMaxNumNewtonItr;
+            Plato::Scalar tAbsDeltaPressure = std::abs(tDeltaPressure);
+            tDone = tAbsDeltaPressure < mNewtonTolerance || mNumNewtonItr > mMaxNumNewtonItr;
         }
 
         return (tNewTotalPressure);
@@ -359,9 +360,8 @@ private:
     Plato::Scalar jacobian(const Plato::Scalar& aRefMassProductionRate, const Plato::Scalar& aTotalPressure, const Plato::Scalar& aThroatArea)
     {
         Plato::Scalar tPower = mAlpha - static_cast<Plato::Scalar>(1);
-        Plato::Scalar tValue = aRefMassProductionRate * mAlpha * mInvPrefAlpha
-                            * std::pow(aTotalPressure, tPower)
-                            - aThroatArea / mCharacteristicVelocity;
+        Plato::Scalar tPowValue = std::pow(aTotalPressure, tPower);
+        Plato::Scalar tValue = ( aRefMassProductionRate * mAlpha * mInvPrefAlpha * tPowValue ) - (aThroatArea / mCharacteristicVelocity);
         return tValue;
     }
 
@@ -373,8 +373,9 @@ private:
      **********************************************************************************/
     Plato::Scalar residual(const Plato::Scalar& aRefMassProductionRate, const Plato::Scalar& aTotalPressure, const Plato::Scalar& aThroatArea)
     {
-        Plato::Scalar tValue = aRefMassProductionRate * mInvPrefAlpha * std::pow(aTotalPressure, mAlpha)
-                - aThroatArea * aTotalPressure / mCharacteristicVelocity;
+        Plato::Scalar tPowValue = std::pow(aTotalPressure, mAlpha);
+        Plato::Scalar tValue = (aRefMassProductionRate * mInvPrefAlpha * tPowValue) 
+            - ( ( aThroatArea * aTotalPressure ) / mCharacteristicVelocity );
         return tValue;
     }
 

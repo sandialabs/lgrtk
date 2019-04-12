@@ -4,6 +4,12 @@
 #include <fenv.h>
 #endif
 
+void safeExit(){
+  Kokkos::finalize_all();
+  MPI_Finalize();
+  exit(0);
+}
+
 /******************************************************************************/
 int main(int aArgc, char **aArgv)
 /******************************************************************************/
@@ -22,8 +28,7 @@ int main(int aArgc, char **aArgv)
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+      safeExit();
     }
 
     MPI_Comm tLocalComm;
@@ -36,8 +41,8 @@ int main(int aArgc, char **aArgv)
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+      tMyApp = nullptr;
+      tPlatoInterface->Catch();
     }
 
     try
@@ -46,14 +51,20 @@ int main(int aArgc, char **aArgv)
     }
     catch(...)
     {
-      Kokkos::finalize_all();
-      MPI_Finalize();
+      safeExit();
     }
 
     tPlatoInterface->perform();
 
-    delete tMyApp;
+    if(tMyApp)
+    {
+      delete tMyApp;
+    }
+    
+    if(tPlatoInterface)
+    {
+      delete tPlatoInterface;
+    }
 
-    Kokkos::finalize_all();
-    MPI_Finalize();
+    safeExit();
 }

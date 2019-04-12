@@ -160,8 +160,8 @@ public:
      * @brief Default constructor
      **********************************************************************************/
     explicit LevelSetCylinderInBox(MPI_Comm aComm = MPI_COMM_WORLD) :
-            mComm(aComm),
-            mTimes()
+            mTimes(),
+            mLibOmegaH(std::make_shared<Omega_h::Library>(nullptr, nullptr, aComm))
     {
     }
 
@@ -350,8 +350,7 @@ private:
         const size_t tNumCellX = tNumCellsPerSide;
         const size_t tNumCellY = tNumCellsPerSide;
         const size_t tNumCellZ = tNumCellsPerSide;
-        auto tLibOmegaH = std::make_shared < Omega_h::Library > (nullptr, nullptr, mComm);
-        mMesh = Omega_h::build_box(tLibOmegaH->world(),
+        mMesh = Omega_h::build_box(mLibOmegaH->world(),
                                    OMEGA_H_SIMPLEX,
                                    tLengthX,
                                    tLengthY,
@@ -381,7 +380,6 @@ private:
     }
 
 private:
-    MPI_Comm mComm;
     bool mComputeArrivalTime = false;
     bool mBuiltBoundingBox = false;
     ProblemFields<mSpatialDim> mHamiltonJacobiFields;
@@ -396,7 +394,9 @@ private:
     Plato::Scalar mTime = 0.0;
     Plato::Scalar mDeltaX = 0.0;
     Plato::OrdinalType mStep = 0;
+
     std::vector<Plato::Scalar> mTimes;
+    std::shared_ptr<Omega_h::Library> mLibOmegaH;
 };
 // class LevelSetCylinderInBox
 

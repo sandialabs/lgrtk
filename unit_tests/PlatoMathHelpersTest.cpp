@@ -25,6 +25,29 @@
 namespace PlatoUnitTests
 {
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_ConditionalExpression)
+{
+    const Plato::OrdinalType tRange = 1;
+    Plato::ScalarVector tOuput("Output", 2 /* number of outputs */);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tRange), LAMBDA_EXPRESSION(Plato::OrdinalType tOrdinal)
+    {
+        Plato::Scalar tConditionalValOne = 5;
+        Plato::Scalar tConditionalValTwo = 4;
+        Plato::Scalar tConsequentValOne = 2;
+        Plato::Scalar tConsequentValTwo = 3;
+        tOuput(tOrdinal) = Plato::conditional_expression(tConditionalValOne, tConditionalValTwo, tConsequentValOne, tConsequentValTwo);
+
+        tConditionalValOne = 3;
+        tOuput(tOrdinal + 1) = Plato::conditional_expression(tConditionalValOne, tConditionalValTwo, tConsequentValOne, tConsequentValTwo);
+    }, "Test inline conditional_expression function");
+
+    auto tHostOuput = Kokkos::create_mirror(tOuput);
+    Kokkos::deep_copy(tHostOuput, tOuput);
+    const Plato::Scalar tTolerance = 1e-6;
+    TEST_FLOATING_EQUALITY(tHostOuput(0), 3.0, tTolerance);
+    TEST_FLOATING_EQUALITY(tHostOuput(1), 2.0, tTolerance);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_dot)
 {
   constexpr Plato::OrdinalType tNumElems = 10;

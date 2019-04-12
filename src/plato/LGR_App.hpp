@@ -292,7 +292,6 @@ public:
     {
         auto tTokens = split(aName, '@');
         auto tFieldName = tTokens[0];
-
         auto tDataMap = m_problem->getDataMap();
         // element ScalarVector?
         if(tDataMap.scalarVectors.count(tFieldName))

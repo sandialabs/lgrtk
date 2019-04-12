@@ -75,13 +75,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_VonMises3D)
             }, "Test Von Mises Yield Stress Calculation");
 
     constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold = {0.965377, 1.315587};
+    std::vector<Plato::Scalar> tGold = {1.284867, 1.615385};
     auto tHostCellVonMises = Kokkos::create_mirror(tCellVonMises);
     Kokkos::deep_copy(tHostCellVonMises, tCellVonMises);
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
     {
         TEST_FLOATING_EQUALITY(tHostCellVonMises(tIndex), tGold[tIndex], tTolerance);
     }
+
+
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_VonMises2D)
@@ -231,7 +233,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold = {0.00166667, 0.00340925, 0.00166667, 0.00849051, 0.0448806, 0.0653398};
+    std::vector<Plato::Scalar> tGold = {0.00307405, 0.00917341, 0.00307405, 0.0200399, 0.0877981, 0.124073};
     auto tHostResultWS = Kokkos::create_mirror(tResultWS);
     Kokkos::deep_copy(tHostResultWS, tResultWS);
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
@@ -241,7 +243,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 
     // ****** TEST GLOBAL SUM ******
     auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
-    TEST_FLOATING_EQUALITY(0.125453, tObjFuncVal, tTolerance);
+    TEST_FLOATING_EQUALITY(0.247233, tObjFuncVal, tTolerance);
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FiniteDiff_CriterionGradZ_2D)
@@ -504,7 +506,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMultipliers2)
     constexpr Plato::Scalar tTolerance = 1e-4;
     std::vector<Plato::Scalar> tGoldMassMultipliers(tNumCells, 0.);
     std::vector<Plato::Scalar> tGoldLagrangeMultipliers =
-        {0.0211555, 0.0441683, 0.0943195, 0.0707151, 0.0772896, 0.054743};
+        {0.041727, 0.050998, 0.122774, 0.12715, 0.130626, 0.0671748};
     auto tHostMassMultipliers = Kokkos::create_mirror(tMassMultipliers);
     Kokkos::deep_copy(tHostMassMultipliers, tMassMultipliers);
     auto tHostLagrangeMultipliers = Kokkos::create_mirror(tLagrangeMultipliers);

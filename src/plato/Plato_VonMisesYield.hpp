@@ -44,6 +44,13 @@ public:
 
 /******************************************************************************//**
  * @brief Von Mises yield criterion for 3D problems
+ *
+ * \f$ sigma_{VM} = \sqrt{ \frac{ ( \sigma_{11} - sigma_{22} )^2 + ( \sigma_{22} - sigma_{33} )^2 +
+ * ( \sigma_{33} - sigma_{11} )^2 + 6( sigma_{12}^2 + sigma_{23}^2 + sigma_{31}^2 ) }{2} }\f$
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aCauchyStress cell/element Cauchy stress tensors
+ * @param [out] aVonMisesStress cell/element Von Mises stresses
 **********************************************************************************/
 template<>
 template<typename Inputype, typename ResultType>
@@ -63,12 +70,18 @@ VonMisesYield<3>::operator()(const Plato::OrdinalType & aCellOrdinal,
             + aCauchyStress(aCellOrdinal, 4) * aCauchyStress(aCellOrdinal, 4)
             + aCauchyStress(aCellOrdinal, 5) * aCauchyStress(aCellOrdinal, 5) );
 
-    ResultType tVonMises = static_cast<Plato::Scalar>(0.5) * ( tPrincipalStressContribution + tShearStressContribution);
+    ResultType tVonMises = static_cast<Plato::Scalar>(0.5) * tPrincipalStressContribution + tShearStressContribution;
     aVonMisesStress(aCellOrdinal) = pow(tVonMises, static_cast<Plato::Scalar>(0.5));
 }
 
 /******************************************************************************//**
  * @brief Von Mises yield criterion for 2D problems (i.e. general plane stress)
+ *
+ * \f$ sigma_{VM} = \sqrt{ \sigma_{11}^2 - \sigma_{11}sigma_{22} + sigma_{22}^2 + 3sigma_{12}^2 } \f$
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aCauchyStress cell/element Cauchy stress tensors
+ * @param [out] aVonMisesStress cell/element Von Mises stresses
 **********************************************************************************/
 template<>
 template<typename Inputype, typename ResultType>
@@ -89,6 +102,12 @@ VonMisesYield<2>::operator()(const Plato::OrdinalType & aCellOrdinal,
 
 /******************************************************************************//**
  * @brief Von Mises yield criterion for 1D problems (i.e. uniaxial stress)
+ *
+ * \f$ sigma_{VM} = \sigma_{11} } \f$
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aCauchyStress cell/element Cauchy stress tensors
+ * @param [out] aVonMisesStress cell/element Von Mises stresses
 **********************************************************************************/
 template<>
 template<typename Inputype, typename ResultType>
