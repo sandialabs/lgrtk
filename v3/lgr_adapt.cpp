@@ -12,11 +12,25 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE update_bar_Q(state& s) {
-  fill(s.Q, double(1.0));
+static void LGR_NOINLINE update_bar_badness(state& s) {
+  fill(s.badness, double(1.0));
 }
 
-inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
+/* Per:
+   Shewchuk, Jonathan Richard.
+   "What is a good linear finite element?
+    interpolation, conditioning, anisotropy, and badness measures (preprint)."
+   University of California at Berkeley 73 (2002): 137.
+   
+   A scale-invariant badness measure correlated with matrix conditioning
+   (and the stable explicit time step) for triangles is area divided by
+   the square of the (root-mean-squared edge length).
+   We also use the fact that we already have area computed and that basis
+   gradient magnitudes relate to opposite edge lengths.
+
+   our "badness" is the inverse of this quality measure
+  */
+inline double triangle_badness(array<vector3<double>, 3> const grad_N, double const area) {
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
@@ -25,27 +39,15 @@ inline double triangle_quality(array<vector3<double>, 3> const grad_N, double co
   return (area * sum_g_i_sq);
 }
 
-inline double triangle_quality(array<vector3<double>, 3> const x) {
+inline double triangle_badness(array<vector3<double>, 3> const x) {
   double const area = triangle_area(x);
-  return triangle_quality(triangle_basis_gradients(x, area), area);
+  return triangle_badness(triangle_basis_gradients(x, area), area);
 }
 
-/* Per:
-   Shewchuk, Jonathan Richard.
-   "What is a good linear finite element?
-    interpolation, conditioning, anisotropy, and quality measures (preprint)."
-   University of California at Berkeley 73 (2002): 137.
-   
-   A scale-invariant quality measure correlated with matrix conditioning
-   (and the stable explicit time step) for triangles is area divided by
-   the square of the (root-mean-squared edge length).
-   We also use the fact that we already have area computed and that basis
-   gradient magnitudes relate to opposite edge lengths.
-  */
-static void LGR_NOINLINE update_triangle_Q(state& s) {
+static void LGR_NOINLINE update_triangle_badness(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_Q = s.Q.begin();
+  auto const elements_to_badness = s.badness.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
@@ -59,8 +61,8 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
       grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
     }
     auto const A = points_to_V[point];
-    double const fast_Q = triangle_quality(grad_N, A);
-    elements_to_Q[element] = fast_Q;
+    double const fast_badness = triangle_badness(grad_N, A);
+    elements_to_badness[element] = fast_badness;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -68,10 +70,10 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
 /* Per:
    Shewchuk, Jonathan Richard.
    "What is a good linear finite element?
-    interpolation, conditioning, anisotropy, and quality measures (preprint)."
+    interpolation, conditioning, anisotropy, and badness measures (preprint)."
    University of California at Berkeley 73 (2002): 137.
    
-   A scale-invariant quality measure correlated with matrix conditioning
+   A scale-invariant badness measure correlated with matrix conditioning
    (and the stable explicit time step) for tetrahedra is volume divided by
    the (root-mean-squared side area) to the (3/2) power.
    We also use the fact that we already have volume computed and that basis
@@ -80,10 +82,10 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
    avoid having to compute any roots, since only relative comparison of
    qualities is necessary.
   */
-static void LGR_NOINLINE update_tetrahedron_Q(state& s) {
+static void LGR_NOINLINE update_tetrahedron_badness(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const elements_to_Q = s.Q.begin();
+  auto const elements_to_badness = s.badness.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
@@ -99,16 +101,16 @@ static void LGR_NOINLINE update_tetrahedron_Q(state& s) {
       sum_g_i_sq += g_i_sq;
     }
     auto const V = points_to_V[point];
-    elements_to_Q[element] = (V * V) * (sum_g_i_sq * sum_g_i_sq * sum_g_i_sq);
+    elements_to_badness[element] = (V * V) * (sum_g_i_sq * sum_g_i_sq * sum_g_i_sq);
   };
   lgr::for_each(s.elements, functor);
 }
 
-void update_Q(input const& in, state& s) {
+void update_badness(input const& in, state& s) {
   switch (in.element) {
-    case BAR: update_bar_Q(s); break;
-    case TRIANGLE: update_triangle_Q(s); break;
-    case TETRAHEDRON: update_tetrahedron_Q(s); break;
+    case BAR: update_bar_badness(s); break;
+    case TRIANGLE: update_triangle_badness(s); break;
+    case TETRAHEDRON: update_tetrahedron_badness(s); break;
     case COMPOSITE_TETRAHEDRON: assert(0); break;
   }
 }
@@ -160,7 +162,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const elements_to_materials = s.material.cbegin();
-  auto const elements_to_badnesses = s.Q.cbegin();
+  auto const elements_to_badnesses = s.badness.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_improvement = a.improvement.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
@@ -236,11 +238,11 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
-      double const new_badness1 = triangle_quality(proposed_x);
+      double const new_badness1 = triangle_badness(proposed_x);
       proposed_x[0] = shell_nodes_to_x[edge_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
-      double const new_badness2 = triangle_quality(proposed_x);
+      double const new_badness2 = triangle_badness(proposed_x);
       double const badness_after = lgr::max(new_badness1, new_badness2);
       if (badness_after > badness_before) continue;
       double const improvement = ((badness_before - badness_after) / badness_after);
@@ -400,11 +402,11 @@ void adapt(state& s) {
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
   a.new_elements_are_same.resize(num_new_elements);
   project(s, a);
-  for (element_index const n : a.new_elements) {
-    element_index const o = a.new_elements_to_old_elements.cbegin()[n];
-    if (n != o) std::cout << int(n) << "->" << int(o) << '\n';
-  }
   apply_triangle_adapt(s, a);
+  for (element_index const n : a.new_elements) {
+    int const same = a.new_elements_are_same.cbegin()[n];
+    if (same != 1) std::cout << "new element " << int(n) << " isn't same (" << same << ")\n";
+  }
 }
 
 }
