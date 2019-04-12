@@ -533,6 +533,7 @@ public:
     double sumPosAlpha = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
+      alpha[n] = 0.;
       auto node = mElems2Verts[elem * nodesPerElem + n];
       const Plato::Scalar LSOld = mFields.mLevelSet(node, mFields.mCurrentState);
       if (volHamiltonianCoeffs[n] > 0.)
