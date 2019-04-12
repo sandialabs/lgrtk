@@ -293,6 +293,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node == target_node) {
+          std::cout << "element " << int(element) << " is part of " << int(node) << "-" << int(target_node) << '\n';
           elements_to_new_counts[element] = is_first ? element_index(2) : element_index(0);
           is_first = false;
         }
@@ -309,6 +310,7 @@ static LGR_NOINLINE void project(state const& s, adapt_state& a) {
   auto functor = [=] (element_index const old_element) {
     element_index first = old_elements_to_new_elements[old_element];
     element_index const last = old_elements_to_new_elements[old_element + element_index(1)];
+    std::cout << "o " << int(old_element) << " first " << int(first) << " last " << int(last) << '\n';
     for (; first < last; ++first) {
       new_elements_to_old_elements[first] = old_element;
     }
@@ -323,9 +325,17 @@ void adapt(state& s) {
   element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
       plus<element_index>(), identity<element_index>());
   std::cout << int(num_new_elements) << " new elements\n";
+  a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
+  auto last_it = transform_exclusive_scan(a.element_counts, a.old_elements_to_new_elements,
+      element_index(0), plus<element_index>(), identity<element_index>());
+  *last_it = num_new_elements;
   a.new_elements.resize(num_new_elements);
   a.new_elements_to_old_elements.resize(num_new_elements);
   project(s, a);
+  for (element_index const n : a.new_elements) {
+    element_index const o = a.new_elements_to_old_elements.cbegin()[n];
+    if (n != o) std::cout << int(n) << "->" << int(o) << '\n';
+  }
 }
 
 }

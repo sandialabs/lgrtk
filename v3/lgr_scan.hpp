@@ -27,9 +27,10 @@ auto transform_exclusive_scan(InputRange&& input, OutputRange&& output, T init, 
   auto last = input.end();
   auto d_first = output.begin();
 	*d_first = init;
-	while (++first != last) {
+	while (first != last) {
 		init = binary_op(std::move(init), unary_op(*first));
 		*(++d_first) = init;
+    ++first;
 	}
 	return ++d_first;
 }
