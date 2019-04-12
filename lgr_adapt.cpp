@@ -357,10 +357,14 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = node;
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[0];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[1];
+    std::cout << "into new element " << int(new_element1) << ", writing triangle\n";
+    std::cout << int(node) << "-" << int(loop_nodes[0]) << "-" << int(loop_nodes[1]) << '\n';
     new_element_nodes = new_elements_to_element_nodes[new_element2];
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = target_node;
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[1];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[0];
+    std::cout << "into new element " << int(new_element2) << ", writing triangle\n";
+    std::cout << int(target_node) << "-" << int(loop_nodes[1]) << "-" << int(loop_nodes[0]) << '\n';
   };
   for_each(s.nodes, functor);
 }
