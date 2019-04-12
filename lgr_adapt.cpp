@@ -131,6 +131,7 @@ struct adapt_state {
   device_vector<node_index, node_index> other_node;
   device_vector<int, node_index> chosen;
   device_vector<int, element_index> element_counts;
+  device_vector<element_index, element_index> old_elements_to_new_elements;
   adapt_state(state&);
 };
 
@@ -139,6 +140,7 @@ adapt_state::adapt_state(state& s)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
+  ,old_elements_to_new_elements(s.elements.size(), s.devpool)
 {}
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
@@ -305,6 +307,7 @@ void adapt(state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
+  offset_scan(a.element_counts, a.old_elements_to_new_elements);
 }
 
 }
