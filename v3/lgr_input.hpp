@@ -67,6 +67,7 @@ class input {
   bool enable_rho_averaging = false;
   bool enable_e_averaging = false;
   bool enable_p_averaging = false;
+  bool enable_adapt = false;
   std::function<
     void(counting_range<node_index> const,
         device_vector<vector3<double>, node_index> const&,

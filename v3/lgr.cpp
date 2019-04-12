@@ -880,6 +880,7 @@ static void LGR_NOINLINE triple_point() {
   in.material_domains.emplace_back(right_top, std::move(right_top_domain));
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
+  in.enable_adapt = true;
   run(in);
 }
 
