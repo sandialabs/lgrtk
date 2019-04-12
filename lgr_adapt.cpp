@@ -304,13 +304,57 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   for_each(s.nodes, functor);
 }
 
+static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
+{
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_other_nodes = a.other_node.cbegin();
+  auto const nodes_are_chosen = a.chosen.cbegin();
+  auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto functor = [=] (node_index const node) {
+    if (!int(nodes_are_chosen[node])) return;
+    node_index const target_node = nodes_to_other_nodes[node];
+    array<element_index, 2> loop_elements;
+    array<node_index, 2> loop_nodes;
+    bool is_first = true;
+    element_index first_element(-1);
+    for (auto const node_element : nodes_to_node_elements[node]) {
+      element_index const element = node_elements_to_elements[node_element]; 
+      auto const element_nodes = elements_to_element_nodes[element];
+      node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
+      node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
+      node_in_element_index const plus2 = node_in_element_index((int(node_in_element) + 2) % 3);
+      node_index const node1 = element_nodes_to_nodes[element_nodes[plus1]];
+      node_index const node2 = element_nodes_to_nodes[element_nodes[plus2]];
+      if (node1 == target_node) {
+        loop_elements[1] = element;
+        loop_nodes[1] = node2;
+        if (is_first) {
+          first_element = element;
+          is_first = false;
+        }
+      }
+      if (node2 == target_node) {
+        loop_elements[0] = element;
+        loop_nodes[0] = node1;
+        if (is_first) {
+          first_element = element;
+          is_first = false;
+        }
+      }
+    }
+  };
+  for_each(s.nodes, functor);
+}
+
 static LGR_NOINLINE void project(state const& s, adapt_state& a) {
   auto const old_elements_to_new_elements = a.old_elements_to_new_elements.cbegin();
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.begin();
   auto functor = [=] (element_index const old_element) {
     element_index first = old_elements_to_new_elements[old_element];
     element_index const last = old_elements_to_new_elements[old_element + element_index(1)];
-    std::cout << "o " << int(old_element) << " first " << int(first) << " last " << int(last) << '\n';
     for (; first < last; ++first) {
       new_elements_to_old_elements[first] = old_element;
     }
@@ -336,6 +380,7 @@ void adapt(state& s) {
     element_index const o = a.new_elements_to_old_elements.cbegin()[n];
     if (n != o) std::cout << int(n) << "->" << int(o) << '\n';
   }
+  apply_triangle_adapt(s, a);
 }
 
 }
