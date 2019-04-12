@@ -4,6 +4,7 @@
 #include <lgr_adapt.hpp>
 #include <lgr_array.hpp>
 #include <lgr_element_specific_inline.hpp>
+#include <lgr_print.hpp>
 
 #include <iostream>
 
@@ -15,7 +16,7 @@ static void LGR_NOINLINE update_bar_Q(state& s) {
 
 inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
   double sum_g_i_sq = 0.0;
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
     sum_g_i_sq += g_i_sq;
   }
@@ -66,7 +67,15 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
     auto const A = points_to_V[point];
     double const fast_Q = triangle_quality(grad_N, A);
     double const slow_Q = triangle_quality(x);
-    std::cout << "fast-slow " << (fast_Q - slow_Q) << '\n';
+    std::cout << "element " << int(element) << " fast " << fast_Q << " slow " << slow_Q << '\n';
+    std::cout << "coords \n(" << x[0]
+      << ")-\n(" << x[1]
+      << ")-\n(" << x[2] << ")\n";
+    x[0] = vector3<double>(2.02428335372779689e+00, 1.99470047031827891e+00, 0.00000000000000000e+00);
+    x[1] = vector3<double>(1.61626388177754388e+00, 1.99618859048635988e+00, 0.00000000000000000e+00);
+    x[2] = vector3<double>(1.53878933627949976e+00, 1.49456252739368156e+00, 0.00000000000000000e+00);
+    double const Q_91 = triangle_quality(x);
+    std::cout << "Q91 " << Q_91 << '\n';
     elements_to_Q[element] = fast_Q;
   };
   lgr::for_each(s.elements, functor);
@@ -212,6 +221,13 @@ void consider_2d_swaps(state& s)
       double const old_badness1 = shell_element_badnesses[loop_elements[0]];
       double const old_badness2 = shell_element_badnesses[loop_elements[1]];
       std::cout << "old badnesses " << old_badness1 << ", " << old_badness2 << '\n';
+      std::cout << "old elements " << int(shell_elements[loop_elements[0]])
+        << ", " << int(shell_elements[loop_elements[1]]) << '\n';
+      std::cout << "old triangle " << int(shell_elements[loop_elements[0]])
+        << " " << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][0]])
+        << "-" << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][1]])
+        << "-" << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][2]])
+        << '\n';
       double const badness_before = lgr::max(old_badness1, old_badness2);
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
@@ -220,6 +236,9 @@ void consider_2d_swaps(state& s)
       std::cout << "proposing triangle " << int(shell_nodes[center_node])
         << "-" << int(shell_nodes[loop_nodes[0]])
         << "-" << int(shell_nodes[edge_node]) << '\n';
+      std::cout << "proposing coords \n(" << shell_nodes_to_x[center_node]
+        << ")-\n(" << shell_nodes_to_x[loop_nodes[0]]
+        << ")-\n(" << shell_nodes_to_x[edge_node] << ")\n";
       double const new_badness1 = triangle_quality(proposed_x);
 //    if (badness_after < badness_before) continue;
       proposed_x[0] = shell_nodes_to_x[edge_node];
