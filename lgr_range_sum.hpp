@@ -128,7 +128,14 @@ public:
     m_vector.swap(other.m_vector);
   }
   void assign_sizes(vector<int, typename Allocator::template rebind<int>::other, SourceIndex> const& sizes) {
-    offset_scan(sizes, m_vector);
+    assert(m_vector.size() == sizes.size() + SourceIndex(1));
+    auto offsets_iterator = m_vector.begin();
+    *offsets_iterator = TargetIndex(0);
+    ++offsets_iterator;
+    auto const output = iterator_range<decltype(offsets_iterator)>(offsets_iterator, m_vector.end());
+    lgr::plus<TargetIndex> const binop;
+    auto const unop = [] (int const i) -> TargetIndex { return TargetIndex(i); };
+    lgr::transform_inclusive_scan(sizes, output, binop, unop);
   }
   void resize(size_type count) {
     m_vector.resize(count + size_type(1));
