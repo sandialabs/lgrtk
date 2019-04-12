@@ -844,7 +844,7 @@ static void LGR_NOINLINE triple_point() {
   input in(nmaterials);
   in.name = "triple_point";
   in.element = TRIANGLE;
-  in.end_time = 0.5;
+  in.end_time = 1.0;
   in.num_file_outputs = 2;
   in.elements_along_x = 14;
   in.x_domain_size = 7.0;

@@ -214,7 +214,7 @@ void consider_2d_swaps(state& s)
       double const badness_after = lgr::max(new_badness1, new_badness2);
       if (badness_after > badness_before) continue;
       double const benefit_percentage = (100.0 * ((badness_before - badness_after) / badness_after));
-      if (benefit_percentage < 5.0) continue;
+      if (benefit_percentage < 10.0) continue;
       std::cout << std::fixed << std::setprecision(1);
       std::cout << "swapping edge " << int(node) << "-" << int(shell_nodes[edge_node])
         << " is beneficial by "
