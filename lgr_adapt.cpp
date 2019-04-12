@@ -46,36 +46,18 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
   auto const elements_to_Q = s.Q.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
-  auto const elements_to_element_nodes =
-    s.elements * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    auto const element_nodes = elements_to_element_nodes[element];
     array<vector3<double>, 3> grad_N;
-    array<vector3<double>, 3> x;
     for (auto const i : nodes_in_element) {
       grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
-      node_index const node = element_nodes_to_nodes[element_nodes[i]];
-      x[int(i)] = nodes_to_x[node];
     }
     auto const A = points_to_V[point];
     double const fast_Q = triangle_quality(grad_N, A);
-    double const slow_Q = triangle_quality(x);
-    std::cout << "element " << int(element) << " fast " << fast_Q << " slow " << slow_Q << '\n';
-    std::cout << "coords \n(" << x[0]
-      << ")-\n(" << x[1]
-      << ")-\n(" << x[2] << ")\n";
-    x[0] = vector3<double>(2.02428335372779689e+00, 1.99470047031827891e+00, 0.00000000000000000e+00);
-    x[1] = vector3<double>(1.61626388177754388e+00, 1.99618859048635988e+00, 0.00000000000000000e+00);
-    x[2] = vector3<double>(1.53878933627949976e+00, 1.49456252739368156e+00, 0.00000000000000000e+00);
-    double const Q_91 = triangle_quality(x);
-    std::cout << "Q91 " << Q_91 << '\n';
     elements_to_Q[element] = fast_Q;
   };
   lgr::for_each(s.elements, functor);
