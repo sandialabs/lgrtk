@@ -54,6 +54,7 @@
 #include <cmath>
 #include <math.h>
 #include <cstdio>
+#include <vector>
 #include <memory>
 #include <cassert>
 #include <cstddef>
