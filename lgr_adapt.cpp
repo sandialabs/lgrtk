@@ -126,7 +126,22 @@ static inline int find_or_append(
   return count++;
 }
 
-void consider_2d_swaps(state& s)
+struct adapt_state {
+  device_vector<double, node_index> badness;
+  device_vector<node_index, node_index> other_node;
+  device_vector<int, node_index> chosen;
+  device_vector<int, element_index> element_counts;
+  adapt_state(state&);
+};
+
+adapt_state::adapt_state(state& s)
+  :badness(s.nodes.size(), s.devpool)
+  ,other_node(s.nodes.size(), s.devpool)
+  ,chosen(s.nodes.size(), s.devpool)
+  ,element_counts(s.elements.size(), s.devpool)
+{}
+
+static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -136,6 +151,8 @@ void consider_2d_swaps(state& s)
   auto const elements_to_materials = s.material.cbegin();
   auto const elements_to_badnesses = s.Q.cbegin();
   auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_badness = a.badness.begin();
+  auto const nodes_to_other_nodes = a.other_node.begin();
   auto functor = [=] (node_index const node) {
     int num_shell_nodes = 0;
     int num_shell_elements = 0;
@@ -222,13 +239,66 @@ void consider_2d_swaps(state& s)
         best_swap_edge_node = edge_node;
       }
     }
-    if (best_swap_edge_node != -1) {
-      std::cout << std::fixed << std::setprecision(1);
-      std::cout << "swapping edge " << int(node) << "-" << int(shell_nodes[best_swap_edge_node])
-        << " is beneficial\n";
-    }
+    nodes_to_badness[node] = lowest_swap_badness;
+    nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : shell_nodes[best_swap_edge_node];
   };
   for_each(s.nodes, functor);
+}
+
+static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
+{
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_badness = a.badness.cbegin();
+  auto const nodes_to_other_nodes = a.other_node.cbegin();
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const nodes_are_chosen = a.chosen.begin();
+  fill(a.element_counts, 1);
+  auto const elements_to_new_counts = a.element_counts.begin();
+  auto functor = [=] (node_index const node) {
+    node_index const target_node = nodes_to_other_nodes[node];
+    if (target_node == node_index(-1)) return;
+    double const badness = nodes_to_badness[node];
+    for (auto const node_element : nodes_to_node_elements[node]) {
+      element_index const element = node_elements_to_elements[node_element]; 
+      auto const element_nodes = elements_to_element_nodes[element];
+      for (auto const node_in_element : nodes_in_element) {
+        element_node_index const element_node = element_nodes[node_in_element];
+        node_index const adj_node = element_nodes_to_nodes[element_node];
+        if (adj_node != node) {
+          double const adj_badness = nodes_to_badness[adj_node];
+          if ((adj_badness < badness) ||
+              ((adj_badness == badness) &&
+               (adj_node < node))) {
+            nodes_are_chosen[node] = 0;
+            return;
+          }
+        }
+      }
+    }
+    bool is_first = true;
+    for (auto const node_element : nodes_to_node_elements[node]) {
+      element_index const element = node_elements_to_elements[node_element]; 
+      auto const element_nodes = elements_to_element_nodes[element];
+      for (auto const node_in_element : nodes_in_element) {
+        element_node_index const element_node = element_nodes[node_in_element];
+        node_index const adj_node = element_nodes_to_nodes[element_node];
+        if (adj_node == target_node) {
+          elements_to_new_counts[element] = is_first ? 2 : 0;
+        }
+      }
+    }
+    nodes_are_chosen[node] = 1;
+  };
+  for_each(s.nodes, functor);
+}
+
+void adapt(state& s) {
+  adapt_state a(s);
+  evaluate_triangle_adapt(s, a);
+  choose_triangle_adapt(s, a);
 }
 
 }
