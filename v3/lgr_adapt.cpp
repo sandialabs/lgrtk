@@ -176,6 +176,8 @@ void consider_2d_swaps(state& s)
     }
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
+      // only examine edges once, the smaller node examines it
+      if (shell_nodes[edge_node] < shell_nodes[center_node]) continue;
       std::cout << "considering edge " << int(node) << "-" << int(shell_nodes[edge_node]) << "\n";
       array<int, 2> loop_elements;
       loop_elements[0] = loop_elements[1] = -1;
@@ -214,21 +216,18 @@ void consider_2d_swaps(state& s)
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
-      proposed_x[2] = shell_nodes_to_x[edge_node];
+      proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
       std::cout << "proposing triangle " << int(shell_nodes[center_node])
         << "-" << int(shell_nodes[loop_nodes[0]])
-        << "-" << int(shell_nodes[edge_node]) << '\n';
-      std::cout << "proposing coords \n(" << shell_nodes_to_x[center_node]
-        << ")-\n(" << shell_nodes_to_x[loop_nodes[0]]
-        << ")-\n(" << shell_nodes_to_x[edge_node] << ")\n";
+        << "-" << int(shell_nodes[loop_nodes[1]]) << '\n';
       double const new_badness1 = triangle_quality(proposed_x);
 //    if (badness_after < badness_before) continue;
       proposed_x[0] = shell_nodes_to_x[edge_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
-      proposed_x[2] = shell_nodes_to_x[center_node];
+      proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
       std::cout << "proposing triangle " << int(shell_nodes[edge_node])
         << "-" << int(shell_nodes[loop_nodes[1]])
-        << "-" << int(shell_nodes[center_node]) << '\n';
+        << "-" << int(shell_nodes[loop_nodes[0]]) << '\n';
       double const new_badness2 = triangle_quality(proposed_x);
       std::cout << "new badnesses " << new_badness1 << ", " << new_badness2 << '\n';
       double const badness_after = lgr::max(new_badness1, new_badness2);
