@@ -45,18 +45,29 @@ static void LGR_NOINLINE update_triangle_Q(state& s) {
   auto const elements_to_Q = s.Q.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
+  auto const elements_to_element_nodes =
+    s.elements * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
+    auto const element_nodes = elements_to_element_nodes[element];
     array<vector3<double>, 3> grad_N;
+    array<vector3<double>, 3> x;
     for (auto const i : nodes_in_element) {
       grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
+      node_index const node = element_nodes_to_nodes[element_nodes[i]];
+      x[int(i)] = nodes_to_x[node];
     }
     auto const A = points_to_V[point];
-    elements_to_Q[element] = triangle_quality(grad_N, A);
+    double const fast_Q = triangle_quality(grad_N, A);
+    double const slow_Q = triangle_quality(x);
+    std::cout << "fast-slow " << (fast_Q - slow_Q) << '\n';
+    elements_to_Q[element] = fast_Q;
   };
   lgr::for_each(s.elements, functor);
 }
@@ -131,7 +142,7 @@ void consider_2d_swaps(state& s)
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const elements_to_materials = s.material.cbegin();
-  auto const elements_to_qualities = s.Q.cbegin();
+  auto const elements_to_badnesses = s.Q.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (node_index const node) {
     std::cout << "considering swaps for node " << int(node) << '\n';
@@ -144,7 +155,7 @@ void consider_2d_swaps(state& s)
     array<element_index, max_shell_elements> shell_elements;
     array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
     array<material_index, max_shell_elements> shell_elements_to_materials;
-    array<double, max_shell_elements> shell_element_qualities;
+    array<double, max_shell_elements> shell_element_badnesses;
     array<int, max_shell_elements> shell_elements_to_node_in_element;
     array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
     int center_node = -1;
@@ -167,15 +178,14 @@ void consider_2d_swaps(state& s)
       }
       material_index const material = elements_to_materials[element];
       shell_elements_to_materials[shell_element] = material;
-      double const quality = elements_to_qualities[element];
-      shell_element_qualities[shell_element] = quality;
+      double const badness = elements_to_badnesses[element];
+      shell_element_badnesses[shell_element] = badness;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
-    std::cout << num_shell_elements << " shell elements\n";
-    std::cout << num_shell_nodes << " shell nodes\n";
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
+      std::cout << "considering edge " << int(node) << "-" << int(shell_nodes[edge_node]) << "\n";
       array<int, 2> loop_elements;
       loop_elements[0] = loop_elements[1] = -1;
       array<int, 2> loop_nodes;
@@ -183,29 +193,47 @@ void consider_2d_swaps(state& s)
       for (int element = 0; element < num_shell_elements; ++element) {
         int const node_in_element = shell_elements_to_node_in_element[element];
         if (shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3] == edge_node) {
-          loop_elements[0] = element;
-          loop_nodes[0] = shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3];
+          loop_elements[1] = element;
+          loop_nodes[1] = shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3];
         }
         if (shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3] == edge_node) {
-          loop_elements[1] = element;
-          loop_nodes[1] = shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
+          loop_elements[0] = element;
+          loop_nodes[0] = shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
         }
       }
-      if (loop_elements[0] == -1 || loop_elements[1] == -1) continue;
-      if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) continue;
-      double const quality_before = lgr::min(shell_element_qualities[loop_elements[0]], shell_element_qualities[loop_elements[1]]);
+      if (loop_elements[0] == -1 || loop_elements[1] == -1) {
+        std::cout << "not a complete loop\n";
+        continue;
+      }
+      if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) {
+        std::cout << "multi-material, avoided\n";
+        continue;
+      }
+      double const old_badness1 = shell_element_badnesses[loop_elements[0]];
+      double const old_badness2 = shell_element_badnesses[loop_elements[1]];
+      std::cout << "old badnesses " << old_badness1 << ", " << old_badness2 << '\n';
+      double const badness_before = lgr::max(old_badness1, old_badness2);
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
       proposed_x[2] = shell_nodes_to_x[edge_node];
-      double quality_after = triangle_quality(proposed_x);
-      if (quality_after < quality_before) continue;
-      proposed_x[0] = shell_nodes_to_x[center_node];
-      proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
-      proposed_x[2] = shell_nodes_to_x[edge_node];
-      quality_after = lgr::min(quality_after, triangle_quality(proposed_x));
-      if (quality_after < quality_before) continue;
-      std::cout << "flipping edge " << int(node) << "-" << int(edge_node) << " is beneficial\n";
+      std::cout << "proposing triangle " << int(shell_nodes[center_node])
+        << "-" << int(shell_nodes[loop_nodes[0]])
+        << "-" << int(shell_nodes[edge_node]) << '\n';
+      double const new_badness1 = triangle_quality(proposed_x);
+//    if (badness_after < badness_before) continue;
+      proposed_x[0] = shell_nodes_to_x[edge_node];
+      proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
+      proposed_x[2] = shell_nodes_to_x[center_node];
+      std::cout << "proposing triangle " << int(shell_nodes[edge_node])
+        << "-" << int(shell_nodes[loop_nodes[1]])
+        << "-" << int(shell_nodes[center_node]) << '\n';
+      double const new_badness2 = triangle_quality(proposed_x);
+      std::cout << "new badnesses " << new_badness1 << ", " << new_badness2 << '\n';
+      double const badness_after = lgr::max(new_badness1, new_badness2);
+      std::cout << "badness before " << badness_before << " badness after " << badness_after << '\n';
+      if (badness_after > badness_before) continue;
+      std::cout << "flipping edge " << int(node) << "-" << int(shell_nodes[edge_node]) << " is beneficial\n";
     }
   };
   for_each(s.nodes, functor);
