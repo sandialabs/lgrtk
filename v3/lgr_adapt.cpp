@@ -7,6 +7,7 @@
 #include <lgr_print.hpp>
 
 #include <iostream>
+#include <iomanip>
 
 namespace lgr {
 
@@ -136,7 +137,6 @@ void consider_2d_swaps(state& s)
   auto const elements_to_badnesses = s.Q.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto functor = [=] (node_index const node) {
-    std::cout << "considering swaps for node " << int(node) << '\n';
     int num_shell_nodes = 0;
     int num_shell_elements = 0;
     constexpr int max_shell_elements = 32;
@@ -178,7 +178,6 @@ void consider_2d_swaps(state& s)
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
       if (shell_nodes[edge_node] < shell_nodes[center_node]) continue;
-      std::cout << "considering edge " << int(node) << "-" << int(shell_nodes[edge_node]) << "\n";
       array<int, 2> loop_elements;
       loop_elements[0] = loop_elements[1] = -1;
       array<int, 2> loop_nodes;
@@ -195,45 +194,32 @@ void consider_2d_swaps(state& s)
         }
       }
       if (loop_elements[0] == -1 || loop_elements[1] == -1) {
-        std::cout << "not a complete loop\n";
         continue;
       }
       if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) {
-        std::cout << "multi-material, avoided\n";
         continue;
       }
       double const old_badness1 = shell_element_badnesses[loop_elements[0]];
       double const old_badness2 = shell_element_badnesses[loop_elements[1]];
-      std::cout << "old badnesses " << old_badness1 << ", " << old_badness2 << '\n';
-      std::cout << "old elements " << int(shell_elements[loop_elements[0]])
-        << ", " << int(shell_elements[loop_elements[1]]) << '\n';
-      std::cout << "old triangle " << int(shell_elements[loop_elements[0]])
-        << " " << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][0]])
-        << "-" << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][1]])
-        << "-" << int(shell_nodes[shell_elements_to_shell_nodes[loop_elements[0]][2]])
-        << '\n';
       double const badness_before = lgr::max(old_badness1, old_badness2);
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
-      std::cout << "proposing triangle " << int(shell_nodes[center_node])
-        << "-" << int(shell_nodes[loop_nodes[0]])
-        << "-" << int(shell_nodes[loop_nodes[1]]) << '\n';
       double const new_badness1 = triangle_quality(proposed_x);
-//    if (badness_after < badness_before) continue;
       proposed_x[0] = shell_nodes_to_x[edge_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
-      std::cout << "proposing triangle " << int(shell_nodes[edge_node])
-        << "-" << int(shell_nodes[loop_nodes[1]])
-        << "-" << int(shell_nodes[loop_nodes[0]]) << '\n';
       double const new_badness2 = triangle_quality(proposed_x);
-      std::cout << "new badnesses " << new_badness1 << ", " << new_badness2 << '\n';
       double const badness_after = lgr::max(new_badness1, new_badness2);
-      std::cout << "badness before " << badness_before << " badness after " << badness_after << '\n';
       if (badness_after > badness_before) continue;
-      std::cout << "flipping edge " << int(node) << "-" << int(shell_nodes[edge_node]) << " is beneficial\n";
+      double const benefit_percentage = (100.0 * ((badness_before - badness_after) / badness_after));
+      if (benefit_percentage < 5.0) continue;
+      std::cout << std::fixed << std::setprecision(1);
+      std::cout << "swapping edge " << int(node) << "-" << int(shell_nodes[edge_node])
+        << " is beneficial by "
+        << benefit_percentage
+        << "%\n";
     }
   };
   for_each(s.nodes, functor);
