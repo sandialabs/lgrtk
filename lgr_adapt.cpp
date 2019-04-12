@@ -5,6 +5,7 @@
 #include <lgr_array.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
+#include <lgr_reduce.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -130,7 +131,7 @@ struct adapt_state {
   device_vector<double, node_index> improvement;
   device_vector<node_index, node_index> other_node;
   device_vector<int, node_index> chosen;
-  device_vector<int, element_index> element_counts;
+  device_vector<element_index, element_index> element_counts;
   device_vector<element_index, element_index> old_elements_to_new_elements;
   adapt_state(state&);
 };
@@ -140,7 +141,7 @@ adapt_state::adapt_state(state& s)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
-  ,old_elements_to_new_elements(s.elements.size(), s.devpool)
+  ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
 {}
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state& s, adapt_state& a)
@@ -257,7 +258,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_are_chosen = a.chosen.begin();
-  fill(a.element_counts, 1);
+  fill(a.element_counts, element_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
   auto functor = [=] (node_index const node) {
     node_index const target_node = nodes_to_other_nodes[node];
@@ -293,7 +294,8 @@ static LGR_NOINLINE void choose_triangle_adapt(state& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node == target_node) {
-          elements_to_new_counts[element] = is_first ? 2 : 0;
+          elements_to_new_counts[element] = is_first ? element_index(2) : element_index(0);
+          is_first = false;
         }
       }
     }
@@ -307,7 +309,12 @@ void adapt(state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
-  offset_scan(a.element_counts, a.old_elements_to_new_elements);
+  element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
+      plus<element_index>(), identity<element_index>());
+  std::cout << int(num_new_elements) << " new elements\n";
+  for (element_index const i : a.element_counts) {
+    if (i != element_index(1)) std::cout << int(i) << '\n';
+  }
 }
 
 }
