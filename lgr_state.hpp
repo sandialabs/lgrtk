@@ -21,7 +21,7 @@ class state {
   counting_range<node_index> nodes{node_index(0)};
   counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   counting_range<point_index> points{point_index(0)};
-  device_memory_pool devpool;
+  mutable device_memory_pool devpool;
   device_vector<node_index, element_node_index> elements_to_nodes{devpool};
   range_sum<node_element_index, device_allocator<node_element_index>, node_index> nodes_to_node_elements{device_allocator<node_element_index>{devpool}};
   device_vector<element_index, node_element_index> node_elements_to_elements{devpool};
