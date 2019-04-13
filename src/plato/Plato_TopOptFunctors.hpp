@@ -32,8 +32,8 @@ cell_mass(const Plato::OrdinalType & aCellOrdinal,
         ControlType tNodalMass = 0.0;
         for(Plato::OrdinalType tIndex_J = 0; tIndex_J < CellNumNodes; tIndex_J++)
         {
-            tNodalMass += aBasisFunc(tIndex_I) * aBasisFunc(tIndex_J)
-            * aCellControls(aCellOrdinal, tIndex_J);
+            auto tValue = aBasisFunc(tIndex_I) * aBasisFunc(tIndex_J) * aCellControls(aCellOrdinal, tIndex_J);
+            tNodalMass += tValue;
         }
         tCellMass += tNodalMass;
     }
