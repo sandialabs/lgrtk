@@ -88,12 +88,12 @@ private:
         Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
-        mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
+        mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
         mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
-        mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
+        mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 500.0);
         mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
         mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
-        mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.05);
+        mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.5);
     }
 
     /******************************************************************************//**
