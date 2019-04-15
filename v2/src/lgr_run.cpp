@@ -1,5 +1,7 @@
 #include <Omega_h_malloc.hpp>
 #include <Omega_h_profile.hpp>
+#include <Omega_h_file.hpp>
+#include <Omega_h_print.hpp>
 #include <lgr_flood.hpp>
 #include <lgr_hydro.hpp>
 #include <lgr_run.hpp>
@@ -72,10 +74,19 @@ static void run_simulation(Simulation& sim) {
     if (sim.adapter.needs_adapt()) {
       reset_configuration<Elem>(sim);
       sim.adapter.adapt();
+
+      Omega_h::vtk::write_vtu("debug.vtu", &(sim.disc.mesh), 1);
+
       sim.flooder.flood();
       auto const field_X = sim.fields.get(sim.ref_coords);
+
+      std::cout << "field_X: " << field_X << "\n";
+
       auto const field_x = sim.fields.set(sim.position);
       Omega_h::copy_into(field_X, field_x);
+
+      sim.responses.evaluate();
+
       initialize_configuration<Elem>(sim);
       update_configuration<Elem>(sim);
       sim.models.after_configuration();

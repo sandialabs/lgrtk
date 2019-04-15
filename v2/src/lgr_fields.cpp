@@ -230,8 +230,10 @@ static void copy_field_on_all_nodes_from_omega_h(Omega_h::Mesh& mesh, std::strin
     return;
   }
   auto const vertex_nodes = p2_nodes[0];
+  OMEGA_H_CHECK(vertex_nodes.size() == mesh.nverts());
   auto const vertex_data = mesh.get_array<double>(0, name);
   auto const ncomps = divide_no_remainder(vertex_data.size(), mesh.nverts());
+  OMEGA_H_CHECK(num_nodes == mesh.nverts() + mesh.nedges());
   Omega_h::Write<double> nodal_data(num_nodes * ncomps);
   auto vertex_functor = OMEGA_H_LAMBDA(int const vertex) {
     auto const node = vertex_nodes[vertex];
@@ -241,7 +243,9 @@ static void copy_field_on_all_nodes_from_omega_h(Omega_h::Mesh& mesh, std::strin
   };
   Omega_h::parallel_for(mesh.nverts(), std::move(vertex_functor));
   auto const edge_data = mesh.get_array<double>(1, name);
+  OMEGA_H_CHECK(edge_data.size() == ncomps * mesh.nedges());
   auto const edge_nodes = p2_nodes[1];
+  OMEGA_H_CHECK(edge_nodes.size() == mesh.nedges());
   auto edge_functor = OMEGA_H_LAMBDA(int const edge) {
     auto const node = edge_nodes[edge];
     for (int comp = 0; comp < ncomps; ++comp) {

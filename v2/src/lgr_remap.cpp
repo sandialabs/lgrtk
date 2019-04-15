@@ -1,5 +1,7 @@
 #include <Omega_h_profile.hpp>
 #include <Omega_h_map.hpp>
+#include <Omega_h_file.hpp>
+#include <Omega_h_print.hpp>
 #include <lgr_element_functions.hpp>
 #include <lgr_for.hpp>
 #include <lgr_remap.hpp>
@@ -206,6 +208,8 @@ void Remap<Elem>::before_adapt() {
     parallel_for(npoints, std::move(functor));
   }
   sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
+
+  Omega_h::vtk::write_vtu("debug_before_adapt.vtu", &(sim.disc.mesh), 1);
 }
 
 static Omega_h::Write<double> allocate_and_fill_with_same(
@@ -590,24 +594,49 @@ static void remap_midedge_field(
     std::string const& name)
 {
   if (!old_mesh.has_tag(1, name)) return;
-  auto const old_vert_field = old_mesh.get_array<double>(0, name);
+
+  bool is_coords = (name == "coordinates");
+  auto const new_vert_field = new_mesh.get_array<double>(0, name);
   auto const old_edge_field = old_mesh.get_array<double>(1, name);
+
   auto const ncomps = Omega_h::divide_no_remainder(old_edge_field.size(), old_mesh.nedges());
   auto const same_data = read(unmap(same_edges_to_old_edges, old_edge_field, ncomps));
   Omega_h::Write<double> const new_edge_field(new_mesh.nedges() * ncomps);
   map_into(same_data, same_edges_to_new_edges, new_edge_field, ncomps);
   auto const new_edges_to_verts = new_mesh.ask_verts_of(1);
+
+  for (int same_edge = 0; same_edge < same_edges_to_new_edges.size(); ++same_edge) {
+    auto const new_edge = same_edges_to_new_edges[same_edge];
+    auto const old_edge = same_edges_to_old_edges[same_edge];
+    if ((new_edge == 18 || new_edge == 16 || new_edge == 13) && is_coords) {
+      std::cout << new_edge << " old edge: " << old_edge << '\n';
+      std::cout << new_edge << " x: " << same_data[same_edge * 3 + 0] << "\n";
+      std::cout << new_edge << " y: " << same_data[same_edge * 3 + 1] << "\n";
+      std::cout << new_edge << " z: " << same_data[same_edge * 3 + 2] << "\n";
+    }
+  }
+
   auto functor = OMEGA_H_LAMBDA(int const product_edge) {
     auto const new_edge = prods2new_ents[product_edge];
     auto const v0 = new_edges_to_verts[new_edge * 2 + 0];
     auto const v1 = new_edges_to_verts[new_edge * 2 + 1];
     for (int comp = 0; comp < ncomps; ++comp) {
-      new_edge_field[new_edge * ncomps + comp] =
-        0.5 *
-        (old_vert_field[v0 * ncomps + comp] +
-         old_vert_field[v1 * ncomps + comp]);
+
+      double ovf0 = (new_vert_field[v0 * ncomps + comp]);
+      double ovf1 = (new_vert_field[v1 * ncomps + comp]);
+
+      double val = 0.5 * (ovf0 + ovf1);
+
+      if ((new_edge == 18 || new_edge == 16 || new_edge == 13) && is_coords) {
+        std::cout << new_edge << " comp: " << comp << '\n';
+        std::cout << new_edge << " avgd value: " << val << "\n";
+        std::cout << new_edge << " verts: " << v0 << ", " << v1 << '\n';
+        std::cout << new_edge << " vert values: " << ovf0 << ", " << ovf1 << '\n';
+      }
+      new_edge_field[new_edge * ncomps + comp] = val;
     }
   };
+  parallel_for(prods2new_ents.size(), std::move(functor));
   new_mesh.add_tag(1, name, ncomps, read(new_edge_field));
 }
 
@@ -640,6 +669,8 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     }
   }
   if (prod_dim == 1) {
+    std::cout << "REFINE: \n";
+    Omega_h::vtk::write_vtu("debug_refine.vtu", &new_mesh, 1);
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "coordinates");
@@ -649,6 +680,7 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "acceleration");
+    std::cout << "\n";
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
@@ -694,6 +726,7 @@ void Remap<Elem>::coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     }
   }
   if (prod_dim == 1) {
+    std::cout << "COARSEN:\n";
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "coordinates");
@@ -703,6 +736,7 @@ void Remap<Elem>::coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "acceleration");
+    std::cout << "\n";
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2doms.a2ab, prods2new_ents,
@@ -749,6 +783,7 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
     Omega_h::LOs same_ents2new_ents) {
   if (prod_dim == 1) {
+    std::cout << "SWAP:\n";
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "coordinates");
@@ -758,6 +793,7 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
         prods2new_ents, "acceleration");
+    std::cout << "\n";
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
