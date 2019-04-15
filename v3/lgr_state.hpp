@@ -69,6 +69,7 @@ class state {
   double next_file_output_time;
   double dt = 0.0;
   double max_stable_dt;
+  double min_quality;
 };
 
 class input;

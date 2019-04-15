@@ -581,7 +581,6 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
       update_e_h(s, half_dt);
-    //interpolate_e(s);
     } else {
       update_e(s, half_dt);
     }
@@ -597,6 +596,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       interpolate_rho(s);
     }
     update_quality(in, s);
+    update_min_quality(s);
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
@@ -734,6 +734,10 @@ void run(input const& in) {
         std::cout << "step " << s.n << " time " << s.time << " dt " << s.max_stable_dt << "\n";
       }
       time_integrator_step(in, s);
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+        adapt(in, s);
+        common_initialization(in, s);
+      }
       ++s.n;
     }
   }
@@ -745,17 +749,6 @@ void run(input const& in) {
   }
   if (in.output_to_command_line) {
     std::cout << "final time " << s.time << "\n";
-  }
-  if (in.enable_adapt) {
-    for (int i = 0; i < 6; ++i) {
-      adapt(in, s);
-      common_initialization(in, s);
-      if (in.output_to_command_line) {
-        ++file_output_index;
-        std::cout << "outputting post-adapt file n " << file_output_index << " time " << s.time << "\n";
-      }
-      output_file(in, file_output_index, s);
-    }
   }
 }
 
