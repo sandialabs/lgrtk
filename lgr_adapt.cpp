@@ -134,7 +134,7 @@ static inline int find_or_append(
 struct adapt_state {
   device_vector<double, node_index> improvement;
   device_vector<node_index, node_index> other_node;
-  device_vector<int, node_index> chosen;
+  device_vector<bool, node_index> chosen;
   device_vector<element_index, element_index> element_counts;
   device_vector<element_index, element_index> old_elements_to_new_elements;
   device_vector<element_index, element_index> new_elements_to_old_elements;
@@ -272,7 +272,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_improvement = a.improvement.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
-  fill(a.chosen, 0);
+  fill(a.chosen, false);
   auto const nodes_are_chosen = a.chosen.begin();
   fill(a.element_counts, element_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
@@ -312,7 +312,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         }
       }
     }
-    nodes_are_chosen[node] = 1;
+    nodes_are_chosen[node] = true;
   };
   for_each(s.nodes, functor);
 }
@@ -332,7 +332,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   fill(a.new_elements_are_same, 1);
   auto const new_elements_are_same = a.new_elements_are_same.begin();
   auto functor = [=] (node_index const node) {
-    if (!int(nodes_are_chosen[node])) return;
+    if (!nodes_are_chosen[node]) return;
     std::cout << "chosen node " << int(node) << '\n';
     node_index const target_node = nodes_to_other_nodes[node];
     array<element_index, 2> loop_elements;
@@ -471,10 +471,12 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state& a,
   data = std::move(new_data);
 }
 
-void adapt(input const& in, state& s) {
+bool adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
+  bool const any_were_chosen = transform_reduce(a.chosen, false, logical_or(), identity<bool>());
+  if (!any_were_chosen) return false;
   element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
       plus<element_index>(), identity<element_index>());
   std::cout << int(num_new_elements) << " new elements\n";
@@ -495,6 +497,7 @@ void adapt(input const& in, state& s) {
   s.elements = a.new_elements;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   invert_connectivity(s);
+  return true;
 }
 
 }
