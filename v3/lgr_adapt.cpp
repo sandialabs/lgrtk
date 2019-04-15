@@ -390,13 +390,16 @@ static LGR_NOINLINE void project(state const& s, adapt_state& a) {
   for_each(s.elements, functor);
 }
 
-static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+template <class T>
+static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state& a,
+    device_vector<T, element_node_index> const& old_data,
+    device_vector<T, element_node_index>& new_data) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto const old_element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
+  auto const old_element_nodes_to_T = old_data.cbegin();
+  auto const new_element_nodes_to_T = new_data.begin();
   auto const new_elements_are_same = a.new_elements_are_same.cbegin();
   auto functor = [=] (element_index const new_element) {
     if (new_elements_are_same[new_element]) {
@@ -406,12 +409,16 @@ static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
       for (auto const node_in_element : nodes_in_element) {
         auto const new_element_node = new_element_nodes[node_in_element];
         auto const old_element_node = old_element_nodes[node_in_element];
-        new_element_nodes_to_nodes[new_element_node] =
-          old_element_nodes_to_nodes[old_element_node];
+        new_element_nodes_to_T[new_element_node] =
+          T(old_element_nodes_to_T[old_element_node]);
       }
     }
   };
   for_each(a.new_elements, functor);
+}
+
+static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+  transfer_same_element_node<node_index>(s, a, s.elements_to_nodes, a.new_element_nodes_to_nodes);
 }
 
 void adapt(state& s) {
