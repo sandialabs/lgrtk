@@ -742,7 +742,7 @@ void run(input const& in) {
   if (in.output_to_command_line) {
     std::cout << "final time " << s.time << "\n";
   }
-  if (in.enable_adapt) adapt(s);
+  if (in.enable_adapt) adapt(in, s);
 }
 
 }

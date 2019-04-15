@@ -36,10 +36,24 @@ public:
   {
     resize(count);
   }
-  vector(vector&&) noexcept = default;
+  vector(vector&& other) noexcept
+    :m_allocator(other.m_allocator)
+    ,m_data(other.m_data)
+    ,m_size(other.m_size)
+  {
+    other.m_data = nullptr;
+    other.m_size = 0;
+  }
   vector(vector const&) = delete;
   vector& operator=(vector const&) = delete;
-  vector& operator=(vector&&) = delete;
+  vector& operator=(vector&& other) noexcept {
+    m_allocator = other.m_allocator;
+    m_data = other.m_data;
+    m_size = other.m_size;
+    other.m_data = nullptr;
+    other.m_size = size_type(0);
+    return *this;
+  }
   ~vector() { clear(); }
   T* data() noexcept { return m_data; }
   T const* data() const noexcept { return m_data; }
