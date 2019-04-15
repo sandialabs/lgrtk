@@ -21,7 +21,7 @@ public:
   device_vector(device_vector&&) noexcept = default;
   device_vector(device_vector const&) = delete;
   device_vector& operator=(device_vector const&) = delete;
-  device_vector& operator=(device_vector&&) = delete;
+  device_vector& operator=(device_vector&&) noexcept = default;
   ~device_vector() = default;
 };
 

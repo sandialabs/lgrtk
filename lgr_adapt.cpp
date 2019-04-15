@@ -421,7 +421,48 @@ static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
   transfer_same_element_node<node_index>(s, a, s.elements_to_nodes, a.new_element_nodes_to_nodes);
 }
 
-void adapt(state& s) {
+template <class T>
+static LGR_NOINLINE void transfer_element_data(adapt_state& a,
+    device_vector<T, element_index>& data) {
+  device_vector<T, element_index> new_data(a.new_elements.size(), data.get_allocator());
+  auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
+  auto const old_elements_to_T = data.cbegin();
+  auto const new_elements_to_T = new_data.begin();
+  auto functor = [=] (element_index const new_element) {
+    element_index const old_element = new_elements_to_old_elements[new_element];
+    new_elements_to_T[new_element] =
+      T(old_elements_to_T[old_element]);
+  };
+  for_each(a.new_elements, functor);
+  data = std::move(new_data);
+}
+
+template <class T>
+static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state& a,
+    device_vector<T, point_index>& data) {
+  auto const points_in_element = s.points_in_element;
+  device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
+  auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
+  auto const old_points_to_T = data.cbegin();
+  auto const new_points_to_T = new_data.begin();
+  auto const old_elements_to_points = s.elements * points_in_element;
+  auto const new_elements_to_points = a.new_elements * points_in_element;
+  auto functor = [=] (element_index const new_element) {
+    element_index const old_element = new_elements_to_old_elements[new_element];
+    auto const new_element_points = new_elements_to_points[new_element];
+    auto const old_element_points = old_elements_to_points[old_element];
+    for (auto const point_in_element : points_in_element) {
+      auto const new_point = new_element_points[point_in_element];
+      auto const old_point = old_element_points[point_in_element];
+      new_points_to_T[new_point] =
+        T(old_points_to_T[old_point]);
+    }
+  };
+  for_each(a.new_elements, functor);
+  data = std::move(new_data);
+}
+
+void adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
@@ -439,6 +480,9 @@ void adapt(state& s) {
   project(s, a);
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
+  transfer_element_data<material_index>(a, s.material);
+  transfer_point_data<double>(s, a, s.rho);
+  if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
 }
 
 }
