@@ -747,7 +747,7 @@ void run(input const& in) {
     std::cout << "final time " << s.time << "\n";
   }
   if (in.enable_adapt) {
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 6; ++i) {
       adapt(in, s);
       common_initialization(in, s);
       if (in.output_to_command_line) {
