@@ -30,16 +30,24 @@ static void LGR_NOINLINE update_bar_quality(state& s) {
    gradient magnitudes relate to opposite edge lengths.
   */
 inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
+  assert(std::isfinite(area));
+  assert(area != 0.0);
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
+    assert(std::isfinite(g_i_sq));
     sum_g_i_sq += g_i_sq;
   }
-  return 1.0 / (area * sum_g_i_sq);
+  double const denom = (area * sum_g_i_sq);
+  assert(std::isfinite(denom));
+  double const q = 1.0 / denom;
+  assert(std::isfinite(q));
+  return q;
 }
 
 inline double triangle_quality(array<vector3<double>, 3> const x) {
   double const area = triangle_area(x);
+  if (area <= 0.0) return area;
   return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
@@ -171,7 +179,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const elements_to_materials = s.material.cbegin();
-  auto const elements_to_qualityes = s.quality.cbegin();
+  auto const elements_to_qualities = s.quality.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_improvement = a.improvement.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
@@ -185,7 +193,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     array<element_index, max_shell_elements> shell_elements;
     array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
     array<material_index, max_shell_elements> shell_elements_to_materials;
-    array<double, max_shell_elements> shell_element_qualityes;
+    array<double, max_shell_elements> shell_element_qualities;
     array<int, max_shell_elements> shell_elements_to_node_in_element;
     array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
     int center_node = -1;
@@ -208,8 +216,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       }
       material_index const material = elements_to_materials[element];
       shell_elements_to_materials[shell_element] = material;
-      double const quality = elements_to_qualityes[element];
-      shell_element_qualityes[shell_element] = quality;
+      double const quality = elements_to_qualities[element];
+      shell_element_qualities[shell_element] = quality;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
@@ -240,20 +248,26 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) {
         continue;
       }
-      double const old_quality1 = shell_element_qualityes[loop_elements[0]];
-      double const old_quality2 = shell_element_qualityes[loop_elements[1]];
+      double const old_quality1 = shell_element_qualities[loop_elements[0]];
+      double const old_quality2 = shell_element_qualities[loop_elements[1]];
       double const quality_before = min(old_quality1, old_quality2);
+      assert(quality_before > 0.0);
       array<vector3<double>, 3> proposed_x;
       proposed_x[0] = shell_nodes_to_x[center_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
       double const new_quality1 = triangle_quality(proposed_x);
+      if (new_quality1 <= quality_before) continue;
       proposed_x[0] = shell_nodes_to_x[edge_node];
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
       double const new_quality2 = triangle_quality(proposed_x);
       double const quality_after = min(new_quality1, new_quality2);
       if (quality_after <= quality_before) continue;
+      assert(std::isfinite(quality_after));
+      assert(quality_before > 0.0);
+      assert(quality_after > quality_before);
+      assert(quality_after > 0.0);
       double const improvement = ((quality_after - quality_before) / quality_before);
       if (improvement < 0.05) continue;
       if (improvement > best_improvement) {
