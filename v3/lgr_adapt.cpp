@@ -371,6 +371,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = target_node;
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[1];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[0];
+    std::cout << "setting new_elements_are_same=0 for " << int(new_element1)
+      << " and " << int(new_element2) << '\n';
     new_elements_are_same[new_element1] = 0;
     new_elements_are_same[new_element2] = 0;
   };
@@ -390,10 +392,9 @@ static LGR_NOINLINE void project(state const& s, adapt_state& a) {
   for_each(s.elements, functor);
 }
 
-template <class T>
 static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state& a,
-    device_vector<T, element_node_index> const& old_data,
-    device_vector<T, element_node_index>& new_data) {
+    device_vector<node_index, element_node_index> const& old_data,
+    device_vector<node_index, element_node_index>& new_data) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -409,16 +410,20 @@ static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state&
       for (auto const node_in_element : nodes_in_element) {
         auto const new_element_node = new_element_nodes[node_in_element];
         auto const old_element_node = old_element_nodes[node_in_element];
-        new_element_nodes_to_T[new_element_node] =
-          T(old_element_nodes_to_T[old_element_node]);
+        node_index const node = node_index(old_element_nodes_to_T[old_element_node]);
+      //std::cout << "transferring node " << int(node) << " new_element " << int(new_element)
+      //  << " old_element " << int(old_element) << '\n';
+        new_element_nodes_to_T[new_element_node] = node;
       }
+    } else {
+      std::cout << "new_elements_are_same[" << int(new_element) << "] = " << int(new_elements_are_same[new_element]) << '\n';
     }
   };
   for_each(a.new_elements, functor);
 }
 
 static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
-  transfer_same_element_node<node_index>(s, a, s.elements_to_nodes, a.new_element_nodes_to_nodes);
+  transfer_same_element_node(s, a, s.elements_to_nodes, a.new_element_nodes_to_nodes);
 }
 
 template <class T>
