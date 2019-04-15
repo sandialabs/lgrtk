@@ -747,13 +747,15 @@ void run(input const& in) {
     std::cout << "final time " << s.time << "\n";
   }
   if (in.enable_adapt) {
-    adapt(in, s);
-    common_initialization(in, s);
-    if (in.output_to_command_line) {
-      ++file_output_index;
-      std::cout << "outputting post-adapt file n " << file_output_index << " time " << s.time << "\n";
+    for (int i = 0; i < 4; ++i) {
+      adapt(in, s);
+      common_initialization(in, s);
+      if (in.output_to_command_line) {
+        ++file_output_index;
+        std::cout << "outputting post-adapt file n " << file_output_index << " time " << s.time << "\n";
+      }
+      output_file(in, file_output_index, s);
     }
-    output_file(in, file_output_index, s);
   }
 }
 
