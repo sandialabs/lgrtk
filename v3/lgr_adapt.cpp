@@ -80,7 +80,7 @@ static void LGR_NOINLINE update_triangle_quality(state& s) {
    Furthermore, we raise the entire quantity to the fourth power in order to
    avoid having to compute any roots, since only relative comparison of
    qualities is necessary.
-   
+
    As such, our "quality" is the inverse of this quality measure to the fourth power
   */
 static void LGR_NOINLINE update_tetrahedron_quality(state& s) {
@@ -390,6 +390,30 @@ static LGR_NOINLINE void project(state const& s, adapt_state& a) {
   for_each(s.elements, functor);
 }
 
+static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+  auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
+  auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const old_element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
+  auto const new_elements_are_same = a.new_elements_are_same.cbegin();
+  auto functor = [=] (element_index const new_element) {
+    if (new_elements_are_same[new_element]) {
+      auto const new_element_nodes = new_elements_to_element_nodes[new_element];
+      element_index const old_element = new_elements_to_old_elements[new_element];
+      auto const old_element_nodes = old_elements_to_element_nodes[old_element];
+      for (auto const node_in_element : nodes_in_element) {
+        auto const new_element_node = new_element_nodes[node_in_element];
+        auto const old_element_node = old_element_nodes[node_in_element];
+        new_element_nodes_to_nodes[new_element_node] =
+          old_element_nodes_to_nodes[old_element_node];
+      }
+    }
+  };
+  for_each(a.new_elements, functor);
+}
+
 void adapt(state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
@@ -407,10 +431,7 @@ void adapt(state& s) {
   a.new_elements_are_same.resize(num_new_elements);
   project(s, a);
   apply_triangle_adapt(s, a);
-  for (element_index const n : a.new_elements) {
-    int const same = a.new_elements_are_same.cbegin()[n];
-    if (same != 1) std::cout << "new element " << int(n) << " isn't same (" << same << ")\n";
-  }
+  transfer_same_connectivity(s, a);
 }
 
 }
