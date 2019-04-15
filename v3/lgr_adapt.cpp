@@ -254,9 +254,6 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
         best_swap_edge_node = edge_node;
       }
     }
-    if (best_swap_edge_node != -1) {
-      std::cout << int(node) << "-" << int(shell_nodes[best_swap_edge_node]) << " has improvement " << best_improvement << '\n';
-    }
     nodes_to_improvement[node] = best_improvement;
     nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : shell_nodes[best_swap_edge_node];
   };
@@ -306,7 +303,6 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node == target_node) {
-          std::cout << "element " << int(element) << " is part of " << int(node) << "-" << int(target_node) << '\n';
           elements_to_new_counts[element] = is_first ? element_index(2) : element_index(0);
           is_first = false;
         }
@@ -333,7 +329,6 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const new_elements_are_same = a.new_elements_are_same.begin();
   auto functor = [=] (node_index const node) {
     if (!nodes_are_chosen[node]) return;
-    std::cout << "chosen node " << int(node) << '\n';
     node_index const target_node = nodes_to_other_nodes[node];
     array<element_index, 2> loop_elements;
     array<node_index, 2> loop_nodes;
@@ -375,8 +370,6 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = target_node;
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[1];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[0];
-  //std::cout << "setting new_elements_are_same=0 for " << int(new_element1)
-  //  << " and " << int(new_element2) << '\n';
     new_elements_are_same[new_element1] = 0;
     new_elements_are_same[new_element2] = 0;
   };
@@ -415,12 +408,8 @@ static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state&
         auto const new_element_node = new_element_nodes[node_in_element];
         auto const old_element_node = old_element_nodes[node_in_element];
         node_index const node = node_index(old_element_nodes_to_T[old_element_node]);
-      //std::cout << "transferring node " << int(node) << " new_element " << int(new_element)
-      //  << " old_element " << int(old_element) << '\n';
         new_element_nodes_to_T[new_element_node] = node;
       }
-    } else {
-    //std::cout << "new_elements_are_same[" << int(new_element) << "] = " << int(new_elements_are_same[new_element]) << '\n';
     }
   };
   for_each(a.new_elements, functor);
@@ -475,11 +464,12 @@ bool adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
-  bool const any_were_chosen = transform_reduce(a.chosen, false, logical_or(), identity<bool>());
-  if (!any_were_chosen) return false;
+  auto bool_to_int = [](bool const b) -> int { return int(b); };
+  int const num_chosen = transform_reduce(a.chosen, int(0), plus<int>(), bool_to_int);
+  if (num_chosen == 0) return false;
+  std::cout << "adapting " << num_chosen << " cavities\n";
   element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
       plus<element_index>(), identity<element_index>());
-  std::cout << int(num_new_elements) << " new elements\n";
   a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
   transform_exclusive_scan(a.element_counts, a.old_elements_to_new_elements,
       element_index(0), plus<element_index>(), identity<element_index>());
