@@ -271,12 +271,15 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_improvement = a.improvement.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
+  fill(a.chosen, 0);
   auto const nodes_are_chosen = a.chosen.begin();
   fill(a.element_counts, element_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
   auto functor = [=] (node_index const node) {
     node_index const target_node = nodes_to_other_nodes[node];
-    if (target_node == node_index(-1)) return;
+    if (target_node == node_index(-1)) {
+      return;
+    }
     double const improvement = nodes_to_improvement[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
@@ -289,7 +292,6 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
           if ((adj_improvement > improvement) ||
               ((adj_improvement == improvement) &&
                (adj_node < node))) {
-            nodes_are_chosen[node] = 0;
             return;
           }
         }
@@ -330,6 +332,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const new_elements_are_same = a.new_elements_are_same.begin();
   auto functor = [=] (node_index const node) {
     if (!int(nodes_are_chosen[node])) return;
+    std::cout << "chosen node " << int(node) << '\n';
     node_index const target_node = nodes_to_other_nodes[node];
     array<element_index, 2> loop_elements;
     array<node_index, 2> loop_nodes;
@@ -361,6 +364,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
       }
     }
     element_index const new_element1 = old_elements_to_new_elements[keeper_element];
+    assert(new_element1 != 1);
     element_index const new_element2 = new_element1 + element_index(1);
     using l_t = node_in_element_index;
     auto new_element_nodes = new_elements_to_element_nodes[new_element1];
@@ -371,8 +375,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = target_node;
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[1];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[0];
-    std::cout << "setting new_elements_are_same=0 for " << int(new_element1)
-      << " and " << int(new_element2) << '\n';
+  //std::cout << "setting new_elements_are_same=0 for " << int(new_element1)
+  //  << " and " << int(new_element2) << '\n';
     new_elements_are_same[new_element1] = 0;
     new_elements_are_same[new_element2] = 0;
   };
@@ -416,7 +420,7 @@ static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state&
         new_element_nodes_to_T[new_element_node] = node;
       }
     } else {
-      std::cout << "new_elements_are_same[" << int(new_element) << "] = " << int(new_elements_are_same[new_element]) << '\n';
+    //std::cout << "new_elements_are_same[" << int(new_element) << "] = " << int(new_elements_are_same[new_element]) << '\n';
     }
   };
   for_each(a.new_elements, functor);
