@@ -671,7 +671,7 @@ static void LGR_NOINLINE initialize_e(input const& in, state& s) {
   initialize_material_scalar(in.e0, s, s.e);
 }
 
-void common_initialization(input const& in, state& s) {
+static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
@@ -746,7 +746,15 @@ void run(input const& in) {
   if (in.output_to_command_line) {
     std::cout << "final time " << s.time << "\n";
   }
-  if (in.enable_adapt) adapt(in, s);
+  if (in.enable_adapt) {
+    adapt(in, s);
+    common_initialization(in, s);
+    if (in.output_to_command_line) {
+      ++file_output_index;
+      std::cout << "outputting post-adapt file n " << file_output_index << " time " << s.time << "\n";
+    }
+    output_file(in, file_output_index, s);
+  }
 }
 
 }

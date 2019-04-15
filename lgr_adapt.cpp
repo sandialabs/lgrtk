@@ -6,7 +6,6 @@
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
 #include <lgr_reduce.hpp>
-#include <lgr_physics.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -487,7 +486,6 @@ void adapt(input const& in, state& s) {
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   s.elements = a.new_elements;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
-  common_initialization(in, s);
 }
 
 }
