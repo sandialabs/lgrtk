@@ -286,16 +286,17 @@ private:
     	mTimes.push_back(mTime);
     	++mStep;
 
-    	if (mComputeArrivalTime)
-    	{
-    		const Plato::Scalar tDeltaPseudoTime = aBurnRateMultiplier * mInterfaceSpeedNormForUpdatingArrivalTime * aDeltaTime;
-            offset_level_set(mMesh, mHamiltonJacobiFields, -tDeltaPseudoTime);
-    	}
-    	else
-    	{
-            evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier*aDeltaTime);
+        if(mComputeArrivalTime)
+        {
+            const Plato::Scalar tDeltaPseudoTime = static_cast<Plato::Scalar>(-1) * aBurnRateMultiplier
+                    * mInterfaceSpeedNormForUpdatingArrivalTime * aDeltaTime;
+            offset_level_set(mMesh, mHamiltonJacobiFields, tDeltaPseudoTime);
+        }
+        else
+        {
+            evolve_level_set(mMesh, mHamiltonJacobiFields, mInterfaceWidth, aBurnRateMultiplier * aDeltaTime);
             reinitialize_level_set(mMesh, mHamiltonJacobiFields, mTime, mInterfaceWidth, mReIninitializationDeltaTime);
-    	}
+        }
 
         this->cacheData();
     }

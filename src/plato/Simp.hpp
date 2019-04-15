@@ -63,14 +63,8 @@ public:
     template<typename ScalarType>
     DEVICE_TYPE inline ScalarType operator()( const ScalarType & aInput ) const
     {
-        if (aInput != static_cast<ScalarType>(0.0))
-        {
-            return mMinValue + (static_cast<ScalarType>(1.0) - mMinValue) * pow(aInput, mPenaltyParam);
-        }
-        else
-        {
-            return mMinValue;
-        }
+        auto tOutput = mMinValue + ( (static_cast<ScalarType>(1.0) - mMinValue) * pow(aInput, mPenaltyParam) );
+        return tOutput;
     }
 };
 

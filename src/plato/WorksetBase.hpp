@@ -12,7 +12,8 @@ namespace Plato
 {
 
 template <class Scalar, class Result>
-inline Scalar local_result_sum(const Plato::OrdinalType& aNumCells, Result aResult) {
+inline Scalar local_result_sum(const Plato::OrdinalType& aNumCells, const Result & aResult)
+{
   Scalar tReturnVal(0.0);
   Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal, Scalar& aLocalResult)
   {

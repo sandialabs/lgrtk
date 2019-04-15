@@ -88,12 +88,12 @@ private:
         Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
-        mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
+        mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
         mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
-        mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
+        mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 500.0);
         mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
         mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
-        mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.05);
+        mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.5);
     }
 
     /******************************************************************************//**
@@ -303,18 +303,22 @@ public:
             // Compute Von Mises stress constraint residual
             ResultT tVonMisesOverStressLimit = tCellVonMises(aCellOrdinal) / tStressLimit;
             ResultT tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-            ResultT tCellConstraintValue = tVonMisesOverLimitMinusOne *
-                    (tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne + static_cast<Plato::Scalar>(1.0));
+            ResultT tVonMisesOverLimitMinusOneCubed =
+                    tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+            ResultT tCellConstraintValue = tVonMisesOverLimitMinusOneCubed + tVonMisesOverLimitMinusOne;
+
 
             ControlT tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tPenalizedCellDensity = tSIMP(tCellDensity);
             tOutputCellVonMises(aCellOrdinal) = tPenalizedCellDensity * tCellVonMises(aCellOrdinal);
             ResultT tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tCellConstraintValue;
-            ResultT tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
+            ResultT tPenalizedStressConstraint = static_cast<ResultT>(0.0);
+            tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<ResultT>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<ResultT>(0.0);
 
-            ResultT tStressContribution = ( tLagrangeMultipliers(aCellOrdinal) +
-                    static_cast<Plato::Scalar>(0.5) * tAugLagPenalty * tPenalizedStressConstraint ) * tPenalizedStressConstraint;
+            ResultT tTermOne = tLagrangeMultipliers(aCellOrdinal) * tPenalizedStressConstraint;
+            ResultT tTermTwo = static_cast<Plato::Scalar>(0.5) * tAugLagPenalty * tPenalizedStressConstraint * tPenalizedStressConstraint;
+            ResultT tStressContribution = static_cast<Plato::Scalar>(1.0 / tNumCells) * (tTermOne + tTermTwo);
 
             // Compute mass contribution to augmented Lagrangian function
             ResultT tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
@@ -322,7 +326,7 @@ public:
             ResultT tMassContribution = (tCellMaterialDensity * tCellMass) / tMassNormalizationMultiplier;
 
             // Compute augmented Lagrangian
-            aResultWS(aCellOrdinal) = tMassContribution + ( static_cast<Plato::Scalar>(1.0 / tNumCells) * tStressContribution );
+            aResultWS(aCellOrdinal) = tMassContribution + tStressContribution;
         },"Compute Augmented Lagrangian Function");
 
         Plato::toMap(m_dataMap, tOutputCellVonMises, "Vonmises");
@@ -378,14 +382,16 @@ public:
             auto tCellDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             auto tPenalizedCellDensity = tSIMP(tCellDensity);
             auto tVonMisesOverLimitMinusOne = tVonMisesOverStressLimit - static_cast<Plato::Scalar>(1.0);
-            auto tStressConstraint = tVonMisesOverLimitMinusOne * (tVonMisesOverLimitMinusOne *
-                    tVonMisesOverLimitMinusOne + static_cast<Plato::Scalar>(1.0));
+            auto tVonMisesOverLimitMinusOneCubed = tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne * tVonMisesOverLimitMinusOne;
+            auto tStressConstraint = tVonMisesOverLimitMinusOneCubed + tVonMisesOverLimitMinusOne;
 
             // Compute penalized Von Mises stress constraint
             auto tSuggestedPenalizedStressConstraint = tPenalizedCellDensity * tStressConstraint;
-            auto tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
+            auto tPenalizedStressConstraint = static_cast<Plato::Scalar>(0.0);
+            tPenalizedStressConstraint = tVonMisesOverStressLimit > static_cast<Plato::Scalar>(1.0) ?
                     tSuggestedPenalizedStressConstraint : static_cast<Plato::Scalar>(0.0);
-            const Plato::Scalar tSuggestedLagrangeMultiplier = tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tPenalizedStressConstraint;
+            const Plato::Scalar tSuggestedLagrangeMultiplier = tLagrangeMultipliers(aCellOrdinal)
+                    + (tAugLagPenalty * tPenalizedStressConstraint);
             tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, static_cast<Plato::Scalar>(0.0));
         }, "Update Multipliers");
     }
