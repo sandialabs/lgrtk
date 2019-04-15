@@ -117,6 +117,13 @@ void update_quality(input const& in, state& s) {
   }
 }
 
+void update_min_quality(state& s) {
+  s.min_quality = transform_reduce(s.quality,
+      std::numeric_limits<double>::max(),
+      minimum<double>(),
+      identity<double>());
+}
+
 template <int Capacity, class Index>
 static inline int find_or_append(
     int& count,
