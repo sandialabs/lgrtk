@@ -581,33 +581,34 @@ void Remap<Elem>::swap_point_remap(Omega_h::Mesh& old_mesh,
   }
 }
 
-static void remap_midedge_coordinates(
+static void remap_midedge_field(
     Omega_h::Mesh& old_mesh,
     Omega_h::Mesh& new_mesh,
     Omega_h::LOs same_edges_to_old_edges,
     Omega_h::LOs same_edges_to_new_edges,
-    Omega_h::LOs prods2new_ents)
+    Omega_h::LOs prods2new_ents,
+    std::string const& name)
 {
-  if (!old_mesh.has_tag(1, "coordinates")) return;
-  auto const old_vert_coords = old_mesh.get_array<double>(0, "coordinates");
-  auto const old_edge_coords = old_mesh.get_array<double>(1, "coordinates");
-  auto const ncomps = Omega_h::divide_no_remainder(old_edge_coords.size(), old_mesh.nedges());
-  auto const same_data = read(unmap(same_edges_to_old_edges, old_edge_coords, ncomps));
-  Omega_h::Write<double> const new_edge_coords(new_mesh.nedges() * ncomps);
-  map_into(same_data, same_edges_to_new_edges, new_edge_coords, ncomps);
+  if (!old_mesh.has_tag(1, name)) return;
+  auto const old_vert_field = old_mesh.get_array<double>(0, name);
+  auto const old_edge_field = old_mesh.get_array<double>(1, name);
+  auto const ncomps = Omega_h::divide_no_remainder(old_edge_field.size(), old_mesh.nedges());
+  auto const same_data = read(unmap(same_edges_to_old_edges, old_edge_field, ncomps));
+  Omega_h::Write<double> const new_edge_field(new_mesh.nedges() * ncomps);
+  map_into(same_data, same_edges_to_new_edges, new_edge_field, ncomps);
   auto const new_edges_to_verts = new_mesh.ask_verts_of(1);
   auto functor = OMEGA_H_LAMBDA(int const product_edge) {
     auto const new_edge = prods2new_ents[product_edge];
     auto const v0 = new_edges_to_verts[new_edge * 2 + 0];
     auto const v1 = new_edges_to_verts[new_edge * 2 + 1];
     for (int comp = 0; comp < ncomps; ++comp) {
-      new_edge_coords[new_edge * ncomps + comp] =
+      new_edge_field[new_edge * ncomps + comp] =
         0.5 *
-        (old_vert_coords[v0 * ncomps + comp] +
-         old_vert_coords[v1 * ncomps + comp]);
+        (old_vert_field[v0 * ncomps + comp] +
+         old_vert_field[v1 * ncomps + comp]);
     }
   };
-  new_mesh.add_tag(1, "coordinates", ncomps, read(new_edge_coords));
+  new_mesh.add_tag(1, name, ncomps, read(new_edge_field));
 }
 
 template <class Elem>
@@ -639,9 +640,15 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     }
   }
   if (prod_dim == 1) {
-    remap_midedge_coordinates(old_mesh, new_mesh,
+    remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
-        prods2new_ents);
+        prods2new_ents, "coordinates");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "velocity");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
@@ -687,9 +694,15 @@ void Remap<Elem>::coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     }
   }
   if (prod_dim == 1) {
-    remap_midedge_coordinates(old_mesh, new_mesh,
+    remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
-        prods2new_ents);
+        prods2new_ents, "coordinates");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "velocity");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2doms.a2ab, prods2new_ents,
@@ -736,9 +749,15 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
     Omega_h::LOs same_ents2new_ents) {
   if (prod_dim == 1) {
-    remap_midedge_coordinates(old_mesh, new_mesh,
+    remap_midedge_field(old_mesh, new_mesh,
         same_ents2old_ents, same_ents2new_ents,
-        prods2new_ents);
+        prods2new_ents, "coordinates");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "velocity");
+    remap_midedge_field(old_mesh, new_mesh,
+        same_ents2old_ents, same_ents2new_ents,
+        prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
     remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
