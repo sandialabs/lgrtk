@@ -364,7 +364,6 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
       }
     }
     element_index const new_element1 = old_elements_to_new_elements[keeper_element];
-    assert(new_element1 != 1);
     element_index const new_element2 = new_element1 + element_index(1);
     using l_t = node_in_element_index;
     auto new_element_nodes = new_elements_to_element_nodes[new_element1];
@@ -479,9 +478,8 @@ void adapt(input const& in, state& s) {
       plus<element_index>(), identity<element_index>());
   std::cout << int(num_new_elements) << " new elements\n";
   a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
-  auto last_it = transform_exclusive_scan(a.element_counts, a.old_elements_to_new_elements,
+  transform_exclusive_scan(a.element_counts, a.old_elements_to_new_elements,
       element_index(0), plus<element_index>(), identity<element_index>());
-  *last_it = num_new_elements;
   a.new_elements.resize(num_new_elements);
   a.new_elements_to_old_elements.resize(num_new_elements);
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());

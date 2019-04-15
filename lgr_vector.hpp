@@ -47,6 +47,7 @@ public:
   vector(vector const&) = delete;
   vector& operator=(vector const&) = delete;
   vector& operator=(vector&& other) noexcept {
+    clear();
     m_allocator = other.m_allocator;
     m_data = other.m_data;
     m_size = other.m_size;
