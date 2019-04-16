@@ -269,6 +269,52 @@ static inline void evaluate_triangle_swap(
   }
 }
 
+static inline double measure_edge(double const h_min, double const h_max, double const l) {
+  return l / (0.5 * (h_min + h_max));
+}
+
+template <int max_shell_elements, int max_shell_nodes>
+static inline void evaluate_triangle_split(
+    int const center_node,
+    int const edge_node,
+    cavity<3, max_shell_elements, max_shell_nodes> const c,
+    double&,
+    int&
+    ) {
+  auto const h1 = c.shell_nodes_to_h[center_node];
+  auto const h2 = c.shell_nodes_to_h[edge_node];
+  auto const x1 = c.shell_nodes_to_x[center_node];
+  auto const x2 = c.shell_nodes_to_x[edge_node];
+  auto const h_min = min(h1, h2);
+  auto const h_max = max(h1, h2);
+  auto const l = norm(x1 - x2);
+  auto const lm = measure_edge(h_min, h_max, l);
+  if (lm < std::sqrt(2.0)) return;
+  auto const midpoint_x = 0.5 * (x1 + x2);
+  for (int element = 0; element < c.num_shell_elements; ++element) {
+    array<vector3<double>, 3> parent_x;
+    int const center_node_in_element = c.shell_elements_to_node_in_element[element];
+    int edge_node_in_element = -1;
+    for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
+      int const shell_node = c.shell_elements_to_shell_nodes[element][node_in_element];
+      parent_x[node_in_element] = c.shell_nodes_to_x[shell_node];
+      if (shell_node == edge_node) edge_node_in_element = node_in_element;
+    }
+    if (edge_node_in_element == -1) continue;
+    array<vector3<double>, 3> child_x = parent_x;
+    child_x[center_node_in_element] = midpoint_x;
+    constexpr double min_acceptable_quality = 0.2;
+    double const new_quality1 = triangle_quality(child_x);
+    if (new_quality1 < min_acceptable_quality) return;
+    child_x[center_node_in_element] = c.shell_nodes_to_x[center_node];
+    child_x[edge_node_in_element] = midpoint_x;
+    double const new_quality2 = triangle_quality(child_x);
+    if (new_quality2 < min_acceptable_quality) return;
+  }
+  std::cout << int(c.shell_nodes[center_node]) << "-" << int(c.shell_nodes[edge_node])
+    << " is a good edge to split\n";
+}
+
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
@@ -318,6 +364,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       // only examine edges once, the smaller node examines it
       if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
       evaluate_triangle_swap(center_node, edge_node, c,
+          best_improvement, best_swap_edge_node);
+      evaluate_triangle_split(center_node, edge_node, c,
           best_improvement, best_swap_edge_node);
     }
     nodes_to_improvement[node] = best_improvement;
