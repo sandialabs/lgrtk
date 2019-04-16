@@ -74,7 +74,7 @@ static void LGR_NOINLINE update_triangle_quality(state& s) {
    "What is a good linear finite element?
     interpolation, conditioning, anisotropy, and quality measures (preprint)."
    University of California at Berkeley 73 (2002): 137.
-   
+
    A scale-invariant quality measure correlated with matrix conditioning
    (and the stable explicit time step) for tetrahedra is volume divided by
    the (root-mean-squared side area) to the (3/2) power.
