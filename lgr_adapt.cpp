@@ -365,7 +365,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
       evaluate_triangle_swap(center_node, edge_node, c,
           best_improvement, best_swap_edge_node);
-      evaluate_triangle_split(center_node, edge_node, c,
+      if ((0)) evaluate_triangle_split(center_node, edge_node, c,
           best_improvement, best_swap_edge_node);
     }
     nodes_to_improvement[node] = best_improvement;
@@ -409,7 +409,6 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         }
       }
     }
-    bool is_first = true;
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       auto const element_nodes = elements_to_element_nodes[element];
@@ -417,8 +416,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node == target_node) {
-          elements_to_new_counts[element] = is_first ? element_index(2) : element_index(0);
-          is_first = false;
+          elements_to_new_counts[element] = element_index(1);
         }
       }
     }
@@ -446,8 +444,6 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     node_index const target_node = nodes_to_other_nodes[node];
     array<element_index, 2> loop_elements;
     array<node_index, 2> loop_nodes;
-    bool is_first = true;
-    element_index keeper_element(-1);
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       auto const element_nodes = elements_to_element_nodes[element];
@@ -459,22 +455,14 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
       if (node1 == target_node) {
         loop_elements[1] = element;
         loop_nodes[1] = node2;
-        if (is_first) {
-          keeper_element = element;
-          is_first = false;
-        }
       }
       if (node2 == target_node) {
         loop_elements[0] = element;
         loop_nodes[0] = node1;
-        if (is_first) {
-          keeper_element = element;
-          is_first = false;
-        }
       }
     }
-    element_index const new_element1 = old_elements_to_new_elements[keeper_element];
-    element_index const new_element2 = new_element1 + element_index(1);
+    element_index const new_element1 = old_elements_to_new_elements[loop_elements[0]];
+    element_index const new_element2 = old_elements_to_new_elements[loop_elements[1]];
     using l_t = node_in_element_index;
     auto new_element_nodes = new_elements_to_element_nodes[new_element1];
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = node;
