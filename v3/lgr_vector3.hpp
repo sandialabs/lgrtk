@@ -106,9 +106,15 @@ cross(vector3<Scalar> const left,
 }
 
 template <typename Scalar>
+constexpr inline Scalar
+norm_squared(vector3<Scalar> const v) noexcept {
+  return (v * v);
+}
+
+template <typename Scalar>
 inline Scalar
 norm(vector3<Scalar> const v) noexcept {
-  return std::sqrt(v * v);
+  return std::sqrt(norm_squared(v));
 }
 
 }

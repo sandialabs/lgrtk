@@ -127,18 +127,40 @@ void update_min_quality(state& s) {
       identity<double>());
 }
 
-template <int Capacity, class Index>
-static inline int find_or_append(
-    int& count,
-    array<Index, Capacity>& buffer,
-    Index const index)
+void initialize_h_adapt(state& s)
 {
-  for (int i = 0; i < count; ++i) {
-    if (buffer[i] == index) return i;
-  }
-  assert(count < Capacity);
-  buffer[count] = index;
-  return count++;
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_h_adapt = s.h_adapt.begin();
+  auto functor = [=] (node_index const node) {
+    vector3<double> const x = nodes_to_x[node];
+    double lsq_max = 0.0;
+    double lsq_min = std::numeric_limits<double>::max();
+    for (auto const node_element : nodes_to_node_elements[node]) {
+      element_index const element = node_elements_to_elements[node_element]; 
+      auto const element_nodes = elements_to_element_nodes[element];
+      for (auto const node_in_element : nodes_in_element) {
+        element_node_index const element_node = element_nodes[node_in_element];
+        node_index const adj_node = element_nodes_to_nodes[element_node];
+        if (adj_node != node) {
+          vector3<double> const adj_x = nodes_to_x[adj_node];
+          auto const lsq = norm_squared(adj_x - x);
+          lsq_max = max(lsq_max, lsq);
+          lsq_min = min(lsq_min, lsq);
+        }
+      }
+    }
+    double const h_min = std::sqrt(lsq_min);
+    double const h_max = std::sqrt(lsq_max);
+    double const alpha = std::sqrt(h_max / h_min);
+    double const h_avg = h_min * alpha;
+    nodes_to_h_adapt[node] = h_avg;
+  };
+  for_each(s.nodes, functor);
 }
 
 struct adapt_state {
@@ -165,6 +187,20 @@ adapt_state::adapt_state(state const& s)
   ,new_elements_are_same(s.devpool)
   ,new_elements(element_index(0))
 {}
+
+template <int Capacity, class Index>
+static inline int find_or_append(
+    int& count,
+    array<Index, Capacity>& buffer,
+    Index const index)
+{
+  for (int i = 0; i < count; ++i) {
+    if (buffer[i] == index) return i;
+  }
+  assert(count < Capacity);
+  buffer[count] = index;
+  return count++;
+}
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
 {
