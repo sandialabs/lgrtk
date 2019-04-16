@@ -204,6 +204,8 @@ static inline int find_or_append(
 
 template <int nodes_per_element, int max_shell_elements, int max_shell_nodes>
 struct cavity {
+  int num_shell_elements;
+  int num_shell_nodes;
   array<node_index, max_shell_nodes> shell_nodes;
   array<element_index, max_shell_elements> shell_elements;
   array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
@@ -217,7 +219,6 @@ template <int max_shell_elements, int max_shell_nodes>
 static inline void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
-    int const num_shell_elements,
     cavity<3, max_shell_elements, max_shell_nodes> const c,
     double& best_improvement,
     int& best_swap_edge_node
@@ -226,7 +227,7 @@ static inline void evaluate_triangle_swap(
   loop_elements[0] = loop_elements[1] = -1;
   array<int, 2> loop_nodes;
   loop_nodes[0] = loop_nodes[1] = -1;
-  for (int element = 0; element < num_shell_elements; ++element) {
+  for (int element = 0; element < c.num_shell_elements; ++element) {
     int const node_in_element = c.shell_elements_to_node_in_element[element];
     if (c.shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3] == edge_node) {
       loop_elements[1] = element;
@@ -281,21 +282,21 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (node_index const node) {
-    int num_shell_nodes = 0;
-    int num_shell_elements = 0;
     cavity<3, 32, 32> c;
+    c.num_shell_nodes = 0;
+    c.num_shell_elements = 0;
     int center_node = -1;
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
-      int const shell_element = num_shell_elements++;
+      int const shell_element = c.num_shell_elements++;
       c.shell_elements[shell_element] = element;
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const node2 = element_nodes_to_nodes[element_node];
-        int const shell_node = find_or_append(num_shell_nodes, c.shell_nodes, node2);
+        int const shell_node = find_or_append(c.num_shell_nodes, c.shell_nodes, node2);
         if (node2 == node) center_node = shell_node;
-        if (shell_node + 1 == num_shell_nodes) {
+        if (shell_node + 1 == c.num_shell_nodes) {
           c.shell_nodes_to_x[shell_node] = nodes_to_x[node2];
         }
         c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
@@ -309,13 +310,11 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     }
     double best_improvement = 0.0;
     int best_swap_edge_node = -1;
-    for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
+    for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
       if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
-      evaluate_triangle_swap(
-          center_node,
-          edge_node, num_shell_elements, c,
+      evaluate_triangle_swap(center_node, edge_node, c,
           best_improvement, best_swap_edge_node);
     }
     nodes_to_improvement[node] = best_improvement;
