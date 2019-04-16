@@ -39,6 +39,7 @@ add_library(lgr_library
     lgr_internal_energy.cpp
     lgr_neo_hookean.cpp
     lgr_albany_J2.cpp
+    lgr_sierra_J2.cpp
     lgr_stvenant_kirchhoff.cpp
     lgr_riemann.cpp
     lgr_osh_output.cpp
