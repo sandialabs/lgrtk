@@ -595,7 +595,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_nodal_density(s);
       interpolate_rho(s);
     }
-    update_quality(in, s);
+    if (in.enable_adapt) update_quality(in, s);
     update_min_quality(s);
     update_symm_grad_v(s);
     update_h_min(in, s);
@@ -677,7 +677,7 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   update_nodal_mass(in, s);
   if (in.enable_nodal_energy) update_nodal_density(s);
   initialize_grad_N(in, s);
-  update_quality(in, s);
+  if (in.enable_adapt) update_quality(in, s);
   update_symm_grad_v(s);
   update_h_min(in, s);
   update_material_state(in, s);

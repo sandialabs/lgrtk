@@ -135,7 +135,9 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }
   write_vtk_scalars(stream, "time_step", s.elements, s.points_in_element, s.element_dt);
-  write_vtk_scalars(stream, "shape_quality", s.quality);
+  if (in.enable_adapt) {
+    write_vtk_scalars(stream, "quality", s.quality);
+  }
   write_vtk_materials(stream, s.material);
   stream.close();
 }
