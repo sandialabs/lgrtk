@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <string>
 
 #include <lgr_vector3.hpp>
 #include <lgr_physics_types.hpp>
