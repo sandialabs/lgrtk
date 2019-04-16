@@ -30,18 +30,13 @@ static void LGR_NOINLINE update_bar_quality(state& s) {
    gradient magnitudes relate to opposite edge lengths.
   */
 inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
-  assert(std::isfinite(area));
-  assert(area != 0.0);
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
-    assert(std::isfinite(g_i_sq));
     sum_g_i_sq += g_i_sq;
   }
   double const denom = (area * sum_g_i_sq);
-  assert(std::isfinite(denom));
   double const q = 1.0 / denom;
-  assert(std::isfinite(q));
   return q;
 }
 
@@ -262,12 +257,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
       proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
       double const new_quality2 = triangle_quality(proposed_x);
+      if (new_quality2 <= quality_before) continue;
       double const quality_after = min(new_quality1, new_quality2);
-      if (quality_after <= quality_before) continue;
-      assert(std::isfinite(quality_after));
-      assert(quality_before > 0.0);
-      assert(quality_after > quality_before);
-      assert(quality_after > 0.0);
       double const improvement = ((quality_after - quality_before) / quality_before);
       if (improvement < 0.05) continue;
       if (improvement > best_improvement) {
