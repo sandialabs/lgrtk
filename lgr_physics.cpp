@@ -721,6 +721,7 @@ void run(input const& in) {
   in.initial_v(s.nodes, s.x, &s.v);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
   common_initialization(in, s);
+  if (in.enable_adapt) initialize_h_adapt(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;

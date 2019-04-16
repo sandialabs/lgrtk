@@ -116,6 +116,7 @@ void file_writer::operator()(
   start_vtk_file(stream);
   write_vtk_points(stream, s.x);
   write_vtk_cells(stream, in, s);
+  //POINTS
   write_vtk_point_data(stream, s);
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
@@ -126,6 +127,10 @@ void file_writer::operator()(
     write_vtk_scalars(stream, "nodal_energy", s.e_h);
     write_vtk_scalars(stream, "nodal_density", s.rho_h);
   }
+  if (in.enable_adapt) {
+    write_vtk_scalars(stream, "h", s.h_adapt);
+  }
+  //CELLS
   write_vtk_cell_data(stream, s);
   if (!(in.enable_nodal_pressure || in.enable_nodal_energy)) {
     write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
