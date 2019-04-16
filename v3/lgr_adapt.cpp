@@ -202,16 +202,23 @@ static inline int find_or_append(
   return count++;
 }
 
+template <int nodes_per_element, int max_shell_elements, int max_shell_nodes>
+struct cavity {
+  array<node_index, max_shell_nodes> shell_nodes;
+  array<element_index, max_shell_elements> shell_elements;
+  array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
+  array<material_index, max_shell_elements> shell_elements_to_materials;
+  array<double, max_shell_elements> shell_element_qualities;
+  array<int, max_shell_elements> shell_elements_to_node_in_element;
+  array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
+};
+
 template <int max_shell_elements, int max_shell_nodes>
 static inline void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
     int const num_shell_elements,
-    array<array<int, 3>, max_shell_elements> const shell_elements_to_shell_nodes,
-    array<material_index, max_shell_elements> const shell_elements_to_materials,
-    array<double, max_shell_elements> const shell_element_qualities,
-    array<int, max_shell_elements> const shell_elements_to_node_in_element,
-    array<vector3<double>, max_shell_nodes> shell_nodes_to_x,
+    cavity<3, max_shell_elements, max_shell_nodes> const c,
     double& best_improvement,
     int& best_swap_edge_node
     ) {
@@ -220,35 +227,35 @@ static inline void evaluate_triangle_swap(
   array<int, 2> loop_nodes;
   loop_nodes[0] = loop_nodes[1] = -1;
   for (int element = 0; element < num_shell_elements; ++element) {
-    int const node_in_element = shell_elements_to_node_in_element[element];
-    if (shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3] == edge_node) {
+    int const node_in_element = c.shell_elements_to_node_in_element[element];
+    if (c.shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3] == edge_node) {
       loop_elements[1] = element;
-      loop_nodes[1] = shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3];
+      loop_nodes[1] = c.shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3];
     }
-    if (shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3] == edge_node) {
+    if (c.shell_elements_to_shell_nodes[element][(node_in_element + 2) % 3] == edge_node) {
       loop_elements[0] = element;
-      loop_nodes[0] = shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
+      loop_nodes[0] = c.shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
     }
   }
   if (loop_elements[0] == -1 || loop_elements[1] == -1) {
     return;
   }
-  if (shell_elements_to_materials[loop_elements[0]] != shell_elements_to_materials[loop_elements[1]]) {
+  if (c.shell_elements_to_materials[loop_elements[0]] != c.shell_elements_to_materials[loop_elements[1]]) {
     return;
   }
-  double const old_quality1 = shell_element_qualities[loop_elements[0]];
-  double const old_quality2 = shell_element_qualities[loop_elements[1]];
+  double const old_quality1 = c.shell_element_qualities[loop_elements[0]];
+  double const old_quality2 = c.shell_element_qualities[loop_elements[1]];
   double const quality_before = min(old_quality1, old_quality2);
   assert(quality_before > 0.0);
   array<vector3<double>, 3> proposed_x;
-  proposed_x[0] = shell_nodes_to_x[center_node];
-  proposed_x[1] = shell_nodes_to_x[loop_nodes[0]];
-  proposed_x[2] = shell_nodes_to_x[loop_nodes[1]];
+  proposed_x[0] = c.shell_nodes_to_x[center_node];
+  proposed_x[1] = c.shell_nodes_to_x[loop_nodes[0]];
+  proposed_x[2] = c.shell_nodes_to_x[loop_nodes[1]];
   double const new_quality1 = triangle_quality(proposed_x);
   if (new_quality1 <= quality_before) return;
-  proposed_x[0] = shell_nodes_to_x[edge_node];
-  proposed_x[1] = shell_nodes_to_x[loop_nodes[1]];
-  proposed_x[2] = shell_nodes_to_x[loop_nodes[0]];
+  proposed_x[0] = c.shell_nodes_to_x[edge_node];
+  proposed_x[1] = c.shell_nodes_to_x[loop_nodes[1]];
+  proposed_x[2] = c.shell_nodes_to_x[loop_nodes[0]];
   double const new_quality2 = triangle_quality(proposed_x);
   if (new_quality2 <= quality_before) return;
   double const quality_after = min(new_quality1, new_quality2);
@@ -272,59 +279,47 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_improvement = a.improvement.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
+  auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (node_index const node) {
     int num_shell_nodes = 0;
     int num_shell_elements = 0;
-    constexpr int max_shell_elements = 32;
-    constexpr int max_shell_nodes = 32;
-    constexpr int nodes_per_element = 3;
-    array<node_index, max_shell_nodes> shell_nodes;
-    array<element_index, max_shell_elements> shell_elements;
-    array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
-    array<material_index, max_shell_elements> shell_elements_to_materials;
-    array<double, max_shell_elements> shell_element_qualities;
-    array<int, max_shell_elements> shell_elements_to_node_in_element;
-    array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
+    cavity<3, 32, 32> c;
     int center_node = -1;
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       int const shell_element = num_shell_elements++;
-      shell_elements[shell_element] = element;
+      c.shell_elements[shell_element] = element;
       auto const element_nodes = elements_to_element_nodes[element];
-      for (node_in_element_index node_in_element(0);
-          node_in_element < node_in_element_index(nodes_per_element);
-          ++node_in_element) {
+      for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const node2 = element_nodes_to_nodes[element_node];
-        int const shell_node = find_or_append(num_shell_nodes, shell_nodes, node2);
+        int const shell_node = find_or_append(num_shell_nodes, c.shell_nodes, node2);
         if (node2 == node) center_node = shell_node;
         if (shell_node + 1 == num_shell_nodes) {
-          shell_nodes_to_x[shell_node] = nodes_to_x[node2];
+          c.shell_nodes_to_x[shell_node] = nodes_to_x[node2];
         }
-        shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
+        c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
       }
       material_index const material = elements_to_materials[element];
-      shell_elements_to_materials[shell_element] = material;
+      c.shell_elements_to_materials[shell_element] = material;
       double const quality = elements_to_qualities[element];
-      shell_element_qualities[shell_element] = quality;
+      c.shell_element_qualities[shell_element] = quality;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
-      shell_elements_to_node_in_element[shell_element] = int(node_in_element);
+      c.shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
     double best_improvement = 0.0;
     int best_swap_edge_node = -1;
     for (int edge_node = 0; edge_node < num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
-      if (shell_nodes[edge_node] < shell_nodes[center_node]) continue;
+      if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
       evaluate_triangle_swap(
           center_node,
-          edge_node, num_shell_elements, shell_elements_to_shell_nodes,
-          shell_elements_to_materials, shell_element_qualities,
-          shell_elements_to_node_in_element, shell_nodes_to_x,
+          edge_node, num_shell_elements, c,
           best_improvement, best_swap_edge_node);
     }
     nodes_to_improvement[node] = best_improvement;
-    nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : shell_nodes[best_swap_edge_node];
+    nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : c.shell_nodes[best_swap_edge_node];
   };
   for_each(s.nodes, functor);
 }
