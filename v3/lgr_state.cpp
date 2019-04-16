@@ -50,6 +50,7 @@ void resize_state(input const& in, state& s) {
   s.material.resize(s.elements.size());
   if (in.enable_adapt) {
     s.quality.resize(s.elements.size());
+    s.h_adapt.resize(s.nodes.size());
   }
 }
 
