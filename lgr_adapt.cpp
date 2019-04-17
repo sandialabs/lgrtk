@@ -490,17 +490,21 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   for_each(s.nodes, functor);
 }
 
-static LGR_NOINLINE void project(state const& s, adapt_state& a) {
-  auto const old_elements_to_new_elements = a.old_elements_to_new_elements.cbegin();
-  auto const new_elements_to_old_elements = a.new_elements_to_old_elements.begin();
-  auto functor = [=] (element_index const old_element) {
-    element_index first = old_elements_to_new_elements[old_element];
-    element_index const last = old_elements_to_new_elements[old_element + element_index(1)];
+template <class Index>
+static LGR_NOINLINE void project(
+    counting_range<Index> const old_things,
+    device_vector<Index, Index> const& old_things_to_new_things_in,
+    device_vector<Index, Index>& new_things_to_old_things_in) {
+  auto const old_things_to_new_things = old_things_to_new_things_in.cbegin();
+  auto const new_things_to_old_things = new_things_to_old_things_in.begin();
+  auto functor = [=] (Index const old_thing) {
+    Index first = old_things_to_new_things[old_thing];
+    Index const last = old_things_to_new_things[old_thing + Index(1)];
     for (; first < last; ++first) {
-      new_elements_to_old_elements[first] = old_element;
+      new_things_to_old_things[first] = old_thing;
     }
   };
-  for_each(s.elements, functor);
+  for_each(old_things, functor);
 }
 
 static LGR_NOINLINE void transfer_same_element_node(state const& s, adapt_state& a,
@@ -594,7 +598,7 @@ bool adapt(input const& in, state& s) {
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
   a.new_elements_are_same.resize(num_new_elements);
   a.new_nodes_are_same.resize(num_new_nodes);
-  project(s, a);
+  project(s.elements, a.old_elements_to_new_elements, a.new_elements_to_old_elements);
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
