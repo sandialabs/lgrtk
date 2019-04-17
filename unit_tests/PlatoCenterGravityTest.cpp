@@ -438,6 +438,40 @@ public:
 namespace CenterGravityTest
 {
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralMass_operator)
+{
+    // CREATE MESH FOR UNIT TEST
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    // ALLOCATE PLATO CRITERION
+    constexpr Plato::Scalar tDensity = 2.5;
+    Plato::StructuralMass<tSpaceDim> tComputeStructuralMass(tDensity);
+
+    // CREATE CONFIGURATION WORKSET
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    Plato::ScalarArray3DT<Plato::Scalar> tConfigWS("config workset", tNumCells, tNumNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // CREATE CONTROL WORKSET
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("controls", tNumVerts);
+    Plato::fill(0.25, tControl);
+    Plato::ScalarMultiVectorT<Plato::Scalar> tControlWS("control workset", tNumCells, tNumNodesPerCell);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // CALL FUNCTION BEING TESTED
+    Plato::Scalar tStructuralMass = 0;
+    tComputeStructuralMass(tNumCells, tControlWS, tConfigWS, tStructuralMass);
+
+    // TEST OUTPUT
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    TEST_FLOATING_EQUALITY(0.625 /* gold */, tStructuralMass, tTolerance);
+}
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CenterGravity_ComputeInitialStructuralMass)
 {
     // CREATE MESH FOR UNIT TEST
