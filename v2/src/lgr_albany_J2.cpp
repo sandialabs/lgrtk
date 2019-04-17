@@ -18,7 +18,7 @@ OMEGA_H_INLINE void albany_J2_update(
     double& c){
 
   auto const I = Omega_h::identity_matrix<3, 3>();
-  double const sq23 = std::sqrt(2.0 / 3.0);
+  double const sqrt23 = std::sqrt(2.0 / 3.0);
 
   // compute material properties
   auto const mu = E / (2.0 * (1.0 + nu));
@@ -38,7 +38,7 @@ OMEGA_H_INLINE void albany_J2_update(
 
   // check the yield condition
   auto const smag = Omega_h::norm(s);
-  auto const f = smag - sq23 * (Y + K * eqps);
+  auto const f = smag - sqrt23 * (Y + K * eqps);
 
   // plastic increment
   if (f > 1.0e-12) {
@@ -51,13 +51,13 @@ OMEGA_H_INLINE void albany_J2_update(
     double R = f;
     double dRdX = -2.0 * mubar * (1.0 + H / (3.0 * mubar));
 
-    while ((! converged) && (iter < 30)) {
+    while ((converged == false) && (iter < 30)) {
       iter++;
       X = X - R / dRdX;
-      alpha = eqps + sq23 * X;
+      alpha = eqps + sqrt23 * X;
       H = K * alpha;
       dH = K;
-      R = smag - (2.0 * mubar * X + sq23 * (Y + H));
+      R = smag - (2.0 * mubar * X + sqrt23 * (Y + H));
       dRdX = -2.0 * mubar * (1.0 + dH / (3.0 * mubar));
       res = std::abs(R);
       if ((res < 1.0e-11) || (res / Y < 1.0e-11) || (res / f < 1.0e-11)) {
@@ -173,7 +173,7 @@ struct AlbanyJ2 : public Model<Elem> {
       // update the stress, wave speed, and plastic history vars
       albany_J2_update(rho, E, nu, K, Y, F, Fp, eqps, sigma, c);
 
-      // resize Fp to it's small value
+      // resize Fp to its small value
       Tensor<Elem::dim> Fp_new;
       for (int i = 0; i < Elem::dim; ++i)
       for (int j = 0; j < Elem::dim; ++j)

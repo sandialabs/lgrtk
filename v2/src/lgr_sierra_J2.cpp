@@ -5,11 +5,25 @@
 
 namespace lgr {
 
+namespace {
+
+template<typename Tensor, typename Scalar>
+OMEGA_H_INLINE Scalar effective_stress(Tensor const & s, Scalar const & sigy)
+{
+  auto const sb = s / sigy;
+  Scalar const seff = Omega_h::inner_product(sb, sb);
+  return std::sqrt(1.5 * seff) * sigy;
+}
+
+
+} // anonymous namespace
+
 OMEGA_H_INLINE void sierra_J2_update(
     double const rho,
     double const E,
     double const nu,
     double const K,
+    double const beta,
     double const Y,
     Tensor<3> const& F,
     Tensor<3>& Fp,
@@ -17,79 +31,130 @@ OMEGA_H_INLINE void sierra_J2_update(
     Tensor<3>& sigma,
     double& c){
 
+  // line search parameters
+  double const eta_ls  = 0.1;
+  double const beta_ls = 1.e-05;
+
+  int const max_ls_iter  = 16;
+  int const max_rma_iter = 16;
+
   auto const I = Omega_h::identity_matrix<3, 3>();
-  double const sq23 = std::sqrt(2.0 / 3.0);
+  double const sqrt23 = std::sqrt(2.0 / 3.0);
 
   // compute material properties
   auto const mu = E / (2.0 * (1.0 + nu));
+  auto const twomu = 2.0 * mu;
+  auto const threemu = 3.0 * mu;
   auto const kappa = E / (3.0 * (1.0 - 2.0 * nu));
+  auto const lambda = twomu * nu / (1.0 - 2.0 * nu);
 
   // get def grad quantities
   auto const J = determinant(F);
-  auto const Jp13 = std::cbrt(J);
-  auto const Jm23 = 1.0 / Jp13 / Jp13;
   auto const Fpinv = invert(Fp);
+  auto Fe = F * Fpinv;
 
-  // compute the trial state
-  auto const Cpinv = Fpinv * transpose(Fpinv);
-  auto const be = Jm23 * F * Cpinv * transpose(F);
-  auto const mubar = trace(be) * mu / 3.0;
-  auto s = mu * deviator(be);
+  //
+  // Predict stress
+  //
 
-  // check the yield condition
-  auto const smag = Omega_h::norm(s);
-  auto const f = smag - sq23 * (Y + K * eqps);
+  // elastic log strain: 1/2 log(Ce)
+  auto const Ce = transpose(Fe) * Fe;
+  auto const Ee = Omega_h::log_spd(Ce);
 
-  // plastic increment
-  if (f > 1.0e-12) {
+  // M - Mandel stress in intermediate config
+  // s - deviatoric Mandel stress
+  auto const trEe = trace(Ee);
+  auto M = lambda * trEe * I + 2.0 * mu * Ee;
+  auto s = M - trace(M) / 3.0 * I;
+  auto pressure = kappa * trEe;
+  M = pressure * I + s;
 
-    int iter = 0;
-    bool converged = false;
-    double dgam{0.0}, H{0.0}, dH{0.0}, alpha{0.0}, res{0.0};
-
-    double X = 0.;
-    double R = f;
-    double dRdX = -2.0 * mubar * (1.0 + H / (3.0 * mubar));
-
-    while ((! converged) && (iter < 30)) {
-      iter++;
-      X = X - R / dRdX;
-      alpha = eqps + sq23 * X;
-      H = K * alpha;
-      dH = K;
-      R = smag - (2.0 * mubar * X + sq23 * (Y + H));
-      dRdX = -2.0 * mubar * (1.0 + dH / (3.0 * mubar));
-      res = std::abs(R);
-      if ((res < 1.0e-11) || (res / Y < 1.0e-11) || (res / f < 1.0e-11)) {
-        converged = true;
-      }
-    }
-    OMEGA_H_CHECK(converged == true);
-
-    // updates
-    dgam = X;
-    auto const N = (1.0 / smag) * s;
-    auto const fpinc = dgam * N;
-    s -= 2.0 * mubar * fpinc;
-    eqps = alpha;
-    auto const Fpinc = lgr::exp::exp(fpinc);
-    Fp = Fpinc * Fp;
-  }
-
-  // elastic increment all plastic quantities remain the same
-  // update proceeds in the same manner as below
-
-  // compute stress
-  auto const p = 0.5 * kappa * (J - 1.0 / J);
-  sigma = s / J + p * I;
+  // cauchy stress = (1/J)Fe^(-T)*M*Fe^T
+  sigma = transpose(invert(Fe)) * M * transpose(Fe) / J;
 
   // compute wave speed (same as neohookean for now)
-  auto tangent_bulk_modulus = 0.5 * kappa * (J + 1.0 / J);
-  auto plane_wave_modulus = tangent_bulk_modulus + (4.0 / 3.0) * mu;
+  auto const tangent_bulk_modulus = 0.5 * kappa * (J + 1.0 / J);
+  auto const plane_wave_modulus = tangent_bulk_modulus + (4.0 / 3.0) * mu;
   OMEGA_H_CHECK(plane_wave_modulus > 0.0);
   c = std::sqrt(plane_wave_modulus / rho);
   OMEGA_H_CHECK(c > 0.0);
 
+  // Voce hardening
+  auto sbar = Y + K * (1.0 - std::exp(-beta * eqps));
+  auto const seff_pred = effective_stress(s, Y);
+
+  // check for yielding
+  if (seff_pred <=  sbar) return;
+
+  double merit_old = 1.0;
+  double merit_new = 1.0;
+  double dg_tol = 1.0;
+  int iter = 0;
+  double eqps_new = 0.0;
+  const double tolerance = 1.0e-10;
+  double dg = 0.0;
+
+  // begin return mapping algorithm
+  while (dg_tol > tolerance) {
+    ++iter;
+    double dg0 = dg;
+    eqps_new = eqps + dg0;
+    auto const hprime = beta * K * std::exp(-beta * eqps_new);
+    auto const numerator = seff_pred - threemu * dg0 - sbar;
+    auto const denominator = threemu + hprime;
+    auto const ddg = numerator / denominator;
+    double alpha_ls = 1.0;
+    int line_search_iteration = 0;
+
+    // Line search
+    bool line_search = true;
+    while (line_search == true) {
+      ++line_search_iteration;
+      dg = dg0 + alpha_ls * ddg;
+      if (dg < 0.0) dg = 0.0;
+      eqps_new = eqps + dg;
+      sbar = Y + K * (1.0 - std::exp(-beta * eqps_new));
+      auto const residual =  seff_pred - sbar - threemu * dg;
+      merit_new = residual * residual;
+      auto const factor = 1.0 - 2.0 * beta_ls * alpha_ls;
+      if (merit_new <= factor*merit_old) {
+        merit_old = merit_new;
+        line_search = false;
+      } else {
+        auto const alpha_ls_old = alpha_ls;
+        alpha_ls = alpha_ls_old * alpha_ls_old * merit_old /
+            (merit_new - merit_old + 2.0 * alpha_ls_old * merit_old);
+        if (eta_ls * alpha_ls_old > alpha_ls) {
+          alpha_ls = eta_ls * alpha_ls_old;
+        }
+      }
+      if (line_search_iteration > max_ls_iter && line_search == true) {
+        Omega_h_fail("Line search in Sierra J2 model");
+      }
+    } // End line search
+    dg_tol = std::sqrt(0.5 * merit_new / twomu / twomu);
+    if (iter >= max_rma_iter) {
+      Omega_h_fail("Return mapping algorithm in Sierra J2 model");
+    }
+
+  } // End return mapping algorithm
+
+  auto const n = 1.5 * s / seff_pred;
+  auto const A = dg * n;
+  s -= twomu * A;
+
+  eqps = eqps_new;
+  Fp = lgr::exp::exp(A) * Fp;
+  Fe = F * invert(Fp);
+
+  // udpate stress
+  pressure = kappa * trace(Ee);
+  M = s + pressure*I;
+
+  // cauchy stress = (1/J)Fe^(-T)*M*Fe^T
+  sigma = transpose(invert(Fe)) * M * transpose(Fe) / J;
+
+  return;
 }
 
 
@@ -99,6 +164,7 @@ struct SierraJ2 : public Model<Elem> {
   FieldIndex poissons_ratio;
   FieldIndex elastic_modulus;
   FieldIndex hardening_modulus;
+  FieldIndex hardening_exponent;
   FieldIndex yield_strength;
   FieldIndex plastic_def_grad;
   FieldIndex equivalent_plastic_strain;
@@ -111,6 +177,8 @@ struct SierraJ2 : public Model<Elem> {
         "E", "elastic modulus", 1, RemapType::PICK, pl, "");
     this->hardening_modulus = this->point_define(
         "K", "hardening modulus", 1, RemapType::PICK, pl, "");
+    this->hardening_exponent = this->point_define(
+        "beta", "hardening exponent", 1, RemapType::PICK, pl, "");
     this->yield_strength = this->point_define(
         "Y", "yield strength", 1, RemapType::PICK, pl, "");
     this->plastic_def_grad = this->point_define(
@@ -129,6 +197,7 @@ struct SierraJ2 : public Model<Elem> {
     auto points_to_nu = this->points_get(this->poissons_ratio);
     auto points_to_E = this->points_get(this->elastic_modulus);
     auto points_to_K = this->points_get(this->hardening_modulus);
+    auto points_to_beta = this->points_get(this->hardening_exponent);
     auto points_to_Y = this->points_get(this->yield_strength);
     auto points_to_Fp = this->points_getset(this->plastic_def_grad);
     auto points_to_eqps = this->points_getset(this->equivalent_plastic_strain);
@@ -164,6 +233,7 @@ struct SierraJ2 : public Model<Elem> {
       auto E = points_to_E[point];
       auto nu = points_to_nu[point];
       auto K = points_to_K[point];
+      auto beta = points_to_beta[point];
       auto Y = points_to_Y[point];
 
       // values to update
@@ -171,9 +241,9 @@ struct SierraJ2 : public Model<Elem> {
       Tensor<3> sigma;
 
       // update the stress, wave speed, and plastic history vars
-      sierra_J2_update(rho, E, nu, K, Y, F, Fp, eqps, sigma, c);
+      sierra_J2_update(rho, E, nu, K, beta, Y, F, Fp, eqps, sigma, c);
 
-      // resize Fp to it's small value
+      // resize Fp to its small value
       Tensor<Elem::dim> Fp_new;
       for (int i = 0; i < Elem::dim; ++i)
       for (int j = 0; j < Elem::dim; ++j)
