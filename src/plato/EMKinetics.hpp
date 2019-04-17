@@ -9,24 +9,24 @@
   
     given a strain and electric field, compute the stress and electric displacement
 
-    IMPORTANT NOTE:  This model is scaled to make the coupling symmetric and better
-     conditioned.  The second equation is multiplied by -a:
+    IMPORTANT NOTE:  This model is scaled to make the coupling better conditioned. 
+    The second equation is multiplied by a:
 
-     i.e., this:     |  T |   |   C     -e  |  |  S  |
-                     |    | = |             |  |     |
-                     |  D |   |   e      p  |  |  E  |
+     i.e., this:     | T |   |   C     -e  |  |  S  |
+                     |   | = |             |  |     |
+                     | D |   |   e      p  |  |  E  |
               
-     becomes this:   |  T |   |   C   -a*e  |  |  S  |
-                     |    | = |             |  |     |
-                     |-a*D|   | -a*e -a*a*p |  | E/a |
+     becomes this:   | T |   |   C   -a*e  |  |  S  |
+                     |   | = |             |  |     |
+                     |a*D|   |  a*e  a*a*p |  | E/a |
               
-     A typical value for a is 1e9.  So, this model computes (T -a*D) from 
+     A typical value for a is 1e9.  So, this model computes (T  a*D) from 
      (S E/a) which means that electrical quantities in the simulation are scaled:
  
             Electric potential:      phi/a
             Electric field:          E/a
-            Electric displacement:   -D*q
-            Electric charge density: -a*q
+            Electric displacement:   D*q
+            Electric charge density: a*q
 
      and should be 'unscaled' before writing output.  Further, boundary conditions
      must be scaled.
@@ -86,10 +86,10 @@ class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
       for( int iDim=0; iDim<SpaceDim; iDim++){
         edisp(cellOrdinal,iDim) = 0.0;
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          edisp(cellOrdinal,iDim) += (-m_alpha2)*efield(cellOrdinal,jDim)*m_cellPermittivity(iDim, jDim);
+          edisp(cellOrdinal,iDim) += m_alpha2*efield(cellOrdinal,jDim)*m_cellPermittivity(iDim, jDim);
         }
         for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          edisp(cellOrdinal,iDim) += (-m_alpha)*strain(cellOrdinal,jVoigt)*m_cellPiezoelectricCoupling(iDim, jVoigt);
+          edisp(cellOrdinal,iDim) += m_alpha*strain(cellOrdinal,jVoigt)*m_cellPiezoelectricCoupling(iDim, jVoigt);
         }
       }
     }

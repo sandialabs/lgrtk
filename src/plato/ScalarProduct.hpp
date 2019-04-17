@@ -26,14 +26,16 @@ class ScalarProduct
                 Plato::ScalarVectorT<ProductScalarType> scalarProduct,
                 Plato::ScalarMultiVectorT<Tensor1ScalarType> voigtTensor1,
                 Plato::ScalarMultiVectorT<Tensor2ScalarType> voigtTensor2,
-                Plato::ScalarVectorT<VolumeScalarType> cellVolume ) const {
+                Plato::ScalarVectorT<VolumeScalarType> cellVolume,
+                Plato::Scalar scale = 1.0 ) const {
 
       // compute scalar product
       //
+      ProductScalarType inc(0.0);
       for( Plato::OrdinalType iVoigt=0; iVoigt<NumElements; iVoigt++){
-        scalarProduct(cellOrdinal) += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2(cellOrdinal,iVoigt);
+        inc += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2(cellOrdinal,iVoigt);
       }
-      scalarProduct(cellOrdinal) *= cellVolume(cellOrdinal);
+      scalarProduct(cellOrdinal) += scale*inc*cellVolume(cellOrdinal);
     }
 
     template<typename ProductScalarType, 
@@ -44,14 +46,16 @@ class ScalarProduct
                 Plato::ScalarVectorT<ProductScalarType> scalarProduct,
                 Plato::ScalarMultiVectorT<Tensor1ScalarType> voigtTensor1,
                 Omega_h::Vector<NumElements> voigtTensor2,
-                Plato::ScalarVectorT<VolumeScalarType> cellVolume ) const {
+                Plato::ScalarVectorT<VolumeScalarType> cellVolume,
+                Plato::Scalar scale = 1.0 ) const {
 
       // compute scalar product
       //
+      ProductScalarType inc(0.0);
       for( Plato::OrdinalType iVoigt=0; iVoigt<NumElements; iVoigt++){
-        scalarProduct(cellOrdinal) += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2[iVoigt];
+        inc += voigtTensor1(cellOrdinal,iVoigt)*voigtTensor2[iVoigt];
       }
-      scalarProduct(cellOrdinal) *= cellVolume(cellOrdinal);
+      scalarProduct(cellOrdinal) += scale*inc*cellVolume(cellOrdinal);
     }
 };
 

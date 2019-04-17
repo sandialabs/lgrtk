@@ -225,21 +225,11 @@ if (LGR_ENABLE_PLATO)
     PlatoUnitTestMain.cpp
   )
 
-  set(ElectroelasticTests_SOURCES
-    ElectroelasticTests.cpp
-    PlatoTestHelpers.cpp
-    PlatoUnitTestMain.cpp
-  )
-
   set(Derivatives_HEADERS
     PlatoTestHelpers.hpp
   )
 
   set(HeatEquationTests_HEADERS
-    PlatoTestHelpers.hpp
-  )
-
-  set(ElectroelasticTests_HEADERS
     PlatoTestHelpers.hpp
   )
 
@@ -253,10 +243,55 @@ if (LGR_ENABLE_PLATO)
     ${HeatEquationTests_HEADERS}
   )
 
+  set(ElectroelasticTests_SOURCES
+    ElectroelasticTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(ElectroelasticTests_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
   add_executable(ElectroelasticUnitTests
     ${ElectroelasticTests_SOURCES}
     ${ElectroelasticTests_HEADERS}
   )
+
+  target_link_libraries(ElectroelasticUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(ElectroelasticUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ElectroelasticUnitTests)
+  add_test(NAME runElectroelasticUnitTests COMMAND ${ES_MPI_TEST})
+
+  set(ThermoelasticTests_SOURCES
+    ThermoelasticTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(ThermoelasticTests_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(ThermoelasticUnitTests
+    ${ThermoelasticTests_SOURCES}
+    ${ThermoelasticTests_HEADERS}
+  )
+
+  target_link_libraries(ThermoelasticUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(ThermoelasticUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ThermoelasticUnitTests)
+  add_test(NAME runThermoelasticUnitTests COMMAND ${ES_MPI_TEST})
 
   target_link_libraries(DerivativeUnitTests 
     lgrtk
@@ -277,16 +312,6 @@ if (LGR_ENABLE_PLATO)
 
   build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/HeatEquationUnitTests)
   add_test(NAME runHeatEquationUnitTests COMMAND ${ES_MPI_TEST})
-
-  target_link_libraries(ElectroelasticUnitTests 
-    lgrtk
-    ${Trilinos_LIBRARIES} 
-    ${Trilinos_TPL_LIBRARIES} 
-    )
-  target_include_directories(ElectroelasticUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ElectroelasticUnitTests)
-  add_test(NAME runElectroelasticUnitTests COMMAND ${ES_MPI_TEST})
 
   if(LGR_ENABLE_AD_TEST AND NOT AMGX_FOUND)
     set(AD_Tests_SOURCES

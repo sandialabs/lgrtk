@@ -129,7 +129,7 @@ class InternalElectroelasticEnergy :
         // compute element internal energy (inner product of strain and weighted stress)
         //
         mechanicalScalarProduct(aCellOrdinal, aResult, stress, strain, cellVolume);
-        electricalScalarProduct(aCellOrdinal, aResult, edisp,  efield, cellVolume);
+        electricalScalarProduct(aCellOrdinal, aResult, edisp,  efield, cellVolume, -1.0);
 
       },"energy gradient");
 
