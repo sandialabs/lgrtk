@@ -608,6 +608,7 @@ bool adapt(input const& in, state& s) {
   if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   s.elements = a.new_elements;
+  s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   invert_connectivity(s);
   return true;
