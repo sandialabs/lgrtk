@@ -129,16 +129,7 @@ public:
   }
   void assign_sizes(vector<int, typename Allocator::template rebind<int>::other, SourceIndex> const& sizes) {
     assert(m_vector.size() == sizes.size() + SourceIndex(1));
-    auto offsets_iterator = m_vector.begin();
-    auto const first = offsets_iterator;
-    ++offsets_iterator;
-    auto const second = offsets_iterator;
-    auto first_range = iterator_range<decltype(offsets_iterator)>(first, second);
-    fill(first_range, TargetIndex(0));
-    auto const output = iterator_range<decltype(offsets_iterator)>(second, m_vector.end());
-    lgr::plus<TargetIndex> const binop;
-    auto const unop = [] (int const i) -> TargetIndex { return TargetIndex(i); };
-    lgr::transform_inclusive_scan(sizes, output, binop, unop);
+    offset_scan(sizes, m_vector);
   }
   void resize(size_type count) {
     m_vector.resize(count + size_type(1));
