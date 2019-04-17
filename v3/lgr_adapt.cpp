@@ -570,8 +570,7 @@ bool adapt(input const& in, state& s) {
   int const num_chosen = transform_reduce(a.chosen, int(0), plus<int>(), bool_to_int);
   if (num_chosen == 0) return false;
   std::cout << "adapting " << num_chosen << " cavities\n";
-  element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
-      plus<element_index>(), identity<element_index>());
+  auto const num_new_elements = reduce(a.element_counts, element_index(0));
   a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
   a.new_elements.resize(num_new_elements);
