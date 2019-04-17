@@ -168,7 +168,9 @@ struct adapt_state {
   device_vector<node_index, node_index> other_node;
   device_vector<bool, node_index> chosen;
   device_vector<element_index, element_index> element_counts;
+  device_vector<node_index, node_index> node_counts;
   device_vector<element_index, element_index> old_elements_to_new_elements;
+  device_vector<node_index, node_index> old_nodes_to_new_nodes;
   device_vector<element_index, element_index> new_elements_to_old_elements;
   device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
   device_vector<int, element_index> new_elements_are_same;
@@ -181,7 +183,9 @@ adapt_state::adapt_state(state const& s)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
+  ,node_counts(s.nodes.size(), s.devpool)
   ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
+  ,old_nodes_to_new_nodes(s.nodes.size() + node_index(1), s.devpool)
   ,new_elements_to_old_elements(s.devpool)
   ,new_element_nodes_to_nodes(s.devpool)
   ,new_elements_are_same(s.devpool)
@@ -386,6 +390,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   fill(a.chosen, false);
   auto const nodes_are_chosen = a.chosen.begin();
   fill(a.element_counts, element_index(1));
+  fill(a.node_counts, node_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
   auto functor = [=] (node_index const node) {
     node_index const target_node = nodes_to_other_nodes[node];
@@ -572,8 +577,9 @@ bool adapt(input const& in, state& s) {
     std::cout << "adapting " << num_chosen << " cavities\n";
   }
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
-  a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
+//auto const num_new_nodes = reduce(a.node_counts, node_index(0));
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
+  offset_scan(a.node_counts, a.old_nodes_to_new_nodes);
   a.new_elements.resize(num_new_elements);
   a.new_elements_to_old_elements.resize(num_new_elements);
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
