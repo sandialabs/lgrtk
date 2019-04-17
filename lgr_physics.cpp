@@ -5,7 +5,6 @@
 #include <lgr_state.hpp>
 #include <lgr_physics.hpp>
 #include <lgr_counting_range.hpp>
-#include <lgr_physics_types.hpp>
 #include <lgr_vector3.hpp>
 #include <lgr_matrix3x3.hpp>
 #include <lgr_symmetric3x3.hpp>

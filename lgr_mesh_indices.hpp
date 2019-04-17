@@ -1,11 +1,6 @@
 #pragma once
 
-#include <lgr_struct_vector.hpp>
-#include <lgr_symmetric3x3.hpp>
-#include <lgr_allocator.hpp>
 #include <lgr_index.hpp>
-#include <lgr_pinned_vector.hpp>
-#include <lgr_device_vector.hpp>
 
 namespace lgr {
 

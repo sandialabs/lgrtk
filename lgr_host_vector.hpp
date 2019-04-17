@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lgr_vector.hpp>
+#include <lgr_allocator.hpp>
 
 namespace lgr {
 

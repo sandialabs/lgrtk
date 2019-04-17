@@ -5,9 +5,10 @@
 
 #include <lgr_macros.hpp>
 #include <lgr_vector3.hpp>
-#include <lgr_physics_types.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_counting_range.hpp>
+#include <lgr_device_vector.hpp>
+#include <lgr_mesh_indices.hpp>
 
 namespace lgr {
 
