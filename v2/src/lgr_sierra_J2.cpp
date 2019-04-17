@@ -83,7 +83,7 @@ OMEGA_H_INLINE void sierra_J2_update(
   auto const seff_pred = effective_stress(s, Y);
 
   // check for yielding
-  if (seff_pred <=  sbar) return;
+  if (seff_pred <= sbar) return;
 
   double merit_old = 1.0;
   double merit_new = 1.0;
