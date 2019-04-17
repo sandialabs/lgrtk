@@ -599,6 +599,7 @@ bool adapt(input const& in, state& s) {
   a.new_elements_are_same.resize(num_new_elements);
   a.new_nodes_are_same.resize(num_new_nodes);
   project(s.elements, a.old_elements_to_new_elements, a.new_elements_to_old_elements);
+  project(s.nodes, a.old_nodes_to_new_nodes, a.new_nodes_to_old_nodes);
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
