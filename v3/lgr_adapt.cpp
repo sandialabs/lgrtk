@@ -573,8 +573,12 @@ bool adapt(input const& in, state& s) {
   element_index const num_new_elements = transform_reduce(a.element_counts, element_index(0),
       plus<element_index>(), identity<element_index>());
   a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
-  transform_exclusive_scan(a.element_counts, a.old_elements_to_new_elements,
-      element_index(0), plus<element_index>(), identity<element_index>());
+  auto tmp_it = a.old_elements_to_new_elements.begin();
+  *tmp_it = element_index(0);
+  ++tmp_it;
+  auto tmp_rest = iterator_range<decltype(tmp_it)>(tmp_it, a.old_elements_to_new_elements.end());
+  transform_inclusive_scan(a.element_counts, tmp_rest,
+      plus<element_index>(), identity<element_index>());
   a.new_elements.resize(num_new_elements);
   a.new_elements_to_old_elements.resize(num_new_elements);
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
