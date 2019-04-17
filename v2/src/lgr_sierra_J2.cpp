@@ -90,6 +90,7 @@ OMEGA_H_INLINE void sierra_J2_update(double const rho, double const E,
     auto const hprime = beta * K * std::exp(-beta * eqps_new);
     auto const numerator = seff_pred - threemu * dg0 - sbar;
     auto const denominator = threemu + hprime;
+    merit_old = numerator * numerator;
     auto const ddg = numerator / denominator;
     double alpha_ls = 1.0;
     int line_search_iteration = 0;
@@ -117,12 +118,12 @@ OMEGA_H_INLINE void sierra_J2_update(double const rho, double const E,
         }
       }
       if (line_search_iteration > max_ls_iter && line_search == true) {
-        Omega_h_fail("Line search in Sierra J2 model");
+        Omega_h_fail("Line search failing in Sierra J2 model.\n");
       }
     }  // end line search
     dg_tol = std::sqrt(0.5 * merit_new / twomu / twomu);
     if (iter >= max_rma_iter) {
-      Omega_h_fail("Return mapping algorithm in Sierra J2 model");
+      Omega_h_fail("Return mapping not converging in Sierra J2 model.\n");
     }
 
   }  // end return mapping algorithm
