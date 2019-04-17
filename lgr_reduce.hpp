@@ -14,4 +14,9 @@ T transform_reduce(Range&& range, T init, BinaryOp binary_op, UnaryOp unary_op) 
   return init;
 }
 
+template <class Range, class T>
+T reduce(Range&& range, T init) {
+  return transform_reduce(range, init, plus<T>(), identity<T>());
+}
+
 }
