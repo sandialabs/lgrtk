@@ -25,4 +25,9 @@ struct identity {
   }
 };
 
+struct logical_or
+{
+  inline constexpr bool operator()(bool const a, bool const b) const {return a || b;}
+};
+
 }

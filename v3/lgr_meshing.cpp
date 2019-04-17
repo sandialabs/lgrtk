@@ -8,7 +8,7 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE invert_connectivity(state& s) {
+void invert_connectivity(state& s) {
   vector<int, device_allocator<int>, node_index> counts_vector(
       s.nodes.size(), device_allocator<int>(s.devpool));
   lgr::fill(counts_vector, int(0));

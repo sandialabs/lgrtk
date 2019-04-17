@@ -41,6 +41,7 @@ SET(LGRV1_SOURCES
 )
 
 SET(PLATO_SOURCES
+  plato/Plato_AugLagStressCriterionGeneral.cpp
   plato/Plato_AugLagStressCriterion.cpp
   plato/LinearElasticMaterial.cpp
   plato/LinearElectroelasticMaterial.cpp

@@ -1,6 +1,6 @@
 #include <memory>
 
-#include <lgr_run.hpp>
+#include <lgr_physics.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_fill.hpp>
 #include <lgr_domain.hpp>
@@ -846,19 +846,19 @@ static void LGR_NOINLINE triple_point() {
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 56;
+  in.elements_along_x = 14;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 24;
+  in.elements_along_y = 6;
   in.y_domain_size = 3.0;
-  in.rho0[right_bottom] = 0.1;
-  in.rho0[right_top] = 1.0;
+  in.rho0[right_top] = 0.1;
+  in.rho0[right_bottom] = 1.0;
   in.rho0[left] = 1.0;
   in.enable_ideal_gas = true;
-  in.gamma[right_bottom] = 1.5;
+  in.gamma[right_top] = 1.5;
   in.gamma[left] = 1.5;
-  in.gamma[right_top] = 1.4;
-  in.e0[right_bottom] = 2.5;
-  in.e0[right_top] = 0.3125;
+  in.gamma[right_bottom] = 1.4;
+  in.e0[right_top] = 2.5;
+  in.e0[right_bottom] = 0.3125;
   in.e0[left] = 2.0;
   in.initial_v = zero_v;
   constexpr auto x_axis = vector3<double>::x_axis();
@@ -880,6 +880,7 @@ static void LGR_NOINLINE triple_point() {
   in.material_domains.emplace_back(right_top, std::move(right_top_domain));
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
+  in.enable_adapt = true;
   run(in);
 }
 

@@ -3,7 +3,7 @@
 #include <iomanip>
 
 #include <lgr_state.hpp>
-#include <lgr_run.hpp>
+#include <lgr_physics.hpp>
 #include <lgr_counting_range.hpp>
 #include <lgr_physics_types.hpp>
 #include <lgr_vector3.hpp>
@@ -581,7 +581,6 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
       update_e_h(s, half_dt);
-    //interpolate_e(s);
     } else {
       update_e(s, half_dt);
     }
@@ -596,7 +595,10 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_nodal_density(s);
       interpolate_rho(s);
     }
-    update_Q(in, s);
+    if (in.enable_adapt) {
+      update_quality(in, s);
+      update_min_quality(s);
+    }
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
@@ -671,6 +673,30 @@ static void LGR_NOINLINE initialize_e(input const& in, state& s) {
   initialize_material_scalar(in.e0, s, s.e);
 }
 
+static void LGR_NOINLINE common_initialization(input const& in, state& s) {
+  initialize_V(in, s);
+  if (in.enable_viscosity) update_h_art(in, s);
+  update_nodal_mass(in, s);
+  if (in.enable_nodal_energy) update_nodal_density(s);
+  initialize_grad_N(in, s);
+  if (in.enable_adapt) {
+    update_quality(in, s);
+    update_min_quality(s);
+  }
+  update_symm_grad_v(s);
+  update_h_min(in, s);
+  update_material_state(in, s);
+  if (in.enable_nodal_energy) interpolate_K(s);
+  update_c(s);
+  if (in.enable_viscosity) apply_viscosity(in, s);
+  else lgr::fill(s.nu_art, double(0.0));
+  update_element_dt(s);
+  find_max_stable_dt(s);
+  update_a_from_material_state(in, s);
+  update_p_h_dot_from_a(in, s);
+  if (!in.enable_nodal_energy) update_p(s);
+}
+
 void run(input const& in) {
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
@@ -693,25 +719,9 @@ void run(input const& in) {
   lgr::fill(s.e_h, in.e0[material_index(0)]);
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
-  initialize_V(in, s);
-  if (in.enable_viscosity) update_h_art(in, s);
-  update_nodal_mass(in, s);
-  if (in.enable_nodal_energy) update_nodal_density(s);
-  initialize_grad_N(in, s);
-  update_Q(in, s);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
-  update_symm_grad_v(s);
-  update_h_min(in, s);
-  update_material_state(in, s);
-  if (in.enable_nodal_energy) interpolate_K(s);
-  update_c(s);
-  if (in.enable_viscosity) apply_viscosity(in, s);
-  else lgr::fill(s.nu_art, double(0.0));
-  update_element_dt(s);
-  find_max_stable_dt(s);
-  update_a_from_material_state(in, s);
-  update_p_h_dot_from_a(in, s);
-  if (!in.enable_nodal_energy) update_p(s);
+  common_initialization(in, s);
+  if (in.enable_adapt) initialize_h_adapt(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
@@ -730,6 +740,10 @@ void run(input const& in) {
         std::cout << "step " << s.n << " time " << s.time << " dt " << s.max_stable_dt << "\n";
       }
       time_integrator_step(in, s);
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+        adapt(in, s);
+        common_initialization(in, s);
+      }
       ++s.n;
     }
   }

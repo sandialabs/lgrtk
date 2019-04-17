@@ -21,7 +21,7 @@ class state {
   counting_range<node_index> nodes{node_index(0)};
   counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   counting_range<point_index> points{point_index(0)};
-  device_memory_pool devpool;
+  mutable device_memory_pool devpool;
   device_vector<node_index, element_node_index> elements_to_nodes{devpool};
   range_sum<node_element_index, device_allocator<node_element_index>, node_index> nodes_to_node_elements{device_allocator<node_element_index>{devpool}};
   device_vector<element_index, node_element_index> node_elements_to_elements{devpool};
@@ -63,12 +63,14 @@ class state {
   device_vector<double, node_index> e_h_dot{devpool}; // time derivative of nodal specific internal energy
   device_vector<double, node_index> rho_h{devpool}; // nodal density
   device_vector<material_index, element_index> material{devpool}; // element material
-  device_vector<double, element_index> Q{devpool}; // element quality
+  device_vector<double, element_index> quality{devpool}; // inverse element quality
+  device_vector<double, node_index> h_adapt{devpool}; // desired edge length
   std::map<std::string, device_vector<node_index, int>> node_sets;
   host_vector<device_vector<element_index, int>, material_index> element_sets;
   double next_file_output_time;
   double dt = 0.0;
   double max_stable_dt;
+  double min_quality;
 };
 
 class input;

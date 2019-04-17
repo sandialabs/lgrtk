@@ -42,7 +42,7 @@ public:
   array_vector(array_vector&&) noexcept = default;
   array_vector(array_vector const&) = delete;
   array_vector& operator=(array_vector const&) = delete;
-  array_vector& operator=(array_vector&&) = delete;
+  array_vector& operator=(array_vector&&) noexcept = default;
   ~array_vector() = default;
   iterator begin() noexcept {
     return array_range().begin();

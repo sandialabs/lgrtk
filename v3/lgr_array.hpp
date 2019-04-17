@@ -19,21 +19,24 @@ class array {
   private:
     T m_impl[N];
   public:
-    reference operator[](Index const i) noexcept {
+    inline reference operator[](Index const i) noexcept {
       return m_impl[int(i)];
     }
-    const_reference operator[](Index const i) const noexcept {
+    inline const_reference operator[](Index const i) const noexcept {
       return m_impl[int(i)];
     }
-    pointer data() noexcept { return m_impl; }
-    const_pointer data() const noexcept { return m_impl; }
-    iterator begin() noexcept { return iterator(m_impl); } 
-    const_iterator begin() const noexcept { return const_iterator(m_impl); } 
-    const_iterator cbegin() const noexcept { return const_iterator(m_impl); } 
-    iterator end() noexcept { return iterator(m_impl + N); } 
-    const_iterator end() const noexcept { return const_iterator(m_impl + N); } 
-    const_iterator cend() const noexcept { return const_iterator(m_impl + N); } 
+    inline pointer data() noexcept { return m_impl; }
+    inline const_pointer data() const noexcept { return m_impl; }
+    inline iterator begin() noexcept { return iterator(m_impl); } 
+    inline const_iterator begin() const noexcept { return const_iterator(m_impl); } 
+    inline const_iterator cbegin() const noexcept { return const_iterator(m_impl); } 
+    inline iterator end() noexcept { return iterator(m_impl + N); } 
+    inline const_iterator end() const noexcept { return const_iterator(m_impl + N); } 
+    inline const_iterator cend() const noexcept { return const_iterator(m_impl + N); } 
     constexpr size_type size() const noexcept { return size_type(N); }
+    inline array& operator=(array const&) noexcept = default;
+    inline array(array const&) noexcept = default;
+    inline array() noexcept = default;
 };
 
 }

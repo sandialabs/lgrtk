@@ -111,7 +111,7 @@ public:
   struct_vector(struct_vector&&) noexcept = default;
   struct_vector(struct_vector const&) = delete;
   struct_vector& operator=(struct_vector const&) = delete;
-  struct_vector& operator=(struct_vector&&) = delete;
+  struct_vector& operator=(struct_vector&&) noexcept = default;
   ~struct_vector() = default;
   iterator begin() noexcept {
     return iterator(m_array_vector.begin());
