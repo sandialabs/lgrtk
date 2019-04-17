@@ -421,7 +421,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
       }
     }
     for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element]; 
+      element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
@@ -447,6 +447,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
   auto const old_elements_to_new_elements = a.old_elements_to_new_elements.cbegin();
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
+  auto const old_nodes_to_new_nodes = a.old_nodes_to_new_nodes.cbegin();
   auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
   fill(a.new_elements_are_same, 1);
   fill(a.new_nodes_are_same, 1);
@@ -457,7 +458,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     array<element_index, 2> loop_elements;
     array<node_index, 2> loop_nodes;
     for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element]; 
+      element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
       node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
@@ -477,13 +478,13 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     element_index const new_element2 = old_elements_to_new_elements[loop_elements[1]];
     using l_t = node_in_element_index;
     auto new_element_nodes = new_elements_to_element_nodes[new_element1];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = node;
-    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[0];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[1];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = old_nodes_to_new_nodes[node];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = old_nodes_to_new_nodes[loop_nodes[0]];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = old_nodes_to_new_nodes[loop_nodes[1]];
     new_element_nodes = new_elements_to_element_nodes[new_element2];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = target_node;
-    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = loop_nodes[1];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = loop_nodes[0];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = old_nodes_to_new_nodes[target_node];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = old_nodes_to_new_nodes[loop_nodes[1]];
+    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = old_nodes_to_new_nodes[loop_nodes[0]];
     new_elements_are_same[new_element1] = 0;
     new_elements_are_same[new_element2] = 0;
   };
