@@ -45,12 +45,14 @@ void offset_scan(InputRange const& input, OutputRange& output) {
   ++it;
   auto const second = it;
   auto first_range = iterator_range<decltype(it)>(first, second);
-  using value_type = typename OutputRange::value_type;
-  fill(first_range, value_type(0));
+  using input_value_type = typename InputRange::value_type;
+  using output_value_type = typename OutputRange::value_type;
+  fill(first_range, output_value_type(0));
   auto const end = output.end();
   auto rest = iterator_range<decltype(it)>(second, end);
+  auto const unop = [] (input_value_type const i) { return output_value_type(i); };
   transform_inclusive_scan(input, rest,
-      plus<value_type>(), identity<value_type>());
+      plus<output_value_type>(), unop);
 }
 
 }
