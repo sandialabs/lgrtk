@@ -568,7 +568,9 @@ bool adapt(input const& in, state& s) {
   choose_triangle_adapt(s, a);
   auto const num_chosen = reduce(a.chosen, int(0));
   if (num_chosen == 0) return false;
-  std::cout << "adapting " << num_chosen << " cavities\n";
+  if (in.output_to_command_line) {
+    std::cout << "adapting " << num_chosen << " cavities\n";
+  }
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
   a.old_elements_to_new_elements.resize(s.elements.size() + element_index(1));
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
