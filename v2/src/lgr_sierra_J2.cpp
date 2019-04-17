@@ -39,7 +39,6 @@ OMEGA_H_INLINE void sierra_J2_update(
   int const max_rma_iter = 16;
 
   auto const I = Omega_h::identity_matrix<3, 3>();
-  double const sqrt23 = std::sqrt(2.0 / 3.0);
 
   // compute material properties
   auto const mu = E / (2.0 * (1.0 + nu));
