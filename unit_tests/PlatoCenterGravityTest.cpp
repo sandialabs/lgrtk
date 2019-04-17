@@ -13,6 +13,7 @@
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/PlatoMathHelpers.hpp"
+#include "plato/Plato_StructuralMass.hpp"
 #include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
@@ -20,70 +21,6 @@
 
 namespace Plato
 {
-
-/******************************************************************************//**
- * @brief Interface to compute the structural mass
-**********************************************************************************/
-template<Plato::OrdinalType SpaceDim>
-class StructuralMass : public Simplex<SpaceDim>
-{
-private:
-    static constexpr Plato::OrdinalType mSpaceDim = Simplex<SpaceDim>::m_numSpatialDims; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Simplex<SpaceDim>::m_numNodesPerCell; /*!< number of nodes per element/cell */
-
-    Plato::Scalar mMaterialDensity; /*!< material density (note: constant for all elements/cells) */
-
-public:
-    /******************************************************************************//**
-     * @brief Constructor
-     * @param [in] aMaterialDensity material density (note: constant for all elements/cells)
-    **********************************************************************************/
-    explicit StructuralMass(const Plato::Scalar & aMaterialDensity) :
-            mMaterialDensity(aMaterialDensity)
-    {
-    }
-
-    /******************************************************************************//**
-     * @brief Destructor
-    **********************************************************************************/
-    ~StructuralMass()
-    {
-    }
-
-    /******************************************************************************//**
-     * @brief Compute the total structural mass
-     * @param [in] aNumCells number of elements/cells
-     * @param [in] aControl design variables used to denote material or void
-     * @param [in] aConfig coordinates
-     * @param [out] aOutput total structural mass
-    **********************************************************************************/
-    template<typename OutputType, typename ControlType, typename ConfigType>
-    inline void operator()(const Plato::OrdinalType aNumCells,
-                                 const Plato::ScalarMultiVectorT<ControlType> aControl,
-                                 const Plato::ScalarArray3DT<ConfigType> aConfig,
-                                 OutputType & aOutput) const
-    {
-        Plato::ComputeCellVolume<SpaceDim> tComputeCellVolume;
-        Plato::LinearTetCubRuleDegreeOne<SpaceDim> tCubatureRule;
-
-        auto tMaterialDensity = mMaterialDensity;
-        Plato::ScalarVectorT<OutputType> tTotalMass("total mass", aNumCells);
-
-        auto tCubWeight = tCubatureRule.getCubWeight();
-        auto tBasisFunc = tCubatureRule.getBasisFunctions();
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
-        {
-            ConfigType tCellVolume = 0;
-            tComputeCellVolume(aCellOrdinal, aConfig, tCellVolume);
-            ControlType tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControl);
-            tTotalMass(aCellOrdinal) = tCellMass * tMaterialDensity * tCellVolume * tCubWeight;
-        },"Compute Structural Mass");
-
-        aOutput = 0;
-        Plato::local_sum(tTotalMass, aOutput);
-    }
-};
-// class StructuralMass
 
 /******************************************************************************//**
  * @brief Augmented Lagrangian center of gravity constraint criterion with mass objective
