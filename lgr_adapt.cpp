@@ -566,8 +566,7 @@ bool adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
-  auto bool_to_int = [](bool const b) -> int { return int(b); };
-  int const num_chosen = transform_reduce(a.chosen, int(0), plus<int>(), bool_to_int);
+  auto const num_chosen = reduce(a.chosen, int(0));
   if (num_chosen == 0) return false;
   std::cout << "adapting " << num_chosen << " cavities\n";
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
