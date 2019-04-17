@@ -155,6 +155,7 @@ public:
 #endif
 
         mResidual = mEqualityConstraint.value(tStatesSubView, aControl);
+
         return mStates;
     }
 

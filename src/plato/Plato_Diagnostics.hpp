@@ -20,9 +20,13 @@ namespace Plato
  * @brief Test partial derivative with respect to the control variables
  * @param [in] aMesh mesh database
  * @param [in] aCriterion scalar function (i.e. scalar criterion) interface
+ * @param [in] aSuperscriptLowerBound lower bound on the superscript used to compute the step (e.g. \f$10^{lb}/$f
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
-inline void test_partial_control(Omega_h::Mesh & aMesh, AbstractScalarFunction<EvaluationType> & aCriterion)
+inline void test_partial_control(Omega_h::Mesh & aMesh,
+                                 AbstractScalarFunction<EvaluationType> & aCriterion,
+                                 Plato::OrdinalType aSuperscriptLowerBound = 1,
+                                 Plato::OrdinalType aSuperscriptUpperBound = 10)
 {
     using StateT = typename EvaluationType::StateScalarType;
     using ConfigT = typename EvaluationType::ConfigScalarType;
@@ -77,10 +81,8 @@ inline void test_partial_control(Omega_h::Mesh & aMesh, AbstractScalarFunction<E
     std::cout << std::right << std::setw(18) << "\nStep Size" << std::setw(20) << "Grad'*Step" << std::setw(18) << "FD Approx"
                << std::setw(20) << "abs(Error)" << "\n";
 
-    constexpr Plato::OrdinalType tSuperscriptLowerBound = 1;
-    constexpr Plato::OrdinalType tSuperscriptUpperBound = 10;
     Plato::ScalarVector tTrialControl("trial control", tNumVerts);
-    for(Plato::OrdinalType tIndex = tSuperscriptLowerBound; tIndex <= tSuperscriptUpperBound; tIndex++)
+    for(Plato::OrdinalType tIndex = aSuperscriptLowerBound; tIndex <= aSuperscriptUpperBound; tIndex++)
     {
         Plato::Scalar tEpsilon = tEpsilon = static_cast<Plato::Scalar>(1) /
                 std::pow(static_cast<Plato::Scalar>(10), tIndex);
