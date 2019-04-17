@@ -24,8 +24,8 @@ OMEGA_H_INLINE void sierra_J2_update(double const rho, double const E,
   double const eta_ls = 0.1;
   double const beta_ls = 1.e-05;
 
-  int const max_ls_iter = 16;
-  int const max_rma_iter = 16;
+  int const max_ls_iter = 128;
+  int const max_rma_iter = 128;
 
   auto const I = Omega_h::identity_matrix<3, 3>();
 
