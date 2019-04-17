@@ -175,6 +175,7 @@ struct adapt_state {
   device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
   device_vector<int, element_index> new_elements_are_same;
   counting_range<element_index> new_elements;
+  counting_range<node_index> new_nodes;
   adapt_state(state const&);
 };
 
@@ -190,6 +191,7 @@ adapt_state::adapt_state(state const& s)
   ,new_element_nodes_to_nodes(s.devpool)
   ,new_elements_are_same(s.devpool)
   ,new_elements(element_index(0))
+  ,new_nodes(node_index(0))
 {}
 
 template <int Capacity, class Index>
@@ -577,10 +579,11 @@ bool adapt(input const& in, state& s) {
     std::cout << "adapting " << num_chosen << " cavities\n";
   }
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
-//auto const num_new_nodes = reduce(a.node_counts, node_index(0));
+  auto const num_new_nodes = reduce(a.node_counts, node_index(0));
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
   offset_scan(a.node_counts, a.old_nodes_to_new_nodes);
   a.new_elements.resize(num_new_elements);
+  a.new_nodes.resize(num_new_nodes);
   a.new_elements_to_old_elements.resize(num_new_elements);
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
   a.new_elements_are_same.resize(num_new_elements);
