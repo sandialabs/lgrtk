@@ -172,8 +172,10 @@ struct adapt_state {
   device_vector<element_index, element_index> old_elements_to_new_elements;
   device_vector<node_index, node_index> old_nodes_to_new_nodes;
   device_vector<element_index, element_index> new_elements_to_old_elements;
+  device_vector<node_index, node_index> new_nodes_to_old_nodes;
   device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
   device_vector<int, element_index> new_elements_are_same;
+  device_vector<int, node_index> new_nodes_are_same;
   counting_range<element_index> new_elements;
   counting_range<node_index> new_nodes;
   adapt_state(state const&);
@@ -188,8 +190,10 @@ adapt_state::adapt_state(state const& s)
   ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
   ,old_nodes_to_new_nodes(s.nodes.size() + node_index(1), s.devpool)
   ,new_elements_to_old_elements(s.devpool)
+  ,new_nodes_to_old_nodes(s.devpool)
   ,new_element_nodes_to_nodes(s.devpool)
   ,new_elements_are_same(s.devpool)
+  ,new_nodes_are_same(s.devpool)
   ,new_elements(element_index(0))
   ,new_nodes(node_index(0))
 {}
@@ -445,6 +449,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
   fill(a.new_elements_are_same, 1);
+  fill(a.new_nodes_are_same, 1);
   auto const new_elements_are_same = a.new_elements_are_same.begin();
   auto functor = [=] (node_index const node) {
     if (!nodes_are_chosen[node]) return;
@@ -585,8 +590,10 @@ bool adapt(input const& in, state& s) {
   a.new_elements.resize(num_new_elements);
   a.new_nodes.resize(num_new_nodes);
   a.new_elements_to_old_elements.resize(num_new_elements);
+  a.new_nodes_to_old_nodes.resize(num_new_nodes);
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
   a.new_elements_are_same.resize(num_new_elements);
+  a.new_nodes_are_same.resize(num_new_nodes);
   project(s, a);
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
