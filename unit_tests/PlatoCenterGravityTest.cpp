@@ -21,6 +21,9 @@
 namespace Plato
 {
 
+/******************************************************************************//**
+ * @brief Interface to compute the structural mass
+**********************************************************************************/
 template<Plato::OrdinalType SpaceDim>
 class StructuralMass : public Simplex<SpaceDim>
 {
@@ -31,15 +34,29 @@ private:
     Plato::Scalar mMaterialDensity; /*!< material density (note: constant for all elements/cells) */
 
 public:
+    /******************************************************************************//**
+     * @brief Constructor
+     * @param [in] aMaterialDensity material density (note: constant for all elements/cells)
+    **********************************************************************************/
     explicit StructuralMass(const Plato::Scalar & aMaterialDensity) :
             mMaterialDensity(aMaterialDensity)
     {
     }
 
+    /******************************************************************************//**
+     * @brief Destructor
+    **********************************************************************************/
     ~StructuralMass()
     {
     }
 
+    /******************************************************************************//**
+     * @brief Compute the total structural mass
+     * @param [in] aNumCells number of elements/cells
+     * @param [in] aControl design variables used to denote material or void
+     * @param [in] aConfig coordinates
+     * @param [out] aOutput total structural mass
+    **********************************************************************************/
     template<typename OutputType, typename ControlType, typename ConfigType>
     inline void operator()(const Plato::OrdinalType aNumCells,
                                  const Plato::ScalarMultiVectorT<ControlType> aControl,
@@ -66,6 +83,7 @@ public:
         Plato::local_sum(tTotalMass, aOutput);
     }
 };
+// class StructuralMass
 
 /******************************************************************************//**
  * @brief Augmented Lagrangian center of gravity constraint criterion with mass objective
