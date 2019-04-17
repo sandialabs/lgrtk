@@ -2,6 +2,9 @@
 
 #include <iterator>
 
+#include <lgr_functional.hpp>
+#include <lgr_fill.hpp>
+
 namespace lgr {
 
 template<class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
@@ -33,6 +36,21 @@ auto transform_exclusive_scan(InputRange&& input, OutputRange&& output, T init, 
     ++first;
   }
   return ++d_first;
+}
+
+template <class InputRange, class OutputRange>
+void offset_scan(InputRange const& input, OutputRange& output) {
+  auto it = output.begin();
+  auto const first = it;
+  ++it;
+  auto const second = it;
+  auto first_range = iterator_range<decltype(it)>(first, second);
+  using value_type = typename OutputRange::value_type;
+  fill(first_range, value_type(0));
+  auto const end = output.end();
+  auto rest = iterator_range<decltype(it)>(second, end);
+  transform_inclusive_scan(input, rest,
+      plus<value_type>(), identity<value_type>());
 }
 
 }
