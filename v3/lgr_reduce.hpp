@@ -5,7 +5,7 @@
 namespace lgr {
 
 template <class Range, class T, class BinaryOp, class UnaryOp>
-T transform_reduce(Range&& range, T init, BinaryOp binary_op, UnaryOp unary_op) {
+T transform_reduce(Range const& range, T init, BinaryOp binary_op, UnaryOp unary_op) {
   auto first = range.begin();
   auto const last = range.end();
   for (; first != last; ++first) {
@@ -15,8 +15,10 @@ T transform_reduce(Range&& range, T init, BinaryOp binary_op, UnaryOp unary_op) 
 }
 
 template <class Range, class T>
-T reduce(Range&& range, T init) {
-  return transform_reduce(range, init, plus<T>(), identity<T>());
+T reduce(Range const& range, T init) {
+  using input_value_type = typename Range::value_type;
+  auto const unop = [] (input_value_type const i) { return T(i); };
+  return transform_reduce(range, init, plus<T>(), unop);
 }
 
 }
