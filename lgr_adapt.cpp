@@ -174,8 +174,8 @@ struct adapt_state {
   device_vector<element_index, element_index> new_elements_to_old_elements;
   device_vector<node_index, node_index> new_nodes_to_old_nodes;
   device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
-  device_vector<int, element_index> new_elements_are_same;
-  device_vector<int, node_index> new_nodes_are_same;
+  device_vector<bool, element_index> new_elements_are_same;
+  device_vector<bool, node_index> new_nodes_are_same;
   counting_range<element_index> new_elements;
   counting_range<node_index> new_nodes;
   adapt_state(state const&);
@@ -345,7 +345,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     c.num_shell_elements = 0;
     int center_node = -1;
     for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element]; 
+      element_index const element = node_elements_to_elements[node_element];
       int const shell_element = c.num_shell_elements++;
       c.shell_elements[shell_element] = element;
       auto const element_nodes = elements_to_element_nodes[element];
@@ -449,8 +449,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_nodes_to_new_nodes = a.old_nodes_to_new_nodes.cbegin();
   auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
-  fill(a.new_elements_are_same, 1);
-  fill(a.new_nodes_are_same, 1);
+  fill(a.new_elements_are_same, true);
+  fill(a.new_nodes_are_same, true);
   auto const new_elements_are_same = a.new_elements_are_same.begin();
   auto functor = [=] (node_index const node) {
     if (!nodes_are_chosen[node]) return;
@@ -485,8 +485,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = old_nodes_to_new_nodes[target_node];
     new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = old_nodes_to_new_nodes[loop_nodes[1]];
     new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = old_nodes_to_new_nodes[loop_nodes[0]];
-    new_elements_are_same[new_element1] = 0;
-    new_elements_are_same[new_element2] = 0;
+    new_elements_are_same[new_element1] = false;
+    new_elements_are_same[new_element2] = false;
   };
   for_each(s.nodes, functor);
 }
