@@ -245,7 +245,7 @@ public:
                        const Plato::ScalarMultiVector & aControlWS,
                        const Plato::ScalarArray3D & aConfigWS) override
     {
-        this->updateMultipliers(aStateWS, aControlWS, aConfigWS);
+        this->updateLagrangeMultipliers(aStateWS, aControlWS, aConfigWS);
         this->updateAugLagPenaltyMultipliers();
     }
 
@@ -333,14 +333,14 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Update Lagrange and mass multipliers
+     * @brief Update Lagrange multipliers
      * @param [in] aState 2D container of state variables
      * @param [in] aControl 2D container of control variables
      * @param [in] aConfig 3D container of configuration/coordinates
     **********************************************************************************/
-    void updateMultipliers(const Plato::ScalarMultiVector & aStateWS,
-                           const Plato::ScalarMultiVector & aControlWS,
-                           const Plato::ScalarArray3D & aConfigWS)
+    void updateLagrangeMultipliers(const Plato::ScalarMultiVector & aStateWS,
+                                   const Plato::ScalarMultiVector & aControlWS,
+                                   const Plato::ScalarArray3D & aConfigWS)
     {
         // Create Cauchy stress functors
         Strain<mSpaceDim> tCauchyStrain;
