@@ -176,6 +176,7 @@ struct adapt_state {
   device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
   device_vector<bool, element_index> new_elements_are_same;
   device_vector<bool, node_index> new_nodes_are_same;
+  device_vector<array<node_index, 2>, node_index> interpolate_from;
   counting_range<element_index> new_elements;
   counting_range<node_index> new_nodes;
   adapt_state(state const&);
@@ -194,6 +195,7 @@ adapt_state::adapt_state(state const& s)
   ,new_element_nodes_to_nodes(s.devpool)
   ,new_elements_are_same(s.devpool)
   ,new_nodes_are_same(s.devpool)
+  ,interpolate_from(s.devpool)
   ,new_elements(element_index(0))
   ,new_nodes(node_index(0))
 {}
@@ -580,14 +582,25 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
 }
 
 template <class T>
-static LGR_NOINLINE void transfer_nodal_data(adapt_state const& a, device_vector<T, node_index>& data) {
+static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vector<T, node_index>& data) {
   device_vector<T, node_index> new_data(a.new_nodes.size(), data.get_allocator());
   auto const old_nodes_to_data = data.cbegin();
   auto const new_nodes_to_data = new_data.begin();
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
+  auto const new_nodes_are_same = a.new_nodes_are_same.cbegin();
+  auto const interpolate_from = a.interpolate_from.cbegin();
   auto functor = [=] (node_index const new_node) {
-    node_index const old_node = new_nodes_to_old_nodes[new_node];
-    new_nodes_to_data[new_node] = T(old_nodes_to_data[old_node]);
+    if (new_nodes_are_same[new_node]) {
+      node_index const old_node = new_nodes_to_old_nodes[new_node];
+      new_nodes_to_data[new_node] = T(old_nodes_to_data[old_node]);
+    } else {
+      array<node_index, 2> const pair = interpolate_from[new_node];
+      node_index const left = pair[0];
+      node_index const right = pair[1];
+      new_nodes_to_data[new_node] = 0.5 * (
+          T(old_nodes_to_data[left])
+        + T(old_nodes_to_data[right]));
+    }
   };
   for_each(a.new_nodes, functor);
   data = std::move(new_data);
@@ -613,6 +626,7 @@ bool adapt(input const& in, state& s) {
   a.new_element_nodes_to_nodes.resize(num_new_elements * s.nodes_in_element.size());
   a.new_elements_are_same.resize(num_new_elements);
   a.new_nodes_are_same.resize(num_new_nodes);
+  a.interpolate_from.resize(num_new_nodes);
   project(s.elements, a.old_elements_to_new_elements, a.new_elements_to_old_elements);
   project(s.nodes, a.old_nodes_to_new_nodes, a.new_nodes_to_old_nodes);
   apply_triangle_adapt(s, a);
@@ -621,8 +635,8 @@ bool adapt(input const& in, state& s) {
   transfer_point_data<double>(s, a, s.rho);
   if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
-  transfer_nodal_data<vector3<double>>(a, s.x);
-  transfer_nodal_data<vector3<double>>(a, s.v);
+  interpolate_nodal_data<vector3<double>>(a, s.x);
+  interpolate_nodal_data<vector3<double>>(a, s.v);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
