@@ -555,7 +555,7 @@ static LGR_NOINLINE void transfer_element_data(adapt_state& a,
 }
 
 template <class T>
-static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state& a,
+static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
     device_vector<T, point_index>& data) {
   auto const points_in_element = s.points_in_element;
   device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
@@ -576,6 +576,20 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state& a,
     }
   };
   for_each(a.new_elements, functor);
+  data = std::move(new_data);
+}
+
+template <class T>
+static LGR_NOINLINE void transfer_nodal_data(adapt_state const& a, device_vector<T, node_index>& data) {
+  device_vector<T, node_index> new_data(a.new_nodes.size(), data.get_allocator());
+  auto const old_nodes_to_data = data.cbegin();
+  auto const new_nodes_to_data = new_data.begin();
+  auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
+  auto functor = [=] (node_index const new_node) {
+    node_index const old_node = new_nodes_to_old_nodes[new_node];
+    new_nodes_to_data[new_node] = T(old_nodes_to_data[old_node]);
+  };
+  for_each(a.new_nodes, functor);
   data = std::move(new_data);
 }
 
@@ -607,6 +621,8 @@ bool adapt(input const& in, state& s) {
   transfer_point_data<double>(s, a, s.rho);
   if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
+  transfer_nodal_data<vector3<double>>(a, s.x);
+  transfer_nodal_data<vector3<double>>(a, s.v);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
