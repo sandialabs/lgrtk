@@ -22,6 +22,8 @@ namespace Plato {
                                           (((SpatialDim == 1) ? 1 : 0)));
     static_assert(m_numVoigtTerms, "SpatialDim must be 1, 2, or 3.");
 
+    Plato::Scalar m_cellDensity;
+    Plato::Scalar m_cellSpecificHeat;
     Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
     Plato::Scalar m_cellThermalExpansionCoef;
     Omega_h::Matrix<SpatialDim, SpatialDim> m_cellThermalConductivity;
@@ -29,6 +31,8 @@ namespace Plato {
 
   public:
     LinearThermoelasticMaterial();
+    decltype(m_cellDensity)               getMassDensity()          const {return m_cellDensity;}
+    decltype(m_cellSpecificHeat)          getSpecificHeat()         const {return m_cellSpecificHeat;}
     decltype(m_cellStiffness)             getStiffnessMatrix()      const {return m_cellStiffness;}
     decltype(m_cellThermalExpansionCoef)  getThermalExpansion()     const {return m_cellThermalExpansionCoef;}
     decltype(m_cellThermalConductivity)   getThermalConductivity()  const {return m_cellThermalConductivity;}

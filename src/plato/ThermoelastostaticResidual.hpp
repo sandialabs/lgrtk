@@ -104,7 +104,7 @@ public:
             m_boundaryLoads =   std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
         }
   
-        // parse electrical boundary Conditions
+        // parse thermal boundary Conditions
         // 
         if(aProblemParams.isSublist("Thermal Natural Boundary Conditions"))
         {

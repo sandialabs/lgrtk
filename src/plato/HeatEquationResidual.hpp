@@ -9,7 +9,6 @@
 #include "plato/FluxDivergence.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoMathHelpers.hpp"
-#include "plato/StateValues.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
@@ -18,6 +17,9 @@
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractVectorFunctionInc.hpp"
 #include "plato/ImplicitFunctors.hpp"
+#include "plato/InterpolateFromNodal.hpp"
+#include "plato/ProjectToNode.hpp"
+#include "plato/ApplyWeighting.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
@@ -125,11 +127,11 @@ class HeatEquationResidual :
       Plato::ScalarMultiVectorT<ResultScalarType> tFlux("thermal flux at step k",numCells,SpaceDim);
       Plato::ScalarMultiVectorT<ResultScalarType> tPrevFlux("thermal flux at step k-1",numCells,SpaceDim);
 
-      Plato::ScalarMultiVectorT<StateScalarType> tStateValues("Gauss point temperature at step k", numCells, m_numDofsPerNode);
-      Plato::ScalarMultiVectorT<PrevStateScalarType> tPrevStateValues("Gauss point temperature at step k-1", numCells, m_numDofsPerNode);
+      Plato::ScalarVectorT<StateScalarType> tTemperature("Gauss point temperature at step k", numCells);
+      Plato::ScalarVectorT<PrevStateScalarType> tPrevTemperature("Gauss point temperature at step k-1", numCells);
 
-      Plato::ScalarMultiVectorT<ResultScalarType> tThermalContent("Gauss point heat content at step k", numCells, m_numDofsPerNode);
-      Plato::ScalarMultiVectorT<ResultScalarType> tPrevThermalContent("Gauss point heat content at step k-1", numCells, m_numDofsPerNode);
+      Plato::ScalarVectorT<ResultScalarType> tThermalContent("Gauss point heat content at step k", numCells);
+      Plato::ScalarVectorT<ResultScalarType> tPrevThermalContent("Gauss point heat content at step k-1", numCells);
 
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
@@ -138,9 +140,9 @@ class HeatEquationResidual :
       Plato::ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
       Plato::FluxDivergence<SpaceDim>        fluxDivergence;
 
-      Plato::StateValues computeStateValues;
+      Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode> interpolateFromNodal;
       Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
-      Plato::ComputeProjectionWorkset projectThermalContent;
+      Plato::ProjectToNode<SpaceDim, m_numDofsPerNode> projectThermalContent;
       
       auto basisFunctions = m_cubatureRule->getBasisFunctions();
     
@@ -178,13 +180,13 @@ class HeatEquationResidual :
         
         // compute temperature at gausspoints
         //
-        computeStateValues(cellOrdinal, basisFunctions, aState, tStateValues);
-        computeStateValues(cellOrdinal, basisFunctions, aPrevState, tPrevStateValues);
+        interpolateFromNodal(cellOrdinal, basisFunctions, aState, tTemperature);
+        interpolateFromNodal(cellOrdinal, basisFunctions, aPrevState, tPrevTemperature);
 
         // compute the specific heat content (i.e., specific heat times temperature)
         //
-        thermalContent(cellOrdinal, tThermalContent, tStateValues);
-        thermalContent(cellOrdinal, tPrevThermalContent, tPrevStateValues);
+        thermalContent(cellOrdinal, tThermalContent, tTemperature);
+        thermalContent(cellOrdinal, tPrevThermalContent, tPrevTemperature);
 
         // apply weighting
         //

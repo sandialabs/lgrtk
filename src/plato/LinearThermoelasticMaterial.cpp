@@ -19,6 +19,17 @@ LinearThermoelasticMaterial<1>()
     m_cellThermalExpansionCoef=a;
     m_cellThermalConductivity(0,0)=k;
     m_cellReferenceTemperature=t;
+
+    if( paramList.isType<double>("Mass Density") ){
+      m_cellDensity = paramList.get<double>("Mass Density");
+    } else {
+      m_cellDensity = 1.0;
+    }
+    if( paramList.isType<double>("Specific Heat") ){
+      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+    } else {
+      m_cellSpecificHeat = 1.0;
+    }
 }
 /******************************************************************************/
 template<>
@@ -40,6 +51,17 @@ LinearThermoelasticMaterial<2>()
     m_cellThermalConductivity(0,0)=k;
     m_cellThermalConductivity(1,1)=k;
     m_cellReferenceTemperature=t;
+
+    if( paramList.isType<double>("Mass Density") ){
+      m_cellDensity = paramList.get<double>("Mass Density");
+    } else {
+      m_cellDensity = 1.0;
+    }
+    if( paramList.isType<double>("Specific Heat") ){
+      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+    } else {
+      m_cellSpecificHeat = 1.0;
+    }
 }
 /******************************************************************************/
 template<>
@@ -65,6 +87,17 @@ LinearThermoelasticMaterial<3>()
     m_cellThermalConductivity(1,1)=k;
     m_cellThermalConductivity(2,2)=k;
     m_cellReferenceTemperature=t;
+
+    if( paramList.isType<double>("Mass Density") ){
+      m_cellDensity = paramList.get<double>("Mass Density");
+    } else {
+      m_cellDensity = 1.0;
+    }
+    if( paramList.isType<double>("Specific Heat") ){
+      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+    } else {
+      m_cellSpecificHeat = 1.0;
+    }
 }
 
 } // namespace Plato 

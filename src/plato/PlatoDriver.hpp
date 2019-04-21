@@ -56,25 +56,27 @@ void output(Teuchos::ParameterList & aParamList,
     } else
     if(tPhysics == "Thermomechanical")
     {
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-
-        auto tNumVertices = aMesh.nverts();
-        auto tNumDisp = tNumVertices * SpatialDim;
-        Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
-        Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
-
-        auto tNumPot  = tNumVertices;
-        Omega_h::Write<Omega_h::Real> tTemperature (tNumPot, "Temperature");
-        Plato::copy<SpatialDim+1, 1>(/*tStride=*/SpatialDim, tNumVertices, tSubView, tTemperature);
-
         const Plato::Scalar tRestartTime = 0.;
         Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer(aOutputFilePath, &aMesh, SpatialDim, tRestartTime);
 
-        aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim , Omega_h::Reals(tDisp));
-        aMesh.add_tag(Omega_h::VERT, "Temperature",   1          , Omega_h::Reals(tTemperature));
-        Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
-        tWriter.write(/*time_index*/1, /*current_time=*/1.0, tTags);
+        auto nSteps = aState.extent(0);
+        for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
+          auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
+
+          auto tNumVertices = aMesh.nverts();
+          Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
+          Plato::copy<SpatialDim+1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tTemp);
+
+          auto tNumDisp = tNumVertices * SpatialDim;
+          Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
+          Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
+
+          aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                  Omega_h::Reals(tDisp));
+          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+
+          Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+          tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+        }
     } else
     if(tPhysics == "Mechanical")
     {

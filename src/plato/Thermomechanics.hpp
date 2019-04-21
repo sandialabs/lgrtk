@@ -9,7 +9,9 @@
 #include "plato/Simplex.hpp"
 #include "plato/SimplexThermomechanics.hpp"
 #include "plato/AbstractVectorFunction.hpp"
+#include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/ThermoelastostaticResidual.hpp"
+#include "plato/TransientThermomechResidual.hpp"
 #include "plato/InternalThermoelasticEnergy.hpp"
 #include "plato/Volume.hpp"
 //#include "plato/TMStressPNorm.hpp"
@@ -57,6 +59,40 @@ struct FunctionFactory
             }
             else
             {
+                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+        }
+    }
+    /******************************************************************************/
+    template <typename EvaluationType>
+    std::shared_ptr<AbstractVectorFunctionInc<EvaluationType>>
+    createVectorFunctionInc(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets, 
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList& aParamList,
+                            std::string strVectorFunctionType )
+    /******************************************************************************/
+    {
+        if( strVectorFunctionType == "First Order" )
+        {
+            auto penaltyParams = aParamList.sublist(strVectorFunctionType).sublist("Penalty Function");
+            std::string penaltyType = penaltyParams.get<std::string>("Type");
+            if( penaltyType == "SIMP" )
+            {
+                return std::make_shared<TransientThermomechResidual<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+            } else
+            if( penaltyType == "RAMP" )
+            {
+                return std::make_shared<TransientThermomechResidual<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+            } else
+            if( penaltyType == "Heaviside" )
+            {
+                return std::make_shared<TransientThermomechResidual<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+            } else {
                 throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
@@ -153,6 +189,18 @@ struct FunctionFactory
         {
             throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
         }
+    }
+    /******************************************************************************/
+    template <typename EvaluationType>
+    std::shared_ptr<AbstractScalarFunctionInc<EvaluationType>>
+    createScalarFunctionInc(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList& aParamList,
+                            std::string strScalarFunctionType )
+    /******************************************************************************/
+    {
+      throw std::runtime_error("Objectives not yet implemented for this physics");
     }
 }; // struct FunctionFactory
 

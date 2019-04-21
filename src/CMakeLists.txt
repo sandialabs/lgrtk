@@ -48,6 +48,7 @@ SET(PLATO_SOURCES
   plato/LinearElectroelasticMaterial.cpp
   plato/LinearThermoelasticMaterial.cpp
   plato/HeatEquationResidual.cpp
+  plato/TransientThermomechResidual.cpp
   plato/InternalThermalEnergy.cpp
   plato/InternalThermoelasticEnergy.cpp
   plato/InternalElectroelasticEnergy.cpp
