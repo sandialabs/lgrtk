@@ -79,7 +79,8 @@ class TransientThermomechResidual :
       Plato::DataMap& aDataMap,
       Teuchos::ParameterList& aProblemParams,
       Teuchos::ParameterList& aPenaltyParams) :
-     AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap),
+     AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap,
+        {"Displacement X", "Displacement Y", "Displacement Z", "Temperature"}),
      m_indicatorFunction(aPenaltyParams),
      m_applyStressWeighting(m_indicatorFunction),
      m_applyFluxWeighting(m_indicatorFunction),

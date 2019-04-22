@@ -73,7 +73,7 @@ class HeatEquationResidual :
       Plato::DataMap& aDataMap,
       Teuchos::ParameterList& problemParams,
       Teuchos::ParameterList& penaltyParams) :
-     AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap),
+     AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, {"Temperature"}),
      m_indicatorFunction(penaltyParams),
      m_applyFluxWeighting(m_indicatorFunction),
      m_applyMassWeighting(m_indicatorFunction),
