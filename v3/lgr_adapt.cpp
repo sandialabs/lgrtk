@@ -163,10 +163,15 @@ void initialize_h_adapt(state& s)
   for_each(s.nodes, functor);
 }
 
+enum cavity_op {
+  SWAP,
+};
+
 struct adapt_state {
   device_vector<double, node_index> improvement;
   device_vector<node_index, node_index> other_node;
   device_vector<bool, node_index> chosen;
+  device_vector<cavity_op, node_index> op;
   device_vector<element_index, element_index> element_counts;
   device_vector<node_index, node_index> node_counts;
   device_vector<element_index, element_index> old_elements_to_new_elements;
@@ -186,6 +191,7 @@ adapt_state::adapt_state(state const& s)
   :improvement(s.nodes.size(), s.devpool)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
+  ,op(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
   ,node_counts(s.nodes.size(), s.devpool)
   ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
@@ -407,7 +413,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
     }
     double const improvement = nodes_to_improvement[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element]; 
+      element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
