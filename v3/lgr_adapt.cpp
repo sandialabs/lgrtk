@@ -168,7 +168,7 @@ enum cavity_op {
 };
 
 struct adapt_state {
-  device_vector<double, node_index> improvement;
+  device_vector<double, node_index> criteria;
   device_vector<node_index, node_index> other_node;
   device_vector<bool, node_index> chosen;
   device_vector<cavity_op, node_index> op;
@@ -188,7 +188,7 @@ struct adapt_state {
 };
 
 adapt_state::adapt_state(state const& s)
-  :improvement(s.nodes.size(), s.devpool)
+  :criteria(s.nodes.size(), s.devpool)
   ,other_node(s.nodes.size(), s.devpool)
   ,chosen(s.nodes.size(), s.devpool)
   ,op(s.nodes.size(), s.devpool)
@@ -344,7 +344,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_qualities = s.quality.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_h = s.h_adapt.cbegin();
-  auto const nodes_to_improvement = a.improvement.begin();
+  auto const nodes_to_criteria = a.criteria.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (node_index const node) {
@@ -375,18 +375,18 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       c.shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
-    double best_improvement = 0.0;
+    double best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
       if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
       evaluate_triangle_swap(center_node, edge_node, c,
-          best_improvement, best_swap_edge_node);
+          best_swap_improvement, best_swap_edge_node);
       if ((0)) evaluate_triangle_split(center_node, edge_node, c,
-          best_improvement, best_swap_edge_node);
+          best_swap_improvement, best_swap_edge_node);
     }
-    nodes_to_improvement[node] = best_improvement;
+    nodes_to_criteria[node] = best_swap_improvement;
     nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : c.shell_nodes[best_swap_edge_node];
   };
   for_each(s.nodes, functor);
@@ -398,7 +398,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_improvement = a.improvement.cbegin();
+  auto const nodes_to_criteria = a.criteria.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
   fill(a.chosen, false);
@@ -411,7 +411,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
     if (target_node == node_index(-1)) {
       return;
     }
-    double const improvement = nodes_to_improvement[node];
+    double const criteria = nodes_to_criteria[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
@@ -419,9 +419,9 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node != node) {
-          double const adj_improvement = nodes_to_improvement[adj_node];
-          if ((adj_improvement > improvement) ||
-              ((adj_improvement == improvement) &&
+          double const adj_criteria = nodes_to_criteria[adj_node];
+          if ((adj_criteria > criteria) ||
+              ((adj_criteria == criteria) &&
                (adj_node < node))) {
             return;
           }
