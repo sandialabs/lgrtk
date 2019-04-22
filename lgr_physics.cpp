@@ -741,6 +741,7 @@ void run(input const& in) {
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
         adapt(in, s);
+        resize_state(in, s);
         common_initialization(in, s);
       }
       ++s.n;
