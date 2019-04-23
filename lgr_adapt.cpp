@@ -390,13 +390,13 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       evaluate_triangle_split(center_node, edge_node, c,
           longest_split_edge, best_split_edge_node);
     }
-    if (best_swap_edge_node == -1) {
-      nodes_to_other_nodes[node] = node_index(-1);
-      nodes_to_op[node] = cavity_op::NONE;
-    } else {
+    if (best_swap_edge_node != -1) {
       nodes_to_criteria[node] = best_swap_improvement;
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
       nodes_to_op[node] = cavity_op::SWAP;
+    } else {
+      nodes_to_other_nodes[node] = node_index(-1);
+      nodes_to_op[node] = cavity_op::NONE;
     }
   };
   for_each(s.nodes, functor);
