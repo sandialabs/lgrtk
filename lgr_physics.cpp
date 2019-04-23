@@ -742,7 +742,11 @@ void run(input const& in) {
       if (in.enable_adapt && (s.n % 10 == 0)) {
         adapt(in, s);
         resize_state(in, s);
+        output_file(in, file_output_index, s);
+        ++file_output_index;
         common_initialization(in, s);
+        output_file(in, file_output_index, s);
+        ++file_output_index;
       }
       ++s.n;
     }
