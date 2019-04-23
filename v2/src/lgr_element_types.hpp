@@ -4,6 +4,9 @@
 #include <lgr_config.hpp>
 #include <lgr_math.hpp>
 
+// DEBUG
+#include <Omega_h_print.hpp>
+
 namespace lgr {
 
 template <class Elem>
