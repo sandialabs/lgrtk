@@ -7,10 +7,10 @@
 namespace lgr {
 
 template <class Iterator, layout L, class OuterIndex, class InnerIndex>
-class inner_iterator; 
+class inner_iterator;
 
 template <class Iterator, layout L, class OuterIndex, class InnerIndex>
-class outer_iterator; 
+class outer_iterator;
 
 template <class Iterator, layout L, class OuterIndex, class InnerIndex>
 class range_product;
