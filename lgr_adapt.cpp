@@ -164,7 +164,9 @@ void initialize_h_adapt(state& s)
 }
 
 enum cavity_op {
+  NONE,
   SWAP,
+  SPLIT,
 };
 
 struct adapt_state {
@@ -296,9 +298,10 @@ static inline void evaluate_triangle_split(
     int const center_node,
     int const edge_node,
     cavity<3, max_shell_elements, max_shell_nodes> const c,
-    double&,
-    int&
+    double& longest_length,
+    int& best_split_edge_node
     ) {
+  constexpr double min_acceptable_quality = 0.2;
   auto const h1 = c.shell_nodes_to_h[center_node];
   auto const h2 = c.shell_nodes_to_h[edge_node];
   auto const x1 = c.shell_nodes_to_x[center_node];
@@ -308,6 +311,7 @@ static inline void evaluate_triangle_split(
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
   if (lm < std::sqrt(2.0)) return;
+  if (lm < longest_length) return;
   auto const midpoint_x = 0.5 * (x1 + x2);
   for (int element = 0; element < c.num_shell_elements; ++element) {
     array<vector3<double>, 3> parent_x;
@@ -321,7 +325,6 @@ static inline void evaluate_triangle_split(
     if (edge_node_in_element == -1) continue;
     array<vector3<double>, 3> child_x = parent_x;
     child_x[center_node_in_element] = midpoint_x;
-    constexpr double min_acceptable_quality = 0.2;
     double const new_quality1 = triangle_quality(child_x);
     if (new_quality1 < min_acceptable_quality) return;
     child_x[center_node_in_element] = c.shell_nodes_to_x[center_node];
@@ -329,8 +332,8 @@ static inline void evaluate_triangle_split(
     double const new_quality2 = triangle_quality(child_x);
     if (new_quality2 < min_acceptable_quality) return;
   }
-  std::cout << int(c.shell_nodes[center_node]) << "-" << int(c.shell_nodes[edge_node])
-    << " is a good edge to split\n";
+  longest_length = lm;
+  best_split_edge_node = edge_node;
 }
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
@@ -347,6 +350,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_criteria = a.criteria.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
+  auto const nodes_to_op = a.op.begin();
   auto functor = [=] (node_index const node) {
     cavity<3, 32, 32> c;
     c.num_shell_nodes = 0;
@@ -377,17 +381,25 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     }
     double best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
+    double longest_split_edge = 0.0;
+    int best_split_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
       if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
       evaluate_triangle_swap(center_node, edge_node, c,
           best_swap_improvement, best_swap_edge_node);
-      if ((0)) evaluate_triangle_split(center_node, edge_node, c,
-          best_swap_improvement, best_swap_edge_node);
+      evaluate_triangle_split(center_node, edge_node, c,
+          longest_split_edge, best_split_edge_node);
     }
-    nodes_to_criteria[node] = best_swap_improvement;
-    nodes_to_other_nodes[node] = (best_swap_edge_node == -1) ? node_index(-1) : c.shell_nodes[best_swap_edge_node];
+    if (best_swap_edge_node == -1) {
+      nodes_to_other_nodes[node] = node_index(-1);
+      nodes_to_op[node] = cavity_op::NONE;
+    } else {
+      nodes_to_criteria[node] = best_swap_improvement;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
+      nodes_to_op[node] = cavity_op::SWAP;
+    }
   };
   for_each(s.nodes, functor);
 }
@@ -406,11 +418,13 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   fill(a.element_counts, element_index(1));
   fill(a.node_counts, node_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
+  auto const nodes_to_op = a.op.cbegin();
   auto functor = [=] (node_index const node) {
-    node_index const target_node = nodes_to_other_nodes[node];
-    if (target_node == node_index(-1)) {
+    cavity_op const op = nodes_to_op[node];
+    if (op == cavity_op::NONE) {
       return;
     }
+    node_index const target_node = nodes_to_other_nodes[node];
     double const criteria = nodes_to_criteria[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
