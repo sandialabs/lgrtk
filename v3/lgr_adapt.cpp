@@ -172,7 +172,6 @@ enum cavity_op {
 struct adapt_state {
   device_vector<double, node_index> criteria;
   device_vector<node_index, node_index> other_node;
-  device_vector<bool, node_index> chosen;
   device_vector<cavity_op, node_index> op;
   device_vector<element_index, element_index> element_counts;
   device_vector<node_index, node_index> node_counts;
@@ -192,7 +191,6 @@ struct adapt_state {
 adapt_state::adapt_state(state const& s)
   :criteria(s.nodes.size(), s.devpool)
   ,other_node(s.nodes.size(), s.devpool)
-  ,chosen(s.nodes.size(), s.devpool)
   ,op(s.nodes.size(), s.devpool)
   ,element_counts(s.elements.size(), s.devpool)
   ,node_counts(s.nodes.size(), s.devpool)
@@ -413,13 +411,11 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_criteria = a.criteria.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
-  fill(a.chosen, false);
-  auto const nodes_are_chosen = a.chosen.begin();
   fill(a.element_counts, element_index(1));
   fill(a.node_counts, node_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
   auto const nodes_to_new_counts = a.node_counts.begin();
-  auto const nodes_to_op = a.op.cbegin();
+  auto const nodes_to_op = a.op.begin();
   auto functor = [=] (node_index const node) {
     cavity_op const op = nodes_to_op[node];
     if (op == cavity_op::NONE) {
@@ -436,11 +432,20 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         if (adj_node != node) {
           cavity_op const adj_op = nodes_to_op[adj_node];
           double const adj_criteria = nodes_to_criteria[adj_node];
-          if (op < adj_op) return;
+          if (op < adj_op) {
+            nodes_to_op[node] = cavity_op::NONE;
+            return;
+          }
           if (op > adj_op) continue;
-          if (criteria < adj_criteria) return;
+          if (criteria < adj_criteria) {
+            nodes_to_op[node] = cavity_op::NONE;
+            return;
+          }
           if (criteria > adj_criteria) continue;
-          if (adj_node < node) return;
+          if (adj_node < node) {
+            nodes_to_op[node] = cavity_op::NONE;
+            return;
+          }
         }
       }
     }
@@ -464,7 +469,6 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
     if (op == cavity_op::SPLIT) {
       nodes_to_new_counts[node] = node_index(2);
     }
-    nodes_are_chosen[node] = true;
   };
   for_each(s.nodes, functor);
 }
@@ -591,10 +595,10 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   fill(a.new_elements_are_same, true);
   fill(a.new_nodes_are_same, true);
   c.new_elements_are_same = a.new_elements_are_same.begin();
-  auto const nodes_are_chosen = a.chosen.cbegin();
+  auto const nodes_to_op = a.op.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto functor = [=] (node_index const node) {
-    if (!nodes_are_chosen[node]) return;
+    if (cavity_op::NONE == nodes_to_op[node]) return;
     node_index const target_node = nodes_to_other_nodes[node];
     apply_triangle_swap(c, node, target_node);
     if ((0)) apply_triangle_split(c, node, target_node);
@@ -719,7 +723,8 @@ bool adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
-  auto const num_chosen = reduce(a.chosen, int(0));
+  auto const num_chosen = transform_reduce(a.op, int(0), plus<int>(),
+      [](cavity_op const op) { return op == cavity_op::NONE ? 0 : 1; });
   if (num_chosen == 0) return false;
   if (in.output_to_command_line) {
     std::cout << "adapting " << num_chosen << " cavities\n";
