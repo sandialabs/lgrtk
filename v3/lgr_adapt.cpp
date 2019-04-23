@@ -390,10 +390,14 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       evaluate_triangle_split(center_node, edge_node, c,
           longest_split_edge, best_split_edge_node);
     }
-    if (best_swap_edge_node != -1) {
-      nodes_to_criteria[node] = best_swap_improvement;
-      nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
-      nodes_to_op[node] = cavity_op::SWAP;
+    if (best_split_edge_node != -1) {
+      nodes_to_criteria[node] = longest_split_edge;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
+      nodes_to_op[node] = cavity_op::SPLIT;
+  //} else if (best_swap_edge_node != -1) {
+  //  nodes_to_criteria[node] = best_swap_improvement;
+  //  nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
+  //  nodes_to_op[node] = cavity_op::SWAP;
     } else {
       nodes_to_other_nodes[node] = node_index(-1);
       nodes_to_op[node] = cavity_op::NONE;
@@ -731,7 +735,9 @@ bool adapt(input const& in, state& s) {
     std::cout << "adapting " << num_chosen << " cavities\n";
   }
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
+  std::cout << int(num_new_elements) << " new elements\n";
   auto const num_new_nodes = reduce(a.node_counts, node_index(0));
+  std::cout << int(num_new_nodes) << " new nodes\n";
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
   offset_scan(a.node_counts, a.old_nodes_to_new_nodes);
   a.new_elements.resize(num_new_elements);
@@ -752,9 +758,11 @@ bool adapt(input const& in, state& s) {
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
+  interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
+  s.nodes_to_node_elements.resize(s.nodes.size());
   invert_connectivity(s);
   return true;
 }
