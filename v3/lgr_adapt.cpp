@@ -485,6 +485,7 @@ struct apply_cavity {
   struct_vector_iterator<node_index const, device_layout, node_index> nodes_to_other_nodes;
   counting_range<node_in_element_index> nodes_in_element;
   struct_vector_iterator<bool, device_layout, node_index> new_nodes_are_same;
+  struct_vector_iterator<array<node_index, 2>, device_layout, node_index> interpolate_from;
   apply_cavity(state const& s, adapt_state& a)
     :nodes_to_node_elements(s.nodes_to_node_elements.cbegin())
     ,node_elements_to_elements(s.node_elements_to_elements.cbegin())
@@ -499,6 +500,7 @@ struct apply_cavity {
     ,nodes_to_other_nodes(a.other_node.cbegin())
     ,nodes_in_element(s.nodes_in_element)
     ,new_nodes_are_same(a.new_nodes_are_same.begin())
+    ,interpolate_from(a.interpolate_from.begin())
   {}
 };
 
@@ -546,12 +548,12 @@ static inline void apply_triangle_split(apply_cavity const c,
   auto const split_node = new_center_node + node_index(1);
   for (auto const node_element : c.nodes_to_node_elements[center_node]) {
     element_index const element = c.node_elements_to_elements[node_element];
-    auto const element_nodes = c.elements_to_element_nodes[element];
+    auto const old_element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index target_node_in_element(-1);
     array<node_index, 3, node_in_element_index> new_nodes;
     for (auto const node_in_element : c.nodes_in_element) {
-      auto const element_node = element_nodes[node_in_element];
-      node_index const old_node = c.old_element_nodes_to_nodes[element_node];
+      auto const old_element_node = old_element_nodes[node_in_element];
+      node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
       if (old_node == target_node) target_node_in_element = node_in_element;
       auto const new_node = c.old_nodes_to_new_nodes[old_node];
       new_nodes[node_in_element] = new_node;
@@ -576,6 +578,10 @@ static inline void apply_triangle_split(apply_cavity const c,
     c.new_nodes_are_same[split_node] = false;
     c.new_elements_are_same[new_element1] = false;
     c.new_elements_are_same[new_element2] = false;
+    array<node_index, 2> interpolate_from;
+    interpolate_from[0] = center_node;
+    interpolate_from[1] = target_node;
+    c.interpolate_from[split_node] = interpolate_from;
   }
 }
 
