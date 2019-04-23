@@ -22,7 +22,7 @@ static void LGR_NOINLINE update_bar_quality(state& s) {
    "What is a good linear finite element?
     interpolation, conditioning, anisotropy, and quality measures (preprint)."
    University of California at Berkeley 73 (2002): 137.
-   
+
    A scale-invariant quality measure correlated with matrix conditioning
    (and the stable explicit time step) for triangles is area divided by
    the square of the (root-mean-squared edge length).
@@ -418,6 +418,7 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   fill(a.element_counts, element_index(1));
   fill(a.node_counts, node_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
+  auto const nodes_to_new_counts = a.node_counts.begin();
   auto const nodes_to_op = a.op.cbegin();
   auto functor = [=] (node_index const node) {
     cavity_op const op = nodes_to_op[node];
@@ -450,9 +451,18 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node == target_node) {
-          elements_to_new_counts[element] = element_index(1);
+          element_index count(-100);
+          if (op == cavity_op::SWAP) {
+            count = element_index(1);
+          } else if (op == cavity_op::SPLIT) {
+            count = element_index(2);
+          }
+          elements_to_new_counts[element] = count;
         }
       }
+    }
+    if (op == cavity_op::SPLIT) {
+      nodes_to_new_counts[node] = node_index(2);
     }
     nodes_are_chosen[node] = true;
   };
