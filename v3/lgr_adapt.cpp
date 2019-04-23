@@ -598,10 +598,11 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_op = a.op.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto functor = [=] (node_index const node) {
-    if (cavity_op::NONE == nodes_to_op[node]) return;
+    cavity_op const op = nodes_to_op[node];
+    if (cavity_op::NONE == op) return;
     node_index const target_node = nodes_to_other_nodes[node];
-    apply_triangle_swap(c, node, target_node);
-    if ((0)) apply_triangle_split(c, node, target_node);
+    if (cavity_op::SWAP == op) apply_triangle_swap(c, node, target_node);
+    if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
   };
   for_each(s.nodes, functor);
 }
