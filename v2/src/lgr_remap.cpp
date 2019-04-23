@@ -238,49 +238,6 @@ Omega_h::Write<double> Remap<Elem>::setup_new_shape_data(
 }
 
 template <class Elem>
-void Remap<Elem>::remap_shape(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
-    Omega_h::LOs keys2prods, Omega_h::LOs prods2new_ents,
-    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents) {
-  if ((1)) return;
-  auto new_weights = setup_new_shape_data(
-      old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents, "weight");
-  auto new_gradients = setup_new_shape_data(
-      old_mesh, new_mesh, same_ents2old_ents, same_ents2new_ents, "gradient");
-  auto new_dt_h = setup_new_shape_data(old_mesh, new_mesh, same_ents2old_ents,
-      same_ents2new_ents, "time step length");
-  auto new_visc_h = setup_new_shape_data(old_mesh, new_mesh, same_ents2old_ents,
-      same_ents2new_ents, "viscosity length");
-  auto new_coords = new_mesh.coords();
-  auto new_elems2verts = new_mesh.ask_elem_verts();
-  auto new_functor = OMEGA_H_LAMBDA(int key) {
-    for (auto prod = keys2prods[key]; prod < keys2prods[key + 1]; ++prod) {
-      auto new_elem = prods2new_ents[prod];
-      auto elem_verts =
-          Omega_h::gather_verts<Elem::nodes>(new_elems2verts, new_elem);
-      auto elem_node_coords = Omega_h::gather_vectors<Elem::nodes, Elem::dim>(
-          new_coords, elem_verts);
-      auto shape = Elem::shape(elem_node_coords);
-      new_dt_h[new_elem] = shape.lengths.time_step_length;
-      new_visc_h[new_elem] = shape.lengths.viscosity_length;
-      for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
-        auto pt = new_elem * Elem::points + elem_pt;
-        setgrads<Elem>(new_gradients, pt, shape.basis_gradients[elem_pt]);
-        new_weights[pt] = shape.weights[elem_pt];
-      }
-    }
-  };
-  parallel_for(keys2prods.size() - 1, std::move(new_functor));
-  new_mesh.add_tag(
-      new_mesh.dim(), "weight", Elem::points, Omega_h::read(new_weights));
-  new_mesh.add_tag(new_mesh.dim(), "gradient",
-      Elem::points * Elem::nodes * Elem::dim, Omega_h::read(new_gradients));
-  new_mesh.add_tag(
-      new_mesh.dim(), "time step length", 1, Omega_h::read(new_dt_h));
-  new_mesh.add_tag(
-      new_mesh.dim(), "viscosity length", 1, Omega_h::read(new_visc_h));
-}
-
-template <class Elem>
 static void refine_pick_remap(
     Omega_h::Mesh& old_mesh,
     Omega_h::Mesh& new_mesh,
@@ -652,8 +609,6 @@ void Remap<Elem>::refine(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
         prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
-    remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
-        same_ents2old_ents, same_ents2new_ents);
     for (auto& name : fields_to_remap[RemapType::PER_UNIT_VOLUME]) {
       refine_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim,
           keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,
@@ -706,8 +661,6 @@ void Remap<Elem>::coarsen(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
         prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
-    remap_shape(old_mesh, new_mesh, keys2doms.a2ab, prods2new_ents,
-        same_ents2old_ents, same_ents2new_ents);
     for (auto& name : fields_to_remap[RemapType::PER_UNIT_VOLUME]) {
       coarsen_point_remap(old_mesh, new_mesh, prod_dim, keys2doms.a2ab,
           keys2doms.ab2b, prods2new_ents, same_ents2old_ents,
@@ -761,8 +714,6 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
         prods2new_ents, "acceleration");
   }
   if (prod_dim == old_mesh.dim()) {
-    remap_shape(old_mesh, new_mesh, keys2prods, prods2new_ents,
-        same_ents2old_ents, same_ents2new_ents);
     for (auto& name : fields_to_remap[RemapType::PER_UNIT_VOLUME]) {
       swap_point_remap<VolumeWeighter>(old_mesh, new_mesh, 1, prod_dim,
           keys2edges, keys2prods, prods2new_ents, same_ents2old_ents,

@@ -14,6 +14,7 @@
 #include <lgr_nodal_pressure.hpp>
 #include <lgr_pressure.hpp>
 #include <lgr_scope.hpp>
+#include <lgr_sierra_J2.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_stvenant_kirchhoff.hpp>
 
@@ -91,6 +92,7 @@ ModelFactories get_builtin_material_model_factories() {
   out["neo-Hookean"] = neo_hookean_factory<Elem>;
   out["StVenant-Kirchhoff"] = stvenant_kirchhoff_factory<Elem>;
   out["Albany J2"]  = albany_J2_factory<Elem>;
+  out["Sierra J2"]  = sierra_J2_factory<Elem>;
   return out;
 }
 
