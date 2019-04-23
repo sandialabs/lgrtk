@@ -223,7 +223,7 @@ static inline int find_or_append(
 }
 
 template <int nodes_per_element, int max_shell_elements, int max_shell_nodes>
-struct cavity {
+struct eval_cavity {
   int num_shell_elements;
   int num_shell_nodes;
   array<node_index, max_shell_nodes> shell_nodes;
@@ -240,7 +240,7 @@ template <int max_shell_elements, int max_shell_nodes>
 static inline void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
-    cavity<3, max_shell_elements, max_shell_nodes> const c,
+    eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
     double& best_improvement,
     int& best_swap_edge_node
     ) {
@@ -297,7 +297,7 @@ template <int max_shell_elements, int max_shell_nodes>
 static inline void evaluate_triangle_split(
     int const center_node,
     int const edge_node,
-    cavity<3, max_shell_elements, max_shell_nodes> const c,
+    eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
     double& longest_length,
     int& best_split_edge_node
     ) {
@@ -352,7 +352,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_op = a.op.begin();
   auto functor = [=] (node_index const node) {
-    cavity<3, 32, 32> c;
+    eval_cavity<3, 32, 32> c;
     c.num_shell_nodes = 0;
     c.num_shell_elements = 0;
     int center_node = -1;
@@ -469,57 +469,84 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   for_each(s.nodes, functor);
 }
 
+struct apply_cavity {
+  range_sum_iterator<node_index, node_element_index> nodes_to_node_elements;
+  struct_vector_iterator<element_index const, device_layout, node_element_index> node_elements_to_elements;
+  struct_vector_iterator<node_in_element_index const, device_layout, node_element_index> node_elements_to_nodes_in_element;
+  range_product<counting_iterator<element_node_index>,
+    device_layout, element_index, node_in_element_index> elements_to_element_nodes;
+  struct_vector_iterator<node_index const, device_layout, element_node_index> old_element_nodes_to_nodes;
+  struct_vector_iterator<element_index const, device_layout, element_index> old_elements_to_new_elements;
+  range_product<counting_iterator<element_node_index>,
+    device_layout, element_index, node_in_element_index> new_elements_to_element_nodes;
+  struct_vector_iterator<node_index const, device_layout, node_index> old_nodes_to_new_nodes;
+  struct_vector_iterator<node_index, device_layout, element_node_index> new_element_nodes_to_nodes;
+  struct_vector_iterator<bool, device_layout, element_index> new_elements_are_same;
+  struct_vector_iterator<node_index const, device_layout, node_index> nodes_to_other_nodes;
+  apply_cavity(state const& s, adapt_state& a)
+    :nodes_to_node_elements(s.nodes_to_node_elements.cbegin())
+    ,node_elements_to_elements(s.node_elements_to_elements.cbegin())
+    ,node_elements_to_nodes_in_element(s.node_elements_to_nodes_in_element.cbegin())
+    ,elements_to_element_nodes(s.elements * s.nodes_in_element)
+    ,old_element_nodes_to_nodes(s.elements_to_nodes.cbegin())
+    ,old_elements_to_new_elements(a.old_elements_to_new_elements.cbegin())
+    ,new_elements_to_element_nodes(a.new_elements * s.nodes_in_element)
+    ,old_nodes_to_new_nodes(a.old_nodes_to_new_nodes.cbegin())
+    ,new_element_nodes_to_nodes(a.new_element_nodes_to_nodes.begin())
+    ,new_elements_are_same(a.new_elements_are_same.begin())
+    ,nodes_to_other_nodes(a.other_node.cbegin())
+  {}
+};
+
+static inline void apply_triangle_swap(apply_cavity const c,
+    node_index const node,
+    node_index const target_node) {
+  array<element_index, 2> loop_elements;
+  array<node_index, 2> loop_nodes;
+  for (auto const node_element : c.nodes_to_node_elements[node]) {
+    element_index const element = c.node_elements_to_elements[node_element];
+    auto const element_nodes = c.elements_to_element_nodes[element];
+    node_in_element_index const node_in_element = c.node_elements_to_nodes_in_element[node_element];
+    node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
+    node_in_element_index const plus2 = node_in_element_index((int(node_in_element) + 2) % 3);
+    node_index const node1 = c.old_element_nodes_to_nodes[element_nodes[plus1]];
+    node_index const node2 = c.old_element_nodes_to_nodes[element_nodes[plus2]];
+    if (node1 == target_node) {
+      loop_elements[1] = element;
+      loop_nodes[1] = node2;
+    }
+    if (node2 == target_node) {
+      loop_elements[0] = element;
+      loop_nodes[0] = node1;
+    }
+  }
+  element_index const new_element1 = c.old_elements_to_new_elements[loop_elements[0]];
+  element_index const new_element2 = c.old_elements_to_new_elements[loop_elements[1]];
+  using l_t = node_in_element_index;
+  auto new_element_nodes = c.new_elements_to_element_nodes[new_element1];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = c.old_nodes_to_new_nodes[node];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = c.old_nodes_to_new_nodes[loop_nodes[0]];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = c.old_nodes_to_new_nodes[loop_nodes[1]];
+  new_element_nodes = c.new_elements_to_element_nodes[new_element2];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = c.old_nodes_to_new_nodes[target_node];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = c.old_nodes_to_new_nodes[loop_nodes[1]];
+  c.new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = c.old_nodes_to_new_nodes[loop_nodes[0]];
+  c.new_elements_are_same[new_element1] = false;
+  c.new_elements_are_same[new_element2] = false;
+}
+
 static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 {
-  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
-  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto const old_element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_other_nodes = a.other_node.cbegin();
-  auto const nodes_are_chosen = a.chosen.cbegin();
-  auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
-  auto const old_elements_to_new_elements = a.old_elements_to_new_elements.cbegin();
-  auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
-  auto const old_nodes_to_new_nodes = a.old_nodes_to_new_nodes.cbegin();
-  auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
+  apply_cavity c(s, a);
   fill(a.new_elements_are_same, true);
   fill(a.new_nodes_are_same, true);
-  auto const new_elements_are_same = a.new_elements_are_same.begin();
+  c.new_elements_are_same = a.new_elements_are_same.begin();
+  auto const nodes_are_chosen = a.chosen.cbegin();
+  auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto functor = [=] (node_index const node) {
     if (!nodes_are_chosen[node]) return;
     node_index const target_node = nodes_to_other_nodes[node];
-    array<element_index, 2> loop_elements;
-    array<node_index, 2> loop_nodes;
-    for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element];
-      auto const element_nodes = elements_to_element_nodes[element];
-      node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
-      node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
-      node_in_element_index const plus2 = node_in_element_index((int(node_in_element) + 2) % 3);
-      node_index const node1 = old_element_nodes_to_nodes[element_nodes[plus1]];
-      node_index const node2 = old_element_nodes_to_nodes[element_nodes[plus2]];
-      if (node1 == target_node) {
-        loop_elements[1] = element;
-        loop_nodes[1] = node2;
-      }
-      if (node2 == target_node) {
-        loop_elements[0] = element;
-        loop_nodes[0] = node1;
-      }
-    }
-    element_index const new_element1 = old_elements_to_new_elements[loop_elements[0]];
-    element_index const new_element2 = old_elements_to_new_elements[loop_elements[1]];
-    using l_t = node_in_element_index;
-    auto new_element_nodes = new_elements_to_element_nodes[new_element1];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = old_nodes_to_new_nodes[node];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = old_nodes_to_new_nodes[loop_nodes[0]];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = old_nodes_to_new_nodes[loop_nodes[1]];
-    new_element_nodes = new_elements_to_element_nodes[new_element2];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(0)]] = old_nodes_to_new_nodes[target_node];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(1)]] = old_nodes_to_new_nodes[loop_nodes[1]];
-    new_element_nodes_to_nodes[new_element_nodes[l_t(2)]] = old_nodes_to_new_nodes[loop_nodes[0]];
-    new_elements_are_same[new_element1] = false;
-    new_elements_are_same[new_element2] = false;
+    apply_triangle_swap(c, node, target_node);
   };
   for_each(s.nodes, functor);
 }
