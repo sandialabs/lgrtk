@@ -433,12 +433,13 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node != node) {
+          cavity_op const adj_op = nodes_to_op[adj_node];
           double const adj_criteria = nodes_to_criteria[adj_node];
-          if ((adj_criteria > criteria) ||
-              ((adj_criteria == criteria) &&
-               (adj_node < node))) {
-            return;
-          }
+          if (op < adj_op) return;
+          if (op > adj_op) continue;
+          if (criteria < adj_criteria) return;
+          if (criteria > adj_criteria) continue;
+          if (adj_node < node) return;
         }
       }
     }
