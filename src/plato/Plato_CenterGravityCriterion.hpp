@@ -20,6 +20,28 @@ namespace Plato
 {
 
 /******************************************************************************//**
+ * @brief Compute centroid coordinates per cell/element
+ * @param [in] aCellOrdinal cell/element ordinal
+ * @param [in] aConfigWS 3D container with the coordinates per cell/element
+ * @param [out] aCentroid 1D container with the centroid coordinates per cell/element
+**********************************************************************************/
+template<Plato::OrdinalType SpaceDim, typename InputT, typename OutputT>
+DEVICE_TYPE inline void compute_simplex_centroid(const Plato::OrdinalType & aCellOrdinal,
+                                                 Plato::ScalarArray3DT<InputT> aConfigWS,
+                                                 Plato::ScalarMultiVectorT<OutputT> aCentroid)
+{
+    constexpr Plato::OrdinalType tNumNodesPerCell = SpaceDim + static_cast<Plato::OrdinalType>(1);
+    for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < tNumNodesPerCell; tNodeIndex++)
+    {
+        for(Plato::OrdinalType tDim = 0; tDim < SpaceDim; tDim++)
+        {
+            aCentroid(aCellOrdinal, tDim) += (aConfigWS(aCellOrdinal, tNodeIndex, tDim) / tNumNodesPerCell);
+        }
+    }
+}
+// function compute_simplex_centroid
+
+/******************************************************************************//**
  * @brief Augmented Lagrangian center of gravity constraint criterion with mass objective
 **********************************************************************************/
 template<typename EvaluationType>
@@ -42,7 +64,6 @@ private:
     Plato::Scalar mAugLagPenalty; /*!< augmented Lagrangian penalty */
     Plato::Scalar mMinErsatzValue; /*!< minimum ersatz material value in SIMP model */
     Plato::Scalar mCellMaterialDensity; /*!< material density (note: constant for all the elements/cells) */
-    Plato::Scalar mGravitationalConstant; /*!< gravitational constants, default value set to 9.8 meters/seconds^2 */
     Plato::Scalar mAugLagPenaltyUpperBound; /*!< upper bound on augmented Lagrangian penalty */
     Plato::Scalar mMassNormalizationMultiplier; /*!< normalization multipliers for mass criterion */
     Plato::Scalar mInitialLagrangeMultipliersValue; /*!< initial value for Lagrange multipliers */
@@ -76,7 +97,6 @@ private:
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
         mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
-        mGravitationalConstant = tParams.get<Plato::Scalar>("Gravitational Constant", 9.8);
         mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 500.0);
         mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
         mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
@@ -109,7 +129,6 @@ public:
             mAugLagPenalty(0.25),
             mMinErsatzValue(1e-9),
             mCellMaterialDensity(1.0),
-            mGravitationalConstant(9.8),
             mAugLagPenaltyUpperBound(500),
             mMassNormalizationMultiplier(1.0),
             mInitialLagrangeMultipliersValue(0.01),
@@ -133,7 +152,6 @@ public:
             mAugLagPenalty(0.25),
             mMinErsatzValue(1e-9),
             mCellMaterialDensity(1.0),
-            mGravitationalConstant(9.8),
             mAugLagPenaltyUpperBound(500),
             mMassNormalizationMultiplier(1.0),
             mInitialLagrangeMultipliersValue(0.01),
@@ -141,7 +159,6 @@ public:
             mLagrangeMultipliers("Lagrange Multipliers", mSpaceDim),
             mTargetCenterGravity("Target Center of Gravity", mSpaceDim)
     {
-        this->computeInitialStructuralMass();
         this->computeInitialStructuralMass();
         Plato::fill(1, mTargetCenterGravity);
         Plato::fill(mInitialLagrangeMultipliersValue, mLagrangeMultipliers);
@@ -249,8 +266,7 @@ public:
 
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tTargetCenterGravity = mTargetCenterGravity;
-        auto tCellMaterialDensity = mCellMaterialDensity;
-        auto tGravitationalConstant = mGravitationalConstant;
+        auto tMaterialDensity = mCellMaterialDensity;
 
         // ****** DEFINE CUBATURE RULE ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
@@ -259,29 +275,29 @@ public:
 
         // ****** COMPUTE CONSTRAINT CONTRIBUTION FROM EACH CELL ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
+        Plato::ScalarMultiVector tCentroid("Centroid", tNumCells, mSpaceDim);
         Plato::ScalarMultiVector tConstraints("Constraints", tNumCells, mSpaceDim);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
             // Compute mass objective contribution to augmented Lagrangian function
             Plato::Scalar tCellVolume = 0.0;
             tComputeCellVolume(aCellOrdinal, aConfigWS, tCellVolume);
-            Plato::Scalar tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
-            Plato::Scalar tPenalizedMass = tSIMP(tCellMass);
-            Plato::Scalar tCellPenalizedMassTimesDensity = tPenalizedMass * tCellVolume * tCubWeight * tCellMaterialDensity;
+            auto tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
+            auto tPenalizedMass = tSIMP(tCellMass);
+            auto tCellPenalizedMassTimesDensity = tPenalizedMass * tCellVolume * tCubWeight * tMaterialDensity;
 
             // Compute constraint contribution to augmented Lagrangian function
-            for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
+            Plato::compute_simplex_centroid<mSpaceDim>(aCellOrdinal, aConfigWS, tCentroid);
+            auto tAppxTotalMass = static_cast<Plato::Scalar>(tNumCells) * tCellMass * tCellVolume * tMaterialDensity;
+            for(Plato::OrdinalType tDimIndex = 0; tDimIndex < mSpaceDim; tDimIndex++)
             {
-                for(Plato::OrdinalType tDimIndex = 0; tDimIndex < mSpaceDim; tDimIndex++)
-                {
-                    Plato::Scalar tMyCurrentCenterGravityContribution = ( tGravitationalConstant * tCellPenalizedMassTimesDensity
-                            * aConfigWS(aCellOrdinal, tNodeIndex, tDimIndex) ) / tCellPenalizedMassTimesDensity;
-                    Plato::Scalar tMyCenterGravityOverLimit = ( tMyCurrentCenterGravityContribution / tTargetCenterGravity(tDimIndex) );
-                    Plato::Scalar tMyCenterGravityOverLimitMinusOne = tMyCenterGravityOverLimit - static_cast<Plato::Scalar>(1.0);
-                    Plato::Scalar tMyDimConstraint = tMyCenterGravityOverLimitMinusOne * ( (tMyCenterGravityOverLimitMinusOne
-                            * tMyCenterGravityOverLimitMinusOne) + static_cast<Plato::Scalar>(1.0) );
-                    tConstraints(aCellOrdinal, tDimIndex) += tMyDimConstraint;
-                }
+                auto tMyCurrentCenterGravityContribution = ( tCellPenalizedMassTimesDensity
+                        * tCentroid(aCellOrdinal, tDimIndex) ) / tAppxTotalMass;
+                auto tMyCenterGravityOverLimit = ( tMyCurrentCenterGravityContribution / tTargetCenterGravity(tDimIndex) );
+                auto tMyCenterGravityOverLimitMinusOne = tMyCenterGravityOverLimit - static_cast<Plato::Scalar>(1.0);
+                auto tMyDimConstraint = tMyCenterGravityOverLimitMinusOne * ( (tMyCenterGravityOverLimitMinusOne
+                        * tMyCenterGravityOverLimitMinusOne) + static_cast<Plato::Scalar>(1.0) );
+                tConstraints(aCellOrdinal, tDimIndex) += tMyDimConstraint;
             }
         },"Compute Cell Constraints");
 
@@ -319,16 +335,20 @@ public:
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tAugLagPenalty = mAugLagPenalty;
         auto tTargetCenterGravity = mTargetCenterGravity;
-        auto tCellMaterialDensity = mCellMaterialDensity;
+        auto tMaterialDensity = mCellMaterialDensity;
         auto tLagrangeMultipliers = mLagrangeMultipliers;
-        auto tGravitationalConstant = mGravitationalConstant;
         auto tMassNormalizationMultiplier = mMassNormalizationMultiplier;
+
+        // ****** INITIALIZE TEMPORARY ARRAYS ******
+        const Plato::OrdinalType tNumCells = mMesh.nelems();
+        Plato::ScalarVectorT<ResultT> tConstraint("constraint", tNumCells);
+        Plato::ScalarMultiVectorT<ConfigT> tCentroids("Centroids", tNumCells, mSpaceDim);
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
         auto tCubWeight = tCubatureRule.getCubWeight();
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
-        const Plato::OrdinalType tNumCells = mMesh.nelems();
+        constexpr Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0/ mSpaceDim);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
             // Compute mass objective contribution to augmented Lagrangian function
@@ -337,30 +357,26 @@ public:
             tCellVolume *= tCubWeight;
             ControlT tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS);
             ControlT tPenalizedMass = tSIMP(tCellMass);
-            ResultT tCellPenalizedMassTimesDensity = tPenalizedMass * tCellVolume * tCellMaterialDensity;
-            ResultT tMassContribution = tCellPenalizedMassTimesDensity / tMassNormalizationMultiplier;
+            ResultT tCellPenalizedMassTimesDensity = tPenalizedMass * tCellVolume * tMaterialDensity;
+            aResultWS(aCellOrdinal) = tCellPenalizedMassTimesDensity / tMassNormalizationMultiplier;
 
             // Compute constraint contribution to augmented Lagrangian function
-            ResultT tCenterGravityContribution = 0.0;
-            for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
+            Plato::compute_simplex_centroid<mSpaceDim>(aCellOrdinal, aConfigWS, tCentroids);
+            ResultT tAppxTotalMass = static_cast<Plato::Scalar>(tNumCells) * tCellMass * tCellVolume * tMaterialDensity;
+            for(Plato::OrdinalType tDimIndex = 0; tDimIndex < mSpaceDim; tDimIndex++)
             {
-                for(Plato::OrdinalType tDimIndex = 0; tDimIndex < mSpaceDim; tDimIndex++)
-                {
-                    ResultT tMyCurrentCenterGravityContribution = ( tGravitationalConstant * tCellPenalizedMassTimesDensity
-                            * aConfigWS(aCellOrdinal, tNodeIndex, tDimIndex) ) / tCellPenalizedMassTimesDensity;
-                    ResultT tMyCenterGravityOverLimit = ( tMyCurrentCenterGravityContribution / tTargetCenterGravity(tDimIndex) );
-                    ResultT tMyCenterGravityOverLimitMinusOne = tMyCenterGravityOverLimit - static_cast<Plato::Scalar>(1.0);
-                    ResultT tMyConstraint = tMyCenterGravityOverLimitMinusOne * ( (tMyCenterGravityOverLimitMinusOne
-                            * tMyCenterGravityOverLimitMinusOne) + static_cast<Plato::Scalar>(1.0) );
-                    ResultT tLagrangianTermOne = tLagrangeMultipliers(tDimIndex) * tMyConstraint;
-                    ResultT tLagrangianTermTwo = tAugLagPenalty * static_cast<Plato::Scalar>(0.5) * tMyConstraint * tMyConstraint;
-                    ResultT tMyLagrangianConstribution = tLagrangianTermOne + tLagrangianTermTwo;
-                    tCenterGravityContribution += tMyLagrangianConstribution;
-                }
+                ResultT tMyCurrentCenterGravityContribution = ( tCellPenalizedMassTimesDensity
+                        * tCentroids(aCellOrdinal, tDimIndex) ) / tAppxTotalMass;
+                ResultT tMyCenterGravityOverLimit = ( tMyCurrentCenterGravityContribution / tTargetCenterGravity(tDimIndex) );
+                ResultT tMyCenterGravityOverLimitMinusOne = tMyCenterGravityOverLimit - static_cast<Plato::Scalar>(1.0);
+                ResultT tMyConstraint = tMyCenterGravityOverLimitMinusOne * ( (tMyCenterGravityOverLimitMinusOne
+                        * tMyCenterGravityOverLimitMinusOne) + static_cast<Plato::Scalar>(1.0) );
+                ResultT tLagrangianTermOne = tLagrangeMultipliers(tDimIndex) * tMyConstraint;
+                ResultT tLagrangianTermTwo = tAugLagPenalty * static_cast<Plato::Scalar>(0.5) * tMyConstraint * tMyConstraint;
+                tConstraint(aCellOrdinal) += tLagrangianTermOne + tLagrangianTermTwo;
             }
 
-            aResultWS(aCellOrdinal) = tMassContribution +
-                    ( static_cast<Plato::Scalar>(1.0/ mSpaceDim) * tCenterGravityContribution );
+            aResultWS(aCellOrdinal) += ( tLagrangianMultiplier * tConstraint(aCellOrdinal) );
         },"Evaluate Augmented Lagrangian Function");
     }
 
@@ -386,7 +402,6 @@ public:
 // class CenterGravityCriterion
 
 } // namespace Plato
-
 
 #include "plato/Mechanics.hpp"
 
