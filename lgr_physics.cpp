@@ -740,6 +740,8 @@ void run(input const& in) {
       }
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
+        output_file(in, file_output_index, s);
+        ++file_output_index;
         adapt(in, s);
         resize_state(in, s);
         output_file(in, file_output_index, s);

@@ -1,4 +1,5 @@
 #include <cassert>
+#include <iostream>
 
 #include <lgr_element_specific.hpp>
 #include <lgr_macros.hpp>
@@ -9,6 +10,7 @@
 #include <lgr_copy.hpp>
 #include <lgr_composite_tetrahedron.hpp>
 #include <lgr_element_specific_inline.hpp>
+#include <lgr_print.hpp>
 
 namespace lgr {
 
@@ -44,12 +46,19 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
+    array<node_index, 3> nodes;
     array<vector3<double>, 3> x;
     for (int i = 0; i < 3; ++i) {
       node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      nodes[i] = node;
       x[i] = nodes_to_x[node];
     }
     double const area = triangle_area(x);
+    if (area <= 0.0) {
+      std::cout << "new element " << int(element) << " area " << area << '\n';
+      for (auto const x_a : x) std::cout << "x: " << x_a << '\n';
+      for (auto const node : nodes) std::cout << "node: " << int(node) << '\n';
+    }
     assert(area > 0.0);
     points_to_V[elements_to_points[element][fp]] = area;
   };
