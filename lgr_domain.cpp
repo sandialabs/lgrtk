@@ -95,6 +95,15 @@ void set_materials(input const& in, state& s) {
   }
 }
 
+void collect_node_sets(input const& in, state& s) {
+  for (auto const& pair : in.node_sets) {
+    auto const& domain_name = pair.first;
+    auto const& domain_ptr = pair.second;
+    s.node_sets.emplace(domain_name, s.devpool);
+    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
+  }
+}
+
 void collect_element_sets(input const& in, state& s)
 {
   s.element_sets.resize(in.material_count, s.devpool);

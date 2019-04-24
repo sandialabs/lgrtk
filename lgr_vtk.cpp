@@ -138,8 +138,6 @@ void file_writer::operator()(
   }
   if (!in.enable_nodal_energy) {
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
-    std::cout << "at VTK time, s.elements is " << int(s.elements.size()) << '\n';
-    std::cout << "at VTK time, density array size " << int(s.rho.size()) << '\n';
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }
   write_vtk_scalars(stream, "time_step", s.elements, s.points_in_element, s.element_dt);
