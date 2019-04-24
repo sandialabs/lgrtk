@@ -310,7 +310,12 @@ void write_vtu(Omega_h::filesystem::path const& step_path,
   OMEGA_H_TIME_FUNCTION;
   auto const dim = sim.disc.dim();
   Omega_h::filesystem::path vtu_name;
-  if (override_path) vtu_name = step_path;
+  if (override_path) {
+    // hack to visualize the data when this function is
+    // called as a free-floating function
+    sim.disc.set_node_coords(sim.get(sim.position));
+    vtu_name = step_path;
+  }
   else vtu_name = step_path / piece_filename(sim.comm->rank());
   std::ofstream file(vtu_name.c_str());
   OMEGA_H_CHECK(file.is_open());
