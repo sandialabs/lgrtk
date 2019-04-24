@@ -703,12 +703,7 @@ void run(input const& in) {
   state s;
   build_mesh(in, s);
   if (in.x_transform) in.x_transform(&s.x);
-  for (auto const& pair : in.node_sets) {
-    auto const& domain_name = pair.first;
-    auto const& domain_ptr = pair.second;
-    s.node_sets.emplace(domain_name, s.devpool);
-    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
-  }
+  collect_node_sets(in, s);
   resize_state(in, s);
   set_materials(in, s);
   collect_element_sets(in, s);
