@@ -678,6 +678,7 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
     device_vector<T, point_index>& data, bool print = false) {
   auto const points_in_element = s.points_in_element;
   device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
+  if (print) std::cout << "resizing new vector to " << int(new_data.size()) << '\n';
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_points_to_T = data.cbegin();
   auto const new_points_to_T = new_data.begin();
@@ -691,9 +692,9 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
       auto const new_point = new_element_points[point_in_element];
       auto const old_point = old_element_points[point_in_element];
       T const old_value = old_points_to_T[old_point];
-      if (print) {
-        std::cout << "moving value " << old_value << " to " << int(new_point) << " from " << int(old_point) << '\n';
-      }
+//    if (print) {
+//      std::cout << "moving value " << old_value << " to " << int(new_point) << " from " << int(old_point) << '\n';
+//    }
       new_points_to_T[new_point] = old_value;
     }
   };
@@ -763,14 +764,18 @@ bool adapt(input const& in, state& s) {
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
-  transfer_point_data<double>(s, a, s.rho);
+  transfer_point_data<double>(s, a, s.rho, true);
+  std::cout << "new density array size " << int(s.rho.size()) << '\n';
   if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
   interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
+  s.points.resize(s.elements.size() * s.points_in_element.size());
+  std::cout << "in adapt, s.elements is " << int(s.elements.size()) << '\n';
   s.nodes = a.new_nodes;
+  std::cout << "in adapt, setting s.nodes to " << int(s.nodes.size()) << '\n';
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   s.nodes_to_node_elements.resize(s.nodes.size());
   invert_connectivity(s);
