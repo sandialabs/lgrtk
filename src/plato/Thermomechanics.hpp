@@ -200,7 +200,23 @@ struct FunctionFactory
                             std::string strScalarFunctionType )
     /******************************************************************************/
     {
-      throw std::runtime_error("Objectives not yet implemented for this physics");
+        if( strScalarFunctionType == "Internal Thermoelastic Energy" ){
+            auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+            std::string penaltyType = penaltyParams.get<std::string>("Type");
+            if( penaltyType == "SIMP" ){
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+            } else
+            if( penaltyType == "RAMP" ){
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+            } else
+            if( penaltyType == "Heaviside" ){
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+            } else {
+                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+            }
+        } else {
+            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+        }
     }
 }; // struct FunctionFactory
 

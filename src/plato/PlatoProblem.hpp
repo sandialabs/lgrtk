@@ -293,7 +293,7 @@ public:
             Plato::scale(static_cast<Plato::Scalar>(-1), tPartialObjectiveWRT_State);
 
             // compute dgdu: partial of PDE wrt state
-            mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
+            mJacobian = mEqualityConstraint.gradient_u_T(tStatesSubView, aControl);
 
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 

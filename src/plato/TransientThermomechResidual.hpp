@@ -201,7 +201,6 @@ class TransientThermomechResidual :
         // compute stress and flux divergence
         //
         stressDivergence(cellOrdinal, aResult, tStress,     gradient, cellVolume, aTimeStep/2.0);
-        stressDivergence(cellOrdinal, aResult, tPrevStress, gradient, cellVolume, aTimeStep/2.0);
 
         fluxDivergence(cellOrdinal, aResult, tFlux,     gradient, cellVolume, aTimeStep/2.0);
         fluxDivergence(cellOrdinal, aResult, tPrevFlux, gradient, cellVolume, aTimeStep/2.0);

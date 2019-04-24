@@ -552,6 +552,45 @@ class Assemble
 
 
 /******************************************************************************/
+template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode>
+class BlockMatrixTransposeEntryOrdinal
+{
+  private:
+    const typename CrsMatrixType::RowMapVector m_rowMap;
+    const typename CrsMatrixType::OrdinalVector m_columnIndices;
+    const Omega_h::LOs m_cells2nodes;
+
+  public:
+    BlockMatrixTransposeEntryOrdinal(Teuchos::RCP<Plato::CrsMatrixType> matrix, Omega_h::Mesh* mesh ) :
+      m_rowMap(matrix->rowMap()),
+      m_columnIndices(matrix->columnIndices()),
+      m_cells2nodes(mesh->ask_elem_verts()) { }
+
+    DEVICE_TYPE
+    inline
+    Plato::OrdinalType
+    operator()(Plato::OrdinalType cellOrdinal, Plato::OrdinalType icellDof, Plato::OrdinalType jcellDof) const
+    {
+        auto iNode = icellDof / DofsPerNode;
+        auto iDof  = icellDof % DofsPerNode;
+        auto jNode = jcellDof / DofsPerNode;
+        auto jDof  = jcellDof % DofsPerNode;
+        Plato::OrdinalType iLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
+        Plato::OrdinalType jLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
+        Plato::RowMapEntryType rowStart = m_rowMap(jLocalOrdinal);
+        Plato::RowMapEntryType rowEnd   = m_rowMap(jLocalOrdinal+1);
+        for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
+        {
+          if (m_columnIndices(entryOrdinal) == iLocalOrdinal)
+          {
+            return entryOrdinal*DofsPerNode*DofsPerNode+jDof*DofsPerNode+iDof;
+          }
+        }
+        return Plato::RowMapEntryType(-1);
+    }
+};
+
+/******************************************************************************/
 template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode_I, Plato::OrdinalType DofsPerNode_J=DofsPerNode_I>
 class BlockMatrixEntryOrdinal
 {
