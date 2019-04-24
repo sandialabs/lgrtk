@@ -743,10 +743,13 @@ void run(input const& in) {
         output_file(in, file_output_index, s);
         ++file_output_index;
         adapt(in, s);
+        std::cout << "before resize_state, density array size is " << int(s.rho.size()) << '\n';
         resize_state(in, s);
+        std::cout << "after resize_state, density array size is " << int(s.rho.size()) << '\n';
         output_file(in, file_output_index, s);
         ++file_output_index;
         common_initialization(in, s);
+        std::cout << "after common_initialization, density array size is " << int(s.rho.size()) << '\n';
         output_file(in, file_output_index, s);
         ++file_output_index;
       }
