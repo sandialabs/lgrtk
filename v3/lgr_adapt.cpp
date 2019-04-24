@@ -570,14 +570,10 @@ static inline void apply_triangle_split(apply_cavity const c,
       old_nodes[node_in_element] = old_node;
     }
     if (target_node_in_element == node_in_element_index(-1)) continue;
-    std::cout << "element " << int(element) << " splitting as part of " << int(center_node) << "-" << int(target_node) << '\n';
-    for (auto const old_node : old_nodes) std::cout << "old node " << int(old_node) << '\n';
     node_in_element_index const center_node_in_element = c.node_elements_to_nodes_in_element[node_element];
     element_index const new_element1 = c.old_elements_to_new_elements[element];
     auto const new_element_nodes1 = c.new_elements_to_element_nodes[new_element1];
     new_nodes[center_node_in_element] = split_node;
-    std::cout << "new element " << int(new_element1) << '\n';
-    for (auto const new_node : new_nodes) std::cout << "new node " << int(new_node) << '\n';
     for (auto const node_in_element : c.nodes_in_element) {
       auto const new_element_node = new_element_nodes1[node_in_element];
       c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
@@ -586,8 +582,6 @@ static inline void apply_triangle_split(apply_cavity const c,
     auto const new_element_nodes2 = c.new_elements_to_element_nodes[new_element2];
     new_nodes[center_node_in_element] = new_center_node;
     new_nodes[target_node_in_element] = split_node;
-    std::cout << "new element " << int(new_element2) << '\n';
-    for (auto const new_node : new_nodes) std::cout << "new node " << int(new_node) << '\n';
     for (auto const node_in_element : c.nodes_in_element) {
       auto const new_element_node = new_element_nodes2[node_in_element];
       c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
@@ -681,7 +675,7 @@ static LGR_NOINLINE void transfer_element_data(adapt_state& a,
 
 template <class T>
 static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
-    device_vector<T, point_index>& data) {
+    device_vector<T, point_index>& data, bool print = false) {
   auto const points_in_element = s.points_in_element;
   device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -696,8 +690,11 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
     for (auto const point_in_element : points_in_element) {
       auto const new_point = new_element_points[point_in_element];
       auto const old_point = old_element_points[point_in_element];
-      new_points_to_T[new_point] =
-        T(old_points_to_T[old_point]);
+      T const old_value = old_points_to_T[old_point];
+      if (print) {
+        std::cout << "moving value " << old_value << " to " << int(new_point) << " from " << int(old_point) << '\n';
+      }
+      new_points_to_T[new_point] = old_value;
     }
   };
   for_each(a.new_elements, functor);
@@ -715,13 +712,11 @@ static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vec
   auto functor = [=] (node_index const new_node) {
     if (new_nodes_are_same[new_node]) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
-      std::cout << "copying new node " << int(new_node) << " from " << int(old_node) << '\n';
       new_nodes_to_data[new_node] = T(old_nodes_to_data[old_node]);
     } else {
       array<node_index, 2> const pair = interpolate_from[new_node];
       node_index const left = pair[0];
       node_index const right = pair[1];
-      std::cout << "interpolating new node " << int(new_node) << " from " << int(left) << "+" << int(right) << '\n';
       new_nodes_to_data[new_node] = 0.5 * (
           T(old_nodes_to_data[left])
         + T(old_nodes_to_data[right]));
