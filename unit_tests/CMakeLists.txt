@@ -161,33 +161,6 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runAugLagStressUnitTests COMMAND ${ES_MPI_TEST})
 #end: AugLagStressTest unit test
 
-#begin: CenterGravityTest unit test
-  set(CenterGravityTest_SOURCES
-    PlatoCenterGravityTest.cpp
-    PlatoTestHelpers.cpp
-    PlatoUnitTestMain.cpp
-  )
-
-  set(CenterGravityTest_HEADERS
-    PlatoTestHelpers.hpp
-  )
-
-  add_executable(CenterGravityUnitTests
-    ${CenterGravityTest_SOURCES}
-    ${CenterGravityTest_HEADERS}
-  )
-
-  target_link_libraries(CenterGravityUnitTests 
-    lgrtk
-    ${Trilinos_LIBRARIES} 
-    ${Trilinos_TPL_LIBRARIES} 
-    )
-  target_include_directories(CenterGravityUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
-
-  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/CenterGravityUnitTests)
-  add_test(NAME runCenterGravityUnitTests COMMAND ${ES_MPI_TEST})
-#end: CenterGravityTest unit test
-
 #begin: PlatoMathHelpers unit test
   set(PlatoMathHelpers_SOURCES
     PlatoMathHelpersTest.cpp
