@@ -552,7 +552,6 @@ static inline void apply_triangle_swap(apply_cavity const c,
 static inline void apply_triangle_split(apply_cavity const c,
     node_index const center_node,
     node_index const target_node) {
-  std::cout << "applying split to old edge " << int(center_node) << "-" << int(target_node) << '\n';
   node_index const new_center_node = c.old_nodes_to_new_nodes[center_node];
   auto const split_node = new_center_node + node_index(1);
   for (auto const node_element : c.nodes_to_node_elements[center_node]) {
@@ -675,10 +674,9 @@ static LGR_NOINLINE void transfer_element_data(adapt_state& a,
 
 template <class T>
 static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
-    device_vector<T, point_index>& data, bool print = false) {
+    device_vector<T, point_index>& data) {
   auto const points_in_element = s.points_in_element;
   device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
-  if (print) std::cout << "resizing new vector to " << int(new_data.size()) << '\n';
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_points_to_T = data.cbegin();
   auto const new_points_to_T = new_data.begin();
@@ -692,9 +690,6 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
       auto const new_point = new_element_points[point_in_element];
       auto const old_point = old_element_points[point_in_element];
       T const old_value = old_points_to_T[old_point];
-//    if (print) {
-//      std::cout << "moving value " << old_value << " to " << int(new_point) << " from " << int(old_point) << '\n';
-//    }
       new_points_to_T[new_point] = old_value;
     }
   };
@@ -729,8 +724,6 @@ static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vec
 
 bool adapt(input const& in, state& s) {
   adapt_state a(s);
-  std::cout << int(s.elements.size()) << " elements before\n";
-  std::cout << int(s.nodes.size()) << " nodes before\n";
   evaluate_triangle_adapt(s, a);
   choose_triangle_adapt(s, a);
   auto const num_chosen = transform_reduce(a.op, int(0), plus<int>(),
@@ -740,15 +733,7 @@ bool adapt(input const& in, state& s) {
     std::cout << "adapting " << num_chosen << " cavities\n";
   }
   auto const num_new_elements = reduce(a.element_counts, element_index(0));
-  std::cout << int(num_new_elements) << " elements after\n";
-  for (auto const node : s.nodes) {
-    node_index const count = a.node_counts.begin()[node];
-    if (count != node_index(1)) {
-      std::cout << "node_counts[" << int(node) << "] = " << int(count) << '\n';
-    }
-  }
   auto const num_new_nodes = reduce(a.node_counts, node_index(0));
-  std::cout << int(num_new_nodes) << " nodes after\n";
   offset_scan(a.element_counts, a.old_elements_to_new_elements);
   offset_scan(a.node_counts, a.old_nodes_to_new_nodes);
   a.new_elements.resize(num_new_elements);
@@ -764,17 +749,14 @@ bool adapt(input const& in, state& s) {
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
-  transfer_point_data<double>(s, a, s.rho, true);
-  std::cout << "new density array size " << int(s.rho.size()) << '\n';
+  transfer_point_data<double>(s, a, s.rho);
   if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
   interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
-  std::cout << "in adapt, s.elements is " << int(s.elements.size()) << '\n';
   s.nodes = a.new_nodes;
-  std::cout << "in adapt, setting s.nodes to " << int(s.nodes.size()) << '\n';
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   propagate_connectivity(s);
   return true;
