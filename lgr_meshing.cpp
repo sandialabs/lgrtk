@@ -1,5 +1,7 @@
 #include <cassert>
 
+#include <iostream>
+
 #include <lgr_meshing.hpp>
 #include <lgr_macros.hpp>
 #include <lgr_state.hpp>
@@ -8,7 +10,10 @@
 
 namespace lgr {
 
-void invert_connectivity(state& s) {
+void propagate_connectivity(state& s) {
+  s.nodes_to_node_elements.resize(s.nodes.size());
+  s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
+  s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
   vector<int, device_allocator<int>, node_index> counts_vector(
       s.nodes.size(), device_allocator<int>(s.devpool));
   lgr::fill(counts_vector, int(0));
@@ -31,13 +36,14 @@ void invert_connectivity(state& s) {
   lgr::fill(counts_vector, int(0));
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.begin();
+  auto const num_node_elements = s.node_elements_to_elements.size();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.begin();
   auto const nodes_in_element = s.nodes_in_element;
   auto fill_functor = [=](element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const node_in_element : nodes_in_element) {
-      auto const element_node = element_nodes[node_in_element];
-      auto const node = element_nodes_to_nodes[element_node];
+      element_node_index const element_node = element_nodes[node_in_element];
+      node_index const node = element_nodes_to_nodes[element_node];
       int offset;
       { // needs to be atomic!
       offset = nodes_to_count[node];
@@ -45,11 +51,17 @@ void invert_connectivity(state& s) {
       }
       auto const node_elements_range = nodes_to_node_elements[node];
       auto const node_element = node_elements_range[node_element_index(offset)];
+      if (node_element >= num_node_elements) {
+        std::cerr << "element " << int(element) << " node " << int(node)
+          << " trying to write to node_element " << int(node_element)
+          << " but total is " << int(node_element) << '\n';
+      }
       node_elements_to_elements[node_element] = element;
       node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
   };
   lgr::for_each(s.elements, fill_functor);
+  s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
 static void LGR_NOINLINE initialize_bars_to_nodes(state& s) {
@@ -365,11 +377,7 @@ void build_mesh(input const& in, state& s) {
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
     case COMPOSITE_TETRAHEDRON: build_10_node_tetrahedron_mesh(in, s); break;
   }
-  s.nodes_to_node_elements.resize(s.nodes.size());
-  s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  invert_connectivity(s);
-  s.points.resize(s.elements.size() * s.points_in_element.size());
+  propagate_connectivity(s);
 }
 
 }
