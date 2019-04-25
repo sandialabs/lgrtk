@@ -20,19 +20,47 @@ class array {
     T m_impl[N];
   public:
     inline reference operator[](Index const i) noexcept {
-      return m_impl[int(i)];
+      return begin()[i];
     }
     inline const_reference operator[](Index const i) const noexcept {
-      return m_impl[int(i)];
+      return begin()[i];
     }
     inline pointer data() noexcept { return m_impl; }
     inline const_pointer data() const noexcept { return m_impl; }
-    inline iterator begin() noexcept { return iterator(m_impl); } 
-    inline const_iterator begin() const noexcept { return const_iterator(m_impl); } 
-    inline const_iterator cbegin() const noexcept { return const_iterator(m_impl); } 
-    inline iterator end() noexcept { return iterator(m_impl + N); } 
-    inline const_iterator end() const noexcept { return const_iterator(m_impl + N); } 
-    inline const_iterator cend() const noexcept { return const_iterator(m_impl + N); } 
+    inline iterator begin() noexcept {
+#ifdef NDEBUG
+      return iterator(m_impl);
+#else
+      return iterator(m_impl, m_impl, m_impl + N);
+#endif
+    }
+    inline const_iterator begin() const noexcept {
+#ifdef NDEBUG
+      return const_iterator(m_impl);
+#else
+      return const_iterator(m_impl, m_impl, m_impl + N);
+#endif
+    }
+    inline const_iterator cbegin() const noexcept {
+      return begin();
+    }
+    inline iterator end() noexcept {
+#ifdef NDEBUG
+      return iterator(m_impl + N);
+#else
+      return iterator(m_impl + N, m_impl, m_impl + N);
+#endif
+    }
+    inline const_iterator end() const noexcept {
+#ifdef NDEBUG
+      return const_iterator(m_impl + N);
+#else
+      return const_iterator(m_impl + N, m_impl, m_impl + N);
+#endif
+    }
+    inline const_iterator cend() const noexcept {
+      return end();
+    }
     constexpr size_type size() const noexcept { return size_type(N); }
     inline array& operator=(array const&) noexcept = default;
     inline array(array const&) noexcept = default;
