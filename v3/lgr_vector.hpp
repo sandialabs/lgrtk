@@ -58,12 +58,48 @@ public:
   ~vector() { clear(); }
   T* data() noexcept { return m_data; }
   T const* data() const noexcept { return m_data; }
-  iterator begin() noexcept { return iterator(m_data); }
-  const_iterator begin() const noexcept { return const_iterator(m_data); }
-  const_iterator cbegin() const noexcept { return const_iterator(m_data); }
-  iterator end() noexcept { return iterator(m_data + int(m_size)); }
-  const_iterator end() const noexcept { return const_iterator(m_data + int(m_size)); }
-  const_iterator cend() const noexcept { return const_iterator(m_data + int(m_size)); }
+  iterator begin() noexcept {
+#ifdef NDEBUG
+    return iterator(m_data);
+#else
+    return iterator(m_data, m_data, m_data + int(m_size));
+#endif
+  }
+  const_iterator begin() const noexcept {
+#ifdef NDEBUG
+    return const_iterator(m_data);
+#else
+    return const_iterator(m_data, m_data, m_data + int(m_size));
+#endif
+  }
+  const_iterator cbegin() const noexcept {
+#ifdef NDEBUG
+    return const_iterator(m_data);
+#else
+    return const_iterator(m_data, m_data, m_data + int(m_size));
+#endif
+  }
+  iterator end() noexcept {
+#ifdef NDEBUG
+    return iterator(m_data + int(m_size));
+#else
+    return iterator(m_data + int(m_size), m_data, m_data + int(m_size));
+#endif
+  }
+  const_iterator end() const noexcept {
+#ifdef NDEBUG
+    return const_iterator(m_data + int(m_size));
+#else
+    return const_iterator(m_data + int(m_size), m_data, m_data + int(m_size));
+#endif
+  }
+  const_iterator cend() const noexcept {
+#ifdef NDEBUG
+    return const_iterator(m_data + int(m_size));
+#else
+    return const_iterator(m_data + int(m_size), m_data, m_data + int(m_size));
+#endif
+  }
   bool empty() const noexcept { return m_size == 0; }
   size_type size() const noexcept { return m_size; }
   void clear() {
@@ -76,12 +112,6 @@ public:
     clear();
     m_data = allocator_traits_type::allocate(m_allocator, std::size_t(count));
     m_size = count;
-  }
-  void swap(vector& other) {
-    using std::swap;
-    swap(m_allocator, other.m_allocator);
-    swap(m_data, other.m_data);
-    swap(m_size, other.m_size);
   }
   allocator_type get_allocator() const { return m_allocator; }
 };
