@@ -96,23 +96,6 @@ static Omega_h::Matrix<3, 10> get_reference_coords() {
   return Omega_h::transpose(X);
 }
 
-static Omega_h::Matrix<3, 10> get_broken_reference_coords() {
-  Omega_h::Matrix<10, 3> X;
-  X = {
-    0.481279, 0.347261, 0.257175,
-    0.262811, 0.290676, 0.312645,
-    0.308554, -6.11711e-17, 0.306792,
-    0.405951, 0.174134, 0.406079,
-    0.372879, 0.324051, 0.286994,
-    0.327813, 0.186193, 0.342971,
-    0.431337, 0.262344, 0.336462,
-    0.443615, 0.260697, 0.331627,
-    0.334381, 0.232405, 0.359362,
-    0.357252, 0.0870671, 0.356436
-  };
-  return Omega_h::transpose(X);
-}
-
 static Omega_h::Matrix<3, 10> get_current_coords() {
   Omega_h::Matrix<10, 3> x;
   x = {
@@ -811,12 +794,6 @@ TEST(composite_tet, min_char_length) {
   auto X = get_reference_coords();
   auto min = lgr::CompTet::compute_char_length(X);
   EXPECT_TRUE(are_close(1.0127999982449550e-01, min));
-}
-
-TEST(composite_tet, broken_min_char_length) {
-  auto X = get_broken_reference_coords();
-  auto min = lgr::CompTet::compute_char_length(X);
-  std::cout << "MIN!!!!!!!!" << min << std::endl;
 }
 
 TEST(composite_tet, mass_matrix) {

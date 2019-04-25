@@ -1219,12 +1219,6 @@ Shape<CompTet> CompTet::shape(Matrix<dim, nodes> node_coords) {
   out.lengths.time_step_length =
       magic_number * compute_char_length(node_coords);
 
-  if (out.lengths.time_step_length < 0) {
-    for (int i = 0; i < 10; ++i) {
-      std::cout << node_coords[i] << std::endl;
-    }
-  }
-
   out.lengths.viscosity_length = out.lengths.time_step_length;
 
   return out;

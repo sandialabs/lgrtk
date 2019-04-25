@@ -5,8 +5,6 @@
 #include <lgr_scope.hpp>
 #include <lgr_simulation.hpp>
 
-#include "lgr_vtk_output.hpp"
-
 namespace lgr {
 
 template <class Elem>
@@ -428,33 +426,17 @@ void compute_point_time_steps(Simulation& sim) {
   auto const elems_to_h = sim.get(sim.time_step_length);
   auto const points_to_dt = sim.set(sim.point_time_step);
   double const max = std::numeric_limits<double>::max();
-  Omega_h::Write<Omega_h::Byte> print(1); // DEBUG
-  print.set(0, 0); // DEBUG
   auto functor = OMEGA_H_LAMBDA(int const point) {
     auto const elem = point / Elem::points;
     auto const h = elems_to_h[elem];
-    if (h <= 0.0) { // DEBUG
-      std::cout << elem << std::endl; // DEBUG
-      print[0] = 1; // DEBUG
-    }
-    if ((0)) OMEGA_H_CHECK(h > 0.0); // DEBUG
+    OMEGA_H_CHECK(h > 0.0);
     auto const c = points_to_c[point];
-    if ((0)) OMEGA_H_CHECK(c >= 0.0); // DEBUG
+    OMEGA_H_CHECK(c >= 0.0);
     auto const dt = (c == 0.0) ? max : (h / c);
-    if ((0)) OMEGA_H_CHECK(dt > 0.0); // DEBUG
+    OMEGA_H_CHECK(dt > 0.0);
     points_to_dt[point] = dt;
   };
   parallel_for(sim.points(), std::move(functor));
-
-  // DEBUG
-  if (print.get(0)) {
-    LgrFields lgr_empty[4];
-    OshFields osh_fields[4];
-    osh_fields[3].insert("global");
-    ::lgr::write_vtu("failure.vtu", sim, false, lgr_empty, osh_fields, true);
-    Omega_h_fail("NO!\n");
-  }
-
 }
 
 #define LGR_EXPL_INST(Elem)                                                    \
