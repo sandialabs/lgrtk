@@ -741,8 +741,6 @@ void run(input const& in) {
         resize_state(in, s);
         collect_element_sets(in, s);
         collect_node_sets(in, s);
-        output_file(in, file_output_index, s);
-        ++file_output_index;
         common_initialization(in, s);
         output_file(in, file_output_index, s);
         ++file_output_index;

@@ -394,10 +394,10 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       nodes_to_criteria[node] = longest_split_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
       nodes_to_op[node] = cavity_op::SPLIT;
-  //} else if (best_swap_edge_node != -1) {
-  //  nodes_to_criteria[node] = best_swap_improvement;
-  //  nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
-  //  nodes_to_op[node] = cavity_op::SWAP;
+    } else if (best_swap_edge_node != -1) {
+      nodes_to_criteria[node] = best_swap_improvement;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
+      nodes_to_op[node] = cavity_op::SWAP;
     } else {
       nodes_to_other_nodes[node] = node_index(-1);
       nodes_to_op[node] = cavity_op::NONE;
