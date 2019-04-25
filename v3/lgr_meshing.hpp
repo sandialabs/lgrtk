@@ -6,6 +6,6 @@ class input;
 class state;
 
 void build_mesh(input const& in, state& s);
-void invert_connectivity(state& s);
+void propagate_connectivity(state& s);
 
 }

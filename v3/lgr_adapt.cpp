@@ -772,13 +772,11 @@ bool adapt(input const& in, state& s) {
   interpolate_nodal_data<vector3<double>>(a, s.v);
   interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
-  s.points.resize(s.elements.size() * s.points_in_element.size());
   std::cout << "in adapt, s.elements is " << int(s.elements.size()) << '\n';
   s.nodes = a.new_nodes;
   std::cout << "in adapt, setting s.nodes to " << int(s.nodes.size()) << '\n';
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
-  s.nodes_to_node_elements.resize(s.nodes.size());
-  invert_connectivity(s);
+  propagate_connectivity(s);
   return true;
 }
 
