@@ -97,6 +97,34 @@ void assign_element_materials(input const& in, state& s) {
   }
 }
 
+void compute_nodal_materials(input const& in, state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_materials = s.material.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_materials = s.nodal_materials.begin();
+  vector3<double> x_maxima(in.x_domain_size, in.y_domain_size, in.z_domain_size);
+  auto functor = [=](node_index const node) {
+    auto const node_elements = nodes_to_node_elements[node];
+    auto node_materials = material_set::none();
+    for (auto const node_element : node_elements) {
+      element_index const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_materials[element];
+      node_materials = node_materials | material_set(element_material);
+    }
+    vector3<double> const x = nodes_to_x[node];
+    bool is_exterior = false;
+    constexpr double tol = 1.0e-10;
+    for (int axis = 0; axis < 3; ++axis) {
+      if (std::abs(x(0)) < tol) is_exterior = true;
+      if (std::abs(x(0) - x_maxima(0)) < tol) is_exterior = true;
+    }
+    if (is_exterior) node_materials = node_materials | material_set(exterior_material);
+    nodes_to_materials[node] = node_materials;
+  };
+  for_each(s.nodes, functor);
+}
+
 void collect_node_sets(input const& in, state& s) {
   for (auto const& pair : in.node_sets) {
     auto const& domain_name = pair.first;

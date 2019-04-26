@@ -160,6 +160,7 @@ class input;
 class state;
 
 void assign_element_materials(input const& in, state& s);
+void compute_nodal_materials(input const& in, state& s);
 void collect_element_sets(input const& in, state& s);
 void collect_node_sets(input const& in, state& s);
 
