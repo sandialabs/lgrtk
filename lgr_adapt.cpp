@@ -166,8 +166,8 @@ void initialize_h_adapt(state& s)
 enum cavity_op {
   NONE,
   SWAP,
-  SPLIT,
   COLLAPSE,
+  SPLIT,
 };
 
 struct adapt_state {
@@ -446,7 +446,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       evaluate_triangle_collapse(center_node, edge_node, c,
           shortest_collapse_edge, best_collapse_edge_node);
     }
-    if (((0)) && best_split_edge_node != -1) {
+    if (best_split_edge_node != -1) {
       nodes_to_criteria[node] = longest_split_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
       nodes_to_op[node] = cavity_op::SPLIT;
@@ -454,7 +454,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       nodes_to_criteria[node] = 1.0 / shortest_collapse_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_collapse_edge_node];
       nodes_to_op[node] = cavity_op::COLLAPSE;
-    } else if (((0)) && best_swap_edge_node != -1) {
+    } else if (best_swap_edge_node != -1) {
       nodes_to_criteria[node] = best_swap_improvement;
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
       nodes_to_op[node] = cavity_op::SWAP;
