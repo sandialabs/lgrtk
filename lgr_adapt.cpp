@@ -308,8 +308,8 @@ static inline void evaluate_triangle_split(
   auto const h_max = max(h1, h2);
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
-  if (lm < std::sqrt(2.0)) return;
-  if (lm < longest_length) return;
+  if (lm <= std::sqrt(2.0)) return;
+  if (lm <= longest_length) return;
   auto const midpoint_x = 0.5 * (x1 + x2);
   for (int element = 0; element < c.num_shell_elements; ++element) {
     array<vector3<double>, 3> parent_x;
@@ -332,6 +332,47 @@ static inline void evaluate_triangle_split(
   }
   longest_length = lm;
   best_split_edge_node = edge_node;
+}
+
+template <int max_shell_elements, int max_shell_nodes>
+static inline void evaluate_triangle_collapse(
+    int const center_node,
+    int const edge_node,
+    eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
+    double& shortest_length,
+    int& best_collapse_edge_node
+    ) {
+  constexpr double min_acceptable_quality = 0.2;
+  auto const h1 = c.shell_nodes_to_h[center_node];
+  auto const h2 = c.shell_nodes_to_h[edge_node];
+  auto const x1 = c.shell_nodes_to_x[center_node];
+  auto const x2 = c.shell_nodes_to_x[edge_node];
+  auto const h_min = min(h1, h2);
+  auto const h_max = max(h1, h2);
+  auto const l = norm(x1 - x2);
+  auto const lm = measure_edge(h_min, h_max, l);
+  if (lm >= (1.0 / std::sqrt(2.0))) return;
+  if (lm >= shortest_length) return;
+  material_index cavity_material(-1);
+  for (int element = 0; element < c.num_shell_elements; ++element) {
+    array<vector3<double>, 3> proposed_x;
+    int const center_node_in_element = c.shell_elements_to_node_in_element[element];
+    int edge_node_in_element = -1;
+    for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
+      int const shell_node = c.shell_elements_to_shell_nodes[element][node_in_element];
+      proposed_x[node_in_element] = c.shell_nodes_to_x[shell_node];
+      if (shell_node == edge_node) edge_node_in_element = node_in_element;
+      material_index const element_material = c.shell_elements_to_materials[element];
+      if (cavity_material == material_index(-1)) cavity_material = element_material;
+      else if (cavity_material != element_material) return; // only allow interior collapses
+    }
+    if (edge_node_in_element != -1) continue;
+    proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
+    double const new_quality = triangle_quality(proposed_x);
+    if (new_quality < min_acceptable_quality) return;
+  }
+  shortest_length = lm;
+  best_collapse_edge_node = edge_node;
 }
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
@@ -381,6 +422,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     int best_swap_edge_node = -1;
     double longest_split_edge = 0.0;
     int best_split_edge_node = -1;
+    double shortest_collapse_edge = 1.0;
+    int best_collapse_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
       // only examine edges once, the smaller node examines it
@@ -389,6 +432,8 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
           best_swap_improvement, best_swap_edge_node);
       evaluate_triangle_split(center_node, edge_node, c,
           longest_split_edge, best_split_edge_node);
+      evaluate_triangle_collapse(center_node, edge_node, c,
+          shortest_collapse_edge, best_collapse_edge_node);
     }
     if (best_split_edge_node != -1) {
       nodes_to_criteria[node] = longest_split_edge;
