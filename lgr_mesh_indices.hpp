@@ -89,6 +89,7 @@ public:
     return (bits | other.bits) == bits;
   }
   constexpr static inline material_set none() noexcept { return material_set(std::uint64_t(0)); }
+  constexpr explicit inline operator std::uint64_t() const noexcept { return bits; }
 };
 
 }
