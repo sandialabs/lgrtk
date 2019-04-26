@@ -66,16 +66,6 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
   }
 }
 
-template <class Index>
-static void write_vtk_scalars(std::ostream& stream, char const* name,
-    device_vector<material_set, Index> const& vec) {
-  stream << "SCALARS " << name << " int 1\n";
-  stream << "LOOKUP_TABLE default\n";
-  for (material_set const val : vec) {
-    stream << std::uint64_t(val) << "\n";
-  }
-}
-
 static void write_vtk_materials(std::ostream& stream,
     device_vector<material_index, element_index> const& vec) {
   stream << "SCALARS material int 1\n";
@@ -140,7 +130,6 @@ void file_writer::operator()(
   }
   if (in.enable_adapt) {
     write_vtk_scalars(stream, "h", s.h_adapt);
-    write_vtk_scalars(stream, "material_set", s.nodal_materials);
   }
   //CELLS
   write_vtk_cell_data(stream, s);
