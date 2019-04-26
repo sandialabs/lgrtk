@@ -353,14 +353,9 @@ static inline void evaluate_triangle_collapse(
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
   if (lm >= (1.0 / std::sqrt(2.0))) {
-    std::cerr << int(c.shell_nodes[center_node])
-      << "-" << int(c.shell_nodes[edge_node]) << " not short enough "
-      << "h_min " << h_min << " h_max " << h_max << " l " << l << " lm " << lm << '\n';
     return;
   }
   if (lm >= shortest_length) {
-    std::cerr << int(c.shell_nodes[center_node])
-      << "-" << int(c.shell_nodes[edge_node]) << " rejected for previous winner\n";
     return;
   }
   material_index cavity_material(-1);
@@ -382,13 +377,9 @@ static inline void evaluate_triangle_collapse(
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
     double const new_quality = triangle_quality(proposed_x);
     if (new_quality < min_acceptable_quality) {
-      std::cerr << int(c.shell_nodes[center_node])
-        << "-" << int(c.shell_nodes[edge_node]) << " rejected for minimum quality\n";
       return;
     }
   }
-  std::cerr << "current winner " << int(c.shell_nodes[center_node])
-    << "-" << int(c.shell_nodes[edge_node]) << " at " << lm << '\n';
   shortest_length = lm;
   best_collapse_edge_node = edge_node;
 }
