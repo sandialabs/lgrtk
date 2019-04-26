@@ -121,17 +121,16 @@ void compute_nodal_materials(input const& in, state& s) {
       node_materials = node_materials | material_set(element_material);
     }
     vector3<double> const x = nodes_to_x[node];
-    bool is_exterior = false;
     constexpr double tol = 1.0e-10;
-    for (int axis = 0; axis < dimension; ++axis) {
-      if (std::abs(x(axis)) < tol) {
-        is_exterior = true;
-      }
-      if (std::abs(x(axis) - x_maxima(axis)) < tol) {
-        is_exterior = true;
-      }
+    if ((std::abs(x(0)) < tol) || (std::abs(x(0) - x_maxima(0)) < tol)) {
+      node_materials = node_materials | material_set(x_boundary_material);
     }
-    if (is_exterior) node_materials = node_materials | material_set(exterior_material);
+    if ((std::abs(x(1)) < tol) || (std::abs(x(1) - x_maxima(1)) < tol)) {
+      node_materials = node_materials | material_set(y_boundary_material);
+    }
+    if ((std::abs(x(2)) < tol) || (std::abs(x(2) - x_maxima(2)) < tol)) {
+      node_materials = node_materials | material_set(z_boundary_material);
+    }
     nodes_to_materials[node] = node_materials;
   };
   for_each(s.nodes, functor);

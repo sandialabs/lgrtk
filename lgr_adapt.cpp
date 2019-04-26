@@ -344,6 +344,7 @@ static inline void evaluate_triangle_collapse(
     double& shortest_length,
     int& best_collapse_edge_node
     ) {
+  if (!c.shell_nodes_to_materials[edge_node].contains(c.shell_nodes_to_materials[center_node])) return;
   constexpr double min_acceptable_quality = 0.2;
   auto const h1 = c.shell_nodes_to_h[center_node];
   auto const h2 = c.shell_nodes_to_h[edge_node];
