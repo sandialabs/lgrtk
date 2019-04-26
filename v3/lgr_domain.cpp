@@ -90,6 +90,8 @@ void set_materials(input const& in, state& s) {
   lgr::for_each(s.elements, centroid_functor);
   for (auto const& pair : in.material_domains) {
     auto const material = pair.first;
+    assert(default_material <= material);
+    assert(material <= max_user_material);
     auto const& domain = pair.second;
     domain->mark(centroid_vector, material, &s.material);
   }
