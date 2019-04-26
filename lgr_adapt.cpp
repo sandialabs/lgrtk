@@ -233,6 +233,7 @@ struct eval_cavity {
   array<int, max_shell_elements> shell_elements_to_node_in_element;
   array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
   array<double, max_shell_nodes> shell_nodes_to_h;
+  array<material_set, max_shell_nodes> shell_nodes_to_materials;
 };
 
 template <int max_shell_elements, int max_shell_nodes>
@@ -395,6 +396,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_qualities = s.quality.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_h = s.h_adapt.cbegin();
+  auto const nodes_to_materials = s.nodal_materials.cbegin();
   auto const nodes_to_criteria = a.criteria.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
@@ -417,6 +419,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
         if (shell_node + 1 == c.num_shell_nodes) {
           c.shell_nodes_to_x[shell_node] = nodes_to_x[node2];
           c.shell_nodes_to_h[shell_node] = nodes_to_h[node2];
+          c.shell_nodes_to_materials[shell_node] = nodes_to_materials[node2];
         }
         c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
       }

@@ -82,6 +82,7 @@ class material_set {
   explicit constexpr inline material_set(std::uint64_t const bits_in) noexcept : bits(bits_in) {}
 public:
   explicit constexpr inline material_set(material_index const material) noexcept : bits(std::uint64_t(1) << int(material)) {}
+  inline material_set() noexcept = default;
   constexpr inline material_set operator|(material_set const other) const noexcept {
     return material_set(bits | other.bits);
   }
