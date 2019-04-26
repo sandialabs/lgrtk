@@ -167,6 +167,7 @@ enum cavity_op {
   NONE,
   SWAP,
   SPLIT,
+  COLLAPSE,
 };
 
 struct adapt_state {
@@ -498,26 +499,34 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         }
       }
     }
+    element_index edge_element_count(-100);
+    if (op == cavity_op::SWAP) {
+      edge_element_count = element_index(1);
+    } else if (op == cavity_op::SPLIT) {
+      edge_element_count = element_index(2);
+    } else if (op == cavity_op::COLLAPSE) {
+      edge_element_count = element_index(0);
+    }
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
-        if (adj_node == target_node) {
-          element_index count(-100);
-          if (op == cavity_op::SWAP) {
-            count = element_index(1);
-          } else if (op == cavity_op::SPLIT) {
-            count = element_index(2);
-          }
-          elements_to_new_counts[element] = count;
+        if (adj_node == target_node) { // element is adjacent to the edge
+          elements_to_new_counts[element] = edge_element_count;
         }
       }
     }
-    if (op == cavity_op::SPLIT) {
-      nodes_to_new_counts[node] = node_index(2);
+    node_index node_count(-100);
+    if (op == cavity_op::SWAP) {
+      node_count = node_index(1);
+    } else if (op == cavity_op::SPLIT) {
+      node_count = node_index(2);
+    } else if (op == cavity_op::COLLAPSE) {
+      node_count = node_index(0);
     }
+    nodes_to_new_counts[node] = node_count;
   };
   for_each(s.nodes, functor);
 }
