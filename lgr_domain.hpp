@@ -159,7 +159,7 @@ void collect_node_set(
 class input;
 class state;
 
-void set_materials(input const& in, state& s);
+void assign_element_materials(input const& in, state& s);
 void collect_element_sets(input const& in, state& s);
 void collect_node_sets(input const& in, state& s);
 
