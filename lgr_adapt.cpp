@@ -613,14 +613,12 @@ static inline void apply_triangle_split(apply_cavity const c,
     auto const old_element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index target_node_in_element(-1);
     array<node_index, 3, node_in_element_index> new_nodes;
-    array<node_index, 3, node_in_element_index> old_nodes;
     for (auto const node_in_element : c.nodes_in_element) {
       auto const old_element_node = old_element_nodes[node_in_element];
       node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
       if (old_node == target_node) target_node_in_element = node_in_element;
       auto const new_node = c.old_nodes_to_new_nodes[old_node];
       new_nodes[node_in_element] = new_node;
-      old_nodes[node_in_element] = old_node;
     }
     if (target_node_in_element == node_in_element_index(-1)) continue;
     node_in_element_index const center_node_in_element = c.node_elements_to_nodes_in_element[node_element];
@@ -639,13 +637,42 @@ static inline void apply_triangle_split(apply_cavity const c,
       auto const new_element_node = new_element_nodes2[node_in_element];
       c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
     }
-    c.new_nodes_are_same[split_node] = false;
     c.new_elements_are_same[new_element1] = false;
     c.new_elements_are_same[new_element2] = false;
-    array<node_index, 2> interpolate_from;
-    interpolate_from[0] = center_node;
-    interpolate_from[1] = target_node;
-    c.interpolate_from[split_node] = interpolate_from;
+  }
+  c.new_nodes_are_same[split_node] = false;
+  array<node_index, 2> interpolate_from;
+  interpolate_from[0] = center_node;
+  interpolate_from[1] = target_node;
+  c.interpolate_from[split_node] = interpolate_from;
+}
+
+static inline void apply_triangle_collapse(apply_cavity const c,
+    node_index const center_node,
+    node_index const target_node) {
+  node_index const new_target_node = c.old_nodes_to_new_nodes[target_node];
+  for (auto const node_element : c.nodes_to_node_elements[center_node]) {
+    element_index const element = c.node_elements_to_elements[node_element];
+    auto const old_element_nodes = c.elements_to_element_nodes[element];
+    node_in_element_index target_node_in_element(-1);
+    array<node_index, 3, node_in_element_index> new_nodes;
+    for (auto const node_in_element : c.nodes_in_element) {
+      auto const old_element_node = old_element_nodes[node_in_element];
+      node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
+      if (old_node == target_node) target_node_in_element = node_in_element;
+      auto const new_node = c.old_nodes_to_new_nodes[old_node];
+      new_nodes[node_in_element] = new_node;
+    }
+    if (target_node_in_element != node_in_element_index(-1)) continue;
+    node_in_element_index const center_node_in_element = c.node_elements_to_nodes_in_element[node_element];
+    element_index const new_element = c.old_elements_to_new_elements[element];
+    auto const new_element_nodes = c.new_elements_to_element_nodes[new_element];
+    new_nodes[center_node_in_element] = new_target_node;
+    for (auto const node_in_element : c.nodes_in_element) {
+      auto const new_element_node = new_element_nodes[node_in_element];
+      c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
+    }
+    c.new_elements_are_same[new_element] = false;
   }
 }
 
@@ -662,7 +689,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     if (cavity_op::NONE == op) return;
     node_index const target_node = nodes_to_other_nodes[node];
     if (cavity_op::SWAP == op) apply_triangle_swap(c, node, target_node);
-    if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
+    else if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
+    else if (cavity_op::COLLAPSE == op) apply_triangle_collapse(c, node, target_node);
   };
   for_each(s.nodes, functor);
 }
