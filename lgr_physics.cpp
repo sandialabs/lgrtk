@@ -738,13 +738,15 @@ void run(input const& in) {
       if (in.enable_adapt && (s.n % 10 == 0)) {
         output_file(in, file_output_index, s);
         ++file_output_index;
-        adapt(in, s);
-        resize_state(in, s);
-        collect_element_sets(in, s);
-        collect_node_sets(in, s);
-        common_initialization(in, s);
-        output_file(in, file_output_index, s);
-        ++file_output_index;
+        for (int i = 0; i < 3; ++i) {
+          adapt(in, s);
+          resize_state(in, s);
+          collect_element_sets(in, s);
+          collect_node_sets(in, s);
+          common_initialization(in, s);
+          output_file(in, file_output_index, s);
+          ++file_output_index;
+        }
       }
       ++s.n;
     }
