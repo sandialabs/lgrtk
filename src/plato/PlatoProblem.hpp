@@ -300,8 +300,7 @@ public:
             // adjoint problem uses transpose of global stiffness, but we're assuming the constrained
             // system is symmetric.
 
-            Plato::ScalarVector
-              tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            Plato::ScalarVector tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
             typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
