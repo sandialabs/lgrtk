@@ -744,6 +744,7 @@ void run(input const& in) {
         common_initialization(in, s);
         output_file(in, file_output_index, s);
         ++file_output_index;
+        if (s.n > 4) assert(0);
       }
       ++s.n;
     }

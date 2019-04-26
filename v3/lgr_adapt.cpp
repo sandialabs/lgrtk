@@ -352,8 +352,17 @@ static inline void evaluate_triangle_collapse(
   auto const h_max = max(h1, h2);
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
-  if (lm >= (1.0 / std::sqrt(2.0))) return;
-  if (lm >= shortest_length) return;
+  if (lm >= (1.0 / std::sqrt(2.0))) {
+    std::cerr << int(c.shell_nodes[center_node])
+      << "-" << int(c.shell_nodes[edge_node]) << " not short enough "
+      << "h_min " << h_min << " h_max " << h_max << " l " << l << " lm " << lm << '\n';
+    return;
+  }
+  if (lm >= shortest_length) {
+    std::cerr << int(c.shell_nodes[center_node])
+      << "-" << int(c.shell_nodes[edge_node]) << " rejected for previous winner\n";
+    return;
+  }
   material_index cavity_material(-1);
   for (int element = 0; element < c.num_shell_elements; ++element) {
     array<vector3<double>, 3> proposed_x;
@@ -365,13 +374,21 @@ static inline void evaluate_triangle_collapse(
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
       material_index const element_material = c.shell_elements_to_materials[element];
       if (cavity_material == material_index(-1)) cavity_material = element_material;
-      else if (cavity_material != element_material) return; // only allow interior collapses
+      else if (cavity_material != element_material) {
+        return; // only allow interior collapses
+      }
     }
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
     double const new_quality = triangle_quality(proposed_x);
-    if (new_quality < min_acceptable_quality) return;
+    if (new_quality < min_acceptable_quality) {
+      std::cerr << int(c.shell_nodes[center_node])
+        << "-" << int(c.shell_nodes[edge_node]) << " rejected for minimum quality\n";
+      return;
+    }
   }
+  std::cerr << "current winner " << int(c.shell_nodes[center_node])
+    << "-" << int(c.shell_nodes[edge_node]) << " at " << lm << '\n';
   shortest_length = lm;
   best_collapse_edge_node = edge_node;
 }
@@ -427,20 +444,26 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     int best_collapse_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
-      // only examine edges once, the smaller node examines it
-      if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
-      evaluate_triangle_swap(center_node, edge_node, c,
-          best_swap_improvement, best_swap_edge_node);
-      evaluate_triangle_split(center_node, edge_node, c,
-          longest_split_edge, best_split_edge_node);
+      if (c.shell_nodes[center_node] < c.shell_nodes[edge_node]) {
+        // swaps and splits are non-directional, they only need to be
+        // examined by one of the nodes
+        evaluate_triangle_swap(center_node, edge_node, c,
+            best_swap_improvement, best_swap_edge_node);
+        evaluate_triangle_split(center_node, edge_node, c,
+            longest_split_edge, best_split_edge_node);
+      }
       evaluate_triangle_collapse(center_node, edge_node, c,
           shortest_collapse_edge, best_collapse_edge_node);
     }
-    if (best_split_edge_node != -1) {
+    if (((0)) && best_split_edge_node != -1) {
       nodes_to_criteria[node] = longest_split_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
       nodes_to_op[node] = cavity_op::SPLIT;
-    } else if (best_swap_edge_node != -1) {
+    } else if (best_collapse_edge_node != -1) {
+      nodes_to_criteria[node] = 1.0 / shortest_collapse_edge;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_collapse_edge_node];
+      nodes_to_op[node] = cavity_op::COLLAPSE;
+    } else if (((0)) && best_swap_edge_node != -1) {
       nodes_to_criteria[node] = best_swap_improvement;
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
       nodes_to_op[node] = cavity_op::SWAP;
