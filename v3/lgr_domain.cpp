@@ -102,8 +102,16 @@ void compute_nodal_materials(input const& in, state& s) {
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const elements_to_materials = s.material.cbegin();
   auto const nodes_to_x = s.x.cbegin();
+  s.nodal_materials.resize(s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.begin();
-  vector3<double> x_maxima(in.x_domain_size, in.y_domain_size, in.z_domain_size);
+  vector3<double> const x_maxima(in.x_domain_size, in.y_domain_size, in.z_domain_size);
+  int dimension = -1;
+  switch (in.element) {
+    case BAR: dimension = 1; break;
+    case TRIANGLE: dimension = 2; break;
+    case TETRAHEDRON: dimension = 3; break;
+    case COMPOSITE_TETRAHEDRON: dimension = 3; break;
+  }
   auto functor = [=](node_index const node) {
     auto const node_elements = nodes_to_node_elements[node];
     auto node_materials = material_set::none();
@@ -115,9 +123,13 @@ void compute_nodal_materials(input const& in, state& s) {
     vector3<double> const x = nodes_to_x[node];
     bool is_exterior = false;
     constexpr double tol = 1.0e-10;
-    for (int axis = 0; axis < 3; ++axis) {
-      if (std::abs(x(0)) < tol) is_exterior = true;
-      if (std::abs(x(0) - x_maxima(0)) < tol) is_exterior = true;
+    for (int axis = 0; axis < dimension; ++axis) {
+      if (std::abs(x(axis)) < tol) {
+        is_exterior = true;
+      }
+      if (std::abs(x(axis) - x_maxima(axis)) < tol) {
+        is_exterior = true;
+      }
     }
     if (is_exterior) node_materials = node_materials | material_set(exterior_material);
     nodes_to_materials[node] = node_materials;

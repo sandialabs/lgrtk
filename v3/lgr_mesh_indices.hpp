@@ -74,8 +74,8 @@ class material_index : public index<int, material_index> {
 };
 
 static constexpr material_index default_material = material_index(0);
-static constexpr material_index max_user_material = material_index(60);
-static constexpr material_index exterior_material = material_index(61);
+static constexpr material_index max_user_material = material_index(29);
+static constexpr material_index exterior_material = material_index(30);
 
 class material_set {
   std::uint64_t bits;

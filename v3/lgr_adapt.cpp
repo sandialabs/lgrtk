@@ -855,6 +855,7 @@ bool adapt(input const& in, state& s) {
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   propagate_connectivity(s);
+  compute_nodal_materials(in, s);
   return true;
 }
 
