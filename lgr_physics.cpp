@@ -706,6 +706,7 @@ void run(input const& in) {
   collect_node_sets(in, s);
   resize_state(in, s);
   assign_element_materials(in, s);
+  if (in.enable_adapt) compute_nodal_materials(in, s);
   collect_element_sets(in, s);
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
