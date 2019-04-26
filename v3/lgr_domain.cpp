@@ -68,7 +68,7 @@ void collect_node_set(
   collect_set(nodes, is_in, *node_set_nodes);
 }
 
-void set_materials(input const& in, state& s) {
+void assign_element_materials(input const& in, state& s) {
   lgr::fill(s.material, material_index(0));
   device_vector<vector3<double>, element_index>
     centroid_vector(s.elements.size(), s.devpool);
