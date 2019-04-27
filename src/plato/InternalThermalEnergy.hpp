@@ -154,17 +154,17 @@ namespace Plato
 template<typename EvaluationType, typename IndicatorFunctionType>
 class InternalThermalEnergyInc : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractScalarFunctionInc<EvaluationType>
+  public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
-    static constexpr int mSpaceDim = EvaluationType::SpatialDim;
+    static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<mSpaceDim>::m_numNodesPerCell;
     using SimplexThermal<mSpaceDim>::m_numDofsPerCell;
 
-    using AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -186,7 +186,7 @@ class InternalThermalEnergyInc :
                              Plato::DataMap& aDataMap,
                              Teuchos::ParameterList& aProblemParams,
                              Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermal Energy"),
+            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermal Energy"),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/

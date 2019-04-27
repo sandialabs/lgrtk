@@ -15,11 +15,14 @@
 #include "plato/Heaviside.hpp"
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class TemperatureAverageInc : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractScalarFunctionInc<EvaluationType>
+  public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -29,8 +32,8 @@ class TemperatureAverageInc :
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -50,7 +53,7 @@ class TemperatureAverageInc :
                         Plato::DataMap& aDataMap,
                         Teuchos::ParameterList& aProblemParams,
                         Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Temperature Average"),
+            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Temperature Average"),
             m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction) {}
@@ -97,17 +100,20 @@ class TemperatureAverageInc :
       },"temperature");
     }
 };
+// class
+
+} // namespace Plato TemperatureAverageInc
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(TemperatureAverageInc, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 3)
 #endif
 
 #endif

@@ -17,7 +17,6 @@
 
    and manages the evaluation of the function and derivatives wrt state
    and control. status
-  
 */
 /******************************************************************************/
 template<typename PhysicsT>
@@ -44,11 +43,11 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
 
     static constexpr Plato::OrdinalType m_numConfigDofsPerCell = m_numSpatialDims*m_numNodesPerCell;
 
-    std::shared_ptr<AbstractScalarFunctionInc<Residual>>  mScalarFunctionValue;
-    std::shared_ptr<AbstractScalarFunctionInc<Jacobian>>  mScalarFunctionGradientU;
-    std::shared_ptr<AbstractScalarFunctionInc<JacobianP>> mScalarFunctionGradientP;
-    std::shared_ptr<AbstractScalarFunctionInc<GradientX>> mScalarFunctionGradientX;
-    std::shared_ptr<AbstractScalarFunctionInc<GradientZ>> mScalarFunctionGradientZ;
+    std::shared_ptr<Plato::AbstractScalarFunctionInc<Residual>>  mScalarFunctionValue;
+    std::shared_ptr<Plato::AbstractScalarFunctionInc<Jacobian>>  mScalarFunctionGradientU;
+    std::shared_ptr<Plato::AbstractScalarFunctionInc<JacobianP>> mScalarFunctionGradientP;
+    std::shared_ptr<Plato::AbstractScalarFunctionInc<GradientX>> mScalarFunctionGradientX;
+    std::shared_ptr<Plato::AbstractScalarFunctionInc<GradientZ>> mScalarFunctionGradientZ;
 
      Plato::DataMap& m_dataMap;
 
@@ -94,27 +93,27 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
     {
     }
 
-    void allocateValue(const std::shared_ptr<AbstractScalarFunctionInc<Residual>>& aInput)
+    void allocateValue(const std::shared_ptr<Plato::AbstractScalarFunctionInc<Residual>>& aInput)
     {
         mScalarFunctionValue = aInput;
     }
 
-    void allocateGradientU(const std::shared_ptr<AbstractScalarFunctionInc<Jacobian>>& aInput)
+    void allocateGradientU(const std::shared_ptr<Plato::AbstractScalarFunctionInc<Jacobian>>& aInput)
     {
         mScalarFunctionGradientU = aInput;
     }
 
-    void allocateGradientP(const std::shared_ptr<AbstractScalarFunctionInc<JacobianP>>& aInput)
+    void allocateGradientP(const std::shared_ptr<Plato::AbstractScalarFunctionInc<JacobianP>>& aInput)
     {
         mScalarFunctionGradientP = aInput;
     }
 
-    void allocateGradientZ(const std::shared_ptr<AbstractScalarFunctionInc<GradientZ>>& aInput)
+    void allocateGradientZ(const std::shared_ptr<Plato::AbstractScalarFunctionInc<GradientZ>>& aInput)
     {
         mScalarFunctionGradientZ = aInput;
     }
 
-    void allocateGradientX(const std::shared_ptr<AbstractScalarFunctionInc<GradientX>>& aInput)
+    void allocateGradientX(const std::shared_ptr<Plato::AbstractScalarFunctionInc<GradientX>>& aInput)
     {
         mScalarFunctionGradientX = aInput;
     }
