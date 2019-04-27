@@ -33,7 +33,7 @@ namespace MechanicsFactory
  * @param [in] aFuncType vector function name
 **********************************************************************************/
 template<typename EvaluationType>
-inline std::shared_ptr<AbstractVectorFunction<EvaluationType>>
+inline std::shared_ptr<Plato::AbstractVectorFunction<EvaluationType>>
 elastostatics_residual(Omega_h::Mesh& aMesh,
                        Omega_h::MeshSets& aMeshSets,
                        Plato::DataMap& aDataMap,
@@ -45,17 +45,17 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<ElastostaticResidual<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<ElastostaticResidual<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<ElastostaticResidual<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -261,7 +261,7 @@ struct FunctionFactory
      * @param [in] aFuncName vector function name
     **********************************************************************************/
     template<typename EvaluationType>
-    std::shared_ptr<AbstractVectorFunction<EvaluationType>>
+    std::shared_ptr<Plato::AbstractVectorFunction<EvaluationType>>
     createVectorFunction(Omega_h::Mesh& aMesh, 
                          Omega_h::MeshSets& aMeshSets,
                          Plato::DataMap& aDataMap, 

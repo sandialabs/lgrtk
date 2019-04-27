@@ -1083,9 +1083,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsResidual)
     Omega_h::MeshSets tMeshSets;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 
@@ -1165,9 +1165,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsResidual)
     Omega_h::MeshSets tMeshSets;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 

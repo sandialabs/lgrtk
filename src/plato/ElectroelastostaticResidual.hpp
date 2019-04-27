@@ -18,32 +18,33 @@
 #include "plato/NaturalBCs.hpp"
 #include "plato/BodyLoads.hpp"
 
-namespace Plato {
+namespace Plato
+{
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ElectroelastostaticResidual :
         public Plato::SimplexElectromechanics<EvaluationType::SpatialDim>,
-        public AbstractVectorFunction<EvaluationType>
+        public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
 private:
-    static constexpr int SpaceDim = EvaluationType::SpatialDim;
+    static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
-    static constexpr int NElecDims = 1;
-    static constexpr int NMechDims = SpaceDim;
+    static constexpr Plato::OrdinalType NElecDims = 1;
+    static constexpr Plato::OrdinalType NMechDims = SpaceDim;
 
-    static constexpr int EDofOffset = SpaceDim;
-    static constexpr int MDofOffset = 0;
+    static constexpr Plato::OrdinalType EDofOffset = SpaceDim;
+    static constexpr Plato::OrdinalType MDofOffset = 0;
 
     using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
     using Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerNode;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractVectorFunction<EvaluationType>::mMesh;
-    using AbstractVectorFunction<EvaluationType>::m_dataMap;
-    using AbstractVectorFunction<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -146,7 +147,7 @@ public:
       Plato::ScalarMultiVectorT<ResultScalarType> edisp ("edisp" , tNumCells, SpaceDim);
     
       auto quadratureWeight = mCubatureRule->getCubWeight();
-      Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(int cellOrdinal)
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
         computeGradient(cellOrdinal, gradient, config, cellVolume);
         cellVolume(cellOrdinal) *= quadratureWeight;
@@ -163,7 +164,7 @@ public:
 
       auto& applyStressWeighting = m_applyStressWeighting;
       auto& applyEDispWeighting  = m_applyEDispWeighting;
-      Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(int cellOrdinal)
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
         // apply weighting
         //

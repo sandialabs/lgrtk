@@ -24,26 +24,31 @@
 
 #include "plato/ExpInstMacros.hpp"
 
-namespace Plato {
+namespace Plato
+{
 
-/******************************************************************************/
+/******************************************************************************//**
+ * @brief Elastostatic vector function interface
+ * @tparam EvaluationType evaluation type use to determine automatic differentiation
+ *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
+ * @tparam IndicatorFunctionType penalty function used for density-based methods
+**********************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ElastostaticResidual :
         public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
-        public AbstractVectorFunction<EvaluationType>
-/******************************************************************************/
+        public Plato::AbstractVectorFunction<EvaluationType>
 {
 private:
-    static constexpr int SpaceDim = EvaluationType::SpatialDim;
+    static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;
+    using Simplex<mSpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell;
 
-    using AbstractVectorFunction<EvaluationType>::mMesh;
-    using AbstractVectorFunction<EvaluationType>::m_dataMap;
-    using AbstractVectorFunction<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -53,57 +58,63 @@ private:
     Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> m_cellStiffness;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
+    ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>> m_bodyLoads;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
+    std::shared_ptr<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>> m_bodyLoads;
+    std::shared_ptr<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>> m_boundaryLoads;
     std::shared_ptr<Plato::CellForcing<m_numVoigtTerms>> m_cellForcing;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
     std::vector<std::string> m_plottable;
 
 public:
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Constructor
+     * @param [in] aMesh volume mesh database
+     * @param [in] aMeshSets surface mesh database
+     * @param [in] aDataMap PLATO Analyze database
+     * @param [in] aProblemParams input parameters for overall problem
+     * @param [in] aPenaltyParams input parameters for penalty function
+    **********************************************************************************/
     ElastostaticResidual(Omega_h::Mesh& aMesh,
                          Omega_h::MeshSets& aMeshSets,
                          Plato::DataMap& aDataMap,
                          Teuchos::ParameterList& aProblemParams,
                          Teuchos::ParameterList& aPenaltyParams) :
-            AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
+            Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction),
             m_bodyLoads(nullptr),
             m_boundaryLoads(nullptr),
             m_cellForcing(nullptr),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
-    /**************************************************************************/
     {
         // create material model and get stiffness
         //
-        Plato::ElasticModelFactory<SpaceDim> mmfactory(aProblemParams);
-        auto materialModel = mmfactory.create();
-        m_cellStiffness = materialModel->getStiffnessMatrix();
+        Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
+        auto tMaterialModel = tMaterialModelFactory.create();
+        m_cellStiffness = tMaterialModel->getStiffnessMatrix();
   
 
         // parse body loads
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            m_bodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            m_bodyLoads = std::make_shared<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse boundary Conditions
         // 
         if(aProblemParams.isSublist("Natural Boundary Conditions"))
         {
-            m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
+            m_boundaryLoads = std::make_shared<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
         }
   
         // parse cell problem forcing
         //
         if(aProblemParams.isSublist("Cell Problem Forcing"))
         {
-            int tColumnIndex = aProblemParams.sublist("Cell Problem Forcing").get<int>("Column Index");
+            Plato::OrdinalType tColumnIndex = aProblemParams.sublist("Cell Problem Forcing").get<Plato::OrdinalType>("Column Index");
             m_cellForcing = std::make_shared<Plato::CellForcing<m_numVoigtTerms>>(m_cellStiffness, tColumnIndex);
         }
 
@@ -113,118 +124,101 @@ public:
 
     }
 
-
-/*
-    ElastostaticResidual(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Plato::DataMap aDataMap) :
-            AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(3.0, 0.0),
-            m_applyWeighting(m_indicatorFunction),
-            m_bodyLoads(nullptr),
-            m_boundaryLoads(nullptr),
-            m_cellForcing(nullptr),
-            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
-    {
-        // Create material model and get stiffness
-        Teuchos::ParameterList tParamList;
-        tParamList.set<Plato::Scalar>("Poissons Ratio", 1.0);
-        tParamList.set<Plato::Scalar>("Youngs Modulus", 0.3);
-        Plato::IsotropicLinearElasticMaterial<EvaluationType::SpatialDim> tDefaultMaterialModel(tParamList);
-        m_cellStiffness = tDefaultMaterialModel.getStiffnessMatrix();
-    }
-*/
-
-    /**************************************************************************/
-    void evaluate(const Plato::ScalarMultiVectorT<StateScalarType> & state,
-                  const Plato::ScalarMultiVectorT<ControlScalarType> & control,
-                  const Plato::ScalarArray3DT<ConfigScalarType> & config,
-                  Plato::ScalarMultiVectorT<ResultScalarType> & result,
+    /******************************************************************************//**
+     * @brief Evaluate vector function
+     * @param [in] aState 2D array with state variables (C,DOF)
+     * @param [in] aControl 2D array with control variables (C,N)
+     * @param [in] aConfig 3D array with control variables (C,N,D)
+     * @param [in] aResult 1D array with control variables (C,DOF)
+     * @param [in] aTimeStep current time step
+     * Nomenclature: C = number of cells, DOF = number of degrees of freedom per cell
+     * N = number of nodes per cell, D = spatial dimensions
+    **********************************************************************************/
+    void evaluate(const Plato::ScalarMultiVectorT<StateScalarType> & aState,
+                  const Plato::ScalarMultiVectorT<ControlScalarType> & aControl,
+                  const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
+                  Plato::ScalarMultiVectorT<ResultScalarType> & aResult,
                   Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
-        auto tNumCells = mMesh.nelems();
+      auto tNumCells = mMesh.nelems();
 
-        using StrainScalarType =
-        typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>,
-                            StateScalarType, ConfigScalarType>;
+      using StrainScalarType =
+          typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
-      Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      Strain<SpaceDim>                        voigtStrain;
-      LinearStress<SpaceDim>                  voigtStress(m_cellStiffness);
-      StressDivergence<SpaceDim>              stressDivergence;
+      Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
+      Strain<mSpaceDim>                        tComputeVoigtStrain;
+      LinearStress<mSpaceDim>                  tComputeVoigtStress(m_cellStiffness);
+      StressDivergence<mSpaceDim>              tComputeStressDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType>
-        cellVolume("cell weight",tNumCells);
+        tCellVolume("cell weight",tNumCells);
 
       Plato::ScalarMultiVectorT<StrainScalarType>
-        strain("strain",tNumCells,m_numVoigtTerms);
+        tStrain("strain",tNumCells,m_numVoigtTerms);
     
       Plato::ScalarArray3DT<ConfigScalarType>
-        gradient("gradient",tNumCells,m_numNodesPerCell,SpaceDim);
+        tGradient("gradient",tNumCells,m_numNodesPerCell,mSpaceDim);
     
       Plato::ScalarMultiVectorT<ResultScalarType>
-        stress("stress",tNumCells,m_numVoigtTerms);
+        tStress("stress",tNumCells,m_numVoigtTerms);
     
-      auto quadratureWeight = mCubatureRule->getCubWeight();
-      Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(int cellOrdinal)
+      auto tQuadratureWeight = mCubatureRule->getCubWeight();
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
       {
-        computeGradient(cellOrdinal, gradient, config, cellVolume);
-        cellVolume(cellOrdinal) *= quadratureWeight;
+        tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
+        tCellVolume(aCellOrdinal) *= tQuadratureWeight;
 
         // compute strain
-        //
-        voigtStrain(cellOrdinal, strain, state, gradient);
+        tComputeVoigtStrain(aCellOrdinal, tStrain, aState, tGradient);
     
         // compute stress
-        //
-        voigtStress(cellOrdinal, stress, strain);
+        tComputeVoigtStress(aCellOrdinal, tStress, tStrain);
       }, "Cauchy stress");
 
       if( m_cellForcing != nullptr )
       {
-          m_cellForcing->add( stress );
+          m_cellForcing->add( tStress );
       }
 
-      auto& applyWeighting = m_applyWeighting;
-      Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(int cellOrdinal)
+      auto& tApplyWeighting = m_applyWeighting;
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
       {
         // apply weighting
-        //
-        applyWeighting(cellOrdinal, stress, control);
+        tApplyWeighting(aCellOrdinal, tStress, aControl);
     
         // compute stress divergence
-        //
-        stressDivergence(cellOrdinal, result, stress, gradient, cellVolume);
+        tComputeStressDivergence(aCellOrdinal, aResult, tStress, tGradient, tCellVolume);
       }, "Apply weighting and compute divergence");
 
       if( m_bodyLoads != nullptr )
       {
-          m_bodyLoads->get( mMesh, state, control, result );
+          m_bodyLoads->get( mMesh, aState, aControl, aResult );
       }
 
       if( m_boundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult );
       }
 
-      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, strain, "strain");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, stress, "stress");
+      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, tStrain, "strain");
+      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, tStress, "stress");
 
     }
 };
 // class ElastostaticResidual
 
+} // namespace Plato
+
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 1)
+PLATO_EXPL_DEC(Plato::ElastostaticResidual, Plato::SimplexMechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 2)
+PLATO_EXPL_DEC(Plato::ElastostaticResidual, Plato::SimplexMechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(ElastostaticResidual, SimplexMechanics, 3)
+PLATO_EXPL_DEC(Plato::ElastostaticResidual, Plato::SimplexMechanics, 3)
 #endif
-
-} // namespace Plato
 
 #endif

@@ -35,7 +35,7 @@ namespace Plato
 template<typename EvaluationType, class PenaltyFunctionType, class ProjectionType>
 class AdjointStructuralDynamicsResidual:
         public Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>,
-        public AbstractVectorFunction<EvaluationType>
+        public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
 private:

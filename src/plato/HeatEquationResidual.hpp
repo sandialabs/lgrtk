@@ -24,11 +24,14 @@
 
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class HeatEquationResidual : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractVectorFunctionInc<EvaluationType>
+  public Plato::AbstractVectorFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -38,9 +41,9 @@ class HeatEquationResidual :
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractVectorFunctionInc<EvaluationType>::mMesh;
-    using AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
-    using AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -203,17 +206,20 @@ class HeatEquationResidual :
       }
     }
 };
+// class HeatEquationResidual
+
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 1)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 2)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 3)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 3)
 #endif
 
 #endif

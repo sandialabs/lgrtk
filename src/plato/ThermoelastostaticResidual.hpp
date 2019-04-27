@@ -19,13 +19,14 @@
 #include "plato/NaturalBCs.hpp"
 #include "plato/BodyLoads.hpp"
 
-namespace Plato {
+namespace Plato
+{
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ThermoelastostaticResidual :
         public Plato::SimplexThermomechanics<EvaluationType::SpatialDim>,
-        public AbstractVectorFunction<EvaluationType>
+        public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
 private:
@@ -42,9 +43,9 @@ private:
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractVectorFunction<EvaluationType>::mMesh;
-    using AbstractVectorFunction<EvaluationType>::m_dataMap;
-    using AbstractVectorFunction<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -73,7 +74,7 @@ public:
                                Plato::DataMap& aDataMap,
                                Teuchos::ParameterList& aProblemParams,
                                Teuchos::ParameterList& aPenaltyParams) :
-            AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
+            Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
             m_indicatorFunction(aPenaltyParams),
             m_applyStressWeighting(m_indicatorFunction),
             m_applyFluxWeighting(m_indicatorFunction),

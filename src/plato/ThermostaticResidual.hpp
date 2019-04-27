@@ -21,11 +21,14 @@
 
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ThermostaticResidual : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractVectorFunction<EvaluationType>
+  public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -35,16 +38,14 @@ class ThermostaticResidual :
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractVectorFunction<EvaluationType>::mMesh;
-    using AbstractVectorFunction<EvaluationType>::m_dataMap;
-    using AbstractVectorFunction<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
-
-
 
     Omega_h::Matrix< SpaceDim, SpaceDim> m_cellConductivity;
     
@@ -57,16 +58,15 @@ class ThermostaticResidual :
 
   public:
     /**************************************************************************/
-    ThermostaticResidual(
-      Omega_h::Mesh& aMesh,
-      Omega_h::MeshSets& aMeshSets,
-      Plato::DataMap& aDataMap,
-      Teuchos::ParameterList& problemParams,
-      Teuchos::ParameterList& penaltyParams) :
-     AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-     m_indicatorFunction(penaltyParams),
-     m_applyWeighting(m_indicatorFunction),
-     m_boundaryLoads(nullptr)
+    ThermostaticResidual(Omega_h::Mesh& aMesh,
+                         Omega_h::MeshSets& aMeshSets,
+                         Plato::DataMap& aDataMap,
+                         Teuchos::ParameterList& problemParams,
+                         Teuchos::ParameterList& penaltyParams) :
+            Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
+            m_indicatorFunction(penaltyParams),
+            m_applyWeighting(m_indicatorFunction),
+            m_boundaryLoads(nullptr)
     /**************************************************************************/
     {
       Plato::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
@@ -156,17 +156,20 @@ class ThermostaticResidual :
       }
     }
 };
+// class ThermostaticResidual
+
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(ThermostaticResidual, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 3)
 #endif
 
 #endif

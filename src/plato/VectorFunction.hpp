@@ -42,10 +42,10 @@ class VectorFunction : public WorksetBase<PhysicsT>
 
     static constexpr Plato::OrdinalType m_numConfigDofsPerCell = m_numSpatialDims*m_numNodesPerCell;
 
-    std::shared_ptr<AbstractVectorFunction<Residual>>  mVectorFunctionResidual;
-    std::shared_ptr<AbstractVectorFunction<Jacobian>>  mVectorFunctionJacobianU;
-    std::shared_ptr<AbstractVectorFunction<GradientX>> mVectorFunctionJacobianX;
-    std::shared_ptr<AbstractVectorFunction<GradientZ>> mVectorFunctionJacobianZ;
+    std::shared_ptr<Plato::AbstractVectorFunction<Residual>>  mVectorFunctionResidual;
+    std::shared_ptr<Plato::AbstractVectorFunction<Jacobian>>  mVectorFunctionJacobianU;
+    std::shared_ptr<Plato::AbstractVectorFunction<GradientX>> mVectorFunctionJacobianX;
+    std::shared_ptr<Plato::AbstractVectorFunction<GradientZ>> mVectorFunctionJacobianZ;
 
     Plato::DataMap& m_dataMap;
 
@@ -104,8 +104,8 @@ class VectorFunction : public WorksetBase<PhysicsT>
     * @param [in] aJacobian Jacobian evaluator
     *
     ******************************************************************************/
-    void allocateResidual(const std::shared_ptr<AbstractVectorFunction<Residual>>& aResidual,
-                          const std::shared_ptr<AbstractVectorFunction<Jacobian>>& aJacobian)
+    void allocateResidual(const std::shared_ptr<Plato::AbstractVectorFunction<Residual>>& aResidual,
+                          const std::shared_ptr<Plato::AbstractVectorFunction<Jacobian>>& aJacobian)
     {
         mVectorFunctionResidual = aResidual;
         mVectorFunctionJacobianU = aJacobian;
@@ -117,7 +117,7 @@ class VectorFunction : public WorksetBase<PhysicsT>
     * @param [in] aGradientZ partial derivative with respect to control evaluator
     *
     ******************************************************************************/
-    void allocateJacobianZ(const std::shared_ptr<AbstractVectorFunction<GradientZ>>& aGradientZ)
+    void allocateJacobianZ(const std::shared_ptr<Plato::AbstractVectorFunction<GradientZ>>& aGradientZ)
     {
         mVectorFunctionJacobianZ = aGradientZ; 
     }
@@ -128,7 +128,7 @@ class VectorFunction : public WorksetBase<PhysicsT>
     * @param [in] GradientX partial derivative with respect to configuration evaluator
     *
     ******************************************************************************/
-    void allocateJacobianX(const std::shared_ptr<AbstractVectorFunction<GradientX>>& aGradientX)
+    void allocateJacobianX(const std::shared_ptr<Plato::AbstractVectorFunction<GradientX>>& aGradientX)
     {
         mVectorFunctionJacobianX = aGradientX; 
     }
