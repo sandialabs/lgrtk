@@ -24,7 +24,7 @@ namespace Plato
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
 inline void test_partial_control(Omega_h::Mesh & aMesh,
-                                 AbstractScalarFunction<EvaluationType> & aCriterion,
+                                 Plato::AbstractScalarFunction<EvaluationType> & aCriterion,
                                  Plato::OrdinalType aSuperscriptLowerBound = 1,
                                  Plato::OrdinalType aSuperscriptUpperBound = 10)
 {
@@ -133,7 +133,7 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
  * @param [in] aCriterion scalar function (i.e. scalar criterion) interface
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
-inline void test_partial_state(Omega_h::Mesh & aMesh, AbstractScalarFunction<EvaluationType> & aCriterion)
+inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::AbstractScalarFunction<EvaluationType> & aCriterion)
 {
     using StateT = typename EvaluationType::StateScalarType;
     using ConfigT = typename EvaluationType::ConfigScalarType;

@@ -34,7 +34,7 @@ namespace Plato
 template<typename EvaluationType>
 class FrequencyResponseMisfit :
         public Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim, EvaluationType::NumControls>,
-        public AbstractScalarFunction<EvaluationType>
+        public Plato::AbstractScalarFunction<EvaluationType>
 {
 private:
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;
@@ -58,7 +58,7 @@ public:
                                      Omega_h::MeshSets& aMeshSets, 
                                      Plato::DataMap aDataMap,
                                      Teuchos::ParameterList & aParamList) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
             mExpStates(),
             mTimeSteps(),
             mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, m_numDofsPerNode>(&aMesh))
@@ -74,7 +74,7 @@ public:
                                      Plato::DataMap aDataMap,
                                      const std::vector<Plato::Scalar> & aTimeSteps,
                                      const Plato::ScalarMultiVector & aExpStates) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
             mExpStates(aExpStates),
             mTimeSteps(aTimeSteps),
             mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, m_numDofsPerNode>(&aMesh))

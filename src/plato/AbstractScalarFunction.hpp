@@ -6,8 +6,13 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************//**
  * @brief Abstract scalar function (i.e. criterion) interface
+ * @tparam EvaluationType evaluation type use to determine automatic differentiation
+ *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
 **********************************************************************************/
 template<typename EvaluationType>
 class AbstractScalarFunction
@@ -92,5 +97,7 @@ public:
         return m_functionName;
     }
 };
+
+} // namespace Plato
 
 #endif

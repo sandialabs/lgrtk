@@ -41,10 +41,10 @@ private:
     using GradientX = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientX; /*!< configuration variables automatic differentiation type */
     using GradientZ = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientZ; /*!< control variables automatic differentiation type */
 
-    std::shared_ptr<AbstractScalarFunction<Residual>> mScalarFunctionValue; /*!< scalar function value interface */
-    std::shared_ptr<AbstractScalarFunction<Jacobian>> mScalarFunctionGradientU; /*!< scalar function value partial wrt states */
-    std::shared_ptr<AbstractScalarFunction<GradientX>> mScalarFunctionGradientX; /*!< scalar function value partial wrt configuration */
-    std::shared_ptr<AbstractScalarFunction<GradientZ>> mScalarFunctionGradientZ; /*!< scalar function value partial wrt controls */
+    std::shared_ptr<Plato::AbstractScalarFunction<Residual>> mScalarFunctionValue; /*!< scalar function value interface */
+    std::shared_ptr<Plato::AbstractScalarFunction<Jacobian>> mScalarFunctionGradientU; /*!< scalar function value partial wrt states */
+    std::shared_ptr<Plato::AbstractScalarFunction<GradientX>> mScalarFunctionGradientX; /*!< scalar function value partial wrt configuration */
+    std::shared_ptr<Plato::AbstractScalarFunction<GradientZ>> mScalarFunctionGradientZ; /*!< scalar function value partial wrt controls */
 
     Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
 
@@ -99,7 +99,7 @@ public:
      * @brief Allocate scalar function using the residual automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateValue(const std::shared_ptr<AbstractScalarFunction<Residual>>& aInput)
+    void allocateValue(const std::shared_ptr<Plato::AbstractScalarFunction<Residual>>& aInput)
     {
         mScalarFunctionValue = aInput;
     }
@@ -108,7 +108,7 @@ public:
      * @brief Allocate scalar function using the Jacobian automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientU(const std::shared_ptr<AbstractScalarFunction<Jacobian>>& aInput)
+    void allocateGradientU(const std::shared_ptr<Plato::AbstractScalarFunction<Jacobian>>& aInput)
     {
         mScalarFunctionGradientU = aInput;
     }
@@ -117,7 +117,7 @@ public:
      * @brief Allocate scalar function using the GradientZ automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientZ(const std::shared_ptr<AbstractScalarFunction<GradientZ>>& aInput)
+    void allocateGradientZ(const std::shared_ptr<Plato::AbstractScalarFunction<GradientZ>>& aInput)
     {
         mScalarFunctionGradientZ = aInput;
     }
@@ -126,7 +126,7 @@ public:
      * @brief Allocate scalar function using the GradientX automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientX(const std::shared_ptr<AbstractScalarFunction<GradientX>>& aInput)
+    void allocateGradientX(const std::shared_ptr<Plato::AbstractScalarFunction<GradientX>>& aInput)
     {
         mScalarFunctionGradientX = aInput;
     }

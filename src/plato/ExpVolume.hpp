@@ -25,7 +25,7 @@ namespace Plato
 template<typename EvaluationType, typename PenaltyFuncType, typename ProjectionFuncType>
 class ExpVolume :
         public Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim, EvaluationType::NumControls>,
-        public AbstractScalarFunction<EvaluationType>
+        public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
 private:
@@ -47,7 +47,7 @@ public:
                        Omega_h::MeshSets& aMeshSets,
                        Plato::DataMap& aDataMap, 
                        Teuchos::ParameterList & aPenaltyParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Experimental Volume"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Experimental Volume"),
             mProjectionFunction(),
             mPenaltyFunction(aPenaltyParams),
             mApplyProjection(mProjectionFunction),
@@ -60,7 +60,7 @@ public:
     explicit ExpVolume(Omega_h::Mesh& aMesh,
                        Omega_h::MeshSets& aMeshSets, 
                        Plato::DataMap& aDataMap) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Experimental Volume"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Experimental Volume"),
             mProjectionFunction(),
             mPenaltyFunction(3.0, 0.0),
             mApplyProjection(mProjectionFunction),

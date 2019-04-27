@@ -12,16 +12,19 @@
 #include "plato/Heaviside.hpp"
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename PenaltyFunctionType>
-class Volume : public AbstractScalarFunction<EvaluationType>
+class Volume : public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
     
-    using AbstractScalarFunction<EvaluationType>::mMesh;
-    using AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -40,7 +43,7 @@ class Volume : public AbstractScalarFunction<EvaluationType>
            Plato::DataMap& aDataMap, 
            Teuchos::ParameterList&, 
            Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
             mPenaltyFunction(aPenaltyParams),
             mApplyWeighting(mPenaltyFunction)
     /**************************************************************************/
@@ -82,4 +85,8 @@ class Volume : public AbstractScalarFunction<EvaluationType>
       },"volume");
     }
 };
+// class Volume
+
+} // namespace Plato
+
 #endif

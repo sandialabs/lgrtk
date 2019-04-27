@@ -14,11 +14,14 @@
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class StressPNorm : 
   public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
-  public AbstractScalarFunction<EvaluationType>
+  public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -28,8 +31,8 @@ class StressPNorm :
     using Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractScalarFunction<EvaluationType>::mMesh;
-    using AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -52,7 +55,7 @@ class StressPNorm :
                 Plato::DataMap& aDataMap, 
                 Teuchos::ParameterList& aProblemParams, 
                 Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress P-Norm"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress P-Norm"),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
@@ -146,18 +149,20 @@ class StressPNorm :
       m_norm->postEvaluate(resultValue);
     }
 };
+// class StressPNorm
 
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 1)
+PLATO_EXPL_DEC(Plato::StressPNorm, Plato::SimplexMechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 2)
+PLATO_EXPL_DEC(Plato::StressPNorm, Plato::SimplexMechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(StressPNorm, Plato::SimplexMechanics, 3)
+PLATO_EXPL_DEC(Plato::StressPNorm, Plato::SimplexMechanics, 3)
 #endif
 
 #endif

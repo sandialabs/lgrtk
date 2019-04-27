@@ -17,11 +17,14 @@
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class EMStressPNorm : 
   public Plato::SimplexElectromechanics<EvaluationType::SpatialDim>,
-  public AbstractScalarFunction<EvaluationType>
+  public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -31,8 +34,8 @@ class EMStressPNorm :
     using Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractScalarFunction<EvaluationType>::mMesh;
-    using AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -54,7 +57,7 @@ class EMStressPNorm :
                   Plato::DataMap& aDataMap, 
                   Teuchos::ParameterList& aProblemParams, 
                   Teuchos::ParameterList& aPenaltyParams) :
-              AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress P-Norm"),
+              Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress P-Norm"),
               m_indicatorFunction(aPenaltyParams),
               m_applyWeighting(m_indicatorFunction),
               m_CubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
@@ -139,17 +142,20 @@ class EMStressPNorm :
       m_norm->postEvaluate(resultValue);
     }
 };
+// class EMStressPNorm
+
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 1)
+PLATO_EXPL_DEC(Plato::EMStressPNorm, Plato::SimplexElectromechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 2)
+PLATO_EXPL_DEC(Plato::EMStressPNorm, Plato::SimplexElectromechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(EMStressPNorm, Plato::SimplexElectromechanics, 3)
+PLATO_EXPL_DEC(Plato::EMStressPNorm, Plato::SimplexElectromechanics, 3)
 #endif
 
 #endif
