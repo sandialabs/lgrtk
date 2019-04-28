@@ -6,7 +6,6 @@
 #include "plato/ScalarGrad.hpp"
 #include "plato/ThermalFlux.hpp"
 #include "plato/ScalarProduct.hpp"
-#include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
@@ -78,7 +77,7 @@ class ThermalFluxRate :
         m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, boundaryLoads, 1.0/aTimeStep );
         m_boundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, boundaryLoads, 1.0/aTimeStep );
 
-        Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
         {
           for( int iNode=0; iNode<m_numNodesPerCell; iNode++) {
             aResult(cellOrdinal) += (aState(cellOrdinal, iNode) - aPrevState(cellOrdinal, iNode))*boundaryLoads(cellOrdinal,iNode);

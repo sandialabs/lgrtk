@@ -50,7 +50,7 @@ class InternalElasticEnergy :
     Plato::Scalar m_quadratureWeight; /*!< quadrature weight for simplex element */
 
     IndicatorFunctionType m_indicatorFunction; /*!< penalty function */
-    ApplyWeighting<mSpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting; /*!< apply penalty function */
+    Plato::ApplyWeighting<mSpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting; /*!< apply penalty function */
 
     std::vector<std::string> m_plottable; /*!< database of output field names */
 

@@ -45,7 +45,7 @@ class EMStressPNorm :
     Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> m_materialModel;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<SpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> m_CubatureRule;
 
     Teuchos::RCP<TensorNormBase<m_numVoigtTerms,EvaluationType>> m_norm;

@@ -44,7 +44,7 @@ class StressPNorm :
     Plato::Scalar m_quadratureWeight;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<SpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
 
     Teuchos::RCP<TensorNormBase<m_numVoigtTerms,EvaluationType>> m_norm;
 

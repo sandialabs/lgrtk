@@ -50,7 +50,7 @@ class InternalThermalEnergy :
     Plato::Scalar m_quadratureWeight; /*!< integration rule weight */
 
     IndicatorFunctionType m_indicatorFunction; /*!< penalty function */
-    ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> m_applyWeighting; /*!< applies penalty function */
+    Plato::ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> m_applyWeighting; /*!< applies penalty function */
 
   public:
     /******************************************************************************//**

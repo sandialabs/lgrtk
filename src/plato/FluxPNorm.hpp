@@ -45,9 +45,9 @@ class FluxPNorm :
     Plato::Scalar m_quadratureWeight;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
 
-    int m_exponent;
+    Plato::OrdinalType m_exponent;
 
   public:
     /**************************************************************************/

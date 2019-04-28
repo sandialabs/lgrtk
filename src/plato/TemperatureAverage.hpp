@@ -44,7 +44,7 @@ class TemperatureAverageInc :
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyWeighting;
 
   public:
     /**************************************************************************/

@@ -18,7 +18,6 @@
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractVectorFunctionInc.hpp"
 #include "plato/ImplicitFunctors.hpp"
-#include "plato/ApplyWeighting.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
@@ -58,8 +57,8 @@ class HeatEquationResidual :
     Plato::Scalar m_cellSpecificHeat;
     
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
-    ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;

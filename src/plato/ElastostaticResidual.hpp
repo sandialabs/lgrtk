@@ -58,7 +58,7 @@ private:
     Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> m_cellStiffness;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
 
     std::shared_ptr<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>> m_bodyLoads;
     std::shared_ptr<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>> m_boundaryLoads;

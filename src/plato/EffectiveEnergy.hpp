@@ -46,7 +46,7 @@ class EffectiveEnergy :
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<mSpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<mSpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
 
     Omega_h::Matrix< m_numVoigtTerms, m_numVoigtTerms> m_cellStiffness;
     Omega_h::Vector<m_numVoigtTerms> m_assumedStrain;

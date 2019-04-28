@@ -34,7 +34,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     Plato::Scalar mQuadratureWeight;
 
     PenaltyFunctionType mPenaltyFunction;
-    ApplyWeighting<SpaceDim,1,PenaltyFunctionType> mApplyWeighting;
+    Plato::ApplyWeighting<SpaceDim,1,PenaltyFunctionType> mApplyWeighting;
 
   public:
     /**************************************************************************/
