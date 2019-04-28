@@ -4,6 +4,9 @@
 #include "plato/SimplexElectromechanics.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Electromechanical kinematics functor.
   
@@ -65,4 +68,7 @@ class EMKinematics : public Plato::SimplexElectromechanics<SpaceDim>
       }
     }
 };
+
+} // namespace Plato
+
 #endif

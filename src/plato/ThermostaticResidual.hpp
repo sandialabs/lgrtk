@@ -122,11 +122,11 @@ class ThermostaticResidual :
 
       ScalarGrad<SpaceDim>            scalarGrad;
       ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
-      FluxDivergence<SpaceDim>        fluxDivergence;
+      Plato::FluxDivergence<SpaceDim>        fluxDivergence;
     
       auto& applyWeighting  = m_applyWeighting;
       auto quadratureWeight = m_quadratureWeight;
-      Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
     
         computeGradient(cellOrdinal, gradient, config, cellVolume);

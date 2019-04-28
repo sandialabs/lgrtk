@@ -119,7 +119,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
   auto cellSpecificHeat = materialModel->getSpecificHeat();
 
   ThermalFlux<spaceDim>      thermalFlux(cellConductivity);
-  FluxDivergence<spaceDim>  fluxDivergence;
+  Plato::FluxDivergence<spaceDim>  fluxDivergence;
 
   Plato::LinearTetCubRuleDegreeOne<spaceDim> cubatureRule;
 

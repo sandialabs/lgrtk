@@ -87,8 +87,8 @@ class StressPNorm :
       auto numCells = mMesh.nelems();
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      Strain<SpaceDim>                        voigtStrain;
-      LinearStress<SpaceDim>                  voigtStress(m_cellStiffness);
+      Plato::Strain<SpaceDim>                        voigtStrain;
+      Plato::LinearStress<SpaceDim>                  voigtStress(m_cellStiffness);
 
       using StrainScalarType = 
         typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>,

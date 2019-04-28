@@ -134,8 +134,8 @@ public:
       TMKinematics<SpaceDim>                  kinematics;
       TMKinetics<SpaceDim>                    kinetics(m_materialModel);
       
-      StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
-      FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
+      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
 
       Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
 

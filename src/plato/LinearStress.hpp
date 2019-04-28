@@ -5,6 +5,9 @@
 
 #include <Omega_h_matrix.hpp>
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Stress functor.
   
@@ -44,4 +47,7 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
       }
     }
 };
+// class LinearStress
+
+} // namespace Plato
 #endif

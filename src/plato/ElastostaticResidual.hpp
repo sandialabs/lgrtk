@@ -146,9 +146,9 @@ public:
           typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-      Strain<mSpaceDim>                        tComputeVoigtStrain;
-      LinearStress<mSpaceDim>                  tComputeVoigtStress(m_cellStiffness);
-      StressDivergence<mSpaceDim>              tComputeStressDivergence;
+      Plato::Strain<mSpaceDim>                        tComputeVoigtStrain;
+      Plato::LinearStress<mSpaceDim>                  tComputeVoigtStress(m_cellStiffness);
+      Plato::StressDivergence<mSpaceDim>       tComputeStressDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType>
         tCellVolume("cell weight",tNumCells);

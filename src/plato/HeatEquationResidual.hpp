@@ -136,7 +136,7 @@ class HeatEquationResidual :
 
       ScalarGrad<SpaceDim>            scalarGrad;
       ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
-      FluxDivergence<SpaceDim>        fluxDivergence;
+      Plato::FluxDivergence<SpaceDim>        fluxDivergence;
 
       Plato::StateValues computeStateValues;
       ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);

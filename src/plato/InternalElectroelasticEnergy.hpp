@@ -10,7 +10,6 @@
 #include "plato/EMKinetics.hpp"
 #include "plato/ApplyWeighting.hpp"
 #include "plato/Strain.hpp"
-#include "plato/LinearStress.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/ToMap.hpp"
@@ -104,8 +103,8 @@ class InternalElectroelasticEnergy :
         typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-      EMKinematics<mSpaceDim>                  tKinematics;
-      EMKinetics<mSpaceDim>                    tKinetics(m_materialModel);
+      Plato::EMKinematics<mSpaceDim>                  tKinematics;
+      Plato::EMKinetics<mSpaceDim>                    tKinetics(m_materialModel);
 
       ScalarProduct<m_numVoigtTerms>          tMechanicalScalarProduct;
       ScalarProduct<mSpaceDim>                tElectricalScalarProduct;

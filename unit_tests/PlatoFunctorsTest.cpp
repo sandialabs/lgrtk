@@ -224,7 +224,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStrainsToComplexStrains)
     tElastostatics.worksetConfig(tConfigWS);
 
     // COMPUTE LINEAR STRAINS 
-    Strain<tSpaceDim> tComputeLinearStrain;
+    Plato::Strain<tSpaceDim> tComputeLinearStrain;
     const Plato::OrdinalType tNumVoigtTerms = 6;
     Plato::ScalarMultiVectorT<StrainT> tRealLinearStrain("RealLinearStrain", tNumCells, tNumVoigtTerms);
     Plato::ScalarMultiVectorT<StrainT> tImagLinearStrain("ImagLinearStrain", tNumCells, tNumVoigtTerms);
@@ -375,10 +375,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearStressToComplexStress)
     // COMPUTE LINEAR STRESS
     Plato::Scalar tYoungModulus = 1.0;
     Plato::Scalar tPoissonRatio = 0.3;
-    Strain<tSpaceDim> tComputeLinearStrain;
+    Plato::Strain<tSpaceDim> tComputeLinearStrain;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMaterialModel(tYoungModulus, tPoissonRatio);
     auto tStiffnessMatrix = tMaterialModel.getStiffnessMatrix();
-    LinearStress<tSpaceDim> tComputeLinearStress(tStiffnessMatrix);
+    Plato::LinearStress<tSpaceDim> tComputeLinearStress(tStiffnessMatrix);
 
     const Plato::OrdinalType tNumVoigtTerms = 6;
     Plato::ScalarMultiVectorT<StrainT> tRealLinearStrain("RealLinearStrain", tNumCells, tNumVoigtTerms);
@@ -544,11 +544,11 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearElasticForcesToComplexElasticF
     // COMPUTE LINEAR ELASTIC FORCES
     Plato::Scalar tYoungModulus = 1.0;
     Plato::Scalar tPoissonRatio = 0.3;
-    Strain<tSpaceDim> tComputeLinearStrain;
-    StressDivergence<tSpaceDim> tComputeElasticForces;
+    Plato::Strain<tSpaceDim> tComputeLinearStrain;
+    Plato::StressDivergence<tSpaceDim> tComputeElasticForces;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMaterialModel(tYoungModulus, tPoissonRatio);
     auto tStiffnessMatrix = tMaterialModel.getStiffnessMatrix();
-    LinearStress<tSpaceDim> tComputeLinearStress(tStiffnessMatrix);
+    Plato::LinearStress<tSpaceDim> tComputeLinearStress(tStiffnessMatrix);
 
     const Plato::OrdinalType tNumVoigtTerms = 6;
     Plato::ScalarMultiVectorT<StrainT> tRealLinearStrain("RealLinearStrain", tNumCells, tNumVoigtTerms);
@@ -660,230 +660,6 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareLinearElasticForcesToComplexElasticF
             tMyIndex = (tDofIndex % tSpaceDim) + tSpaceDim
                     + (static_cast<Plato::OrdinalType>(tDofIndex/tSpaceDim) * tNumDofsPerNode);
             TEST_FLOATING_EQUALITY(tHostComplexElasticForces(tCellIndex, tMyIndex), tHostImagElasticForces(tCellIndex, tDofIndex), tTolerance);
-        }
-    }
-}
-
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsResidual)
-{
-    // BUILD OMEGA_H MESH
-    const Plato::OrdinalType tSpaceDim = 3;
-    const Plato::OrdinalType tMeshWidth = 1;
-    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
-
-    // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
-    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
-    using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
-   
-    // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
-    Plato::DataMap tDataMap;
-    VectorFunction<Plato::Mechanics<tSpaceDim>> tElastostatics(*tMesh, tDataMap);
-    
-    // ALLOCATE ELASTOSTATICS RESIDUAL
-    Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
-    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
-    tElastostatics.allocateResidual(tResidual, tJacobianState);
-
-    // SET PROBLEM-RELATED DIMENSIONS
-    Plato::OrdinalType tNumCells = tMesh.get()->nelems();
-    TEST_EQUALITY(tNumCells, static_cast<Plato::OrdinalType>(6));
-    Plato::OrdinalType tNumVertices = tMesh.get()->nverts();
-    TEST_EQUALITY(tNumVertices, static_cast<Plato::OrdinalType>(8));
-    Plato::OrdinalType tTotalNumDofs = tNumVertices * tSpaceDim;
-    TEST_EQUALITY(tTotalNumDofs, static_cast<Plato::OrdinalType>(24));
-
-    // ALLOCATE STATES VECTOR FOR ELASTOSTATICS EXAMPLE
-    Plato::ScalarVector tRealStates("Real LinearStates", tTotalNumDofs);
-    auto tHostRealStates = Kokkos::create_mirror(tRealStates);
-    Plato::ScalarVector tImagStates("Imag LinearStates", tTotalNumDofs);
-    auto tHostImagStates = Kokkos::create_mirror(tImagStates);
-    for(Plato::OrdinalType tIndex = 0; tIndex < tTotalNumDofs; tIndex++)
-    {
-        tHostRealStates(tIndex) = static_cast<Plato::Scalar>(1e-3) * static_cast<Plato::Scalar>(tIndex);
-        tHostImagStates(tIndex) = static_cast<Plato::Scalar>(2e-3) * static_cast<Plato::Scalar>(tIndex);
-    }
-    Kokkos::deep_copy(tRealStates, tHostRealStates);
-    Kokkos::deep_copy(tImagStates, tHostImagStates);
-
-    // ALLOCATE CONTROL VECTOR FOR EXAMPLE
-    Plato::ScalarVector tControl("Control", tNumVertices);
-    auto tHostControl = Kokkos::create_mirror(tControl);
-    for(Plato::OrdinalType tIndex = 0; tIndex < tNumVertices; tIndex++)
-    {
-        tHostControl(tIndex) = static_cast<Plato::Scalar>(1.0);
-    }
-    Kokkos::deep_copy(tControl, tHostControl);
-
-    // COMPUTE ELASTOSTATICS RESIDUAL
-    auto tRealElastostaticsResidual = tElastostatics.value(tRealStates, tControl);
-    Plato::OrdinalType tSize = tRealElastostaticsResidual.size();
-    TEST_EQUALITY(tTotalNumDofs, tSize);
-    auto tImagElastostaticsResidual = tElastostatics.value(tImagStates, tControl);
-    tSize = tImagElastostaticsResidual.size();
-    TEST_EQUALITY(tTotalNumDofs, tSize);
-
-    // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
-    using SD_StrainT = typename
-        Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
-
-    // ALLOCATE ELASTODYNAMICS VECTOR FUNCTION
-    VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tElastodynamics(*tMesh, tDataMap);
-    std::shared_ptr<Plato::AbstractVectorFunction<SD_ResidualT>> tResidualSD;
-    tResidualSD = std::make_shared<Plato::StructuralDynamicsResidual<SD_ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<Plato::AbstractVectorFunction<SD_JacobianU>> tJacobianStateSD;
-    tJacobianStateSD = std::make_shared<Plato::StructuralDynamicsResidual<SD_JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    tElastodynamics.allocateResidual(tResidualSD, tJacobianStateSD);
-
-    // ALLOCATE STATE VECTOR FOR ELASTODYNAMICS EXAMPLE
-    tTotalNumDofs = static_cast<Plato::OrdinalType>(2) * tNumVertices * tSpaceDim;
-    TEST_EQUALITY(tTotalNumDofs, static_cast<Plato::OrdinalType>(48));
-    Plato::ScalarVector tComplexStates("ComplexStates", tTotalNumDofs);
-
-    auto tHostComplexStates = Kokkos::create_mirror(tComplexStates);
-    const Plato::OrdinalType tNumRealDofs = tNumVertices * tSpaceDim;
-    TEST_EQUALITY(tNumRealDofs, static_cast<Plato::OrdinalType>(24));
-    const Plato::OrdinalType tNumDofsPerNode = static_cast<Plato::OrdinalType>(2) * tSpaceDim;
-    for(Plato::OrdinalType tIndex = 0; tIndex < tNumRealDofs; tIndex++)
-    {
-        Plato::OrdinalType tMyIndex = (tIndex % tSpaceDim)
-            + (static_cast<Plato::OrdinalType>(tIndex/tSpaceDim) * tNumDofsPerNode);
-        tHostComplexStates(tMyIndex) = static_cast<Plato::Scalar>(1e-3) * static_cast<Plato::Scalar>(tIndex);
-        tMyIndex = (tIndex % tSpaceDim) + tSpaceDim + (static_cast<Plato::OrdinalType>(tIndex/tSpaceDim) * tNumDofsPerNode);
-        tHostComplexStates(tMyIndex) = static_cast<Plato::Scalar>(2e-3) * static_cast<Plato::Scalar>(tIndex);
-    }
-    Kokkos::deep_copy(tComplexStates, tHostComplexStates);
-
-    // COMPUTE ELASTODYNAMICS RESIDUAL
-    auto tElastodynamicsResidual = tElastodynamics.value(tComplexStates, tControl);
-    tSize = tElastodynamicsResidual.size();
-    TEST_EQUALITY(tTotalNumDofs, tSize); // tTotalNumDofs = 48
-
-    // TEST OUTPUTS: LINEAR AND COMPLEX ELASTIC FORCES SHOULD BE EQUAL
-    auto tHostRealElastostaticsResidual = Kokkos::create_mirror(tRealElastostaticsResidual);
-    Kokkos::deep_copy(tHostRealElastostaticsResidual, tRealElastostaticsResidual);
-    auto tHostImagElastostaticsResidual = Kokkos::create_mirror(tImagElastostaticsResidual);
-    Kokkos::deep_copy(tHostImagElastostaticsResidual, tImagElastostaticsResidual);
-    auto tHostElastodynamicsResidual = Kokkos::create_mirror(tElastodynamicsResidual);
-    Kokkos::deep_copy(tHostElastodynamicsResidual, tElastodynamicsResidual);
-
-    const Plato::Scalar tTolerance = 1e-6;
-    for(Plato::OrdinalType tDofIndex = 0; tDofIndex < tNumRealDofs; tDofIndex++)
-    {
-        Plato::OrdinalType tMyIndex = (tDofIndex % tSpaceDim)
-                + (static_cast<Plato::OrdinalType>(tDofIndex/tSpaceDim) * tNumDofsPerNode);
-        TEST_FLOATING_EQUALITY(tHostElastodynamicsResidual(tMyIndex), tHostRealElastostaticsResidual(tDofIndex), tTolerance);
-        tMyIndex = (tDofIndex % tSpaceDim) + tSpaceDim
-                + (static_cast<Plato::OrdinalType>(tDofIndex/tSpaceDim) * tNumDofsPerNode);
-        TEST_FLOATING_EQUALITY(tHostElastodynamicsResidual(tMyIndex), tHostImagElastostaticsResidual(tDofIndex), tTolerance);
-    }
-}
-
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, CompareElastostaticsToElastodynamicsGradU)
-{
-    // BUILD OMEGA_H MESH
-    const Plato::OrdinalType tSpaceDim = 3;
-    const Plato::OrdinalType tMeshWidth = 1;
-    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
-
-    // ******************** SET ELASTOSTATICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using ResidualT = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Residual;
-    using JacobianU = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::Jacobian;
-    using JacobianX = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientX;
-    using JacobianZ = typename Plato::Evaluation<typename Plato::Mechanics<tSpaceDim>::SimplexT>::GradientZ;
-    using StrainT = typename Plato::fad_type_t<Plato::Mechanics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
-
-    // ALLOCATE ELASTOSTATICS VECTOR FUNCTION
-    Plato::DataMap tDataMap;
-    VectorFunction<Plato::Mechanics<tSpaceDim>> tElastostatics(*tMesh, tDataMap);
-    
-    // ALLOCATE ELASTOSTATICS RESIDUAL
-    Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ElastostaticResidual<ResidualT, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
-    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ElastostaticResidual<JacobianU, SIMP>>(*tMesh, tMeshSets, tDataMap, *params, params->sublist("Elastostatics"));
-    tElastostatics.allocateResidual(tResidual, tJacobianState);
-
-    // SET PROBLEM-RELATED DIMENSIONS
-    Plato::OrdinalType tNumCells = tMesh.get()->nelems();
-    TEST_EQUALITY(tNumCells, static_cast<Plato::OrdinalType>(6));
-    Plato::OrdinalType tNumVertices = tMesh.get()->nverts();
-    TEST_EQUALITY(tNumVertices, static_cast<Plato::OrdinalType>(8));
-    Plato::OrdinalType tTotalNumDofs = tNumVertices * tSpaceDim;
-    TEST_EQUALITY(tTotalNumDofs, static_cast<Plato::OrdinalType>(24));
-
-    // ALLOCATE STATES VECTOR FOR ELASTOSTATICS EXAMPLE
-    Plato::ScalarVector tLinearStates("LinearStates", tTotalNumDofs);
-
-    // ALLOCATE CONTROL VECTOR FOR EXAMPLE
-    Plato::ScalarVector tControl("Control", tNumVertices);
-    auto tHostControl = Kokkos::create_mirror(tControl);
-    for(Plato::OrdinalType tIndex = 0; tIndex < tNumVertices; tIndex++)
-    {
-        tHostControl(tIndex) = static_cast<Plato::Scalar>(1.0);
-    }
-    Kokkos::deep_copy(tControl, tHostControl);
-
-    // COMPUTE ELASTOSTATICS JACOBIAN U
-    auto tElastostaticsJacobianU = tElastostatics.gradient_u(tLinearStates, tControl);
-
-    // ******************** SET ELASTODYNAMICS' EVALUATION TYPES FOR UNIT TEST ********************
-    using SD_ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
-    using SD_JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    using SD_JacobianX = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientX;
-    using SD_JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
-    using SD_StrainT = typename
-        Plato::fad_type_t<Plato::StructuralDynamics<tSpaceDim>, ResidualT::StateScalarType, ResidualT::ConfigScalarType>;
-
-    // ALLOCATE ELASTODYNAMICS VECTOR FUNCTION
-    VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tElastodynamics(*tMesh, tDataMap);
-    std::shared_ptr<Plato::AbstractVectorFunction<SD_ResidualT>> tResidualSD;
-    tResidualSD = std::make_shared<Plato::StructuralDynamicsResidual<SD_ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<Plato::AbstractVectorFunction<SD_JacobianU>> tJacobianStateSD;
-    tJacobianStateSD = std::make_shared<Plato::StructuralDynamicsResidual<SD_JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    tElastodynamics.allocateResidual(tResidualSD, tJacobianStateSD);
-
-    // ALLOCATE STATE VECTOR FOR ELASTODYNAMICS EXAMPLE
-    tTotalNumDofs = static_cast<Plato::OrdinalType>(2) * tNumVertices * tSpaceDim;
-    TEST_EQUALITY(tTotalNumDofs, static_cast<Plato::OrdinalType>(48));
-    Plato::ScalarVector tComplexStates("ComplexStates", tTotalNumDofs);
-
-    // COMPUTE ELASTODYNAMICS JACOBIAN U
-    auto tNumDofsPerNode = static_cast<Plato::OrdinalType>(2) * tSpaceDim;
-    auto tElastodynamicsJacobianU = tElastodynamics.gradient_u(tComplexStates, tControl);
- 
-    // TEST OUTPUTS: LINEAR AND COMPLEX ELASTIC FORCES SHOULD BE EQUAL
-    auto tElastostaticsJacEntries = tElastostaticsJacobianU->entries();
-    auto tHostElastostaticsJacEntries = Kokkos::create_mirror(tElastostaticsJacEntries);
-    Kokkos::deep_copy(tHostElastostaticsJacEntries, tElastostaticsJacEntries);
-    
-    auto tElastodynamicsJacEntries = tElastodynamicsJacobianU->entries();
-    auto tHostElastodynamicsJacEntries = Kokkos::create_mirror(tElastodynamicsJacEntries);
-    Kokkos::deep_copy(tHostElastodynamicsJacEntries, tElastodynamicsJacEntries);
-    
-    const Plato::Scalar tTolerance = 1e-6;
-    const Plato::OrdinalType tComplexSpaceStride = tNumDofsPerNode * tSpaceDim; // tNumDofsPerNode = 6
-    for(Plato::OrdinalType tVertexIndex = 0; tVertexIndex < tNumVertices; tVertexIndex++)
-    {
-        auto tElastoStaticsStride = tVertexIndex * (tSpaceDim * tSpaceDim);
-        auto tElastoDynamicsStride = tVertexIndex * (tNumDofsPerNode * tNumDofsPerNode); // tNumDofsPerNode = 6
-        for(Plato::OrdinalType tDimIndex = 0; tDimIndex < tSpaceDim; tDimIndex++)
-        {
-            auto tMyIndex = tElastoStaticsStride + (tSpaceDim * tDimIndex) + tDimIndex; // tNumDofsPerNode = tSpaceDim
-            auto tRealIndex = tElastoDynamicsStride + (tNumDofsPerNode * tDimIndex) + tDimIndex; 
-            TEST_FLOATING_EQUALITY(tHostElastodynamicsJacEntries(tRealIndex), tHostElastostaticsJacEntries(tMyIndex), tTolerance);
-            auto tImagIndex = tElastoDynamicsStride + tComplexSpaceStride + (tNumDofsPerNode * tDimIndex) + tSpaceDim + tDimIndex; 
-            TEST_FLOATING_EQUALITY(tHostElastodynamicsJacEntries(tImagIndex), tHostElastostaticsJacEntries(tMyIndex), tTolerance);
         }
     }
 }

@@ -6,6 +6,9 @@
 
 #include <Omega_h_vector.hpp>
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Strain functor.
   
@@ -69,4 +72,6 @@ class Strain : public Plato::SimplexMechanics<SpaceDim>
       }
     }
 };
+
+} // namespace Plato
 #endif

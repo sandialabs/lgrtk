@@ -35,6 +35,10 @@
 
 */
 /******************************************************************************/
+
+namespace Plato
+{
+
 template<int SpaceDim>
 class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
 {
@@ -94,4 +98,7 @@ class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
       }
     }
 };
+
+} // namespace Plato
+
 #endif

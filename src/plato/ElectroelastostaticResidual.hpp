@@ -130,11 +130,11 @@ public:
       typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      EMKinematics<SpaceDim>                  kinematics;
-      EMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::EMKinematics<SpaceDim>                  kinematics;
+      Plato::EMKinetics<SpaceDim>                    kinetics(m_materialModel);
       
-      StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
-      FluxDivergence  <SpaceDim, m_numDofsPerNode, EDofOffset> edispDivergence;
+      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, EDofOffset> edispDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight",tNumCells);
 

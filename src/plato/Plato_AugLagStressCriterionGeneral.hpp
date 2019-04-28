@@ -268,10 +268,10 @@ public:
         using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
 
         ::SIMP tSIMP(mPenalty, mMinErsatzValue);
-        Strain<mSpaceDim> tComputeCauchyStrain;
+        Plato::Strain<mSpaceDim> tComputeCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
+        Plato::LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
 
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
@@ -351,11 +351,11 @@ public:
                                    const Plato::ScalarArray3D & aConfigWS)
     {
         // Create Cauchy stress functors
-        Strain<mSpaceDim> tComputeCauchyStrain;
+        Plato::Strain<mSpaceDim> tComputeCauchyStrain;
         ::SIMP tSIMP(mPenalty, mMinErsatzValue);
         Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
+        Plato::LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
 
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();

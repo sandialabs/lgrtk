@@ -103,10 +103,10 @@ class InternalElasticEnergy :
     {
       auto tNumCells = mMesh.nelems();
 
-        Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
         ScalarProduct<m_numVoigtTerms> tComputeScalarProduct;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(m_cellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(m_cellStiffness);
 
       using StrainScalarType = 
         typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;

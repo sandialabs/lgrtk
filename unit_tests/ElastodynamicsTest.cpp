@@ -820,9 +820,9 @@ public:
                   Plato::Scalar aTimeStep = 0.0) const
     {
         // elastic forces functors
-        Strain<mSpatialDim> tComputeStrains;
-        LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
-        StressDivergence<mSpatialDim> tComputeStressDivergence;
+        Plato::Strain<mSpatialDim> tComputeStrains;
+        Plato::LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
+        Plato::StressDivergence<mSpatialDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpatialDim> tComputeGradient;
 
         // allocate local containers
@@ -981,9 +981,9 @@ public:
                   Plato::Scalar aTimeStep = 0.0) const
     {
         // elastic force functors
-        Strain<mSpatialDim> tComputeStrains;
-        LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
-        StressDivergence<mSpatialDim> tComputeStressDivergence;
+        Plato::Strain<mSpatialDim> tComputeStrains;
+        Plato::LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
+        Plato::StressDivergence<mSpatialDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpatialDim> tComputeGradient;
         // Inertial force functors
         Plato::StateValues tComputeValues;
@@ -1885,10 +1885,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -1987,10 +1987,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Initialize elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Initialize inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -2469,10 +2469,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -2569,10 +2569,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Initialize elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Initialize inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);

@@ -3,6 +3,9 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Flux divergence functor.
   
@@ -41,4 +44,7 @@ class FluxDivergence : public Simplex<SpaceDim>
       }
     }
 };
+// class FluxDivergence
+
+} // namespace Plato
 #endif

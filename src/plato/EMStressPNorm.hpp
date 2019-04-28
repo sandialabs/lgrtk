@@ -86,8 +86,8 @@ class EMStressPNorm :
         typename Plato::fad_type_t<Plato::SimplexElectromechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      EMKinematics<SpaceDim>                  kinematics;
-      EMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::EMKinematics<SpaceDim>                  kinematics;
+      Plato::EMKinetics<SpaceDim>                    kinetics(m_materialModel);
 
       Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight", numCells);
 
