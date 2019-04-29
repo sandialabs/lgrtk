@@ -40,7 +40,7 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
     constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
 
     // Create configuration workset
-    WorksetBase<SimplexPhysics> tWorksetBase(aMesh);
+    Plato::WorksetBase<SimplexPhysics> tWorksetBase(aMesh);
     Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
     tWorksetBase.worksetConfig(tConfigWS);
 
@@ -147,7 +147,7 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::AbstractScalarFunct
     constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
 
     // Create configuration workset
-    WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(aMesh);
+    Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(aMesh);
     Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
     tWorksetBase.worksetConfig(tConfigWS);
 

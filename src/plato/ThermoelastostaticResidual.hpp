@@ -131,8 +131,8 @@ public:
       typename Plato::fad_type_t<Plato::SimplexThermomechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      TMKinematics<SpaceDim>                  kinematics;
-      TMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::TMKinematics<SpaceDim>                  kinematics;
+      Plato::TMKinetics<SpaceDim>                    kinetics(m_materialModel);
       
       Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
       Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;

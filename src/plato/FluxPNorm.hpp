@@ -87,9 +87,9 @@ class FluxPNorm :
       auto numCells = mMesh.nelems();
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      ScalarGrad<SpaceDim>                    scalarGrad;
-      ThermalFlux<SpaceDim>                   thermalFlux(m_cellConductivity);
-      VectorPNorm<SpaceDim>                   vectorPNorm;
+      Plato::ScalarGrad<SpaceDim>                    scalarGrad;
+      Plato::ThermalFlux<SpaceDim>                   thermalFlux(m_cellConductivity);
+      Plato::VectorPNorm<SpaceDim>                   vectorPNorm;
 
       using GradScalarType =
         typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>,StateScalarType, ConfigScalarType>;

@@ -4,6 +4,9 @@
 #include "plato/SimplexThermomechanics.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Thermomechanical kinematics functor.
   
@@ -65,4 +68,8 @@ class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
       }
     }
 };
+// class TMKinematics
+
+} // namespace Plato
+
 #endif

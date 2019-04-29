@@ -70,7 +70,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
   auto T = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), T_host_view);
 
 
-  WorksetBase<SimplexThermal<spaceDim>> worksetBase(*mesh);
+  Plato::WorksetBase<SimplexThermal<spaceDim>> worksetBase(*mesh);
 
   Plato::ScalarArray3DT<Plato::Scalar>
     gradient("gradient",numCells,nodesPerCell,spaceDim);
@@ -94,7 +94,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
 
   Plato::ComputeGradientWorkset<spaceDim> computeGradient;
 
-  ScalarGrad<spaceDim> scalarGrad;
+  Plato::ScalarGrad<spaceDim> scalarGrad;
 
   // create input
   //
@@ -118,7 +118,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
   auto cellDensity      = materialModel->getMassDensity();
   auto cellSpecificHeat = materialModel->getSpecificHeat();
 
-  ThermalFlux<spaceDim>      thermalFlux(cellConductivity);
+  Plato::ThermalFlux<spaceDim>      thermalFlux(cellConductivity);
   Plato::FluxDivergence<spaceDim>  fluxDivergence;
 
   Plato::LinearTetCubRuleDegreeOne<spaceDim> cubatureRule;
@@ -149,7 +149,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
     massResult("mass", numCells, dofsPerCell);
 
   Plato::StateValues computeStateValues;
-  ThermalContent     computeThermalContent(cellDensity, cellSpecificHeat);
+  Plato::ThermalContent     computeThermalContent(cellDensity, cellSpecificHeat);
   Plato::ComputeProjectionWorkset projectThermalContent;
 
   auto basisFunctions = cubatureRule.getBasisFunctions();

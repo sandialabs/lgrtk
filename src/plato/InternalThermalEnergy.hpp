@@ -98,9 +98,9 @@ class InternalThermalEnergy :
       auto tNumCells = mMesh.nelems();
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-      ScalarGrad<mSpaceDim>                    tComputeScalarGrad;
+      Plato::ScalarGrad<mSpaceDim>                    tComputeScalarGrad;
       ScalarProduct<mSpaceDim>                 tComputeScalarProduct;
-      ThermalFlux<mSpaceDim>                   tComputeThermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<mSpaceDim>                   tComputeThermalFlux(m_cellConductivity);
 
       using GradScalarType =
         typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
@@ -215,8 +215,8 @@ class InternalThermalEnergyInc :
       auto numCells = mMesh.nelems();
 
       Plato::ComputeGradientWorkset<mSpaceDim> computeGradient;
-      ScalarGrad<mSpaceDim>                    scalarGrad;
-      ThermalFlux<mSpaceDim>                   thermalFlux(m_cellConductivity);
+      Plato::ScalarGrad<mSpaceDim>                    scalarGrad;
+      Plato::ThermalFlux<mSpaceDim>                   thermalFlux(m_cellConductivity);
       ScalarProduct<mSpaceDim>                 scalarProduct;
 
       using GradScalarType =

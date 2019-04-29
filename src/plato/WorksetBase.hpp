@@ -21,6 +21,7 @@ inline Scalar local_result_sum(const Plato::OrdinalType& aNumCells, const Result
   }, tReturnVal);
   return tReturnVal;
 }
+// function local_result_sum
 
 /*************************************************************************//**
 *
@@ -46,6 +47,7 @@ inline Scalar assemble_scalar_func_value(const Plato::OrdinalType& aNumCells, co
   }, tReturnValue);
   return tReturnValue;
 }
+// function assemble_scalar_func_value
 
 /*************************************************************************//**
 *
@@ -81,6 +83,7 @@ inline void assemble_vector_gradient(const Plato::OrdinalType& aNumCells,
         }
     }, "Assemble - Vector Gradient Calculation");
 }
+// function assemble_vector_gradient
 
 /*************************************************************************//**
 *
@@ -112,6 +115,7 @@ inline void assemble_scalar_gradient(const Plato::OrdinalType& aNumCells,
       }
     }, "Assemble - Scalar Gradient Calculation");
 }
+// function assemble_scalar_gradient
 
 /******************************************************************************/
 template<int numNodesPerCell, class ControlEntryOrdinal, class Control, class ControlWS>
@@ -130,6 +134,7 @@ inline void workset_control_scalar_scalar(int aNumCells,
         }
     }, "workset_control_scalar_scalar");
 }
+// function workset_control_scalar_scalar
 
 /******************************************************************************/
 template<int numNodesPerCell, class ControlFad, class ControlEntryOrdinal, class Control, class FadControlWS>
@@ -148,6 +153,7 @@ inline void workset_control_scalar_fad(int aNumCells,
         }
     }, "workset_control_scalar_fad");
 }
+// function workset_control_scalar_fad
 
 /******************************************************************************/
 template<int numDofsPerNode, int numNodesPerCell, class StateEntryOrdinal, class State, class StateWS>
@@ -167,6 +173,7 @@ inline void workset_state_scalar_scalar(int aNumCells, StateEntryOrdinal aStateE
         }
     }, "workset_state_scalar_scalar");
 }
+// function workset_state_scalar_scalar
 
 /******************************************************************************/
 template<int numDofsPerNode, int numNodesPerCell, int numDofsPerCell, class StateFad, class StateEntryOrdinal, class State, class FadStateWS>
@@ -189,6 +196,7 @@ inline void workset_state_scalar_fad(int aNumCells,
         }
     }, "workset_state_scalar_fad");
 }
+// function workset_state_scalar_fad
 
 /******************************************************************************/
 template<int spaceDim, int numNodesPerCell, class ConfigWS, class NodeCoordinates>
@@ -206,6 +214,7 @@ inline void workset_config_scalar(int aNumCells, NodeCoordinates aNodeCoordinate
         }
     }, "workset_config_scalar");
 }
+// function workset_config_scalar
 
 /******************************************************************************/
 template<int spaceDim, int numNodesPerCell, int numConfigDofsPerCell, class ConfigFad, class FadConfigWS, class NodeCoordinates>
@@ -225,6 +234,7 @@ inline void workset_config_fad(int aNumCells, NodeCoordinates aNodeCoordinate, F
         }
     }, "workset_config_fad");
 }
+// function workset_config_fad
 
 /******************************************************************************/
 template<int numNodesPerCell, int numDofsPerNode, class StateEntryOrdinal, class Residual, class ReturnVal>
@@ -244,6 +254,7 @@ inline void assemble_residual(int aNumCells,
     }
   }, "assemble_residual");
 }
+// function assemble_residual
 
 /******************************************************************************/
 template<class MatrixEntriesOrdinal, class Jacobian, class ReturnVal>
@@ -265,6 +276,7 @@ inline void assemble_jacobian(int aNumCells,
     }
   }, "assemble_jacobian");
 }
+// function assemble_jacobian
 
 /******************************************************************************/
 template<class MatrixEntriesOrdinal, class Jacobian, class ReturnVal>
@@ -286,8 +298,7 @@ inline void assemble_transpose_jacobian(int aNumCells,
     }
   }, "assemble_transpose_jacobian");
 }
-
-}//namespace Plato
+// function assemble_transpose_jacobian
 
 /******************************************************************************/
 /*! Base class for workset functionality.
@@ -417,5 +428,8 @@ class WorksetBase : public SimplexPhysics
     }
 
 };
+// class WorksetBase
+
+}//namespace Plato
 
 #endif

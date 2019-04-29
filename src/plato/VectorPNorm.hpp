@@ -3,36 +3,42 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Vector p-norm functor.
-  
-    Given a vector, compute the p-norm.
-    Assumes single point integration.
-*/
+
+ Given a vector, compute the p-norm.
+ Assumes single point integration.
+ */
 /******************************************************************************/
 template<Plato::OrdinalType VectorLength>
 class VectorPNorm
 {
-  public:
+public:
 
-    template<typename ResultScalarType, 
-             typename VectorScalarType, 
-             typename VolumeScalarType>
-    DEVICE_TYPE inline void
-    operator()( Plato::OrdinalType cellOrdinal,
-                Plato::ScalarVectorT<ResultScalarType> pnorm,
-                Plato::ScalarMultiVectorT<VectorScalarType> argVector,
-                Plato::OrdinalType p,
-                Plato::ScalarVectorT<VolumeScalarType> cellVolume ) const {
+    template<typename ResultScalarType, typename VectorScalarType, typename VolumeScalarType>
+    DEVICE_TYPE inline void operator()(Plato::OrdinalType aCellOrdinal,
+                                       Plato::ScalarVectorT<ResultScalarType> aPnorm,
+                                       Plato::ScalarMultiVectorT<VectorScalarType> aArgVector,
+                                       Plato::OrdinalType aPvalue,
+                                       Plato::ScalarVectorT<VolumeScalarType> aCellVolume) const
+    {
 
-      // compute scalar product
-      //
-      pnorm(cellOrdinal) = 0.0;
-      for( Plato::OrdinalType iTerm=0; iTerm<VectorLength; iTerm++){
-        pnorm(cellOrdinal) += argVector(cellOrdinal,iTerm)*argVector(cellOrdinal,iTerm);
-      }
-      pnorm(cellOrdinal) = pow(pnorm(cellOrdinal),p/2.0);
-      pnorm(cellOrdinal) *= cellVolume(cellOrdinal);
+        // compute scalar product
+        //
+        aPnorm(aCellOrdinal) = 0.0;
+        for(Plato::OrdinalType iTerm = 0; iTerm < VectorLength; iTerm++)
+        {
+            aPnorm(aCellOrdinal) += aArgVector(aCellOrdinal, iTerm) * aArgVector(aCellOrdinal, iTerm);
+        }
+        aPnorm(aCellOrdinal) = pow(aPnorm(aCellOrdinal), aPvalue / 2.0);
+        aPnorm(aCellOrdinal) *= aCellVolume(aCellOrdinal);
     }
 };
+// class VectorPNorm
+
+}// namespace Plato
+
 #endif

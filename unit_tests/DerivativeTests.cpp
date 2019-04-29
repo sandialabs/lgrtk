@@ -74,7 +74,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto u = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), u_host_view);
 
 
-  WorksetBase<Plato::SimplexMechanics<spaceDim>> worksetBase(*mesh);
+  Plato::WorksetBase<Plato::SimplexMechanics<spaceDim>> worksetBase(*mesh);
 
   Plato::ScalarArray3DT<Plato::Scalar>
     gradient("gradient",numCells,nodesPerCell,spaceDim);

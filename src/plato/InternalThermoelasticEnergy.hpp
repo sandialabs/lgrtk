@@ -95,8 +95,8 @@ class InternalThermoelasticEnergy :
         typename Plato::fad_type_t<Plato::SimplexThermomechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<mSpaceDim> computeGradient;
-      TMKinematics<mSpaceDim>                  kinematics;
-      TMKinetics<mSpaceDim>                    kinetics(m_materialModel);
+      Plato::TMKinematics<mSpaceDim>                  kinematics;
+      Plato::TMKinetics<mSpaceDim>                    kinetics(m_materialModel);
 
       ScalarProduct<m_numVoigtTerms>          mechanicalScalarProduct;
       ScalarProduct<mSpaceDim>                 thermalScalarProduct;

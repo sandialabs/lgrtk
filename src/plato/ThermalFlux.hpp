@@ -4,6 +4,9 @@
 #include "plato/PlatoStaticsTypes.hpp"
 #include <Omega_h_matrix.hpp>
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Thermal flux functor.
   
@@ -40,4 +43,7 @@ class ThermalFlux
       }
     }
 };
+// class ThermalFlux
+
+} // namespace Plato
 #endif

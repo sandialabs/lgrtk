@@ -134,12 +134,12 @@ class HeatEquationResidual :
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
 
-      ScalarGrad<SpaceDim>            scalarGrad;
-      ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
+      Plato::ScalarGrad<SpaceDim>            scalarGrad;
+      Plato::ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
       Plato::FluxDivergence<SpaceDim>        fluxDivergence;
 
       Plato::StateValues computeStateValues;
-      ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
+      Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
       Plato::ComputeProjectionWorkset projectThermalContent;
       
       auto basisFunctions = m_cubatureRule->getBasisFunctions();

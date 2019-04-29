@@ -20,20 +20,20 @@
 */
 /******************************************************************************/
 template<typename PhysicsT>
-class ScalarFunctionInc : public WorksetBase<PhysicsT>
+class ScalarFunctionInc : public Plato::WorksetBase<PhysicsT>
 {
   private:
-    using WorksetBase<PhysicsT>::m_numDofsPerCell;
-    using WorksetBase<PhysicsT>::m_numNodesPerCell;
-    using WorksetBase<PhysicsT>::m_numDofsPerNode;
-    using WorksetBase<PhysicsT>::m_numSpatialDims;
-    using WorksetBase<PhysicsT>::m_numControl;
-    using WorksetBase<PhysicsT>::m_numNodes;
-    using WorksetBase<PhysicsT>::m_numCells;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode;
+    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims;
+    using Plato::WorksetBase<PhysicsT>::m_numControl;
+    using Plato::WorksetBase<PhysicsT>::m_numNodes;
+    using Plato::WorksetBase<PhysicsT>::m_numCells;
 
-    using WorksetBase<PhysicsT>::m_stateEntryOrdinal;
-    using WorksetBase<PhysicsT>::m_controlEntryOrdinal;
-    using WorksetBase<PhysicsT>::m_configEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_stateEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_controlEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_configEntryOrdinal;
 
     using Residual  = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Residual;
     using Jacobian  = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Jacobian;
@@ -59,7 +59,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
                       Plato::DataMap & aDataMap,
                       Teuchos::ParameterList& aParamList,
                       const std::string & aScalarFunctionType ) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap)
     /**************************************************************************/
     {
@@ -83,7 +83,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
 
     /**************************************************************************/
     ScalarFunctionInc(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             mScalarFunctionValue(nullptr),
             mScalarFunctionGradientU(nullptr),
             mScalarFunctionGradientP(nullptr),
@@ -134,13 +134,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       // 
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
 
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       // 
       Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
 
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create result view
       //
@@ -162,13 +162,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //
@@ -209,13 +209,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       // 
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
 
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       // 
       Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
 
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       //
@@ -230,13 +230,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //
@@ -275,12 +275,12 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       // workset control
       // 
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       // 
       Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       //
@@ -290,13 +290,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       // 
       Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset",m_numCells,m_numDofsPerCell);
       auto tState = Kokkos::subview(aStates, aStepIndex, Kokkos::ALL());
-      WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
       // workset prev state
       // 
       Plato::ScalarMultiVectorT<PrevStateScalar> tPrevStateWS("previous state workset",m_numCells,m_numDofsPerCell);
       auto tPrevState = Kokkos::subview(aStates, aStepIndex-1, Kokkos::ALL());
-      WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
       // evaluate function
       //
@@ -314,7 +314,7 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         // 
         Plato::ScalarMultiVectorT<PrevStateScalar> tNextStateWS("next state workset",m_numCells,m_numDofsPerCell);
         auto tNextState = Kokkos::subview(aStates, aStepIndex+1, Kokkos::ALL());
-        WorksetBase<PhysicsT>::worksetState(tNextState, tNextStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tNextState, tNextStateWS);
   
         // evaluate function
         //
@@ -355,13 +355,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
       // 
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
 
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       // 
       Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
 
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create result view
       //
@@ -379,13 +379,13 @@ class ScalarFunctionInc : public WorksetBase<PhysicsT>
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
 
-        WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
         //

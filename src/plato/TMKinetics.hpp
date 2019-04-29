@@ -4,6 +4,9 @@
 #include "plato/SimplexThermomechanics.hpp"
 #include "plato/LinearThermoelasticMaterial.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Thermoelastics functor.
   
@@ -68,4 +71,8 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
       }
     }
 };
+// class TMKinetics
+
+} // namespace Plato
+
 #endif

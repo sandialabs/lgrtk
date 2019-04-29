@@ -3,6 +3,9 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Thermal content functor.
   
@@ -31,4 +34,8 @@ class ThermalContent
       tcontent(cellOrdinal,0) = temperature(cellOrdinal,0)*m_cellDensity*m_cellSpecificHeat;
     }
 };
+// class ThermalContent
+
+} // namespace Plato
+
 #endif
