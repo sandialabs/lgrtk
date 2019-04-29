@@ -11,9 +11,6 @@
 
 namespace lgr {
 
-using LgrFields = std::set<std::size_t>;
-using OshFields = std::set<std::string>;
-
 struct VtkOutput : public Response {
  public:
   VtkOutput(Simulation& sim_in, Omega_h::InputMap& pl);
@@ -307,12 +304,17 @@ static void write_lgr_fields(std::ostream& file, Simulation& sim,
   }
 }
 
-static void write_vtu(Omega_h::filesystem::path const& step_path,
+void write_vtu(Omega_h::filesystem::path const& step_path,
     Simulation& sim, bool compress, LgrFields lgr_fields[4],
-    OshFields osh_fields[4]) {
+    OshFields osh_fields[4], bool override_path) {
   OMEGA_H_TIME_FUNCTION;
   auto const dim = sim.disc.dim();
-  auto const vtu_name = step_path / piece_filename(sim.comm->rank());
+  Omega_h::filesystem::path vtu_name;
+  if (override_path) {
+    sim.disc.set_node_coords(sim.get(sim.position));
+    vtu_name = step_path;
+  }
+  else vtu_name = step_path / piece_filename(sim.comm->rank());
   std::ofstream file(vtu_name.c_str());
   Omega_h::vtk::write_vtkfile_vtu_start_tag(file, compress);
   file << "<UnstructuredGrid>\n";
