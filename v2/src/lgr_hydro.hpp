@@ -1,6 +1,5 @@
 #ifndef LGR_HYDRO_HPP
 #define LGR_HYDRO_HPP
-
 #include <lgr_element_types.hpp>
 
 namespace lgr {
@@ -25,6 +24,8 @@ template <class Elem>
 void compute_nodal_acceleration(Simulation& sim);
 template <class Elem>
 void compute_point_time_steps(Simulation& sim);
+template <class Elem>
+void fix_ref_coords(Simulation& sim);
 
 #define LGR_EXPL_INST(Elem)                                                    \
   extern template void initialize_configuration<Elem>(Simulation & sim);       \
@@ -35,7 +36,8 @@ void compute_point_time_steps(Simulation& sim);
   extern template void correct_velocity<Elem>(Simulation & sim);               \
   extern template void compute_stress_divergence<Elem>(Simulation & sim);      \
   extern template void compute_nodal_acceleration<Elem>(Simulation & sim);     \
-  extern template void compute_point_time_steps<Elem>(Simulation & sim);
+  extern template void compute_point_time_steps<Elem>(Simulation & sim);       \
+  extern template void fix_ref_coords<Elem>(Simulation & sim);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

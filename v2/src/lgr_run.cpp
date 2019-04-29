@@ -73,6 +73,7 @@ static void run_simulation(Simulation& sim) {
       reset_configuration<Elem>(sim);
       sim.adapter.adapt();
       sim.flooder.flood();
+      if ((0)) fix_ref_coords<Elem>(sim);
       auto const field_X = sim.fields.get(sim.ref_coords);
       auto const field_x = sim.fields.set(sim.position);
       Omega_h::copy_into(field_X, field_x);

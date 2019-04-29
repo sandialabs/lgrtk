@@ -439,6 +439,61 @@ void compute_point_time_steps(Simulation& sim) {
   parallel_for(sim.points(), std::move(functor));
 }
 
+OMEGA_H_INLINE
+Omega_h::Few<int, 2> get_edge_nodes(int const node) {
+  Omega_h::Few<int, 2> n;
+  n[0] = -1; n[1] = -1;
+  if (node == 4) {n[0] = 0; n[1] = 1;}
+  if (node == 5) {n[0] = 1; n[1] = 2;}
+  if (node == 6) {n[0] = 2; n[1] = 0;}
+  if (node == 7) {n[0] = 0; n[1] = 3;}
+  if (node == 8) {n[0] = 1; n[1] = 3;}
+  if (node == 9) {n[0] = 2; n[1] = 3;}
+  return n;
+}
+
+template <class Elem>
+void fix_ref_coords(Simulation& sim) {
+  LGR_SCOPE(sim);
+  auto const ndim = sim.dim();
+  auto const nodes_to_X = sim.getset(sim.ref_coords);
+  auto const nodes_to_v = sim.set(sim.velocity);
+  auto const nodes_to_a = sim.set(sim.acceleration);
+  auto const nodes_to_elems = sim.nodes_to_elems();
+  auto const elems_to_nodes = sim.elems_to_nodes();
+  Omega_h::Write<double> new_nodes_to_X(sim.nodes() * ndim);
+  auto functor = OMEGA_H_LAMBDA(int const node) {
+    auto const coord = getvec<Elem>(nodes_to_X, node);
+    setvec<Elem>(new_nodes_to_X, node, coord);
+    auto const begin = nodes_to_elems.a2ab[node];
+    auto const end = nodes_to_elems.a2ab[node + 1];
+    for (auto node_elem = begin; node_elem < end; ++node_elem) {
+      auto const elem = nodes_to_elems.ab2b[node_elem];
+      auto const code = nodes_to_elems.codes[node_elem];
+      auto const elem_node = Omega_h::code_which_down(code);
+      auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
+      auto const X = getvecs<Elem>(nodes_to_X, elem_nodes);
+      auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
+      auto const a = getvecs<Elem>(nodes_to_a, elem_nodes);
+      auto const shape = Elem::shape(X);
+      auto const h = shape.lengths.time_step_length;
+      if (h < OMEGA_H_EPSILON) {
+        if (elem_node > 3) {
+          auto const edge_nodes = get_edge_nodes(elem_node);
+          auto const new_coord = 0.5 * (X[edge_nodes[0]] + X[edge_nodes[1]]);
+          auto const new_v = 0.5 * (v[edge_nodes[0]] + v[edge_nodes[1]]);
+          auto const new_a = 0.5 * (a[edge_nodes[0]] + a[edge_nodes[1]]);
+          setvec<Elem>(new_nodes_to_X, node, new_coord);
+          setvec<Elem>(nodes_to_v, node, new_v);
+          setvec<Elem>(nodes_to_a, node, new_a);
+        }
+      }
+    }
+  };
+  parallel_for(sim.nodes(), std::move(functor));
+  Omega_h::copy_into(read(new_nodes_to_X), nodes_to_X);
+}
+
 #define LGR_EXPL_INST(Elem)                                                    \
   template void initialize_configuration<Elem>(Simulation & sim);              \
   template void reset_configuration<Elem>(Simulation & sim);                   \
@@ -448,7 +503,8 @@ void compute_point_time_steps(Simulation& sim) {
   template void correct_velocity<Elem>(Simulation & sim);                      \
   template void compute_stress_divergence<Elem>(Simulation & sim);             \
   template void compute_nodal_acceleration<Elem>(Simulation & sim);            \
-  template void compute_point_time_steps<Elem>(Simulation & sim);
+  template void compute_point_time_steps<Elem>(Simulation & sim);              \
+  template void fix_ref_coords<Elem>(Simulation & sim);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 

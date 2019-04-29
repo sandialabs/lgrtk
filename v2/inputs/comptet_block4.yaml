@@ -99,6 +99,7 @@ responses:
       - equivalent plastic strain
       - plastic deformation gradient
   - 
+    time period: 1.0e-3
     type: command line history
     minimum column width: 20
     scalars:
