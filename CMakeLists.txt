@@ -18,6 +18,7 @@ add_executable(lgr
     lgr_memory_pool.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
+    lgr_threads.cpp
     )
 set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
