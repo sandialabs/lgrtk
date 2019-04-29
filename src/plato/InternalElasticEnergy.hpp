@@ -104,7 +104,7 @@ class InternalElasticEnergy :
       auto tNumCells = mMesh.nelems();
 
         Plato::Strain<mSpaceDim> tComputeVoigtStrain;
-        ScalarProduct<m_numVoigtTerms> tComputeScalarProduct;
+        Plato::ScalarProduct<m_numVoigtTerms> tComputeScalarProduct;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
         Plato::LinearStress<mSpaceDim> tComputeVoigtStress(m_cellStiffness);
 

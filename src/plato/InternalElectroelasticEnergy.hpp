@@ -106,8 +106,8 @@ class InternalElectroelasticEnergy :
       Plato::EMKinematics<mSpaceDim>                  tKinematics;
       Plato::EMKinetics<mSpaceDim>                    tKinetics(m_materialModel);
 
-      ScalarProduct<m_numVoigtTerms>          tMechanicalScalarProduct;
-      ScalarProduct<mSpaceDim>                tElectricalScalarProduct;
+      Plato::ScalarProduct<m_numVoigtTerms>          tMechanicalScalarProduct;
+      Plato::ScalarProduct<mSpaceDim>                tElectricalScalarProduct;
 
       Plato::ScalarVectorT<ConfigScalarType> tCellVolume("cell weight",tNumCells);
 

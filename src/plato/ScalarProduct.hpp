@@ -5,6 +5,9 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Scalar product functor.
   
@@ -58,5 +61,7 @@ class ScalarProduct
       scalarProduct(cellOrdinal) += scale*inc*cellVolume(cellOrdinal);
     }
 };
+
+} // namespace Plato
 
 #endif
