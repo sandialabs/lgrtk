@@ -79,7 +79,7 @@ static void LGR_NOINLINE gas_expansion() {
   in.num_file_outputs = 100;
   in.elements_along_x = 160;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 1.4;
   in.e0[gas] = 1.0;
   in.initial_v = zero_v;
@@ -552,7 +552,7 @@ static void LGR_NOINLINE Noh_1D() {
   in.elements_along_x = 44;
   in.x_domain_size = 1.1;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -593,7 +593,7 @@ static void LGR_NOINLINE Noh_2D() {
   in.elements_along_y = 34;
   in.y_domain_size = 0.85;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -715,7 +715,7 @@ static void LGR_NOINLINE Noh_3D() {
   in.elements_along_z = 20;
   in.z_domain_size = 0.9;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -766,7 +766,7 @@ static void LGR_NOINLINE composite_Noh_3D() {
   in.elements_along_z = 20;
   in.z_domain_size = 0.9;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -814,7 +814,8 @@ static void LGR_NOINLINE Sod_1D() {
   in.x_domain_size = 1.0;
   in.rho0[left] = 1.0;
   in.rho0[right] = 0.125;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[left] = true;
+  in.enable_ideal_gas[right] = true;
   in.gamma[left] = 1.4;
   in.gamma[right] = 1.4;
   in.e0[left] = 1.0 / ((1.4 - 1.0) * 1.0);
@@ -853,7 +854,9 @@ static void LGR_NOINLINE triple_point() {
   in.rho0[right_top] = 0.1;
   in.rho0[right_bottom] = 1.0;
   in.rho0[left] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[left] = true;
+  in.enable_ideal_gas[right_top] = true;
+  in.enable_ideal_gas[right_bottom] = true;
   in.gamma[right_top] = 1.5;
   in.gamma[left] = 1.5;
   in.gamma[right_bottom] = 1.4;
@@ -887,7 +890,7 @@ static void LGR_NOINLINE triple_point() {
 }
 
 int main() {
-  if ((1)) lgr::elastic_wave();
+  if ((0)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -905,6 +908,6 @@ int main() {
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((1)) lgr::twisting_composite_column();
-  if ((0)) lgr::Sod_1D();
-  if ((0)) lgr::triple_point();
+  if ((1)) lgr::Sod_1D();
+  if ((1)) lgr::triple_point();
 }
