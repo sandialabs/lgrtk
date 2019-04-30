@@ -550,11 +550,9 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
 }
 
 static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
-  if (in.enable_nodal_pressure) {
-    update_v_prime(in, s);
-    update_p_h_W(s);
-    update_p_h_dot(s);
-  }
+  update_v_prime(in, s);
+  update_p_h_W(s);
+  update_p_h_dot(s);
 }
 
 static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
@@ -612,7 +610,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) update_element_dt(s);
     if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
-    update_p_h_dot_from_a(in, s);
+    if (in.enable_nodal_pressure) {
+      update_p_h_dot_from_a(in, s);
+    }
     if (last_pc && (!(in.enable_nodal_pressure || in.enable_nodal_energy))) update_p(s);
   }
 }
@@ -631,7 +631,9 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_element_dt(s);
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
-  update_p_h_dot_from_a(in, s);
+  if (in.enable_nodal_pressure) {
+    update_p_h_dot_from_a(in, s);
+  }
   update_p(s);
   update_v(s, s.dt / 2.0, s.v);
 }
@@ -695,7 +697,9 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   update_element_dt(s);
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
-  update_p_h_dot_from_a(in, s);
+  if (in.enable_nodal_pressure) {
+    update_p_h_dot_from_a(in, s);
+  }
   if (!in.enable_nodal_energy) update_p(s);
 }
 
