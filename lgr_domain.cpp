@@ -42,7 +42,7 @@ static void collect_set(
 {
   device_vector<int, Index> offsets(range.size(), is_in.get_allocator());
   lgr::transform_inclusive_scan(is_in, offsets, lgr::plus<int>(), lgr::identity<int>());
-  int const set_size = lgr::transform_reduce(is_in, int(0), lgr::plus<int>(), lgr::identity<int>());
+  int const set_size = reduce(is_in, int(0));
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets = offsets.cbegin();
