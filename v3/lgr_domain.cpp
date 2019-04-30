@@ -147,11 +147,11 @@ void collect_node_sets(input const& in, state& s) {
 
 void collect_element_sets(input const& in, state& s)
 {
-  s.element_sets.resize(in.material_count, s.devpool);
+  s.element_sets.resize(in.materials.size(), s.devpool);
   device_vector<int, element_index> is_in(s.elements.size(), s.devpool);
   auto const elements_to_material = s.material.cbegin();
   auto const elements_are_in = is_in.begin();
-  for (material_index material(0); material < in.material_count; ++material) {
+  for (auto const material : in.materials) {
     auto functor = [=](element_index const element) {
       material_index const element_material = elements_to_material[element];
       elements_are_in[element] = int(element_material == material);

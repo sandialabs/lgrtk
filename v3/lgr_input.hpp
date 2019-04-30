@@ -40,7 +40,7 @@ class input {
   element_kind element;
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
   h_min_kind h_min = INBALL_DIAMETER;
-  material_index material_count;
+  counting_range<material_index> materials;
   double end_time;
   double CFL = 0.9;
   int num_file_outputs;
@@ -79,7 +79,7 @@ class input {
   std::vector<std::pair<material_index, std::unique_ptr<domain>>> material_domains;
   input() = delete;
   input(material_index material_count_in)
-    :material_count(material_count_in)
+    :materials(material_count_in)
     ,rho0(material_count_in, pinpool)
     ,e0(material_count_in, double(0.0), pinpool)
     ,enable_neo_Hookean(material_count_in, false, pinpool)
