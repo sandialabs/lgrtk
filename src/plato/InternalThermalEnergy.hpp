@@ -99,7 +99,7 @@ class InternalThermalEnergy :
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
       Plato::ScalarGrad<mSpaceDim>                    tComputeScalarGrad;
-      ScalarProduct<mSpaceDim>                 tComputeScalarProduct;
+      Plato::ScalarProduct<mSpaceDim>                 tComputeScalarProduct;
       Plato::ThermalFlux<mSpaceDim>                   tComputeThermalFlux(m_cellConductivity);
 
       using GradScalarType =
@@ -217,7 +217,7 @@ class InternalThermalEnergyInc :
       Plato::ComputeGradientWorkset<mSpaceDim> computeGradient;
       Plato::ScalarGrad<mSpaceDim>                    scalarGrad;
       Plato::ThermalFlux<mSpaceDim>                   thermalFlux(m_cellConductivity);
-      ScalarProduct<mSpaceDim>                 scalarProduct;
+      Plato::ScalarProduct<mSpaceDim>                 scalarProduct;
 
       using GradScalarType =
         typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;

@@ -98,8 +98,8 @@ class InternalThermoelasticEnergy :
       Plato::TMKinematics<mSpaceDim>                  kinematics;
       Plato::TMKinetics<mSpaceDim>                    kinetics(m_materialModel);
 
-      ScalarProduct<m_numVoigtTerms>          mechanicalScalarProduct;
-      ScalarProduct<mSpaceDim>                 thermalScalarProduct;
+      Plato::ScalarProduct<m_numVoigtTerms>          mechanicalScalarProduct;
+      Plato::ScalarProduct<mSpaceDim>                 thermalScalarProduct;
 
       Plato::InterpolateFromNodal<mSpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
 

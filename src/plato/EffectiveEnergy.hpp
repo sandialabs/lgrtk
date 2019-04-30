@@ -106,10 +106,10 @@ class EffectiveEnergy :
     {
       auto numCells = mMesh.nelems();
 
+      Plato::Strain<mSpaceDim> voigtStrain;
+      Plato::ScalarProduct<m_numVoigtTerms> scalarProduct;
       Plato::ComputeGradientWorkset<mSpaceDim> computeGradient;
-      Plato::Strain<mSpaceDim>                        voigtStrain;
-      HomogenizedStress<mSpaceDim>             homogenizedStress(m_cellStiffness, m_columnIndex);
-      ScalarProduct<m_numVoigtTerms>          scalarProduct;
+      Plato::HomogenizedStress < mSpaceDim > homogenizedStress(m_cellStiffness, m_columnIndex);
 
       using StrainScalarType = 
         typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
