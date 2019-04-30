@@ -378,10 +378,11 @@ static void LGR_NOINLINE update_e(state& s, double const dt,
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_e_h(state& s, double const dt)
+static void LGR_NOINLINE update_e_h(state& s, double const dt,
+    device_vector<double, node_index> const& old_e_h_vector)
 {
   auto const nodes_to_e_h_dot = s.e_h_dot.cbegin();
-  auto const nodes_to_old_e_h = s.old_e_h.cbegin();
+  auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
   auto const nodes_to_e_h = s.e_h.begin();
   auto functor = [=] (node_index const node) {
     auto const e_h_dot = nodes_to_e_h_dot[node];
@@ -574,7 +575,11 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     old_p_h.resize(s.nodes.size());
     lgr::copy(s.p_h, old_p_h);
   }
-  if (in.enable_nodal_energy) lgr::copy(s.e_h, s.old_e_h);
+  device_vector<double, node_index> old_e_h(s.devpool);
+  if (in.enable_nodal_energy) {
+    old_e_h.resize(s.nodes.size());
+    lgr::copy(s.e_h, old_e_h);
+  }
   constexpr int npc = 2;
   for (int pc = 0; pc < npc; ++pc) {
     if (pc == 0) advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
@@ -588,7 +593,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_rho_e_dot(s);
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
-      update_e_h(s, half_dt);
+      update_e_h(s, half_dt, old_e_h);
     } else {
       update_e(s, half_dt, old_e);
     }
