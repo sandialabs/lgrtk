@@ -49,7 +49,6 @@ class state {
   device_vector<vector3<double>, node_index> f{devpool}; // nodal (internal) forces
   device_vector<double, point_index> rho{devpool}; // element density
   device_vector<double, point_index> e{devpool}; // element specific internal energy
-  device_vector<double, point_index> old_e{devpool}; // specific internal energy at previous time state
   device_vector<double, point_index> rho_e_dot{devpool}; // time derivative of internal energy density
   device_vector<double, node_index> m{devpool}; // nodal mass
   device_vector<vector3<double>, node_index> a{devpool}; // nodal acceleration

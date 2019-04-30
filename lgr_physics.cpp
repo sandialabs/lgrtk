@@ -360,11 +360,12 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_e(state& s, double const dt)
+static void LGR_NOINLINE update_e(state& s, double const dt,
+    device_vector<double, point_index> const& old_e_vector)
 {
   auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
   auto const points_to_rho = s.rho.cbegin();
-  auto const points_to_old_e = s.old_e.cbegin();
+  auto const points_to_old_e = old_e_vector.cbegin();
   auto const points_to_e = s.e.begin();
   auto functor = [=] (point_index const point) {
     auto const rho_e_dot = points_to_rho_e_dot[point];
@@ -564,9 +565,10 @@ static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
 
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
-  device_vector<vector3<double>, node_index> old_v(s.v.size(), s.devpool);
+  device_vector<vector3<double>, node_index> old_v(s.nodes.size(), s.devpool);
   lgr::copy(s.v, old_v);
-  lgr::copy(s.e, s.old_e);
+  device_vector<double, point_index> old_e(s.points.size(), s.devpool);
+  lgr::copy(s.e, old_e);
   device_vector<double, node_index> old_p_h(s.devpool);
   if (in.enable_nodal_pressure) {
     old_p_h.resize(s.nodes.size());
@@ -588,7 +590,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       update_e_h_dot_from_a(in, s);
       update_e_h(s, half_dt);
     } else {
-      update_e(s, half_dt);
+      update_e(s, half_dt, old_e);
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
