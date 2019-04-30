@@ -517,7 +517,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
   if (in.enable_neo_Hookean) {
     neo_Hookean(in, s);
   }
-  if (in.enable_ideal_gas) {
+  if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy) {
       nodal_ideal_gas(in, s);
     } else {
