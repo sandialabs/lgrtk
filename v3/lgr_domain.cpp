@@ -65,7 +65,7 @@ static void collect_set(
   lgr::for_each(range, functor2);
 }
 
-void collect_node_set(
+static void collect_node_set(
     counting_range<node_index> const nodes,
     domain const& domain,
     device_vector<vector3<double>, node_index> const& x_vector,
