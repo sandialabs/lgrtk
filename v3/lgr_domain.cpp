@@ -155,7 +155,8 @@ std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) 
   return out;
 }
 
-std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius) {
+std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double
+    const radius) {
   lgr::sphere const s{origin, radius};
   auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
   return out;
@@ -167,7 +168,8 @@ std::unique_ptr<domain> half_space_domain(plane const& p) {
   return out;
 }
 
-std::unique_ptr<domain> box_domain(vector3<double> const lower_left, vector3<double> const upper_right) {
+std::unique_ptr<domain> box_domain(vector3<double> const lower_left,
+    vector3<double> const upper_right) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({vector3<double>::x_axis(), lower_left(0)});
   out->clip({-vector3<double>::x_axis(), -upper_right(0)});
