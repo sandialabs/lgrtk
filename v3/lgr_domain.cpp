@@ -33,6 +33,16 @@ void union_domain::mark(
   }
 }
 
+void union_domain::mark(
+    device_vector<vector3<double>,
+    node_index> const& points,
+    material_index const marker,
+    device_vector<material_set, node_index>* markers) const {
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
+}
+
 template <class Index>
 static void collect_set(
   counting_range<Index> const range,
@@ -88,12 +98,11 @@ void assign_element_materials(input const& in, state& s) {
     elements_to_centroids[element] = centroid;
   };
   lgr::for_each(s.elements, centroid_functor);
-  for (auto const& pair : in.material_domains) {
-    auto const material = pair.first;
-    assert(default_material <= material);
-    assert(material <= max_user_material);
-    auto const& domain = pair.second;
-    domain->mark(centroid_vector, material, &s.material);
+  for (auto const material : in.materials) {
+    auto const& domain = in.domains[material];
+    if (domain) {
+      domain->mark(centroid_vector, material, &s.material);
+    }
   }
 }
 
@@ -101,10 +110,8 @@ void compute_nodal_materials(input const& in, state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const elements_to_materials = s.material.cbegin();
-  auto const nodes_to_x = s.x.cbegin();
   s.nodal_materials.resize(s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.begin();
-  vector3<double> const x_maxima(in.x_domain_size, in.y_domain_size, in.z_domain_size);
   int dimension = -1;
   switch (in.element) {
     case BAR: dimension = 1; break;
@@ -120,28 +127,20 @@ void compute_nodal_materials(input const& in, state& s) {
       material_index const element_material = elements_to_materials[element];
       node_materials = node_materials | material_set(element_material);
     }
-    vector3<double> const x = nodes_to_x[node];
-    constexpr double tol = 1.0e-10;
-    if ((std::abs(x(0)) < tol) || (std::abs(x(0) - x_maxima(0)) < tol)) {
-      node_materials = node_materials | material_set(x_boundary_material);
-    }
-    if ((std::abs(x(1)) < tol) || (std::abs(x(1) - x_maxima(1)) < tol)) {
-      node_materials = node_materials | material_set(y_boundary_material);
-    }
-    if ((std::abs(x(2)) < tol) || (std::abs(x(2) - x_maxima(2)) < tol)) {
-      node_materials = node_materials | material_set(z_boundary_material);
-    }
     nodes_to_materials[node] = node_materials;
   };
   for_each(s.nodes, functor);
+  for (auto const boundary : in.boundaries) {
+    auto const& domain = in.domains[boundary];
+    domain->mark(s.x, boundary, &s.nodal_materials);
+  }
 }
 
 void collect_node_sets(input const& in, state& s) {
-  for (auto const& pair : in.node_sets) {
-    auto const& domain_name = pair.first;
-    auto const& domain_ptr = pair.second;
-    s.node_sets.emplace(domain_name, s.devpool);
-    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
+  s.node_sets.resize(in.materials.size() + in.boundaries.size(), s.devpool);
+  for (auto const boundary : in.boundaries) {
+    auto const& domain_ptr = in.domains[boundary];
+    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets[boundary]));
   }
 }
 

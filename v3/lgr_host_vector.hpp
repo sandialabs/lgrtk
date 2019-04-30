@@ -29,6 +29,11 @@ public:
   {
     resize(count, args...);
   }
+  explicit host_vector(size_type count)
+    :m_impl(host_allocator<T>())
+  {
+    resize(count);
+  }
   host_vector(host_vector&&) = delete;
   host_vector(host_vector const&) = delete;
   host_vector& operator=(host_vector const&) = delete;
@@ -55,6 +60,14 @@ public:
     T* const ptr = data();
     for (size_type i(0); i < count; ++i) {
       new (ptr + int(i)) T(args...);
+    }
+  }
+  void resize(size_type count) {
+    clear();
+    m_impl.resize(count);
+    T* const ptr = data();
+    for (size_type i(0); i < count; ++i) {
+      new (ptr + int(i)) T();
     }
   }
   void clear() {
