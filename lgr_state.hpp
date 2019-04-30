@@ -30,7 +30,6 @@ class state {
   device_vector<vector3<double>, node_index> x{devpool}; // current nodal positions
   device_vector<vector3<double>, node_index> u{devpool}; // nodal displacements since previous time state
   device_vector<vector3<double>, node_index> v{devpool}; // nodal velocities
-  device_vector<vector3<double>, node_index> old_v{devpool}; // nodal velocities at previous time state
   device_vector<double, point_index> V{devpool}; // measures (volume/area/length)
   device_vector<vector3<double>, point_node_index> grad_N{devpool}; // gradients of basis functions
   device_vector<matrix3x3<double>, point_index> F_total{devpool}; // deformation gradient since simulation start

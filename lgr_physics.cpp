@@ -563,14 +563,15 @@ static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
 
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
-  lgr::copy(s.v, s.old_v);
+  device_vector<vector3<double>, node_index> old_v(s.v.size(), s.devpool);
+  lgr::copy(s.v, old_v);
   lgr::copy(s.e, s.old_e);
   if (in.enable_nodal_pressure) lgr::copy(s.p_h, s.old_p_h);
   if (in.enable_nodal_energy) lgr::copy(s.e_h, s.old_e_h);
   constexpr int npc = 2;
   for (int pc = 0; pc < npc; ++pc) {
     if (pc == 0) advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
-    update_v(s, s.dt / 2.0, s.old_v);
+    update_v(s, s.dt / 2.0, old_v);
     update_symm_grad_v(s);
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
@@ -586,7 +587,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    if (last_pc) update_v(s, s.dt, s.old_v);
+    if (last_pc) update_v(s, s.dt, old_v);
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
