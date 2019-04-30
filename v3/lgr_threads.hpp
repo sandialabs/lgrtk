@@ -12,7 +12,7 @@ class thread_pool {
  public:
   explicit thread_pool(int const n_threads)
   {
-    assert(nthreads > 0);
+    assert(n_threads > 0);
     while (int(threads_.size()) < n_threads) {
       std::thread thread;
       try {

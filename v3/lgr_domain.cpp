@@ -43,39 +43,25 @@ void union_domain::mark(
   }
 }
 
-template <class Index>
+template <class Index, class IsInFunctor>
 static void collect_set(
   counting_range<Index> const range,
-  device_vector<int, Index> const& is_in,
+  IsInFunctor is_in_functor,
   device_vector<Index, int>& set_items
   )
 {
-  device_vector<int, Index> offsets(range.size(), is_in.get_allocator());
-  lgr::transform_inclusive_scan(is_in, offsets, lgr::plus<int>(), lgr::identity<int>());
-  int const set_size = reduce(is_in, int(0));
+  device_vector<int, Index> offsets(range.size(), set_items.get_allocator());
+  transform_inclusive_scan(range, offsets, lgr::plus<int>(), is_in_functor);
+  int const set_size = transform_reduce(range, int(0), lgr::plus<int>(), is_in_functor);
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets = offsets.cbegin();
-  auto const items_are_in = is_in.cbegin();
-  auto functor2 = [=] (Index const item) {
-    if (items_are_in[item]) {
+  auto functor = [=] (Index const item) {
+    if (is_in_functor(item) != 0) {
       set_items_to_items[items_to_offsets[item] - 1] = item;
     }
   };
-  lgr::for_each(range, functor2);
-}
-
-static void collect_node_set(
-    counting_range<node_index> const nodes,
-    domain const& domain,
-    device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<node_index, int>* node_set_nodes)
-{
-  device_allocator<int> alloc(x_vector.get_allocator());
-  device_vector<int, node_index> is_in(nodes.size(), alloc);
-  lgr::fill(is_in, int(0));
-  domain.mark(x_vector, int(1), &is_in);
-  collect_set(nodes, is_in, *node_set_nodes);
+  lgr::for_each(range, functor);
 }
 
 void assign_element_materials(input const& in, state& s) {
@@ -138,25 +124,27 @@ void compute_nodal_materials(input const& in, state& s) {
 
 void collect_node_sets(input const& in, state& s) {
   s.node_sets.resize(in.materials.size() + in.boundaries.size(), s.devpool);
+  assert(s.nodal_materials.size() == s.nodes.size());
+  auto const nodes_to_materials = s.nodal_materials.cbegin();
   for (auto const boundary : in.boundaries) {
-    auto const& domain_ptr = in.domains[boundary];
-    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets[boundary]));
+    auto is_in_functor = [=](node_index const node) -> int {
+      material_set const materials = nodes_to_materials[node];
+      return (materials.contains(material_set(boundary))) ? 1 : 0;
+    };
+    collect_set(s.nodes, is_in_functor, s.node_sets[boundary]);
   }
 }
 
 void collect_element_sets(input const& in, state& s)
 {
   s.element_sets.resize(in.materials.size(), s.devpool);
-  device_vector<int, element_index> is_in(s.elements.size(), s.devpool);
   auto const elements_to_material = s.material.cbegin();
-  auto const elements_are_in = is_in.begin();
   for (auto const material : in.materials) {
-    auto functor = [=](element_index const element) {
+    auto is_in_functor = [=](element_index const element) -> int {
       material_index const element_material = elements_to_material[element];
-      elements_are_in[element] = int(element_material == material);
+      return (element_material == material) ? 1 : 0;
     };
-    for_each(s.elements, functor);
-    collect_set(s.elements, is_in, s.element_sets[material]);
+    collect_set(s.elements, is_in_functor, s.element_sets[material]);
   }
 }
 
