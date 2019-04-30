@@ -33,42 +33,38 @@ void union_domain::mark(
   }
 }
 
-template <class Index>
+void union_domain::mark(
+    device_vector<vector3<double>,
+    node_index> const& points,
+    material_index const marker,
+    device_vector<material_set, node_index>* markers) const {
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
+}
+
+template <class Index, class IsInFunctor>
 static void collect_set(
   counting_range<Index> const range,
-  device_vector<int, Index> const& is_in,
+  IsInFunctor is_in_functor,
   device_vector<Index, int>& set_items
   )
 {
-  device_vector<int, Index> offsets(range.size(), is_in.get_allocator());
-  lgr::transform_inclusive_scan(is_in, offsets, lgr::plus<int>(), lgr::identity<int>());
-  int const set_size = lgr::transform_reduce(is_in, int(0), lgr::plus<int>(), lgr::identity<int>());
+  device_vector<int, Index> offsets(range.size(), set_items.get_allocator());
+  transform_inclusive_scan(range, offsets, lgr::plus<int>(), is_in_functor);
+  int const set_size = transform_reduce(range, int(0), lgr::plus<int>(), is_in_functor);
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets = offsets.cbegin();
-  auto const items_are_in = is_in.cbegin();
-  auto functor2 = [=] (Index const item) {
-    if (items_are_in[item]) {
+  auto functor = [=] (Index const item) {
+    if (is_in_functor(item) != 0) {
       set_items_to_items[items_to_offsets[item] - 1] = item;
     }
   };
-  lgr::for_each(range, functor2);
+  lgr::for_each(range, functor);
 }
 
-void collect_node_set(
-    counting_range<node_index> const nodes,
-    domain const& domain,
-    device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<node_index, int>* node_set_nodes)
-{
-  device_allocator<int> alloc(x_vector.get_allocator());
-  device_vector<int, node_index> is_in(nodes.size(), alloc);
-  lgr::fill(is_in, int(0));
-  domain.mark(x_vector, int(1), &is_in);
-  collect_set(nodes, is_in, *node_set_nodes);
-}
-
-void set_materials(input const& in, state& s) {
+void assign_element_materials(input const& in, state& s) {
   lgr::fill(s.material, material_index(0));
   device_vector<vector3<double>, element_index>
     centroid_vector(s.elements.size(), s.devpool);
@@ -88,35 +84,68 @@ void set_materials(input const& in, state& s) {
     elements_to_centroids[element] = centroid;
   };
   lgr::for_each(s.elements, centroid_functor);
-  for (auto const& pair : in.material_domains) {
-    auto const material = pair.first;
-    auto const& domain = pair.second;
-    domain->mark(centroid_vector, material, &s.material);
+  for (auto const material : in.materials) {
+    auto const& domain = in.domains[material];
+    if (domain) {
+      domain->mark(centroid_vector, material, &s.material);
+    }
+  }
+}
+
+void compute_nodal_materials(input const& in, state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_materials = s.material.cbegin();
+  s.nodal_materials.resize(s.nodes.size());
+  auto const nodes_to_materials = s.nodal_materials.begin();
+  int dimension = -1;
+  switch (in.element) {
+    case BAR: dimension = 1; break;
+    case TRIANGLE: dimension = 2; break;
+    case TETRAHEDRON: dimension = 3; break;
+    case COMPOSITE_TETRAHEDRON: dimension = 3; break;
+  }
+  auto functor = [=](node_index const node) {
+    auto const node_elements = nodes_to_node_elements[node];
+    auto node_materials = material_set::none();
+    for (auto const node_element : node_elements) {
+      element_index const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_materials[element];
+      node_materials = node_materials | material_set(element_material);
+    }
+    nodes_to_materials[node] = node_materials;
+  };
+  for_each(s.nodes, functor);
+  for (auto const boundary : in.boundaries) {
+    auto const& domain = in.domains[boundary];
+    domain->mark(s.x, boundary, &s.nodal_materials);
   }
 }
 
 void collect_node_sets(input const& in, state& s) {
-  for (auto const& pair : in.node_sets) {
-    auto const& domain_name = pair.first;
-    auto const& domain_ptr = pair.second;
-    s.node_sets.emplace(domain_name, s.devpool);
-    collect_node_set(s.nodes, *domain_ptr, s.x, &(s.node_sets.find(domain_name)->second));
+  counting_range<material_index> const all_materials(in.materials.size() + in.boundaries.size());
+  s.node_sets.resize(all_materials.size(), s.devpool);
+  assert(s.nodal_materials.size() == s.nodes.size());
+  auto const nodes_to_materials = s.nodal_materials.cbegin();
+  for (auto const material : all_materials) {
+    auto is_in_functor = [=](node_index const node) -> int {
+      material_set const materials = nodes_to_materials[node];
+      return (materials.contains(material_set(material))) ? 1 : 0;
+    };
+    collect_set(s.nodes, is_in_functor, s.node_sets[material]);
   }
 }
 
 void collect_element_sets(input const& in, state& s)
 {
-  s.element_sets.resize(in.material_count, s.devpool);
-  device_vector<int, element_index> is_in(s.elements.size(), s.devpool);
+  s.element_sets.resize(in.materials.size(), s.devpool);
   auto const elements_to_material = s.material.cbegin();
-  auto const elements_are_in = is_in.begin();
-  for (material_index material(0); material < in.material_count; ++material) {
-    auto functor = [=](element_index const element) {
+  for (auto const material : in.materials) {
+    auto is_in_functor = [=](element_index const element) -> int {
       material_index const element_material = elements_to_material[element];
-      elements_are_in[element] = int(element_material == material);
+      return (element_material == material) ? 1 : 0;
     };
-    for_each(s.elements, functor);
-    collect_set(s.elements, is_in, s.element_sets[material]);
+    collect_set(s.elements, is_in_functor, s.element_sets[material]);
   }
 }
 
@@ -127,7 +156,8 @@ std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) 
   return out;
 }
 
-std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius) {
+std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double
+    const radius) {
   lgr::sphere const s{origin, radius};
   auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
   return out;
@@ -139,7 +169,8 @@ std::unique_ptr<domain> half_space_domain(plane const& p) {
   return out;
 }
 
-std::unique_ptr<domain> box_domain(vector3<double> const lower_left, vector3<double> const upper_right) {
+std::unique_ptr<domain> box_domain(vector3<double> const lower_left,
+    vector3<double> const upper_right) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({vector3<double>::x_axis(), lower_left(0)});
   out->clip({-vector3<double>::x_axis(), -upper_right(0)});

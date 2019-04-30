@@ -46,24 +46,26 @@ static void LGR_NOINLINE spin_v(
 static void LGR_NOINLINE elastic_wave() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_boundary(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
   in.name = "elastic_wave";
   in.element = BAR;
   in.end_time = 4.0e-3;
   in.num_file_outputs = 200;
   in.elements_along_x = 1000;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   constexpr auto x_axis = vector3<double>::x_axis();
   static constexpr double eps = 1.0e-10;
-  auto x_minmax = std::make_unique<union_domain>();
-  x_minmax->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
-  x_minmax->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
-  in.node_sets["x_minmax"] = std::move(x_minmax);
-  in.zero_acceleration_conditions.push_back({"x_minmax", x_axis});
+  auto x_domain = std::make_unique<union_domain>();
+  x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
+  x_domain->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
+  in.domains[x_boundary] = std::move(x_domain);
+  in.zero_acceleration_conditions.push_back({x_boundary, x_axis});
 //in.enable_nodal_pressure = true;
 //in.c_tau = 0.5;
   run(in);
@@ -72,14 +74,15 @@ static void LGR_NOINLINE elastic_wave() {
 static void LGR_NOINLINE gas_expansion() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index nboundaries(0);
+  input in(nmaterials, nboundaries);
   in.name = "gas_expansion";
   in.element = BAR;
   in.end_time = 10.0;
   in.num_file_outputs = 100;
   in.elements_along_x = 160;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 1.4;
   in.e0[gas] = 1.0;
   in.initial_v = zero_v;
@@ -89,7 +92,8 @@ static void LGR_NOINLINE gas_expansion() {
 static void LGR_NOINLINE spinning_square() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index nboundaries(0);
+  input in(nmaterials, nboundaries);
   in.name = "spinning_square";
   in.element = TRIANGLE;
   in.end_time = 1.0e-2;
@@ -99,9 +103,9 @@ static void LGR_NOINLINE spinning_square() {
   in.elements_along_y = 1;
   in.y_domain_size = 1.0;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   run(in);
 }
@@ -141,7 +145,9 @@ static void LGR_NOINLINE Cooks_membrane_x(
 static void LGR_NOINLINE Cooks_membrane() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
   in.name = "Cooks_membrane";
   in.element = TRIANGLE;
   in.end_time = 40.0;
@@ -151,17 +157,17 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.elements_along_y = 8;
   in.y_domain_size = 1.0;
   in.rho0[body] = 1.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 833333.0;
-  in.G0 = 83.0;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 833333.0;
+  in.G0[body] = 83.0;
   in.initial_v = quadratic_in_x_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  auto x_min = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_min"] = std::move(x_min);
+  auto x_min_domain = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[x_min] = std::move(x_min_domain);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"x_min", y_axis});
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_min, y_axis});
   in.x_transform = Cooks_membrane_x;
   in.enable_nodal_pressure = true;
   in.c_tau = 0.5;
@@ -171,7 +177,12 @@ static void LGR_NOINLINE Cooks_membrane() {
 static void LGR_NOINLINE swinging_plate() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index x_max(2);
+  constexpr material_index y_min(3);
+  constexpr material_index y_max(4);
+  constexpr material_index nboundaries(4);
+  input in(nmaterials, nboundaries);
   in.name = "swinging_plate";
   in.element = TRIANGLE;
   in.num_file_outputs = 200;
@@ -181,15 +192,15 @@ static void LGR_NOINLINE swinging_plate() {
   in.y_domain_size = 2.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.45;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
   double const w = (pi / 2.0) * std::sqrt((2.0 * G) / rho);
   in.end_time = 0.16;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto swinging_plate_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -211,14 +222,14 @@ static void LGR_NOINLINE swinging_plate() {
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
+  in.zero_acceleration_conditions.push_back({y_max, y_axis});
   in.enable_nodal_pressure = true;
   in.c_tau = 0.5;
   run(in);
@@ -227,7 +238,8 @@ static void LGR_NOINLINE swinging_plate() {
 static void LGR_NOINLINE spinning_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index nboundaries(0);
+  input in(nmaterials, nboundaries);
   in.name = "spinning_cube";
   in.element = TETRAHEDRON;
   in.end_time = 1.0e-2;
@@ -239,9 +251,9 @@ static void LGR_NOINLINE spinning_cube() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   in.CFL = 0.9;
   in.time_integrator = VELOCITY_VERLET;
@@ -251,7 +263,10 @@ static void LGR_NOINLINE spinning_cube() {
 static void LGR_NOINLINE elastic_wave_2d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_boundary(1);
+  constexpr material_index y_boundary(2);
+  constexpr material_index nboundaries(2);
+  input in(nmaterials, nboundaries);
   in.name = "elastic_wave_2d";
   in.element = TRIANGLE;
   in.end_time = 2.0e-3;
@@ -260,30 +275,34 @@ static void LGR_NOINLINE elastic_wave_2d() {
   in.elements_along_y = 1;
   in.y_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  auto x_minmax = std::make_unique<union_domain>();
-  x_minmax->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
-  x_minmax->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
-  in.node_sets["x_minmax"] = std::move(x_minmax);
-  in.zero_acceleration_conditions.push_back({"x_minmax", x_axis});
-  auto y_minmax = std::make_unique<union_domain>();
-  y_minmax->add(epsilon_around_plane_domain({y_axis, 0.0}, eps));
-  y_minmax->add(epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
-  in.node_sets["y_minmax"] = std::move(y_minmax);
-  in.zero_acceleration_conditions.push_back({"y_minmax", y_axis});
+  auto x_domain = std::make_unique<union_domain>();
+  x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
+  x_domain->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
+  in.domains[x_boundary] = std::move(x_domain);
+  in.zero_acceleration_conditions.push_back({x_boundary, x_axis});
+  auto y_domain = std::make_unique<union_domain>();
+  y_domain->add(epsilon_around_plane_domain({y_axis, 0.0}, eps));
+  y_domain->add(epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
+  in.domains[y_boundary] = std::move(y_domain);
+  in.zero_acceleration_conditions.push_back({y_boundary, y_axis});
   run(in);
 }
 
 static void LGR_NOINLINE elastic_wave_3d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_boundary(1);
+  constexpr material_index y_boundary(2);
+  constexpr material_index z_boundary(3);
+  constexpr material_index nboundaries(3);
+  input in(nmaterials, nboundaries);
   in.name = "elastic_wave_3d";
   in.element = TETRAHEDRON;
   in.end_time = 2.0e-3;
@@ -294,36 +313,43 @@ static void LGR_NOINLINE elastic_wave_3d() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  auto x_minmax = std::make_unique<union_domain>();
-  x_minmax->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
-  x_minmax->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
-  in.node_sets["x_minmax"] = std::move(x_minmax);
-  in.zero_acceleration_conditions.push_back({"x_minmax", x_axis});
-  auto y_minmax = std::make_unique<union_domain>();
-  y_minmax->add(epsilon_around_plane_domain({y_axis, 0.0}, eps));
-  y_minmax->add(epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
-  in.node_sets["y_minmax"] = std::move(y_minmax);
-  in.zero_acceleration_conditions.push_back({"y_minmax", y_axis});
-  auto z_minmax = std::make_unique<union_domain>();
-  z_minmax->add(epsilon_around_plane_domain({z_axis, 0.0}, eps));
-  z_minmax->add(epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps));
-  in.node_sets["z_minmax"] = std::move(z_minmax);
-  in.zero_acceleration_conditions.push_back({"z_minmax", z_axis});
+  auto x_domain = std::make_unique<union_domain>();
+  x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
+  x_domain->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
+  in.domains[x_boundary] = std::move(x_domain);
+  in.zero_acceleration_conditions.push_back({x_boundary, x_axis});
+  auto y_domain = std::make_unique<union_domain>();
+  y_domain->add(epsilon_around_plane_domain({y_axis, 0.0}, eps));
+  y_domain->add(epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
+  in.domains[y_boundary] = std::move(y_domain);
+  in.zero_acceleration_conditions.push_back({y_boundary, y_axis});
+  auto z_domain = std::make_unique<union_domain>();
+  z_domain->add(epsilon_around_plane_domain({z_axis, 0.0}, eps));
+  z_domain->add(epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps));
+  in.domains[z_boundary] = std::move(z_domain);
+  in.zero_acceleration_conditions.push_back({z_boundary, z_axis});
   run(in);
 }
 
 static void LGR_NOINLINE swinging_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index x_max(2);
+  constexpr material_index y_min(3);
+  constexpr material_index y_max(4);
+  constexpr material_index z_min(5);
+  constexpr material_index z_max(6);
+  constexpr material_index nboundaries(6);
+  input in(nmaterials, nboundaries);
   in.name = "swinging_cube";
   in.element = TETRAHEDRON;
   in.num_file_outputs = 100;
@@ -335,15 +361,15 @@ static void LGR_NOINLINE swinging_cube() {
   in.z_domain_size = 2.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.45;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
   double const w = pi * std::sqrt((3.0 * G) / (4.0 * rho));
   in.end_time = 0.10;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto swinging_cube_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -367,78 +393,30 @@ static void LGR_NOINLINE swinging_cube() {
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
-  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.node_sets["z_max"] = epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
-  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
-  in.zero_acceleration_conditions.push_back({"z_max", z_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_max, y_axis});
+  in.zero_acceleration_conditions.push_back({z_min, z_axis});
+  in.zero_acceleration_conditions.push_back({z_max, z_axis});
   in.enable_nodal_pressure = true;
   in.c_tau = 0.5;
   in.CFL = 0.45;
   run(in);
 }
 
-static void LGR_NOINLINE bending_beam() {
-  constexpr material_index body(0);
-  constexpr material_index nmaterials(1);
-  input in(nmaterials);
-  in.name = "bending_beam";
-  in.element = TETRAHEDRON;
-  in.num_file_outputs = 100;
-  in.elements_along_x = 3;
-  in.x_domain_size = 1.0;
-  in.elements_along_y = 18;
-  in.y_domain_size = 6.0;
-  in.elements_along_z = 3;
-  in.z_domain_size = 1.0;
-  double const rho = 1.1e3;
-  in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
-  double const nu = 0.499;
-  double const E = 1.7e7;
-  double const K = E / (3.0 * (1.0 - 2.0 * nu));
-  double const G = E / (2.0 * (1.0 + nu));
-  in.end_time = 1.0;
-  in.K0 = K;
-  in.G0 = G;
-  auto bending_beam_v = [=] (
-    counting_range<node_index> const nodes,
-    device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<vector3<double>, node_index>* v_vector) {
-    auto const nodes_to_x = x_vector.cbegin();
-    auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
-      vector3<double> const x = nodes_to_x[node];
-      auto const v = vector3<double>((5.0 / 3.0) * x(1), 0.0, 0.0);
-      nodes_to_v[node] = v;
-    };
-    lgr::for_each(nodes, functor);
-  };
-  in.initial_v = bending_beam_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
-  static constexpr double eps = 1.0e-10;
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"y_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", z_axis});
-  in.enable_nodal_pressure = true;
-  in.c_tau = 0.15;
-  run(in);
-}
-
 static void LGR_NOINLINE twisting_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index y_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
   in.name = "twisting_column";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
@@ -451,13 +429,13 @@ static void LGR_NOINLINE twisting_column() {
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.499;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto twisting_column_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -476,65 +454,10 @@ static void LGR_NOINLINE twisting_column() {
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"y_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", z_axis});
-  in.enable_nodal_pressure = true;
-  in.c_tau = 0.5;
-  in.CFL = 0.9;
-  run(in);
-}
-
-static void LGR_NOINLINE tet_piston() {
-  constexpr material_index body(0);
-  constexpr material_index nmaterials(1);
-  input in(nmaterials);
-  in.name = "tet_piston";
-  in.element = TETRAHEDRON;
-  in.end_time = 10.0;
-  in.num_file_outputs = 100;
-  in.elements_along_x = 1;
-  in.x_domain_size = 1.0;
-  in.elements_along_y = 1;
-  in.y_domain_size = 1.0;
-  in.elements_along_z = 1;
-  in.z_domain_size = 1.0;
-  double const rho = 1.0;
-  in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
-  double const K = 1.0;
-  double const G = 1.0;
-  in.K0 = K;
-  in.G0 = G;
-  auto tet_piston_v = [=] (
-    counting_range<node_index> const nodes,
-    device_vector<vector3<double>, node_index> const& x_vector,
-    device_vector<vector3<double>, node_index>* v_vector) {
-    auto const nodes_to_x = x_vector.cbegin();
-    auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
-      vector3<double> const x = nodes_to_x[node];
-      auto const v = 0.6 * (x(2) / 1.0) * vector3<double>(0.0, 0.0, 1.0);
-      nodes_to_v[node] = v;
-    };
-    lgr::for_each(nodes, functor);
-  };
-  in.initial_v = tet_piston_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
-  static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
-  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
-  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({y_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_min, z_axis});
   in.enable_nodal_pressure = true;
   in.c_tau = 0.5;
   in.CFL = 0.9;
@@ -544,7 +467,9 @@ static void LGR_NOINLINE tet_piston() {
 static void LGR_NOINLINE Noh_1D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
   in.name = "Noh_1D";
   in.element = BAR;
   in.end_time = 0.6;
@@ -552,7 +477,7 @@ static void LGR_NOINLINE Noh_1D() {
   in.elements_along_x = 44;
   in.x_domain_size = 1.1;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -572,8 +497,8 @@ static void LGR_NOINLINE Noh_1D() {
   in.initial_v = inward_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
@@ -583,7 +508,10 @@ static void LGR_NOINLINE Noh_1D() {
 static void LGR_NOINLINE Noh_2D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index nboundaries(2);
+  input in(nmaterials, nboundaries);
   in.name = "Noh_2D";
   in.element = TRIANGLE;
   in.end_time = 0.6;
@@ -593,7 +521,7 @@ static void LGR_NOINLINE Noh_2D() {
   in.elements_along_y = 34;
   in.y_domain_size = 0.85;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -614,10 +542,10 @@ static void LGR_NOINLINE Noh_2D() {
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.5;
@@ -629,7 +557,8 @@ static void LGR_NOINLINE Noh_2D() {
 static void LGR_NOINLINE spinning_composite_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index nboundaries(0);
+  input in(nmaterials, nboundaries);
   in.name = "spinning_composite_cube";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 1.0e-2;
@@ -641,9 +570,9 @@ static void LGR_NOINLINE spinning_composite_cube() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
-  in.enable_neo_Hookean = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.enable_neo_Hookean[body] = true;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   in.CFL = 0.9;
   in.time_integrator = VELOCITY_VERLET;
@@ -653,7 +582,9 @@ static void LGR_NOINLINE spinning_composite_cube() {
 static void LGR_NOINLINE twisting_composite_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index y_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
   in.name = "twisting_composite_column";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
@@ -666,13 +597,13 @@ static void LGR_NOINLINE twisting_composite_column() {
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.499;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto twisting_column_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -691,10 +622,10 @@ static void LGR_NOINLINE twisting_composite_column() {
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"y_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", z_axis});
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({y_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_min, z_axis});
   in.enable_J_averaging = true;
   in.CFL = 0.9;
   run(in);
@@ -703,7 +634,11 @@ static void LGR_NOINLINE twisting_composite_column() {
 static void LGR_NOINLINE Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index z_min(3);
+  constexpr material_index nboundaries(3);
+  input in(nmaterials, nboundaries);
   in.name = "Noh_3D";
   in.element = TETRAHEDRON;
   in.end_time = 0.6;
@@ -715,7 +650,7 @@ static void LGR_NOINLINE Noh_3D() {
   in.elements_along_z = 20;
   in.z_domain_size = 0.9;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -737,12 +672,12 @@ static void LGR_NOINLINE Noh_3D() {
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({z_min, z_axis});
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.1;
@@ -754,7 +689,11 @@ static void LGR_NOINLINE Noh_3D() {
 static void LGR_NOINLINE composite_Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
-  input in(nmaterials);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index z_min(3);
+  constexpr material_index nboundaries(3);
+  input in(nmaterials, nboundaries);
   in.name = "composite_Noh_3D";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.6;
@@ -766,7 +705,7 @@ static void LGR_NOINLINE composite_Noh_3D() {
   in.elements_along_z = 20;
   in.z_domain_size = 0.9;
   in.rho0[gas] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
@@ -788,12 +727,12 @@ static void LGR_NOINLINE composite_Noh_3D() {
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["z_min"] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"z_min", z_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({z_min, z_axis});
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.25;
   in.quadratic_artificial_viscosity = 0.5;
@@ -805,7 +744,10 @@ static void LGR_NOINLINE Sod_1D() {
   constexpr material_index left(0);
   constexpr material_index right(1);
   constexpr material_index nmaterials(2);
-  input in(nmaterials);
+  constexpr material_index x_min(2);
+  constexpr material_index x_max(3);
+  constexpr material_index nboundaries(2);
+  input in(nmaterials, nboundaries);
   in.name = "Sod_1D";
   in.element = BAR;
   in.end_time = 0.14;
@@ -814,7 +756,8 @@ static void LGR_NOINLINE Sod_1D() {
   in.x_domain_size = 1.0;
   in.rho0[left] = 1.0;
   in.rho0[right] = 0.125;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[left] = true;
+  in.enable_ideal_gas[right] = true;
   in.gamma[left] = 1.4;
   in.gamma[right] = 1.4;
   in.e0[left] = 1.0 / ((1.4 - 1.0) * 1.0);
@@ -822,17 +765,17 @@ static void LGR_NOINLINE Sod_1D() {
   in.initial_v = zero_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.25;
   in.quadratic_artificial_viscosity = 0.5;
   auto right_domain = half_space_domain(plane{vector3<double>{1.0, 0.0, 0.0}, 0.5});
   auto left_domain = half_space_domain(plane{vector3<double>{-1.0, 0.0, 0.0}, -0.5});
-  in.material_domains.emplace_back(left, std::move(left_domain));
-  in.material_domains.emplace_back(right, std::move(right_domain));
+  in.domains[left] = std::move(left_domain);
+  in.domains[right] = std::move(right_domain);
   run(in);
 }
 
@@ -841,19 +784,26 @@ static void LGR_NOINLINE triple_point() {
   constexpr material_index right_bottom(1);
   constexpr material_index right_top(2);
   constexpr material_index nmaterials(3);
-  input in(nmaterials);
+  constexpr material_index x_min(3);
+  constexpr material_index x_max(4);
+  constexpr material_index y_min(5);
+  constexpr material_index y_max(6);
+  constexpr material_index nboundaries(4);
+  input in(nmaterials, nboundaries);
   in.name = "triple_point";
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 14;
+  in.elements_along_x = 28;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 6;
+  in.elements_along_y = 12;
   in.y_domain_size = 3.0;
   in.rho0[right_top] = 0.1;
   in.rho0[right_bottom] = 1.0;
   in.rho0[left] = 1.0;
-  in.enable_ideal_gas = true;
+  in.enable_ideal_gas[left] = true;
+  in.enable_ideal_gas[right_top] = true;
+  in.enable_ideal_gas[right_bottom] = true;
   in.gamma[right_top] = 1.5;
   in.gamma[left] = 1.5;
   in.gamma[right_bottom] = 1.4;
@@ -864,20 +814,20 @@ static void LGR_NOINLINE triple_point() {
   constexpr auto x_axis = vector3<double>::x_axis();
   constexpr auto y_axis = vector3<double>::y_axis();
   constexpr double eps = 1.0e-10;
-  in.node_sets["x_min"] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
-  in.node_sets["x_max"] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
-  in.node_sets["y_min"] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.node_sets["y_max"] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
-  in.zero_acceleration_conditions.push_back({"x_min", x_axis});
-  in.zero_acceleration_conditions.push_back({"x_max", x_axis});
-  in.zero_acceleration_conditions.push_back({"y_min", y_axis});
-  in.zero_acceleration_conditions.push_back({"y_max", y_axis});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps);
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_max, y_axis});
   auto left_domain = box_domain({0.0, 0.0, -eps}, {1.0, 3.0, eps});
   auto right_bottom_domain = box_domain({1.0, 0.0, -eps}, {7.0, 1.5, eps});
   auto right_top_domain = box_domain({1.0, 1.5, -eps}, {7.0, 3.0, eps});
-  in.material_domains.emplace_back(left, std::move(left_domain));
-  in.material_domains.emplace_back(right_bottom, std::move(right_bottom_domain));
-  in.material_domains.emplace_back(right_top, std::move(right_top_domain));
+  in.domains[left] = std::move(left_domain);
+  in.domains[right_bottom] = std::move(right_bottom_domain);
+  in.domains[right_top] = std::move(right_top_domain);
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
   in.enable_adapt = true;
@@ -887,7 +837,7 @@ static void LGR_NOINLINE triple_point() {
 }
 
 int main() {
-  if ((0)) lgr::elastic_wave();
+  if ((1)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -896,15 +846,13 @@ int main() {
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
-  if ((0)) lgr::bending_beam();
   if ((0)) lgr::twisting_column();
-  if ((0)) lgr::tet_piston();
   if ((0)) lgr::Noh_1D();
-  if ((0)) lgr::Noh_2D();
+  if ((1)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
-  if ((0)) lgr::twisting_composite_column();
-  if ((0)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((1)) lgr::twisting_composite_column();
+  if ((1)) lgr::Sod_1D();
+  if ((0)) lgr::triple_point();
 }

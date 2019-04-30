@@ -30,7 +30,6 @@ class state {
   device_vector<vector3<double>, node_index> x{devpool}; // current nodal positions
   device_vector<vector3<double>, node_index> u{devpool}; // nodal displacements since previous time state
   device_vector<vector3<double>, node_index> v{devpool}; // nodal velocities
-  device_vector<vector3<double>, node_index> old_v{devpool}; // nodal velocities at previous time state
   device_vector<double, point_index> V{devpool}; // measures (volume/area/length)
   device_vector<vector3<double>, point_node_index> grad_N{devpool}; // gradients of basis functions
   device_vector<matrix3x3<double>, point_index> F_total{devpool}; // deformation gradient since simulation start
@@ -42,7 +41,6 @@ class state {
   device_vector<double, point_node_index> W{devpool}; // work done, per element-node pair (contribution to a node's work by an element)
   device_vector<double, node_index> p_h_dot{devpool}; // time derivative of stabilized nodal pressure
   device_vector<double, node_index> p_h{devpool}; // stabilized nodal pressure
-  device_vector<double, node_index> old_p_h{devpool}; // stabilized nodal pressure at previous time state
   device_vector<double, point_index> K{devpool}; // (tangent/effective) bulk modulus
   device_vector<double, node_index> K_h{devpool}; // (tangent/effective) bulk modulus at nodes
   device_vector<double, point_index> G{devpool}; // (tangent/effective) shear modulus
@@ -51,22 +49,22 @@ class state {
   device_vector<vector3<double>, node_index> f{devpool}; // nodal (internal) forces
   device_vector<double, point_index> rho{devpool}; // element density
   device_vector<double, point_index> e{devpool}; // element specific internal energy
-  device_vector<double, point_index> old_e{devpool}; // specific internal energy at previous time state
   device_vector<double, point_index> rho_e_dot{devpool}; // time derivative of internal energy density
-  device_vector<double, node_index> m{devpool}; // nodal mass
+  device_vector<double, node_index> mass{devpool}; // total lumped nodal mass
+  host_vector<device_vector<double, node_index>, material_index> material_mass; // per-material lumped nodal mass
   device_vector<vector3<double>, node_index> a{devpool}; // nodal acceleration
   device_vector<double, element_index> h_min{devpool}; // minimum characteristic element length, used for stable time step
   device_vector<double, element_index> h_art{devpool}; // characteristic element length used for artificial viscosity
   device_vector<double, point_index> nu_art{devpool}; // artificial kinematic viscosity scalar
   device_vector<double, point_index> element_dt{devpool}; // stable time step of each element
-  device_vector<double, node_index> e_h{devpool}; // nodal specific internal energy
-  device_vector<double, node_index> old_e_h{devpool}; // nodal specific internal energy at previous time state
+  host_vector<device_vector<double, node_index>, material_index> e_h; // nodal specific internal energy
   device_vector<double, node_index> e_h_dot{devpool}; // time derivative of nodal specific internal energy
   device_vector<double, node_index> rho_h{devpool}; // nodal density
   device_vector<material_index, element_index> material{devpool}; // element material
+  device_vector<material_set, node_index> nodal_materials{devpool}; // nodal material set
   device_vector<double, element_index> quality{devpool}; // inverse element quality
   device_vector<double, node_index> h_adapt{devpool}; // desired edge length
-  std::map<std::string, device_vector<node_index, int>> node_sets;
+  host_vector<device_vector<node_index, int>, material_index> node_sets;
   host_vector<device_vector<element_index, int>, material_index> element_sets;
   double next_file_output_time;
   double dt = 0.0;

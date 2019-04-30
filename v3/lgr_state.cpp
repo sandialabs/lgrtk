@@ -6,7 +6,6 @@ namespace lgr {
 void resize_state(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
-  s.old_v.resize(s.nodes.size());
   s.V.resize(s.points.size());
   s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
   s.F_total.resize(s.points.size());
@@ -20,9 +19,9 @@ void resize_state(input const& in, state& s) {
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
   if (!in.enable_nodal_energy) s.e.resize(s.points.size());
-  if (!in.enable_nodal_energy) s.old_e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
-  s.m.resize(s.nodes.size());
+  s.material_mass.resize(in.materials.size(), s.nodes.size(), s.devpool);
+  s.mass.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());
   if (in.enable_viscosity) {
@@ -33,15 +32,13 @@ void resize_state(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
     s.p_h.resize(s.nodes.size());
     s.p_h_dot.resize(s.nodes.size());
-    s.old_p_h.resize(s.nodes.size());
     s.v_prime.resize(s.points.size());
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }
   if (in.enable_nodal_energy) {
     s.K_h.resize(s.nodes.size());
     s.p_h.resize(s.nodes.size());
-    s.e_h.resize(s.nodes.size());
-    s.old_e_h.resize(s.nodes.size());
+    s.e_h.resize(in.materials.size(), s.nodes.size(), s.devpool);
     s.e_h_dot.resize(s.nodes.size());
     s.rho_h.resize(s.nodes.size());
     s.q.resize(s.points.size());

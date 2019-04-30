@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <lgr_index.hpp>
 
 namespace lgr {
@@ -71,6 +73,22 @@ class material_index : public index<int, material_index> {
     using base_type = index<int, material_index>;
     constexpr explicit inline material_index(int const i) noexcept : base_type(i) {}
     inline material_index() noexcept = default;
+};
+
+class material_set {
+  std::uint64_t bits;
+  explicit constexpr inline material_set(std::uint64_t const bits_in) noexcept : bits(bits_in) {}
+public:
+  explicit constexpr inline material_set(material_index const material) noexcept : bits(std::uint64_t(1) << int(material)) {}
+  inline material_set() noexcept = default;
+  constexpr inline material_set operator|(material_set const other) const noexcept {
+    return material_set(bits | other.bits);
+  }
+  constexpr inline bool contains(material_set const other) const noexcept {
+    return (bits | other.bits) == bits;
+  }
+  constexpr static inline material_set none() noexcept { return material_set(std::uint64_t(0)); }
+  constexpr explicit inline operator std::uint64_t() const noexcept { return bits; }
 };
 
 }

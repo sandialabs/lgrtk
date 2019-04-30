@@ -59,9 +59,10 @@ static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vecto
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p_h(state& s, double const dt) {
+static void LGR_NOINLINE update_p_h(state& s, double const dt,
+    device_vector<double, node_index> const& old_p_h_vector) {
   auto const nodes_to_p_h = s.p_h.begin();
-  auto const nodes_to_old_p_h = s.old_p_h.cbegin();
+  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot.cbegin();
   auto functor = [=] (node_index const node) {
     double const old_p_h = nodes_to_old_p_h[node];
@@ -74,7 +75,7 @@ static void LGR_NOINLINE update_p_h(state& s, double const dt) {
 
 static void LGR_NOINLINE update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
-  auto const nodes_to_m = s.m.cbegin();
+  auto const nodes_to_m = s.mass.cbegin();
   auto const nodes_to_a = s.a.begin();
   auto functor = [=] (node_index const node) {
     vector3<double> const f = nodes_to_f[node];
@@ -201,30 +202,33 @@ static void LGR_NOINLINE find_max_stable_dt(state& s)
   s.max_stable_dt = lgr::transform_reduce(s.element_dt, init, lgr::minimum<double>(), lgr::identity<double>());
 }
 
-static void LGR_NOINLINE neo_Hookean(input const& in, state& s) {
+static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index const material) {
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
-  auto const K0 = in.K0;
-  auto const G0 = in.G0;
-  auto functor = [=] (point_index const point) {
-    matrix3x3<double> const F = points_to_F_total[point];
-    auto const J = determinant(F);
-    auto const Jinv = 1.0 / J;
-    auto const half_K0 = 0.5 * K0;
-    auto const Jm13 = 1.0 / std::cbrt(J);
-    auto const Jm23 = Jm13 * Jm13;
-    auto const Jm53 = (Jm23 * Jm23) * Jm13;
-    auto const B = self_times_transpose(F);
-    auto const devB = deviator(B);
-    auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
-    points_to_sigma[point] = sigma;
-    auto const K = half_K0 * (J + Jinv);
-    points_to_K[point] = K;
-    points_to_G[point] = G0;
+  auto const K0 = in.K0[material];
+  auto const G0 = in.G0[material];
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const F = points_to_F_total[point];
+      auto const J = determinant(F);
+      auto const Jinv = 1.0 / J;
+      auto const half_K0 = 0.5 * K0;
+      auto const Jm13 = 1.0 / std::cbrt(J);
+      auto const Jm23 = Jm13 * Jm13;
+      auto const Jm53 = (Jm23 * Jm23) * Jm13;
+      auto const B = self_times_transpose(F);
+      auto const devB = deviator(B);
+      auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
+      points_to_sigma[point] = sigma;
+      auto const K = half_K0 * (J + Jinv);
+      points_to_K[point] = K;
+      points_to_G[point] = G0;
+    }
   };
-  lgr::for_each(s.points, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
 static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
@@ -356,11 +360,12 @@ static void LGR_NOINLINE update_rho_e_dot(state& s)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_e(state& s, double const dt)
+static void LGR_NOINLINE update_e(state& s, double const dt,
+    device_vector<double, point_index> const& old_e_vector)
 {
   auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
   auto const points_to_rho = s.rho.cbegin();
-  auto const points_to_old_e = s.old_e.cbegin();
+  auto const points_to_old_e = old_e_vector.cbegin();
   auto const points_to_e = s.e.begin();
   auto functor = [=] (point_index const point) {
     auto const rho_e_dot = points_to_rho_e_dot[point];
@@ -373,18 +378,20 @@ static void LGR_NOINLINE update_e(state& s, double const dt)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_e_h(state& s, double const dt)
+static void LGR_NOINLINE update_e_h(state& s, double const dt,
+    material_index const material,
+    device_vector<double, node_index> const& old_e_h_vector)
 {
   auto const nodes_to_e_h_dot = s.e_h_dot.cbegin();
-  auto const nodes_to_old_e_h = s.old_e_h.cbegin();
-  auto const nodes_to_e_h = s.e_h.begin();
+  auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
+  auto const nodes_to_e_h = s.e_h[material].begin();
   auto functor = [=] (node_index const node) {
     auto const e_h_dot = nodes_to_e_h_dot[node];
     double const old_e_h = nodes_to_old_e_h[node];
     auto const e_h = old_e_h + dt * e_h_dot;
     nodes_to_e_h[node] = e_h;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
 static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
@@ -514,12 +521,12 @@ static void LGR_NOINLINE volume_average_p(state& s) {
 }
 
 static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
-  if (in.enable_neo_Hookean) {
-    neo_Hookean(in, s);
+  if (in.enable_neo_Hookean[material]) {
+    neo_Hookean(in, s, material);
   }
-  if (in.enable_ideal_gas) {
+  if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy) {
-      nodal_ideal_gas(in, s);
+      nodal_ideal_gas(in, s, material);
     } else {
       ideal_gas(in, s, material);
     }
@@ -532,7 +539,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   lgr::fill(s.sigma, symmetric3x3<double>::zero());
   lgr::fill(s.G, double(0.0));
-  for (material_index material(0); material < in.material_count; ++material) {
+  for (auto const material : in.materials) {
     update_single_material_state(in, s, material);
   }
 }
@@ -542,56 +549,72 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   update_nodal_force(s);
   update_a(s);
   for (auto const& cond : in.zero_acceleration_conditions) {
-    zero_acceleration(s.node_sets.find(cond.node_set_name)->second, cond.axis, &s.a);
+    zero_acceleration(s.node_sets[cond.boundary], cond.axis, &s.a);
   }
 }
 
 static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
-  if (in.enable_nodal_pressure) {
-    update_v_prime(in, s);
-    update_p_h_W(s);
-    update_p_h_dot(s);
-  }
+  update_v_prime(in, s);
+  update_p_h_W(s);
+  update_p_h_dot(s);
 }
 
 static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
-  update_q(in, s);
-  update_e_h_W(s);
-  update_e_h_dot(s);
+  for (auto const material : in.materials) {
+    update_q(in, s);
+    update_e_h_W(s);
+    update_e_h_dot(s, material);
+  }
 }
 
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
-  lgr::copy(s.v, s.old_v);
-  lgr::copy(s.e, s.old_e);
-  if (in.enable_nodal_pressure) lgr::copy(s.p_h, s.old_p_h);
-  if (in.enable_nodal_energy) lgr::copy(s.e_h, s.old_e_h);
+  device_vector<vector3<double>, node_index> old_v(s.nodes.size(), s.devpool);
+  lgr::copy(s.v, old_v);
+  device_vector<double, point_index> old_e(s.points.size(), s.devpool);
+  lgr::copy(s.e, old_e);
+  device_vector<double, node_index> old_p_h(s.devpool);
+  if (in.enable_nodal_pressure) {
+    old_p_h.resize(s.nodes.size());
+    lgr::copy(s.p_h, old_p_h);
+  }
+  host_vector<device_vector<double, node_index>, material_index> old_e_h(in.materials.size(), s.devpool);
+  for (auto const material : in.materials) {
+    if (in.enable_nodal_energy) {
+      old_e_h[material].resize(s.nodes.size());
+      lgr::copy(s.e_h[material], old_e_h[material]);
+    }
+  }
   constexpr int npc = 2;
   for (int pc = 0; pc < npc; ++pc) {
     if (pc == 0) advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
-    update_v(s, s.dt / 2.0, s.old_v);
+    update_v(s, s.dt / 2.0, old_v);
     update_symm_grad_v(s);
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     if (in.enable_nodal_pressure) {
-      update_p_h(s, half_dt);
+      update_p_h(s, half_dt, old_p_h);
     }
     update_rho_e_dot(s);
     if (in.enable_nodal_energy) {
       update_e_h_dot_from_a(in, s);
-      update_e_h(s, half_dt);
+      for (auto const material : in.materials) {
+        update_e_h(s, half_dt, material, old_e_h[material]);
+      }
     } else {
-      update_e(s, half_dt);
+      update_e(s, half_dt, old_e);
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    if (last_pc) update_v(s, s.dt, s.old_v);
+    if (last_pc) update_v(s, s.dt, old_v);
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
     if (in.enable_rho_averaging) volume_average_rho(s);
     if (in.enable_nodal_energy) {
-      update_nodal_density(s);
+      for (auto const material : in.materials) {
+        update_nodal_density(s, material);
+      }
       interpolate_rho(s);
     }
     if (in.enable_adapt) {
@@ -609,7 +632,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (last_pc) update_element_dt(s);
     if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
-    update_p_h_dot_from_a(in, s);
+    if (in.enable_nodal_pressure) {
+      update_p_h_dot_from_a(in, s);
+    }
     if (last_pc && (!(in.enable_nodal_pressure || in.enable_nodal_energy))) update_p(s);
   }
 }
@@ -628,7 +653,9 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_element_dt(s);
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
-  update_p_h_dot_from_a(in, s);
+  if (in.enable_nodal_pressure) {
+    update_p_h_dot_from_a(in, s);
+  }
   update_p(s);
   update_v(s, s.dt / 2.0, s.v);
 }
@@ -676,7 +703,11 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
-  if (in.enable_nodal_energy) update_nodal_density(s);
+  if (in.enable_nodal_energy) {
+    for (auto const material : in.materials) {
+      update_nodal_density(s, material);
+    }
+  }
   initialize_grad_N(in, s);
   if (in.enable_adapt) {
     update_quality(in, s);
@@ -692,7 +723,9 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   update_element_dt(s);
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
-  update_p_h_dot_from_a(in, s);
+  if (in.enable_nodal_pressure) {
+    update_p_h_dot_from_a(in, s);
+  }
   if (!in.enable_nodal_energy) update_p(s);
 }
 
@@ -703,14 +736,19 @@ void run(input const& in) {
   state s;
   build_mesh(in, s);
   if (in.x_transform) in.x_transform(&s.x);
-  collect_node_sets(in, s);
   resize_state(in, s);
-  set_materials(in, s);
+  assign_element_materials(in, s);
+  compute_nodal_materials(in, s);
+  collect_node_sets(in, s);
   collect_element_sets(in, s);
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
   lgr::fill(s.p_h, double(0.0));
-  lgr::fill(s.e_h, in.e0[material_index(0)]);
+  if (in.enable_nodal_energy) {
+    for (auto const material : in.materials) {
+      lgr::fill(s.e_h[material], in.e0[material]);
+    }
+  }
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
@@ -737,13 +775,15 @@ void run(input const& in) {
       if (in.enable_adapt && (s.n % 10 == 0)) {
         output_file(in, file_output_index, s);
         ++file_output_index;
-        adapt(in, s);
-        resize_state(in, s);
-        collect_element_sets(in, s);
-        collect_node_sets(in, s);
-        common_initialization(in, s);
-        output_file(in, file_output_index, s);
-        ++file_output_index;
+        for (int i = 0; i < 3; ++i) {
+          adapt(in, s);
+          resize_state(in, s);
+          collect_element_sets(in, s);
+          collect_node_sets(in, s);
+          common_initialization(in, s);
+          output_file(in, file_output_index, s);
+          ++file_output_index;
+        }
       }
       ++s.n;
     }

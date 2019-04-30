@@ -166,6 +166,7 @@ void initialize_h_adapt(state& s)
 enum cavity_op {
   NONE,
   SWAP,
+  COLLAPSE,
   SPLIT,
 };
 
@@ -232,6 +233,7 @@ struct eval_cavity {
   array<int, max_shell_elements> shell_elements_to_node_in_element;
   array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
   array<double, max_shell_nodes> shell_nodes_to_h;
+  array<material_set, max_shell_nodes> shell_nodes_to_materials;
 };
 
 template <int max_shell_elements, int max_shell_nodes>
@@ -308,8 +310,8 @@ static inline void evaluate_triangle_split(
   auto const h_max = max(h1, h2);
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
-  if (lm < std::sqrt(2.0)) return;
-  if (lm < longest_length) return;
+  if (lm <= std::sqrt(2.0)) return;
+  if (lm <= longest_length) return;
   auto const midpoint_x = 0.5 * (x1 + x2);
   for (int element = 0; element < c.num_shell_elements; ++element) {
     array<vector3<double>, 3> parent_x;
@@ -334,6 +336,56 @@ static inline void evaluate_triangle_split(
   best_split_edge_node = edge_node;
 }
 
+template <int max_shell_elements, int max_shell_nodes>
+static inline void evaluate_triangle_collapse(
+    int const center_node,
+    int const edge_node,
+    eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
+    double& shortest_length,
+    int& best_collapse_edge_node
+    ) {
+  if (!c.shell_nodes_to_materials[edge_node].contains(c.shell_nodes_to_materials[center_node])) return;
+  constexpr double min_acceptable_quality = 0.2;
+  auto const h1 = c.shell_nodes_to_h[center_node];
+  auto const h2 = c.shell_nodes_to_h[edge_node];
+  auto const x1 = c.shell_nodes_to_x[center_node];
+  auto const x2 = c.shell_nodes_to_x[edge_node];
+  auto const h_min = min(h1, h2);
+  auto const h_max = max(h1, h2);
+  auto const l = norm(x1 - x2);
+  auto const lm = measure_edge(h_min, h_max, l);
+  if (lm >= (1.0 / std::sqrt(2.0))) {
+    return;
+  }
+  if (lm >= shortest_length) {
+    return;
+  }
+  material_index cavity_material(-1);
+  for (int element = 0; element < c.num_shell_elements; ++element) {
+    array<vector3<double>, 3> proposed_x;
+    int const center_node_in_element = c.shell_elements_to_node_in_element[element];
+    int edge_node_in_element = -1;
+    for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
+      int const shell_node = c.shell_elements_to_shell_nodes[element][node_in_element];
+      proposed_x[node_in_element] = c.shell_nodes_to_x[shell_node];
+      if (shell_node == edge_node) edge_node_in_element = node_in_element;
+      material_index const element_material = c.shell_elements_to_materials[element];
+      if (cavity_material == material_index(-1)) cavity_material = element_material;
+      else if (cavity_material != element_material) {
+        return; // only allow interior collapses
+      }
+    }
+    if (edge_node_in_element != -1) continue;
+    proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
+    double const new_quality = triangle_quality(proposed_x);
+    if (new_quality < min_acceptable_quality) {
+      return;
+    }
+  }
+  shortest_length = lm;
+  best_collapse_edge_node = edge_node;
+}
+
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
@@ -345,6 +397,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_qualities = s.quality.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_h = s.h_adapt.cbegin();
+  auto const nodes_to_materials = s.nodal_materials.cbegin();
   auto const nodes_to_criteria = a.criteria.begin();
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
@@ -367,6 +420,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
         if (shell_node + 1 == c.num_shell_nodes) {
           c.shell_nodes_to_x[shell_node] = nodes_to_x[node2];
           c.shell_nodes_to_h[shell_node] = nodes_to_h[node2];
+          c.shell_nodes_to_materials[shell_node] = nodes_to_materials[node2];
         }
         c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
       }
@@ -381,19 +435,29 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
     int best_swap_edge_node = -1;
     double longest_split_edge = 0.0;
     int best_split_edge_node = -1;
+    double shortest_collapse_edge = 1.0;
+    int best_collapse_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
-      // only examine edges once, the smaller node examines it
-      if (c.shell_nodes[edge_node] < c.shell_nodes[center_node]) continue;
-      evaluate_triangle_swap(center_node, edge_node, c,
-          best_swap_improvement, best_swap_edge_node);
-      evaluate_triangle_split(center_node, edge_node, c,
-          longest_split_edge, best_split_edge_node);
+      if (c.shell_nodes[center_node] < c.shell_nodes[edge_node]) {
+        // swaps and splits are non-directional, they only need to be
+        // examined by one of the nodes
+        evaluate_triangle_swap(center_node, edge_node, c,
+            best_swap_improvement, best_swap_edge_node);
+        evaluate_triangle_split(center_node, edge_node, c,
+            longest_split_edge, best_split_edge_node);
+      }
+      evaluate_triangle_collapse(center_node, edge_node, c,
+          shortest_collapse_edge, best_collapse_edge_node);
     }
     if (best_split_edge_node != -1) {
       nodes_to_criteria[node] = longest_split_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
       nodes_to_op[node] = cavity_op::SPLIT;
+    } else if (best_collapse_edge_node != -1) {
+      nodes_to_criteria[node] = 1.0 / shortest_collapse_edge;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_collapse_edge_node];
+      nodes_to_op[node] = cavity_op::COLLAPSE;
     } else if (best_swap_edge_node != -1) {
       nodes_to_criteria[node] = best_swap_improvement;
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
@@ -453,26 +517,34 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
         }
       }
     }
+    element_index edge_element_count(-100);
+    if (op == cavity_op::SWAP) {
+      edge_element_count = element_index(1);
+    } else if (op == cavity_op::SPLIT) {
+      edge_element_count = element_index(2);
+    } else if (op == cavity_op::COLLAPSE) {
+      edge_element_count = element_index(0);
+    }
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
-        if (adj_node == target_node) {
-          element_index count(-100);
-          if (op == cavity_op::SWAP) {
-            count = element_index(1);
-          } else if (op == cavity_op::SPLIT) {
-            count = element_index(2);
-          }
-          elements_to_new_counts[element] = count;
+        if (adj_node == target_node) { // element is adjacent to the edge
+          elements_to_new_counts[element] = edge_element_count;
         }
       }
     }
-    if (op == cavity_op::SPLIT) {
-      nodes_to_new_counts[node] = node_index(2);
+    node_index node_count(-100);
+    if (op == cavity_op::SWAP) {
+      node_count = node_index(1);
+    } else if (op == cavity_op::SPLIT) {
+      node_count = node_index(2);
+    } else if (op == cavity_op::COLLAPSE) {
+      node_count = node_index(0);
     }
+    nodes_to_new_counts[node] = node_count;
   };
   for_each(s.nodes, functor);
 }
@@ -559,14 +631,12 @@ static inline void apply_triangle_split(apply_cavity const c,
     auto const old_element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index target_node_in_element(-1);
     array<node_index, 3, node_in_element_index> new_nodes;
-    array<node_index, 3, node_in_element_index> old_nodes;
     for (auto const node_in_element : c.nodes_in_element) {
       auto const old_element_node = old_element_nodes[node_in_element];
       node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
       if (old_node == target_node) target_node_in_element = node_in_element;
       auto const new_node = c.old_nodes_to_new_nodes[old_node];
       new_nodes[node_in_element] = new_node;
-      old_nodes[node_in_element] = old_node;
     }
     if (target_node_in_element == node_in_element_index(-1)) continue;
     node_in_element_index const center_node_in_element = c.node_elements_to_nodes_in_element[node_element];
@@ -585,13 +655,42 @@ static inline void apply_triangle_split(apply_cavity const c,
       auto const new_element_node = new_element_nodes2[node_in_element];
       c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
     }
-    c.new_nodes_are_same[split_node] = false;
     c.new_elements_are_same[new_element1] = false;
     c.new_elements_are_same[new_element2] = false;
-    array<node_index, 2> interpolate_from;
-    interpolate_from[0] = center_node;
-    interpolate_from[1] = target_node;
-    c.interpolate_from[split_node] = interpolate_from;
+  }
+  c.new_nodes_are_same[split_node] = false;
+  array<node_index, 2> interpolate_from;
+  interpolate_from[0] = center_node;
+  interpolate_from[1] = target_node;
+  c.interpolate_from[split_node] = interpolate_from;
+}
+
+static inline void apply_triangle_collapse(apply_cavity const c,
+    node_index const center_node,
+    node_index const target_node) {
+  node_index const new_target_node = c.old_nodes_to_new_nodes[target_node];
+  for (auto const node_element : c.nodes_to_node_elements[center_node]) {
+    element_index const element = c.node_elements_to_elements[node_element];
+    auto const old_element_nodes = c.elements_to_element_nodes[element];
+    node_in_element_index target_node_in_element(-1);
+    array<node_index, 3, node_in_element_index> new_nodes;
+    for (auto const node_in_element : c.nodes_in_element) {
+      auto const old_element_node = old_element_nodes[node_in_element];
+      node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
+      if (old_node == target_node) target_node_in_element = node_in_element;
+      auto const new_node = c.old_nodes_to_new_nodes[old_node];
+      new_nodes[node_in_element] = new_node;
+    }
+    if (target_node_in_element != node_in_element_index(-1)) continue;
+    node_in_element_index const center_node_in_element = c.node_elements_to_nodes_in_element[node_element];
+    element_index const new_element = c.old_elements_to_new_elements[element];
+    auto const new_element_nodes = c.new_elements_to_element_nodes[new_element];
+    new_nodes[center_node_in_element] = new_target_node;
+    for (auto const node_in_element : c.nodes_in_element) {
+      auto const new_element_node = new_element_nodes[node_in_element];
+      c.new_element_nodes_to_nodes[new_element_node] = new_nodes[node_in_element];
+    }
+    c.new_elements_are_same[new_element] = false;
   }
 }
 
@@ -608,7 +707,8 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     if (cavity_op::NONE == op) return;
     node_index const target_node = nodes_to_other_nodes[node];
     if (cavity_op::SWAP == op) apply_triangle_swap(c, node, target_node);
-    if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
+    else if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
+    else if (cavity_op::COLLAPSE == op) apply_triangle_collapse(c, node, target_node);
   };
   for_each(s.nodes, functor);
 }
@@ -759,6 +859,7 @@ bool adapt(input const& in, state& s) {
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   propagate_connectivity(s);
+  compute_nodal_materials(in, s);
   return true;
 }
 
