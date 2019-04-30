@@ -57,7 +57,7 @@ static void write_vtk_point_data(std::ostream& stream, state const& s) {
 }
 
 template <class Index>
-static void write_vtk_scalars(std::ostream& stream, char const* name,
+static void write_vtk_scalars(std::ostream& stream, std::string const& name,
     device_vector<double, Index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
@@ -122,11 +122,16 @@ void file_writer::operator()(
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
-    write_vtk_scalars(stream, "nodal_pressure", s.p_h);
+    write_vtk_scalars(stream, "pressure", s.p_h);
   }
   if (in.enable_nodal_energy) {
-    write_vtk_scalars(stream, "nodal_energy", s.e_h);
-    write_vtk_scalars(stream, "nodal_density", s.rho_h);
+    for (material_index const material : in.materials) {
+      std::stringstream name_stream;
+      name_stream << "energy_" << int(material);
+      auto name = name_stream.str();
+      write_vtk_scalars(stream, name, s.e_h[material]);
+    }
+    write_vtk_scalars(stream, "density", s.rho_h);
   }
   if (in.enable_adapt) {
     write_vtk_scalars(stream, "h", s.h_adapt);
