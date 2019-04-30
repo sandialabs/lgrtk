@@ -54,8 +54,8 @@ class input {
   pinned_vector<double, material_index> rho0;
   pinned_vector<double, material_index> e0;
   pinned_vector<bool, material_index> enable_neo_Hookean;
-  double K0;
-  double G0 = 0.0;
+  pinned_vector<double, material_index> K0;
+  pinned_vector<double, material_index> G0;
   pinned_vector<bool, material_index> enable_ideal_gas;
   pinned_vector<double, material_index> gamma;
   bool enable_nodal_pressure = false;
@@ -83,6 +83,8 @@ class input {
     ,rho0(material_count_in, pinpool)
     ,e0(material_count_in, double(0.0), pinpool)
     ,enable_neo_Hookean(material_count_in, false, pinpool)
+    ,K0(material_count_in, pinpool)
+    ,G0(material_count_in, double(0.0), pinpool)
     ,enable_ideal_gas(material_count_in, false, pinpool)
     ,gamma(material_count_in, pinpool)
   {}

@@ -54,8 +54,8 @@ static void LGR_NOINLINE elastic_wave() {
   in.elements_along_x = 1000;
   in.rho0[body] = 1000.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   constexpr auto x_axis = vector3<double>::x_axis();
   static constexpr double eps = 1.0e-10;
@@ -100,8 +100,8 @@ static void LGR_NOINLINE spinning_square() {
   in.y_domain_size = 1.0;
   in.rho0[body] = 1000.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   run(in);
 }
@@ -152,8 +152,8 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.y_domain_size = 1.0;
   in.rho0[body] = 1.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 833333.0;
-  in.G0 = 83.0;
+  in.K0[body] = 833333.0;
+  in.G0[body] = 83.0;
   in.initial_v = quadratic_in_x_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
@@ -188,8 +188,8 @@ static void LGR_NOINLINE swinging_plate() {
   double const G = E / (2.0 * (1.0 + nu));
   double const w = (pi / 2.0) * std::sqrt((2.0 * G) / rho);
   in.end_time = 0.16;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto swinging_plate_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -240,8 +240,8 @@ static void LGR_NOINLINE spinning_cube() {
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   in.CFL = 0.9;
   in.time_integrator = VELOCITY_VERLET;
@@ -261,8 +261,8 @@ static void LGR_NOINLINE elastic_wave_2d() {
   in.y_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
@@ -295,8 +295,8 @@ static void LGR_NOINLINE elastic_wave_3d() {
   in.z_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 1.0e9;
-  in.G0 = 0.0;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
   static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
@@ -342,8 +342,8 @@ static void LGR_NOINLINE swinging_cube() {
   double const G = E / (2.0 * (1.0 + nu));
   double const w = pi * std::sqrt((3.0 * G) / (4.0 * rho));
   in.end_time = 0.10;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto swinging_cube_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -406,8 +406,8 @@ static void LGR_NOINLINE bending_beam() {
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
   in.end_time = 1.0;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto bending_beam_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -456,8 +456,8 @@ static void LGR_NOINLINE twisting_column() {
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto twisting_column_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -505,8 +505,8 @@ static void LGR_NOINLINE tet_piston() {
   in.enable_neo_Hookean[body] = true;
   double const K = 1.0;
   double const G = 1.0;
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto tet_piston_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -642,8 +642,8 @@ static void LGR_NOINLINE spinning_composite_cube() {
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
   in.enable_neo_Hookean[body] = true;
-  in.K0 = 200.0e9;
-  in.G0 = 75.0e9;
+  in.K0[body] = 200.0e9;
+  in.G0[body] = 75.0e9;
   in.initial_v = spin_v;
   in.CFL = 0.9;
   in.time_integrator = VELOCITY_VERLET;
@@ -671,8 +671,8 @@ static void LGR_NOINLINE twisting_composite_column() {
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  in.K0 = K;
-  in.G0 = G;
+  in.K0[body] = K;
+  in.G0[body] = G;
   auto twisting_column_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,

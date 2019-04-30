@@ -201,30 +201,33 @@ static void LGR_NOINLINE find_max_stable_dt(state& s)
   s.max_stable_dt = lgr::transform_reduce(s.element_dt, init, lgr::minimum<double>(), lgr::identity<double>());
 }
 
-static void LGR_NOINLINE neo_Hookean(input const& in, state& s) {
+static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index const material) {
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
-  auto const K0 = in.K0;
-  auto const G0 = in.G0;
-  auto functor = [=] (point_index const point) {
-    matrix3x3<double> const F = points_to_F_total[point];
-    auto const J = determinant(F);
-    auto const Jinv = 1.0 / J;
-    auto const half_K0 = 0.5 * K0;
-    auto const Jm13 = 1.0 / std::cbrt(J);
-    auto const Jm23 = Jm13 * Jm13;
-    auto const Jm53 = (Jm23 * Jm23) * Jm13;
-    auto const B = self_times_transpose(F);
-    auto const devB = deviator(B);
-    auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
-    points_to_sigma[point] = sigma;
-    auto const K = half_K0 * (J + Jinv);
-    points_to_K[point] = K;
-    points_to_G[point] = G0;
+  auto const K0 = in.K0[material];
+  auto const G0 = in.G0[material];
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    for (auto const point : elements_to_points[element]) {
+      matrix3x3<double> const F = points_to_F_total[point];
+      auto const J = determinant(F);
+      auto const Jinv = 1.0 / J;
+      auto const half_K0 = 0.5 * K0;
+      auto const Jm13 = 1.0 / std::cbrt(J);
+      auto const Jm23 = Jm13 * Jm13;
+      auto const Jm53 = (Jm23 * Jm23) * Jm13;
+      auto const B = self_times_transpose(F);
+      auto const devB = deviator(B);
+      auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
+      points_to_sigma[point] = sigma;
+      auto const K = half_K0 * (J + Jinv);
+      points_to_K[point] = K;
+      points_to_G[point] = G0;
+    }
   };
-  lgr::for_each(s.points, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
 static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
@@ -515,7 +518,7 @@ static void LGR_NOINLINE volume_average_p(state& s) {
 
 static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
   if (in.enable_neo_Hookean[material]) {
-    neo_Hookean(in, s);
+    neo_Hookean(in, s, material);
   }
   if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy) {
