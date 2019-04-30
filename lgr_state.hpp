@@ -57,7 +57,7 @@ class state {
   device_vector<double, element_index> h_art{devpool}; // characteristic element length used for artificial viscosity
   device_vector<double, point_index> nu_art{devpool}; // artificial kinematic viscosity scalar
   device_vector<double, point_index> element_dt{devpool}; // stable time step of each element
-  device_vector<double, node_index> e_h{devpool}; // nodal specific internal energy
+  host_vector<device_vector<double, node_index>, material_index> e_h; // nodal specific internal energy
   device_vector<double, node_index> e_h_dot{devpool}; // time derivative of nodal specific internal energy
   device_vector<double, node_index> rho_h{devpool}; // nodal density
   device_vector<material_index, element_index> material{devpool}; // element material

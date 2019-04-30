@@ -238,12 +238,12 @@ void update_e_h_dot(state& s, material_index const material)
   lgr::for_each(s.node_sets[material], functor);
 }
 
-void nodal_ideal_gas(input const& in, state& s) {
+void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   auto const nodes_to_rho = s.rho_h.cbegin();
-  auto const nodes_to_e = s.e_h.cbegin();
+  auto const nodes_to_e = s.e_h[material].cbegin();
   auto const nodes_to_p = s.p_h.begin();
   auto const nodes_to_K = s.K_h.begin();
-  auto const gamma = in.gamma[material_index(0)];
+  auto const gamma = in.gamma[material];
   auto functor = [=] (node_index const node) {
     double const rho = nodes_to_rho[node];
     assert(rho > 0.0);
@@ -255,7 +255,7 @@ void nodal_ideal_gas(input const& in, state& s) {
     auto const K = gamma * p;
     nodes_to_K[node] = K;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
 void update_nodal_density(state& s, material_index const material)
