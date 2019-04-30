@@ -123,15 +123,16 @@ void compute_nodal_materials(input const& in, state& s) {
 }
 
 void collect_node_sets(input const& in, state& s) {
-  s.node_sets.resize(in.materials.size() + in.boundaries.size(), s.devpool);
+  counting_range<material_index> const all_materials(in.materials.size() + in.boundaries.size());
+  s.node_sets.resize(all_materials.size(), s.devpool);
   assert(s.nodal_materials.size() == s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.cbegin();
-  for (auto const boundary : in.boundaries) {
+  for (auto const material : all_materials) {
     auto is_in_functor = [=](node_index const node) -> int {
       material_set const materials = nodes_to_materials[node];
-      return (materials.contains(material_set(boundary))) ? 1 : 0;
+      return (materials.contains(material_set(material))) ? 1 : 0;
     };
-    collect_set(s.nodes, is_in_functor, s.node_sets[boundary]);
+    collect_set(s.nodes, is_in_functor, s.node_sets[material]);
   }
 }
 
