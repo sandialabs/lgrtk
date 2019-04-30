@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <lgr_index.hpp>
 
 namespace lgr {

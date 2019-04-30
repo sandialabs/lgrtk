@@ -50,7 +50,8 @@ class state {
   device_vector<double, point_index> rho{devpool}; // element density
   device_vector<double, point_index> e{devpool}; // element specific internal energy
   device_vector<double, point_index> rho_e_dot{devpool}; // time derivative of internal energy density
-  device_vector<double, node_index> m{devpool}; // nodal mass
+  device_vector<double, node_index> mass{devpool}; // total lumped nodal mass
+  host_vector<device_vector<double, node_index>, material_index> material_mass; // per-material lumped nodal mass
   device_vector<vector3<double>, node_index> a{devpool}; // nodal acceleration
   device_vector<double, element_index> h_min{devpool}; // minimum characteristic element length, used for stable time step
   device_vector<double, element_index> h_art{devpool}; // characteristic element length used for artificial viscosity
