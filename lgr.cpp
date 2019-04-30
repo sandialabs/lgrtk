@@ -846,9 +846,9 @@ static void LGR_NOINLINE triple_point() {
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 14;
+  in.elements_along_x = 28;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 6;
+  in.elements_along_y = 12;
   in.y_domain_size = 3.0;
   in.rho0[right_top] = 0.1;
   in.rho0[right_bottom] = 1.0;
@@ -887,7 +887,7 @@ static void LGR_NOINLINE triple_point() {
 }
 
 int main() {
-  if ((0)) lgr::elastic_wave();
+  if ((1)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -900,11 +900,11 @@ int main() {
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::tet_piston();
   if ((0)) lgr::Noh_1D();
-  if ((0)) lgr::Noh_2D();
+  if ((1)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
-  if ((0)) lgr::twisting_composite_column();
+  if ((1)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((0)) lgr::triple_point();
 }

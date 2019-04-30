@@ -705,7 +705,8 @@ void run(input const& in) {
   if (in.x_transform) in.x_transform(&s.x);
   collect_node_sets(in, s);
   resize_state(in, s);
-  set_materials(in, s);
+  assign_element_materials(in, s);
+  if (in.enable_adapt) compute_nodal_materials(in, s);
   collect_element_sets(in, s);
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
@@ -737,13 +738,15 @@ void run(input const& in) {
       if (in.enable_adapt && (s.n % 10 == 0)) {
         output_file(in, file_output_index, s);
         ++file_output_index;
-        adapt(in, s);
-        resize_state(in, s);
-        collect_element_sets(in, s);
-        collect_node_sets(in, s);
-        common_initialization(in, s);
-        output_file(in, file_output_index, s);
-        ++file_output_index;
+        for (int i = 0; i < 3; ++i) {
+          adapt(in, s);
+          resize_state(in, s);
+          collect_element_sets(in, s);
+          collect_node_sets(in, s);
+          common_initialization(in, s);
+          output_file(in, file_output_index, s);
+          ++file_output_index;
+        }
       }
       ++s.n;
     }

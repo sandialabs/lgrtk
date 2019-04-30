@@ -2,7 +2,7 @@
 
 namespace lgr {
 
-template <class Integral, class Tag>
+template <class Integral, class Derived>
 class index {
   Integral i;
 public:
@@ -12,55 +12,55 @@ public:
   inline index(index&&) noexcept = default;
   inline index& operator=(index const&) noexcept = default;
   inline index& operator=(index&&) noexcept = default;
-  constexpr inline Tag operator+(Tag const& other) const noexcept {
-    return Tag(i + other.i);
+  constexpr inline Derived operator+(Derived const& other) const noexcept {
+    return Derived(i + other.i);
   }
-  constexpr inline Tag operator-(Tag const& other) const noexcept {
-    return Tag(i - other.i);
+  constexpr inline Derived operator-(Derived const& other) const noexcept {
+    return Derived(i - other.i);
   }
-  inline Tag& operator++() noexcept {
+  inline Derived& operator++() noexcept {
     ++i;
-    return *static_cast<Tag*>(this);
+    return *static_cast<Derived*>(this);
   }
-  inline Tag operator++(int) const noexcept {
+  inline Derived operator++(int) const noexcept {
     auto const old = *this;
     ++i;
     return old;
   }
-  inline Tag& operator--() noexcept {
+  inline Derived& operator--() noexcept {
     --i;
-    return *static_cast<Tag*>(this);
+    return *static_cast<Derived*>(this);
   }
-  inline Tag operator--(int) const noexcept {
+  inline Derived operator--(int) const noexcept {
     auto const old = *this;
     --i;
     return old;
   }
-  constexpr inline bool operator==(Tag const& other) const noexcept {
+  constexpr inline bool operator==(Derived const& other) const noexcept {
     return i == other.i;
   }
-  constexpr inline bool operator!=(Tag const& other) const noexcept {
+  constexpr inline bool operator!=(Derived const& other) const noexcept {
     return i != other.i;
   }
-  constexpr inline bool operator>(Tag const& other) const noexcept {
+  constexpr inline bool operator>(Derived const& other) const noexcept {
     return i > other.i;
   }
-  constexpr inline bool operator<(Tag const& other) const noexcept {
+  constexpr inline bool operator<(Derived const& other) const noexcept {
     return i < other.i;
   }
-  constexpr inline bool operator>=(Tag const& other) const noexcept {
+  constexpr inline bool operator>=(Derived const& other) const noexcept {
     return i >= other.i;
   }
-  constexpr inline bool operator<=(Tag const& other) const noexcept {
+  constexpr inline bool operator<=(Derived const& other) const noexcept {
     return i <= other.i;
   }
-  inline Tag& operator+=(Tag const& other) noexcept {
+  inline Derived& operator+=(Derived const& other) noexcept {
     i += other.i;
-    return *static_cast<Tag*>(this);
+    return *static_cast<Derived*>(this);
   }
-  inline Tag& operator-=(Tag const& other) noexcept {
+  inline Derived& operator-=(Derived const& other) noexcept {
     i -= other.i;
-    return *static_cast<Tag*>(this);
+    return *static_cast<Derived*>(this);
   }
   explicit constexpr inline operator Integral() const noexcept {
     return i;
@@ -69,11 +69,11 @@ public:
   explicit inline operator size_t_std() const noexcept {
     return size_t_std(i);
   }
-  constexpr inline Tag operator*(Integral const n) const noexcept {
-    return Tag(i * n);
+  constexpr inline Derived operator*(Integral const n) const noexcept {
+    return Derived(i * n);
   }
-  constexpr inline Tag operator/(Integral const n) const noexcept {
-    return Tag(i / n);
+  constexpr inline Derived operator/(Integral const n) const noexcept {
+    return Derived(i / n);
   }
 };
 

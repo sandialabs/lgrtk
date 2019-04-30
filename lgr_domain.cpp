@@ -68,7 +68,7 @@ void collect_node_set(
   collect_set(nodes, is_in, *node_set_nodes);
 }
 
-void set_materials(input const& in, state& s) {
+void assign_element_materials(input const& in, state& s) {
   lgr::fill(s.material, material_index(0));
   device_vector<vector3<double>, element_index>
     centroid_vector(s.elements.size(), s.devpool);
@@ -90,9 +90,50 @@ void set_materials(input const& in, state& s) {
   lgr::for_each(s.elements, centroid_functor);
   for (auto const& pair : in.material_domains) {
     auto const material = pair.first;
+    assert(default_material <= material);
+    assert(material <= max_user_material);
     auto const& domain = pair.second;
     domain->mark(centroid_vector, material, &s.material);
   }
+}
+
+void compute_nodal_materials(input const& in, state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const elements_to_materials = s.material.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  s.nodal_materials.resize(s.nodes.size());
+  auto const nodes_to_materials = s.nodal_materials.begin();
+  vector3<double> const x_maxima(in.x_domain_size, in.y_domain_size, in.z_domain_size);
+  int dimension = -1;
+  switch (in.element) {
+    case BAR: dimension = 1; break;
+    case TRIANGLE: dimension = 2; break;
+    case TETRAHEDRON: dimension = 3; break;
+    case COMPOSITE_TETRAHEDRON: dimension = 3; break;
+  }
+  auto functor = [=](node_index const node) {
+    auto const node_elements = nodes_to_node_elements[node];
+    auto node_materials = material_set::none();
+    for (auto const node_element : node_elements) {
+      element_index const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_materials[element];
+      node_materials = node_materials | material_set(element_material);
+    }
+    vector3<double> const x = nodes_to_x[node];
+    constexpr double tol = 1.0e-10;
+    if ((std::abs(x(0)) < tol) || (std::abs(x(0) - x_maxima(0)) < tol)) {
+      node_materials = node_materials | material_set(x_boundary_material);
+    }
+    if ((std::abs(x(1)) < tol) || (std::abs(x(1) - x_maxima(1)) < tol)) {
+      node_materials = node_materials | material_set(y_boundary_material);
+    }
+    if ((std::abs(x(2)) < tol) || (std::abs(x(2) - x_maxima(2)) < tol)) {
+      node_materials = node_materials | material_set(z_boundary_material);
+    }
+    nodes_to_materials[node] = node_materials;
+  };
+  for_each(s.nodes, functor);
 }
 
 void collect_node_sets(input const& in, state& s) {

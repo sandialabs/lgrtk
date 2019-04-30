@@ -64,6 +64,7 @@ class state {
   device_vector<double, node_index> e_h_dot{devpool}; // time derivative of nodal specific internal energy
   device_vector<double, node_index> rho_h{devpool}; // nodal density
   device_vector<material_index, element_index> material{devpool}; // element material
+  device_vector<material_set, node_index> nodal_materials{devpool}; // nodal material set
   device_vector<double, element_index> quality{devpool}; // inverse element quality
   device_vector<double, node_index> h_adapt{devpool}; // desired edge length
   std::map<std::string, device_vector<node_index, int>> node_sets;

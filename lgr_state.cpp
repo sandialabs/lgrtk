@@ -51,6 +51,7 @@ void resize_state(input const& in, state& s) {
   if (in.enable_adapt) {
     s.quality.resize(s.elements.size());
     s.h_adapt.resize(s.nodes.size());
+    s.nodal_materials.resize(s.nodes.size());
   }
 }
 
