@@ -75,7 +75,7 @@ static void LGR_NOINLINE update_p_h(state& s, double const dt,
 
 static void LGR_NOINLINE update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
-  auto const nodes_to_m = s.m.cbegin();
+  auto const nodes_to_m = s.mass.cbegin();
   auto const nodes_to_a = s.a.begin();
   auto functor = [=] (node_index const node) {
     vector3<double> const f = nodes_to_f[node];
@@ -559,9 +559,11 @@ static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
 }
 
 static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
-  update_q(in, s);
-  update_e_h_W(s);
-  update_e_h_dot(s);
+  for (auto const material : in.materials) {
+    update_q(in, s);
+    update_e_h_W(s);
+    update_e_h_dot(s, material);
+  }
 }
 
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
@@ -605,7 +607,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_J_averaging) volume_average_J(s);
     if (in.enable_rho_averaging) volume_average_rho(s);
     if (in.enable_nodal_energy) {
-      update_nodal_density(s);
+      for (auto const material : in.materials) {
+        update_nodal_density(s, material);
+      }
       interpolate_rho(s);
     }
     if (in.enable_adapt) {
@@ -694,7 +698,11 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
-  if (in.enable_nodal_energy) update_nodal_density(s);
+  if (in.enable_nodal_energy) {
+    for (auto const material : in.materials) {
+      update_nodal_density(s, material);
+    }
+  }
   initialize_grad_N(in, s);
   if (in.enable_adapt) {
     update_quality(in, s);

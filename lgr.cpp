@@ -854,5 +854,5 @@ int main() {
   if ((0)) lgr::spinning_composite_cube();
   if ((1)) lgr::twisting_composite_column();
   if ((1)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((0)) lgr::triple_point();
 }

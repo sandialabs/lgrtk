@@ -440,19 +440,22 @@ void update_h_art(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE update_nodal_mass_uniform(state& s) {
+static void LGR_NOINLINE update_nodal_mass_uniform(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_V = s.V.cbegin();
-  auto const nodes_to_m = s.m.begin();
+  auto const nodes_to_m = s.material_mass[material].begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const elements_to_points = s.elements * s.points_in_element;
+  auto const elements_to_material = s.material.cbegin();
   auto functor = [=] (node_index const node) {
     double m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
-      auto const element = node_elements_to_elements[node_element];
+      element_index const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_material[element];
+      if (element_material != material) continue;
       for (auto const point : elements_to_points[element]) {
         double const rho = points_to_rho[point];
         double const V = points_to_V[point];
@@ -461,26 +464,29 @@ static void LGR_NOINLINE update_nodal_mass_uniform(state& s) {
     }
     nodes_to_m[node] = m;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s) {
+static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  auto const nodes_to_m = s.m.begin();
+  auto const nodes_to_m = s.material_mass[material].begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const points_in_element = s.points_in_element;
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto const elements_to_material = s.material.cbegin();
   auto functor = [=] (node_index const node) {
     double m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       element_index const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_material[element];
+      if (element_material != material) continue;
       node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       array<vector3<double>, 10> node_coords;
@@ -500,17 +506,31 @@ static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s) {
     }
     nodes_to_m[node] = m;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
 void update_nodal_mass(input const& in, state& s) {
-  switch (in.element) {
-    case BAR:
-    case TRIANGLE:
-    case TETRAHEDRON:
-      update_nodal_mass_uniform(s); break;
-    case COMPOSITE_TETRAHEDRON:
-      update_nodal_mass_composite_tetrahedron(s); break;
+  for (auto const material : in.materials) {
+    switch (in.element) {
+      case BAR:
+      case TRIANGLE:
+      case TETRAHEDRON:
+        update_nodal_mass_uniform(s, material); break;
+      case COMPOSITE_TETRAHEDRON:
+        update_nodal_mass_composite_tetrahedron(s, material); break;
+    }
+  }
+  fill(s.mass, double(0.0));
+  for (auto const material : in.materials) {
+    auto const nodes_to_total = s.mass.begin();
+    auto const nodes_to_partial = s.material_mass[material].cbegin();
+    auto functor = [=] (node_index const node) {
+      double m_total = nodes_to_total[node];
+      double const m_partial = nodes_to_partial[node];
+      m_total = m_total + m_partial;
+      nodes_to_total[node] = m_total;
+    };
+    for_each(s.node_sets[material], functor);
   }
 }
 

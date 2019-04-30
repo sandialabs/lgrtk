@@ -20,7 +20,8 @@ void resize_state(input const& in, state& s) {
   s.rho.resize(s.points.size());
   if (!in.enable_nodal_energy) s.e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
-  s.m.resize(s.nodes.size());
+  s.material_mass.resize(in.materials.size(), s.nodes.size(), s.devpool);
+  s.mass.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());
   if (in.enable_viscosity) {
