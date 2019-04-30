@@ -514,7 +514,7 @@ static void LGR_NOINLINE volume_average_p(state& s) {
 }
 
 static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
-  if (in.enable_neo_Hookean) {
+  if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s);
   }
   if (in.enable_ideal_gas[material]) {

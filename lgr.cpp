@@ -53,7 +53,7 @@ static void LGR_NOINLINE elastic_wave() {
   in.num_file_outputs = 200;
   in.elements_along_x = 1000;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
   in.initial_v = set_exponential_wave_v;
@@ -99,7 +99,7 @@ static void LGR_NOINLINE spinning_square() {
   in.elements_along_y = 1;
   in.y_domain_size = 1.0;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
   in.initial_v = spin_v;
@@ -151,7 +151,7 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.elements_along_y = 8;
   in.y_domain_size = 1.0;
   in.rho0[body] = 1.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 833333.0;
   in.G0 = 83.0;
   in.initial_v = quadratic_in_x_v;
@@ -181,7 +181,7 @@ static void LGR_NOINLINE swinging_plate() {
   in.y_domain_size = 2.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.45;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -239,7 +239,7 @@ static void LGR_NOINLINE spinning_cube() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
   in.initial_v = spin_v;
@@ -260,7 +260,7 @@ static void LGR_NOINLINE elastic_wave_2d() {
   in.elements_along_y = 1;
   in.y_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
   in.initial_v = set_exponential_wave_v;
@@ -294,7 +294,7 @@ static void LGR_NOINLINE elastic_wave_3d() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0e-3;
   in.rho0[body] = 1000.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 1.0e9;
   in.G0 = 0.0;
   in.initial_v = set_exponential_wave_v;
@@ -335,7 +335,7 @@ static void LGR_NOINLINE swinging_cube() {
   in.z_domain_size = 2.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.45;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -400,7 +400,7 @@ static void LGR_NOINLINE bending_beam() {
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.499;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -451,7 +451,7 @@ static void LGR_NOINLINE twisting_column() {
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.499;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -502,7 +502,7 @@ static void LGR_NOINLINE tet_piston() {
   in.z_domain_size = 1.0;
   double const rho = 1.0;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const K = 1.0;
   double const G = 1.0;
   in.K0 = K;
@@ -641,7 +641,7 @@ static void LGR_NOINLINE spinning_composite_cube() {
   in.elements_along_z = 1;
   in.z_domain_size = 1.0;
   in.rho0[body] = 7800.0;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   in.K0 = 200.0e9;
   in.G0 = 75.0e9;
   in.initial_v = spin_v;
@@ -666,7 +666,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   in.z_domain_size = 1.0;
   double const rho = 1.1e3;
   in.rho0[body] = rho;
-  in.enable_neo_Hookean = true;
+  in.enable_neo_Hookean[body] = true;
   double const nu = 0.499;
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
@@ -890,7 +890,7 @@ static void LGR_NOINLINE triple_point() {
 }
 
 int main() {
-  if ((0)) lgr::elastic_wave();
+  if ((1)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();

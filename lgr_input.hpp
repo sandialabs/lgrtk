@@ -53,7 +53,7 @@ class input {
   bool output_to_command_line = true;
   pinned_vector<double, material_index> rho0;
   pinned_vector<double, material_index> e0;
-  bool enable_neo_Hookean = false;
+  pinned_vector<bool, material_index> enable_neo_Hookean;
   double K0;
   double G0 = 0.0;
   pinned_vector<bool, material_index> enable_ideal_gas;
@@ -82,6 +82,7 @@ class input {
     :material_count(material_count_in)
     ,rho0(material_count_in, pinpool)
     ,e0(material_count_in, double(0.0), pinpool)
+    ,enable_neo_Hookean(material_count_in, false, pinpool)
     ,enable_ideal_gas(material_count_in, false, pinpool)
     ,gamma(material_count_in, pinpool)
   {}
