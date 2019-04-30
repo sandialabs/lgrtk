@@ -19,7 +19,6 @@ void resize_state(input const& in, state& s) {
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
   if (!in.enable_nodal_energy) s.e.resize(s.points.size());
-  if (!in.enable_nodal_energy) s.old_e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
   s.m.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
