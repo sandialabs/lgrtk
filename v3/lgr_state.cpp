@@ -38,7 +38,6 @@ void resize_state(input const& in, state& s) {
     s.K_h.resize(s.nodes.size());
     s.p_h.resize(s.nodes.size());
     s.e_h.resize(s.nodes.size());
-    s.old_e_h.resize(s.nodes.size());
     s.e_h_dot.resize(s.nodes.size());
     s.rho_h.resize(s.nodes.size());
     s.q.resize(s.points.size());
