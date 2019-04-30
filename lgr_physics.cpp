@@ -535,7 +535,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
 static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   lgr::fill(s.sigma, symmetric3x3<double>::zero());
   lgr::fill(s.G, double(0.0));
-  for (material_index material(0); material < in.material_count; ++material) {
+  for (auto const material : in.materials) {
     update_single_material_state(in, s, material);
   }
 }
