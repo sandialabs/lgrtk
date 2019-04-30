@@ -710,10 +710,10 @@ void run(input const& in) {
   state s;
   build_mesh(in, s);
   if (in.x_transform) in.x_transform(&s.x);
-  collect_node_sets(in, s);
   resize_state(in, s);
   assign_element_materials(in, s);
-  if (in.enable_adapt) compute_nodal_materials(in, s);
+  compute_nodal_materials(in, s);
+  collect_node_sets(in, s);
   collect_element_sets(in, s);
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
