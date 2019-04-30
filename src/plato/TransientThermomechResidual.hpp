@@ -30,7 +30,7 @@
 template<typename EvaluationType, typename IndicatorFunctionType>
 class TransientThermomechResidual : 
   public Plato::SimplexThermomechanics<EvaluationType::SpatialDim>,
-  public AbstractVectorFunctionInc<EvaluationType>
+  public Plato::AbstractVectorFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -47,9 +47,9 @@ class TransientThermomechResidual :
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractVectorFunctionInc<EvaluationType>::mMesh;
-    using AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
-    using AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -61,9 +61,9 @@ class TransientThermomechResidual :
     Plato::Scalar m_cellSpecificHeat;
     
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim, m_numVoigtTerms,  IndicatorFunctionType> m_applyStressWeighting;
-    ApplyWeighting<SpaceDim, SpaceDim,         IndicatorFunctionType> m_applyFluxWeighting;
-    ApplyWeighting<SpaceDim, NThrmDims,        IndicatorFunctionType> m_applyMassWeighting;
+    Plato::ApplyWeighting<SpaceDim, m_numVoigtTerms,  IndicatorFunctionType> m_applyStressWeighting;
+    Plato::ApplyWeighting<SpaceDim, SpaceDim,         IndicatorFunctionType> m_applyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim, NThrmDims,        IndicatorFunctionType> m_applyMassWeighting;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>> m_boundaryLoads;
@@ -79,7 +79,7 @@ class TransientThermomechResidual :
       Plato::DataMap& aDataMap,
       Teuchos::ParameterList& aProblemParams,
       Teuchos::ParameterList& aPenaltyParams) :
-     AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap,
+     Plato::AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap,
         {"Displacement X", "Displacement Y", "Displacement Z", "Temperature"}),
      m_indicatorFunction(aPenaltyParams),
      m_applyStressWeighting(m_indicatorFunction),
@@ -154,16 +154,16 @@ class TransientThermomechResidual :
 
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
-      TMKinematics<SpaceDim>                   kinematics;
-      TMKinetics<SpaceDim>                     kinetics(m_materialModel);
+      Plato::TMKinematics<SpaceDim>                   kinematics;
+      Plato::TMKinetics<SpaceDim>                     kinetics(m_materialModel);
 
       Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
 
-      FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
-      StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
+      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
 
-      ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
-      ProjectToNode<SpaceDim, m_numDofsPerNode, TDofOffset> projectThermalContent;
+      Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
+      Plato::ProjectToNode<SpaceDim, m_numDofsPerNode, TDofOffset> projectThermalContent;
       
       auto basisFunctions = m_cubatureRule->getBasisFunctions();
     

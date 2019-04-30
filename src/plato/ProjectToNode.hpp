@@ -3,6 +3,7 @@
 
 #include "plato/Simplex.hpp"
 
+namespace Plato {
 
 /******************************************************************************/
 /*! Project to node functor.
@@ -60,4 +61,6 @@ class ProjectToNode : public Simplex<SpaceDim>
         }
     }
 };
+
+}
 #endif

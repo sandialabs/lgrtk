@@ -81,7 +81,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
 
   }, "state");
 
-  WorksetBase<Plato::SimplexThermomechanics<spaceDim>> worksetBase(*mesh);
+  Plato::WorksetBase<Plato::SimplexThermomechanics<spaceDim>> worksetBase(*mesh);
 
   Plato::ScalarArray3DT<Plato::Scalar>     gradient("gradient",numCells,nodesPerCell,spaceDim);
   Plato::ScalarMultiVectorT<Plato::Scalar> tStrain("strain", numCells, numVoigtTerms);
@@ -125,16 +125,16 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto cellSpecificHeat = materialModel->getSpecificHeat();
 
   Plato::ComputeGradientWorkset<spaceDim>  computeGradient;
-  TMKinematics<spaceDim>                   kinematics;
-  TMKinetics<spaceDim>                     kinetics(materialModel);
+  Plato::TMKinematics<spaceDim>                   kinematics;
+  Plato::TMKinetics<spaceDim>                     kinetics(materialModel);
 
   Plato::InterpolateFromNodal<spaceDim, dofsPerNode, TDofOffset> interpolateFromNodal;
 
-  FluxDivergence  <spaceDim, dofsPerNode, TDofOffset> fluxDivergence;
-  StressDivergence<spaceDim, dofsPerNode> stressDivergence;
+  Plato::FluxDivergence  <spaceDim, dofsPerNode, TDofOffset> fluxDivergence;
+  Plato::StressDivergence<spaceDim, dofsPerNode> stressDivergence;
 
-  ThermalContent computeThermalContent(cellDensity, cellSpecificHeat);
-  ProjectToNode<spaceDim, dofsPerNode, TDofOffset> projectThermalContent;
+  Plato::ThermalContent computeThermalContent(cellDensity, cellSpecificHeat);
+  Plato::ProjectToNode<spaceDim, dofsPerNode, TDofOffset> projectThermalContent;
 
   Plato::LinearTetCubRuleDegreeOne<spaceDim> cubatureRule;
 
@@ -392,45 +392,21 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
 
   }, "state");
 
-  // create mesh based density from host data
-  //
-//  std::vector<Plato::Scalar> z_host( mesh->nverts(), 1.0 );
-//  Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-//    z_host_view(z_host.data(),z_host.size());
-//  auto z = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), z_host_view);
-
-
-  // create mesh based temperature from host data
-  //
-//  std::vector<Plato::Scalar> T_host( mesh->nverts() );
-//  Plato::Scalar Tval = 0.0, dval = 1.0000;
-//  for( auto& val : T_host ) val = (Tval += dval);
-//  Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-//    T_host_view(T_host.data(),T_host.size());
-//  auto T = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), T_host_view);
-
-//  std::vector<Plato::Scalar> Tprev_host( mesh->nverts() );
-//  Tval = 0.0; dval = 0.5000;
-//  for( auto& val : Tprev_host ) val = (Tval += dval);
-//  Kokkos::View<Plato::Scalar*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>
-//    Tprev_host_view(Tprev_host.data(),Tprev_host.size());
-//  auto Tprev = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), Tprev_host_view);
-
 
   // create input
   //
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
-    "<ParameterList name='Plato Problem'>                                           \n"
-    "  <Parameter name='PDE Constraint' type='string' value='First Order'/>         \n"
-    "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                   \n"
-    "  <ParameterList name='First Order'>                                           \n"
-    "    <ParameterList name='Penalty Function'>                                    \n"
-    "      <Parameter name='Exponent' type='double' value='1.0'/>                   \n"
-    "      <Parameter name='Type' type='string' value='SIMP'/>                      \n"
-    "    </ParameterList>                                                           \n"
-    "  </ParameterList>                                                             \n"
-    "  <ParameterList name='Material Model'>                                        \n"
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <Parameter name='PDE Constraint' type='string' value='First Order'/>                  \n"
+    "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                            \n"
+    "  <ParameterList name='First Order'>                                                    \n"
+    "    <ParameterList name='Penalty Function'>                                             \n"
+    "      <Parameter name='Exponent' type='double' value='1.0'/>                            \n"
+    "      <Parameter name='Type' type='string' value='SIMP'/>                               \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
     "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
     "      <Parameter name='Mass Density' type='double' value='0.3'/>                        \n"
     "      <Parameter name='Specific Heat' type='double' value='1.0e6'/>                     \n"
@@ -440,12 +416,12 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
     "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='1000.0'/>\n"
     "      <Parameter  name='Reference Temperature' type='double' value='0.0'/>              \n"
     "    </ParameterList>                                                                    \n"
-    "  </ParameterList>                                                                    \n"
-    "  <ParameterList name='Time Integration'>                                      \n"
-    "    <Parameter name='Number Time Steps' type='int' value='3'/>                 \n"
-    "    <Parameter name='Time Step' type='double' value='0.5'/>                    \n"
-    "  </ParameterList>                                                             \n"
-    "</ParameterList>                                                               \n"
+    "  </ParameterList>                                                                      \n"
+    "  <ParameterList name='Time Integration'>                                               \n"
+    "    <Parameter name='Number Time Steps' type='int' value='3'/>                          \n"
+    "    <Parameter name='Time Step' type='double' value='0.5'/>                             \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
   );
 
   // create constraint evaluator
@@ -465,15 +441,13 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Kokkos::deep_copy( residual_Host, residual );
 
   std::vector<double> residual_gold = { 
-   -2.124953906250000e6, -2.062440625000000e6, -6.249867187500000e5,
-   -2.531164257812500e6, -8.124761718750000e5, -6.249874999999999e5,
-   -6.562197265625000e5, -1.874828125000000e5,  9.375644531250000e5,
-   -2.531119726562500e6, -1.374948437500000e6, -3.749796874999999e5,
-    9.379042968750000e4, -9.372355468750008e5, -1.873796874999993e5,
-    4.375738281250000e5,  1.875119921875000e6,  1.250945312500003e5,
-    1.875804687500000e5,  1.876246093749995e5,  2.250182421875000e6,
-    2.625173828125000e6,  1.437553515625000e6,  2.500351562500002e5,
-    6.250726562499998e5,  3.375119921875000e6,  6.250359375000002e5
+   -18669.59575320513,   -14903.70552884615,   -19551.14663461538,    0.02413541666666667, 
+   -17427.51482371794,   -15745.01001602564,   -16586.51762820513,    0.03118750000000000,
+    1562.601562500000,   -6370.137620192306,   -1682.848557692307,    0.006822916666666667,
+   -20191.77644230769,   -9695.429487179485,   -25641.05689102564,    0.04497656250000000,
+   -3164.858373397435,   -3205.112580128204,   -120.4136618589738,    0.01215104166666667,
+   -2563.956730769230,   -841.4164663461538,   -3325.396033653845,    0.006354166666666668,
+   -1562.213541666663,   -40.32972756410084,   -6570.533653846154,    0.01607031250000000
   };
 
   for(int iNode=0; iNode<int(residual_gold.size()); iNode++){
@@ -494,17 +468,22 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Kokkos::deep_copy(jac_entriesHost, jac_entries);
 
   std::vector<Plato::Scalar> gold_jac_entries = {
-   1.250023437500000e5,  -4.166588541666666e4,  -4.166588541666666e4,
-   7.812500000000000e-1,  7.812500000000000e-1,  2.343750000000000,
-   7.812500000000000e-1, -4.166588541666666e4,  -4.166588541666666e4,
-   2.083364583333333e5,  -6.249882812500000e4,  -4.166588541666666e4,
-   7.812500000000000e-1,  1.562500000000000,     2.343750000000000,
-  -6.249882812500000e4,   7.812500000000000e-1, -4.166588541666666e4,
-   8.333411458333333e4,  -2.083294270833333e4,   7.812500000000000e-1,
-  -2.083294270833333e4,   7.812500000000000e-1, -6.249882812500000e4,
-   3.750046875000000e5,  -6.249882812500000e4,  -6.249882812500000e4,
-   7.812500000000000e-1, -6.249882812500000e4,  -1.249976562500000e5,
-   1.562500000000000,     2.343750000000000,     1.562500000000000
+    8.81410256410256195e9,  0.00000000000000000,    0.00000000000000000,   13020.8333333333321, 
+    0.00000000000000000,    8.81410256410256195e9,  0.00000000000000000,   13020.8333333333321,
+    0.00000000000000000,    0.00000000000000000,    8.81410256410256195e9, 13020.8333333333321,
+    0.00000000000000000,    0.00000000000000000,    0.00000000000000000,   2468.750000000000000,
+   -1.60256410256410241e9,  8.01282051282051206e8,  0.00000000000000000,   0.00000000000000000,
+    1.20192307692307663e9, -5.60897435897435760e9,  1.20192307692307663e9, 13020.8333333333321, 
+    0.00000000000000000,    8.01282051282051206e8, -1.60256410256410241e9, 0.00000000000000000,
+    0.00000000000000000,    0.00000000000000000,    0.00000000000000000,   739.583333333333371,
+   -1.60256410256410241e9,  0.00000000000000000,    8.01282051282051206e8, 0.00000000000000000,
+    0.00000000000000000,   -1.60256410256410241e9,  8.01282051282051206e8, 0.00000000000000000,
+    1.20192307692307663e9,  1.20192307692307663e9, -5.60897435897435760e9, 13020.8333333333321,
+    0.00000000000000000,    0.00000000000000000,    0.00000000000000000,   739.583333333333371,
+    0.00000000000000000,    8.01282051282051206e8,  8.01282051282051206e8, 0.00000000000000000,
+    1.20192307692307663e9,  0.00000000000000000,   -2.00320512820512772e9, 6510.41666666666606,
+    1.20192307692307663e9, -2.00320512820512772e9,  0.00000000000000000,   6510.41666666666606,
+    0.00000000000000000,    0.00000000000000000,    0.00000000000000000,   781.250000000000000
   };
 
   int jac_entriesSize = gold_jac_entries.size();
@@ -522,17 +501,10 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Kokkos::deep_copy(jac_p_entriesHost, jac_p_entries);
 
   std::vector<Plato::Scalar> gold_jac_p_entries = {
-    1.249976562500000e5,  -4.166744791666666e4,  -4.166744791666666e4,
-   -7.812500000000000e-1, -7.812500000000000e-1, -2.343750000000000,
-   -7.812500000000000e-1, -4.166744791666666e4,  -4.166744791666666e4,
-   2.083302083333333e5,   -6.250117187500000e4,  -4.166744791666666e4,
-   -7.812500000000000e-1, -1.562500000000000,    -2.343750000000000,
-   -6.250117187500000e4,  -7.812500000000000e-1, -4.166744791666666e4,
-   8.333255208333333e4,   -2.083372395833333e4,  -7.812500000000000e-1,
-   -2.083372395833333e4,  -7.812500000000000e-1, -6.250117187500000e4,
-   3.749953125000000e5,   -6.250117187500000e4,  -6.250117187500000e4,
-   -7.812500000000000e-1, -6.250117187500000e4,  -1.250023437500000e5,
-   -1.562500000000000,    -2.343750000000000,    -1.562500000000000
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -2218.75000000000000,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -822.916666666666629,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -822.916666666666629,
+   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -781.250000000000000
   };
 
   int jac_p_entriesSize = gold_jac_p_entries.size();
@@ -550,17 +522,10 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Kokkos::deep_copy(grad_entriesHost, grad_entries);
 
   std::vector<Plato::Scalar> gold_grad_entries = {
-    -5.31238476562500000e5,  1.56253027343750000e5, -1.56247070312500000e5, 
-    -1.79685107421875000e5, -1.79683349609375000e5,  9.37615234374999854e4, 
-     2.50004980468750000e5,  5.46880566406250000e5, -1.56220703125000000e4, 
-    -5.15610156250000000e5, -1.17183496093749985e5, -1.56246679687500000e5, 
-    -1.32810009765625000e5,  1.56322265624999709e4,  4.68869140625000437e4, 
-     5.85945019531250000e5,  2.89067626953124942e5, -1.56216796875000018e4, 
-    -1.56246679687500000e5, -6.24987792968750073e4,  1.56283203125000146e4, 
-     2.18752099609374971e5, -7.03101074218750000e4, -3.90584960937500000e4, 
-    -6.32791064453125000e5, -7.81194335937500000e4, -1.40620263671875000e5, 
-    -1.56246874999999971e5,  1.79692822265625000e5,  4.06261132812499884e5, 
-     1.56257324218750058e5,  1.56262109375000000e5,  2.18758593749999971e5
+   -4667.39893830128131, -3725.92638221153720, -4887.78665865384573, 0.00603385416666666653,
+   -651.022135416666629,  2003.16997195512795,  1051.69831730769238, 0.00163411458333333312,
+    390.647786458333599, -1592.53700921474319, -420.706931089743875, 0.00147135416666666660,
+   -701.095102163461092, -50.0911959134616325, -1231.98677884615336, 0.00114127604166666652
   };
 
   int grad_entriesSize = gold_grad_entries.size();
@@ -578,18 +543,18 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Kokkos::deep_copy(grad_x_entriesHost, grad_x_entries);
 
   std::vector<lgr::Scalar> gold_grad_x_entries = {
-    -5.687544531250000e6,  8.749757812500000e5, -6.252343749999994e4, 
-     1.875000000000000e5,  7.499757812499998e5, -5.625000000000002e5, 
-     1.812500000000000e6, -4.375000000000001e5,  1.499976562500000e6, 
-    -5.625000000000000e5,  9.999890625000000e5,  9.999917968749999e5, 
-     1.749980078125000e6,  1.749986718750000e6, -2.062500000000000e6, 
-     8.124554687500000e5,  7.499757812500000e5,  1.937476562500000e6, 
-    -1.875246093750001e5, -1.625000000000000e6, -1.875152343750000e5, 
-     1.874955468749999e6, -3.062500000000000e6, -1.562500000000000e6, 
-     1.937484765625000e6, -3.125082031250000e5, -1.249976562500000e6, 
-    -9.375060156250000e6,  1.874967968750000e6, -6.250031250000001e5, 
-     1.687500000000000e6,  1.624967968750000e6, -4.374917968749998e5, 
-     1.812500000000000e6, -4.374999999999999e5,  1.499973437500000e6
+   -34615.3846153846025, -37980.7692307692196, -79807.6923076922831, -0.0267395833333333305,
+    11858.9743589743539, -8333.33333333333394,  13942.3076923076842, -0.0123645833333333316,
+   -160.256410256407435,  480.769230769233445, -2884.61538461538294, -0.0122083333333333315,
+   -320.512820512819644, -4727.40785256410163, -4647.43589743589473,  0.0000624999999999999742,
+    10015.8693910256370,  16666.6666666666642,  2804.36217948717967, -0.0124062499999999989,
+   -6570.51282051281851, -7131.28525641025590, -320.512820512821236, -0.000187499999999999950, 
+   -19391.0256410256334,  5929.48717948717967,  41426.4643429487041,  0.000604166666666666480,
+   -160.256410256411073, -4647.43589743589564, -14503.1165865384537, -0.000145833333333333318,
+    11217.7664262820472,  10416.5781249999964,  13942.3076923076915, -0.0116875000000000000,
+   -21474.3589743589691,  1362.30448717948912, -881.321714743589837, -0.000187499999999999950,
+    1522.31089743589655,  7532.05128205127949,  15384.6518429487151, -0.00529166666666666674,
+    9935.80889423076587,  5048.04046474358620,  3685.89743589743739, -0.00365104166666666658
   };
 
   int grad_x_entriesSize = gold_grad_x_entries.size();
@@ -599,175 +564,3 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
 
 }
 
-#ifdef NOPE
-
-/******************************************************************************/
-/*! 
-  \brief Compute value and both gradients (wrt state and control) of 
-         InternalthermalEnergy in 3D.
-*/
-/******************************************************************************/
-TEUCHOS_UNIT_TEST( TransientThermomechTests, InternalThermalEnergy3D )
-{ 
-  // create test mesh
-  //
-  constexpr int meshWidth=2;
-  constexpr int spaceDim=3;
-  auto mesh = PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth);
-
-
-  // create mesh based temperature from host data
-  //
-  int tNumSteps = 3;
-  int tNumNodes = mesh->nverts();
-  Plato::ScalarMultiVector T("temperature history", tNumSteps, tNumNodes);
-  Plato::ScalarVector z("density", tNumNodes);
-  Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumNodes), LAMBDA_EXPRESSION(const int & aNodeOrdinal)
-  {
-     z(aNodeOrdinal) = 1.0;
-
-     for( int i=0; i<tNumSteps; i++){
-       T(i, aNodeOrdinal) = (i+1)*aNodeOrdinal;
-     }
-  }, "temperature history");
-
-
-  // create material model
-  //
-  Teuchos::RCP<Teuchos::ParameterList> params =
-    Teuchos::getParametersFromXmlString(
-    "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Heat Equation'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Thermal Energy'/> \n"
-    "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Thermal Energy'>                              \n"
-    "    <ParameterList name='Penalty Function'>                                   \n"
-    "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
-    "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
-    "    </ParameterList>                                                          \n"
-    "  </ParameterList>                                                            \n"
-    "  <ParameterList name='Material Model'>                                       \n"
-    "    <ParameterList name='Isotropic Linear Thermal'>                           \n"
-    "      <Parameter name='Mass Density' type='double' value='0.3'/>              \n"
-    "      <Parameter name='Specific Heat' type='double' value='1.0e3'/>           \n"
-    "      <Parameter name='Conductivity Coefficient' type='double' value='1.0e6'/>\n"
-    "    </ParameterList>                                                          \n"
-    "  </ParameterList>                                                            \n"
-    "  <ParameterList name='Time Integration'>                                     \n"
-    "    <Parameter name='Number Time Steps' type='int' value='3'/>                \n"
-    "    <Parameter name='Time Step' type='double' value='0.5'/>                   \n"
-    "  </ParameterList>                                                            \n"
-    "</ParameterList>                                                              \n"
-  );
-
-  // create objective
-  //
-  Plato::DataMap dataMap;
-  Omega_h::MeshSets tMeshSets;
-  ScalarFunctionInc<::Plato::Thermal<spaceDim>> 
-    scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
-
-  auto timeStep = params->sublist("Time Integration").get<double>("Time Step");
-  int timeIncIndex = 1;
-
-  // compute and test objective value
-  //
-  auto value = scalarFunction.value(T, z, timeStep);
-
-  double value_gold = 7.95166666666666603e9;
-  TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
-
-  // compute and test objective gradient wrt state, u
-  //
-  auto grad_u = scalarFunction.gradient_u(T, z, timeStep, timeIncIndex);
-
-  auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
-  Kokkos::deep_copy( grad_u_Host, grad_u );
-
-  std::vector<double> grad_u_gold = { 
-    -2.266666666666666e7, -2.200000000000000e7, -6.666666666666666e6, 
-    -2.700000000000000e7, -8.666666666666666e6, -6.666666666666667e6, 
-    -6.999999999999999e6, -2.000000000000001e6,  9.999999999999998e6, 
-    -2.699999999999999e7, -1.466666666666667e7, -3.999999999999999e6, 
-     1.000000000000002e6, -1.000000000000000e7, -2.000000000000007e6, 
-     4.666666666666670e6,  2.000000000000000e7,  1.333333333333331e6, 
-     2.000000000000002e6,  2.000000000000002e6,  2.399999999999999e7, 
-     2.800000000000001e7,  1.533333333333333e7,  2.666666666666666e6, 
-     6.666666666666670e6,  3.600000000000000e7,  6.666666666666666e6
-  };
-
-  for(int iNode=0; iNode<int(grad_u_gold.size()); iNode++){
-    if(grad_u_gold[iNode] == 0.0){
-      TEST_ASSERT(fabs(grad_u_Host[iNode]) < 1e-12);
-    } else {
-      TEST_FLOATING_EQUALITY(grad_u_Host[iNode], grad_u_gold[iNode], 1e-13);
-    }
-  }
-
-
-  // compute and test objective gradient wrt control, z
-  //
-  auto grad_z = scalarFunction.gradient_z(T, z, timeStep);
-
-  auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
-  Kokkos::deep_copy( grad_z_Host, grad_z );
-
-  std::vector<double> grad_z_gold = {
-    6.613750000000000e8, 6.175000000000000e8, 1.543750000000000e8, 
-    3.813333333333334e8, 1.121250000000000e8, 5.741666666666666e7, 
-    1.235000000000000e8, 3.900000000000000e7, 1.987916666666666e8, 
-    5.492500000000000e8, 2.334583333333333e8, 2.275000000000000e7, 
-    3.791666666666666e7, 1.168916666666667e9, 5.774166666666667e8, 
-    1.803750000000000e8, 2.074583333333333e8, 1.056250000000000e8, 
-    4.820833333333334e7, 1.197083333333333e8, 4.495833333333334e8, 
-    7.133750000000000e8, 2.811250000000000e8, 1.191666666666667e7, 
-    3.087500000000001e7, 7.659166666666666e8, 1.023750000000000e8
-  };
-
-  for(int iNode=0; iNode<int(grad_z_gold.size()); iNode++){
-    TEST_FLOATING_EQUALITY(grad_z_Host[iNode], grad_z_gold[iNode], 1e-13);
-  }
-
-  // compute and test objective gradient wrt node position, x
-  //
-  auto grad_x = scalarFunction.gradient_x(T, z, timeStep);
-  
-  auto grad_x_Host = Kokkos::create_mirror_view( grad_x );
-  Kokkos::deep_copy(grad_x_Host, grad_x);
-
-  std::vector<Plato::Scalar> grad_x_gold = {
-     2.457000000000000e9, -2.656333333333333e9, -1.261000000000000e9, 
-     2.437500000000000e9, -2.710500000000000e9,  2.860000000000001e8, 
-     6.825000000000000e8, -8.775000000000000e8,  1.321666666666667e9, 
-     1.895833333333333e9,  1.124500000000000e9, -4.550000000000001e8, 
-     4.506666666666666e8,  1.928333333333333e8,  7.821666666666667e8, 
-     4.073333333333333e8,  4.030000000000000e8,  2.296666666666667e8, 
-     1.603333333333333e8,  8.493333333333333e8, -2.296666666666667e8, 
-     3.900000000000002e7,  2.860000000000000e8, -1.170000000000000e8, 
-    -1.371500000000000e9, -5.156666666666666e8, -5.914999999999999e8, 
-     2.223000000000000e9, -5.134999999999999e8, -1.180833333333333e9, 
-     1.284833333333333e9, -1.852500000000000e9,  1.213333333333331e8, 
-     9.100000000000001e7,  1.950000000000001e8,  1.299999999999999e8, 
-    -4.333333333333340e6,  1.906666666666667e8, -2.903333333333335e8, 
-     1.419166666666667e9,  4.289999999999999e8,  1.219833333333333e9, 
-     6.825000000000000e8,  3.965000000000000e8,  1.759333333333333e9, 
-    -3.943333333333335e8,  3.705000000000000e8,  4.918333333333333e8, 
-    -1.232833333333334e9,  1.690000000000002e8, -1.928333333333334e8, 
-     3.531666666666668e8,  2.665000000000002e8, -1.170000000000002e8, 
-     4.333333333333328e6,  1.083333333333333e8,  1.430000000000000e8, 
-     2.145000000000001e8,  1.083333333333333e8,  3.358333333333334e8, 
-     6.933333333333373e7,  2.329166666666666e9, -3.228333333333337e8, 
-    -4.454666666666666e9, -1.109333333333333e9,  3.293333333333337e8, 
-    -2.433166666666667e9, -6.153333333333334e8,  1.042166666666667e9, 
-    -2.166666666666649e7,  4.333333333333302e7,  4.766666666666681e7, 
-    -4.116666666666666e7,  1.559999999999996e8,  1.755000000000002e8, 
-    -5.650666666666667e9,  2.775500000000000e9, -2.901166666666666e9, 
-     7.323333333333335e8,  4.571666666666666e8, -7.561666666666669e8
-  };
-
-  for(int iNode=0; iNode<int(grad_x_gold.size()); iNode++){
-    TEST_FLOATING_EQUALITY(grad_x_Host[iNode], grad_x_gold[iNode], 1e-13);
-  }
-}
-
-#endif

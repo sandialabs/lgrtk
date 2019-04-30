@@ -254,17 +254,17 @@ class VectorFunction : public Plato::WorksetBase<PhysicsT>
       //
       Plato::ScalarArray3DT<ConfigScalar>
           tConfigWS("Config Workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // Workset state
       //
       Plato::ScalarMultiVectorT<StateScalar> tStateWS("State Workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
       // Workset control
       //
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // create return view
       //
@@ -285,7 +285,7 @@ class VectorFunction : public Plato::WorksetBase<PhysicsT>
           tJacobianMatEntryOrdinal( tJacobianMat, &tMesh );
 
       auto tJacobianMatEntries = tJacobianMat->entries();
-      WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+      Plato::WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
       return tJacobianMat;
     }
