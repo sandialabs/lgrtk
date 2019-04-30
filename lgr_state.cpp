@@ -32,7 +32,6 @@ void resize_state(input const& in, state& s) {
   if (in.enable_nodal_pressure) {
     s.p_h.resize(s.nodes.size());
     s.p_h_dot.resize(s.nodes.size());
-    s.old_p_h.resize(s.nodes.size());
     s.v_prime.resize(s.points.size());
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }

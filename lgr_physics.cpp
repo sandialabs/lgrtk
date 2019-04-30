@@ -59,9 +59,10 @@ static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vecto
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p_h(state& s, double const dt) {
+static void LGR_NOINLINE update_p_h(state& s, double const dt,
+    device_vector<double, node_index> const& old_p_h_vector) {
   auto const nodes_to_p_h = s.p_h.begin();
-  auto const nodes_to_old_p_h = s.old_p_h.cbegin();
+  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot.cbegin();
   auto functor = [=] (node_index const node) {
     double const old_p_h = nodes_to_old_p_h[node];
@@ -566,7 +567,11 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
   device_vector<vector3<double>, node_index> old_v(s.v.size(), s.devpool);
   lgr::copy(s.v, old_v);
   lgr::copy(s.e, s.old_e);
-  if (in.enable_nodal_pressure) lgr::copy(s.p_h, s.old_p_h);
+  device_vector<double, node_index> old_p_h(s.devpool);
+  if (in.enable_nodal_pressure) {
+    old_p_h.resize(s.nodes.size());
+    lgr::copy(s.p_h, old_p_h);
+  }
   if (in.enable_nodal_energy) lgr::copy(s.e_h, s.old_e_h);
   constexpr int npc = 2;
   for (int pc = 0; pc < npc; ++pc) {
@@ -576,7 +581,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     if (in.enable_nodal_pressure) {
-      update_p_h(s, half_dt);
+      update_p_h(s, half_dt, old_p_h);
     }
     update_rho_e_dot(s);
     if (in.enable_nodal_energy) {
