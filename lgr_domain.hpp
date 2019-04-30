@@ -81,6 +81,10 @@ class domain {
         device_vector<vector3<double>, element_index> const& points,
         material_index const marker,
         device_vector<material_index, element_index>* markers) const = 0;
+    virtual void mark(
+        device_vector<vector3<double>, node_index> const& points,
+        material_index const marker,
+        device_vector<material_set, node_index>* markers) const = 0;
 };
 
 template <class SourceDomain>
@@ -129,6 +133,30 @@ class clipped_domain : public domain {
       device_vector<material_index, element_index>* markers) const override {
     this->mark_tmpl<element_index, material_index>(points, marker, markers);
   }
+  void mark(
+      device_vector<vector3<double>, node_index> const& points,
+      material_index const marker,
+      device_vector<material_set, node_index>* markers) const override {
+    counting_range<node_index> const range(points.size());
+    auto const points_begin = points.cbegin();
+    auto const markers_begin = markers->begin();
+    auto const clips_begin = m_host_clips.cbegin();
+    auto const clips_end = m_host_clips.cend();
+    auto const source = m_source;
+    auto functor = [=] (node_index const i) {
+      vector3<double> const pt = points_begin[i];
+      bool is_in = (distance(source, pt) >= 0.0);
+      for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
+        is_in &= (distance(*clips_it, pt) >= 0.0);
+      }
+      if (is_in) {
+        material_set set = markers_begin[i];
+        set = set | material_set(marker);
+        markers_begin[i] = set;
+      }
+    };
+    lgr::for_each(range, functor);
+  }
 };
 
 class union_domain : public domain {
@@ -143,6 +171,10 @@ class union_domain : public domain {
       device_vector<vector3<double>, element_index> const& points,
       material_index const marker,
       device_vector<material_index, element_index>* markers) const override;
+  void mark(
+      device_vector<vector3<double>, node_index> const& points,
+      material_index const marker,
+      device_vector<material_set, node_index>* markers) const override;
 };
 
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);

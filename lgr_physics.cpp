@@ -545,7 +545,7 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   update_nodal_force(s);
   update_a(s);
   for (auto const& cond : in.zero_acceleration_conditions) {
-    zero_acceleration(s.node_sets.find(cond.node_set_name)->second, cond.axis, &s.a);
+    zero_acceleration(s.node_sets[cond.boundary], cond.axis, &s.a);
   }
 }
 
