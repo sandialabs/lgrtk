@@ -24,7 +24,7 @@ namespace Plato
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
 inline void test_partial_control(Omega_h::Mesh & aMesh,
-                                 AbstractScalarFunction<EvaluationType> & aCriterion,
+                                 Plato::AbstractScalarFunction<EvaluationType> & aCriterion,
                                  Plato::OrdinalType aSuperscriptLowerBound = 1,
                                  Plato::OrdinalType aSuperscriptUpperBound = 10)
 {
@@ -40,7 +40,7 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
     constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
 
     // Create configuration workset
-    WorksetBase<SimplexPhysics> tWorksetBase(aMesh);
+    Plato::WorksetBase<SimplexPhysics> tWorksetBase(aMesh);
     Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
     tWorksetBase.worksetConfig(tConfigWS);
 
@@ -133,7 +133,7 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
  * @param [in] aCriterion scalar function (i.e. scalar criterion) interface
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
-inline void test_partial_state(Omega_h::Mesh & aMesh, AbstractScalarFunction<EvaluationType> & aCriterion)
+inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::AbstractScalarFunction<EvaluationType> & aCriterion)
 {
     using StateT = typename EvaluationType::StateScalarType;
     using ConfigT = typename EvaluationType::ConfigScalarType;
@@ -147,7 +147,7 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, AbstractScalarFunction<Eva
     constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
 
     // Create configuration workset
-    WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(aMesh);
+    Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(aMesh);
     Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
     tWorksetBase.worksetConfig(tConfigWS);
 

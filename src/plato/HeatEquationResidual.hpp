@@ -18,17 +18,19 @@
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractVectorFunctionInc.hpp"
 #include "plato/ImplicitFunctors.hpp"
-#include "plato/ApplyWeighting.hpp"
 #include "plato/NaturalBCs.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class HeatEquationResidual : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractVectorFunctionInc<EvaluationType>
+  public Plato::AbstractVectorFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -38,9 +40,9 @@ class HeatEquationResidual :
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractVectorFunctionInc<EvaluationType>::mMesh;
-    using AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
-    using AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -55,8 +57,8 @@ class HeatEquationResidual :
     Plato::Scalar m_cellSpecificHeat;
     
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
-    ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
@@ -132,12 +134,12 @@ class HeatEquationResidual :
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
 
-      ScalarGrad<SpaceDim>            scalarGrad;
-      ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
-      FluxDivergence<SpaceDim>        fluxDivergence;
+      Plato::ScalarGrad<SpaceDim>            scalarGrad;
+      Plato::ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
+      Plato::FluxDivergence<SpaceDim>        fluxDivergence;
 
       Plato::StateValues computeStateValues;
-      ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
+      Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
       Plato::ComputeProjectionWorkset projectThermalContent;
       
       auto basisFunctions = m_cubatureRule->getBasisFunctions();
@@ -203,17 +205,20 @@ class HeatEquationResidual :
       }
     }
 };
+// class HeatEquationResidual
+
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 1)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 2)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC_INC(HeatEquationResidual, SimplexThermal, 3)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 3)
 #endif
 
 #endif

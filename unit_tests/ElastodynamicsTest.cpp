@@ -820,9 +820,9 @@ public:
                   Plato::Scalar aTimeStep = 0.0) const
     {
         // elastic forces functors
-        Strain<mSpatialDim> tComputeStrains;
-        LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
-        StressDivergence<mSpatialDim> tComputeStressDivergence;
+        Plato::Strain<mSpatialDim> tComputeStrains;
+        Plato::LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
+        Plato::StressDivergence<mSpatialDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpatialDim> tComputeGradient;
 
         // allocate local containers
@@ -981,9 +981,9 @@ public:
                   Plato::Scalar aTimeStep = 0.0) const
     {
         // elastic force functors
-        Strain<mSpatialDim> tComputeStrains;
-        LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
-        StressDivergence<mSpatialDim> tComputeStressDivergence;
+        Plato::Strain<mSpatialDim> tComputeStrains;
+        Plato::LinearStress<mSpatialDim> tComputeStress(mCellStiffness);
+        Plato::StressDivergence<mSpatialDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpatialDim> tComputeGradient;
         // Inertial force functors
         Plato::StateValues tComputeValues;
@@ -1077,20 +1077,20 @@ public:
  *
 ********************************************************************************/
 template<typename PhysicsT>
-class DynamicScalarFunction : public WorksetBase<PhysicsT>
+class DynamicScalarFunction : public Plato::WorksetBase<PhysicsT>
 {
 private:
-    using WorksetBase<PhysicsT>::m_numNodes;
-    using WorksetBase<PhysicsT>::m_numCells;
-    using WorksetBase<PhysicsT>::m_numControl;
-    using WorksetBase<PhysicsT>::m_numDofsPerCell;
-    using WorksetBase<PhysicsT>::m_numDofsPerNode;
-    using WorksetBase<PhysicsT>::m_numSpatialDims;
-    using WorksetBase<PhysicsT>::m_numNodesPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numNodes;
+    using Plato::WorksetBase<PhysicsT>::m_numCells;
+    using Plato::WorksetBase<PhysicsT>::m_numControl;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode;
+    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims;
+    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell;
 
-    using WorksetBase<PhysicsT>::m_stateEntryOrdinal;
-    using WorksetBase<PhysicsT>::m_configEntryOrdinal;
-    using WorksetBase<PhysicsT>::m_controlEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_stateEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_configEntryOrdinal;
+    using Plato::WorksetBase<PhysicsT>::m_controlEntryOrdinal;
 
     using Residual  = typename Plato::Experimental::DynamicsEvaluation<PhysicsT>::Residual;
     using GradientU = typename Plato::Experimental::DynamicsEvaluation<PhysicsT>::GradientU;
@@ -1116,7 +1116,7 @@ public:
                           Plato::DataMap & aDataMap,
                           Teuchos::ParameterList& aParamList,
                           const std::string & aType ) :
-          WorksetBase<PhysicsT>(aMesh),
+          Plato::WorksetBase<PhysicsT>(aMesh),
           mDataMap(aDataMap)
   /**************************************************************************/
   {
@@ -1147,26 +1147,26 @@ public:
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create result view
       Plato::ScalarVectorT<ResultScalar>
@@ -1200,27 +1200,27 @@ public:
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar>
         tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       Plato::ScalarVectorT<ResultScalar>
@@ -1255,27 +1255,27 @@ public:
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement state",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar>
         tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       Plato::ScalarVectorT<ResultScalar>
@@ -1310,27 +1310,27 @@ public:
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar>
         tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       Plato::ScalarVectorT<ResultScalar>
@@ -1365,27 +1365,27 @@ public:
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement state",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar>
         tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create return view
       Plato::ScalarVectorT<ResultScalar>
@@ -1420,27 +1420,27 @@ public:
       // workset control
       Plato::ScalarMultiVectorT<ControlScalar>
        tControlWS("control workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // workset state
       Plato::ScalarMultiVectorT<StateUScalar>
         tStateDispWS("state displacement workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aDisp, tStateDispWS);
 
       // workset state velocity
       Plato::ScalarMultiVectorT<StateVScalar>
       tStateVelWS("state velocity workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aVel, tStateVelWS);
 
       // workset state acceleration
       Plato::ScalarMultiVectorT<StateAScalar>
       tStateAccWS("state acceleration workset",m_numCells,m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aAcc, tStateAccWS);
 
       // workset config
       Plato::ScalarArray3DT<ConfigScalar>
         tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // create result
       Plato::ScalarVectorT<ResultScalar>
@@ -1885,10 +1885,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -1987,10 +1987,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Initialize elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Initialize inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -2469,10 +2469,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -2569,10 +2569,10 @@ public:
                      Plato::ScalarMultiVectorT<ResultScalarType> & aOutput)
     {
         // Initialize elastic force functors
-        Strain<mSpaceDim> tComputeVoigtStrain;
-        StressDivergence<mSpaceDim> tComputeStressDivergence;
+        Plato::Strain<mSpaceDim> tComputeVoigtStrain;
+        Plato::StressDivergence<mSpaceDim> tComputeStressDivergence;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
         // Initialize inertial force functors
         Plato::StateValues tComputeValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
@@ -2975,16 +2975,16 @@ public:
  *
 ********************************************************************************/
 template<typename PhysicsT>
-class ForceFunction : public WorksetBase<PhysicsT>
+class ForceFunction : public Plato::WorksetBase<PhysicsT>
 {
 private:
-    using WorksetBase<PhysicsT>::m_numNodes;
-    using WorksetBase<PhysicsT>::m_numCells;
-    using WorksetBase<PhysicsT>::m_numControl;
-    using WorksetBase<PhysicsT>::m_numDofsPerCell;
-    using WorksetBase<PhysicsT>::m_numDofsPerNode;
-    using WorksetBase<PhysicsT>::m_numSpatialDims;
-    using WorksetBase<PhysicsT>::m_numNodesPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numNodes;
+    using Plato::WorksetBase<PhysicsT>::m_numCells;
+    using Plato::WorksetBase<PhysicsT>::m_numControl;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell;
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode;
+    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims;
+    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell;
 
     using Residual = typename Plato::Experimental::DynamicsEvaluation<PhysicsT>::Residual;
     std::shared_ptr<AbstractForceFunction<Residual>> mForceFunctionValue;
@@ -3004,7 +3004,7 @@ public:
      *
     ********************************************************************************/
     ForceFunction(Omega_h::Mesh& aMesh, Teuchos::ParameterList& aParamList, std::string& aType) :
-        WorksetBase<PhysicsT>(aMesh)
+        Plato::WorksetBase<PhysicsT>(aMesh)
     {
         typename PhysicsT::FunctionFactory tFactory;
         mForceFunctionValue = tFactory.template createForceFunction<Residual>(aParamList, aType);
@@ -3039,20 +3039,20 @@ public:
       using ControlScalar = typename Residual::ControlScalarType;
 
       Plato::ScalarMultiVectorT<StateUScalar> tStateWS("State Workset", m_numCells, m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset", m_numCells, m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       Plato::ScalarArray3DT<ConfigScalar> tConfigWS("Config Workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       Plato::ScalarMultiVectorT<ResultScalar> tForceWS("Force Workset", m_numCells, m_numDofsPerCell);
       mForceFunctionValue->evaluate( tStateWS, tControlWS, tConfigWS, tForceWS, aTimeStep );
 
       auto tTotalNumDofs = m_numDofsPerNode*m_numNodes;
       Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>  tAssembledForce("Assembled Force", tTotalNumDofs);
-      WorksetBase<PhysicsT>::assembleResidual( tForceWS, tAssembledForce );
+      Plato::WorksetBase<PhysicsT>::assembleResidual( tForceWS, tAssembledForce );
 
       return tAssembledForce;
     }
@@ -3069,7 +3069,7 @@ public:
  *
  *********************************************************************************/
 template<typename PhysicsT>
-class DynamicsVectorFunction : public WorksetBase<PhysicsT>
+class DynamicsVectorFunction : public Plato::WorksetBase<PhysicsT>
 {
 private:
     /*!< aid determine automatic differentiation types associated with respective evaluation type */
@@ -3080,13 +3080,13 @@ private:
     using GradientX = typename Plato::Experimental::DynamicsEvaluation<PhysicsT>::GradientX;
     using GradientZ = typename Plato::Experimental::DynamicsEvaluation<PhysicsT>::GradientZ;
 
-    using WorksetBase<PhysicsT>::m_numNodes; /*!< number of nodes per cell (i.e. element) */
-    using WorksetBase<PhysicsT>::m_numCells; /*!< number of cells */
-    using WorksetBase<PhysicsT>::m_numControl; /*!< number of controls (i.e. design variables) */
-    using WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
-    using WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degrees of freedom per node */
-    using WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
-    using WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell */
+    using Plato::WorksetBase<PhysicsT>::m_numNodes; /*!< number of nodes per cell (i.e. element) */
+    using Plato::WorksetBase<PhysicsT>::m_numCells; /*!< number of cells */
+    using Plato::WorksetBase<PhysicsT>::m_numControl; /*!< number of controls (i.e. design variables) */
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degrees of freedom per node */
+    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
+    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell */
 
     static constexpr Plato::OrdinalType mNumConfigDofsPerCell = m_numSpatialDims * m_numNodesPerCell; /*!< number of configuration degrees of freedom */
 
@@ -3119,7 +3119,7 @@ public:
                            Plato::DataMap& aDataMap,
                            Teuchos::ParameterList& aParamList,
                            std::string& aName) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             mDataMap(aDataMap)
     {
         typename PhysicsT::FunctionFactory tFunctionFactory;
@@ -3136,7 +3136,7 @@ public:
      * @param aDataMap map used to access problem-specific data at runtime
     ******************************************************************************/
     DynamicsVectorFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             mDataMap(aDataMap),
             mVectorFunctionResidual(nullptr),
             mVectorFunctionJacobianU(nullptr),
@@ -3289,15 +3289,15 @@ public:
     {
         // Current state workset
         Plato::ScalarMultiVector tOldDispWS("Old State Workset",m_numCells,m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aOldDisp, tOldDispWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aOldDisp, tOldDispWS);
 
         // Current velocity workset
         Plato::ScalarMultiVector tOldVelWS("Old Velocity Workset",m_numCells,m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aOldVel, tOldVelWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aOldVel, tOldVelWS);
 
         // Current acceleration workset
         Plato::ScalarMultiVector tOldAccWS("Old Acceleration Workset",m_numCells,m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aOldAcc, tOldAccWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aOldAcc, tOldAccWS);
 
         mVectorFunctionResidual->setPreviousState(aTimeStep, tOldDispWS, tOldVelWS, tOldAccWS);
         mVectorFunctionJacobianA->setPreviousState(aTimeStep, tOldDispWS, tOldVelWS, tOldAccWS);
@@ -3348,23 +3348,23 @@ public:
 
          // Displacement State workset
          Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
          // Velocity State workset
          Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
          // Acceleration State workset
          Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
          // Control workset
          Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset", m_numCells, m_numNodesPerCell);
-         WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
          // Configuration workset
          Plato::ScalarArray3DT<ConfigScalar> tConfigWS("Config Workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-         WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
          // Residual workset
          Plato::ScalarMultiVectorT<ResultScalar> tResidual("Cells Residual", m_numCells, m_numDofsPerCell);
@@ -3375,7 +3375,7 @@ public:
          // create and assemble to return view
          const Plato::OrdinalType tTotalNumDofs = this->size();
          Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>  tAssembledResidual("Assembled Residual", tTotalNumDofs);
-         WorksetBase<PhysicsT>::assembleResidual( tResidual, tAssembledResidual );
+         Plato::WorksetBase<PhysicsT>::assembleResidual( tResidual, tAssembledResidual );
 
          return tAssembledResidual;
     }
@@ -3406,23 +3406,23 @@ public:
         // Workset config
         Plato::ScalarArray3DT<ConfigScalar>
             tConfigWS("Config Workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // Displacement State workset
         Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
         // Velocity State workset
         Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
         // Acceleration State workset
         Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
         // Workset control
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset", m_numCells, m_numNodesPerCell);
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // create return view
         Plato::ScalarMultiVectorT<ResultScalar> tJacobian("Jacobian Configuration", m_numCells, m_numDofsPerCell);
@@ -3440,7 +3440,7 @@ public:
             tJacobianMatEntryOrdinal(tJacobianMat, &tMesh);
 
         auto tJacobianMatEntries = tJacobianMat->entries();
-        WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, mNumConfigDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+        Plato::WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, mNumConfigDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
         return tJacobianMat;
     }
@@ -3471,23 +3471,23 @@ public:
          // Workset config
          Plato::ScalarArray3DT<ConfigScalar>
              tConfigWS("Config Workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-         WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
          // Displacement State workset
          Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
          // Velocity State workset
          Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
          // Acceleration State workset
          Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
          // Workset control
          Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset",m_numCells,m_numNodesPerCell);
-         WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
          // create return view
          Plato::ScalarMultiVectorT<ResultScalar> tJacobian("Jacobian StateU",m_numCells,m_numDofsPerCell);
@@ -3505,7 +3505,7 @@ public:
              tJacobianMatEntryOrdinal(tJacobianMat, &tMesh);
 
          auto tJacobianMatEntries = tJacobianMat->entries();
-         WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+         Plato::WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
          return tJacobianMat;
     }
@@ -3536,23 +3536,23 @@ public:
          // Workset config
          Plato::ScalarArray3DT<ConfigScalar>
              tConfigWS("Config Workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-         WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
          // Displacement State workset
          Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
          // Velocity State workset
          Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
          // Acceleration State workset
          Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
          // Workset control
          Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset",m_numCells,m_numNodesPerCell);
-         WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
          // create return view
          Plato::ScalarMultiVectorT<ResultScalar> tJacobian("Jacobian StateV",m_numCells,m_numDofsPerCell);
@@ -3570,7 +3570,7 @@ public:
              tJacobianMatEntryOrdinal(tJacobianMat, &tMesh);
 
          auto tJacobianMatEntries = tJacobianMat->entries();
-         WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+         Plato::WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
          return tJacobianMat;
     }
@@ -3601,23 +3601,23 @@ public:
          // Workset config
          Plato::ScalarArray3DT<ConfigScalar>
              tConfigWS("Config Workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-         WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
          // Displacement State workset
          Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
          // Velocity State workset
          Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
          // Acceleration State workset
          Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-         WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+         Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
          // Workset control
          Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset",m_numCells,m_numNodesPerCell);
-         WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
          // create return view
          Plato::ScalarMultiVectorT<ResultScalar> tJacobian("Jacobian StateA",m_numCells,m_numDofsPerCell);
@@ -3635,7 +3635,7 @@ public:
              tJacobianMatEntryOrdinal(tJacobianMat, &tMesh);
 
          auto tJacobianMatEntries = tJacobianMat->entries();
-         WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+         Plato::WorksetBase<PhysicsT>::assembleJacobian(m_numDofsPerCell, m_numDofsPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
          return tJacobianMat;
     }
@@ -3666,23 +3666,23 @@ public:
       // Workset config
       Plato::ScalarArray3DT<ConfigScalar>
           tConfigWS("Config Workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-      WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+      Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
       // Workset control
       Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset",m_numCells,m_numNodesPerCell);
-      WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+      Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
       // Displacement State workset
       Plato::ScalarMultiVectorT<StateUScalar> tStateU_WS("Current StateU Workset", m_numCells, m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aStateU, tStateU_WS);
 
       // Velocity State workset
       Plato::ScalarMultiVectorT<StateVScalar> tStateV_WS("Current StateV Workset", m_numCells, m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aStateV, tStateV_WS);
 
       // Acceleration State workset
       Plato::ScalarMultiVectorT<StateAScalar> tStateA_WS("Current StateA Workset", m_numCells, m_numDofsPerCell);
-      WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
+      Plato::WorksetBase<PhysicsT>::worksetState(aStateA, tStateA_WS);
 
       // create result
       Plato::ScalarMultiVectorT<ResultScalar> tJacobian("Jacobian Control",m_numCells,m_numDofsPerCell);
@@ -3700,7 +3700,7 @@ public:
         tJacobianMatEntryOrdinal( tJacobianMat, &tMesh );
 
       auto tJacobianMatEntries = tJacobianMat->entries();
-      WorksetBase<PhysicsT>::assembleTransposeJacobian(m_numDofsPerCell, m_numNodesPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
+      Plato::WorksetBase<PhysicsT>::assembleTransposeJacobian(m_numDofsPerCell, m_numNodesPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
       return tJacobianMat;
     }

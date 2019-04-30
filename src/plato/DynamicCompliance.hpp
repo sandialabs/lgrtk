@@ -36,7 +36,7 @@ namespace Plato
 template<typename EvaluationType, class PenaltyFuncType, class ProjectionFuncType>
 class DynamicCompliance:
         public Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim, EvaluationType::NumControls>,
-        public AbstractScalarFunction<EvaluationType>
+        public Plato::AbstractScalarFunction<EvaluationType>
 {
 private:
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numVoigtTerms;
@@ -68,7 +68,7 @@ public:
                       Plato::DataMap& aDataMap, 
                       Teuchos::ParameterList& aProblemParams,
                       Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
             mDensity(aProblemParams.get<double>("Material Density", 1.0)),
             mProjectionFunction(),
             mPenaltyFunction(aPenaltyParams),
@@ -85,7 +85,7 @@ public:
     }
     /**************************************************************************/
     DynamicCompliance(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Plato::DataMap& aDataMap) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
             mDensity(1.0),
             mProjectionFunction(),
             mPenaltyFunction(3.0, 0.0),

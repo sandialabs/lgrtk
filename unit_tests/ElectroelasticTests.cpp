@@ -26,7 +26,6 @@
 #include <plato/alg/CrsLinearProblem.hpp>
 #include <plato/alg/ParallelComm.hpp>
 #include "plato/Simp.hpp"
-#include "plato/ApplyWeighting.hpp"
 #include "plato/ScalarProduct.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/WorksetBase.hpp"

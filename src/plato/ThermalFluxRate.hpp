@@ -6,16 +6,18 @@
 #include "plato/ScalarGrad.hpp"
 #include "plato/ThermalFlux.hpp"
 #include "plato/ScalarProduct.hpp"
-#include "plato/ApplyWeighting.hpp"
 #include "plato/SimplexThermal.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
+
+namespace Plato
+{
 
 /******************************************************************************/
 template<typename EvaluationType>
 class ThermalFluxRate : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractScalarFunctionInc<EvaluationType>
+  public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -25,9 +27,9 @@ class ThermalFluxRate :
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
-    using AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
-    using AbstractScalarFunctionInc<EvaluationType>::mMeshSets;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -43,7 +45,7 @@ class ThermalFluxRate :
                     Omega_h::MeshSets& aMeshSets,
                     Plato::DataMap& aDataMap,
                     Teuchos::ParameterList& problemParams) :
-            AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Thermal Flux Rate"),
+            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Thermal Flux Rate"),
             m_boundaryLoads(nullptr)
     /**************************************************************************/
     {
@@ -75,7 +77,7 @@ class ThermalFluxRate :
         m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, boundaryLoads, 1.0/aTimeStep );
         m_boundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, boundaryLoads, 1.0/aTimeStep );
 
-        Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
         {
           for( int iNode=0; iNode<m_numNodesPerCell; iNode++) {
             aResult(cellOrdinal) += (aState(cellOrdinal, iNode) - aPrevState(cellOrdinal, iNode))*boundaryLoads(cellOrdinal,iNode);
@@ -84,5 +86,7 @@ class ThermalFluxRate :
       }
     }
 };
+
+} // namespace Plato
 
 #endif

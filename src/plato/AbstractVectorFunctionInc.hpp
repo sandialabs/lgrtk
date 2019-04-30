@@ -6,6 +6,9 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType>
 class AbstractVectorFunctionInc
@@ -57,5 +60,7 @@ public:
              Plato::Scalar aTimeStep = 0.0) const = 0;
     /******************************************************************************/
 };
+
+} // namespace Plato
 
 #endif

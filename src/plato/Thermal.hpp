@@ -81,7 +81,7 @@ struct FunctionFactory{
     }
   }
   template <typename EvaluationType>
-  std::shared_ptr<AbstractScalarFunction<EvaluationType>>
+  std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>>
   createScalarFunction( 
     Omega_h::Mesh& aMesh,
     Omega_h::MeshSets& aMeshSets,
@@ -94,13 +94,13 @@ struct FunctionFactory{
       auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
-        return std::make_shared<InternalThermalEnergy<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergy<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "RAMP" ){
-        return std::make_shared<InternalThermalEnergy<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergy<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "Heaviside" ){
-        return std::make_shared<InternalThermalEnergy<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergy<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -109,13 +109,13 @@ struct FunctionFactory{
       auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
-        return std::make_shared<FluxPNorm<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::FluxPNorm<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "RAMP" ){
-        return std::make_shared<FluxPNorm<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::FluxPNorm<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "Heaviside" ){
-        return std::make_shared<FluxPNorm<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::FluxPNorm<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -124,13 +124,13 @@ struct FunctionFactory{
       auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
-        return std::make_shared<Volume<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::Volume<EvaluationType, ::SIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "RAMP" ){
-        return std::make_shared<Volume<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::Volume<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "Heaviside" ){
-        return std::make_shared<Volume<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::Volume<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -139,7 +139,7 @@ struct FunctionFactory{
     }
   }
   template <typename EvaluationType>
-  std::shared_ptr<AbstractScalarFunctionInc<EvaluationType>>
+  std::shared_ptr<Plato::AbstractScalarFunctionInc<EvaluationType>>
   createScalarFunctionInc( 
     Omega_h::Mesh& aMesh,
     Omega_h::MeshSets& aMeshSets,
@@ -148,19 +148,19 @@ struct FunctionFactory{
     std::string strScalarFunctionType )
   {
     if( strScalarFunctionType == "Thermal Flux Rate" ){
-      return std::make_shared<ThermalFluxRate<EvaluationType>>(aMesh, aMeshSets, aDataMap,aParamList);
+      return std::make_shared<Plato::ThermalFluxRate<EvaluationType>>(aMesh, aMeshSets, aDataMap,aParamList);
     } else
     if( strScalarFunctionType == "Internal Thermal Energy" ){
       auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
-        return std::make_shared<InternalThermalEnergyInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergyInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "RAMP" ){
-        return std::make_shared<InternalThermalEnergyInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergyInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "Heaviside" ){
-        return std::make_shared<InternalThermalEnergyInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::InternalThermalEnergyInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -169,13 +169,13 @@ struct FunctionFactory{
       auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
-        return std::make_shared<TemperatureAverageInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::TemperatureAverageInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "RAMP" ){
-        return std::make_shared<TemperatureAverageInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::TemperatureAverageInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else
       if( penaltyType == "Heaviside" ){
-        return std::make_shared<TemperatureAverageInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+        return std::make_shared<Plato::TemperatureAverageInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
       } else {
         throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
       }
@@ -184,7 +184,8 @@ struct FunctionFactory{
     }
   }
 };
-}
+
+} // namespace ThermalFactory
 
 template <Plato::OrdinalType SpaceDimParam>
 class Thermal : public SimplexThermal<SpaceDimParam> {
@@ -193,7 +194,8 @@ class Thermal : public SimplexThermal<SpaceDimParam> {
     using SimplexT = SimplexThermal<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };
+// class Thermal
 
-}
+} //namespace Plato
 
 #endif

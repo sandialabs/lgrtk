@@ -4,6 +4,9 @@
 #include <Omega_h_matrix.hpp>
 #include "plato/SimplexMechanics.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Homogenized stress functor.
   
@@ -45,4 +48,7 @@ class HomogenizedStress : public Plato::SimplexMechanics<SpaceDim>
       }
     }
 };
+
+}
+
 #endif

@@ -19,13 +19,14 @@
 #include "plato/NaturalBCs.hpp"
 #include "plato/BodyLoads.hpp"
 
-namespace Plato {
+namespace Plato
+{
 
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ThermoelastostaticResidual :
         public Plato::SimplexThermomechanics<EvaluationType::SpatialDim>,
-        public AbstractVectorFunction<EvaluationType>
+        public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
 private:
@@ -42,9 +43,9 @@ private:
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractVectorFunction<EvaluationType>::mMesh;
-    using AbstractVectorFunction<EvaluationType>::m_dataMap;
-    using AbstractVectorFunction<EvaluationType>::mMeshSets;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
+    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -52,8 +53,8 @@ private:
     using ResultScalarType = typename EvaluationType::ResultScalarType;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> m_applyFluxWeighting;
-    ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting;
+    Plato::ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> m_applyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting;
 
     std::shared_ptr<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>> m_bodyLoads;
 
@@ -73,7 +74,7 @@ public:
                                Plato::DataMap& aDataMap,
                                Teuchos::ParameterList& aProblemParams,
                                Teuchos::ParameterList& aPenaltyParams) :
-            AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
+            Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
             m_indicatorFunction(aPenaltyParams),
             m_applyStressWeighting(m_indicatorFunction),
             m_applyFluxWeighting(m_indicatorFunction),
@@ -130,11 +131,11 @@ public:
       typename Plato::fad_type_t<Plato::SimplexThermomechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      TMKinematics<SpaceDim>                  kinematics;
-      TMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::TMKinematics<SpaceDim>                  kinematics;
+      Plato::TMKinetics<SpaceDim>                    kinetics(m_materialModel);
       
-      StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
-      FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
+      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
 
       Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
 

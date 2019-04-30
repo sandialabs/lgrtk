@@ -16,11 +16,14 @@
 
 #include "plato/ExpInstMacros.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class FluxPNorm : 
   public SimplexThermal<EvaluationType::SpatialDim>,
-  public AbstractScalarFunction<EvaluationType>
+  public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
@@ -29,8 +32,8 @@ class FluxPNorm :
     using Simplex<SpaceDim>::m_numNodesPerCell;
     using SimplexThermal<SpaceDim>::m_numDofsPerCell;
 
-    using AbstractScalarFunction<EvaluationType>::mMesh;
-    using AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
+    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -42,9 +45,9 @@ class FluxPNorm :
     Plato::Scalar m_quadratureWeight;
 
     IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
 
-    int m_exponent;
+    Plato::OrdinalType m_exponent;
 
   public:
     /**************************************************************************/
@@ -53,7 +56,7 @@ class FluxPNorm :
               Plato::DataMap& aDataMap, 
               Teuchos::ParameterList& aProblemParams, 
               Teuchos::ParameterList& aPenaltyParams) :
-            AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Flux P-Norm"),
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Flux P-Norm"),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
@@ -84,9 +87,9 @@ class FluxPNorm :
       auto numCells = mMesh.nelems();
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
-      ScalarGrad<SpaceDim>                    scalarGrad;
-      ThermalFlux<SpaceDim>                   thermalFlux(m_cellConductivity);
-      VectorPNorm<SpaceDim>                   vectorPNorm;
+      Plato::ScalarGrad<SpaceDim>                    scalarGrad;
+      Plato::ThermalFlux<SpaceDim>                   thermalFlux(m_cellConductivity);
+      Plato::VectorPNorm<SpaceDim>                   vectorPNorm;
 
       using GradScalarType =
         typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>,StateScalarType, ConfigScalarType>;
@@ -153,17 +156,20 @@ class FluxPNorm :
       resultValue = pow(resultValue, 1.0/m_exponent);
     }
 };
+// class FluxPNorm
+
+} // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(FluxPNorm, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 3)
 #endif
 
 #endif

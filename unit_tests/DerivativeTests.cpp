@@ -31,7 +31,6 @@
 #include <plato/alg/ParallelComm.hpp>
 
 #include <plato/Simp.hpp>
-#include <plato/ApplyWeighting.hpp>
 #include <plato/ScalarProduct.hpp>
 #include <plato/SimplexFadTypes.hpp>
 #include <plato/SimplexMechanics.hpp>
@@ -75,7 +74,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto u = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), u_host_view);
 
 
-  WorksetBase<Plato::SimplexMechanics<spaceDim>> worksetBase(*mesh);
+  Plato::WorksetBase<Plato::SimplexMechanics<spaceDim>> worksetBase(*mesh);
 
   Plato::ScalarArray3DT<Plato::Scalar>
     gradient("gradient",numCells,nodesPerCell,spaceDim);
@@ -98,7 +97,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   worksetBase.worksetState(u, stateWS);
 
   Plato::ComputeGradientWorkset<spaceDim> computeGradient;
-  Strain<spaceDim>                        voigtStrain;
+  Plato::Strain<spaceDim> voigtStrain;
 
   // create input
   //
@@ -119,8 +118,8 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto materialModel = mmfactory.create();
   auto m_cellStiffness = materialModel->getStiffnessMatrix();
 
-  LinearStress<spaceDim>      voigtStress(m_cellStiffness);
-  StressDivergence<spaceDim>  stressDivergence;
+  Plato::LinearStress<spaceDim>      voigtStress(m_cellStiffness);
+  Plato::StressDivergence<spaceDim>  stressDivergence;
 
   Plato::Scalar quadratureWeight = 1.0/6.0;
 

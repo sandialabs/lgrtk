@@ -3,6 +3,9 @@
 
 #include "plato/SimplexMechanics.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Stress Divergence functor.
   
@@ -59,4 +62,7 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
       }
     }
 };
+
+} // namespace Plato
+
 #endif

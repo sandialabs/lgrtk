@@ -7,8 +7,6 @@
 #ifndef HYPERBOLICTANGENTPROJECTION_HPP_
 #define HYPERBOLICTANGENTPROJECTION_HPP_
 
-#include <cmath>
-
 #include <Teuchos_ParameterList.hpp>
 
 #include "plato/PlatoStaticsTypes.hpp"
@@ -51,7 +49,7 @@ public:
         mBetaTimesEta(aBeta*aEta),
         mBetaTimesOneMinusEta(aBeta*(static_cast<Plato::Scalar>(1)-aEta))
     {
-        mDenominator = std::tanh(mBetaTimesEta) + std::tanh(mBetaTimesOneMinusEta);
+        mDenominator = tanh(mBetaTimesEta) + tanh(mBetaTimesOneMinusEta);
     }
 
     /****************************************************************************//**
@@ -71,7 +69,7 @@ public:
         mBetaTimesEta(mBeta*mEta),
         mBetaTimesOneMinusEta(mBeta*(static_cast<Plato::Scalar>(1)-mEta))
     {
-        mDenominator = std::tanh(mBetaTimesEta) + std::tanh(mBetaTimesOneMinusEta);
+        mDenominator = tanh(mBetaTimesEta) + tanh(mBetaTimesOneMinusEta);
     }
 
     /****************************************************************************//**
@@ -88,7 +86,7 @@ public:
     KOKKOS_INLINE_FUNCTION ScalarType apply(const ScalarType & aInput) const
     {
         ScalarType tValue = mBeta * (aInput - mEta);
-        return ((std::tanh(mBetaTimesEta) + std::tanh(tValue)) / mDenominator);
+        return ((tanh(mBetaTimesEta) + tanh(tValue)) / mDenominator);
     }
 
     // ! Sets curvature parameter \beta.
@@ -97,7 +95,7 @@ public:
         mBeta = aInput;
         mBetaTimesEta = mBeta * mEta;
         mBetaTimesOneMinusEta = mBeta * (static_cast<Plato::Scalar>(1) - mEta);
-        mDenominator = std::tanh(mBetaTimesEta) + std::tanh(mBetaTimesOneMinusEta);
+        mDenominator = tanh(mBetaTimesEta) + tanh(mBetaTimesOneMinusEta);
     }
 
     // ! Sets treshold level parameter \eta.
@@ -106,7 +104,7 @@ public:
         mEta = aInput;
         mBetaTimesEta = mBeta * mEta;
         mBetaTimesOneMinusEta = mBeta * (static_cast<Plato::Scalar>(1) - mEta);
-        mDenominator = std::tanh(mBetaTimesEta) + std::tanh(mBetaTimesOneMinusEta);
+        mDenominator = tanh(mBetaTimesEta) + tanh(mBetaTimesOneMinusEta);
     }
 
     // ! Sets curvature parameter \beta and treshold level parameter \eta.
@@ -116,7 +114,7 @@ public:
         mBeta = aBeta;
         mBetaTimesEta = mBeta * mEta;
         mBetaTimesOneMinusEta = mBeta * (static_cast<Plato::Scalar>(1) - mEta);
-        mDenominator = std::tanh(mBetaTimesEta) + std::tanh(mBetaTimesOneMinusEta);
+        mDenominator = tanh(mBetaTimesEta) + tanh(mBetaTimesOneMinusEta);
     }
 
 private:

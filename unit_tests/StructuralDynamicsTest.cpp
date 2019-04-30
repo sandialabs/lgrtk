@@ -521,7 +521,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicCompliance)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractScalarFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::DynamicCompliance<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -568,7 +568,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradZ)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianZ>> tJacobianControl;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianZ>> tJacobianControl;
     tJacobianControl = std::make_shared<Plato::DynamicCompliance<JacobianZ, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -627,7 +627,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradX)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianX>> tJacobianConfig;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianX>> tJacobianConfig;
     tJacobianConfig = std::make_shared<Plato::DynamicCompliance<JacobianX, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -685,7 +685,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradU)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::DynamicCompliance<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -759,7 +759,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeValue)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractScalarFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::ExpVolume<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -806,7 +806,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradZ)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianZ>> tJacobianControl;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianZ>> tJacobianControl;
     tJacobianControl = std::make_shared<Plato::ExpVolume<JacobianZ, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -862,7 +862,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradU)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::ExpVolume<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -914,7 +914,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradX)
     // ALLOCATE INVERSE COMPLIANCE TRANSFER FUNCTION CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianX>> tJacobianConfig;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianX>> tJacobianConfig;
     tJacobianConfig = std::make_shared<Plato::ExpVolume<JacobianX, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
@@ -1083,9 +1083,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsResidual)
     Omega_h::MeshSets tMeshSets;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 
@@ -1165,9 +1165,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsResidual)
     Omega_h::MeshSets tMeshSets;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<AbstractVectorFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
-    std::shared_ptr<AbstractVectorFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 
@@ -1321,7 +1321,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfitValue)
     Omega_h::MeshSets tMeshSets;
     std::vector<Plato::Scalar> tFreqArray = {15.0};
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
-    std::shared_ptr<AbstractScalarFunction<ResidualT>> tResidual;
+    std::shared_ptr<Plato::AbstractScalarFunction<ResidualT>> tResidual;
     tResidual = std::make_shared<Plato::FrequencyResponseMisfit<ResidualT>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
     
     // ALLOCATE SCALAR FUNCTION
@@ -1377,7 +1377,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradZ)
     Omega_h::MeshSets tMeshSets;
     std::vector<Plato::Scalar> tFreqArray = {15.0};
     using JacobianZ = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::GradientZ;
-    std::shared_ptr<AbstractScalarFunction<JacobianZ>> tGradControl;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianZ>> tGradControl;
     tGradControl = std::make_shared<Plato::FrequencyResponseMisfit<JacobianZ>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION
@@ -1439,7 +1439,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradX)
     // ALLOCATE FREQUENCY RESPONSE MISFIT CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianX>> tJacobianConfig;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianX>> tJacobianConfig;
     tJacobianConfig = std::make_shared<Plato::FrequencyResponseMisfit<JacobianX>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION
@@ -1501,7 +1501,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradU)
     // ALLOCATE FREQUENCY RESPONSE MISFIT CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    std::shared_ptr<AbstractScalarFunction<JacobianU>> tJacobianState;
+    std::shared_ptr<Plato::AbstractScalarFunction<JacobianU>> tJacobianState;
     tJacobianState = std::make_shared<Plato::FrequencyResponseMisfit<JacobianU>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION

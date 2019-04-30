@@ -21,30 +21,30 @@
  */
 /******************************************************************************/
 template<typename PhysicsT>
-class ScalarFunction : public WorksetBase<PhysicsT>
+class ScalarFunction : public Plato::WorksetBase<PhysicsT>
 {
 private:
-    using WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degree of freedom per cell/element */
-    using WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell/element */
-    using WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degree of freedom per node */
-    using WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
-    using WorksetBase<PhysicsT>::m_numControl; /*!< number of control variables */
-    using WorksetBase<PhysicsT>::m_numNodes; /*!< total number of nodes in the mesh */
-    using WorksetBase<PhysicsT>::m_numCells; /*!< total number of cells/elements in the mesh */
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degree of freedom per node */
+    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
+    using Plato::WorksetBase<PhysicsT>::m_numControl; /*!< number of control variables */
+    using Plato::WorksetBase<PhysicsT>::m_numNodes; /*!< total number of nodes in the mesh */
+    using Plato::WorksetBase<PhysicsT>::m_numCells; /*!< total number of cells/elements in the mesh */
 
-    using WorksetBase<PhysicsT>::m_stateEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using WorksetBase<PhysicsT>::m_controlEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using WorksetBase<PhysicsT>::m_configEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::m_stateEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::m_controlEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::m_configEntryOrdinal; /*!< number of degree of freedom per cell/element */
 
     using Residual = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Residual; /*!< result variables automatic differentiation type */
     using Jacobian = typename Plato::Evaluation<typename PhysicsT::SimplexT>::Jacobian; /*!< state variables automatic differentiation type */
     using GradientX = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientX; /*!< configuration variables automatic differentiation type */
     using GradientZ = typename Plato::Evaluation<typename PhysicsT::SimplexT>::GradientZ; /*!< control variables automatic differentiation type */
 
-    std::shared_ptr<AbstractScalarFunction<Residual>> mScalarFunctionValue; /*!< scalar function value interface */
-    std::shared_ptr<AbstractScalarFunction<Jacobian>> mScalarFunctionGradientU; /*!< scalar function value partial wrt states */
-    std::shared_ptr<AbstractScalarFunction<GradientX>> mScalarFunctionGradientX; /*!< scalar function value partial wrt configuration */
-    std::shared_ptr<AbstractScalarFunction<GradientZ>> mScalarFunctionGradientZ; /*!< scalar function value partial wrt controls */
+    std::shared_ptr<Plato::AbstractScalarFunction<Residual>> mScalarFunctionValue; /*!< scalar function value interface */
+    std::shared_ptr<Plato::AbstractScalarFunction<Jacobian>> mScalarFunctionGradientU; /*!< scalar function value partial wrt states */
+    std::shared_ptr<Plato::AbstractScalarFunction<GradientX>> mScalarFunctionGradientX; /*!< scalar function value partial wrt configuration */
+    std::shared_ptr<Plato::AbstractScalarFunction<GradientZ>> mScalarFunctionGradientZ; /*!< scalar function value partial wrt controls */
 
     Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
 
@@ -62,7 +62,7 @@ public:
                    Plato::DataMap & aDataMap,
                    Teuchos::ParameterList& aInputParams,
                    const std::string & aFuncName) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap)
     {
         typename PhysicsT::FunctionFactory tFactory;
@@ -86,7 +86,7 @@ public:
      * @param [in] aMeshSets side sets database
     **********************************************************************************/
     ScalarFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
-            WorksetBase<PhysicsT>(aMesh),
+            Plato::WorksetBase<PhysicsT>(aMesh),
             mScalarFunctionValue(nullptr),
             mScalarFunctionGradientU(nullptr),
             mScalarFunctionGradientX(nullptr),
@@ -99,7 +99,7 @@ public:
      * @brief Allocate scalar function using the residual automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateValue(const std::shared_ptr<AbstractScalarFunction<Residual>>& aInput)
+    void allocateValue(const std::shared_ptr<Plato::AbstractScalarFunction<Residual>>& aInput)
     {
         mScalarFunctionValue = aInput;
     }
@@ -108,7 +108,7 @@ public:
      * @brief Allocate scalar function using the Jacobian automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientU(const std::shared_ptr<AbstractScalarFunction<Jacobian>>& aInput)
+    void allocateGradientU(const std::shared_ptr<Plato::AbstractScalarFunction<Jacobian>>& aInput)
     {
         mScalarFunctionGradientU = aInput;
     }
@@ -117,7 +117,7 @@ public:
      * @brief Allocate scalar function using the GradientZ automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientZ(const std::shared_ptr<AbstractScalarFunction<GradientZ>>& aInput)
+    void allocateGradientZ(const std::shared_ptr<Plato::AbstractScalarFunction<GradientZ>>& aInput)
     {
         mScalarFunctionGradientZ = aInput;
     }
@@ -126,7 +126,7 @@ public:
      * @brief Allocate scalar function using the GradientX automatic differentiation type
      * @param [in] aInput scalar function
     **********************************************************************************/
-    void allocateGradientX(const std::shared_ptr<AbstractScalarFunction<GradientX>>& aInput)
+    void allocateGradientX(const std::shared_ptr<Plato::AbstractScalarFunction<GradientX>>& aInput)
     {
         mScalarFunctionGradientX = aInput;
     }
@@ -139,13 +139,13 @@ public:
     void updateProblem(const Plato::ScalarVector & aState, const Plato::ScalarVector & aControl) const
     {
         Plato::ScalarMultiVector tStateWS("state workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         Plato::ScalarMultiVector tControlWS("control workset", m_numCells, m_numNodesPerCell);
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         Plato::ScalarArray3D tConfigWS("config workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         mScalarFunctionValue->updateProblem(tStateWS, tControlWS, tConfigWS);
         mScalarFunctionGradientU->updateProblem(tStateWS, tControlWS, tConfigWS);
@@ -173,18 +173,18 @@ public:
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
 
-        WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
 
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         //
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create result view
         //
@@ -224,17 +224,17 @@ public:
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         //
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create return view
         //
@@ -277,17 +277,17 @@ public:
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("sacado-ized state", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         //
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create return view
         //
@@ -330,17 +330,17 @@ public:
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-        WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
+        Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
-        WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
+        Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset config
         //
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset", m_numCells, m_numNodesPerCell, m_numSpatialDims);
-        WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
+        Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create result
         //

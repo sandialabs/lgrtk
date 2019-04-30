@@ -4,6 +4,9 @@
 #include "plato/PlatoStaticsTypes.hpp"
 #include <Omega_h_vector.hpp>
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Scalar gradient functor.
   
@@ -52,4 +55,8 @@ class ScalarGrad
       }
     }
 };
+// class ScalarGrad
+
+} // namespace Plato
+
 #endif
