@@ -40,13 +40,14 @@ void resize_state(input const& in, state& s) {
     s.p_h.resize(s.nodes.size());
     s.e_h.resize(in.materials.size(), s.devpool);
     s.e_h_dot.resize(in.materials.size(), s.devpool);
+    s.rho_h.resize(in.materials.size(), s.devpool);
     for (auto const material : in.materials) {
       if (in.enable_nodal_energy) {
         s.e_h[material].resize(s.nodes.size());
         s.e_h_dot[material].resize(s.nodes.size());
+        s.rho_h[material].resize(s.nodes.size());
       }
     }
-    s.rho_h.resize(s.nodes.size());
     s.q.resize(s.points.size());
     s.W.resize(s.points.size() * s.nodes_in_element.size());
   }

@@ -17,6 +17,6 @@ void update_e_h_dot(state& s, material_index const);
 void nodal_ideal_gas(input const& in, state& s, material_index const);
 void update_nodal_density(state& s, material_index const);
 void interpolate_K(state& s);
-void interpolate_rho(state& s);
+void interpolate_rho(state& s, material_index const);
 
 }
