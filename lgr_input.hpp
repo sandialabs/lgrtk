@@ -6,7 +6,6 @@
 #include <lgr_vector3.hpp>
 #include <lgr_counting_range.hpp>
 #include <lgr_domain.hpp>
-#include <lgr_pinned_vector.hpp>
 #include <lgr_host_vector.hpp>
 
 namespace lgr {
@@ -36,7 +35,6 @@ class zero_acceleration_condition {
 
 class input {
   public:
-  pinned_memory_pool pinpool;
   std::string name;
   element_kind element;
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
@@ -53,15 +51,15 @@ class input {
   int elements_along_z = 0;
   double z_domain_size = 1.0;
   bool output_to_command_line = true;
-  pinned_vector<double, material_index> rho0;
-  pinned_vector<double, material_index> e0;
-  pinned_vector<bool, material_index> enable_neo_Hookean;
-  pinned_vector<double, material_index> K0;
-  pinned_vector<double, material_index> G0;
-  pinned_vector<bool, material_index> enable_ideal_gas;
-  pinned_vector<double, material_index> gamma;
-  pinned_vector<bool, material_index> enable_nodal_pressure;
-  pinned_vector<bool, material_index> enable_nodal_energy;
+  host_vector<double, material_index> rho0;
+  host_vector<double, material_index> e0;
+  host_vector<bool, material_index> enable_neo_Hookean;
+  host_vector<double, material_index> K0;
+  host_vector<double, material_index> G0;
+  host_vector<bool, material_index> enable_ideal_gas;
+  host_vector<double, material_index> gamma;
+  host_vector<bool, material_index> enable_nodal_pressure;
+  host_vector<bool, material_index> enable_nodal_energy;
   double c_tau = 0.5;
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
@@ -82,15 +80,15 @@ class input {
   input(material_index const material_count_in, material_index const boundary_count_in)
     :materials(material_count_in)
     ,boundaries(material_count_in, material_count_in + boundary_count_in)
-    ,rho0(material_count_in, pinpool)
-    ,e0(material_count_in, double(0.0), pinpool)
-    ,enable_neo_Hookean(material_count_in, false, pinpool)
-    ,K0(material_count_in, pinpool)
-    ,G0(material_count_in, double(0.0), pinpool)
-    ,enable_ideal_gas(material_count_in, false, pinpool)
-    ,gamma(material_count_in, pinpool)
-    ,enable_nodal_pressure(material_count_in, false, pinpool)
-    ,enable_nodal_energy(material_count_in, false, pinpool)
+    ,rho0(material_count_in)
+    ,e0(material_count_in, double(0.0))
+    ,enable_neo_Hookean(material_count_in, false)
+    ,K0(material_count_in)
+    ,G0(material_count_in, double(0.0))
+    ,enable_ideal_gas(material_count_in, false)
+    ,gamma(material_count_in)
+    ,enable_nodal_pressure(material_count_in, false)
+    ,enable_nodal_energy(material_count_in, false)
     ,domains(material_count_in + boundary_count_in)
   {}
 };
