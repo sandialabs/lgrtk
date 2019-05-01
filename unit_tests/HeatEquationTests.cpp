@@ -55,10 +55,9 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
 
 
   int numCells = mesh->nelems();
-  int nodesPerCell  = SimplexThermal<spaceDim>::m_numNodesPerCell;
-  int dofsPerCell   = SimplexThermal<spaceDim>::m_numDofsPerCell;
-  int dofsPerNode   = SimplexThermal<spaceDim>::m_numDofsPerNode;
-
+  constexpr int nodesPerCell  = SimplexThermal<spaceDim>::m_numNodesPerCell;
+  constexpr int dofsPerCell   = SimplexThermal<spaceDim>::m_numDofsPerCell;
+  constexpr int dofsPerNode   = SimplexThermal<spaceDim>::m_numDofsPerNode;
 
   // create mesh based temperature from host data
   //
@@ -139,25 +138,27 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
   }, "flux divergence");
 
 
-  Plato::ScalarMultiVectorT<Plato::Scalar> 
-   stateValues("Gauss point temperature at step k", numCells, dofsPerNode);
+  Plato::ScalarVectorT<Plato::Scalar> 
+   tTemperature("Gauss point temperature at step k", numCells);
 
-  Plato::ScalarMultiVectorT<Plato::Scalar> 
-    thermalContent("Gauss point heat content at step k", numCells, dofsPerNode);
+  Plato::ScalarVectorT<Plato::Scalar> 
+    thermalContent("Gauss point heat content at step k", numCells);
 
   Plato::ScalarMultiVectorT<Plato::Scalar> 
     massResult("mass", numCells, dofsPerCell);
 
   Plato::StateValues computeStateValues;
+
+  Plato::InterpolateFromNodal<spaceDim, dofsPerNode> interpolateFromNodal;
   Plato::ThermalContent     computeThermalContent(cellDensity, cellSpecificHeat);
-  Plato::ComputeProjectionWorkset projectThermalContent;
+  Plato::ProjectToNode<spaceDim, dofsPerNode> projectThermalContent;
 
   auto basisFunctions = cubatureRule.getBasisFunctions();
 
   Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(int cellOrdinal)
   {
-    computeStateValues(cellOrdinal, basisFunctions, stateWS, stateValues);
-    computeThermalContent(cellOrdinal, thermalContent, stateValues);
+    interpolateFromNodal(cellOrdinal, basisFunctions, stateWS, tTemperature);
+    computeThermalContent(cellOrdinal, thermalContent, tTemperature);
     projectThermalContent(cellOrdinal, cellVolume, basisFunctions, thermalContent, massResult);
 
   }, "mass");
@@ -186,23 +187,23 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
 
   // test state values
   //
-  auto stateValues_Host = Kokkos::create_mirror_view( stateValues );
-  Kokkos::deep_copy( stateValues_Host, stateValues );
+  auto tTemperature_Host = Kokkos::create_mirror_view( tTemperature );
+  Kokkos::deep_copy( tTemperature_Host, tTemperature );
 
-  std::vector<std::vector<double>> stateValues_gold = { 
+  std::vector<std::vector<double>> tTemperature_gold = { 
     { 8.5 },{ 7.0 },{ 5.25},{ 9.75},
     { 8.75},{ 6.5 },{ 6.25},{10.75},
     {11.00},{ 8.25},{ 7.75},{10.0 },
     {11.75},{10.25},{ 9.25},{11.0 }
   };
 
-  numGoldCells=stateValues_gold.size();
+  numGoldCells=tTemperature_gold.size();
   for(int iCell=0; iCell<numGoldCells; iCell++){
     for(int iDof=0; iDof<dofsPerNode; iDof++){
-      if(stateValues_gold[iCell][iDof] == 0.0){
-        TEST_ASSERT(fabs(stateValues_Host(iCell,iDof)) < 1e-12);
+      if(tTemperature_gold[iCell][iDof] == 0.0){
+        TEST_ASSERT(fabs(tTemperature_Host(iCell,iDof)) < 1e-12);
       } else {
-        TEST_FLOATING_EQUALITY(stateValues_Host(iCell,iDof), stateValues_gold[iCell][iDof], 1e-13);
+        TEST_FLOATING_EQUALITY(tTemperature_Host(iCell,iDof), tTemperature_gold[iCell][iDof], 1e-13);
       }
     }
   }

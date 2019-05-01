@@ -47,16 +47,15 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
                 Plato::ScalarMultiVectorT< ForcingScalarType  > forcing,
                 Plato::ScalarMultiVectorT< StressScalarType   > stress,
                 Plato::ScalarArray3DT<     GradientScalarType > gradient,
-                Plato::ScalarVectorT<      VolumeScalarType   > cellVolume ) const {
-
+                Plato::ScalarVectorT<      VolumeScalarType   > cellVolume,
+                Plato::Scalar scale = 1.0 ) const {
 
       for(Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
         for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
           Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+iDim+DofOffset;
-          forcing(cellOrdinal, localOrdinal) = 0.0;
           for(Plato::OrdinalType jDim=0; jDim<SpaceDim; jDim++){
             forcing(cellOrdinal,localOrdinal) += 
-              cellVolume(cellOrdinal)*stress(cellOrdinal,m_voigt[iDim][jDim])*gradient(cellOrdinal,iNode,jDim);
+              scale*cellVolume(cellOrdinal)*stress(cellOrdinal,m_voigt[iDim][jDim])*gradient(cellOrdinal,iNode,jDim);
           }
         }
       }

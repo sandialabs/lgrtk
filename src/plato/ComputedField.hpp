@@ -85,6 +85,22 @@ class ComputedField
   }
 
   /******************************************************************************/
+  void get(Plato::ScalarVector aValues, int aOffset, int aStride)
+  /******************************************************************************/
+  {
+    TEUCHOS_TEST_FOR_EXCEPTION(
+      m_values.extent(0)*aStride != aValues.extent(0), 
+      std::logic_error, 
+      "Size mismatch in field initialization:  Mod(view, stride) != 0");
+    auto tFromValues = m_values;
+    auto tToValues = aValues;
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tFromValues.extent(0)), LAMBDA_EXPRESSION(Plato::OrdinalType aPointOrdinal)
+    {
+        tToValues(aStride*aPointOrdinal+aOffset) = tFromValues(aPointOrdinal);
+    }, "copy");
+  }
+
+  /******************************************************************************/
   const decltype(m_name)& name() { return m_name; }
   /******************************************************************************/
 
@@ -137,6 +153,26 @@ class ComputedFields
       for (auto& cf : CFs) {
         if( cf->name() == aName ){
           cf->get(aValues);
+          return;
+        }
+      }
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error, "Requested a Computed Field that doesn't exist.");
+  }
+  /****************************************************************************/
+  /*!
+    \brief Get the values for the specified field.
+    Copies values from the computed field(iValue) into aValues(aStride*iValue+aOffset)
+    @param aName Name of the requested Computed Field.
+    @param aOffset Index of this degree of freedom
+    @param aStride Number of degrees of freedom
+    @param aValues Computed Field values.
+  */
+  void get(const std::string& aName, int aOffset, int aStride, Plato::ScalarVector& aValues)
+  /****************************************************************************/
+  {
+      for (auto& cf : CFs) {
+        if( cf->name() == aName ){
+          cf->get(aValues, aOffset, aStride);
           return;
         }
       }

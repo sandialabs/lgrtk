@@ -293,6 +293,31 @@ if (LGR_ENABLE_PLATO)
   build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/ThermoelasticUnitTests)
   add_test(NAME runThermoelasticUnitTests COMMAND ${ES_MPI_TEST})
 
+  set(TransientThermomechTests_SOURCES
+    TransientThermomechTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(TransientThermomechTests_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(TransientThermomechUnitTests
+    ${TransientThermomechTests_SOURCES}
+    ${TransientThermomechTests_HEADERS}
+  )
+
+  target_link_libraries(TransientThermomechUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(TransientThermomechUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/TransientThermomechUnitTests)
+  add_test(NAME runTransientThermomechUnitTests COMMAND ${ES_MPI_TEST})
+
   target_link_libraries(DerivativeUnitTests 
     lgrtk
     ${Trilinos_LIBRARIES} 

@@ -26,12 +26,12 @@ class ThermalContent
     template<typename TScalarType, typename TContentScalarType>
     DEVICE_TYPE inline void
     operator()( Plato::OrdinalType cellOrdinal,
-                Kokkos::View<TContentScalarType**, Kokkos::LayoutRight, Plato::MemSpace> tcontent,
-                Kokkos::View<TScalarType**, Kokkos::LayoutRight, Plato::MemSpace> temperature) const {
+                Plato::ScalarVectorT<TContentScalarType> tcontent,
+                Plato::ScalarVectorT<TScalarType> temperature) const {
 
       // compute thermal content
       //
-      tcontent(cellOrdinal,0) = temperature(cellOrdinal,0)*m_cellDensity*m_cellSpecificHeat;
+      tcontent(cellOrdinal) = temperature(cellOrdinal)*m_cellDensity*m_cellSpecificHeat;
     }
 };
 // class ThermalContent

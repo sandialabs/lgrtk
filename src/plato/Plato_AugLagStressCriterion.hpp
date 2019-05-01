@@ -104,7 +104,7 @@ private:
         mAugLagPenaltyUpperBound = tParams.get<Plato::Scalar>("Penalty Upper Bound", 100.0);
         mMassMultipliersLowerBound = tParams.get<Plato::Scalar>("Mass Multiplier Lower Bound", 0.0);
         mMassMultipliersUpperBound = tParams.get<Plato::Scalar>("Mass Multiplier Upper Bound", 4.0);
-        mInitialMassMultipliersValue = tParams.get<Plato::Scalar>("Initial Mass Multiplier", 0.0);
+        mInitialMassMultipliersValue = tParams.get<Plato::Scalar>("Initial Mass Multiplier", 1.0);
         mMassNormalizationMultiplier = tParams.get<Plato::Scalar>("Mass Normalization Multiplier", 1.0);
         mInitialLagrangeMultipliersValue = tParams.get<Plato::Scalar>("Initial Lagrange Multiplier", 0.01);
         mAugLagPenaltyExpansionMultiplier = tParams.get<Plato::Scalar>("Penalty Expansion Multiplier", 1.05);
@@ -143,7 +143,7 @@ public:
             mMassMultipliersLowerBound(0),
             mMassMultipliersUpperBound(4),
             mMassNormalizationMultiplier(1.0),
-            mInitialMassMultipliersValue(0.0),
+            mInitialMassMultipliersValue(1.0),
             mInitialLagrangeMultipliersValue(0.01),
             mAugLagPenaltyExpansionMultiplier(1.05),
             mMassMultiplierUpperBoundReductionParam(0.95),

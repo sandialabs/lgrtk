@@ -62,7 +62,11 @@ public:
         }
         else if(tProblemPhysics == "Thermomechanical")
         {
-            return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            if(tProblemPDE == "First Order") {
+              return std::make_shared<HeatEquationProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         return nullptr;
     }

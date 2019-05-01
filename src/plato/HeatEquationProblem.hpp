@@ -35,6 +35,8 @@ private:
 
     static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims;
 
+    static constexpr Plato::OrdinalType m_numDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+
     // required
     VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
 
@@ -54,7 +56,6 @@ private:
     Teuchos::RCP<Plato::CrsMatrixType> mJacobian;
     Teuchos::RCP<Plato::CrsMatrixType> mJacobianP;
 
-    std::string mInitialTemperatureCF;
     Teuchos::RCP<Plato::ComputedFields<SpatialDim>> mComputedFields;
 
     bool mIsSelfAdjoint;
@@ -111,11 +112,11 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<SpatialDim>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
@@ -142,13 +143,6 @@ public:
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
     /******************************************************************************/
     {
-        // initialize first state
-        //
-        if (!mInitialTemperatureCF.empty()) {
-          Plato::ScalarVector firstState = Kokkos::subview(mStates, 0, Kokkos::ALL());
-          mComputedFields->get(mInitialTemperatureCF, firstState);
-        }
-
         for(Plato::OrdinalType tStepIndex = 1; tStepIndex < mNumSteps; tStepIndex++) {
           Plato::ScalarVector tState = Kokkos::subview(mStates, tStepIndex, Kokkos::ALL());
           Plato::ScalarVector tPrevState = Kokkos::subview(mStates, tStepIndex-1, Kokkos::ALL());
@@ -512,13 +506,34 @@ private:
           mComputedFields = Teuchos::rcp(new Plato::ComputedFields<SpatialDim>(aMesh, aParamList.sublist("Computed Fields")));
         }
 
-        if(aParamList.isSublist("Initial Temperature"))
+        if(aParamList.isSublist("Initial State"))
         {
-          if(mComputedFields == Teuchos::null) {
-            throw std::runtime_error("No 'Computed Fields' have been defined");
-          }
-          mInitialTemperatureCF = aParamList.sublist("Initial Temperature").get<std::string>("Computed Field");
-          mComputedFields->find(mInitialTemperatureCF);
+            Plato::ScalarVector tInitialState = Kokkos::subview(mStates, 0, Kokkos::ALL());
+            if(mComputedFields == Teuchos::null) {
+              throw std::runtime_error("No 'Computed Fields' have been defined");
+            }
+
+            auto tDofNames = mEqualityConstraint.getDofNames();
+
+            auto tInitStateParams = aParamList.sublist("Initial State");
+            for (auto i = tInitStateParams.begin(); i != tInitStateParams.end(); ++i) {
+                const auto &tEntry = tInitStateParams.entry(i);
+                const auto &tName  = tInitStateParams.name(i);
+
+                if (tEntry.isList()) 
+                {
+                    auto& tStateList = tInitStateParams.sublist(tName);
+                    auto tFieldName = tStateList.get<std::string>("Computed Field");
+                    int tDofIndex = -1;
+                    for (int j = 0; j < tDofNames.size(); ++j)
+                    {
+                        if (tDofNames[j] == tName) {
+                           tDofIndex = j;
+                        }
+                    }
+                    mComputedFields->get(tFieldName, tDofIndex, tDofNames.size(), tInitialState);
+                }
+            }
         }
 
         if(aParamList.isType<std::string>("Linear Constraint"))
@@ -551,8 +566,6 @@ private:
     }
 };
 
-// JR HACK: explicit instantiation
-// compile time: (no effect)
 #ifdef PLATO_1D
 extern template class HeatEquationProblem<::Plato::Thermal<1>>;
 #endif

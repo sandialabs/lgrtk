@@ -314,8 +314,9 @@ public:
             // Compute Von Mises stress constraint residual
             tVonMisesOverStressLimit(aCellOrdinal) = tVonMises(aCellOrdinal) / tStressLimit;
             tVonMisesOverLimitMinusOne(aCellOrdinal) = tVonMisesOverStressLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
-            tConstraintValue(aCellOrdinal) = ( tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal) *
-                    tVonMisesOverLimitMinusOne(aCellOrdinal) ) + tVonMisesOverLimitMinusOne(aCellOrdinal);
+            tConstraintValue(aCellOrdinal) = ( tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal)
+                    * tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal) )
+                    + ( tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal) );
 
             ControlT tDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tMaterialPenalty = tSIMP(tDensity);
@@ -364,7 +365,7 @@ public:
         Plato::ScalarVector tTrueConstraint("true constraint", tNumCells);
         Plato::ScalarVector tTrialConstraint("trial constraint", tNumCells);
         Plato::ScalarVector tTrialMultiplier("trial multiplier", tNumCells);
-        Plato::ScalarVector tConstraintResidual("constraint residual", tNumCells);
+        Plato::ScalarVector tConstraintValue("constraint residual", tNumCells);
         Plato::ScalarVector tVonMisesOverStressLimit("stress over limit", tNumCells);
         Plato::ScalarVector tVonMisesOverLimitMinusOne("stress over limit - 1", tNumCells);
 
@@ -393,14 +394,14 @@ public:
             // Compute Von Mises stress constraint residual
             tVonMisesOverStressLimit(aCellOrdinal) = tVonMises(aCellOrdinal) / tStressLimit;
             tVonMisesOverLimitMinusOne(aCellOrdinal) = tVonMisesOverStressLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
-            tConstraintResidual(aCellOrdinal) = ( tVonMisesOverLimitMinusOne(aCellOrdinal)
+            tConstraintValue(aCellOrdinal) = ( tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal)
                     * tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal) )
-                    + tVonMisesOverLimitMinusOne(aCellOrdinal);
+                    + ( tVonMisesOverLimitMinusOne(aCellOrdinal) * tVonMisesOverLimitMinusOne(aCellOrdinal) );
 
             // Compute penalized Von Mises stress constraint
             auto tDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             auto tPenalty = tSIMP(tDensity);
-            tTrialConstraint(aCellOrdinal) = tPenalty * tConstraintResidual(aCellOrdinal);
+            tTrialConstraint(aCellOrdinal) = tPenalty * tConstraintValue(aCellOrdinal);
             tTrueConstraint(aCellOrdinal) = tVonMisesOverStressLimit(aCellOrdinal) > static_cast<Plato::Scalar>(1.0) ?
                     tTrialConstraint(aCellOrdinal) : static_cast<Plato::Scalar>(0.0);
 
