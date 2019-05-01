@@ -313,7 +313,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ElastostaticResidual3D )
   //
   Plato::DataMap tDataMap;
   Omega_h::MeshSets tMeshSets;
-  VectorFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::VectorFunction<::Plato::Mechanics<spaceDim>>
     esVectorFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("PDE Constraint"));
 
 
@@ -1265,7 +1265,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ThermostaticResidual3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  VectorFunction<::Plato::Thermal<spaceDim>> 
+  Plato::VectorFunction<::Plato::Thermal<spaceDim>>
     tsVectorFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("PDE Constraint"));
 
 

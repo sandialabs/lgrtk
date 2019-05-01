@@ -1077,7 +1077,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsResidual)
 
     // ALLOCATE VECTOR FUNCTION
     Plato::DataMap tDataMap;
-    VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tVectorFunction(*tMesh, tDataMap);
+    Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tVectorFunction(*tMesh, tDataMap);
 
     // ALLOCATE ELASTODYNAMICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
@@ -1159,7 +1159,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsResidual)
 
     // ALLOCATE VECTOR FUNCTION
     Plato::DataMap tDataMap;
-    VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tVectorFunction(*tMesh, tDataMap);
+    Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>> tVectorFunction(*tMesh, tDataMap);
 
     // ALLOCATE ADJOINT ELASTODYNAMICS RESIDUAL
     Omega_h::MeshSets tMeshSets;
@@ -1566,8 +1566,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsSolve)
     tJacobianState->setIsotropicLinearElasticMaterial(tYoungsModulus, tPoissonRatio);
    
     // ALLOCATE VECTOR FUNCTION
-    std::shared_ptr<VectorFunction<Plato::StructuralDynamics<tSpaceDim>>> tVectorFunction =
-        std::make_shared<VectorFunction<Plato::StructuralDynamics<tSpaceDim>>>(*tMesh, tDataMap);
+    std::shared_ptr<Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>>> tVectorFunction =
+        std::make_shared<Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>>>(*tMesh, tDataMap);
     tVectorFunction->allocateResidual(tResidual, tJacobianState);
 
     // ALLOCATE STRUCTURAL DYNAMICS PROBLEM
@@ -1652,8 +1652,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsSolve)
     tJacobianState->setIsotropicLinearElasticMaterial(tYoungsModulus, tPoissonRatio);
 
     // ALLOCATE VECTOR FUNCTION
-    std::shared_ptr<VectorFunction<Plato::StructuralDynamics<tSpaceDim>>> tVectorFunction =
-        std::make_shared<VectorFunction<Plato::StructuralDynamics<tSpaceDim>>>(*tMesh, tDataMap);
+    std::shared_ptr<Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>>> tVectorFunction =
+        std::make_shared<Plato::VectorFunction<Plato::StructuralDynamics<tSpaceDim>>>(*tMesh, tDataMap);
     tVectorFunction->allocateResidual(tResidual, tJacobianState);
 
     // ALLOCATE ADJOINT STRUCTURAL DYNAMICS PROBLEM

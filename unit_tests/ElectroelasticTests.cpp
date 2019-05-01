@@ -117,7 +117,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   //
   Plato::DataMap tDataMap;
   Omega_h::MeshSets tMeshSets;
-  VectorFunction<::Plato::Electromechanics<spaceDim>>
+  Plato::VectorFunction<::Plato::Electromechanics<spaceDim>>
     vectorFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("PDE Constraint"));
   // compute and test constraint value
   //

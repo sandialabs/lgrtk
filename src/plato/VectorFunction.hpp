@@ -10,6 +10,9 @@
 #include "plato/AbstractVectorFunction.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! constraint class
 
@@ -393,5 +396,8 @@ class VectorFunction : public Plato::WorksetBase<PhysicsT>
       return tJacobianMat;
     }
 };
+// class VectorFunction
+
+} // namespace Plato
 
 #endif

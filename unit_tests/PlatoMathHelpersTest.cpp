@@ -277,7 +277,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixTimesVectorPlusVecto
 
   // create PDE constraint
   //
-  VectorFunction<::Plato::Mechanics<spaceDim>>
+  Plato::VectorFunction<::Plato::Mechanics<spaceDim>>
     esVectorFunction(*mesh, tMeshSets, tDataMap, *tParams, tParams->get<std::string>("PDE Constraint"));
 
   auto dgdx = esVectorFunction.gradient_x(u,z);

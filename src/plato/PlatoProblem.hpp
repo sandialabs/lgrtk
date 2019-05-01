@@ -33,7 +33,7 @@ private:
     static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims; /*!< spatial dimensions */
 
     // required
-    VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
+    Plato::VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
 
     // optional
     std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
