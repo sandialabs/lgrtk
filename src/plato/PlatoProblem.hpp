@@ -22,6 +22,9 @@
 #include "plato/alg/AmgXSparseLinearProblem.hpp"
 #endif
 
+namespace Plato
+{
+
 /******************************************************************************//**
  * @brief Manage scalar and vector function evaluations
 **********************************************************************************/
@@ -33,11 +36,11 @@ private:
     static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims; /*!< spatial dimensions */
 
     // required
-    VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
+    Plato::VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
 
     // optional
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
 
     Plato::ScalarMultiVector mAdjoint;
     Plato::ScalarVector mResidual;
@@ -357,7 +360,6 @@ public:
 
             // compute dgdu: partial of PDE wrt state
             mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
-
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
             // adjoint problem uses transpose of global stiffness, but we're assuming the constrained
@@ -536,13 +538,13 @@ private:
         {
             std::string tName = aInputParams.get<std::string>("Linear Constraint");
             mConstraint =
-                    std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
         if(aInputParams.isType<std::string>("Objective"))
         {
             std::string tName = aInputParams.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mObjective = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
@@ -555,6 +557,9 @@ private:
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
     }
 };
+// class Problem
+
+} // namespace Plato
 
 #include "Thermal.hpp"
 #include "Mechanics.hpp"
@@ -562,22 +567,22 @@ private:
 #include "Thermomechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Problem<::Plato::Thermal<1>>;
-extern template class Problem<::Plato::Mechanics<1>>;
-extern template class Problem<::Plato::Electromechanics<1>>;
-extern template class Problem<::Plato::Thermomechanics<1>>;
+extern template class Plato::Problem<::Plato::Thermal<1>>;
+extern template class Plato::Problem<::Plato::Mechanics<1>>;
+extern template class Plato::Problem<::Plato::Electromechanics<1>>;
+extern template class Plato::Problem<::Plato::Thermomechanics<1>>;
 #endif
 #ifdef PLATO_2D
-extern template class Problem<::Plato::Thermal<2>>;
-extern template class Problem<::Plato::Mechanics<2>>;
-extern template class Problem<::Plato::Electromechanics<2>>;
-extern template class Problem<::Plato::Thermomechanics<2>>;
+extern template class Plato::Problem<::Plato::Thermal<2>>;
+extern template class Plato::Problem<::Plato::Mechanics<2>>;
+extern template class Plato::Problem<::Plato::Electromechanics<2>>;
+extern template class Plato::Problem<::Plato::Thermomechanics<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class Problem<::Plato::Thermal<3>>;
-extern template class Problem<::Plato::Mechanics<3>>;
-extern template class Problem<::Plato::Electromechanics<3>>;
-extern template class Problem<::Plato::Thermomechanics<3>>;
+extern template class Plato::Problem<::Plato::Thermal<3>>;
+extern template class Plato::Problem<::Plato::Mechanics<3>>;
+extern template class Plato::Problem<::Plato::Electromechanics<3>>;
+extern template class Plato::Problem<::Plato::Thermomechanics<3>>;
 #endif
 
 #endif // PLATO_PROBLEM_HPP

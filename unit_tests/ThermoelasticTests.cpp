@@ -112,7 +112,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
 
   Plato::DataMap tDataMap;
   Omega_h::MeshSets tMeshSets;
-  VectorFunction<::Plato::Thermomechanics<spaceDim>> 
+  Plato::VectorFunction<::Plato::Thermomechanics<spaceDim>>
     vectorFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("PDE Constraint"));
 
 
@@ -238,7 +238,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
 
   // create objective
   //
-  ScalarFunction<::Plato::Thermomechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Thermomechanics<spaceDim>>
     scalarFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("Objective"));
 
   // compute and test objective value

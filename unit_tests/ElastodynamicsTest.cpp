@@ -2705,12 +2705,12 @@ inline create_elastodynamics_residual(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type");
     if(tPenaltyType == "SIMP")
     {
-        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else
@@ -2754,12 +2754,12 @@ inline create_adjoint_elastodynamics_residual(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type");
     if(tPenaltyType == "SIMP")
     {
-        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else
@@ -2789,11 +2789,11 @@ inline create_linear_elastic_force(Teuchos::ParameterList & aProblemParam, Teuch
     const std::string tPenaltyType = aPenaltyParam.get<std::string>("Type");
     if(tPenaltyType == "SIMP")
     {
-        return std::make_shared<LinearElasticForce<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<LinearElasticForce<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<LinearElasticForce<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<LinearElasticForce<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else
     {
@@ -2822,11 +2822,11 @@ inline create_rayleigh_viscous_force(Teuchos::ParameterList & aProblemParam, Teu
     const std::string tPenaltyType = aPenaltyParam.get<std::string>("Type");
     if(tPenaltyType == "SIMP")
     {
-        return std::make_shared<RayleighViscousForce<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<RayleighViscousForce<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<RayleighViscousForce<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<RayleighViscousForce<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else
     {
@@ -5410,7 +5410,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, InitialAccelerationsCalculation)
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
     // SET ELASTODYNAMICS VECTOR FUNCTION
-    Plato::Experimental::ElastodynamicsResidual<ResidualT, ::SIMP, Plato::HyperbolicTangentProjection>
+    Plato::Experimental::ElastodynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>
         tElastodynamics(*tMesh, tMeshSets, tDataMap, tProblemParams, tPenaltyParams);
     tElastodynamics.setPreviousState(tInitialTimeStep, tPreviousDisp, tPreviousVel, tPreviousAcc);
     Plato::ScalarMultiVectorT<ResidualT::ResultScalarType> tResidualElastodyn("ResidualElastodyn", tNumCells, tNumNodesPerCell);
@@ -5506,7 +5506,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_Residual)
     Omega_h::MeshSets tMeshSets;
     const Plato::OrdinalType tMeshWidth = 1;
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
-    Plato::Experimental::ElastodynamicsResidual<ResidualT, ::SIMP, Plato::HyperbolicTangentProjection>
+    Plato::Experimental::ElastodynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>
         tResidual(*tMesh, tMeshSets, tDataMap, tProblemParams, tPenaltyParams);
     
     // INITIALIZE MULTI-DIMENSION VECTORS

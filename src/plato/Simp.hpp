@@ -1,15 +1,17 @@
-#ifndef SIMP_HPP
-#define SIMP_HPP
+#pragma once
 
 #include <stdio.h>
 #include <Teuchos_ParameterList.hpp>
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************//**
- * @brief Solid Isotropic Material Penalization (SIMP) model
+ * @brief Modified Solid Isotropic Material Penalization (MSIMP) model
 **********************************************************************************/
-class SIMP
+class MSIMP
 {
 private:
     Plato::Scalar mMinValue; /*!< minimum ersatz material */
@@ -21,7 +23,7 @@ public:
      * @param [in] aPenalty penalty parameter
      * @param [in] aMinValue minimum ersatz material
     **********************************************************************************/
-    explicit SIMP(const Plato::Scalar & aPenalty, const Plato::Scalar & aMinValue) :
+    explicit MSIMP(const Plato::Scalar & aPenalty, const Plato::Scalar & aMinValue) :
             mPenaltyParam(aPenalty),
             mMinValue(aMinValue)
     {
@@ -31,7 +33,7 @@ public:
      * @brief Constructor
      * @param [in] aInputParams input parameters
     **********************************************************************************/
-    explicit SIMP(Teuchos::ParameterList & aInputParams)
+    explicit MSIMP(Teuchos::ParameterList & aInputParams)
     {
         mPenaltyParam = aInputParams.get<Plato::Scalar>("Exponent", 3.0);
         mMinValue = aInputParams.get<Plato::Scalar>("Minimum Value", 0.0);
@@ -67,5 +69,6 @@ public:
         return tOutput;
     }
 };
+// class MSIMP
 
-#endif
+} // namespace Plato

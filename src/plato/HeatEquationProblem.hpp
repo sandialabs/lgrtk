@@ -38,13 +38,13 @@ private:
     static constexpr Plato::OrdinalType m_numDofsPerNode = SimplexPhysics::m_numDofsPerNode;
 
     // required
-    VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
+    Plato::VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
 
     Plato::OrdinalType mNumSteps;
     Plato::Scalar mTimeStep;
 
     // optional
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint;
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint;
     std::shared_ptr<const Plato::ScalarFunctionInc<SimplexPhysics>> mObjective;
 
     Plato::ScalarMultiVector mAdjoints;
@@ -540,7 +540,7 @@ private:
         {
             std::string tName = aParamList.get<std::string>("Linear Constraint");
             mConstraint =
-                    std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
         }
 
         if(aParamList.isType<std::string>("Objective"))

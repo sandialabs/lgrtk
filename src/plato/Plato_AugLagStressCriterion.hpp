@@ -322,7 +322,7 @@ public:
 
         Plato::Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
-        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
+        Plato::MSIMP tSIMP(mPenalty, mMinErsatzValue);
         Plato::LinearStress<mSpaceDim> tCauchyStress(mCellStiffMatrix);
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
 
@@ -403,7 +403,7 @@ public:
         // Create Cauchy stress functors
         Plato::Strain<mSpaceDim> tCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tVonMises;
-        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
+        Plato::MSIMP tSIMP(mPenalty, mMinErsatzValue);
         Plato::LinearStress<mSpaceDim> tCauchyStress(mCellStiffMatrix);
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
 

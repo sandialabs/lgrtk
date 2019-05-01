@@ -62,12 +62,12 @@ private:
     Teuchos::RCP<Plato::CrsMatrixType> mJacobian;
 
     // required
-    std::shared_ptr<const VectorFunction<SimplexPhysics>> mEquality;
+    std::shared_ptr<const Plato::VectorFunction<SimplexPhysics>> mEquality;
 
     // optional
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective;
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint;
-    std::shared_ptr<const VectorFunction<SimplexPhysics>> mAdjointProb;
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mObjective;
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint;
+    std::shared_ptr<const Plato::VectorFunction<SimplexPhysics>> mAdjointProb;
 
 public:
     /******************************************************************************//**
@@ -106,7 +106,7 @@ public:
      * @param aEquality equality constraint vector function
      *
     **********************************************************************************/
-    StructuralDynamicsProblem(Omega_h::Mesh& aMesh, std::shared_ptr<VectorFunction<SimplexPhysics>> & aEquality) :
+    StructuralDynamicsProblem(Omega_h::Mesh& aMesh, std::shared_ptr<Plato::VectorFunction<SimplexPhysics>> & aEquality) :
             mNumStates(aMesh.nverts() * mNumDofsPerNode),
             mNumConfig(aMesh.nverts() * mSpatialDim),
             mNumControls(aMesh.nverts()),
@@ -662,24 +662,24 @@ private:
     /******************************************************************************/
     {
         auto tEqualityName = aParamList.get<std::string>("PDE Constraint");
-        mEquality = std::make_shared<VectorFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tEqualityName);
+        mEquality = std::make_shared<Plato::VectorFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tEqualityName);
 
         if(aParamList.isType<std::string>("Constraint"))
         {
             std::string tConstraintName = aParamList.get<std::string>("Constraint");
-            mConstraint = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tConstraintName);
+            mConstraint = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tConstraintName);
         }
 
         if(aParamList.isType<std::string>("Objective"))
         {
             std::string tObjectiveName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tObjectiveName);
+            mObjective = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tObjectiveName);
 
             auto tLength = mEquality->size();
             mMyAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
 
             std::string tAdjointName = "StructuralDynamics Adjoint";
-            mAdjointProb = std::make_shared<VectorFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tAdjointName);
+            mAdjointProb = std::make_shared<Plato::VectorFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tAdjointName);
         }
 
         // Parse essential boundary conditions (i.e. Dirichlet)

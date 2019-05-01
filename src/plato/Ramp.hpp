@@ -5,30 +5,39 @@
 
 #include "plato/PlatoStaticsTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 class RAMP
 /******************************************************************************/
 {
-    double aPenaltyParam, aMinValue;
+    Plato::Scalar mPenaltyParam;
+    Plato::Scalar mMinValue;
 
 public:
     RAMP() :
-        aPenaltyParam(3),
-        aMinValue(0)
+            mPenaltyParam(3),
+            mMinValue(0)
     {
     }
+
     RAMP(Teuchos::ParameterList & aParamList)
     {
-        aPenaltyParam = aParamList.get<Plato::Scalar>("Exponent");
-        aMinValue = aParamList.get<Plato::Scalar>("Minimum Value", 0.0);
+        mPenaltyParam = aParamList.get < Plato::Scalar > ("Exponent");
+        mMinValue = aParamList.get < Plato::Scalar > ("Minimum Value", 0.0);
     }
+
     template<typename ScalarType>
-    DEVICE_TYPE inline ScalarType operator()( ScalarType aInput ) const
+    DEVICE_TYPE inline ScalarType operator()(ScalarType aInput) const
     {
-        ScalarType tOutput = aMinValue + (static_cast<ScalarType>(1.0) - aMinValue)*aInput
-                /(static_cast<ScalarType>(1.0) + aPenaltyParam*(static_cast<ScalarType>(1.0) - aInput));
+        ScalarType tOutput = mMinValue
+                + (static_cast<ScalarType>(1.0) - mMinValue) * aInput / (static_cast<ScalarType>(1.0)
+                        + mPenaltyParam * (static_cast<ScalarType>(1.0) - aInput));
         return (tOutput);
     }
 };
+
+}
 
 #endif

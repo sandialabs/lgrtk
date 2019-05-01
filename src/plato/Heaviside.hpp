@@ -1,5 +1,4 @@
-#ifndef HEAVISIDE_HPP
-#define HEAVISIDE_HPP
+#pragma once
 
 #ifndef T_PI
 #define T_PI 3.1415926535897932385
@@ -8,8 +7,10 @@
 #include <stdio.h>
 #include <Teuchos_ParameterList.hpp>
 
-
 #include "plato/PlatoStaticsTypes.hpp"
+
+namespace Plato
+{
 
 /******************************************************************************/
 class Heaviside
@@ -58,5 +59,6 @@ public:
         }
     }
 };
+// class Heaviside
 
-#endif
+} // namespace Plato

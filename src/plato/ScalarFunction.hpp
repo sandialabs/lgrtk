@@ -1,5 +1,4 @@
-#ifndef LGR_PLATO_SCALAR_FUNCTION_HPP
-#define LGR_PLATO_SCALAR_FUNCTION_HPP
+#pragma once
 
 #include <memory>
 #include <cassert>
@@ -9,6 +8,9 @@
 #include "plato/WorksetBase.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+
+namespace Plato
+{
 
 /******************************************************************************/
 /*! objective class
@@ -362,4 +364,4 @@ public:
     }
 };
 
-#endif
+} // namespace Plato

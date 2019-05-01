@@ -10,6 +10,9 @@
 #include "plato/AbstractVectorFunctionInc.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! constraint class
 
@@ -443,8 +446,11 @@ class VectorFunctionInc : public Plato::WorksetBase<PhysicsT>
       auto tJacobianMatEntries = tJacobianMat->entries();
       Plato::WorksetBase<PhysicsT>::assembleTransposeJacobian(m_numDofsPerCell, m_numNodesPerCell, tJacobianMatEntryOrdinal, tJacobian, tJacobianMatEntries);
 
-      return tJacobianMat;
+      return (tJacobianMat);
     }
 };
+// class VectorFunctionInc
+
+} // namespace Plato
 
 #endif

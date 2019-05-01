@@ -267,7 +267,7 @@ public:
     {
         using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
 
-        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
+        Plato::MSIMP tSIMP(mPenalty, mMinErsatzValue);
         Plato::Strain<mSpaceDim> tComputeCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
@@ -353,7 +353,7 @@ public:
     {
         // Create Cauchy stress functors
         Plato::Strain<mSpaceDim> tComputeCauchyStrain;
-        ::SIMP tSIMP(mPenalty, mMinErsatzValue);
+        Plato::MSIMP tSIMP(mPenalty, mMinErsatzValue);
         Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
         Plato::LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
