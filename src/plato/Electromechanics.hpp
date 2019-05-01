@@ -53,7 +53,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::ElectroelastostaticResidual<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::ElectroelastostaticResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
             {
@@ -92,7 +92,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
             {
@@ -115,7 +115,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::EMStressPNorm<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
             {
@@ -138,7 +138,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::Volume<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
             {

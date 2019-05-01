@@ -55,7 +55,7 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -130,7 +130,7 @@ internal_elastic_energy(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -167,7 +167,7 @@ stress_p_norm(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -204,7 +204,7 @@ effective_energy(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -241,7 +241,7 @@ volume(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::Volume<EvaluationType, ::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
