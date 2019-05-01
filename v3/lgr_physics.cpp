@@ -634,7 +634,11 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
     update_material_state(in, s);
-    if (in.enable_nodal_energy) interpolate_K(s);
+    if (in.enable_nodal_energy) {
+      for (auto const material : in.materials) {
+        interpolate_K(s, material);
+      }
+    }
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
     if (in.enable_p_averaging) volume_average_p(s);
@@ -725,7 +729,11 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   update_symm_grad_v(s);
   update_h_min(in, s);
   update_material_state(in, s);
-  if (in.enable_nodal_energy) interpolate_K(s);
+  if (in.enable_nodal_energy) {
+    for (auto const material : in.materials) {
+      interpolate_K(s, material);
+    }
+  }
   update_c(s);
   if (in.enable_viscosity) apply_viscosity(in, s);
   else lgr::fill(s.nu_art, double(0.0));
