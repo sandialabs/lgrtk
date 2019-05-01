@@ -16,7 +16,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType>
 class ThermalFluxRate : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
@@ -24,8 +24,8 @@ class ThermalFluxRate :
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
     using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
