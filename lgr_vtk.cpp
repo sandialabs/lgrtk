@@ -8,6 +8,7 @@
 #include <lgr_range_product.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
+#include <lgr_reduce.hpp>
 
 namespace lgr {
 
@@ -122,22 +123,22 @@ void file_writer::operator()(
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
   for (material_index const material : in.materials) {
-    if (in.enable_nodal_pressure || in.enable_nodal_energy) {
+    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
       std::stringstream name_stream;
-      name_stream << "pressure_" << int(material);
+      name_stream << "nodal_pressure_" << int(material);
       auto name = name_stream.str();
       write_vtk_scalars(stream, name, s.p_h[material]);
     }
-    if (in.enable_nodal_energy) {
+    if (in.enable_nodal_energy[material]) {
       {
         std::stringstream name_stream;
-        name_stream << "energy_" << int(material);
+        name_stream << "nodal_energy_" << int(material);
         auto name = name_stream.str();
         write_vtk_scalars(stream, name, s.e_h[material]);
       }
       {
         std::stringstream name_stream;
-        name_stream << "density_" << int(material);
+        name_stream << "nodal_density_" << int(material);
         auto name = name_stream.str();
         write_vtk_scalars(stream, name, s.rho_h[material]);
       }
@@ -148,10 +149,13 @@ void file_writer::operator()(
   }
   //CELLS
   write_vtk_cell_data(stream, s);
-  if (!(in.enable_nodal_pressure || in.enable_nodal_energy)) {
+  auto have_nodal_pressure_or_energy = [&] (material_index const material) {
+    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
+  };
+  if (!all_of(in.materials, have_nodal_pressure_or_energy)) {
     write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
   }
-  if (!in.enable_nodal_energy) {
+  if (!all_of(in.enable_nodal_energy)) {
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }

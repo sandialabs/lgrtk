@@ -60,12 +60,12 @@ class input {
   pinned_vector<double, material_index> G0;
   pinned_vector<bool, material_index> enable_ideal_gas;
   pinned_vector<double, material_index> gamma;
-  bool enable_nodal_pressure = false;
+  pinned_vector<bool, material_index> enable_nodal_pressure;
+  pinned_vector<bool, material_index> enable_nodal_energy;
   double c_tau = 0.5;
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
-  bool enable_nodal_energy = false;
   bool enable_J_averaging = false;
   bool enable_rho_averaging = false;
   bool enable_e_averaging = false;
@@ -89,6 +89,8 @@ class input {
     ,G0(material_count_in, double(0.0), pinpool)
     ,enable_ideal_gas(material_count_in, false, pinpool)
     ,gamma(material_count_in, pinpool)
+    ,enable_nodal_pressure(material_count_in, false, pinpool)
+    ,enable_nodal_energy(material_count_in, false, pinpool)
     ,domains(material_count_in + boundary_count_in)
   {}
 };

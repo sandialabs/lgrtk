@@ -21,4 +21,14 @@ T reduce(Range const& range, T init) {
   return transform_reduce(range, init, plus<T>(), unop);
 }
 
+template <class Range, class UnaryPredicate>
+bool all_of(Range const& range, UnaryPredicate p) {
+  return transform_reduce(range, true, logical_and(), p); 
+}
+
+template <class Range>
+bool all_of(Range const& range) {
+  return all_of(range, identity<bool>());
+}
+
 }

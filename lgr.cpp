@@ -169,7 +169,7 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.zero_acceleration_conditions.push_back({x_min, x_axis});
   in.zero_acceleration_conditions.push_back({x_min, y_axis});
   in.x_transform = Cooks_membrane_x;
-  in.enable_nodal_pressure = true;
+  in.enable_nodal_pressure[body] = true;
   in.c_tau = 0.5;
   run(in);
 }
@@ -230,7 +230,7 @@ static void LGR_NOINLINE swinging_plate() {
   in.zero_acceleration_conditions.push_back({y_min, y_axis});
   in.zero_acceleration_conditions.push_back({x_max, x_axis});
   in.zero_acceleration_conditions.push_back({y_max, y_axis});
-  in.enable_nodal_pressure = true;
+  in.enable_nodal_pressure[body] = true;
   in.c_tau = 0.5;
   run(in);
 }
@@ -405,7 +405,7 @@ static void LGR_NOINLINE swinging_cube() {
   in.zero_acceleration_conditions.push_back({y_max, y_axis});
   in.zero_acceleration_conditions.push_back({z_min, z_axis});
   in.zero_acceleration_conditions.push_back({z_max, z_axis});
-  in.enable_nodal_pressure = true;
+  in.enable_nodal_pressure[body] = true;
   in.c_tau = 0.5;
   in.CFL = 0.45;
   run(in);
@@ -458,7 +458,7 @@ static void LGR_NOINLINE twisting_column() {
   in.zero_acceleration_conditions.push_back({y_min, x_axis});
   in.zero_acceleration_conditions.push_back({y_min, y_axis});
   in.zero_acceleration_conditions.push_back({y_min, z_axis});
-  in.enable_nodal_pressure = true;
+  in.enable_nodal_pressure[body] = true;
   in.c_tau = 0.5;
   in.CFL = 0.9;
   run(in);
@@ -549,7 +549,7 @@ static void LGR_NOINLINE Noh_2D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.5;
-  in.enable_nodal_energy = true;
+  in.enable_nodal_energy[gas] = true;
   in.c_tau = 1.0;
   run(in);
 }
@@ -681,7 +681,7 @@ static void LGR_NOINLINE Noh_3D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.1;
-  in.enable_nodal_energy = true;
+  in.enable_nodal_energy[gas] = true;
   in.c_tau = 1.0;
   run(in);
 }
