@@ -128,18 +128,44 @@ void Adapter::coarsen_metric_with_expansion() {
   sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
 }
 
+OMEGA_H_INLINE
+double get_new_eqps_metric(
+    double avg_eqps, double eqps1, double h0, double h1) {
+  double hnew = h0 - ((h0 - h1) * avg_eqps) / eqps1;
+  return Omega_h::metric_eigenvalue_from_length(hnew);
+}
+
 void Adapter::refine_with_eqps() {
   OMEGA_H_TIME_FUNCTION;
+  if (sim.elem_name != "CompTet") return;
+  auto const h0 = 0.25;
+  auto const h1 = 0.1;
+  auto const eqps1 = 1.0;
+  auto const dim = sim.disc.mesh.dim();
   auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
   auto const implied_metric = get_implied_isos(&sim.disc.mesh);
   auto const nverts = sim.disc.mesh.nverts();
   auto const eqps_idx = sim.fields.find("equivalent plastic strain");
+  auto const verts_to_elems = sim.disc.mesh.ask_up(0, dim);
   OMEGA_H_CHECK(eqps_idx.is_valid());
+  auto const npoints = CompTet::points;
   auto const points_to_eqps = sim.get(eqps_idx);
   auto const new_metric = Omega_h::Write<double>(nverts);
   OMEGA_H_CHECK(sim.fields[eqps_idx].support->subset->mapping.is_identity);
   auto functor = OMEGA_H_LAMBDA(int const vert) {
-    new_metric[vert] = old_metric[vert];
+    double avg_eqps = 0.0;
+    auto const elem_begin = verts_to_elems.a2ab[vert];
+    auto const elem_end = verts_to_elems.a2ab[vert + 1];
+    auto const nadj_elems = elem_end - elem_begin;
+    for (auto idx = elem_begin; idx < elem_end; ++idx) {
+      const auto elem = verts_to_elems.ab2b[idx];
+      for (int elem_pt = 0; elem_pt < npoints; ++elem_pt) {
+        auto const point = elem * npoints + elem_pt;
+        avg_eqps += points_to_eqps[point];
+      }
+    }
+    avg_eqps /= (nadj_elems * npoints);
+    new_metric[vert] = get_new_eqps_metric(avg_eqps, eqps1, h0, h1);
   };
   parallel_for(nverts, std::move(functor));
   sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
