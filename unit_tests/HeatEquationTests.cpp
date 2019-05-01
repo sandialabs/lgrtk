@@ -429,7 +429,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, HeatEquationResidual3D )
   //
   Plato::DataMap tDataMap;
   Omega_h::MeshSets tMeshSets;
-  VectorFunctionInc<::Plato::Thermal<spaceDim>> 
+  Plato::VectorFunctionInc<::Plato::Thermal<spaceDim>>
     vectorFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("PDE Constraint"));
 
 

@@ -243,7 +243,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
 
   // create objective
   //
-  ScalarFunction<::Plato::Electromechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Electromechanics<spaceDim>>
     scalarFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("Objective"));
 
   // compute and test objective value

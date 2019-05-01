@@ -516,7 +516,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -702,7 +702,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -888,7 +888,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1094,7 +1094,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1436,7 +1436,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Thermal<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Thermal<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1585,7 +1585,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Thermal<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Thermal<spaceDim>>
     scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1751,7 +1751,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunction<::Plato::Mechanics<spaceDim>> 
+  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
     volScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Linear Constraint"));
 
 

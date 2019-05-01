@@ -36,8 +36,8 @@ private:
     VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
 
     // optional
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
-    std::shared_ptr<const ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
+    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
 
     Plato::ScalarMultiVector mAdjoint;
     Plato::ScalarVector mResidual;
@@ -357,7 +357,6 @@ public:
 
             // compute dgdu: partial of PDE wrt state
             mJacobian = mEqualityConstraint.gradient_u(tStatesSubView, aControl);
-
             this->applyConstraints(mJacobian, tPartialObjectiveWRT_State);
 
             // adjoint problem uses transpose of global stiffness, but we're assuming the constrained
@@ -536,13 +535,13 @@ private:
         {
             std::string tName = aInputParams.get<std::string>("Linear Constraint");
             mConstraint =
-                    std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
         if(aInputParams.isType<std::string>("Objective"))
         {
             std::string tName = aInputParams.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mObjective = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
