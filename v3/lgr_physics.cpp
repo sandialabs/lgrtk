@@ -60,8 +60,9 @@ static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vecto
 }
 
 static void LGR_NOINLINE update_p_h(state& s, double const dt,
+    material_index const material,
     device_vector<double, node_index> const& old_p_h_vector) {
-  auto const nodes_to_p_h = s.p_h.begin();
+  auto const nodes_to_p_h = s.p_h[material].begin();
   auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot.cbegin();
   auto functor = [=] (node_index const node) {
@@ -70,7 +71,7 @@ static void LGR_NOINLINE update_p_h(state& s, double const dt,
     double const p_h = old_p_h + dt * p_h_dot;
     nodes_to_p_h[node] = p_h;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
 static void LGR_NOINLINE update_a(state& s) {
@@ -532,7 +533,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
     }
   }
   if (in.enable_nodal_pressure || in.enable_nodal_energy) {
-    update_sigma_with_p_h(s);
+    update_sigma_with_p_h(s, material);
   }
 }
 
@@ -554,14 +555,16 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
 }
 
 static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
-  update_v_prime(in, s);
-  update_p_h_W(s);
-  update_p_h_dot(s);
+  for (auto const material : in.materials) {
+    update_v_prime(in, s, material);
+    update_p_h_W(s);
+    update_p_h_dot(s);
+  }
 }
 
 static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
   for (auto const material : in.materials) {
-    update_q(in, s);
+    update_q(in, s, material);
     update_e_h_W(s);
     update_e_h_dot(s, material);
   }
@@ -574,12 +577,12 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
   device_vector<double, point_index> old_e(s.points.size(), s.devpool);
   lgr::copy(s.e, old_e);
   device_vector<double, node_index> old_p_h(s.devpool);
-  if (in.enable_nodal_pressure) {
-    old_p_h.resize(s.nodes.size());
-    lgr::copy(s.p_h, old_p_h);
-  }
   host_vector<device_vector<double, node_index>, material_index> old_e_h(in.materials.size(), s.devpool);
   for (auto const material : in.materials) {
+    if (in.enable_nodal_pressure) {
+      old_p_h.resize(s.nodes.size());
+      lgr::copy(s.p_h[material], old_p_h);
+    }
     if (in.enable_nodal_energy) {
       old_e_h[material].resize(s.nodes.size());
       lgr::copy(s.e_h[material], old_e_h[material]);
@@ -593,7 +596,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     if (in.enable_nodal_pressure) {
-      update_p_h(s, half_dt, old_p_h);
+      for (auto const material : in.materials) {
+        update_p_h(s, half_dt, material, old_p_h);
+      }
     }
     update_rho_e_dot(s);
     if (in.enable_nodal_energy) {
@@ -743,8 +748,10 @@ void run(input const& in) {
   collect_element_sets(in, s);
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
-  lgr::fill(s.p_h, double(0.0));
   for (auto const material : in.materials) {
+    if (in.enable_nodal_pressure) {
+      lgr::fill(s.p_h[material], double(0.0));
+    }
     if (in.enable_nodal_energy) {
       lgr::fill(s.e_h[material], in.e0[material]);
     }
