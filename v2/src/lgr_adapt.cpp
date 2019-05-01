@@ -132,7 +132,8 @@ OMEGA_H_INLINE
 double get_new_eqps_metric(
     double avg_eqps, double eqps1, double h0, double h1) {
   double hnew = h0 - ((h0 - h1) * avg_eqps) / eqps1;
-  return Omega_h::metric_eigenvalue_from_length(hnew);
+  if (hnew < h1) return Omega_h::metric_eigenvalue_from_length(h1);
+  else return Omega_h::metric_eigenvalue_from_length(hnew);
 }
 
 void Adapter::refine_with_eqps() {
