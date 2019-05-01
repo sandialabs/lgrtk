@@ -55,9 +55,9 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
 
 
   int numCells = mesh->nelems();
-  constexpr int nodesPerCell  = SimplexThermal<spaceDim>::m_numNodesPerCell;
-  constexpr int dofsPerCell   = SimplexThermal<spaceDim>::m_numDofsPerCell;
-  constexpr int dofsPerNode   = SimplexThermal<spaceDim>::m_numDofsPerNode;
+  constexpr int nodesPerCell  = Plato::SimplexThermal<spaceDim>::m_numNodesPerCell;
+  constexpr int dofsPerCell   = Plato::SimplexThermal<spaceDim>::m_numDofsPerCell;
+  constexpr int dofsPerNode   = Plato::SimplexThermal<spaceDim>::m_numDofsPerNode;
 
   // create mesh based temperature from host data
   //
@@ -69,7 +69,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
   auto T = Kokkos::create_mirror_view_and_copy( Kokkos::DefaultExecutionSpace(), T_host_view);
 
 
-  Plato::WorksetBase<SimplexThermal<spaceDim>> worksetBase(*mesh);
+  Plato::WorksetBase<Plato::SimplexThermal<spaceDim>> worksetBase(*mesh);
 
   Plato::ScalarArray3DT<Plato::Scalar>
     gradient("gradient",numCells,nodesPerCell,spaceDim);

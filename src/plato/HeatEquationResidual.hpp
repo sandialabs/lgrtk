@@ -31,7 +31,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class HeatEquationResidual : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractVectorFunctionInc<EvaluationType>
 /******************************************************************************/
 {
@@ -39,8 +39,8 @@ class HeatEquationResidual :
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
     using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
@@ -111,10 +111,10 @@ class HeatEquationResidual :
       auto numCells = mMesh.nelems();
 
       using GradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       using PrevGradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, PrevStateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, PrevStateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>
         cellVolume("cell weight",numCells);
@@ -212,15 +212,15 @@ class HeatEquationResidual :
 } // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 1)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, Plato::SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 2)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, Plato::SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, SimplexThermal, 3)
+PLATO_EXPL_DEC_INC(Plato::HeatEquationResidual, Plato::SimplexThermal, 3)
 #endif
 
 #endif

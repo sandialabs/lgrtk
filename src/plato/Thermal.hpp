@@ -188,7 +188,7 @@ struct FunctionFactory{
 } // namespace ThermalFactory
 
 template <Plato::OrdinalType SpaceDimParam>
-class Thermal : public SimplexThermal<SpaceDimParam> {
+class Thermal : public Plato::SimplexThermal<SpaceDimParam> {
   public:
     using FunctionFactory = typename Plato::ThermalFactory::FunctionFactory<SpaceDimParam>;
     using SimplexT = SimplexThermal<SpaceDimParam>;

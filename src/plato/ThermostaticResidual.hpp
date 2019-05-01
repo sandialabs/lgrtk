@@ -27,7 +27,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class ThermostaticResidual : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractVectorFunction<EvaluationType>
 /******************************************************************************/
 {
@@ -35,8 +35,8 @@ class ThermostaticResidual :
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
     using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
     using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
@@ -103,7 +103,7 @@ class ThermostaticResidual :
       auto numCells = mMesh.nelems();
 
       using GradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>
         cellVolume("cell weight",numCells);
@@ -161,15 +161,15 @@ class ThermostaticResidual :
 } // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, Plato::SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, Plato::SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(Plato::ThermostaticResidual, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::ThermostaticResidual, Plato::SimplexThermal, 3)
 #endif
 
 #endif

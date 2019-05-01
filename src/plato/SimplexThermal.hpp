@@ -3,6 +3,9 @@
 
 #include "plato/Simplex.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! Base class for simplex-based thermal
 */
@@ -20,4 +23,8 @@ class SimplexThermal : public Simplex<SpaceDim>
     static constexpr Plato::OrdinalType m_numControl = 1;  // for now, only one control field allowed.
 
 };
+// class SimplexThermal
+
+} // namespace Plato
+
 #endif

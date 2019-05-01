@@ -21,7 +21,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class TemperatureAverageInc : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
@@ -29,8 +29,8 @@ class TemperatureAverageInc :
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
     using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
@@ -74,7 +74,7 @@ class TemperatureAverageInc :
       Plato::StateValues                 tComputeStateValues;
 
       using TScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ControlScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ControlScalarType>;
 
       Plato::ScalarMultiVectorT<StateScalarType>  tStateValues("temperature at GPs", numCells, m_numDofsPerNode);
       Plato::ScalarMultiVectorT<TScalarType>  tWeightedStateValues("weighted temperature at GPs", numCells, m_numDofsPerNode);
@@ -105,15 +105,15 @@ class TemperatureAverageInc :
 } // namespace Plato TemperatureAverageInc
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, Plato::SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, Plato::SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(Plato::TemperatureAverageInc, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::TemperatureAverageInc, Plato::SimplexThermal, 3)
 #endif
 
 #endif

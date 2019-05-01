@@ -28,14 +28,14 @@ namespace Plato
 **********************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class InternalThermalEnergy : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractScalarFunction<EvaluationType>
 {
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
 
     using Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
-    using SimplexThermal<mSpaceDim>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
+    using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
     using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Analyze database */
@@ -103,7 +103,7 @@ class InternalThermalEnergy :
       Plato::ThermalFlux<mSpaceDim>                   tComputeThermalFlux(m_cellConductivity);
 
       using GradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>
         tCellVolume("cell weight",tNumCells);
@@ -153,7 +153,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class InternalThermalEnergyInc : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractScalarFunctionInc<EvaluationType>
 /******************************************************************************/
 {
@@ -161,7 +161,7 @@ class InternalThermalEnergyInc :
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
     using Simplex<mSpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<mSpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
     using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
@@ -220,7 +220,7 @@ class InternalThermalEnergyInc :
       Plato::ScalarProduct<mSpaceDim>                 scalarProduct;
 
       using GradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>
         cellVolume("cell weight",numCells);
@@ -265,18 +265,18 @@ class InternalThermalEnergyInc :
 } // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(Plato::InternalThermalEnergy, SimplexThermal, 1)
-PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergy, Plato::SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, Plato::SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(Plato::InternalThermalEnergy, SimplexThermal, 2)
-PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergy, Plato::SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, Plato::SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(Plato::InternalThermalEnergy, SimplexThermal, 3)
-PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergy, Plato::SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::InternalThermalEnergyInc, Plato::SimplexThermal, 3)
 #endif
 
 #endif

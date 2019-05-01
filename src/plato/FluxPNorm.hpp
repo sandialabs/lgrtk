@@ -22,7 +22,7 @@ namespace Plato
 /******************************************************************************/
 template<typename EvaluationType, typename IndicatorFunctionType>
 class FluxPNorm : 
-  public SimplexThermal<EvaluationType::SpatialDim>,
+  public Plato::SimplexThermal<EvaluationType::SpatialDim>,
   public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
@@ -30,7 +30,7 @@ class FluxPNorm :
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
     
     using Simplex<SpaceDim>::m_numNodesPerCell;
-    using SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
     using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
@@ -92,7 +92,7 @@ class FluxPNorm :
       Plato::VectorPNorm<SpaceDim>                   vectorPNorm;
 
       using GradScalarType =
-        typename Plato::fad_type_t<SimplexThermal<EvaluationType::SpatialDim>,StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>,StateScalarType, ConfigScalarType>;
 
       Plato::ScalarVectorT<ConfigScalarType>
         cellVolume("cell weight",numCells);
@@ -161,15 +161,15 @@ class FluxPNorm :
 } // namespace Plato
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 1)
+PLATO_EXPL_DEC(Plato::FluxPNorm, Plato::SimplexThermal, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 2)
+PLATO_EXPL_DEC(Plato::FluxPNorm, Plato::SimplexThermal, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC(Plato::FluxPNorm, SimplexThermal, 3)
+PLATO_EXPL_DEC(Plato::FluxPNorm, Plato::SimplexThermal, 3)
 #endif
 
 #endif
