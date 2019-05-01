@@ -34,7 +34,7 @@ class InternalElasticEnergy :
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
     
     using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    using Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell; /*!< number of degree of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */

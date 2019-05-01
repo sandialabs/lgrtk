@@ -10,6 +10,9 @@
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
 
+namespace Plato
+{
+
 /******************************************************************************/
 /*! objective class
 
@@ -403,5 +406,8 @@ class ScalarFunctionInc : public Plato::WorksetBase<PhysicsT>
       return tObjGradientZ;
     }
 };
+// class ScalarFunctionInc
+
+} // namespace Plato
 
 #endif

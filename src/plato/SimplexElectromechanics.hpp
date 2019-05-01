@@ -12,11 +12,11 @@ namespace Plato
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
-class SimplexElectromechanics : public Simplex<SpaceDim>
+class SimplexElectromechanics : public Plato::Simplex<SpaceDim>
 {
   public:
-    using Simplex<SpaceDim>::m_numNodesPerCell;
-    using Simplex<SpaceDim>::m_numSpatialDims;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numSpatialDims;
 
     static constexpr Plato::OrdinalType m_numVoigtTerms   = (SpaceDim == 3) ? 6 :
                                              ((SpaceDim == 2) ? 3 :

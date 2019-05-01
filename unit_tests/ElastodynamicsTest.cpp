@@ -730,7 +730,7 @@ class LinearElasticForce :
 private:
     static constexpr Plato::OrdinalType mSpatialDim = EvaluationType::SpatialDim;
 
-    using Simplex<mSpatialDim>::m_numNodesPerCell;
+    using Plato::Simplex<mSpatialDim>::m_numNodesPerCell;
     using Plato::SimplexMechanics<mSpatialDim>::m_numVoigtTerms;
 
     using StateType = typename EvaluationType::StateUScalarType;
@@ -870,7 +870,7 @@ class RayleighViscousForce :
 private:
     static constexpr Plato::OrdinalType mSpatialDim = EvaluationType::SpatialDim;
 
-    using Simplex<mSpatialDim>::m_numNodesPerCell;
+    using Plato::Simplex<mSpatialDim>::m_numNodesPerCell;
     using Plato::SimplexMechanics<mSpatialDim>::m_numVoigtTerms;
     using Plato::SimplexMechanics<mSpatialDim>::m_numDofsPerNode;
     using Plato::SimplexMechanics<mSpatialDim>::m_numDofsPerCell;
@@ -1568,7 +1568,7 @@ class ElastodynamicsResidual :
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Simplex<mSpaceDim>::m_numNodesPerCell;                 /*!< number of nodes per cell (i.e. element) */
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;                 /*!< number of nodes per cell (i.e. element) */
     using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;   /*!< number of stress-strain components */
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell;  /*!< number of degrees of freedom per cell */
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerNode;  /*!< number of degrees of freedom per node */
@@ -2164,7 +2164,7 @@ private:
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Simplex<mSpaceDim>::m_numNodesPerCell;                 /*!< number of nodes per cell (i.e. element) */
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;                 /*!< number of nodes per cell (i.e. element) */
     using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;   /*!< number of stress-strain components */
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell;  /*!< number of degrees of freedom per cell */
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerNode;  /*!< number of degrees of freedom per node */

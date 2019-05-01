@@ -45,7 +45,7 @@ private:
 
     // optional
     std::shared_ptr<const ScalarFunction<SimplexPhysics>> mConstraint;
-    std::shared_ptr<const ScalarFunctionInc<SimplexPhysics>> mObjective;
+    std::shared_ptr<const Plato::ScalarFunctionInc<SimplexPhysics>> mObjective;
 
     Plato::ScalarMultiVector mAdjoints;
     Plato::ScalarVector mResidual;
@@ -546,7 +546,7 @@ private:
         if(aParamList.isType<std::string>("Objective"))
         {
             std::string tName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<ScalarFunctionInc<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+            mObjective = std::make_shared<Plato::ScalarFunctionInc<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoints = Plato::ScalarMultiVector("MyAdjoint", mNumSteps, tLength);

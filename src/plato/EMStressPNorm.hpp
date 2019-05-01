@@ -31,7 +31,7 @@ class EMStressPNorm :
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
     
     using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;

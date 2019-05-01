@@ -1,7 +1,9 @@
-#ifndef SIMPLEX_PHYSICS_HPP
-#define SIMPLEX_PHYSICS_HPP
+#pragma once
 
 #include "plato/PlatoStaticsTypes.hpp"
+
+namespace Plato
+{
 
 /******************************************************************************/
 /*! Base class for simplex-based mechanics
@@ -14,4 +16,6 @@ class Simplex
     static constexpr Plato::OrdinalType m_numSpatialDims  = SpaceDim;
     static constexpr Plato::OrdinalType m_numNodesPerCell = SpaceDim+1;
 };
-#endif
+// class Simplex
+
+} // namespace Plato

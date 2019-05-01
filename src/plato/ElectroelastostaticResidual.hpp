@@ -38,7 +38,7 @@ private:
     static constexpr Plato::OrdinalType MDofOffset = 0;
 
     using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerNode;
     using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
 

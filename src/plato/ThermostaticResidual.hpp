@@ -34,7 +34,7 @@ class ThermostaticResidual :
   private:
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
     using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
 

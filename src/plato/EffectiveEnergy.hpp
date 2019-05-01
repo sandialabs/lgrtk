@@ -33,7 +33,7 @@ class EffectiveEnergy :
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
     
     using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;
-    using Simplex<mSpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;
     using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell;
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;

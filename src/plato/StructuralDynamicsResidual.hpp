@@ -41,8 +41,8 @@ class StructuralDynamicsResidual:
 /******************************************************************************/
 {
 private:
-    using Simplex<EvaluationType::SpatialDim>::m_numSpatialDims;
-    using Simplex<EvaluationType::SpatialDim>::m_numNodesPerCell;
+    using Plato::Simplex<EvaluationType::SpatialDim>::m_numSpatialDims;
+    using Plato::Simplex<EvaluationType::SpatialDim>::m_numNodesPerCell;
 
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numVoigtTerms;
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;

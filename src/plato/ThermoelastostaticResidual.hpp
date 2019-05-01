@@ -39,7 +39,7 @@ private:
     static constexpr int MDofOffset = 0;
 
     using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
 

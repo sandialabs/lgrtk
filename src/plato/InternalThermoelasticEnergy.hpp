@@ -39,7 +39,7 @@ class InternalThermoelasticEnergy :
     static constexpr Plato::OrdinalType TDofOffset = mSpaceDim;
     
     using Plato::SimplexThermomechanics<mSpaceDim>::m_numVoigtTerms;
-    using Simplex<mSpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;
     using Plato::SimplexThermomechanics<mSpaceDim>::m_numDofsPerCell;
     using Plato::SimplexThermomechanics<mSpaceDim>::m_numDofsPerNode;
 
@@ -161,7 +161,7 @@ class InternalThermoelasticEnergyInc :
     static constexpr int TDofOffset = SpaceDim;
 
     using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
     using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
 
