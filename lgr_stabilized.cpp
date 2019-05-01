@@ -5,12 +5,12 @@
 
 namespace lgr {
 
-void update_sigma_with_p_h(state& s) {
+void update_sigma_with_p_h(state& s, material_index const material) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto const nodes_to_p_h = s.p_h.cbegin();
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const points_to_sigma = s.sigma.begin();
   auto functor = [=] (element_index const element) {
@@ -29,10 +29,10 @@ void update_sigma_with_p_h(state& s) {
       points_to_sigma[point] = new_sigma;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_v_prime(input const& in, state& s)
+void update_v_prime(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -43,7 +43,7 @@ void update_v_prime(input const& in, state& s)
   auto const points_to_dt = s.element_dt.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
-  auto const nodes_to_p_h = s.p_h.cbegin();
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const points_to_v_prime = s.v_prime.begin();
   auto const c_tau = in.c_tau;
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
@@ -71,10 +71,10 @@ void update_v_prime(input const& in, state& s)
       points_to_v_prime[point] = v_prime;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_q(input const& in, state& s)
+void update_q(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -85,7 +85,7 @@ void update_q(input const& in, state& s)
   auto const points_to_dt = s.element_dt.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
-  auto const nodes_to_p_h = s.p_h.cbegin();
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const points_to_q = s.q.begin();
   auto const c_tau = in.c_tau;
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
@@ -117,7 +117,7 @@ void update_q(input const& in, state& s)
       points_to_q[point] = q;
     }
   };
-  lgr::for_each(s.elements, functor);
+  lgr::for_each(s.element_sets[material], functor);
 }
 
 void update_p_h_W(state& s)
@@ -241,7 +241,7 @@ void update_e_h_dot(state& s, material_index const material)
 void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   auto const nodes_to_rho = s.rho_h[material].cbegin();
   auto const nodes_to_e = s.e_h[material].cbegin();
-  auto const nodes_to_p = s.p_h.begin();
+  auto const nodes_to_p = s.p_h[material].begin();
   auto const nodes_to_K = s.K_h.begin();
   auto const gamma = in.gamma[material];
   auto functor = [=] (node_index const node) {

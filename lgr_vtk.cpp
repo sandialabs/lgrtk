@@ -121,22 +121,25 @@ void file_writer::operator()(
   write_vtk_point_data(stream, s);
   write_vtk_vectors(stream, "position", s.x);
   write_vtk_vectors(stream, "velocity", s.v);
-  if (in.enable_nodal_pressure || in.enable_nodal_energy) {
-    write_vtk_scalars(stream, "pressure", s.p_h);
-  }
-  if (in.enable_nodal_energy) {
-    for (material_index const material : in.materials) {
-      {
+  for (material_index const material : in.materials) {
+    if (in.enable_nodal_pressure || in.enable_nodal_energy) {
       std::stringstream name_stream;
-      name_stream << "energy_" << int(material);
+      name_stream << "pressure_" << int(material);
       auto name = name_stream.str();
-      write_vtk_scalars(stream, name, s.e_h[material]);
+      write_vtk_scalars(stream, name, s.p_h[material]);
+    }
+    if (in.enable_nodal_energy) {
+      {
+        std::stringstream name_stream;
+        name_stream << "energy_" << int(material);
+        auto name = name_stream.str();
+        write_vtk_scalars(stream, name, s.e_h[material]);
       }
       {
-      std::stringstream name_stream;
-      name_stream << "density_" << int(material);
-      auto name = name_stream.str();
-      write_vtk_scalars(stream, name, s.rho_h[material]);
+        std::stringstream name_stream;
+        name_stream << "density_" << int(material);
+        auto name = name_stream.str();
+        write_vtk_scalars(stream, name, s.rho_h[material]);
       }
     }
   }

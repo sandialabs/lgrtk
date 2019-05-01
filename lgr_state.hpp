@@ -40,7 +40,7 @@ class state {
   device_vector<vector3<double>, point_index> q{devpool}; // element-center heat flux
   device_vector<double, point_node_index> W{devpool}; // work done, per element-node pair (contribution to a node's work by an element)
   device_vector<double, node_index> p_h_dot{devpool}; // time derivative of stabilized nodal pressure
-  device_vector<double, node_index> p_h{devpool}; // stabilized nodal pressure
+  host_vector<device_vector<double, node_index>, material_index> p_h; // stabilized nodal pressure
   device_vector<double, point_index> K{devpool}; // (tangent/effective) bulk modulus
   device_vector<double, node_index> K_h{devpool}; // (tangent/effective) bulk modulus at nodes
   device_vector<double, point_index> G{devpool}; // (tangent/effective) shear modulus
