@@ -456,9 +456,7 @@ template <class Elem>
 void fix_ref_coords(Simulation& sim) {
   LGR_SCOPE(sim);
   auto const ndim = sim.dim();
-  auto const nodes_to_X = sim.getset(sim.ref_coords);
-  auto const nodes_to_v = sim.set(sim.velocity);
-  auto const nodes_to_a = sim.set(sim.acceleration);
+  auto const nodes_to_X = sim.get(sim.ref_coords);
   auto const nodes_to_elems = sim.nodes_to_elems();
   auto const elems_to_nodes = sim.elems_to_nodes();
   Omega_h::Write<double> new_nodes_to_X(sim.nodes() * ndim);
@@ -471,27 +469,20 @@ void fix_ref_coords(Simulation& sim) {
       auto const elem = nodes_to_elems.ab2b[node_elem];
       auto const code = nodes_to_elems.codes[node_elem];
       auto const elem_node = Omega_h::code_which_down(code);
+      if (elem_node < 4) return;
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const X = getvecs<Elem>(nodes_to_X, elem_nodes);
-      auto const v = getvecs<Elem>(nodes_to_v, elem_nodes);
-      auto const a = getvecs<Elem>(nodes_to_a, elem_nodes);
-      auto const shape = Elem::shape(X);
-      auto const h = shape.lengths.time_step_length;
-      if (h < OMEGA_H_EPSILON) {
-        if (elem_node > 3) {
-          auto const edge_nodes = get_edge_nodes(elem_node);
-          auto const new_coord = 0.5 * (X[edge_nodes[0]] + X[edge_nodes[1]]);
-          auto const new_v = 0.5 * (v[edge_nodes[0]] + v[edge_nodes[1]]);
-          auto const new_a = 0.5 * (a[edge_nodes[0]] + a[edge_nodes[1]]);
-          setvec<Elem>(new_nodes_to_X, node, new_coord);
-          setvec<Elem>(nodes_to_v, node, new_v);
-          setvec<Elem>(nodes_to_a, node, new_a);
-        }
-      }
+//      auto const shape = Elem::shape(X);
+//      auto const h = shape.lengths.time_step_length;
+//      if (h < OMEGA_H_EPSILON) {
+      auto const edge_nodes = get_edge_nodes(elem_node);
+      auto const new_coord = 0.5 * (X[edge_nodes[0]] + X[edge_nodes[1]]);
+      setvec<Elem>(new_nodes_to_X, node, new_coord);
     }
   };
   parallel_for(sim.nodes(), std::move(functor));
-  Omega_h::copy_into(read(new_nodes_to_X), nodes_to_X);
+  auto const nodes_to_X_w = sim.set(sim.ref_coords);
+  Omega_h::copy_into(read(new_nodes_to_X), nodes_to_X_w);
 }
 
 #define LGR_EXPL_INST(Elem)                                                    \
