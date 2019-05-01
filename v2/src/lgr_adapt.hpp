@@ -18,11 +18,13 @@ struct Adapter {
   double minimum_length;
   double gradation_rate;
   bool should_coarsen_with_expansion;
+  bool should_refine_with_eqps;
   Adapter(Simulation& sim);
   void setup(Omega_h::InputMap& pl);
   bool needs_adapt();
   void adapt();
   void coarsen_metric_with_expansion();
+  void refine_with_eqps();
   double old_quality;
   double old_length;
 };

@@ -41,6 +41,8 @@ void Adapter::setup(Omega_h::InputMap& pl) {
     this->gradation_rate = adapt_pl.get<double>("gradation rate", "1.0");
     should_coarsen_with_expansion =
         adapt_pl.get<bool>("coarsen with expansion", "false");
+    should_refine_with_eqps =
+        adapt_pl.get<bool>("refine with eqps", "false");
 #define LGR_EXPL_INST(Elem)                                                    \
   if (sim.elem_name == Elem::name()) {                                         \
     remap.reset(remap_factory<Elem>(sim, pl.get_map("remap")));                \
@@ -79,6 +81,7 @@ bool Adapter::needs_adapt() {
 
 void Adapter::adapt() {
   if (should_coarsen_with_expansion) coarsen_metric_with_expansion();
+  if (should_refine_with_eqps) refine_with_eqps();
   {
     auto metric = sim.disc.mesh.get_array<double>(0, "metric");
     metric = Omega_h::limit_metric_gradation(
@@ -120,6 +123,23 @@ void Adapter::coarsen_metric_with_expansion() {
     } else {
       new_metric[vert] = Omega_h::min2(implied_metric[vert], old_metric[vert]);
     }
+  };
+  parallel_for(nverts, std::move(functor));
+  sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
+}
+
+void Adapter::refine_with_eqps() {
+  OMEGA_H_TIME_FUNCTION;
+  auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
+  auto const implied_metric = get_implied_isos(&sim.disc.mesh);
+  auto const nverts = sim.disc.mesh.nverts();
+  auto const eqps_idx = sim.fields.find("equivalent plastic strain");
+  OMEGA_H_CHECK(eqps_idx.is_valid());
+  auto const points_to_eqps = sim.get(eqps_idx);
+  auto const new_metric = Omega_h::Write<double>(nverts);
+  OMEGA_H_CHECK(sim.fields[eqps_idx].support->subset->mapping.is_identity);
+  auto functor = OMEGA_H_LAMBDA(int const vert) {
+    new_metric[vert] = old_metric[vert];
   };
   parallel_for(nverts, std::move(functor));
   sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));
