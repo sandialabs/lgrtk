@@ -51,7 +51,7 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else if(tPenaltyType == "RAMP")
@@ -61,7 +61,7 @@ struct FunctionFactory
             }
             else
             {
-                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
         }
@@ -74,7 +74,7 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else if(tPenaltyType == "RAMP")
@@ -84,7 +84,7 @@ struct FunctionFactory
             }
             else
             {
-                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
         }
@@ -119,7 +119,7 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::DynamicCompliance<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::DynamicCompliance<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else if(tPenaltyType == "RAMP")
@@ -129,7 +129,7 @@ struct FunctionFactory
             }
             else
             {
-                return std::make_shared<Plato::DynamicCompliance<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::DynamicCompliance<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
         }
@@ -142,7 +142,7 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<ExpVolume<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
+                return std::make_shared<ExpVolume<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
             }
             else if(tPenaltyType == "RAMP")
             {
@@ -150,7 +150,7 @@ struct FunctionFactory
             }
             else
             {
-                return std::make_shared<ExpVolume<EvaluationType, ::SIMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
+                return std::make_shared<ExpVolume<EvaluationType, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
             }
         }
         else

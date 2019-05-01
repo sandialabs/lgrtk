@@ -34,21 +34,6 @@
 
 #include "Teuchos_UnitTestHarness.hpp"
 
-/*#include <amgx_c.h>
-#include <amgx_eig_c.h>
-
-namespace Plato
-{
-
-namespace eigen
-{
-
-
-
-}
-
-}*/
-
 namespace PlatoUnitTests
 {
 
@@ -211,13 +196,13 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ApplyPenaltyHeaviside)
     Teuchos::ParameterList tParamList;
     tParamList.set<double>("Exponent", 3.0);
     tParamList.set<double>("Minimum Value", 0.0);
-    SIMP tPenaltyModel(tParamList);
+    Plato::MSIMP tPenaltyModel(tParamList);
     Plato::HeavisideProjection tProjection;
     
     // ALLOCATE PROJECTION AND PENALTY FUNCTORS 
     Plato::OrdinalType tNumCellNodes = 4;
     Plato::OrdinalType tNumVoigtTerms = 6;
-    Plato::ApplyPenalty<SIMP> tApplyPenalty(tPenaltyModel);
+    Plato::ApplyPenalty<Plato::MSIMP> tApplyPenalty(tPenaltyModel);
     Plato::ApplyProjection<Plato::HeavisideProjection> tApplyProjection(tProjection);
 
     // ALLOCATE AND INITIALIZE STRESS VIEW
@@ -271,13 +256,13 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ApplyPenaltyHyperbolicTangent_Array2D)
     Teuchos::ParameterList tParamList;
     tParamList.set<double>("Exponent", 3.0);
     tParamList.set<double>("Minimum Value", 0.0);
-    SIMP tPenaltyModel(tParamList);
+    Plato::MSIMP tPenaltyModel(tParamList);
     Plato::HyperbolicTangentProjection tProjection;
     
     // ALLOCATE PROJECTION AND PENALTY FUNCTORS 
     Plato::OrdinalType tNumCellNodes = 4;
     Plato::OrdinalType tNumVoigtTerms = 6;
-    Plato::ApplyPenalty<SIMP> tApplyPenalty(tPenaltyModel);
+    Plato::ApplyPenalty<Plato::MSIMP> tApplyPenalty(tPenaltyModel);
     Plato::ApplyProjection<Plato::HyperbolicTangentProjection> tApplyProjection(tProjection);
 
     // ALLOCATE AND INITIALIZE STRESS VIEW
@@ -522,7 +507,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicCompliance)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::DynamicCompliance<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::DynamicCompliance<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -569,7 +554,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradZ)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianZ>> tJacobianControl;
-    tJacobianControl = std::make_shared<Plato::DynamicCompliance<JacobianZ, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianControl = std::make_shared<Plato::DynamicCompliance<JacobianZ, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -628,7 +613,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradX)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianX>> tJacobianConfig;
-    tJacobianConfig = std::make_shared<Plato::DynamicCompliance<JacobianX, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianConfig = std::make_shared<Plato::DynamicCompliance<JacobianX, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -686,7 +671,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradU)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::DynamicCompliance<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::DynamicCompliance<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -760,7 +745,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeValue)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::ExpVolume<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::ExpVolume<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -807,7 +792,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradZ)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianZ>> tJacobianControl;
-    tJacobianControl = std::make_shared<Plato::ExpVolume<JacobianZ, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianControl = std::make_shared<Plato::ExpVolume<JacobianZ, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -863,7 +848,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradU)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::ExpVolume<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::ExpVolume<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -915,7 +900,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradX)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     std::shared_ptr<Plato::AbstractScalarFunction<JacobianX>> tJacobianConfig;
-    tJacobianConfig = std::make_shared<Plato::ExpVolume<JacobianX, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianConfig = std::make_shared<Plato::ExpVolume<JacobianX, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
     Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
@@ -1084,9 +1069,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsResidual)
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 
     // TEST SIZE FUNCTION
@@ -1166,9 +1151,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsResidual)
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
     std::shared_ptr<Plato::AbstractVectorFunction<ResidualT>> tResidual;
-    tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     std::shared_ptr<Plato::AbstractVectorFunction<JacobianU>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tVectorFunction.allocateResidual(tResidual, tJacobianState);
 
     // TEST SIZE FUNCTION
@@ -1551,15 +1536,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, StructuralDynamicsSolve)
     const Plato::OrdinalType tSpaceDim = 2;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>> tResidual;
-    tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    std::shared_ptr<Plato::StructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>> tResidual;
+    tResidual = std::make_shared<Plato::StructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
     tResidual->setMassPropDamping(tMassPropDamping);
     tResidual->setStiffPropDamping(tStiffPropDamping);
     tResidual->setIsotropicLinearElasticMaterial(tYoungsModulus, tPoissonRatio);
     
-    std::shared_ptr<Plato::StructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    std::shared_ptr<Plato::StructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>> tJacobianState;
+    tJacobianState = std::make_shared<Plato::StructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
     tJacobianState->setMassPropDamping(tMassPropDamping);
     tJacobianState->setStiffPropDamping(tStiffPropDamping);
@@ -1637,15 +1622,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointStructuralDynamicsSolve)
     const Plato::OrdinalType tSpaceDim = 2;
     using ResidualT = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Residual;
     using JacobianU = typename Plato::Evaluation<typename Plato::StructuralDynamics<tSpaceDim>::SimplexT>::Jacobian;
-    std::shared_ptr<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>> tResidual;
-    tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    std::shared_ptr<Plato::AdjointStructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>> tResidual;
+    tResidual = std::make_shared<Plato::AdjointStructuralDynamicsResidual<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
     tResidual->setMassPropDamping(tMassPropDamping);
     tResidual->setStiffPropDamping(tStiffPropDamping);
     tResidual->setIsotropicLinearElasticMaterial(tYoungsModulus, tPoissonRatio);
 
-    std::shared_ptr<Plato::AdjointStructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>> tJacobianState;
-    tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, SIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
+    std::shared_ptr<Plato::AdjointStructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>> tJacobianState;
+    tJacobianState = std::make_shared<Plato::AdjointStructuralDynamicsResidual<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
     tResidual->setMaterialDensity(tDensity);
     tJacobianState->setMassPropDamping(tMassPropDamping);
     tJacobianState->setStiffPropDamping(tStiffPropDamping);
