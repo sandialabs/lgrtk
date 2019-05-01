@@ -15,10 +15,10 @@ namespace Plato
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumVoigtTerms, typename PenaltyFunction>
-class ApplyWeighting : public Simplex<SpaceDim>
+class ApplyWeighting : public Plato::Simplex<SpaceDim>
 {
   private:
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
 
     PenaltyFunction m_penaltyFunction;
 

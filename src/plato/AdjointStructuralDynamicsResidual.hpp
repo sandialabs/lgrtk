@@ -39,8 +39,8 @@ class AdjointStructuralDynamicsResidual:
 /******************************************************************************/
 {
 private:
-    using Simplex<EvaluationType::SpatialDim>::m_numNodesPerCell;
-    using Simplex<EvaluationType::SpatialDim>::m_numSpatialDims;
+    using Plato::Simplex<EvaluationType::SpatialDim>::m_numNodesPerCell;
+    using Plato::Simplex<EvaluationType::SpatialDim>::m_numSpatialDims;
 
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numVoigtTerms;
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;

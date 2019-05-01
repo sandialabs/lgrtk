@@ -13,11 +13,11 @@ namespace Plato {
 */
 /******************************************************************************/
 template<int SpaceDim, int NumDofsPerNode=SpaceDim, int DofOffset=0>
-class ProjectToNode : public Simplex<SpaceDim>
+class ProjectToNode : public Plato::Simplex<SpaceDim>
 {
   private:
 
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
 
   public:
     /******************************************************************************/

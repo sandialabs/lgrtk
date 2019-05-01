@@ -640,7 +640,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalThermalEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  ScalarFunctionInc<::Plato::Thermal<spaceDim>> 
+  Plato::ScalarFunctionInc<::Plato::Thermal<spaceDim>>
     scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
   auto timeStep = params->sublist("Time Integration").get<double>("Time Step");

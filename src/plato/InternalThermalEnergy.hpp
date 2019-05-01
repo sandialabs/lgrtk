@@ -34,7 +34,7 @@ class InternalThermalEnergy :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
 
-    using Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
     using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
@@ -160,7 +160,7 @@ class InternalThermalEnergyInc :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Simplex<mSpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;
     using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;

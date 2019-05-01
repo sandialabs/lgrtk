@@ -19,11 +19,11 @@ namespace Plato
  * @brief Interface to compute the structural mass
 **********************************************************************************/
 template<Plato::OrdinalType SpaceDim>
-class StructuralMass : public Simplex<SpaceDim>
+class StructuralMass : public Plato::Simplex<SpaceDim>
 {
 private:
-    static constexpr Plato::OrdinalType mSpaceDim = Simplex<SpaceDim>::m_numSpatialDims; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Simplex<SpaceDim>::m_numNodesPerCell; /*!< number of nodes per element/cell */
+    static constexpr Plato::OrdinalType mSpaceDim = Plato::Simplex<SpaceDim>::m_numSpatialDims; /*!< spatial dimensions */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::Simplex<SpaceDim>::m_numNodesPerCell; /*!< number of nodes per element/cell */
 
     Plato::Scalar mMaterialDensity; /*!< material density (note: constant for all elements/cells) */
 

@@ -11,11 +11,11 @@ namespace Plato
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
-class SimplexThermal : public Simplex<SpaceDim>
+class SimplexThermal : public Plato::Simplex<SpaceDim>
 { 
   public:
-    using Simplex<SpaceDim>::m_numNodesPerCell;
-    using Simplex<SpaceDim>::m_numSpatialDims;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numSpatialDims;
 
     static constexpr Plato::OrdinalType m_numDofsPerNode  = 1;
     static constexpr Plato::OrdinalType m_numDofsPerCell  = m_numDofsPerNode*m_numNodesPerCell;

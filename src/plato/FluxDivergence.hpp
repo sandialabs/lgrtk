@@ -13,11 +13,11 @@ namespace Plato
 */
 /******************************************************************************/
 template<int SpaceDim, int NumDofsPerNode=1, int DofOffset=0>
-class FluxDivergence : public Simplex<SpaceDim>
+class FluxDivergence : public Plato::Simplex<SpaceDim>
 {
   private:
 
-    using Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
 
   public:
 
