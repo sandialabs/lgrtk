@@ -382,7 +382,7 @@ static void LGR_NOINLINE update_e_h(state& s, double const dt,
     material_index const material,
     device_vector<double, node_index> const& old_e_h_vector)
 {
-  auto const nodes_to_e_h_dot = s.e_h_dot.cbegin();
+  auto const nodes_to_e_h_dot = s.e_h_dot[material].cbegin();
   auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
   auto const nodes_to_e_h = s.e_h[material].begin();
   auto functor = [=] (node_index const node) {
@@ -744,8 +744,8 @@ void run(input const& in) {
   initialize_rho(in, s);
   if (!in.enable_nodal_energy) initialize_e(in, s);
   lgr::fill(s.p_h, double(0.0));
-  if (in.enable_nodal_energy) {
-    for (auto const material : in.materials) {
+  for (auto const material : in.materials) {
+    if (in.enable_nodal_energy) {
       lgr::fill(s.e_h[material], in.e0[material]);
     }
   }
