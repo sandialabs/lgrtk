@@ -12,7 +12,7 @@ void update_v_prime(input const& in, state& s, material_index const material);
 void update_q(input const& in, state& s, material_index const material);
 void update_p_h_W(state& s);
 void update_e_h_W(state& s);
-void update_p_h_dot(state& s);
+void update_p_h_dot(state& s, material_index const);
 void update_e_h_dot(state& s, material_index const);
 void nodal_ideal_gas(input const& in, state& s, material_index const);
 void update_nodal_density(state& s, material_index const);

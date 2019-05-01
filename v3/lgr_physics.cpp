@@ -64,7 +64,7 @@ static void LGR_NOINLINE update_p_h(state& s, double const dt,
     device_vector<double, node_index> const& old_p_h_vector) {
   auto const nodes_to_p_h = s.p_h[material].begin();
   auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
-  auto const nodes_to_p_h_dot = s.p_h_dot.cbegin();
+  auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
   auto functor = [=] (node_index const node) {
     double const old_p_h = nodes_to_old_p_h[node];
     double const p_h_dot = nodes_to_p_h_dot[node];
@@ -557,15 +557,19 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
 static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s) {
   for (auto const material : in.materials) {
     update_v_prime(in, s, material);
-    update_p_h_W(s);
-    update_p_h_dot(s);
+  }
+  update_p_h_W(s);
+  for (auto const material : in.materials) {
+    update_p_h_dot(s, material);
   }
 }
 
 static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s) {
   for (auto const material : in.materials) {
     update_q(in, s, material);
-    update_e_h_W(s);
+  }
+  update_e_h_W(s);
+  for (auto const material : in.materials) {
     update_e_h_dot(s, material);
   }
 }
