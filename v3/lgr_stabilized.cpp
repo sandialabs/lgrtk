@@ -45,7 +45,7 @@ void update_v_prime(input const& in, state& s, material_index const material)
   auto const nodes_to_a = s.a.cbegin();
   auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const points_to_v_prime = s.v_prime.begin();
-  auto const c_tau = in.c_tau;
+  auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
@@ -87,7 +87,7 @@ void update_q(input const& in, state& s, material_index const material)
   auto const nodes_to_a = s.a.cbegin();
   auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const points_to_q = s.q.begin();
-  auto const c_tau = in.c_tau;
+  auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];

@@ -60,7 +60,7 @@ class input {
   host_vector<double, material_index> gamma;
   host_vector<bool, material_index> enable_nodal_pressure;
   host_vector<bool, material_index> enable_nodal_energy;
-  double c_tau = 0.5;
+  host_vector<double, material_index> c_tau;
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
@@ -89,6 +89,7 @@ class input {
     ,gamma(material_count_in)
     ,enable_nodal_pressure(material_count_in, false)
     ,enable_nodal_energy(material_count_in, false)
+    ,c_tau(material_count_in, 0.5)
     ,domains(material_count_in + boundary_count_in)
   {}
 };
