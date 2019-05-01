@@ -172,16 +172,17 @@ void update_e_h_W(state& s)
   lgr::for_each(s.points, functor);
 }
 
-void update_p_h_dot(state& s)
+void update_p_h_dot(state& s, material_index const material)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
   auto const point_nodes_to_W = s.W.cbegin();
   auto const points_to_V = s.V.cbegin();
-  auto const nodes_to_p_h_dot = s.p_h_dot.begin();
+  auto const nodes_to_p_h_dot = s.p_h_dot[material].begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const elements_to_material = s.material.cbegin();
   double const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto functor = [=] (node_index const node) {
     double node_W = 0.0;
@@ -189,6 +190,8 @@ void update_p_h_dot(state& s)
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
+      material_index const element_material = elements_to_material[element];
+      if (element_material != material) continue;
       auto const node_in_element = node_elements_to_nodes_in_element[node_element];
       for (auto const point : elements_to_points[element]) {
         auto const point_nodes = points_to_point_nodes[point];
@@ -202,7 +205,7 @@ void update_p_h_dot(state& s)
     auto const p_h_dot = node_W / node_V;
     nodes_to_p_h_dot[node] = p_h_dot;
   };
-  lgr::for_each(s.nodes, functor);
+  lgr::for_each(s.node_sets[material], functor);
 }
 
 void update_e_h_dot(state& s, material_index const material)
