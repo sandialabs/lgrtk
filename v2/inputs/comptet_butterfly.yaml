@@ -5,7 +5,7 @@ mesh:
   add mid edge nodes: true
   CUBIT:
     commands: |
-      #{mesh_size = 0.25}
+      #{mesh_size = 0.10}
       reset
       create surface rectangle width 1.998 height 1.998 yplane 
       create surface rectangle width 2 height 2 yplane 
@@ -40,19 +40,20 @@ mesh:
       sideset 5 name "z-"
       sideset 6 surface 1
       sideset 6 name "z+"
-      export genesis "block4neck.g" dimension 3 block all overwrite
-    Exodus file: block4neck.g
+      export genesis "butterfly.g" dimension 3 block all overwrite
+    Exodus file: butterfly.g
 adapt:
   gradation rate: 0.6
 common fields:
   density: 7.8e3
 material models:
   - 
-    type: Albany J2
-    Poissons ratio: 0.25
-    elastic modulus: 200.0e9
-    hardening modulus: 215.0e6
-    yield strength: 349.0e6
+    type: Sierra J2
+    Poissons ratio: 0.249
+    elastic modulus: 20.0e10
+    hardening modulus: 1.23e9
+    hardening exponent: 0.55
+    yield strength: 3.49e8
 modifiers:
   -
     type: compute pressure
@@ -88,6 +89,7 @@ responses:
   - 
     time period: 1.0e-03
     type: VTK output
+    path: butterfly
     fields:
       - acceleration
       - velocity
@@ -99,10 +101,10 @@ responses:
       - equivalent plastic strain
       - plastic deformation gradient
   - 
-    time period: 1.0e-3
     type: command line history
     minimum column width: 20
     scalars:
       - step
       - time
       - dt
+ 
