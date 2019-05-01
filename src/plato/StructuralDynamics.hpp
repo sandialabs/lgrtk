@@ -56,7 +56,7 @@ struct FunctionFactory
             }
             else if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::StructuralDynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
@@ -79,7 +79,7 @@ struct FunctionFactory
             }
             else if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::AdjointStructuralDynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
@@ -124,7 +124,7 @@ struct FunctionFactory
             }
             else if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::DynamicCompliance<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+                return std::make_shared<Plato::DynamicCompliance<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                         (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
@@ -146,7 +146,7 @@ struct FunctionFactory
             }
             else if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<ExpVolume<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
+                return std::make_shared<ExpVolume<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>(aMesh, aMeshSets, aDataMap, tPenaltyParams);
             }
             else
             {

@@ -50,7 +50,7 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
@@ -125,7 +125,7 @@ internal_elastic_energy(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
@@ -162,7 +162,7 @@ stress_p_norm(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
@@ -199,7 +199,7 @@ effective_energy(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
@@ -236,7 +236,7 @@ volume(Omega_h::Mesh& aMesh,
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::Volume<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")

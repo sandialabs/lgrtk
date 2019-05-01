@@ -2710,7 +2710,7 @@ inline create_elastodynamics_residual(Omega_h::Mesh& aMesh,
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::ElastodynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else
@@ -2759,7 +2759,7 @@ inline create_adjoint_elastodynamics_residual(Omega_h::Mesh& aMesh,
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>
+        return std::make_shared<Plato::Experimental::AdjointElastodynamicsResidual<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>
                 (aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
     }
     else
@@ -2793,7 +2793,7 @@ inline create_linear_elastic_force(Teuchos::ParameterList & aProblemParam, Teuch
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<LinearElasticForce<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<LinearElasticForce<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else
     {
@@ -2826,7 +2826,7 @@ inline create_rayleigh_viscous_force(Teuchos::ParameterList & aProblemParam, Teu
     }
     else if(tPenaltyType == "RAMP")
     {
-        return std::make_shared<RayleighViscousForce<EvaluationType, ::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
+        return std::make_shared<RayleighViscousForce<EvaluationType, Plato::RAMP, Plato::HyperbolicTangentProjection>>(aProblemParam, aPenaltyParam);
     }
     else
     {

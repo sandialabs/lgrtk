@@ -50,7 +50,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::ThermoelastostaticResidual<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::ThermoelastostaticResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else 
             if(tPenaltyType == "Heaviside")
@@ -87,7 +87,7 @@ struct FunctionFactory
             } else
             if( penaltyType == "RAMP" )
             {
-                return std::make_shared<TransientThermomechResidual<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+                return std::make_shared<TransientThermomechResidual<EvaluationType, Plato::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
             } else
             if( penaltyType == "Heaviside" )
             {
@@ -123,7 +123,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::InternalThermoelasticEnergy<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::InternalThermoelasticEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else 
             if(tPenaltyType == "Heaviside")
@@ -148,7 +148,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::TMStressPNorm<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::TMStressPNorm<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else 
             if(tPenaltyType == "Heaviside")
@@ -173,7 +173,7 @@ struct FunctionFactory
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::Volume<EvaluationType, ::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else 
             if(tPenaltyType == "Heaviside")
@@ -207,7 +207,7 @@ struct FunctionFactory
                 return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::SIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
             } else
             if( penaltyType == "RAMP" ){
-                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
             } else
             if( penaltyType == "Heaviside" ){
                 return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, ::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
