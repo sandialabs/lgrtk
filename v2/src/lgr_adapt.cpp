@@ -140,7 +140,7 @@ void Adapter::refine_with_eqps() {
   OMEGA_H_TIME_FUNCTION;
   if (sim.elem_name != "CompTet") return;
   auto const h0 = 0.25;
-  auto const h1 = 0.1;
+  auto const h1 = 0.05;
   auto const eqps1 = 1.0;
   auto const dim = sim.disc.mesh.dim();
   auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
