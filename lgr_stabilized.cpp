@@ -211,7 +211,7 @@ void update_e_h_dot(state& s, material_index const material)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
   auto const point_nodes_to_W = s.W.cbegin();
-  auto const nodes_to_e_h_dot = s.e_h_dot.begin();
+  auto const nodes_to_e_h_dot = s.e_h_dot[material].begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_to_m = s.material_mass[material].cbegin();
