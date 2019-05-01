@@ -1,5 +1,6 @@
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
+#include <lgr_reduce.hpp>
 
 namespace lgr {
 
@@ -11,14 +12,19 @@ void resize_state(input const& in, state& s) {
   s.F_total.resize(s.points.size());
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
-  if (!in.enable_nodal_energy) s.p.resize(s.points.size());
+  auto have_nodal_pressure_or_energy = [&] (material_index const material) {
+    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
+  };
+  if (!all_of(in.materials, have_nodal_pressure_or_energy)) {
+    s.p.resize(s.points.size());
+  }
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
   s.c.resize(s.points.size());
   s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
-  if (!in.enable_nodal_energy) s.e.resize(s.points.size());
+  if (!all_of(in.enable_nodal_energy)) s.e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
   s.material_mass.resize(in.materials.size(), s.nodes.size(), s.devpool);
   s.mass.resize(s.nodes.size());
@@ -36,13 +42,13 @@ void resize_state(input const& in, state& s) {
   s.rho_h.resize(in.materials.size(), s.devpool);
   s.K_h.resize(in.materials.size(), s.devpool);
   for (auto const material : in.materials) {
-    if (in.enable_nodal_pressure) {
+    if (in.enable_nodal_pressure[material]) {
       s.p_h[material].resize(s.nodes.size());
       s.p_h_dot[material].resize(s.nodes.size());
       s.v_prime.resize(s.points.size());
       s.W.resize(s.points.size() * s.nodes_in_element.size());
     }
-    if (in.enable_nodal_energy) {
+    if (in.enable_nodal_energy[material]) {
       s.p_h[material].resize(s.nodes.size());
       s.e_h[material].resize(s.nodes.size());
       s.e_h_dot[material].resize(s.nodes.size());

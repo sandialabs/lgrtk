@@ -850,7 +850,7 @@ bool adapt(input const& in, state& s) {
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
   transfer_point_data<double>(s, a, s.rho);
-  if (!in.enable_nodal_energy) transfer_point_data<double>(s, a, s.e);
+  transfer_point_data<double>(s, a, s.e);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
