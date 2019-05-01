@@ -126,12 +126,19 @@ void file_writer::operator()(
   }
   if (in.enable_nodal_energy) {
     for (material_index const material : in.materials) {
+      {
       std::stringstream name_stream;
       name_stream << "energy_" << int(material);
       auto name = name_stream.str();
       write_vtk_scalars(stream, name, s.e_h[material]);
+      }
+      {
+      std::stringstream name_stream;
+      name_stream << "density_" << int(material);
+      auto name = name_stream.str();
+      write_vtk_scalars(stream, name, s.rho_h[material]);
+      }
     }
-    write_vtk_scalars(stream, "density", s.rho_h);
   }
   if (in.enable_adapt) {
     write_vtk_scalars(stream, "h", s.h_adapt);

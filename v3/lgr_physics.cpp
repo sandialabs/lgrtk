@@ -614,8 +614,8 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     if (in.enable_nodal_energy) {
       for (auto const material : in.materials) {
         update_nodal_density(s, material);
+        interpolate_rho(s, material);
       }
-      interpolate_rho(s);
     }
     if (in.enable_adapt) {
       update_quality(in, s);
