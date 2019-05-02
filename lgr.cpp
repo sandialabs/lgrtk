@@ -474,12 +474,12 @@ static void LGR_NOINLINE Noh_1D() {
   in.element = BAR;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
-  in.elements_along_x = 44;
+  in.elements_along_x = 22;
   in.x_domain_size = 1.1;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas[gas] = true;
   in.gamma[gas] = 5.0 / 3.0;
-  in.e0[gas] = 1.0e-14;
+  in.e0[gas] = 1.0e-2;
   auto inward_v = [=] (
     counting_range<node_index> const nodes,
     device_vector<vector3<double>, node_index> const& x_vector,
@@ -502,6 +502,9 @@ static void LGR_NOINLINE Noh_1D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
+  in.enable_nodal_energy[gas] = true;
+  in.c_tau[gas] = 0.3;
+  in.CFL = 0.9;
   run(in);
 }
 
@@ -837,7 +840,7 @@ static void LGR_NOINLINE triple_point() {
 }
 
 int main() {
-  if ((1)) lgr::elastic_wave();
+  if ((0)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -846,13 +849,13 @@ int main() {
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
-  if ((1)) lgr::twisting_column();
-  if ((0)) lgr::Noh_1D();
-  if ((1)) lgr::Noh_2D();
+  if ((0)) lgr::twisting_column();
+  if ((1)) lgr::Noh_1D();
+  if ((0)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
-  if ((1)) lgr::Sod_1D();
+  if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 }
