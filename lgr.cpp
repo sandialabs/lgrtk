@@ -773,12 +773,16 @@ static void LGR_NOINLINE Sod_1D() {
   in.zero_acceleration_conditions.push_back({x_min, x_axis});
   in.zero_acceleration_conditions.push_back({x_max, x_axis});
   in.enable_viscosity = true;
-  in.linear_artificial_viscosity = 0.25;
-  in.quadratic_artificial_viscosity = 0.5;
+  in.linear_artificial_viscosity = 0.5;
+  in.quadratic_artificial_viscosity = 0.125;
   auto right_domain = half_space_domain(plane{vector3<double>{1.0, 0.0, 0.0}, 0.5});
   auto left_domain = half_space_domain(plane{vector3<double>{-1.0, 0.0, 0.0}, -0.5});
   in.domains[left] = std::move(left_domain);
   in.domains[right] = std::move(right_domain);
+  in.enable_nodal_energy[left] = true;
+  in.enable_nodal_energy[right] = true;
+  in.c_tau[left] = 0.0;
+  in.c_tau[right] = 0.0;
   run(in);
 }
 
@@ -850,12 +854,12 @@ int main() {
   if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
   if ((0)) lgr::twisting_column();
-  if ((1)) lgr::Noh_1D();
+  if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
-  if ((0)) lgr::Sod_1D();
+  if ((1)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 }
