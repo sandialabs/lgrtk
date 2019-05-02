@@ -813,6 +813,9 @@ static LGR_NOINLINE void transfer_nodal_material_data(input const& in, adapt_sta
       T const old_value = old_nodes_to_T[old_node];
       new_nodes_to_T[new_node] = old_value;
     };
+    // FIXME: this could be run over just the new nodes touching this material,
+    // but we can't do that right now because we don't compute that set of nodes
+    // until after all the transfers
     for_each(a.new_nodes, functor);
     old_data = std::move(new_data);
   }
@@ -870,8 +873,10 @@ bool adapt(input const& in, state& s) {
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_data<material_index>(a, s.material);
-  transfer_point_data<double>(s, a, s.rho);
-  transfer_point_data<double>(s, a, s.e);
+  if (!all_of(in.enable_nodal_energy)) {
+    transfer_point_data<double>(s, a, s.rho);
+    transfer_point_data<double>(s, a, s.e);
+  }
   transfer_nodal_material_data<double>(in, a, s.rho_h, in.enable_nodal_energy);
   transfer_nodal_material_data<double>(in, a, s.e_h, in.enable_nodal_energy);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
