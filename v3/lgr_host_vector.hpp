@@ -55,6 +55,9 @@ public:
   const_reference operator[](Index const i) const { return m_impl.cbegin()[i]; }
   template <class ... Args>
   void resize(size_type count, Args&& ... args) {
+    if (count == size()) {
+      return;
+    }
     clear();
     m_impl.resize(count);
     T* const ptr = data();
@@ -63,6 +66,9 @@ public:
     }
   }
   void resize(size_type count) {
+    if (count == size()) {
+      return;
+    }
     clear();
     m_impl.resize(count);
     T* const ptr = data();

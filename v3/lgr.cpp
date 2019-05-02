@@ -843,7 +843,7 @@ static void LGR_NOINLINE triple_point() {
   in.c_tau[left] = 1.0;
   in.c_tau[right_bottom] = 1.0;
   in.c_tau[right_top] = 1.0;
-  in.enable_adapt = false;
+  in.enable_adapt = true;
   run(in);
 }
 

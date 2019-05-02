@@ -796,7 +796,17 @@ void run(input const& in) {
 //      ++file_output_index;
         for (int i = 0; i < 3; ++i) {
           adapt(in, s);
+          for (auto const material : in.materials) {
+            for (double const e : s.e_h[material]) assert(e > 0.0);
+          }
           resize_state(in, s);
+          for (auto const material : in.materials) {
+            for (double const e : s.e_h[material]) {
+              if (e <= 0.0) {
+                std::cerr << "material " << int(material) << '\n';
+              }
+            }
+          }
           collect_element_sets(in, s);
           collect_node_sets(in, s);
           common_initialization(in, s);
