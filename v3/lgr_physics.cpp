@@ -774,6 +774,7 @@ void run(input const& in) {
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
   int file_output_index = 0;
+  int file_period_index = 0;
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
@@ -781,7 +782,8 @@ void run(input const& in) {
       }
       output_file(in, file_output_index, s);
       ++file_output_index;
-      s.next_file_output_time = file_output_index * file_output_period;
+      ++file_period_index;
+      s.next_file_output_time = file_period_index * file_output_period;
       s.next_file_output_time = std::min(s.next_file_output_time, in.end_time);
     }
     while (s.time < s.next_file_output_time) {
