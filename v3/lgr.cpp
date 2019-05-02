@@ -799,7 +799,7 @@ static void LGR_NOINLINE triple_point() {
   input in(nmaterials, nboundaries);
   in.name = "triple_point";
   in.element = TRIANGLE;
-  in.end_time = 6.0;
+  in.end_time = 4.0;
   in.num_file_outputs = 60;
   in.elements_along_x = 28;
   in.x_domain_size = 7.0;
@@ -837,13 +837,13 @@ static void LGR_NOINLINE triple_point() {
   in.domains[right_top] = std::move(right_top_domain);
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
-  in.enable_nodal_energy[left] = false;
-  in.enable_nodal_energy[right_bottom] = false;
-  in.enable_nodal_energy[right_top] = false;
+  in.enable_nodal_energy[left] = true;
+  in.enable_nodal_energy[right_bottom] = true;
+  in.enable_nodal_energy[right_top] = true;
   in.c_tau[left] = 1.0;
   in.c_tau[right_bottom] = 1.0;
   in.c_tau[right_top] = 1.0;
-  in.enable_adapt = true;
+  in.enable_adapt = false;
   run(in);
 }
 
