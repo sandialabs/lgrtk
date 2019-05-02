@@ -798,6 +798,27 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
 }
 
 template <class T>
+static LGR_NOINLINE void transfer_nodal_material_data(input const& in, adapt_state const& a,
+    host_vector<device_vector<T, node_index>, material_index>& data,
+    host_vector<bool, material_index> const& enable) {
+  auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
+  for (auto const material : in.materials) {
+    if (!enable[material]) continue;
+    device_vector<T, node_index>& old_data = data[material];
+    device_vector<T, node_index> new_data(a.new_nodes.size(), old_data.get_allocator());
+    auto const old_nodes_to_T = old_data.cbegin();
+    auto const new_nodes_to_T = new_data.begin();
+    auto functor = [=] (node_index const new_node) {
+      node_index const old_node = new_nodes_to_old_nodes[new_node];
+      T const old_value = old_nodes_to_T[old_node];
+      new_nodes_to_T[new_node] = old_value;
+    };
+    for_each(a.new_nodes, functor);
+    old_data = std::move(new_data);
+  }
+}
+
+template <class T>
 static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vector<T, node_index>& data) {
   device_vector<T, node_index> new_data(a.new_nodes.size(), data.get_allocator());
   auto const old_nodes_to_data = data.cbegin();
@@ -851,6 +872,8 @@ bool adapt(input const& in, state& s) {
   transfer_element_data<material_index>(a, s.material);
   transfer_point_data<double>(s, a, s.rho);
   transfer_point_data<double>(s, a, s.e);
+  transfer_nodal_material_data<double>(in, a, s.rho_h, in.enable_nodal_energy);
+  transfer_nodal_material_data<double>(in, a, s.e_h, in.enable_nodal_energy);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
