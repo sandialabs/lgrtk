@@ -250,6 +250,7 @@ void update_e_h_dot(state& s, material_index const material)
 void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   auto const nodes_to_rho = s.rho_h[material].cbegin();
   auto const nodes_to_e = s.e_h[material].cbegin();
+  fill(s.p_h[material], double(0.0));
   auto const nodes_to_p = s.p_h[material].begin();
   auto const nodes_to_K = s.K_h[material].begin();
   auto const gamma = in.gamma[material];
