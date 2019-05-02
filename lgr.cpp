@@ -838,9 +838,9 @@ static void LGR_NOINLINE triple_point() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
   in.enable_adapt = false;
-  in.enable_nodal_energy[left] = true;
-  in.enable_nodal_energy[right_bottom] = true;
-  in.enable_nodal_energy[right_top] = true;
+  in.enable_nodal_energy[left] = false;
+  in.enable_nodal_energy[right_bottom] = false;
+  in.enable_nodal_energy[right_top] = false;
   in.c_tau[left] = 1.0;
   in.c_tau[right_bottom] = 1.0;
   in.c_tau[right_top] = 1.0;
@@ -859,7 +859,7 @@ int main() {
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
   if ((0)) lgr::swinging_cube();
-  if ((0)) lgr::twisting_column();
+  if ((1)) lgr::twisting_column();
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
   if ((0)) lgr::Noh_3D();
@@ -867,5 +867,5 @@ int main() {
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((0)) lgr::triple_point();
 }
