@@ -756,17 +756,16 @@ static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
   for_each(a.new_elements, functor);
 }
 
-template <class T>
-static LGR_NOINLINE void transfer_element_data(adapt_state& a,
-    device_vector<T, element_index>& data) {
-  device_vector<T, element_index> new_data(a.new_elements.size(), data.get_allocator());
+static LGR_NOINLINE void transfer_element_materials(adapt_state& a,
+    device_vector<material_index, element_index>& data) {
+  device_vector<material_index, element_index> new_data(a.new_elements.size(), data.get_allocator());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_elements_to_T = data.cbegin();
   auto const new_elements_to_T = new_data.begin();
   auto functor = [=] (element_index const new_element) {
     element_index const old_element = new_elements_to_old_elements[new_element];
     new_elements_to_T[new_element] =
-      T(old_elements_to_T[old_element]);
+      material_index(old_elements_to_T[old_element]);
   };
   for_each(a.new_elements, functor);
   data = std::move(new_data);
@@ -797,20 +796,19 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
   data = std::move(new_data);
 }
 
-template <class T>
 static LGR_NOINLINE void transfer_nodal_material_data(input const& in, adapt_state const& a,
-    host_vector<device_vector<T, node_index>, material_index>& data,
+    host_vector<device_vector<double, node_index>, material_index>& data,
     host_vector<bool, material_index> const& enable) {
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!enable[material]) continue;
-    device_vector<T, node_index>& old_data = data[material];
-    device_vector<T, node_index> new_data(a.new_nodes.size(), old_data.get_allocator());
+    device_vector<double, node_index>& old_data = data[material];
+    device_vector<double, node_index> new_data(a.new_nodes.size(), old_data.get_allocator());
     auto const old_nodes_to_T = old_data.cbegin();
     auto const new_nodes_to_T = new_data.begin();
     auto functor = [=] (node_index const new_node) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
-      T const old_value = old_nodes_to_T[old_node];
+      double const old_value = old_nodes_to_T[old_node];
       new_nodes_to_T[new_node] = old_value;
     };
     // FIXME: this could be run over just the new nodes touching this material,
@@ -872,13 +870,13 @@ bool adapt(input const& in, state& s) {
   project(s.nodes, a.old_nodes_to_new_nodes, a.new_nodes_to_old_nodes);
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
-  transfer_element_data<material_index>(a, s.material);
+  transfer_element_materials(a, s.material);
   if (!all_of(in.enable_nodal_energy)) {
     transfer_point_data<double>(s, a, s.rho);
     transfer_point_data<double>(s, a, s.e);
   }
-  transfer_nodal_material_data<double>(in, a, s.rho_h, in.enable_nodal_energy);
-  transfer_nodal_material_data<double>(in, a, s.e_h, in.enable_nodal_energy);
+  transfer_nodal_material_data(in, a, s.rho_h, in.enable_nodal_energy);
+  transfer_nodal_material_data(in, a, s.e_h, in.enable_nodal_energy);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
