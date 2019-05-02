@@ -796,19 +796,18 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
   data = std::move(new_data);
 }
 
-static LGR_NOINLINE void transfer_nodal_material_data(input const& in, adapt_state const& a,
-    host_vector<device_vector<double, node_index>, material_index>& data,
-    host_vector<bool, material_index> const& enable) {
+static LGR_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
-    if (!enable[material]) continue;
-    device_vector<double, node_index>& old_data = data[material];
+    if (!in.enable_nodal_energy[material]) continue;
+    device_vector<double, node_index>& old_data = s.e_h[material];
     device_vector<double, node_index> new_data(a.new_nodes.size(), old_data.get_allocator());
     auto const old_nodes_to_T = old_data.cbegin();
     auto const new_nodes_to_T = new_data.begin();
     auto functor = [=] (node_index const new_node) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
       double const old_value = old_nodes_to_T[old_node];
+      assert(old_value > 0.0);
       new_nodes_to_T[new_node] = old_value;
     };
     // FIXME: this could be run over just the new nodes touching this material,
@@ -871,18 +870,19 @@ bool adapt(input const& in, state& s) {
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_materials(a, s.material);
+  transfer_point_data<double>(s, a, s.rho);
   if (!all_of(in.enable_nodal_energy)) {
-    transfer_point_data<double>(s, a, s.rho);
     transfer_point_data<double>(s, a, s.e);
+  } else {
+    transfer_nodal_energy(in, a, s);
   }
-  transfer_nodal_material_data(in, a, s.rho_h, in.enable_nodal_energy);
-  transfer_nodal_material_data(in, a, s.e_h, in.enable_nodal_energy);
   transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
   interpolate_nodal_data<vector3<double>>(a, s.x);
   interpolate_nodal_data<vector3<double>>(a, s.v);
   interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
+  std::cout << "new nodes " << int(a.new_nodes.size()) << '\n';
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   propagate_connectivity(s);
   compute_nodal_materials(in, s);

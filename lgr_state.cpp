@@ -2,6 +2,8 @@
 #include <lgr_input.hpp>
 #include <lgr_reduce.hpp>
 
+#include <iostream>
+
 namespace lgr {
 
 void resize_state(input const& in, state& s) {
@@ -26,7 +28,8 @@ void resize_state(input const& in, state& s) {
   s.rho.resize(s.points.size());
   if (!all_of(in.enable_nodal_energy)) s.e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
-  s.material_mass.resize(in.materials.size(), s.nodes.size(), s.devpool);
+  s.material_mass.resize(in.materials.size(), s.devpool);
+  for (auto& mm : s.material_mass) mm.resize(s.nodes.size());
   s.mass.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());

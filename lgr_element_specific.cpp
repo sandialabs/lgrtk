@@ -445,6 +445,7 @@ static void LGR_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_V = s.V.cbegin();
+  assert(s.material_mass[material].size() == s.nodes.size());
   auto const nodes_to_m = s.material_mass[material].begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const elements_to_points = s.elements * s.points_in_element;
