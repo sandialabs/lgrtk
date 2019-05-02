@@ -120,31 +120,41 @@ void file_writer::operator()(
   write_vtk_cells(stream, in, s);
   //POINTS
   write_vtk_point_data(stream, s);
+  assert(s.x.size() == s.nodes.size());
   write_vtk_vectors(stream, "position", s.x);
+  assert(s.v.size() == s.nodes.size());
   write_vtk_vectors(stream, "velocity", s.v);
   for (material_index const material : in.materials) {
+    if ((0)) {
     if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
       std::stringstream name_stream;
       name_stream << "nodal_pressure_" << int(material);
       auto name = name_stream.str();
+      assert(s.p_h[material].size() == s.nodes.size());
       write_vtk_scalars(stream, name, s.p_h[material]);
     }
+    }
     if (in.enable_nodal_energy[material]) {
+      if ((0)) {
       {
         std::stringstream name_stream;
         name_stream << "nodal_energy_" << int(material);
         auto name = name_stream.str();
+        assert(s.e_h[material].size() == s.nodes.size());
         write_vtk_scalars(stream, name, s.e_h[material]);
+      }
       }
       {
         std::stringstream name_stream;
         name_stream << "nodal_density_" << int(material);
         auto name = name_stream.str();
+        assert(s.rho_h[material].size() == s.nodes.size());
         write_vtk_scalars(stream, name, s.rho_h[material]);
       }
     }
   }
   if (in.enable_adapt) {
+    assert(s.h_adapt.size() == s.nodes.size());
     write_vtk_scalars(stream, "h", s.h_adapt);
   }
   //CELLS

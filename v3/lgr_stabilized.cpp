@@ -273,6 +273,7 @@ void update_nodal_density(state& s, material_index const material)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const nodes_to_m = s.material_mass[material].cbegin();
+  fill(s.rho_h[material], double(0.0));
   auto const nodes_to_rho_h = s.rho_h[material].begin();
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const elements_to_points = s.elements * s.points_in_element;
