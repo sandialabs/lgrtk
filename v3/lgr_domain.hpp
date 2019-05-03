@@ -9,6 +9,7 @@
 #include <lgr_counting_range.hpp>
 #include <lgr_device_vector.hpp>
 #include <lgr_mesh_indices.hpp>
+#include <lgr_material_set.hpp>
 
 namespace lgr {
 

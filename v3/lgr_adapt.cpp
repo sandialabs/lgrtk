@@ -166,8 +166,8 @@ void initialize_h_adapt(state& s)
 enum cavity_op {
   NONE,
   SWAP,
-  COLLAPSE,
   SPLIT,
+  COLLAPSE,
 };
 
 struct adapt_state {
@@ -360,7 +360,7 @@ static inline void evaluate_triangle_collapse(
   if (lm >= shortest_length) {
     return;
   }
-  material_index cavity_material(-1);
+  auto edge_materials = material_set::none();
   for (int element = 0; element < c.num_shell_elements; ++element) {
     array<vector3<double>, 3> proposed_x;
     int const center_node_in_element = c.shell_elements_to_node_in_element[element];
@@ -370,10 +370,8 @@ static inline void evaluate_triangle_collapse(
       proposed_x[node_in_element] = c.shell_nodes_to_x[shell_node];
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
       material_index const element_material = c.shell_elements_to_materials[element];
-      if (cavity_material == material_index(-1)) cavity_material = element_material;
-      else if (cavity_material != element_material) {
-        return; // only allow interior collapses
-      }
+      edge_materials = edge_materials | material_set(element_material);
+      if (edge_materials.size() > 1) return; // only allow interior collapses
     }
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
@@ -450,14 +448,14 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
       evaluate_triangle_collapse(center_node, edge_node, c,
           shortest_collapse_edge, best_collapse_edge_node);
     }
-    if (best_split_edge_node != -1) {
-      nodes_to_criteria[node] = longest_split_edge;
-      nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
-      nodes_to_op[node] = cavity_op::SPLIT;
-    } else if (best_collapse_edge_node != -1) {
+    if (best_collapse_edge_node != -1) {
       nodes_to_criteria[node] = 1.0 / shortest_collapse_edge;
       nodes_to_other_nodes[node] = c.shell_nodes[best_collapse_edge_node];
       nodes_to_op[node] = cavity_op::COLLAPSE;
+    } else if (best_split_edge_node != -1) {
+      nodes_to_criteria[node] = longest_split_edge;
+      nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
+      nodes_to_op[node] = cavity_op::SPLIT;
     } else if (best_swap_edge_node != -1) {
       nodes_to_criteria[node] = best_swap_improvement;
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
