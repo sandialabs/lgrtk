@@ -794,7 +794,7 @@ void run(input const& in) {
       if (in.enable_adapt && (s.n % 10 == 0)) {
 //      output_file(in, file_output_index, s);
 //      ++file_output_index;
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 4; ++i) {
           adapt(in, s);
           resize_state(in, s);
           collect_element_sets(in, s);
