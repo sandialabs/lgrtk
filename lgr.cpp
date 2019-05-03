@@ -801,9 +801,9 @@ static void LGR_NOINLINE triple_point() {
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 28;
+  in.elements_along_x = 112;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 12;
+  in.elements_along_y = 48;
   in.y_domain_size = 3.0;
   in.rho0[right_top] = 0.1;
   in.rho0[right_bottom] = 1.0;
