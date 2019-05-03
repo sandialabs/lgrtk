@@ -20,12 +20,16 @@ public:
   constexpr inline bool contains(material_set const other) const noexcept {
     return (bits | other.bits) == bits;
   }
-  constexpr static inline material_set none() noexcept { return material_set(std::uint64_t(0)); }
   constexpr explicit inline operator std::uint64_t() const noexcept { return bits; }
+  inline int size() const noexcept { return popcount(bits); }
+  constexpr inline material_set operator-(material_set const other) const noexcept {
+    return material_set(bits & (~other.bits));
+  }
+  constexpr static inline material_set none() noexcept { return material_set(std::uint64_t(0)); }
   constexpr static inline material_set all(material_index const size) noexcept {
     return material_set((std::uint64_t(1) << int(size)) - 1);
   }
-  inline int size() noexcept { return popcount(bits); }
+  constexpr inline bool operator==(material_set const other) const noexcept { return bits == other.bits; }
 };
 
 }
