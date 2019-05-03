@@ -372,7 +372,6 @@ static inline void evaluate_triangle_collapse(
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
       material_index const element_material = c.shell_elements_to_materials[element];
       edge_materials = edge_materials | material_set(element_material);
-//    if (edge_materials.size() > 1) return; // only allow interior collapses
     }
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
@@ -887,7 +886,6 @@ bool adapt(input const& in, state& s) {
   interpolate_nodal_data<double>(a, s.h_adapt);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
-  std::cout << "new nodes " << int(a.new_nodes.size()) << '\n';
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);
   propagate_connectivity(s);
   compute_nodal_materials(in, s);
