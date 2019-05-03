@@ -371,7 +371,7 @@ static inline void evaluate_triangle_collapse(
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
       material_index const element_material = c.shell_elements_to_materials[element];
       edge_materials = edge_materials | material_set(element_material);
-      if (edge_materials.size() > 1) return; // only allow interior collapses
+//    if (edge_materials.size() > 1) return; // only allow interior collapses
     }
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
@@ -380,8 +380,12 @@ static inline void evaluate_triangle_collapse(
       return;
     }
   }
-  shortest_length = lm;
-  best_collapse_edge_node = edge_node;
+  auto const center_materials = c.shell_nodes_to_materials[center_node];
+  auto const target_materials = c.shell_nodes_to_materials[edge_node];
+  if (center_materials == edge_materials && target_materials.contains(center_materials)) {
+    shortest_length = lm;
+    best_collapse_edge_node = edge_node;
+  }
 }
 
 static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
