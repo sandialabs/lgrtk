@@ -341,6 +341,7 @@ static inline void evaluate_triangle_collapse(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
+    material_set const boundary_materials,
     double& shortest_length,
     int& best_collapse_edge_node
     ) {
@@ -382,13 +383,13 @@ static inline void evaluate_triangle_collapse(
   }
   auto const center_materials = c.shell_nodes_to_materials[center_node];
   auto const target_materials = c.shell_nodes_to_materials[edge_node];
-  if (center_materials == edge_materials && target_materials.contains(center_materials)) {
+  if ((center_materials - boundary_materials) == edge_materials && target_materials.contains(center_materials)) {
     shortest_length = lm;
     best_collapse_edge_node = edge_node;
   }
 }
 
-static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
+static LGR_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -404,6 +405,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_other_nodes = a.other_node.begin();
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_op = a.op.begin();
+  auto const boundary_materials = material_set::all(in.materials.size() + in.boundaries.size()) - material_set::all(in.materials.size());
   auto functor = [=] (node_index const node) {
     eval_cavity<3, 32, 32> c;
     c.num_shell_nodes = 0;
@@ -450,6 +452,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(state const& s, adapt_state& a)
             longest_split_edge, best_split_edge_node);
       }
       evaluate_triangle_collapse(center_node, edge_node, c,
+          boundary_materials,
           shortest_collapse_edge, best_collapse_edge_node);
     }
     if (best_collapse_edge_node != -1) {
@@ -847,7 +850,7 @@ static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vec
 
 bool adapt(input const& in, state& s) {
   adapt_state a(s);
-  evaluate_triangle_adapt(s, a);
+  evaluate_triangle_adapt(in, s, a);
   choose_triangle_adapt(s, a);
   auto const num_chosen = transform_reduce(a.op, int(0), plus<int>(),
       [](cavity_op const op) { return op == cavity_op::NONE ? 0 : 1; });
