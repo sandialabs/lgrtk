@@ -47,6 +47,7 @@ void Adapter::setup(Omega_h::InputMap& pl) {
       auto& eqps_pl = adapt_pl.get_map("refine with eqps");
       eqps_opts.h_min = eqps_pl.get<double>("h min");
       eqps_opts.h_max = eqps_pl.get<double>("h max");
+      eqps_opts.eqps_min = eqps_pl.get<double>("eqps min");
       eqps_opts.eqps_max = eqps_pl.get<double>("eqps max");
     }
 #define LGR_EXPL_INST(Elem)                                                    \
@@ -147,6 +148,7 @@ void Adapter::refine_with_eqps() {
   if (sim.elem_name != "CompTet") return;
   auto const h0 = eqps_opts.h_max;
   auto const h1 = eqps_opts.h_min;
+  auto const eqps0 = eqps_opts.eqps_min;
   auto const eqps1 = eqps_opts.eqps_max;
   auto const dim = sim.disc.mesh.dim();
   auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
@@ -172,7 +174,11 @@ void Adapter::refine_with_eqps() {
       }
     }
     avg_eqps /= (nadj_elems * npoints);
-    new_metric[vert] = get_new_eqps_metric(avg_eqps, eqps1, h0, h1);
+    if (avg_eqps > eqps0) {
+      new_metric[vert] = get_new_eqps_metric(avg_eqps, eqps1, h0, h1);
+    } else {
+      new_metric[vert] = old_metric[vert];
+    }
   };
   parallel_for(nverts, std::move(functor));
   sim.disc.mesh.add_tag(0, "metric", 1, read(new_metric));

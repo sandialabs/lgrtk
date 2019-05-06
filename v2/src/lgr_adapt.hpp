@@ -11,6 +11,7 @@ struct Simulation;
 struct EqpsOpts {
   double h_min;
   double h_max;
+  double eqps_min;
   double eqps_max;
 };
 
