@@ -41,8 +41,14 @@ void Adapter::setup(Omega_h::InputMap& pl) {
     this->gradation_rate = adapt_pl.get<double>("gradation rate", "1.0");
     should_coarsen_with_expansion =
         adapt_pl.get<bool>("coarsen with expansion", "false");
-    should_refine_with_eqps =
-        adapt_pl.get<bool>("refine with eqps", "false");
+    should_refine_with_eqps = false;
+    if (adapt_pl.is_map("refine with eqps")) {
+      should_refine_with_eqps = true;
+      auto& eqps_pl = adapt_pl.get_map("refine with eqps");
+      eqps_opts.h_min = eqps_pl.get<double>("h min");
+      eqps_opts.h_max = eqps_pl.get<double>("h max");
+      eqps_opts.eqps_max = eqps_pl.get<double>("eqps max");
+    }
 #define LGR_EXPL_INST(Elem)                                                    \
   if (sim.elem_name == Elem::name()) {                                         \
     remap.reset(remap_factory<Elem>(sim, pl.get_map("remap")));                \
@@ -139,9 +145,9 @@ double get_new_eqps_metric(
 void Adapter::refine_with_eqps() {
   OMEGA_H_TIME_FUNCTION;
   if (sim.elem_name != "CompTet") return;
-  auto const h0 = 0.25;
-  auto const h1 = 0.05;
-  auto const eqps1 = 1.0;
+  auto const h0 = eqps_opts.h_max;
+  auto const h1 = eqps_opts.h_max;
+  auto const eqps1 = eqps_opts.eqps_max;
   auto const dim = sim.disc.mesh.dim();
   auto const old_metric = sim.disc.mesh.get_array<double>(0, "metric");
   auto const implied_metric = get_implied_isos(&sim.disc.mesh);

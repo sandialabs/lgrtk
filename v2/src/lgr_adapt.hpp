@@ -8,6 +8,12 @@ namespace lgr {
 
 struct Simulation;
 
+struct EqpsOpts {
+  double h_min;
+  double h_max;
+  double eqps_max;
+};
+
 struct Adapter {
   Simulation& sim;
   Omega_h::AdaptOpts opts;
@@ -27,6 +33,7 @@ struct Adapter {
   void refine_with_eqps();
   double old_quality;
   double old_length;
+  EqpsOpts eqps_opts;
 };
 
 }  // namespace lgr
