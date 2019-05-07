@@ -10,7 +10,7 @@ class iterator_range {
   using difference_type = typename T::difference_type;
   using reference = typename T::reference;
   using iterator = T;
-  inline explicit iterator_range(T const& begin_in, T const& end_in) noexcept
+  inline iterator_range(T const& begin_in, T const& end_in) noexcept
     :m_begin(begin_in)
     ,m_end(end_in)
   {
