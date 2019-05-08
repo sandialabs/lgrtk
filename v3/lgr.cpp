@@ -858,7 +858,7 @@ int main() {
   if ((0)) lgr::spinning_cube();
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
-  if ((0)) lgr::swinging_cube();
+  if ((1)) lgr::swinging_cube();
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
