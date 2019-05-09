@@ -5,6 +5,37 @@
 
 namespace lgr {
 
+void update_p_h(state& s, double const dt,
+    material_index const material,
+    device_vector<double, node_index> const& old_p_h_vector) {
+  auto const nodes_to_p_h = s.p_h[material].begin();
+  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
+  auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
+  auto functor = [=] (node_index const node) {
+    double const old_p_h = nodes_to_old_p_h[node];
+    double const p_h_dot = nodes_to_p_h_dot[node];
+    double const p_h = old_p_h + dt * p_h_dot;
+    nodes_to_p_h[node] = p_h;
+  };
+  lgr::for_each(s.node_sets[material], functor);
+}
+
+void update_e_h(state& s, double const dt,
+    material_index const material,
+    device_vector<double, node_index> const& old_e_h_vector)
+{
+  auto const nodes_to_e_h_dot = s.e_h_dot[material].cbegin();
+  auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
+  auto const nodes_to_e_h = s.e_h[material].begin();
+  auto functor = [=] (node_index const node) {
+    auto const e_h_dot = nodes_to_e_h_dot[node];
+    double const old_e_h = nodes_to_old_e_h[node];
+    auto const e_h = old_e_h + dt * e_h_dot;
+    nodes_to_e_h[node] = e_h;
+  };
+  lgr::for_each(s.node_sets[material], functor);
+}
+
 void update_sigma_with_p_h(state& s, material_index const material) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
@@ -32,7 +63,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
   lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_v_prime(input const& in, state& s, material_index const material)
+static void LGR_NOINLINE update_v_prime(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -74,7 +105,7 @@ void update_v_prime(input const& in, state& s, material_index const material)
   lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_q(input const& in, state& s, material_index const material)
+static void LGR_NOINLINE update_q(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -120,7 +151,7 @@ void update_q(input const& in, state& s, material_index const material)
   lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_p_h_W(state& s, material_index const material)
+static void LGR_NOINLINE update_p_h_W(state& s, material_index const material)
 {
   auto const points_to_K = s.K.cbegin();
   auto const points_to_v_prime = s.v_prime.cbegin();
@@ -151,7 +182,7 @@ void update_p_h_W(state& s, material_index const material)
   for_each(s.element_sets[material], functor);
 }
 
-void update_e_h_W(state& s, material_index const material)
+static void LGR_NOINLINE update_e_h_W(state& s, material_index const material)
 {
   auto const points_to_q = s.q.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -178,7 +209,7 @@ void update_e_h_W(state& s, material_index const material)
   for_each(s.element_sets[material], functor);
 }
 
-void update_p_h_dot(state& s, material_index const material)
+static void LGR_NOINLINE update_p_h_dot(state& s, material_index const material)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -214,7 +245,7 @@ void update_p_h_dot(state& s, material_index const material)
   lgr::for_each(s.node_sets[material], functor);
 }
 
-void update_e_h_dot(state& s, material_index const material)
+static void LGR_NOINLINE update_e_h_dot(state& s, material_index const material)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -341,6 +372,18 @@ void interpolate_rho(state& s, material_index const material)
     }
   };
   lgr::for_each(s.element_sets[material], functor);
+}
+
+void update_p_h_dot_from_a(input const& in, state& s, material_index const material) {
+  update_v_prime(in, s, material);
+  update_p_h_W(s, material);
+  update_p_h_dot(s, material);
+}
+
+void update_e_h_dot_from_a(input const& in, state& s, material_index const material) {
+  update_q(in, s, material);
+  update_e_h_W(s, material);
+  update_e_h_dot(s, material);
 }
 
 }

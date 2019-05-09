@@ -59,21 +59,6 @@ static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vecto
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p_h(state& s, double const dt,
-    material_index const material,
-    device_vector<double, node_index> const& old_p_h_vector) {
-  auto const nodes_to_p_h = s.p_h[material].begin();
-  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
-  auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
-  auto functor = [=] (node_index const node) {
-    double const old_p_h = nodes_to_old_p_h[node];
-    double const p_h_dot = nodes_to_p_h_dot[node];
-    double const p_h = old_p_h + dt * p_h_dot;
-    nodes_to_p_h[node] = p_h;
-  };
-  lgr::for_each(s.node_sets[material], functor);
-}
-
 static void LGR_NOINLINE update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
   auto const nodes_to_m = s.mass.cbegin();
@@ -386,22 +371,6 @@ static void LGR_NOINLINE update_e(state& s, double const dt,
   for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_e_h(state& s, double const dt,
-    material_index const material,
-    device_vector<double, node_index> const& old_e_h_vector)
-{
-  auto const nodes_to_e_h_dot = s.e_h_dot[material].cbegin();
-  auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
-  auto const nodes_to_e_h = s.e_h[material].begin();
-  auto functor = [=] (node_index const node) {
-    auto const e_h_dot = nodes_to_e_h_dot[node];
-    double const old_e_h = nodes_to_old_e_h[node];
-    auto const e_h = old_e_h + dt * e_h_dot;
-    nodes_to_e_h[node] = e_h;
-  };
-  lgr::for_each(s.node_sets[material], functor);
-}
-
 static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
@@ -559,18 +528,6 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   for (auto const& cond : in.zero_acceleration_conditions) {
     zero_acceleration(s.node_sets[cond.boundary], cond.axis, &s.a);
   }
-}
-
-static void LGR_NOINLINE update_p_h_dot_from_a(input const& in, state& s, material_index const material) {
-  update_v_prime(in, s, material);
-  update_p_h_W(s, material);
-  update_p_h_dot(s, material);
-}
-
-static void LGR_NOINLINE update_e_h_dot_from_a(input const& in, state& s, material_index const material) {
-  update_q(in, s, material);
-  update_e_h_W(s, material);
-  update_e_h_dot(s, material);
 }
 
 static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
