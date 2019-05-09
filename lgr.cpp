@@ -339,7 +339,7 @@ static void LGR_NOINLINE elastic_wave_3d() {
   run(in);
 }
 
-static void LGR_NOINLINE swinging_cube() {
+static void LGR_NOINLINE swinging_cube(bool stabilize) {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -350,7 +350,11 @@ static void LGR_NOINLINE swinging_cube() {
   constexpr material_index z_max(6);
   constexpr material_index nboundaries(6);
   input in(nmaterials, nboundaries);
+  if (stabilize) {
+  in.name = "stabilized_swinging_cube";
+  } else {
   in.name = "swinging_cube";
+  }
   in.element = TETRAHEDRON;
   in.num_file_outputs = 100;
   in.elements_along_x = 8;
@@ -405,7 +409,7 @@ static void LGR_NOINLINE swinging_cube() {
   in.zero_acceleration_conditions.push_back({y_max, y_axis});
   in.zero_acceleration_conditions.push_back({z_min, z_axis});
   in.zero_acceleration_conditions.push_back({z_max, z_axis});
-  in.enable_nodal_pressure[body] = true;
+  in.enable_nodal_pressure[body] = stabilize;
   in.c_tau[body] = 0.5;
   in.CFL = 0.45;
   run(in);
@@ -858,7 +862,8 @@ int main() {
   if ((0)) lgr::spinning_cube();
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
-  if ((1)) lgr::swinging_cube();
+  if ((1)) lgr::swinging_cube(true);
+  if ((1)) lgr::swinging_cube(false);
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D();
@@ -867,5 +872,5 @@ int main() {
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
-  if ((1)) lgr::triple_point();
+  if ((0)) lgr::triple_point();
 }
