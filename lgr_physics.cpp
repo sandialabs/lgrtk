@@ -350,7 +350,7 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_rho_e_dot(state& s)
+static void LGR_NOINLINE stress_power(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
@@ -603,7 +603,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
         update_p_h(s, half_dt, material, old_p_h[material]);
       }
     }
-    update_rho_e_dot(s);
+    stress_power(s);
     for (auto const material : in.materials) {
       if (in.enable_nodal_energy[material]) {
         update_e_h_dot_from_a(in, s, material);
