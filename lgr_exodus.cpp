@@ -20,6 +20,7 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
   assert(exodus_error_code == 0);
   host_vector<int> block_ids(init_params.num_elem_blk);
   exodus_error_code = ex_get_ids(file, EX_ELEM_BLOCK, block_ids.data());
+  assert(exodus_error_code == 0);
   switch (in.element) {
     case BAR:
       s.nodes_in_element.resize(node_in_element_index(2));
@@ -91,6 +92,7 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
       host_coords[0].data(),
       host_coords[1].data(),
       host_coords[2].data());
+  assert(exodus_error_code == 0);
   pinned_vector<vector3<double>, node_index> pinned_coords(s.nodes.size(), s.pinpool);
   for (auto const node : s.nodes) {
     pinned_coords[node] = vector3<double>(
