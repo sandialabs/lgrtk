@@ -62,6 +62,7 @@ class state {
   host_vector<device_vector<double, node_index>, material_index> e_h; // nodal specific internal energy
   host_vector<device_vector<double, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy
   host_vector<device_vector<double, node_index>, material_index> rho_h; // nodal density
+  host_vector<device_vector<double, node_index>, material_index> dp_de_h; // nodal derivative of pressure with respect to energy, at constant density
   device_vector<material_index, element_index> material{devpool}; // element material
   device_vector<material_set, node_index> nodal_materials{devpool}; // nodal material set
   device_vector<double, element_index> quality{devpool}; // inverse element quality

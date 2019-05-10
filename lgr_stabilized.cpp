@@ -117,6 +117,8 @@ static void LGR_NOINLINE update_q(input const& in, state& s, material_index cons
   auto const points_to_rho = s.rho.cbegin();
   auto const nodes_to_a = s.a.cbegin();
   auto const nodes_to_p_h = s.p_h[material].cbegin();
+  auto const nodes_to_dp_de = s.dp_de_h[material].cbegin();
+  auto const points_to_K = s.K.cbegin();
   auto const points_to_q = s.q.begin();
   auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
@@ -128,6 +130,7 @@ static void LGR_NOINLINE update_q(input const& in, state& s, material_index cons
       auto grad_p = vector3<double>::zero();
       auto a = vector3<double>::zero();
       double p_h = 0.0;
+      double dp_de = 0.0;
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
@@ -139,11 +142,16 @@ static void LGR_NOINLINE update_q(input const& in, state& s, material_index cons
         grad_p = grad_p + (grad_N * p_h_of_node);
         vector3<double> const a_of_node = nodes_to_a[node];
         a = a + a_of_node;
+        double const dp_de_h = nodes_to_dp_de[node];
+        dp_de += dp_de_h;
       }
       a = a * N;
       p_h = p_h * N;
+      dp_de = dp_de * N;
       double const rho = points_to_rho[point];
-      auto const v_prime = -(tau / rho) * (rho * a + grad_p);
+      double const K = points_to_K[point];
+//    auto const v_prime = -(tau / rho) * (rho * a + grad_p);
+      auto const v_prime = -(tau * K * dp_de / p_h) * (rho * a + grad_p);
       auto const q = p_h * v_prime;
       points_to_q[point] = q;
     }
@@ -284,6 +292,7 @@ void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   fill(s.p_h[material], double(0.0));
   auto const nodes_to_p = s.p_h[material].begin();
   auto const nodes_to_K = s.K_h[material].begin();
+  auto const nodes_to_dp_de = s.dp_de_h[material].begin();
   auto const gamma = in.gamma[material];
   auto functor = [=] (node_index const node) {
     double const rho = nodes_to_rho[node];
@@ -295,6 +304,8 @@ void nodal_ideal_gas(input const& in, state& s, material_index const material) {
     nodes_to_p[node] = p;
     auto const K = gamma * p;
     nodes_to_K[node] = K;
+    auto const dp_de = (gamma - 1.0) * rho;
+    nodes_to_dp_de[node] = dp_de;
   };
   lgr::for_each(s.node_sets[material], functor);
 }
