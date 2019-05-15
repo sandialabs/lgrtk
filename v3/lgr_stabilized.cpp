@@ -150,8 +150,7 @@ static void LGR_NOINLINE update_q(input const& in, state& s, material_index cons
       dp_de = dp_de * N;
       double const rho = points_to_rho[point];
       double const K = points_to_K[point];
-      auto const v_prime = -(tau * K / (dp_de * p_h)) * (rho * a + grad_p);
-      auto const q = p_h * v_prime;
+      auto const q = -(tau * K / dp_de) * (rho * a + grad_p);
       points_to_q[point] = q;
     }
   };
