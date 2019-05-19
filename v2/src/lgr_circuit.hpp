@@ -119,6 +119,8 @@ class Circuit
       //    * 0 <= k < gNum ground node number list
       std::vector<int> gNodes;
 
+//    void Initialize(YAML::Node config);
+      void Initialize(Omega_h::InputMap& pl);
       void AddType(std::string eTypein);
       void AddNodes(std::vector<int> &nodes);
       void AddConductance(double &data);
@@ -130,19 +132,17 @@ class Circuit
       void NodeCount();
       void AssembleMatrix();
       void SolveMatrix();
-//    void Initialize(YAML::Node config);
-      void Initialize(Omega_h::InputMap pl);
       void GaussElim(double **Ai, double *bio, int n);
 
 //    void ParseYAML(YAML::Node config);
-      void ParseYAML(Omega_h::InputMap pl);
+      void ParseYAML(Omega_h::InputMap& pl);
 
    public:
 
 //    Circuit(YAML::Node config);
       Circuit();
       ~Circuit();
-      void Setup(Omega_h::InputMap pl);
+      void Setup(Omega_h::InputMap& pl);
       void SayInfo();
       void SayMatrix();
       void SayVoltages();

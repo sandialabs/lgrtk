@@ -22,10 +22,10 @@ Circuit::Circuit()
    firstCall = true;
 }
 
-void Circuit::Setup(Omega_h::InputMap pl)
+void Circuit::Setup(Omega_h::InputMap& pl)
 {
    Initialize(pl);
-   Solve();
+// Solve();
 }
 
 Circuit::~Circuit()
@@ -120,12 +120,12 @@ int Circuit::GetNumGrounds()
 }
 
 // void Circuit::Initialize(YAML::Node config)
-void Circuit::Initialize(Omega_h::InputMap pl)
+void Circuit::Initialize(Omega_h::InputMap& pl)
 {
    ParseYAML(pl);
-   SayInfo();
-   ComponentMap();
-   NodeCount();
+// SayInfo();
+// ComponentMap();
+// NodeCount();
 }
 
 void Circuit::Solve()
@@ -152,7 +152,7 @@ void Circuit::Solve(double dtin)
 }
 
   
-void Circuit::ParseYAML(Omega_h::InputMap pl)
+void Circuit::ParseYAML(Omega_h::InputMap& pl)
 {
 
    if (pl.is_map("circuit")) {
@@ -161,23 +161,85 @@ void Circuit::ParseYAML(Omega_h::InputMap pl)
 
       // Ground specification
       if (circuit_pl.is_list("ground nodes")) {
-         auto& gNodes_pl = pl.get_list("ground nodes");
+         auto& gNodes_pl = circuit_pl.get_list("ground nodes");
          for (int i=0; i < gNodes_pl.size(); i++) {
-            gNodes[i] = gNodes_pl.get<int>(i);
+            gNodes.push_back(gNodes_pl.get<int>(i));
          }
-      }
+      } // gNodes_pl
 
-   }
+      // Resistors
+      if (circuit_pl.is_list("resistors")) {
+         auto& resistors_pl = circuit_pl.get_list("resistors");
+         std::cout << "FOUND RESISTORS " << resistors_pl.size() << std::endl;
+
+         for (int i=0; i < resistors_pl.size(); i++) {
+             // Find map names here...
+             if (resistors_pl.is_list(i)) {
+//              auto& rn_pl = resistors_pl.get_list(i);
+//              int nd1 = rn_pl.get<int>(0);
+                std::cout << "FOUND RESISTOR NODES LIST" << std::endl;
+             } else if (resistors_pl.is_map(i)) {
+               std::cout << "FOUND RESISTOR MAP" << std::endl;
+               auto& rmap_pl = resistors_pl.get_map(i);
+               if (rmap_pl.is_list("nodes")){
+
+                  auto& rnodes_pl = rmap_pl.get_list("nodes");
+                  std::vector<int> rnodes;
+                  for (int j=0; j < rnodes_pl.size(); j++) {
+                     rnodes.push_back(rnodes_pl.get<int>(j));
+                  }
+
+                  AddType("resistor");
+                  AddNodes(rnodes);
+
+                  std::cout << "FOUND RESISTOR NODES LIST" << std::endl;
+
+               }
+             }
+
+//           if (rel_pl.is_map("nodes")){
+//              std::cout << "FOUND RESISTOR NODES \n";
+//           }
+
+//           if (rel_pl.size() == 2){
+//              std::cout << "FOUND RESISTOR NODES \n";
+//           }
+
+//           if (resistors_pl.is_map(i)) {
+//              if (resistors_pl.is_map(i).get_map(
+//           }
+         }
+
+
+//       if (resistors_pl.is_map("nodes")) {
+//          auto& rnodes_pl = resisors_pl.get_map("resistors");
+
+//              if (key == "nodes") {
+
+
+
+        
+//       for (auto& key : resistors_pl) {
+//           if (key == "nodes") {
+//              AddType("resistor");
+
+//              auto& rnodes_pl = resistors_pl.get_list("nodes");
+//              std::vector<int> rnodev;
+//              for (int j=0; j < rnodes_pl.size(); j++) {
+//                  rnodev.push_back(rnodes_pl.get<int>(j));
+//              }
+//              AddNodes(rnodev);
+//           } else if (it->first.compare("conductance") == 0) {
+//              AddConductance(resistors_pl.get<double>("conductance"));
+//           }
+//       }
+
+      } // resistor_pl
+
+   } // circuit_pl
 
 
 /*
-   YAML::Node circuit = config["circuit"];
-
-   // Grounds
-   if (circuit["ground nodes"]){
-      gNodes = circuit["ground nodes"].as<std::vector<int>>();
-   }
-
    // Resistors
    YAML::Node element = circuit["resistors"];
    for (YAML::iterator it = element.begin(); it != element.end(); ++it) {
