@@ -119,6 +119,12 @@ class Circuit
       //    * 0 <= k < gNum ground node number list
       std::vector<int> gNodes;
 
+      std::vector<int> cVNodes;
+      std::vector<int> cVVals;
+
+      std::vector<int> icVNodes;
+      std::vector<int> icVVals;
+
 //    void Initialize(YAML::Node config);
       void Initialize(Omega_h::InputMap& pl);
       void AddType(std::string eTypein);

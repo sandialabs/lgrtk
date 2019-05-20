@@ -25,7 +25,8 @@ Circuit::Circuit()
 void Circuit::Setup(Omega_h::InputMap& pl)
 {
    Initialize(pl);
-// Solve();
+   Solve();
+   SayVoltages();
 }
 
 Circuit::~Circuit()
@@ -123,9 +124,11 @@ int Circuit::GetNumGrounds()
 void Circuit::Initialize(Omega_h::InputMap& pl)
 {
    ParseYAML(pl);
-// SayInfo();
-// ComponentMap();
-// NodeCount();
+   if (eNum > 0) {
+      ComponentMap();
+      NodeCount();
+   }
+   SayInfo();
 }
 
 void Circuit::Solve()
@@ -170,128 +173,125 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
       // Resistors
       if (circuit_pl.is_list("resistors")) {
          auto& resistors_pl = circuit_pl.get_list("resistors");
-         std::cout << "FOUND RESISTORS " << resistors_pl.size() << std::endl;
 
          for (int i=0; i < resistors_pl.size(); i++) {
-             // Find map names here...
-             if (resistors_pl.is_list(i)) {
-//              auto& rn_pl = resistors_pl.get_list(i);
-//              int nd1 = rn_pl.get<int>(0);
-                std::cout << "FOUND RESISTOR NODES LIST" << std::endl;
-             } else if (resistors_pl.is_map(i)) {
-               std::cout << "FOUND RESISTOR MAP" << std::endl;
-               auto& rmap_pl = resistors_pl.get_map(i);
-               if (rmap_pl.is_list("nodes")){
+            if (resistors_pl.is_map(i)) {
+                auto& rmap_pl = resistors_pl.get_map(i);
 
-                  auto& rnodes_pl = rmap_pl.get_list("nodes");
-                  std::vector<int> rnodes;
-                  for (int j=0; j < rnodes_pl.size(); j++) {
-                     rnodes.push_back(rnodes_pl.get<int>(j));
-                  }
+                // Add resistor nodes
+                if (rmap_pl.is_list("nodes")){
+                
+                   auto& rnodes_pl = rmap_pl.get_list("nodes");
+                   std::vector<int> rnodes;
+                   for (int j=0; j < rnodes_pl.size(); j++) {
+                      rnodes.push_back(rnodes_pl.get<int>(j));
+                   }
 
-                  AddType("resistor");
-                  AddNodes(rnodes);
+                   AddType("resistor");
+                   AddNodes(rnodes);
+                } 
 
-                  std::cout << "FOUND RESISTOR NODES LIST" << std::endl;
-
-               }
-             }
-
-//           if (rel_pl.is_map("nodes")){
-//              std::cout << "FOUND RESISTOR NODES \n";
-//           }
-
-//           if (rel_pl.size() == 2){
-//              std::cout << "FOUND RESISTOR NODES \n";
-//           }
-
-//           if (resistors_pl.is_map(i)) {
-//              if (resistors_pl.is_map(i).get_map(
-//           }
+                // Add resistor conductance
+                if (rmap_pl.is<double>("conductance")) {
+                   double rcval = rmap_pl.get<double>("conductance");
+                   AddConductance(rcval);
+                } 
+                if (rmap_pl.is<int>("conductance")) {
+                   double rcval = static_cast<double>(rmap_pl.get<int>("conductance"));
+                   AddConductance(rcval);
+                }
+            }
          }
+      } // resistors
 
+      // Capacitors
+      if (circuit_pl.is_list("capacitors")) {
+         auto& capacitors_pl = circuit_pl.get_list("capacitors");
 
-//       if (resistors_pl.is_map("nodes")) {
-//          auto& rnodes_pl = resisors_pl.get_map("resistors");
+         for (int i=0; i < capacitors_pl.size(); i++) {
+            if (capacitors_pl.is_map(i)) {
+                auto& cmap_pl = capacitors_pl.get_map(i);
 
-//              if (key == "nodes") {
+                // Add capacitor nodes
+                if (cmap_pl.is_list("nodes")){
+                
+                   auto& cnodes_pl = cmap_pl.get_list("nodes");
+                   std::vector<int> cnodes;
+                   for (int j=0; j < cnodes_pl.size(); j++) {
+                      cnodes.push_back(cnodes_pl.get<int>(j));
+                   }
+                
+                   AddType("capacitor");
+                   AddNodes(cnodes);
+                } 
 
+                // Add capacitor capacitance
+                if (cmap_pl.is<double>("capacitance")) {
+                   double ccval = cmap_pl.get<double>("capacitance");
+                   AddCapacitance(ccval);
+                } 
+                if (cmap_pl.is<int>("capacitance")) {
+                   double ccval = static_cast<double>(cmap_pl.get<int>("capacitance"));
+                   AddCapacitance(ccval);
+                }
 
+                // Add capacitor initial voltage
+                if (cmap_pl.is_list("initial voltage")){
+                
+                   auto& cvnodes_pl = cmap_pl.get_list("initial voltage");
+                   std::vector<double> cvnodes;
+                   for (int j=0; j < cvnodes_pl.size(); j++) {
+                      if (cvnodes_pl.is<double>(j)) {
+                         cvnodes.push_back(cvnodes_pl.get<double>(j));
+                      } else if (cvnodes_pl.is<int>(j)) {
+                         int val = cvnodes_pl.get<int>(j);
+                         double rval = 1.0*val;
+                         cvnodes.push_back(rval);
+                      }
+                   }
+                
+                   AddCVoltage(cvnodes);
+                } 
+            }
+         }
+      } // capacitors
 
-        
-//       for (auto& key : resistors_pl) {
-//           if (key == "nodes") {
-//              AddType("resistor");
+      // Voltage sources
+      if (circuit_pl.is_list("voltage sources")) {
+         auto& vsources_pl = circuit_pl.get_list("voltage sources");
 
-//              auto& rnodes_pl = resistors_pl.get_list("nodes");
-//              std::vector<int> rnodev;
-//              for (int j=0; j < rnodes_pl.size(); j++) {
-//                  rnodev.push_back(rnodes_pl.get<int>(j));
-//              }
-//              AddNodes(rnodev);
-//           } else if (it->first.compare("conductance") == 0) {
-//              AddConductance(resistors_pl.get<double>("conductance"));
-//           }
-//       }
+         for (int i=0; i < vsources_pl.size(); i++) {
+            if (vsources_pl.is_map(i)) {
+                auto& vmap_pl = vsources_pl.get_map(i);
 
-      } // resistor_pl
+                // Add voltage nodes
+                if (vmap_pl.is_list("nodes")){
+                
+                   auto& vnodes_pl = vmap_pl.get_list("nodes");
+                   std::vector<int> vnodes;
+                   for (int j=0; j < vnodes_pl.size(); j++) {
+                      vnodes.push_back(vnodes_pl.get<int>(j));
+                   }
+                
+                   AddType("vsource");
+                   AddNodes(vnodes);
+                } 
 
-   } // circuit_pl
+                // Add voltage source voltage
+                if (vmap_pl.is<double>("voltage")) {
+                   double vval = vmap_pl.get<double>("voltage");
+                   AddVoltage(vval);
+                } 
+                if (vmap_pl.is<int>("voltage")) {
+                   double vval = static_cast<double>(vmap_pl.get<int>("voltage"));
+                   AddVoltage(vval);
+                }
 
+            }
+         }
+      } // voltage sources
 
-/*
-   // Resistors
-   YAML::Node element = circuit["resistors"];
-   for (YAML::iterator it = element.begin(); it != element.end(); ++it) {
-      std::string key = it->first.as<std::string>();
-      if((key.compare("nodes")) == 0) {
-         AddType("resistor");
-
-         std::vector<int> nodes = it->second.as<std::vector<int>>();
-         AddNodes(nodes);
-      }
-      if((key.compare("conductance")) == 0) {
-         double data = it->second.as<double>();
-         AddConductance(data);
-      }
-   }
-
-   // Capacitors
-   element = circuit["capacitors"];
-   for (YAML::iterator it = element.begin(); it != element.end(); ++it) {
-      std::string key = it->first.as<std::string>();
-      if((key.compare("nodes")) == 0) {
-         AddType("capacitor");
-
-         std::vector<int> nodes = it->second.as<std::vector<int>>();
-         AddNodes(nodes);
-      }
-      if((key.compare("capacitance")) == 0) {
-         double data = it->second.as<double>();
-         AddCapacitance(data);
-      }
-      if((key.compare("initial voltage")) == 0) {
-         std::vector<double> data = it->second.as<std::vector<double>>();
-         AddCVoltage(data);
-      }
-   }
-
-   // Voltage sources
-   element = circuit["vsources"];
-   for (YAML::iterator it = element.begin(); it != element.end(); ++it) {
-      std::string key = it->first.as<std::string>();
-      if((key.compare("nodes")) == 0) {
-         AddType("vsource");
-
-         std::vector<int> nodes = it->second.as<std::vector<int>>();
-         AddNodes(nodes);
-      }
-      if((key.compare("voltage")) == 0) {
-         double data = it->second.as<double>();
-         AddVoltage(data);
-      }
-   }
-*/
+   } // Circuit
 }
 
 void Circuit::AssembleMatrix()
@@ -305,18 +305,18 @@ void Circuit::AssembleMatrix()
       NA = nNum - gNum + vNum; 
    }
 
+   if (NA > 0) {
+
    // Setup the array memory
    if (firstCall) {
-      if (NA > 0) {
-         A = new double*[NA];
-         for (int i=0; i<NA; i++) A[i] = new double[NA];
-         B = new double*[NA];
-         for (int i=0; i<NA; i++) B[i] = new double[NA];
-         
-         r  = new double[NA];
-         x  = new double[NA];
-         firstCall = false;
-      }
+      A = new double*[NA];
+      for (int i=0; i<NA; i++) A[i] = new double[NA];
+      B = new double*[NA];
+      for (int i=0; i<NA; i++) B[i] = new double[NA];
+      
+      r  = new double[NA];
+      x  = new double[NA];
+      firstCall = false;
    }
 
    for (int i=0; i<NA; i++) {
@@ -453,6 +453,8 @@ void Circuit::AssembleMatrix()
          r[kk] = r[kk] + vVal[eValMap[i]];
       }
    }
+
+   } // NA > 0
 }
 
 void Circuit::SolveMatrix()
@@ -478,7 +480,7 @@ void Circuit::SolveMatrix()
    for (int i=0; i<NA; i++) x[i] = r[i];
 
    // Gaussian Elimination
-   GaussElim(A,x,NA);
+   if (NA > 0) GaussElim(A,x,NA);
 }
 
 void Circuit::GaussElim(double **Ain, double *bin, int n) {
@@ -650,6 +652,24 @@ void Circuit::NodeCount()
    if (iflg == 0) nNum++;
    }
 
+   // Since capacitors may have initial voltage, we check if any
+   // voltages are at ground AND they are not specified in gNodes
+   double rthresh = 1E-6;
+   for (int i=0;i<eNum;i++){ // check each element,
+      if (eType[i] == ETYPE_CAPACITOR) { // is it a capacitor?
+         for (int j=0;j<2;j++) { // check each capacitor node
+            if (abs(v0Val[eValMap[i]][j]) <= rthresh) { // is this node a ground?
+               iflg = 0;
+               int gNumCurrent = gNodes.size();
+               for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
+                  if (gNodes[k] == enMap[i][j]) iflg = 1; // yes we did
+               }
+               if (iflg == 0) gNodes.push_back(enMap[i][j]); // no we didn't, so add it
+            }
+         }
+      }
+   }
+
    // Count ground nodes
    gNum = gNodes.size();
    if (gNum == 0) {
@@ -693,30 +713,26 @@ void Circuit::AddVoltage(double &data)
 
 void Circuit::SayInfo()
 {
-   std::cout << "******************************" << std::endl;
-   std::cout << "**** CIRCUIT INFORMATION: ****" << std::endl;
-   std::cout << "******************************" << std::endl;
-   std::cout << "Total nodes: "         << GetNumNodes()      << std::endl;
-   std::cout << "Total ground nodes: "  << GetNumGrounds()    << std::endl;
-   std::cout << "Total elements: "      << GetNumElements()   << std::endl;
    std::cout << std::endl;
-   std::cout << "Resistors: "           << GetNumResistors()  << std::endl;
-   std::cout << "Capacitors: "          << GetNumCapacitors() << std::endl;
-   std::cout << "Voltage Sources: "     << GetNumVSources()   << std::endl;
+   std::cout << "Circuit summary:"    << std::endl;
+   std::cout << "...nodes        : "  << GetNumNodes()      << std::endl;
+   std::cout << "   ...grounds   : "  << GetNumGrounds()    << std::endl;
+   std::cout << "...elements     : "  << GetNumElements()   << std::endl;
+   std::cout << "   ...resistors : "  << GetNumResistors()  << std::endl;
+   std::cout << "   ...capacitors: "  << GetNumCapacitors() << std::endl;
+   std::cout << "   ...vsources  : "  << GetNumVSources()   << std::endl;
    std::cout << std::endl;
 }
 
 void Circuit::SayVoltages()
 {
 
-   std::cout << "********************************" << std::endl;
-   std::cout << "**** CIRCUIT NODE VOLTAGES: ****" << std::endl;
-   std::cout << "********************************" << std::endl;
+   std::cout << "Circuit voltages:" << std::endl;
 
    double voltage;
    for (int i=nNumMin; i<nNum+nNumMin; i++){
       voltage = GetNodeVoltage(i);
-      std::cout << "Voltage at node " << i << " is " << voltage << " V" << std::endl;
+      std::cout << "...node " << i << ": " << voltage << " V" << std::endl;
    }
 
    int node1,node2;
@@ -726,11 +742,11 @@ void Circuit::SayVoltages()
       voltage = GetNodeVoltage(node2) - GetNodeVoltage(node1);
 
       if (eType[i] == ETYPE_RESISTOR) {
-         std::cout << "Voltage across " << 1.0/rVal[eValMap[i]] << " ohm resistor, between nodes " << node1 << " and " << node2 << " is " << voltage << " V" << std::endl;
+         std::cout << "..." << 1.0/rVal[eValMap[i]] << " ohm resistor (nodes "     << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       } else if (eType[i] == ETYPE_CAPACITOR) {
-         std::cout << "Voltage across " << cVal[eValMap[i]] << " farad capacitor, between nodes " << node1 << " and " << node2 << " is " << voltage << " V" << std::endl;
+         std::cout << "..." << cVal[eValMap[i]]     << " farad capacitor (nodes "  << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       } else if (eType[i] == ETYPE_VSOURCE) {
-         std::cout << "Voltage across " << vVal[eValMap[i]] << " V voltage source, between nodes " << node1 << " and " << node2 << " is " << voltage << " V" << std::endl;
+         std::cout << "..." << vVal[eValMap[i]]     << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       }
    }
 
