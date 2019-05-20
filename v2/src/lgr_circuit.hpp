@@ -70,8 +70,10 @@ class Circuit
       //       * 0 <= j < nNum - gNum: Voltage, due to KCL
       //       * nNum - gNum <= j < NA: Current, due to voltage constraint
       int NA;
-      double **A, **B;  
-      double *r, *x;
+      MediumMatrix A, B;
+      MediumVector r, x;
+//    double **A, **B;  
+//    double *r, *x;
 
       // When solution is advanced in time, dt is used
       double dt;
@@ -119,13 +121,6 @@ class Circuit
       //    * 0 <= k < gNum ground node number list
       std::vector<int> gNodes;
 
-      std::vector<int> cVNodes;
-      std::vector<int> cVVals;
-
-      std::vector<int> icVNodes;
-      std::vector<int> icVVals;
-
-//    void Initialize(YAML::Node config);
       void Initialize(Omega_h::InputMap& pl);
       void AddType(std::string eTypein);
       void AddNodes(std::vector<int> &nodes);
@@ -138,14 +133,10 @@ class Circuit
       void NodeCount();
       void AssembleMatrix();
       void SolveMatrix();
-      void GaussElim(double **Ai, double *bio, int n);
 
-//    void ParseYAML(YAML::Node config);
       void ParseYAML(Omega_h::InputMap& pl);
 
    public:
-
-//    Circuit(YAML::Node config);
       Circuit();
       ~Circuit();
       void Setup(Omega_h::InputMap& pl);
