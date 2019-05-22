@@ -441,6 +441,11 @@ public:
         Plato::ScalarVectorT<ResultT> tLocalMeasureValueOverLimitMinusOne("local measure over limit minus one", tNumCells);
         Plato::ScalarVectorT<ResultT> tOutputPenalizedLocalMeasure("output penalized local measure", tNumCells);
 
+// Plato::ScalarVectorT<ResultT> tObjective("objective", tNumCells);
+// Plato::ScalarVectorT<ConfigT> tVolume("cell volume", tNumCells);
+// Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
+// Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
+
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tLocalMeasureValueLimit = mLocalMeasureLimit;
         auto tAugLagPenalty = mAugLagPenalty;
@@ -448,11 +453,13 @@ public:
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
-        auto tCubWeight = tCubatureRule.getCubWeight();
+// auto tCubWeight = tCubatureRule.getCubWeight();
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
         Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0 / tNumCells);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
+// tComputeGradient(aCellOrdinal, tGradient, aConfigWS, tVolume);
+// tVolume(aCellOrdinal) *= tCubWeight;
             // Compute local constraint residual
             tLocalMeasureValueOverLimit(aCellOrdinal) = tLocalMeasureValue(aCellOrdinal) / tLocalMeasureValueLimit;
             tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
@@ -466,10 +473,16 @@ public:
             tTrueConstraintValue(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) > static_cast<ResultT>(1.0) ?
                                                      tTrialConstraintValue(aCellOrdinal) : static_cast<ResultT>(0.0);
 
+
+// Compute objective contribution to augmented Lagrangian function
+// tObjective(aCellOrdinal) = ( Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS) * tVolume(aCellOrdinal) * 0.01);
+
             // Compute constraint contribution to augmented Lagrangian function
-            aResultWS(aCellOrdinal)= tLagrangianMultiplier * ( ( tLagrangeMultipliers(aCellOrdinal) *
+            aResultWS(aCellOrdinal) = tLagrangianMultiplier * ( ( tLagrangeMultipliers(aCellOrdinal) *
                     tTrueConstraintValue(aCellOrdinal) ) + ( static_cast<Plato::Scalar>(0.5) * tAugLagPenalty *
                     tTrueConstraintValue(aCellOrdinal) * tTrueConstraintValue(aCellOrdinal) ) );
+
+// aResultWS(aCellOrdinal) += tObjective(aCellOrdinal);
 
         },"Compute Quadratic Augmented Lagrangian Function Without Objective");
 
@@ -605,7 +618,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_Evaluate)
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold = {0.00307405, 0.00917341, 0.00307405, 0.0200399, 0.0877981, 0.124073};
+    std::vector<Plato::Scalar> tGold = {0.00140738, 0.00750674, 0.00140738, 0.0183732, 0.0861314, 0.122407};
     auto tHostResultWS = Kokkos::create_mirror(tResultWS);
     Kokkos::deep_copy(tHostResultWS, tResultWS);
     for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
@@ -615,7 +628,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_Evaluate)
 
     // ****** TEST GLOBAL SUM ******
     auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
-    TEST_FLOATING_EQUALITY(0.247233, tObjFuncVal, tTolerance);
+    TEST_FLOATING_EQUALITY(0.237233, tObjFuncVal, tTolerance);
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CellDensity)
