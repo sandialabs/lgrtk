@@ -73,11 +73,6 @@ void Circuit::Setup()
    Initialize();
    Solve();
    SayVoltages();
-
-   for (int i=0;i<100;i++){
-      Solve(0.01);
-   }
-   SayVoltages();
 }
 
 double Circuit::GetMeshAnodeVoltage()
