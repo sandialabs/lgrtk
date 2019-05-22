@@ -24,6 +24,8 @@ class Circuit
       int gNumMax; // Max node number of ground nodes
       int nNumMin; // Minimum overall node number
 
+      int eMesh; // Mesh element number
+
       // Element type integers:
       const int ETYPE_RESISTOR = 1;
       const int ETYPE_CAPACITOR = 2;
@@ -110,23 +112,25 @@ class Circuit
       //          v0Val[m][0] gives specified initial voltage at node enMap[i][0]
       //          v0Val[m][1] gives specified initial voltage at node enMap[i][1]
       //       if l == ETYPE_VSOURCE:
-      //          vVal[m] gives initial voltage across voltage source
+      //          vVal[m][0] gives specified initial voltage at node enMap[i][0]
+      //          vVal[m][1] gives specified initial voltage at node enMap[i][1]
       std::vector<double> eValMap;
+      std::vector<double> eNumMap;
       std::vector<double> rVal;
       std::vector<double> cVal;
-      std::vector<double> vVal;
+      std::vector< std::vector<double> > vVal;
       std::vector< std::vector<double> > v0Val;
 
       // gNodes[k]:
       //    * 0 <= k < gNum ground node number list
       std::vector<int> gNodes;
 
-      void Initialize(Omega_h::InputMap& pl);
-      void AddType(std::string eTypein);
+      void Initialize();
+      void AddElement(std::string eTypein, int &e);
       void AddNodes(std::vector<int> &nodes);
       void AddConductance(double &data);
       void AddCapacitance(double &data);
-      void AddVoltage(double &data);
+      void AddVoltage(std::vector<double> &data);
       void AddCVoltage(std::vector<double> &data);
       void AddGround(double &data);
       void ComponentMap();
@@ -140,6 +144,7 @@ class Circuit
       Circuit();
       ~Circuit();
       void Setup(Omega_h::InputMap& pl);
+      void Setup();
       void SayInfo();
       void SayMatrix();
       void SayVoltages();
@@ -147,7 +152,10 @@ class Circuit
       void Solve(); // Initial solve without advance in time
       void Solve(double dtin); // Solve with advance in time
       double GetNodeVoltage(int nodein); // Measure voltage at user specified node
-      void SetElementConductance(int e, double c); // Change resistor conductance of user specified element e to c 
+      double GetMeshAnodeVoltage(); // Measure voltage at mesh anode
+      double GetMeshCathodeVoltage(); // Get voltage at mesh cathode
+      void SetElementConductance(int e, double c); // Change resistor conductance of user specified element e to c , where e is in the list of eNumMap[]
+      void SetMeshConductance(double c); // Change mesh conductance of eMesh element
 
       int GetNumNodes();
       int GetNumElements();
@@ -155,6 +163,12 @@ class Circuit
       int GetNumCapacitors();
       int GetNumVSources();
       int GetNumGrounds();
+
+      void AddGroundsUser(std::vector<int> &nodes);
+      void AddMeshUser(int &e);
+      void AddResistorUser(int &e, std::vector<int> &nodes, double &con);
+      void AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap, std::vector<double> &v0);
+      void AddVSourceUser(int &e, std::vector<int> &nodes, std::vector<double> &v);
 };
 
 }  // namespace lgr

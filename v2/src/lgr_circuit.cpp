@@ -16,21 +16,114 @@ Circuit::Circuit()
    gNumMax = 0;
    nNumMin = 0;
 
+   eMesh = -1; // < 0 means mesh isn't set yet
+
    NA      = 0;
 
    solveOnly = true;
    firstCall = true;
 }
 
+Circuit::~Circuit()
+{
+}
+
+void Circuit::AddResistorUser(int &e, std::vector<int> &nodes, double &con) {
+
+   AddElement("resistor",e);
+   AddNodes(nodes);
+   AddConductance(con);
+}
+
+void Circuit::AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap, std::vector<double> &v0) {
+
+   AddElement("capacitor",e);
+   AddNodes(nodes);
+   AddCapacitance(cap);
+   AddCVoltage(v0);
+}
+
+void Circuit::AddVSourceUser(int &e, std::vector<int> &nodes, std::vector<double> &v) {
+
+   AddElement("vsource",e);
+   AddNodes(nodes);
+   AddVoltage(v);
+}
+
+void Circuit::AddGroundsUser(std::vector<int> &nodes) {
+
+   int nadd = nodes.size();
+   for (int i=0;i<nadd;i++) {
+      gNodes.push_back(nodes[i]);
+   }
+}
+
+void Circuit::AddMeshUser(int &e) {
+   eMesh = e;
+}
+
 void Circuit::Setup(Omega_h::InputMap& pl)
 {
-   Initialize(pl);
+   ParseYAML(pl);
+   Setup();
+}
+
+void Circuit::Setup()
+{
+   Initialize();
    Solve();
+   SayVoltages();
+
+   for (int i=0;i<100;i++){
+      Solve(0.01);
+   }
    SayVoltages();
 }
 
-Circuit::~Circuit()
+double Circuit::GetMeshAnodeVoltage()
 {
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[i] == eMesh) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid mesh element number
+      } else if (eType[efind] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor and thus not a mesh
+      } 
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetMeshAnodeVoltage() execption " << ex << std::endl;
+   }
+
+   return GetNodeVoltage(enMap[efind][1]);
+}
+
+double Circuit::GetMeshCathodeVoltage()
+{
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[i] == eMesh) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid mesh element number
+      } else if (eType[efind] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor and thus not a mesh
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetMeshCathodVoltage() execption " << ex << std::endl;
+   }
+
+   return GetNodeVoltage(enMap[efind][0]);
 }
 
 double Circuit::GetNodeVoltage(int nodein)
@@ -65,10 +158,17 @@ double Circuit::GetNodeVoltage(int nodein)
 
 void Circuit::SetElementConductance(int e, double c)
 {
+   int efind = -1;
    try {
-      if (e >= eNum || e < 0) {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[i] == e) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
          throw 1; // Invalid element number
-      } else if (eType[e] != ETYPE_RESISTOR) {
+      } else if (eType[efind] != ETYPE_RESISTOR) {
          throw 2; // Valid element number, but e is not resistor
       } else if (c <= 0) {
          throw 3; // Invalid capacitance
@@ -78,7 +178,12 @@ void Circuit::SetElementConductance(int e, double c)
       std::cout << "Circuit solve SetElementConductance() execption " << ex << std::endl;
    }
 
-   rVal[eValMap[e]] = c;
+   rVal[eValMap[efind]] = c;
+}
+
+void Circuit::SetMeshConductance(double c)
+{
+   SetElementConductance(eMesh, c);
 }
 
 int Circuit::GetNumNodes()
@@ -111,11 +216,11 @@ int Circuit::GetNumGrounds()
    return gNum;
 }
 
-// void Circuit::Initialize(YAML::Node config)
-void Circuit::Initialize(Omega_h::InputMap& pl)
+void Circuit::Initialize()
 {
-   ParseYAML(pl);
-   if (eNum > 0) {
+   // firstCall means we can't add components but
+   // only edit them after first Setup()
+   if ((eNum > 0) && (firstCall)) {
       ComponentMap();
       NodeCount();
    }
@@ -161,6 +266,11 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          }
       } // gNodes_pl
 
+      // Mesh element number
+      if (circuit_pl.is<int>("mesh element")) {
+         eMesh = circuit_pl.get<int>("mesh element");
+      } // Mesh element number
+
       // Resistors
       if (circuit_pl.is_list("resistors")) {
          auto& resistors_pl = circuit_pl.get_list("resistors");
@@ -168,6 +278,12 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          for (int i=0; i < resistors_pl.size(); i++) {
             if (resistors_pl.is_map(i)) {
                 auto& rmap_pl = resistors_pl.get_map(i);
+
+                // Add element number
+                if (rmap_pl.is<int>("element")) {
+                   int e = rmap_pl.get<int>("element");
+                   AddElement("resistor",e);
+                }
 
                 // Add resistor nodes
                 if (rmap_pl.is_list("nodes")){
@@ -178,7 +294,6 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                       rnodes.push_back(rnodes_pl.get<int>(j));
                    }
 
-                   AddType("resistor");
                    AddNodes(rnodes);
                 } 
 
@@ -203,6 +318,12 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
             if (capacitors_pl.is_map(i)) {
                 auto& cmap_pl = capacitors_pl.get_map(i);
 
+                // Add element number
+                if (cmap_pl.is<int>("element")) {
+                   int e = cmap_pl.get<int>("element");
+                   AddElement("capacitor",e);
+                }
+
                 // Add capacitor nodes
                 if (cmap_pl.is_list("nodes")){
                 
@@ -212,7 +333,6 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                       cnodes.push_back(cnodes_pl.get<int>(j));
                    }
                 
-                   AddType("capacitor");
                    AddNodes(cnodes);
                 } 
 
@@ -255,6 +375,12 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
             if (vsources_pl.is_map(i)) {
                 auto& vmap_pl = vsources_pl.get_map(i);
 
+                // Add element number
+                if (vmap_pl.is<int>("element")) {
+                   int e = vmap_pl.get<int>("element");
+                   AddElement("vsource",e);
+                }
+
                 // Add voltage nodes
                 if (vmap_pl.is_list("nodes")){
                 
@@ -264,20 +390,26 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                       vnodes.push_back(vnodes_pl.get<int>(j));
                    }
                 
-                   AddType("vsource");
                    AddNodes(vnodes);
                 } 
 
                 // Add voltage source voltage
-                if (vmap_pl.is<double>("voltage")) {
-                   double vval = vmap_pl.get<double>("voltage");
-                   AddVoltage(vval);
+                if (vmap_pl.is_list("voltage")){
+                
+                   auto& vvnodes_pl = vmap_pl.get_list("voltage");
+                   std::vector<double> vvnodes;
+                   for (int j=0; j < vvnodes_pl.size(); j++) {
+                      if (vvnodes_pl.is<double>(j)) {
+                         vvnodes.push_back(vvnodes_pl.get<double>(j));
+                      } else if (vvnodes_pl.is<int>(j)) {
+                         int val = vvnodes_pl.get<int>(j);
+                         double rval = 1.0*val;
+                         vvnodes.push_back(rval);
+                      }
+                   }
+                
+                   AddVoltage(vvnodes);
                 } 
-                if (vmap_pl.is<int>("voltage")) {
-                   double vval = static_cast<double>(vmap_pl.get<int>("voltage"));
-                   AddVoltage(vval);
-                }
-
             }
          }
       } // voltage sources
@@ -321,8 +453,6 @@ void Circuit::AssembleMatrix()
    int jva = -1;
    int node1,node2;
    int iflg1,iflg2;
-   double vdrop;
-
    // Loop over elements
    for (int i=0; i<eNum; i++) {
       node1 = enMap[i][0];
@@ -387,28 +517,22 @@ void Circuit::AssembleMatrix()
                // Voltage drop constraint
                A(kk, ii) = -1.0;
                A(kk, jj) = 1.0;
-
-               vdrop = v0Val[eValMap[i]][1] - v0Val[eValMap[i]][0];
             } else if (iflg2 == 1) {
                // Contribution to KCL at nodes (non ground)
                A(ii, kk) = 1.0;
    
                // Voltage drop constraint
                A(kk, ii) = -1.0;
-
-               vdrop = 0.0 - v0Val[eValMap[i]][0];
             } else if (iflg1 == 1) {
                // Contribution to KCL at nodes (non ground)
                A(jj, kk) = 1.0;
    
                // Voltage drop constraint
                A(kk, jj) = 1.0;
-
-               vdrop = v0Val[eValMap[i]][1] - 0.0;
             }
    
             // Voltage drop constraint
-            r(kk) = r(kk) + vdrop;
+            r(kk) = r(kk) + (v0Val[eValMap[i]][1]-v0Val[eValMap[i]][0]); 
 
          }
 
@@ -439,7 +563,7 @@ void Circuit::AssembleMatrix()
          }
 
          // Voltage drop constraint
-         r(kk) = r(kk) + vVal[eValMap[i]];
+         r(kk) = r(kk) + (vVal[eValMap[i]][1]-vVal[eValMap[i]][0]); 
       }
    }
 
@@ -449,6 +573,7 @@ void Circuit::AssembleMatrix()
 void Circuit::SolveMatrix()
 {
   
+   if (cNum > 0) { // Only if capacitors is B added
    if (!solveOnly) {
       // A + alpha*B
       for (int i=0; i<NA; i++) {
@@ -464,6 +589,7 @@ void Circuit::SolveMatrix()
       }
       }
    } 
+   }
 
    // Gaussian Elimination
    if (NA > 0) {
@@ -472,8 +598,14 @@ void Circuit::SolveMatrix()
    }
 }
 
-void Circuit::AddType(std::string eTypein)
+void Circuit::AddElement(std::string eTypein, int &e)
 {
+   // Increment elements
+   eNum++;
+
+   // Add to element number map
+   eNumMap.push_back(e);
+
    if (eTypein.compare("resistor") == 0) {
       rNum++;
       eType.push_back(ETYPE_RESISTOR);
@@ -513,7 +645,7 @@ void Circuit::NodeCount()
    nNumMin = enMap[0][0];
    for (int i=0  ; i<eNum2; i++){
       i1 = i % eNum;
-      i2 = i / 2;
+      i2 = i / eNum;
       node1 = enMap[i1][i2];
       iflg = 0;
 
@@ -521,7 +653,7 @@ void Circuit::NodeCount()
       if (node1 < nNumMin) nNumMin = node1;
    for (int j=i+1; j<eNum2; j++){
       j1 = j % eNum;
-      j2 = j / 2;
+      j2 = j / eNum;
       node2 = enMap[j1][j2];
       if (node1 == node2) {
          iflg = 1;
@@ -531,13 +663,30 @@ void Circuit::NodeCount()
    if (iflg == 0) nNum++;
    }
 
-   // Since capacitors may have initial voltage, we check if any
+   // Since voltage sources/capacitors may have initial voltage, we check if any
    // voltages are at ground AND they are not specified in gNodes
+   //
    double rthresh = 1E-6;
    for (int i=0;i<eNum;i++){ // check each element,
+
+      // First, check capacitors
       if (eType[i] == ETYPE_CAPACITOR) { // is it a capacitor?
          for (int j=0;j<2;j++) { // check each capacitor node
             if (abs(v0Val[eValMap[i]][j]) <= rthresh) { // is this node a ground?
+               iflg = 0;
+               int gNumCurrent = gNodes.size();
+               for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
+                  if (gNodes[k] == enMap[i][j]) iflg = 1; // yes we did
+               }
+               if (iflg == 0) gNodes.push_back(enMap[i][j]); // no we didn't, so add it
+            }
+         }
+      }
+
+      // Then, check voltage sources
+      if (eType[i] == ETYPE_VSOURCE) { // is it a voltage source?
+         for (int j=0;j<2;j++) { // check each node
+            if (abs(vVal[eValMap[i]][j]) <= rthresh) { // is this node a ground?
                iflg = 0;
                int gNumCurrent = gNodes.size();
                for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
@@ -563,9 +712,6 @@ void Circuit::NodeCount()
 
 void Circuit::AddNodes(std::vector<int> &nodes)
 {
-   // Increment elements
-   eNum++;
-
    // Add node pair for element
    enMap.push_back(nodes);
 }
@@ -585,7 +731,7 @@ void Circuit::AddCVoltage(std::vector<double> &data)
    v0Val.push_back(data);
 }
 
-void Circuit::AddVoltage(double &data)
+void Circuit::AddVoltage(std::vector<double> &data)
 {
    vVal.push_back(data);
 }
@@ -625,7 +771,7 @@ void Circuit::SayVoltages()
       } else if (eType[i] == ETYPE_CAPACITOR) {
          std::cout << "..." << cVal[eValMap[i]]     << " farad capacitor (nodes "  << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       } else if (eType[i] == ETYPE_VSOURCE) {
-         std::cout << "..." << vVal[eValMap[i]]     << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+         std::cout << "..." << vVal[eValMap[i]][1] - vVal[eValMap[i]][0] << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       }
    }
 
