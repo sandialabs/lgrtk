@@ -118,8 +118,8 @@ class Circuit
       //       if l == ETYPE_VSOURCE:
       //          vVal[m][0] gives specified initial voltage at node enMap[i][0]
       //          vVal[m][1] gives specified initial voltage at node enMap[i][1]
-      std::vector<double> eValMap;
-      std::vector<double> eNumMap;
+      std::vector<int> eValMap;
+      std::vector<int> eNumMap;
       std::vector<double> rVal;
       std::vector<double> cVal;
       std::vector< std::vector<double> > vVal;

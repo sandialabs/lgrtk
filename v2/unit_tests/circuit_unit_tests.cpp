@@ -65,7 +65,7 @@ TEST(circuit, RC) {
    // Advance in time to 1 sec (i.e., 1 tau since R*C = 1)
    double dt = 0.01;
    double tfinal = 1.0;
-   int nstep = tfinal/dt;
+   int nstep = int(tfinal/dt);
    for (int i=0;i<nstep;i++){
       c.Solve(dt);
    }
