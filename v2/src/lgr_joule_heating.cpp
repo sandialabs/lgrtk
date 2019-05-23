@@ -7,6 +7,7 @@
 #include <lgr_joule_heating.hpp>
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
+#include <lgr_circuit.hpp>
 
 namespace lgr {
 
@@ -85,6 +86,7 @@ struct JouleHeating : public Model<Elem> {
     integrate_conductance();
     compute_electrode_voltages();
     contribute_joule_heating();
+    this->sim.circuit.Solve(this->sim.dt);
   }
   void assemble_normalized_voltage_system() {
     std::cerr << "assembling normalized voltage system\n";
@@ -229,9 +231,9 @@ struct JouleHeating : public Model<Elem> {
   }
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
-    // TODO: put a circuit here!
-    // anode_voltage = 1.0;
-    cathode_voltage = 0.0;
+    this->sim.circuit.SetMeshConductance(integrated_conductance);
+    anode_voltage = this->sim.circuit.GetMeshAnodeVoltage();
+    cathode_voltage = this->sim.circuit.GetMeshCathodeVoltage();
   }
   void contribute_joule_heating() {
     OMEGA_H_TIME_FUNCTION;

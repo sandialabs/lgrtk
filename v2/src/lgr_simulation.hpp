@@ -16,6 +16,7 @@
 #include <lgr_scalars.hpp>
 #include <lgr_subsets.hpp>
 #include <lgr_supports.hpp>
+#include <lgr_circuit.hpp>
 
 namespace lgr {
 
@@ -34,6 +35,7 @@ struct Simulation {
   Responses responses;
   Adapter adapter;
   Flooder flooder;
+  Circuit circuit;
   Simulation(Omega_h::CommPtr comm, Setups const& setups_in, Factories&& factories_in);
   double get_double(
       Omega_h::InputMap& pl, const char* name, const char* default_expr);

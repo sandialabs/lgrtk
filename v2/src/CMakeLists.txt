@@ -91,6 +91,8 @@ install(FILES
     lgr_flood.hpp
     lgr_element_functions.hpp
     lgr_setup.hpp
+    lgr_circuit.hpp
+    lgr_linear_algebra.hpp
     DESTINATION include)
 
 if(LGR_COMPTET)

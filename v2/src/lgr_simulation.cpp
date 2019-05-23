@@ -165,6 +165,9 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields.setup_common_defaults(pl.get_map("common fields"));
   fields.setup_default_conditions(*this, time);
   // done setting up conditions
+  // setup circuit
+  circuit.Setup(pl);
+  // done settting up circuit
   // set coordinates
   auto const field_x = fields.set(position);
   auto const mesh_x = disc.get_node_coords();
