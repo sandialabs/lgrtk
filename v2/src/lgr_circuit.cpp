@@ -54,8 +54,8 @@ void Circuit::AddVSourceUser(int &e, std::vector<int> &nodes, std::vector<double
 
 void Circuit::AddGroundsUser(std::vector<int> &nodes) {
 
-   int nadd = nodes.size();
-   for (int i=0;i<nadd;i++) {
+  std::size_t nadd = nodes.size();
+   for (std::size_t i=0;i<nadd;i++) {
       gNodes.push_back(nodes[i]);
    }
 }
@@ -85,14 +85,14 @@ double Circuit::GetMeshAnodeVoltage()
    int efind = -1;
    try {
       for (int i=0;i<eNum;i++) {
-         if (eNumMap[i] == eMesh) {
+         if (eNumMap[std::size_t(i)] == eMesh) {
             efind = i;
             break;
          }
       }
       if (efind < 0) {
          throw 1; // Invalid mesh element number
-      } else if (eType[efind] != ETYPE_RESISTOR) {
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
          throw 2; // Valid element number, but e is not resistor and thus not a mesh
       } 
    }
@@ -100,7 +100,7 @@ double Circuit::GetMeshAnodeVoltage()
       std::cout << "Circuit solve GetMeshAnodeVoltage() execption " << ex << std::endl;
    }
 
-   return GetNodeVoltage(enMap[efind][1]);
+   return GetNodeVoltage(enMap[std::size_t(efind)][1]);
 }
 
 double Circuit::GetMeshCathodeVoltage()
@@ -110,14 +110,14 @@ double Circuit::GetMeshCathodeVoltage()
    int efind = -1;
    try {
       for (int i=0;i<eNum;i++) {
-         if (eNumMap[i] == eMesh) {
+         if (eNumMap[std::size_t(i)] == eMesh) {
             efind = i;
             break;
          }
       }
       if (efind < 0) {
          throw 1; // Invalid mesh element number
-      } else if (eType[efind] != ETYPE_RESISTOR) {
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
          throw 2; // Valid element number, but e is not resistor and thus not a mesh
       }
    }
@@ -125,7 +125,7 @@ double Circuit::GetMeshCathodeVoltage()
       std::cout << "Circuit solve GetMeshCathodVoltage() execption " << ex << std::endl;
    }
 
-   return GetNodeVoltage(enMap[efind][0]);
+   return GetNodeVoltage(enMap[std::size_t(efind)][0]);
 }
 
 double Circuit::GetNodeVoltage(int nodein)
@@ -141,7 +141,7 @@ double Circuit::GetNodeVoltage(int nodein)
    }
    int iflg = 0;
    for (int i=0; i<gNum; i++) {
-      if (nodein == gNodes[i]) {
+      if (nodein == gNodes[std::size_t(i)]) {
          iflg = 1;
          break;
       }
@@ -163,14 +163,14 @@ void Circuit::SetElementConductance(int e, double c)
    int efind = -1;
    try {
       for (int i=0;i<eNum;i++) {
-         if (eNumMap[i] == e) {
+         if (eNumMap[std::size_t(i)] == e) {
             efind = i;
             break;
          }
       }
       if (efind < 0) {
          throw 1; // Invalid element number
-      } else if (eType[efind] != ETYPE_RESISTOR) {
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
          throw 2; // Valid element number, but e is not resistor
       } else if (c <= 0) {
          throw 3; // Invalid capacitance
@@ -180,7 +180,7 @@ void Circuit::SetElementConductance(int e, double c)
       std::cout << "Circuit solve SetElementConductance() execption " << ex << std::endl;
    }
 
-   rVal[eValMap[efind]] = c;
+   rVal[std::size_t(eValMap[std::size_t(efind)])] = c;
 }
 
 void Circuit::SetMeshConductance(double c)
@@ -459,14 +459,14 @@ void Circuit::AssembleMatrix()
    int iflg1,iflg2;
    // Loop over elements
    for (int i=0; i<eNum; i++) {
-      node1 = enMap[i][0];
-      node2 = enMap[i][1];
+      node1 = enMap[std::size_t(i)][0];
+      node2 = enMap[std::size_t(i)][1];
 
       iflg1 = 0;
       iflg2 = 0;
       for (int j=0; j < gNum; j++) {
-         if (node1 == gNodes[j]) iflg1 = 1;
-         if (node2 == gNodes[j]) iflg2 = 1;
+         if (node1 == gNodes[std::size_t(j)]) iflg1 = 1;
+         if (node2 == gNodes[std::size_t(j)]) iflg2 = 1;
       }
 
       // KCL is first in matrix
@@ -475,37 +475,37 @@ void Circuit::AssembleMatrix()
       if (ii >= gNumMax - nNumMin) ii = ii - gNum;
       if (jj >= gNumMax - nNumMin) jj = jj - gNum;
 
-      if (eType[i] == ETYPE_RESISTOR) {
+      if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
          if ((iflg1 == 0) & (iflg2 == 0)) {
             // Myself equation ii
-            A(ii, ii) += rVal[eValMap[i]];
-            A(ii, jj) -= rVal[eValMap[i]];
+            A(ii, ii) += rVal[std::size_t(eValMap[std::size_t(i)])];
+            A(ii, jj) -= rVal[std::size_t(eValMap[std::size_t(i)])];
 
             // Neighbor equation jj
-            A(jj, ii) -= rVal[eValMap[i]];
-            A(jj, jj) += rVal[eValMap[i]];
+            A(jj, ii) -= rVal[std::size_t(eValMap[std::size_t(i)])];
+            A(jj, jj) += rVal[std::size_t(eValMap[std::size_t(i)])];
          } else if (iflg2 == 1) {
             // Myself equation ii only
-            A(ii, ii) += rVal[eValMap[i]];
+            A(ii, ii) += rVal[std::size_t(eValMap[std::size_t(i)])];
          } else if (iflg1 == 1) {
             // Neighbor equation jj only
-            A(jj, jj) += rVal[eValMap[i]];
+            A(jj, jj) += rVal[std::size_t(eValMap[std::size_t(i)])];
          }
-      } else if (eType[i] == ETYPE_CAPACITOR) {
+      } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
          if ((iflg1 == 0) & (iflg2 == 0)) {
             // Myself equation ii
-            B(ii, ii) += cVal[eValMap[i]];
-            B(ii, jj) -= cVal[eValMap[i]];
+            B(ii, ii) += cVal[std::size_t(eValMap[std::size_t(i)])];
+            B(ii, jj) -= cVal[std::size_t(eValMap[std::size_t(i)])];
 
             // Neighbor equation jj
-            B(jj, ii) -= cVal[eValMap[i]];
-            B(jj, jj) += cVal[eValMap[i]];
+            B(jj, ii) -= cVal[std::size_t(eValMap[std::size_t(i)])];
+            B(jj, jj) += cVal[std::size_t(eValMap[std::size_t(i)])];
          } else if (iflg2 == 1) {
             // Myself equation ii only
-            B(ii, ii) += cVal[eValMap[i]];
+            B(ii, ii) += cVal[std::size_t(eValMap[std::size_t(i)])];
          } else if (iflg1 == 1) {
             // Neighbor equation jj only
-            B(jj, jj) += cVal[eValMap[i]];
+            B(jj, jj) += cVal[std::size_t(eValMap[std::size_t(i)])];
          }
 
          // Treat capacitor as voltage source initially
@@ -536,11 +536,11 @@ void Circuit::AssembleMatrix()
             }
    
             // Voltage drop constraint
-            r(kk) = r(kk) + (v0Val[eValMap[i]][1]-v0Val[eValMap[i]][0]); 
+            r(kk) = r(kk) + (v0Val[std::size_t(eValMap[std::size_t(i)])][1]-v0Val[std::size_t(eValMap[std::size_t(i)])][0]); 
 
          }
 
-      } else if (eType[i] == ETYPE_VSOURCE) {
+      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
          jva++;
          kk = nNum - gNum + jva;
 
@@ -567,7 +567,7 @@ void Circuit::AssembleMatrix()
          }
 
          // Voltage drop constraint
-         r(kk) = r(kk) + (vVal[eValMap[i]][1]-vVal[eValMap[i]][0]); 
+         r(kk) = r(kk) + (vVal[std::size_t(eValMap[std::size_t(i)])][1]-vVal[std::size_t(eValMap[std::size_t(i)])][0]); 
       }
    }
 
@@ -628,13 +628,13 @@ void Circuit::ComponentMap()
    int ic = -1;
    int iv = -1;
    for (int i=0; i<eNum; i++){
-      if (eType[i] == ETYPE_RESISTOR) {
+      if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
          ir++;
          eValMap.push_back(ir);
-      } else if (eType[i] == ETYPE_CAPACITOR) {
+      } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
          ic++;
          eValMap.push_back(ic);
-      } else if (eType[i] == ETYPE_VSOURCE) {
+      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
          iv++;
          eValMap.push_back(iv);
       }
@@ -650,7 +650,7 @@ void Circuit::NodeCount()
    for (int i=0  ; i<eNum2; i++){
       i1 = i % eNum;
       i2 = i / eNum;
-      node1 = enMap[i1][i2];
+      node1 = enMap[std::size_t(i1)][std::size_t(i2)];
       iflg = 0;
 
       // Also compute min node at same time
@@ -658,7 +658,7 @@ void Circuit::NodeCount()
    for (int j=i+1; j<eNum2; j++){
       j1 = j % eNum;
       j2 = j / eNum;
-      node2 = enMap[j1][j2];
+      node2 = enMap[std::size_t(j1)][std::size_t(j2)];
       if (node1 == node2) {
          iflg = 1;
          break;
@@ -674,41 +674,41 @@ void Circuit::NodeCount()
    for (int i=0;i<eNum;i++){ // check each element,
 
       // First, check capacitors
-      if (eType[i] == ETYPE_CAPACITOR) { // is it a capacitor?
+      if (eType[std::size_t(i)] == ETYPE_CAPACITOR) { // is it a capacitor?
          for (int j=0;j<2;j++) { // check each capacitor node
-            if (abs(v0Val[eValMap[i]][j]) <= rthresh) { // is this node a ground?
+            if (abs(v0Val[std::size_t(eValMap[std::size_t(i)])][std::size_t(j)]) <= rthresh) { // is this node a ground?
                iflg = 0;
-               int gNumCurrent = gNodes.size();
+               int gNumCurrent = int(gNodes.size());
                for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
-                  if (gNodes[k] == enMap[i][j]) iflg = 1; // yes we did
+                  if (gNodes[std::size_t(k)] == enMap[std::size_t(i)][std::size_t(j)]) iflg = 1; // yes we did
                }
-               if (iflg == 0) gNodes.push_back(enMap[i][j]); // no we didn't, so add it
+               if (iflg == 0) gNodes.push_back(enMap[std::size_t(i)][std::size_t(j)]); // no we didn't, so add it
             }
          }
       }
 
       // Then, check voltage sources
-      if (eType[i] == ETYPE_VSOURCE) { // is it a voltage source?
+      if (eType[std::size_t(i)] == ETYPE_VSOURCE) { // is it a voltage source?
          for (int j=0;j<2;j++) { // check each node
-            if (abs(vVal[eValMap[i]][j]) <= rthresh) { // is this node a ground?
+            if (abs(vVal[std::size_t(eValMap[std::size_t(i)])][std::size_t(j)]) <= rthresh) { // is this node a ground?
                iflg = 0;
-               int gNumCurrent = gNodes.size();
+               int gNumCurrent = int(gNodes.size());
                for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
-                  if (gNodes[k] == enMap[i][j]) iflg = 1; // yes we did
+                  if (gNodes[std::size_t(k)] == enMap[std::size_t(i)][std::size_t(j)]) iflg = 1; // yes we did
                }
-               if (iflg == 0) gNodes.push_back(enMap[i][j]); // no we didn't, so add it
+               if (iflg == 0) gNodes.push_back(enMap[std::size_t(i)][std::size_t(j)]); // no we didn't, so add it
             }
          }
       }
    }
 
    // Count ground nodes
-   gNum = gNodes.size();
+   gNum = int(gNodes.size());
    if (gNum == 0) {
       gNumMax = nNum;
    } else {
       for (int i=0; i<gNum; i++){
-         if (gNodes[i] > gNumMax) gNumMax = gNodes[i];
+         if (gNodes[std::size_t(i)] > gNumMax) gNumMax = gNodes[std::size_t(i)];
       }
    }
 
@@ -766,16 +766,16 @@ void Circuit::SayVoltages()
 
    int node1,node2;
    for (int i=0; i<eNum; i++){
-      node1 = enMap[i][0]; 
-      node2 = enMap[i][1]; 
+      node1 = enMap[std::size_t(i)][0]; 
+      node2 = enMap[std::size_t(i)][1]; 
       voltage = GetNodeVoltage(node2) - GetNodeVoltage(node1);
 
-      if (eType[i] == ETYPE_RESISTOR) {
-         std::cout << "..." << 1.0/rVal[eValMap[i]] << " ohm resistor (nodes "     << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
-      } else if (eType[i] == ETYPE_CAPACITOR) {
-         std::cout << "..." << cVal[eValMap[i]]     << " farad capacitor (nodes "  << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
-      } else if (eType[i] == ETYPE_VSOURCE) {
-         std::cout << "..." << vVal[eValMap[i]][1] - vVal[eValMap[i]][0] << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+      if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
+         std::cout << "..." << 1.0/rVal[std::size_t(eValMap[std::size_t(i)])] << " ohm resistor (nodes "     << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+      } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
+         std::cout << "..." << cVal[std::size_t(eValMap[std::size_t(i)])]     << " farad capacitor (nodes "  << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
+         std::cout << "..." << vVal[std::size_t(eValMap[std::size_t(i)])][1] - vVal[std::size_t(eValMap[std::size_t(i)])][0] << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
       }
    }
 
