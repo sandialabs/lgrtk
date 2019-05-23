@@ -20,8 +20,10 @@ Circuit::Circuit()
 
    NA      = 0;
 
-   solveOnly = true;
-   firstCall = true;
+   solveOnly    = true;
+   firstCall    = true;
+   usingCircuit = false;
+   usingMesh    = false;
 }
 
 Circuit::~Circuit()
@@ -59,6 +61,7 @@ void Circuit::AddGroundsUser(std::vector<int> &nodes) {
 }
 
 void Circuit::AddMeshUser(int &e) {
+   usingMesh = true;
    eMesh = e;
 }
 
@@ -77,6 +80,8 @@ void Circuit::Setup()
 
 double Circuit::GetMeshAnodeVoltage()
 {
+   if (!usingMesh) return 0.0;
+
    int efind = -1;
    try {
       for (int i=0;i<eNum;i++) {
@@ -100,6 +105,8 @@ double Circuit::GetMeshAnodeVoltage()
 
 double Circuit::GetMeshCathodeVoltage()
 {
+   if (!usingMesh) return 0.0;
+
    int efind = -1;
    try {
       for (int i=0;i<eNum;i++) {
@@ -178,7 +185,7 @@ void Circuit::SetElementConductance(int e, double c)
 
 void Circuit::SetMeshConductance(double c)
 {
-   SetElementConductance(eMesh, c);
+   if (usingMesh) SetElementConductance(eMesh, c);
 }
 
 int Circuit::GetNumNodes()
@@ -423,7 +430,9 @@ void Circuit::AssembleMatrix()
       NA = nNum - gNum + vNum; 
    }
 
-   if (NA > 0) {
+   if (NA > 0) usingCircuit = true;
+
+   if (usingCircuit) {
 
    // Setup the array memory
    if (firstCall) {
@@ -587,7 +596,7 @@ void Circuit::SolveMatrix()
    }
 
    // Gaussian Elimination
-   if (NA > 0) {
+   if (usingCircuit) {
       gaussian_elimination(A, r);
       back_substitution(A, r, x);
    }

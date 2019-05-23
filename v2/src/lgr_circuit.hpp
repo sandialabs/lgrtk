@@ -84,6 +84,10 @@ class Circuit
       bool solveOnly;
       // When true, the pointer array memory will be created
       bool firstCall;
+      // When true, the user has specified a mesh
+      bool usingMesh;
+      // When true, the user has specified a circuit
+      bool usingCircuit;
 
       // Element and node maps:
       //    i: element number (0 <= i < eNum)
