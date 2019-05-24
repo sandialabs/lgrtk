@@ -15,6 +15,233 @@
 namespace Plato
 {
 
+
+/******************************************************************************//**
+ * @brief Compute Eigenvalues
+**********************************************************************************/
+template<Plato::OrdinalType SpatialDim>
+class Eigenvalues
+{
+private:
+    const Plato::Scalar mTolerance = static_cast<Plato::Scalar>(1.0e-12);
+    const Plato::OrdinalType tMaxIterations = static_cast<Plato::OrdinalType>(20);
+
+public:
+    /******************************************************************************//**
+     * @brief Constructor
+    **********************************************************************************/
+    Eigenvalues(){}
+
+    /******************************************************************************//**
+     * @brief Destructor
+    **********************************************************************************/
+    ~Eigenvalues(){}
+
+    /******************************************************************************//**
+     * @brief Compute Eigenvalues
+     * @param [in] aCellOrdinal cell/element index
+     * @param [in] aVoigtTensor cell/element voigt tensor
+     * @param [out] aEigenvalues cell/element tensor eigenvalues
+    **********************************************************************************/
+    template<typename Inputype, typename ResultType>
+    DEVICE_TYPE inline void
+    operator()(const Plato::OrdinalType & aCellOrdinal,
+               const Plato::ScalarMultiVectorT<Inputype> & aCauchyStress,
+               const Plato::ScalarMultiVectorT<ResultType> & aVonMisesStress,
+               const bool & aIsStrainType) const;
+};
+// class Eigenvalues
+
+/******************************************************************************//**
+ * @brief Eigenvalues for 3D problems
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aVoigtTensor cell/element voigt tensor
+ * @param [out] aEigenvalues cell/element tensor eigenvalues
+**********************************************************************************/
+template<>
+template<typename Inputype, typename ResultType>
+DEVICE_TYPE inline void
+Eigenvalues<3>::operator()(const Plato::OrdinalType & aCellOrdinal,
+                           const Plato::ScalarMultiVectorT<Inputype> & aVoigtTensor,
+                           const Plato::ScalarMultiVectorT<ResultType> & aEigenvalues,
+                           const bool & aIsStrainType) const
+{
+    ResultType tTensor[3][3];
+    // Fill diagonal elements
+    tTensor[0][0] = aVoigtTensor(aCellOrdinal, 0);
+    tTensor[1][1] = aVoigtTensor(aCellOrdinal, 1);
+    tTensor[2][2] = aVoigtTensor(aCellOrdinal, 2);
+    // Fill used off diagonal elements
+    tTensor[0][1] = aIsStrainType ? aVoigtTensor(aCellOrdinal, 5) / static_cast<Plato::Scalar>(2.0) :
+                                    aVoigtTensor(aCellOrdinal, 5);
+    tTensor[0][2] = aIsStrainType ? aVoigtTensor(aCellOrdinal, 4) / static_cast<Plato::Scalar>(2.0) :
+                                    aVoigtTensor(aCellOrdinal, 4);
+    tTensor[1][2] = aIsStrainType ? aVoigtTensor(aCellOrdinal, 3) / static_cast<Plato::Scalar>(2.0) :
+                                    aVoigtTensor(aCellOrdinal, 3);
+    // Symmetrize
+    tTensor[1][0] = tTensor[0][1]; 
+    tTensor[2][0] = tTensor[0][2]; 
+    tTensor[2][1] = tTensor[1][2];
+
+    ResultType tOffDiagNorm = sqrt(tTensor[0][1]*tTensor[0][1] + tTensor[0][2]*tTensor[0][2] + 
+                                   tTensor[1][2]*tTensor[1][2]);
+
+    ResultType tRelativeTolerance = mTolerance * sqrt(tTensor[0][0]*tTensor[0][0] + tTensor[1][1]*tTensor[1][1] 
+                                                    + tTensor[2][2]*tTensor[2][2]);
+
+    if (tRelativeTolerance < mTolerance)
+        tRelativeTolerance = mTolerance;
+
+    if (tOffDiagNorm < tRelativeTolerance)
+    {
+        aEigenvalues(aCellOrdinal, 0) = aVoigtTensor(aCellOrdinal, 0);
+        aEigenvalues(aCellOrdinal, 1) = aVoigtTensor(aCellOrdinal, 1);
+        aEigenvalues(aCellOrdinal, 2) = aVoigtTensor(aCellOrdinal, 2);
+    }
+    else // Start Jacobi Iteration
+    {
+        ResultType tGivensRotation[3][3];
+        ResultType tTensorRotated[3][3];
+        ResultType tSine, tCosine, tTangent, tTau;
+        Plato::OrdinalType i, j, k, l, p, q;
+        Plato::OrdinalType tIteration = static_cast<Plato::OrdinalType>(0);
+        while ((tOffDiagNorm > tRelativeTolerance) && (tIteration < tMaxIterations))
+        {
+            // ########## Compute location of max off-diagonal entry ##########
+            if (abs(tTensor[0][1]) >= abs(tTensor[0][2]))
+            {
+                if (abs(tTensor[0][1]) >= abs(tTensor[1][2]))
+                {   p = static_cast<Plato::OrdinalType>(0); q = static_cast<Plato::OrdinalType>(1);  }
+                else
+                {   p = static_cast<Plato::OrdinalType>(1); q = static_cast<Plato::OrdinalType>(2);  }
+            }
+            else
+            {
+                if (abs(tTensor[0][2]) >= abs(tTensor[1][2]))
+                {   p = static_cast<Plato::OrdinalType>(0); q = static_cast<Plato::OrdinalType>(2);  }
+                else
+                {   p = static_cast<Plato::OrdinalType>(1); q = static_cast<Plato::OrdinalType>(2);  }
+            }
+
+            // ########## Compute rotation sine and cosine ##########
+            if (abs(tTensor[p][q]) > 1.0e-15)
+            {
+                tTau = (tTensor[q][q] - tTensor[p][p]) / (2.0 * tTensor[p][q]);
+                tTangent = (tTau >= static_cast<Plato::Scalar>(0.0)) ?
+                        static_cast<Plato::Scalar>( 1.0) / (tTau + sqrt(static_cast<Plato::Scalar>(1.0) + tTau*tTau)) :
+                        static_cast<Plato::Scalar>(-1.0) / (static_cast<Plato::Scalar>(-1.0) * tTau + 
+                                                            sqrt(static_cast<Plato::Scalar>(1.0) + tTau*tTau));
+
+                tCosine = static_cast<Plato::Scalar>(1.0) / sqrt(static_cast<Plato::Scalar>(1.0) + tTangent*tTangent);
+                tSine   = tTangent * tCosine;
+            }
+            else
+            {
+                tCosine = static_cast<Plato::Scalar>(1.0);
+                tSine   = static_cast<Plato::Scalar>(0.0);
+            }
+
+            // ########## Apply similarity transform with Givens rotation ##########
+            tGivensRotation[0][0] = 1.0; tGivensRotation[0][1] = 0.0; tGivensRotation[0][2] = 0.0;
+            tGivensRotation[1][0] = 0.0; tGivensRotation[1][1] = 1.0; tGivensRotation[1][2] = 0.0;
+            tGivensRotation[2][0] = 0.0; tGivensRotation[2][1] = 0.0; tGivensRotation[2][2] = 1.0;
+
+            tGivensRotation[p][p] = tCosine;  tGivensRotation[p][q] =   tSine;
+            tGivensRotation[q][p] =  -tSine;  tGivensRotation[q][q] = tCosine;
+
+            for (i = 0; i < 3; ++i)
+                for (l = i; l < 3; ++l) // Note that symmetry is being employed for speed
+                {
+                    tTensorRotated[i][l] = 0.0;
+                    for (j = 0; j < 3; ++j)
+                        for (k = 0; k < 3; ++k)
+                            tTensorRotated[i][l] += tGivensRotation[j][i] * tTensor[j][k] * tGivensRotation[k][l];
+
+                    tTensorRotated[l][i] = tTensorRotated[i][l];
+                }
+
+            for (i = 0; i < 3; ++i)
+                for (j = 0; j < 3; ++j)
+                    tTensor[i][j] = tTensorRotated[i][j];
+
+            // ########## Recompute off-diagonal norm for convergence test ##########
+            tOffDiagNorm = sqrt(tTensor[0][1]*tTensor[0][1] + tTensor[0][2]*tTensor[0][2] + 
+                                tTensor[1][2]*tTensor[1][2]);
+
+            ++tIteration;
+        }
+
+        aEigenvalues(aCellOrdinal, 0) = tTensor[0][0];
+        aEigenvalues(aCellOrdinal, 1) = tTensor[1][1];
+        aEigenvalues(aCellOrdinal, 2) = tTensor[2][2];
+    }
+}
+
+/******************************************************************************//**
+ * @brief Eigenvalues for 2D problems
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aVoigtTensor cell/element voigt tensor
+ * @param [out] aEigenvalues cell/element tensor eigenvalues
+**********************************************************************************/
+template<>
+template<typename Inputype, typename ResultType>
+DEVICE_TYPE inline void
+Eigenvalues<2>::operator()(const Plato::OrdinalType & aCellOrdinal,
+                           const Plato::ScalarMultiVectorT<Inputype> & aVoigtTensor,
+                           const Plato::ScalarMultiVectorT<ResultType> & aEigenvalues,
+                           const bool & aIsStrainType) const
+{
+    ResultType tTensor12 = aIsStrainType ? aVoigtTensor(aCellOrdinal, 2) / static_cast<Plato::Scalar>(2.0) :
+                                           aVoigtTensor(aCellOrdinal, 2);
+    
+    if (abs(tTensor12) < mTolerance) // Tensor is diagonal
+    {
+        aEigenvalues(aCellOrdinal, 0) = aVoigtTensor(aCellOrdinal, 0);
+        aEigenvalues(aCellOrdinal, 1) = aVoigtTensor(aCellOrdinal, 1);
+    }
+    else // 1 iteration of Jacobi is required
+    {
+        ResultType tTensor11 = aVoigtTensor(aCellOrdinal, 0);
+        ResultType tTensor22 = aVoigtTensor(aCellOrdinal, 1);
+        ResultType tTau = (tTensor22 - tTensor11) / (static_cast<Plato::Scalar>(2.0) * tTensor12);
+
+        ResultType tTangent = (tTau >= static_cast<Plato::Scalar>(0.0)) ?
+                   static_cast<Plato::Scalar>( 1.0) / (tTau + sqrt(static_cast<Plato::Scalar>(1.0) + tTau*tTau)) :
+                   static_cast<Plato::Scalar>(-1.0) / (static_cast<Plato::Scalar>(-1.0) * tTau + 
+                                                       sqrt(static_cast<Plato::Scalar>(1.0) + tTau*tTau));
+
+        ResultType tCosine = static_cast<Plato::Scalar>(1.0) / sqrt(static_cast<Plato::Scalar>(1.0) + tTangent*tTangent);
+        ResultType tSine   = tTangent * tCosine;
+        aEigenvalues(aCellOrdinal, 0) = tCosine * (tTensor11*tCosine - tTensor12*tSine) -
+                                        tSine   * (tTensor12*tCosine - tTensor22*tSine);
+        aEigenvalues(aCellOrdinal, 1) = tCosine * (tTensor22*tCosine + tTensor12*tSine) +
+                                        tSine   * (tTensor12*tCosine + tTensor11*tSine);
+    }
+}
+
+/******************************************************************************//**
+ * @brief Eigenvalues for 1D problems
+ *
+ * @param [in] aCellOrdinal cell/element local ordinal
+ * @param [in] aVoigtTensor cell/element voigt tensor
+ * @param [out] aEigenvalues cell/element tensor eigenvalues
+**********************************************************************************/
+template<>
+template<typename Inputype, typename ResultType>
+DEVICE_TYPE inline void
+Eigenvalues<1>::operator()(const Plato::OrdinalType & aCellOrdinal,
+                           const Plato::ScalarMultiVectorT<Inputype> & aVoigtTensor,
+                           const Plato::ScalarMultiVectorT<ResultType> & aEigenvalues,
+                           const bool & aIsStrainType) const
+{
+    ResultType tOutput = aVoigtTensor(aCellOrdinal, 0);
+    aEigenvalues(aCellOrdinal, 0) = tOutput;
+}
+
+
+
 /******************************************************************************//**
  * @brief Abstract local measure class for use in Augmented Lagrange constraint formulation
  * @tparam EvaluationType evaluation type use to determine automatic differentiation
@@ -68,10 +295,12 @@ public:
      * @brief Evaluate local measure
      * @param [in] aState 2D container of state variables
      * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [in] aDataMap map to stored data
      * @param [out] aResult 1D container of cell criterion values
     **********************************************************************************/
     virtual void operator()(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
                             const Plato::ScalarArray3DT<ConfigT> & aConfigWS,
+                            Plato::DataMap & aDataMap,
                             Plato::ScalarVectorT<ResultT> & aResultWS) = 0;
 
     /******************************************************************************//**
@@ -123,9 +352,8 @@ public:
 
     /******************************************************************************//**
      * @brief Constructor tailored for unit testing
-     * @param [in] aMesh mesh database
-     * @param [in] aMeshSets side sets database
-     * @param [in] aDataMap PLATO Engine and Analyze data map
+     * @param [in] aCellStiffMatrix stiffness matrix
+     * @param [in] aName local measure name
      **********************************************************************************/
     VonMisesLocalMeasure(const Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> & aCellStiffMatrix,
                          const std::string aName) :
@@ -145,10 +373,12 @@ public:
      * @brief Evaluate vonmises local measure
      * @param [in] aState 2D container of state variables
      * @param [in] aConfig 3D container of configuration/coordinates
-     * @param [out] aResult 1D container of cell criterion values
+     * @param [in] aDataMap map to stored data
+     * @param [out] aResult 1D container of cell local measure values
     **********************************************************************************/
     virtual void operator()(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
                             const Plato::ScalarArray3DT<ConfigT> & aConfigWS,
+                            Plato::DataMap & aDataMap,
                             Plato::ScalarVectorT<ResultT> & aResultWS)
     {
         const Plato::OrdinalType tNumCells = aResultWS.size();
@@ -165,10 +395,6 @@ public:
         Plato::ScalarMultiVectorT<ResultT> tCauchyStress("stress", tNumCells, mNumVoigtTerms);
         Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
 
-        // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
-        Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
-        auto tCubWeight = tCubatureRule.getCubWeight();
-        auto tBasisFunc = tCubatureRule.getBasisFunctions();
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
         {
             tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tVolume);
@@ -178,6 +404,135 @@ public:
         }, "Compute VonMises Stress");
     }
 };
+
+
+
+
+/******************************************************************************//**
+ * @brief TensileEnergyDensity local measure class for use in Augmented Lagrange constraint formulation
+ * @tparam EvaluationType evaluation type use to determine automatic differentiation
+ *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
+**********************************************************************************/
+template<typename EvaluationType>
+class TensileEnergyDensityLocalMeasure :
+        public AbstractLocalMeasure<EvaluationType>
+{
+private:
+    using AbstractLocalMeasure<EvaluationType>::mSpaceDim;
+    using AbstractLocalMeasure<EvaluationType>::mNumVoigtTerms;
+    using AbstractLocalMeasure<EvaluationType>::mNumNodesPerCell;
+    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
+
+    using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
+    using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
+    using ResultT = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
+
+    Plato::Scalar mLameConstantLambda, mLameConstantMu, mPoissonsRatio, mYoungsModulus;
+
+    /******************************************************************************//**
+     * @brief Get Youngs Modulus and Poisson's Ratio from input parameter list
+     * @param [in] aInputParams input parameters database
+    **********************************************************************************/
+    void getYoungsModulusAndPoissonsRatio(Teuchos::ParameterList & aInputParams)
+    {
+        auto modelParamList = aInputParams.get<Teuchos::ParameterList>("Material Model");
+
+        if( modelParamList.isSublist("Isotropic Linear Elastic") ){
+            auto paramList = modelParamList.sublist("Isotropic Linear Elastic");
+            mPoissonsRatio = paramList.get<double>("Poissons Ratio");
+            mYoungsModulus = paramList.get<double>("Youngs Modulus");
+        }
+        else
+        {
+            throw std::runtime_error("Tensile Energy Density requires Isotropic Linear Elastic Material Model in ParameterList");
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Compute lame constants for isotropic linear elasticity
+    **********************************************************************************/
+    void computeLameConstants()
+    {
+        mLameConstantMu     = mYoungsModulus / 
+                             (static_cast<Plato::Scalar>(2.0) * (static_cast<Plato::Scalar>(1.0) + 
+                              mPoissonsRatio));
+        mLameConstantLambda = static_cast<Plato::Scalar>(2.0) * mLameConstantMu * mPoissonsRatio / 
+                             (static_cast<Plato::Scalar>(1.0) - static_cast<Plato::Scalar>(2.0) * mPoissonsRatio);
+    }
+
+public:
+    /******************************************************************************//**
+     * @brief Primary constructor
+     * @param [in] aInputParams input parameters database
+     * @param [in] aName local measure name
+     **********************************************************************************/
+    TensileEnergyDensityLocalMeasure(Teuchos::ParameterList & aInputParams,
+                                     const std::string & aName) : 
+                                     AbstractLocalMeasure<EvaluationType>(aInputParams, aName)
+    {
+        getYoungsModulusAndPoissonsRatio(aInputParams);
+        computeLameConstants();
+    }
+
+    /******************************************************************************//**
+     * @brief Constructor tailored for unit testing
+     * @param [in] aCellStiffMatrix stiffness matrix
+     * @param [in] aName local measure name
+     **********************************************************************************/
+    TensileEnergyDensityLocalMeasure(const Plato::Scalar & aYoungsModulus,
+                                     const Plato::Scalar & aPoissonsRatio,
+                                     const std::string & aName) :
+                                     AbstractLocalMeasure<EvaluationType>(aName),
+                                     mYoungsModulus(aYoungsModulus),
+                                     mPoissonsRatio(aPoissonsRatio)
+    {
+        computeLameConstants();
+    }
+
+    /******************************************************************************//**
+     * @brief Destructor
+     **********************************************************************************/
+    virtual ~TensileEnergyDensityLocalMeasure()
+    {
+    }
+
+    /******************************************************************************//**
+     * @brief Evaluate tensile energy density local measure
+     * @param [in] aState 2D container of state variables
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [in] aDataMap map to stored data
+     * @param [out] aResult 1D container of cell local measure values
+    **********************************************************************************/
+    virtual void operator()(const Plato::ScalarMultiVectorT<StateT> & aStateWS,
+                            const Plato::ScalarArray3DT<ConfigT> & aConfigWS,
+                            Plato::DataMap & aDataMap,
+                            Plato::ScalarVectorT<ResultT> & aResultWS)
+    {
+        const Plato::OrdinalType tNumCells = aResultWS.size();
+        using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
+
+        Plato::Strain<mSpaceDim> tComputeCauchyStrain;
+        Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
+        Plato::Eigenvalues<mSpaceDim> tComputeEigenvalues;
+
+        // ****** ALLOCATE TEMPORARY MULTI-DIM ARRAYS ON DEVICE ******
+        Plato::ScalarVector tVolume("cell volume", tNumCells);
+        Plato::ScalarMultiVectorT<StrainT> tCauchyStrain("strain", tNumCells, mNumVoigtTerms);
+        Plato::ScalarMultiVectorT<ResultT> tPrincipalStrains("principal strains", tNumCells, mSpaceDim);
+        Plato::ScalarMultiVectorT<ResultT> tTensileEnergyDensity("tensile energy density", tNumCells, mNumVoigtTerms);
+        Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
+
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+        {
+            tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tVolume);
+            tComputeCauchyStrain(tCellOrdinal, tCauchyStrain, aStateWS, tGradient);
+            tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
+            
+        }, "Compute Tensile Energy Density");
+    }
+};
+
+
 
 
 
@@ -430,7 +785,7 @@ public:
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVectorT<ResultT> tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasure)(aStateWS, aConfigWS, tLocalMeasureValue);
+        (*mLocalMeasure)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVectorT<ResultT> tConstraintValue("constraint", tNumCells);
@@ -504,7 +859,7 @@ public:
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVector tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasure)(aStateWS, aConfigWS, tLocalMeasureValue);
+        (*mLocalMeasure)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVector tConstraintValue("constraint residual", tNumCells);
@@ -553,6 +908,79 @@ public:
 
 namespace AugLagStressTest
 {
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_Eigenvalue2D)
+{
+    constexpr Plato::OrdinalType tNumCells = 3;
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tNumVoigtTerms = 3;
+    Plato::Eigenvalues<tSpaceDim> tComputeEigenvalues;
+    Plato::ScalarMultiVector tCauchyStrain("strain", tNumCells, tNumVoigtTerms);
+    auto tHostCauchyStrain = Kokkos::create_mirror(tCauchyStrain);
+    tHostCauchyStrain(0, 0) = 3.0; tHostCauchyStrain(0, 1) = 2.0; tHostCauchyStrain(0, 2) = 0.0;
+    tHostCauchyStrain(1, 0) = 0.5; tHostCauchyStrain(1, 1) = 0.2; tHostCauchyStrain(1, 2) = 1.6;
+    tHostCauchyStrain(2, 0) = 0.0; tHostCauchyStrain(2, 1) = 0.0; tHostCauchyStrain(2, 2) = 1.6;
+    Kokkos::deep_copy(tCauchyStrain, tHostCauchyStrain);
+
+    Plato::ScalarMultiVector tPrincipalStrains("principal strains", tNumCells, tSpaceDim);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+    {
+        tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
+    }, "Test Computing Eigenvalues");
+
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGold1 = {3.0, 2.0};
+    std::vector<Plato::Scalar> tGold2 = {1.16394103, -0.46394103};
+    std::vector<Plato::Scalar> tGold3 = {-0.8, 0.8};
+    auto tHostPrincipalStrains = Kokkos::create_mirror(tPrincipalStrains);
+    Kokkos::deep_copy(tHostPrincipalStrains, tPrincipalStrains);
+
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(0, tIndex), tGold1[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(1, tIndex), tGold2[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(2, tIndex), tGold3[tIndex], tTolerance);
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_Eigenvalue3D)
+{
+    constexpr Plato::OrdinalType tNumCells = 3;
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tNumVoigtTerms = 6;
+    Plato::Eigenvalues<tSpaceDim> tComputeEigenvalues;
+    Plato::ScalarMultiVector tCauchyStrain("strain", tNumCells, tNumVoigtTerms);
+    auto tHostCauchyStrain = Kokkos::create_mirror(tCauchyStrain);
+    tHostCauchyStrain(0, 0) = 3.0; tHostCauchyStrain(0, 1) = 2.0; tHostCauchyStrain(0, 2) = 1.0;
+    tHostCauchyStrain(0, 3) = 0.0; tHostCauchyStrain(0, 4) = 0.0; tHostCauchyStrain(0, 5) = 0.0;
+    tHostCauchyStrain(1, 0) = 0.5; tHostCauchyStrain(1, 1) = 0.2; tHostCauchyStrain(1, 2) = 0.8;
+    tHostCauchyStrain(1, 3) = 1.1; tHostCauchyStrain(1, 4) = 1.5; tHostCauchyStrain(1, 5) = 0.3;
+    tHostCauchyStrain(2, 0) = 1.64913808; tHostCauchyStrain(2, 1) = 0.61759347; tHostCauchyStrain(2, 2) = 0.33326845;
+    tHostCauchyStrain(2, 3) = 0.65938917; tHostCauchyStrain(2, 4) = -0.1840644; tHostCauchyStrain(2, 5) = 1.55789418;
+    Kokkos::deep_copy(tCauchyStrain, tHostCauchyStrain);
+
+    Plato::ScalarMultiVector tPrincipalStrains("principal strains", tNumCells, tSpaceDim);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+    {
+        tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
+    }, "Test Computing Eigenvalues");
+
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGold1 = {3.0, 2.0, 1.0};
+    std::vector<Plato::Scalar> tGold2 = {-0.28251642,  0.17136166,  1.61115476};
+    std::vector<Plato::Scalar> tGold3 = {2.07094021, -0.07551018, 0.60456996};
+    auto tHostPrincipalStrains = Kokkos::create_mirror(tPrincipalStrains);
+    Kokkos::deep_copy(tHostPrincipalStrains, tPrincipalStrains);
+
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(0, tIndex), tGold1[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(1, tIndex), tGold2[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(2, tIndex), tGold3[tIndex], tTolerance);
+}
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_Evaluate)
 {
