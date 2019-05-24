@@ -408,6 +408,52 @@ public:
 
 
 
+/******************************************************************************/
+/*! Tensile energy density functor.
+ *  
+ *  Given principal strains and lame constants, return the tensile energy density
+ */
+/******************************************************************************/
+template<Plato::OrdinalType SpaceDim>
+class TensileEnergyDensity : public Plato::SimplexMechanics<SpaceDim>
+{
+  private:
+
+    // using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
+    // using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
+    // using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+
+  public:
+
+    template<typename StrainType, typename ResultType>
+    DEVICE_TYPE inline void
+    operator()( Plato::OrdinalType aCellOrdinal,
+                const Plato::ScalarMultiVectorT<StrainType> & aPrincipalStrains,
+                const Plato::Scalar & aLameLambda,
+                const Plato::Scalar & aLameMu,
+                const Plato::ScalarVectorT<ResultType> & aTensileEnergyDensity) const 
+    {
+        ResultType tTensileEnergyDensity = static_cast<Plato::Scalar>(0.0);
+        StrainType tStrainTrace = static_cast<Plato::Scalar>(0.0);
+        for (Plato::OrdinalType tDim = 0; tDim < SpaceDim; ++tDim)
+        {
+            tStrainTrace += aPrincipalStrains(aCellOrdinal, tDim);
+            tTensileEnergyDensity += (aPrincipalStrains(aCellOrdinal, tDim) >= 0.0) ?
+                                     (aPrincipalStrains(aCellOrdinal, tDim) * 
+                                      aPrincipalStrains(aCellOrdinal, tDim) * aLameMu) :
+                                     static_cast<Plato::Scalar>(0.0);
+        }
+        StrainType tStrainTraceTensile = (tStrainTrace >= 0.0) ? tStrainTrace : static_cast<Plato::Scalar>(0.0);
+        tTensileEnergyDensity += (aLameLambda * tStrainTraceTensile * 
+                                                tStrainTraceTensile * static_cast<Plato::Scalar>(0.5));
+        aTensileEnergyDensity(aCellOrdinal) = tTensileEnergyDensity;
+        printf("(%f,%f,%f,%f)\n", aTensileEnergyDensity(aCellOrdinal), aLameLambda, aLameMu, tStrainTrace);
+    }
+};
+
+
+
+
 /******************************************************************************//**
  * @brief TensileEnergyDensity local measure class for use in Augmented Lagrange constraint formulation
  * @tparam EvaluationType evaluation type use to determine automatic differentiation
@@ -514,20 +560,26 @@ public:
         Plato::Strain<mSpaceDim> tComputeCauchyStrain;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
         Plato::Eigenvalues<mSpaceDim> tComputeEigenvalues;
+        Plato::TensileEnergyDensity<mSpaceDim> tComputeTensileEnergyDensity;
 
         // ****** ALLOCATE TEMPORARY MULTI-DIM ARRAYS ON DEVICE ******
         Plato::ScalarVector tVolume("cell volume", tNumCells);
         Plato::ScalarMultiVectorT<StrainT> tCauchyStrain("strain", tNumCells, mNumVoigtTerms);
         Plato::ScalarMultiVectorT<ResultT> tPrincipalStrains("principal strains", tNumCells, mSpaceDim);
-        Plato::ScalarMultiVectorT<ResultT> tTensileEnergyDensity("tensile energy density", tNumCells, mNumVoigtTerms);
         Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
 
+        const Plato::Scalar tLameLambda = mLameConstantLambda;
+        const Plato::Scalar tLameMu     = mLameConstantMu;
+        // printf("\n,[%f,%f]\n",tLameLambda,tLameMu);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
         {
             tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tVolume);
             tComputeCauchyStrain(tCellOrdinal, tCauchyStrain, aStateWS, tGradient);
             tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
-            
+            // printf("%d,(%f,%f,%f)\n", tCellOrdinal, tPrincipalStrains(tCellOrdinal, 0),
+            //                                         tPrincipalStrains(tCellOrdinal, 1),
+            //                                         tPrincipalStrains(tCellOrdinal, 2));
+            tComputeTensileEnergyDensity(tCellOrdinal, tPrincipalStrains, tLameLambda, tLameMu, aResultWS);
         }, "Compute Tensile Energy Density");
     }
 };
@@ -552,6 +604,11 @@ public:
         if(tProblemLocalConstraint == "VonMises") // fixme : should this be called stress still?
         {
             return std::make_shared<VonMisesLocalMeasure<EvaluationType>>(aInputParams, "VonMises");
+        }
+        else if(tProblemLocalConstraint == "TensileEnergyDensity")
+        {
+            return std::make_shared<TensileEnergyDensityLocalMeasure<EvaluationType>>
+                                                             (aInputParams, "TensileEnergyDensity");
         }
         else
         {
@@ -982,7 +1039,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_Eigenvalue3D)
         TEST_FLOATING_EQUALITY(tHostPrincipalStrains(2, tIndex), tGold3[tIndex], tTolerance);
 }
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_Evaluate)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateVonMises)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -1057,6 +1114,84 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_Evaluate)
     // ****** TEST GLOBAL SUM ******
     auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
     TEST_FLOATING_EQUALITY(0.237233, tObjFuncVal, tTolerance);
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensity)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    using Residual = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual;
+    using StateT = typename Residual::StateScalarType;
+    using ConfigT = typename Residual::ConfigScalarType;
+    using ResultT = typename Residual::ResultScalarType;
+    using ControlT = typename Residual::ControlScalarType;
+
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+
+    // Create configuration workset
+    Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create control workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(1.0, tControl);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // Create state workset
+    const Plato::OrdinalType tNumDofs = tNumVerts * tSpaceDim;
+    Plato::ScalarVector tState("States", tNumDofs);
+    Plato::fill(0.1, tState);
+    //Plato::fill(0.0, tState);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & aOrdinal)
+            { tState(aOrdinal) *= static_cast<Plato::Scalar>(aOrdinal); }, "fill state");
+    Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tState, tStateWS);
+
+    // Create result/output workset
+    Plato::ScalarVectorT<ResultT> tResultWS("result", tNumCells);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+
+    // SET INPUT DATA
+    Plato::ScalarVector tLagrangeMultipliers("lagrange multipliers", tNumCells);
+    Plato::fill(0.1, tLagrangeMultipliers);
+    tCriterion.setLagrangeMultipliers(tLagrangeMultipliers);
+    tCriterion.setAugLagPenalty(1.5);
+
+    constexpr Plato::Scalar tYoungsModulus = 1.0;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasure = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+                                              (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
+    tCriterion.setLocalMeasure(tLocalMeasure);
+
+    tCriterion.evaluate(tStateWS, tControlWS, tConfigWS, tResultWS);
+
+    // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGold = {0.0290519854871, 0.148180507407, 0.0290519854871,
+                                         0.439464476224,  3.34517161484,    5.3805864727};
+    auto tHostResultWS = Kokkos::create_mirror(tResultWS);
+    Kokkos::deep_copy(tHostResultWS, tResultWS);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
+    {
+        TEST_FLOATING_EQUALITY(tGold[tIndex], tHostResultWS(tIndex), tTolerance);
+    }
+
+    // ****** TEST GLOBAL SUM ******
+    auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
+    TEST_FLOATING_EQUALITY(9.37150704214, tObjFuncVal, tTolerance);
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CellDensity)
