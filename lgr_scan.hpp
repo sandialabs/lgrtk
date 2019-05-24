@@ -23,21 +23,6 @@ auto transform_inclusive_scan(InputRange&& input, OutputRange&& output, BinaryOp
   return ++d_first;
 }
 
-template<class InputRange, class OutputRange, class T, class BinaryOp, class UnaryOp>
-auto transform_exclusive_scan(InputRange&& input, OutputRange&& output, T init, BinaryOp binary_op, UnaryOp unary_op)
-{
-  auto first = input.begin();
-  auto last = input.end();
-  auto d_first = output.begin();
-  *d_first = init;
-  while (first != last) {
-    init = binary_op(std::move(init), unary_op(*first));
-    *(++d_first) = init;
-    ++first;
-  }
-  return ++d_first;
-}
-
 template <class InputRange, class OutputRange>
 void offset_scan(InputRange const& input, OutputRange& output) {
   auto it = output.begin();
