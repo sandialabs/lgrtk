@@ -1,6 +1,8 @@
 #pragma once
 
 #include <hpc_range.hpp>
+#include <hpc_execution.hpp>
+#include <hpc_vector.hpp>
 
 namespace hpc {
 
@@ -18,17 +20,17 @@ public:
   using nonzero_type = decltype(std::declval<row_type>() * std::declval<column_type>());
   using value_type = T;
 private:
-  using data_type = vector<value_type, Allocator, ExecutionPolicy, nonzero_type>;
+  using data_type = ::hpc::vector<value_type, Allocator, ExecutionPolicy, nonzero_type>;
   using data_iterator = typename data_type::iterator;
   using const_data_iterator = typename data_type::const_iterator;
   using range_type = range_product<data_iterator, L, row_type, column_type>;
   using const_range_type = range_product<const_data_iterator, L, row_type, column_type>;
   vector<value_type, Allocator, ExecutionPolicy, nonzero_type> m_data;
   row_type m_rows;
-  constexpr range_type get_range() noexcept {
+  range_type get_range() noexcept {
     return range_type(m_data.begin(), rows(), columns());
   }
-  constexpr const_range_type get_range() const noexcept {
+  const_range_type get_const_range() const noexcept {
     return const_range_type(m_data.begin(), rows(), columns());
   }
 public:
@@ -41,7 +43,7 @@ public:
   using pointer = T*;
   using const_pointer = T const*;
   using iterator = typename range_type::iterator;
-  using const_iterator = typename range_type::const_iterator;
+  using const_iterator = typename const_range_type::const_iterator;
   constexpr matrix() noexcept = default;
   matrix(row_type row_count, column_type column_count)
     :m_data(row_count * column_count)
@@ -68,19 +70,19 @@ public:
     return get_range().begin();
   }
   const_iterator begin() const noexcept {
-    return get_range().begin();
+    return get_const_range().begin();
   }
   const_iterator cbegin() const noexcept {
-    return get_range().begin();
+    return get_const_range().begin();
   }
   iterator end() noexcept {
     return get_range().end();
   }
   const_iterator end() const noexcept {
-    return get_range().end();
+    return get_const_range().end();
   }
   const_iterator cend() const noexcept {
-    return get_range().end();
+    return get_const_range().end();
   }
   bool empty() const noexcept { return m_data.empty(); }
   size_type size() const noexcept { return m_rows; }

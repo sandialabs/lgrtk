@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hpc_iterator.hpp>
+
 namespace hpc {
 
 namespace impl {
@@ -251,6 +253,7 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex> {
   InnerIndex m_inner_size;
  public:
   using inner_iterator_type = inner_iterator<Iterator, layout::right, OuterIndex, InnerIndex>;
+  using inner_difference_type = typename inner_iterator_type::difference_type;
   using value_type = ::hpc::iterator_range<inner_iterator_type>;
   using difference_type = OuterIndex;
   using reference = value_type;
@@ -274,21 +277,21 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex> {
         inner_iterator_type(m_begin + (difference_type(1) * m_inner_size)));
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator& operator++() noexcept {
-    m_begin += (difference_type(1) * m_inner_size);
+    m_begin += inner_difference_type(difference_type(1) * m_inner_size);
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator operator++(int) noexcept {
     auto ret = *this;
-    m_begin += (difference_type(1) * m_inner_size);
+    m_begin += inner_difference_type(difference_type(1) * m_inner_size);
     return ret;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator& operator--() noexcept {
-    m_begin -= (difference_type(1) * m_inner_size);
+    m_begin -= inner_difference_type(difference_type(1) * m_inner_size);
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator operator--(int) noexcept {
     auto ret = *this;
-    m_begin -= (difference_type(1) * m_inner_size);
+    m_begin -= inner_difference_type(difference_type(1) * m_inner_size);
     return ret;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator& operator+=(difference_type const n) noexcept {
@@ -300,10 +303,10 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex> {
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator operator+(difference_type const n) const noexcept {
-    return outer_iterator(m_begin + (n * m_inner_size), m_inner_size);
+    return outer_iterator(m_begin + inner_difference_type(n * m_inner_size), m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator operator-(difference_type const n) const noexcept {
-    return outer_iterator(m_begin - (n * m_inner_size), m_inner_size);
+    return outer_iterator(m_begin - inner_difference_type(n * m_inner_size), m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator[](difference_type const n) const noexcept {
     return *((*this) + n);
