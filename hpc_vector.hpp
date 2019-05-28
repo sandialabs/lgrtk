@@ -44,6 +44,15 @@ public:
   {
     resize(count);
   }
+  vector(size_type count, value_type const& value)
+    :m_allocator()
+    ,m_execution_policy()
+    ,m_data(nullptr)
+    ,m_size(0)
+  {
+    resize(count);
+    ::hpc::fill(m_execution_policy, *this, value);
+  }
   constexpr vector(allocator_type const& allocator_in, execution_policy const& exec_in) noexcept
     :m_allocator(allocator_in)
     ,m_execution_policy(exec_in)
@@ -130,7 +139,7 @@ public:
       return;
     }
     auto const mid = ::hpc::min(m_size, count);
-    auto const move_from_range = ::hpc::make_iterator_range(cbegin(), cbegin() + mid);
+    auto const move_from_range = ::hpc::make_iterator_range(begin(), begin() + mid);
     auto const new_data = allocator_traits::allocate(m_allocator, std::size_t(count));
     iterator const new_begin(new_data, new_data, new_data + std::ptrdiff_t(count));
     auto const move_into_range = ::hpc::make_iterator_range(new_begin, new_begin + mid);

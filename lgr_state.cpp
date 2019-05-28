@@ -28,7 +28,7 @@ void resize_state(input const& in, state& s) {
   s.rho.resize(s.points.size());
   if (!all_of(in.enable_nodal_energy)) s.e.resize(s.points.size());
   s.rho_e_dot.resize(s.points.size());
-  s.material_mass.resize(in.materials.size(), s.devpool);
+  s.material_mass.resize(in.materials.size());
   for (auto& mm : s.material_mass) mm.resize(s.nodes.size());
   s.mass.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
@@ -38,13 +38,13 @@ void resize_state(input const& in, state& s) {
   }
   s.nu_art.resize(s.points.size());
   s.element_dt.resize(s.points.size());
-  s.p_h.resize(in.materials.size(), s.devpool);
-  s.p_h_dot.resize(in.materials.size(), s.devpool);
-  s.e_h.resize(in.materials.size(), s.devpool);
-  s.e_h_dot.resize(in.materials.size(), s.devpool);
-  s.rho_h.resize(in.materials.size(), s.devpool);
-  s.K_h.resize(in.materials.size(), s.devpool);
-  s.dp_de_h.resize(in.materials.size(), s.devpool);
+  s.p_h.resize(in.materials.size());
+  s.p_h_dot.resize(in.materials.size());
+  s.e_h.resize(in.materials.size());
+  s.e_h_dot.resize(in.materials.size());
+  s.rho_h.resize(in.materials.size());
+  s.K_h.resize(in.materials.size());
+  s.dp_de_h.resize(in.materials.size());
   for (auto const material : in.materials) {
     if (in.enable_nodal_pressure[material]) {
       s.p_h[material].resize(s.nodes.size());

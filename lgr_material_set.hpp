@@ -12,7 +12,7 @@ class material_set {
   std::uint64_t bits;
   explicit constexpr inline material_set(std::uint64_t const bits_in) noexcept : bits(bits_in) {}
 public:
-  explicit constexpr inline material_set(material_index const material) noexcept : bits(std::uint64_t(1) << int(material)) {}
+  explicit constexpr inline material_set(material_index const material) noexcept : bits(std::uint64_t(1) << material.get()) {}
   inline material_set() noexcept = default;
   constexpr inline material_set operator|(material_set const other) const noexcept {
     return material_set(bits | other.bits);
@@ -27,7 +27,7 @@ public:
   }
   constexpr static inline material_set none() noexcept { return material_set(std::uint64_t(0)); }
   constexpr static inline material_set all(material_index const size) noexcept {
-    return material_set((std::uint64_t(1) << int(size)) - 1);
+    return material_set((std::uint64_t(1) << size.get()) - 1);
   }
   constexpr inline bool operator==(material_set const other) const noexcept { return bits == other.bits; }
 };

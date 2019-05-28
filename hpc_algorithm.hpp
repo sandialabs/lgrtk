@@ -43,7 +43,7 @@ void copy(serial_policy, FromRange const& from, ToRange& to) {
 }
 
 template <class InputRange, class OutputRange>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE void move(local_policy, InputRange const& input, OutputRange& output) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE void move(local_policy, InputRange& input, OutputRange& output) noexcept
 {
   auto first = input.begin();
   auto const last = input.end();
@@ -54,7 +54,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void move(local_policy, InputRange const& inpu
 }
 
 template <class InputRange, class OutputRange>
-void move(serial_policy, InputRange const& input, OutputRange& output)
+void move(serial_policy, InputRange& input, OutputRange& output)
 {
   auto first = input.begin();
   auto const last = input.end();

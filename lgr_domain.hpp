@@ -7,9 +7,9 @@
 #include <lgr_vector3.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_counting_range.hpp>
-#include <lgr_device_vector.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
+#include <hpc_array_vector.hpp>
 
 namespace lgr {
 
@@ -75,17 +75,17 @@ class domain {
     domain(domain&&) = default;
     virtual ~domain();
     virtual void mark(
-        device_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<vector3<double>, node_index> const& points,
         int const marker,
-        device_vector<int, node_index>* markers) const = 0;
+        hpc::device_vector<int, node_index>* markers) const = 0;
     virtual void mark(
-        device_vector<vector3<double>, element_index> const& points,
+        hpc::device_array_vector<vector3<double>, element_index> const& points,
         material_index const marker,
-        device_vector<material_index, element_index>* markers) const = 0;
+        hpc::device_vector<material_index, element_index>* markers) const = 0;
     virtual void mark(
-        device_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<vector3<double>, node_index> const& points,
         material_index const marker,
-        device_vector<material_set, node_index>* markers) const = 0;
+        hpc::device_vector<material_set, node_index>* markers) const = 0;
 };
 
 template <class SourceDomain>
@@ -101,9 +101,9 @@ class clipped_domain : public domain {
   }
   template <class Index, class Marker>
   void mark_tmpl(
-      device_vector<vector3<double>, Index> const& points,
+      hpc::device_array_vector<vector3<double>, Index> const& points,
       Marker const marker,
-      device_vector<Marker, Index>* markers) const {
+      hpc::device_vector<Marker, Index>* markers) const {
     counting_range<Index> const range(points.size());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
@@ -123,21 +123,21 @@ class clipped_domain : public domain {
     lgr::for_each(range, functor);
   }
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<vector3<double>, node_index> const& points,
       int const marker,
-      device_vector<int, node_index>* markers) const override {
+      hpc::device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
   void mark(
-      device_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<vector3<double>, element_index> const& points,
       material_index const marker,
-      device_vector<material_index, element_index>* markers) const override {
+      hpc::device_vector<material_index, element_index>* markers) const override {
     this->mark_tmpl<element_index, material_index>(points, marker, markers);
   }
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<vector3<double>, node_index> const& points,
       material_index const marker,
-      device_vector<material_set, node_index>* markers) const override {
+      hpc::device_vector<material_set, node_index>* markers) const override {
     counting_range<node_index> const range(points.size());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
@@ -145,7 +145,7 @@ class clipped_domain : public domain {
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
     auto functor = [=] (node_index const i) {
-      vector3<double> const pt = points_begin[i];
+      auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
         is_in &= (distance(*clips_it, pt) >= 0.0);
@@ -165,17 +165,17 @@ class union_domain : public domain {
   public:
   void add(std::unique_ptr<domain>&& uptr);
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<vector3<double>, node_index> const& points,
       int const marker,
-      device_vector<int, node_index>* markers) const override;
+      hpc::device_vector<int, node_index>* markers) const override;
   void mark(
-      device_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<vector3<double>, element_index> const& points,
       material_index const marker,
-      device_vector<material_index, element_index>* markers) const override;
+      hpc::device_vector<material_index, element_index>* markers) const override;
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<vector3<double>, node_index> const& points,
       material_index const marker,
-      device_vector<material_set, node_index>* markers) const override;
+      hpc::device_vector<material_set, node_index>* markers) const override;
 };
 
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);

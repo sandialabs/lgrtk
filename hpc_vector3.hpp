@@ -3,8 +3,12 @@
 #include <cmath>
 #include <hpc_macros.hpp>
 #include <hpc_array_traits.hpp>
+#include <hpc_index.hpp>
 
 namespace hpc {
+
+struct axis_tag {};
+using axis_index = hpc::index<axis_tag, int>;
 
 template <typename Scalar>
 class vector3 {
@@ -18,8 +22,8 @@ public:
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE vector3() noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(int const i) const noexcept { return raw[i]; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE inline scalar_type& operator()(int const i) noexcept { return raw[i]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(axis_index i) const noexcept { return raw[i.get()]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE inline scalar_type& operator()(axis_index i) noexcept { return raw[i.get()]; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 zero() noexcept { return vector3(0.0, 0.0, 0.0); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 x_axis() noexcept { return vector3(1.0, 0.0, 0.0); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 y_axis() noexcept { return vector3(0.0, 1.0, 0.0); }
@@ -143,7 +147,8 @@ template <class T>
 class array_traits<vector3<T>> {
   public:
   using value_type = T;
-  HPC_HOST_DEVICE static constexpr std::ptrdiff_t size() noexcept { return 3; }
+  using size_type = axis_index;
+  HPC_HOST_DEVICE static constexpr size_type size() noexcept { return 3; }
   template <class Iterator>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static vector3<T> load(Iterator it) noexcept {
     return vector3<T>(
