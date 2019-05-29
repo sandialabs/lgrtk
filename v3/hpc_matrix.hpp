@@ -27,6 +27,7 @@ private:
   using const_range_type = range_product<const_data_iterator, L, row_type, column_type>;
   vector<value_type, Allocator, ExecutionPolicy, nonzero_type> m_data;
   row_type m_rows;
+  column_type m_columns;
   range_type get_range() noexcept {
     return range_type(m_data.begin(), rows(), columns());
   }
@@ -48,15 +49,18 @@ public:
   matrix(row_type row_count, column_type column_count)
     :m_data(row_count * column_count)
     ,m_rows(row_count)
+    ,m_columns(column_count)
   {
   }
   constexpr matrix(allocator_type const& allocator_in, execution_policy const& exec_in) noexcept
     :m_data(allocator_in, exec_in)
     ,m_rows(0)
+    ,m_columns(0)
   {}
   matrix(row_type row_count, column_type column_count, allocator_type const& allocator_in, execution_policy const& exec_in)
     :m_data(row_count * column_count, allocator_in, exec_in)
     ,m_rows(row_count)
+    ,m_columns(column_count)
   {
   }
   matrix(matrix&& other) noexcept = default;
@@ -87,13 +91,14 @@ public:
   bool empty() const noexcept { return m_data.empty(); }
   size_type size() const noexcept { return m_rows; }
   row_type rows() const noexcept { return m_rows; }
-  column_type columns() const noexcept { return m_data.size() / m_rows; }
+  column_type columns() const noexcept { return m_columns; }
   void clear() { m_data.clear(); }
   void resize(row_type row_count, column_type column_count) {
     if (row_count == rows() && column_count == columns()) return;
     m_data.clear();
     m_data.resize(row_count * column_count);
     m_rows = row_count;
+    m_columns = column_count;
   }
   constexpr allocator_type get_allocator() const noexcept { return m_data.get_allocator(); }
   constexpr execution_policy get_execution_policy() const noexcept { return m_data.get_execution_policy(); }

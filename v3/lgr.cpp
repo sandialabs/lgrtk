@@ -5,40 +5,41 @@
 #include <lgr_fill.hpp>
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
+#include <hpc_vector3.hpp>
 
 namespace lgr {
 
 static void LGR_NOINLINE set_exponential_wave_v(
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=](node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const d = x(0) - 0.5;
     auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
-    nodes_to_v[node] = vector3<double>(v_x, 0.0, 0.0);
+    nodes_to_v[node] = hpc::vector3<double>(v_x, 0.0, 0.0);
   };
   lgr::for_each(nodes, functor);
 }
 
 static void LGR_NOINLINE zero_v(
-    counting_range<node_index> const /*nodes*/,
-    hpc::device_array_vector<vector3<double>, node_index> const& /*x_vector*/,
-    hpc::device_array_vector<vector3<double>, node_index>* v) {
-  lgr::fill(*v, vector3<double>::zero());
+    hpc::counting_range<node_index> const /*nodes*/,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v) {
+  lgr::fill(*v, hpc::vector3<double>::zero());
 }
 
 static void LGR_NOINLINE spin_v(
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=](node_index const node) {
     auto const x = nodes_to_x[node].load();
-    nodes_to_v[node] = 100.0 * vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
+    nodes_to_v[node] = 100.0 * hpc::vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
   };
   lgr::for_each(nodes, functor);
 }
@@ -59,7 +60,7 @@ static void LGR_NOINLINE elastic_wave() {
   in.K0[body] = 1.0e9;
   in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
-  constexpr auto x_axis = vector3<double>::x_axis();
+  constexpr auto x_axis = hpc::vector3<double>::x_axis();
   static constexpr double eps = 1.0e-10;
   auto x_domain = std::make_unique<union_domain>();
   x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
@@ -111,27 +112,27 @@ static void LGR_NOINLINE spinning_square() {
 }
 
 static void LGR_NOINLINE quadratic_in_x_v(
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=](node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const norm_x = x(0) / 48.0;
     auto const v_y = norm_x * norm_x;
-    nodes_to_v[node] = vector3<double>(0.0, v_y, 0.0);
+    nodes_to_v[node] = hpc::vector3<double>(0.0, v_y, 0.0);
   };
   lgr::for_each(nodes, functor);
 }
 
 static void LGR_NOINLINE Cooks_membrane_x(
-    hpc::device_array_vector<vector3<double>, node_index>* x_vector) {
-  counting_range<node_index> const nodes(x_vector->size());
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector) {
+  hpc::counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
   auto functor = [=](node_index const node) {
     auto const unit_x = nodes_to_x[node].load();
-    vector3<double> const new_x(
+    hpc::vector3<double> const new_x(
         unit_x(0) * 48.0,
         unit_x(1) * 44.0 +
         unit_x(0) * 16.0 +
@@ -161,11 +162,11 @@ static void LGR_NOINLINE Cooks_membrane() {
   in.K0[body] = 833333.0;
   in.G0[body] = 83.0;
   in.initial_v = quadratic_in_x_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
   auto x_min_domain = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[x_min] = std::move(x_min_domain);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   in.zero_acceleration_conditions.push_back({x_min, x_axis});
   in.zero_acceleration_conditions.push_back({x_min, y_axis});
   in.x_transform = Cooks_membrane_x;
@@ -202,15 +203,15 @@ static void LGR_NOINLINE swinging_plate() {
   in.K0[body] = K;
   in.G0[body] = G;
   auto swinging_plate_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 0.001;
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = (U0 * w) * vector3<double>(
+      auto const v = (U0 * w) * hpc::vector3<double>(
           -std::sin((pi * x(0)) / 2.0) * std::cos((pi * x(1)) / 2.0),
           std::cos((pi * x(0)) / 2.0) * std::sin((pi * x(1)) / 2.0),
           0.0);
@@ -219,8 +220,8 @@ static void LGR_NOINLINE swinging_plate() {
     lgr::for_each(nodes, functor);
   };
   in.initial_v = swinging_plate_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
@@ -279,8 +280,8 @@ static void LGR_NOINLINE elastic_wave_2d() {
   in.K0[body] = 1.0e9;
   in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
   auto x_domain = std::make_unique<union_domain>();
   x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
@@ -317,9 +318,9 @@ static void LGR_NOINLINE elastic_wave_3d() {
   in.K0[body] = 1.0e9;
   in.G0[body] = 0.0;
   in.initial_v = set_exponential_wave_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   auto x_domain = std::make_unique<union_domain>();
   x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
@@ -375,16 +376,16 @@ static void LGR_NOINLINE swinging_cube(bool stabilize) {
   in.K0[body] = K;
   in.G0[body] = G;
   auto swinging_cube_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
     auto functor = [=](node_index const node) {
       constexpr double half_pi = pi / 2.0;
       auto const x = nodes_to_x[node].load();
-      auto const v = (U0 * w) * vector3<double>(
+      auto const v = (U0 * w) * hpc::vector3<double>(
           -std::sin(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::cos(half_pi * x(2)),
           std::cos(half_pi * x(0)) * std::sin(half_pi * x(1)) * std::cos(half_pi * x(2)),
           std::cos(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::sin(half_pi * x(2)));
@@ -393,9 +394,9 @@ static void LGR_NOINLINE swinging_cube(bool stabilize) {
     lgr::for_each(nodes, functor);
   };
   in.initial_v = swinging_cube_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);
@@ -441,22 +442,22 @@ static void LGR_NOINLINE twisting_column() {
   in.K0[body] = K;
   in.G0[body] = G;
   auto twisting_column_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = twisting_column_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
   in.zero_acceleration_conditions.push_back({y_min, x_axis});
@@ -485,21 +486,21 @@ static void LGR_NOINLINE Noh_1D() {
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-4;
   auto inward_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = inward_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.zero_acceleration_conditions.push_back({x_min, x_axis});
@@ -532,22 +533,22 @@ static void LGR_NOINLINE Noh_2D() {
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = inward_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
@@ -612,22 +613,22 @@ static void LGR_NOINLINE twisting_composite_column() {
   in.K0[body] = K;
   in.G0[body] = G;
   auto twisting_column_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = twisting_column_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
   in.zero_acceleration_conditions.push_back({y_min, x_axis});
@@ -661,23 +662,23 @@ static void LGR_NOINLINE Noh_3D() {
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = inward_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
@@ -716,23 +717,23 @@ static void LGR_NOINLINE composite_Noh_3D() {
   in.gamma[gas] = 5.0 / 3.0;
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
-    counting_range<node_index> const nodes,
-    hpc::device_array_vector<vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<vector3<double>, node_index>* v_vector) {
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
   };
   in.initial_v = inward_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
@@ -772,7 +773,7 @@ static void LGR_NOINLINE Sod_1D() {
   in.e0[left] = 1.0 / ((1.4 - 1.0) * 1.0);
   in.e0[right] = 0.1 / ((1.4 - 1.0) * 0.125);
   in.initial_v = zero_v;
-  static constexpr vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
@@ -781,8 +782,8 @@ static void LGR_NOINLINE Sod_1D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
   in.quadratic_artificial_viscosity = 0.125;
-  auto right_domain = half_space_domain(plane{vector3<double>{1.0, 0.0, 0.0}, 0.5});
-  auto left_domain = half_space_domain(plane{vector3<double>{-1.0, 0.0, 0.0}, -0.5});
+  auto right_domain = half_space_domain(plane{hpc::vector3<double>{1.0, 0.0, 0.0}, 0.5});
+  auto left_domain = half_space_domain(plane{hpc::vector3<double>{-1.0, 0.0, 0.0}, -0.5});
   in.domains[left] = std::move(left_domain);
   in.domains[right] = std::move(right_domain);
   in.enable_nodal_energy[left] = true;
@@ -824,8 +825,8 @@ static void LGR_NOINLINE triple_point() {
   in.e0[right_bottom] = 0.3125;
   in.e0[left] = 2.0;
   in.initial_v = zero_v;
-  constexpr auto x_axis = vector3<double>::x_axis();
-  constexpr auto y_axis = vector3<double>::y_axis();
+  constexpr auto x_axis = hpc::vector3<double>::x_axis();
+  constexpr auto y_axis = hpc::vector3<double>::y_axis();
   constexpr double eps = 1.0e-10;
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps);

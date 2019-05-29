@@ -10,11 +10,12 @@ namespace hpc {
 
 namespace impl {
 
-template <class T, layout L, class Index>
+template <class T, layout L, class O>
 class array_vector_reference {
   public:
   using array_value_type = typename ::hpc::array_traits<T>::value_type;
-  using iterator_type = ::hpc::impl::inner_iterator<::hpc::pointer_iterator<array_value_type, Index>, L, Index, std::ptrdiff_t>;
+  using array_size_type = typename ::hpc::array_traits<T>::size_type;
+  using iterator_type = ::hpc::impl::inner_iterator<::hpc::pointer_iterator<array_value_type, decltype(O() * array_size_type())>, L, O, array_size_type>;
   private:
   iterator_type m_iterator;
   public:
@@ -39,15 +40,16 @@ class array_vector_reference {
   }
 };
 
-template <class T, layout L, class Index>
-class array_vector_reference<T const, L, Index> {
+template <class T, layout L, class O>
+class array_vector_reference<T const, L, O> {
   public:
   using array_value_type = typename ::hpc::array_traits<T>::value_type;
-  using iterator = ::hpc::impl::inner_iterator<::hpc::pointer_iterator<array_value_type const, Index>, L, Index, std::ptrdiff_t>;
+  using array_size_type = typename ::hpc::array_traits<T>::size_type;
+  using iterator_type = ::hpc::impl::inner_iterator<::hpc::pointer_iterator<array_value_type const, decltype(O() * array_size_type())>, L, O, array_size_type>;
   private:
-  iterator m_iterator;
+  iterator_type m_iterator;
   public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit array_vector_reference(iterator iterator_in) noexcept : m_iterator(iterator_in) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit array_vector_reference(iterator_type iterator_in) noexcept : m_iterator(iterator_in) {}
   // movable
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE array_vector_reference(array_vector_reference&&) = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE array_vector_reference& operator=(array_vector_reference&&) = default;
@@ -62,21 +64,22 @@ class array_vector_reference<T const, L, Index> {
   }
 };
 
-template <class T, layout L, class Index>
+template <class T, layout L, class O>
 class array_vector_iterator {
   public:
   using value_type = std::remove_const_t<T>;
   using array_value_type = typename ::hpc::array_traits<value_type>::value_type;
+  using array_size_type = typename ::hpc::array_traits<value_type>::size_type;
   using qualified_array_value_type = typename std::conditional<
     std::is_const<T>::value,
     array_value_type const,
     array_value_type>::type;
-  using iterator = ::hpc::impl::outer_iterator<::hpc::pointer_iterator<qualified_array_value_type, Index>, L, Index, std::ptrdiff_t>;
+  using iterator = ::hpc::impl::outer_iterator<::hpc::pointer_iterator<qualified_array_value_type, decltype(O() * array_size_type())>, L, O, array_size_type>;
   private:
   iterator m_iterator;
   public:
-  using difference_type = Index;
-  using reference = ::hpc::impl::array_vector_reference<T, L, Index>;
+  using difference_type = O;
+  using reference = ::hpc::impl::array_vector_reference<T, L, O>;
   using pointer = T*;
   using iterator_category = typename iterator::iterator_category;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr array_vector_iterator(iterator iterator_in) noexcept : m_iterator(iterator_in) {}
@@ -152,9 +155,10 @@ template <
   class Index = std::ptrdiff_t>
 class array_vector {
   using array_value_type = typename ::hpc::array_traits<T>::value_type;
-  static constexpr std::ptrdiff_t array_size() noexcept { return ::hpc::array_traits<T>::size(); }
+  using array_size_type = typename ::hpc::array_traits<T>::size_type;
+  static constexpr array_size_type array_size() noexcept { return ::hpc::array_traits<T>::size(); }
   using matrix_allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<array_value_type>;
-  using matrix_type = ::hpc::matrix<array_value_type, L, matrix_allocator_type, ExecutionPolicy, Index>;
+  using matrix_type = ::hpc::matrix<array_value_type, L, matrix_allocator_type, ExecutionPolicy, Index, array_size_type>;
   matrix_type m_matrix;
 public:
   using value_type = T;

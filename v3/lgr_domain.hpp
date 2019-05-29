@@ -4,9 +4,8 @@
 #include <vector>
 
 #include <lgr_macros.hpp>
-#include <lgr_vector3.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_for_each.hpp>
-#include <lgr_counting_range.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
 #include <hpc_array_vector.hpp>
@@ -16,50 +15,50 @@ namespace lgr {
 struct all_space {
 };
 
-constexpr inline double distance(all_space const, vector3<double> const) {
+constexpr inline double distance(all_space const, hpc::vector3<double> const) {
   return 1.0;
 };
 
 struct plane {
-  vector3<double> normal;
+  hpc::vector3<double> normal;
   double origin;
 };
 
-constexpr inline double distance(plane const pl, vector3<double> const pt) {
+constexpr inline double distance(plane const pl, hpc::vector3<double> const pt) {
   return pl.normal * pt - pl.origin;
 };
 
 struct sphere {
-  vector3<double> origin;
+  hpc::vector3<double> origin;
   double radius;
 };
 
-inline double distance(sphere const s, vector3<double> const pt) {
+inline double distance(sphere const s, hpc::vector3<double> const pt) {
   return s.radius - norm(pt - s.origin);
 };
 
 struct cylinder {
-  vector3<double> axis;
-  vector3<double> origin;
+  hpc::vector3<double> axis;
+  hpc::vector3<double> origin;
   double radius;
 };
 
-inline double distance(cylinder const s, vector3<double> const pt) {
+inline double distance(cylinder const s, hpc::vector3<double> const pt) {
   auto const pt_on_plane = pt - (pt * s.axis) * s.axis;
   auto const origin_on_plane = s.origin - (s.origin * s.axis) * s.axis;
   return s.radius - norm(pt_on_plane - origin_on_plane);
 };
 
 struct extruded_sine_wave {
-  vector3<double> z_axis;
-  vector3<double> x_axis;
+  hpc::vector3<double> z_axis;
+  hpc::vector3<double> x_axis;
   double z_offset;
   double sine_period;
   double sine_offset;
   double sine_amplitude;
 };
 
-inline double distance(extruded_sine_wave const w, vector3<double> const pt) {
+inline double distance(extruded_sine_wave const w, hpc::vector3<double> const pt) {
   auto const proj = (pt * w.z_axis) * w.z_axis;
   auto const z = norm(proj) - w.z_offset;
   auto const rej = pt - proj;
@@ -75,15 +74,15 @@ class domain {
     domain(domain&&) = default;
     virtual ~domain();
     virtual void mark(
-        hpc::device_array_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
         int const marker,
         hpc::device_vector<int, node_index>* markers) const = 0;
     virtual void mark(
-        hpc::device_array_vector<vector3<double>, element_index> const& points,
+        hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
         material_index const marker,
         hpc::device_vector<material_index, element_index>* markers) const = 0;
     virtual void mark(
-        hpc::device_array_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
         material_index const marker,
         hpc::device_vector<material_set, node_index>* markers) const = 0;
 };
@@ -101,17 +100,17 @@ class clipped_domain : public domain {
   }
   template <class Index, class Marker>
   void mark_tmpl(
-      hpc::device_array_vector<vector3<double>, Index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, Index> const& points,
       Marker const marker,
       hpc::device_vector<Marker, Index>* markers) const {
-    counting_range<Index> const range(points.size());
+    hpc::counting_range<Index> const range(points.size());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
     auto const clips_begin = m_host_clips.cbegin();
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
     auto functor = [=] (Index const i) {
-      vector3<double> const pt = points_begin[i];
+      hpc::vector3<double> const pt = points_begin[i];
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
         is_in &= (distance(*clips_it, pt) >= 0.0);
@@ -123,22 +122,22 @@ class clipped_domain : public domain {
     lgr::for_each(range, functor);
   }
   void mark(
-      hpc::device_array_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
       int const marker,
       hpc::device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
   void mark(
-      hpc::device_array_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
       material_index const marker,
       hpc::device_vector<material_index, element_index>* markers) const override {
     this->mark_tmpl<element_index, material_index>(points, marker, markers);
   }
   void mark(
-      hpc::device_array_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
       material_index const marker,
       hpc::device_vector<material_set, node_index>* markers) const override {
-    counting_range<node_index> const range(points.size());
+    hpc::counting_range<node_index> const range(points.size());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
     auto const clips_begin = m_host_clips.cbegin();
@@ -165,23 +164,23 @@ class union_domain : public domain {
   public:
   void add(std::unique_ptr<domain>&& uptr);
   void mark(
-      hpc::device_array_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
       int const marker,
       hpc::device_vector<int, node_index>* markers) const override;
   void mark(
-      hpc::device_array_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
       material_index const marker,
       hpc::device_vector<material_index, element_index>* markers) const override;
   void mark(
-      hpc::device_array_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
       material_index const marker,
       hpc::device_vector<material_set, node_index>* markers) const override;
 };
 
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);
-std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius);
+std::unique_ptr<domain> sphere_domain(hpc::vector3<double> const origin, double const radius);
 std::unique_ptr<domain> half_space_domain(plane const& p);
-std::unique_ptr<domain> box_domain(vector3<double> const lower_left, vector3<double> const upper_right);
+std::unique_ptr<domain> box_domain(hpc::vector3<double> const lower_left, hpc::vector3<double> const upper_right);
 
 class input;
 class state;
