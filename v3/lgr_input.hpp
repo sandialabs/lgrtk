@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <functional>
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
