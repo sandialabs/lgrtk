@@ -1,6 +1,5 @@
 #include <lgr_stabilized.hpp>
 #include <lgr_state.hpp>
-#include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
 
 namespace lgr {
@@ -17,7 +16,7 @@ void update_p_h(state& s, double const dt,
     double const p_h = old_p_h + dt * p_h_dot;
     nodes_to_p_h[node] = p_h;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void update_e_h(state& s, double const dt,
@@ -33,7 +32,7 @@ void update_e_h(state& s, double const dt,
     auto const e_h = old_e_h + dt * e_h_dot;
     nodes_to_e_h[node] = e_h;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void update_sigma_with_p_h(state& s, material_index const material) {
@@ -60,7 +59,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
       points_to_sigma[point] = new_sigma;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_v_prime(input const& in, state& s, material_index const material)
@@ -102,7 +101,7 @@ static void HPC_NOINLINE update_v_prime(input const& in, state& s, material_inde
       points_to_v_prime[point] = v_prime;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_q(input const& in, state& s, material_index const material)
@@ -154,7 +153,7 @@ static void HPC_NOINLINE update_q(input const& in, state& s, material_index cons
       points_to_q[point] = q;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_p_h_W(state& s, material_index const material)
@@ -185,7 +184,7 @@ static void HPC_NOINLINE update_p_h_W(state& s, material_index const material)
       }
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_e_h_W(state& s, material_index const material)
@@ -212,7 +211,7 @@ static void HPC_NOINLINE update_e_h_W(state& s, material_index const material)
       }
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_p_h_dot(state& s, material_index const material)
@@ -248,7 +247,7 @@ static void HPC_NOINLINE update_p_h_dot(state& s, material_index const material)
     auto const p_h_dot = node_W / node_V;
     nodes_to_p_h_dot[node] = p_h_dot;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_e_h_dot(state& s, material_index const material)
@@ -281,7 +280,7 @@ static void HPC_NOINLINE update_e_h_dot(state& s, material_index const material)
     auto const e_h_dot = node_W / m;
     nodes_to_e_h_dot[node] = e_h_dot;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void nodal_ideal_gas(input const& in, state& s, material_index const material) {
@@ -305,7 +304,7 @@ void nodal_ideal_gas(input const& in, state& s, material_index const material) {
     auto const dp_de = (gamma - 1.0) * rho;
     nodes_to_dp_de[node] = dp_de;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void update_nodal_density(state& s, material_index const material)
@@ -334,7 +333,7 @@ void update_nodal_density(state& s, material_index const material)
     double const m = nodes_to_m[node];
     nodes_to_rho_h[node] = m / node_V;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void interpolate_K(state& s, material_index const material)
@@ -356,7 +355,7 @@ void interpolate_K(state& s, material_index const material)
       points_to_K[point] = K;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 void interpolate_rho(state& s, material_index const material)
@@ -380,7 +379,7 @@ void interpolate_rho(state& s, material_index const material)
       points_to_rho[point] = rho;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 void update_p_h_dot_from_a(input const& in, state& s, material_index const material) {

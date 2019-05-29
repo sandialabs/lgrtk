@@ -4,7 +4,6 @@
 #include <vector>
 
 #include <hpc_vector3.hpp>
-#include <lgr_for_each.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
 #include <hpc_array_vector.hpp>
@@ -119,7 +118,7 @@ class clipped_domain : public domain {
         markers_begin[i] = marker;
       }
     };
-    lgr::for_each(range, functor);
+    hpc::for_each(hpc::device_policy(), range, functor);
   }
   void mark(
       hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
@@ -155,7 +154,7 @@ class clipped_domain : public domain {
         markers_begin[i] = set;
       }
     };
-    lgr::for_each(range, functor);
+    hpc::for_each(hpc::device_policy(), range, functor);
   }
 };
 

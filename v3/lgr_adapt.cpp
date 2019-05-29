@@ -63,7 +63,7 @@ static void HPC_NOINLINE update_triangle_quality(state& s) {
     double const fast_quality = triangle_quality(grad_N, A);
     elements_to_quality[element] = fast_quality;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 /* Per:
@@ -105,7 +105,7 @@ static void HPC_NOINLINE update_tetrahedron_quality(state& s) {
     auto const V = points_to_V[point];
     elements_to_quality[element] = (V * V) * (sum_g_i_sq * sum_g_i_sq * sum_g_i_sq);
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void update_quality(input const& in, state& s) {
@@ -159,7 +159,7 @@ void initialize_h_adapt(state& s)
     double const h_avg = h_min * alpha;
     nodes_to_h_adapt[node] = h_avg;
   };
-  for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 enum cavity_op {
@@ -470,7 +470,7 @@ static HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s
       nodes_to_op[node] = cavity_op::NONE;
     }
   };
-  for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
@@ -549,7 +549,7 @@ static HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
     }
     nodes_to_new_counts[node] = node_count;
   };
-  for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 struct apply_cavity {
@@ -711,7 +711,7 @@ static HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
     else if (cavity_op::SPLIT == op) apply_triangle_split(c, node, target_node);
     else if (cavity_op::COLLAPSE == op) apply_triangle_collapse(c, node, target_node);
   };
-  for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 template <class Index>
@@ -728,7 +728,7 @@ static HPC_NOINLINE void project(
       new_things_to_old_things[first] = old_thing;
     }
   };
-  for_each(old_things, functor);
+  hpc::for_each(hpc::device_policy(), old_things, functor);
 }
 
 static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
@@ -754,7 +754,7 @@ static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
       }
     }
   };
-  for_each(a.new_elements, functor);
+  hpc::for_each(hpc::device_policy(), a.new_elements, functor);
 }
 
 static HPC_NOINLINE void transfer_element_materials(adapt_state& a,
@@ -768,7 +768,7 @@ static HPC_NOINLINE void transfer_element_materials(adapt_state& a,
     new_elements_to_T[new_element] =
       material_index(old_elements_to_T[old_element]);
   };
-  for_each(a.new_elements, functor);
+  hpc::for_each(hpc::device_policy(), a.new_elements, functor);
   data = std::move(new_data);
 }
 
@@ -794,7 +794,7 @@ static HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
       new_points_to_T[new_point] = old_value;
     }
   };
-  for_each(a.new_elements, functor);
+  hpc::for_each(hpc::device_policy(), a.new_elements, functor);
   data = std::move(new_data);
 }
 
@@ -815,7 +815,7 @@ static HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
     // FIXME: this could be run over just the new nodes touching this material,
     // but we can't do that right now because we don't compute that set of nodes
     // until after all the transfers
-    for_each(a.new_nodes, functor);
+    hpc::for_each(hpc::device_policy(), a.new_nodes, functor);
     old_data = std::move(new_data);
   }
 }
@@ -842,7 +842,7 @@ static HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& dat
         + value_type(old_nodes_to_data[right]));
     }
   };
-  for_each(a.new_nodes, functor);
+  hpc::for_each(hpc::device_policy(), a.new_nodes, functor);
   data = std::move(new_data);
 }
 

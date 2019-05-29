@@ -3,7 +3,6 @@
 
 #include <lgr_element_specific.hpp>
 #include <lgr_state.hpp>
-#include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
 #include <lgr_composite_tetrahedron.hpp>
 #include <lgr_element_specific_inline.hpp>
@@ -29,7 +28,7 @@ static void HPC_NOINLINE initialize_bar_V(state& s) {
     assert(V > 0.0);
     points_to_V[elements_to_points[element][fp]] = V;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_triangle_V(state& s)
@@ -54,7 +53,7 @@ static void HPC_NOINLINE initialize_triangle_V(state& s)
     assert(area > 0.0);
     points_to_V[elements_to_points[element][fp]] = area;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_tetrahedron_V(state& s)
@@ -77,7 +76,7 @@ static void HPC_NOINLINE initialize_tetrahedron_V(state& s)
     assert(volume > 0.0);
     points_to_V[elements_to_points[element][fp]] = volume;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_composite_tetrahedron_V(state& s)
@@ -107,7 +106,7 @@ static void HPC_NOINLINE initialize_composite_tetrahedron_V(state& s)
       points_to_V[element_points[qp]] = volumes[qp.get()];
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void initialize_V(
@@ -135,7 +134,7 @@ static void HPC_NOINLINE initialize_bar_grad_N(state& s) {
     point_nodes_to_grad_N[point_nodes[l_t(0)]] = grad_N0;
     point_nodes_to_grad_N[point_nodes[l_t(1)]] = grad_N1;
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
@@ -163,7 +162,7 @@ static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
       point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
@@ -191,7 +190,7 @@ static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
       point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
@@ -221,7 +220,7 @@ static void HPC_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
       }
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void initialize_grad_N(
@@ -244,7 +243,7 @@ static void HPC_NOINLINE update_bar_h_min(input const&, state& s) {
     auto const point = elements_to_points[element][fp];
     elements_to_h_min[element] = double(points_to_V[point]);
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_h_min_height(input const&, state& s) {
@@ -265,7 +264,7 @@ static void HPC_NOINLINE update_h_min_height(input const&, state& s) {
     }
     elements_to_h_min[element] = min_height;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
@@ -299,7 +298,7 @@ static void HPC_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
     double const radius = 1.0 / perimeter_over_twice_area;
     elements_to_h_min[element] = 2.0 * radius;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_triangle_h_min(input const& in, state& s) {
@@ -340,7 +339,7 @@ static void HPC_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
     double const radius = 1.0 / surface_area_over_thrice_volume;
     elements_to_h_min[element] = 2.0 * radius;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
@@ -366,7 +365,7 @@ static void HPC_NOINLINE update_composite_tetrahedron_h_min(state& s) {
     auto const h_min = composite_tetrahedron::get_length(node_coords);
     elements_to_h_min[element] = h_min;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void update_h_min(input const& in, state& s)
@@ -388,7 +387,7 @@ static void HPC_NOINLINE update_bar_h_art(state& s) {
     auto const point = elements_to_points[element][fp];
     elements_to_h_art[element] = double(points_to_V[point]);
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_triangle_h_art(state& s) {
@@ -404,7 +403,7 @@ static void HPC_NOINLINE update_triangle_h_art(state& s) {
     double const h_art = C_geom * std::sqrt(area);
     elements_to_h_art[element] = h_art;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_tetrahedron_h_art(state& s) {
@@ -420,7 +419,7 @@ static void HPC_NOINLINE update_tetrahedron_h_art(state& s) {
     double const h_art = C_geom * std::cbrt(volume);
     elements_to_h_art[element] = h_art;
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void update_h_art(input const& in, state& s) {
@@ -457,7 +456,7 @@ static void HPC_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
     }
     nodes_to_m[node] = m;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
@@ -499,7 +498,7 @@ static void HPC_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, mater
     }
     nodes_to_m[node] = m;
   };
-  lgr::for_each(s.node_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
 void update_nodal_mass(input const& in, state& s) {
@@ -523,7 +522,7 @@ void update_nodal_mass(input const& in, state& s) {
       m_total = m_total + m_partial;
       nodes_to_total[node] = m_total;
     };
-    for_each(s.node_sets[material], functor);
+    hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
   }
 }
 

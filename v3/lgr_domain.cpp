@@ -76,7 +76,7 @@ void assign_element_materials(input const& in, state& s) {
     centroid = centroid * N;
     elements_to_centroids[element] = centroid;
   };
-  lgr::for_each(s.elements, centroid_functor);
+  hpc::for_each(hpc::device_policy(), s.elements, centroid_functor);
   for (auto const material : in.materials) {
     auto const& domain = in.domains[material];
     if (domain) {
@@ -108,7 +108,7 @@ void compute_nodal_materials(input const& in, state& s) {
     }
     nodes_to_materials[node] = node_materials;
   };
-  for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
   for (auto const boundary : in.boundaries) {
     auto const& domain = in.domains[boundary];
     domain->mark(s.x, boundary, &s.nodal_materials);
