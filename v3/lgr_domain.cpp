@@ -91,13 +91,6 @@ void compute_nodal_materials(input const& in, state& s) {
   auto const elements_to_materials = s.material.cbegin();
   s.nodal_materials.resize(s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.begin();
-  int dimension = -1;
-  switch (in.element) {
-    case BAR: dimension = 1; break;
-    case TRIANGLE: dimension = 2; break;
-    case TETRAHEDRON: dimension = 3; break;
-    case COMPOSITE_TETRAHEDRON: dimension = 3; break;
-  }
   auto functor = [=](node_index const node) {
     auto const node_elements = nodes_to_node_elements[node];
     auto node_materials = material_set::none();

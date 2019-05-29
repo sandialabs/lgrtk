@@ -12,11 +12,11 @@ class index {
 public:
   using integral_type = Integral;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index(std::ptrdiff_t i_in) noexcept : i(integral_type(i_in)) {}
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE index() noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE index(index const&) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE index(index&&) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE index& operator=(index const&) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE index& operator=(index&&) noexcept = default;
+  HPC_ALWAYS_INLINE index() noexcept = default;
+  HPC_ALWAYS_INLINE index(index const&) noexcept = default;
+  HPC_ALWAYS_INLINE index(index&&) noexcept = default;
+  HPC_ALWAYS_INLINE index& operator=(index const&) noexcept = default;
+  HPC_ALWAYS_INLINE index& operator=(index&&) noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index operator+(index const& other) const noexcept {
     return index(i + other.i);
   }

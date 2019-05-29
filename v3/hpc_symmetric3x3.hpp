@@ -50,7 +50,7 @@ public:
         t(2, 0), t(2, 1), t(2, 2))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE symmetric3x3() = default;
+  HPC_ALWAYS_INLINE symmetric3x3() = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<Scalar> full() const noexcept {
     return matrix3x3<Scalar>(
         operator()(S_XX), operator()(S_XY), operator()(S_XZ),

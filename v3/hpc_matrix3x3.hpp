@@ -27,7 +27,7 @@ public:
     raw[2][1] = h;
     raw[2][2] = i;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE matrix3x3() noexcept = default;
+  HPC_ALWAYS_INLINE matrix3x3() noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr matrix3x3 identity() noexcept {
     return matrix3x3(
         1.0, 0.0, 0.0,
