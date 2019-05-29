@@ -4,6 +4,20 @@
 
 namespace hpc {
 
+namespace impl {
+
+template <class T>
+class pi;
+template <>
+class pi<float> { public: static constexpr float value   = 3.14159265f; };
+template <>
+class pi<double> { public: static constexpr double value = 3.141592653589793238; };
+
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T pi() noexcept { return ::hpc::impl::pi<T>::value; }
+
 template <class Range, class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE T
 reduce(local_policy policy, Range const& range, T init) noexcept {

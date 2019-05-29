@@ -8,7 +8,7 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE set_exponential_wave_v(
+static void HPC_NOINLINE set_exponential_wave_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
@@ -23,14 +23,14 @@ static void LGR_NOINLINE set_exponential_wave_v(
   lgr::for_each(nodes, functor);
 }
 
-static void LGR_NOINLINE zero_v(
+static void HPC_NOINLINE zero_v(
     hpc::counting_range<node_index> const /*nodes*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v) {
   hpc::fill(hpc::device_policy(), *v, hpc::vector3<double>::zero());
 }
 
-static void LGR_NOINLINE spin_v(
+static void HPC_NOINLINE spin_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
@@ -43,7 +43,7 @@ static void LGR_NOINLINE spin_v(
   lgr::for_each(nodes, functor);
 }
 
-static void LGR_NOINLINE elastic_wave() {
+static void HPC_NOINLINE elastic_wave() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -71,7 +71,7 @@ static void LGR_NOINLINE elastic_wave() {
   run(in);
 }
 
-static void LGR_NOINLINE gas_expansion() {
+static void HPC_NOINLINE gas_expansion() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -89,7 +89,7 @@ static void LGR_NOINLINE gas_expansion() {
   run(in);
 }
 
-static void LGR_NOINLINE spinning_square() {
+static void HPC_NOINLINE spinning_square() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -110,7 +110,7 @@ static void LGR_NOINLINE spinning_square() {
   run(in);
 }
 
-static void LGR_NOINLINE quadratic_in_x_v(
+static void HPC_NOINLINE quadratic_in_x_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
@@ -125,7 +125,7 @@ static void LGR_NOINLINE quadratic_in_x_v(
   lgr::for_each(nodes, functor);
 }
 
-static void LGR_NOINLINE Cooks_membrane_x(
+static void HPC_NOINLINE Cooks_membrane_x(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector) {
   hpc::counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
@@ -142,7 +142,7 @@ static void LGR_NOINLINE Cooks_membrane_x(
   lgr::for_each(nodes, functor);
 }
 
-static void LGR_NOINLINE Cooks_membrane() {
+static void HPC_NOINLINE Cooks_membrane() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -174,7 +174,7 @@ static void LGR_NOINLINE Cooks_membrane() {
   run(in);
 }
 
-static void LGR_NOINLINE swinging_plate() {
+static void HPC_NOINLINE swinging_plate() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -197,7 +197,7 @@ static void LGR_NOINLINE swinging_plate() {
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  double const w = (pi / 2.0) * std::sqrt((2.0 * G) / rho);
+  double const w = (hpc::pi<double>() / 2.0) * std::sqrt((2.0 * G) / rho);
   in.end_time = 0.16;
   in.K0[body] = K;
   in.G0[body] = G;
@@ -211,8 +211,8 @@ static void LGR_NOINLINE swinging_plate() {
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
-          -std::sin((pi * x(0)) / 2.0) * std::cos((pi * x(1)) / 2.0),
-          std::cos((pi * x(0)) / 2.0) * std::sin((pi * x(1)) / 2.0),
+          -std::sin((hpc::pi<double>() * x(0)) / 2.0) * std::cos((hpc::pi<double>() * x(1)) / 2.0),
+          std::cos((hpc::pi<double>() * x(0)) / 2.0) * std::sin((hpc::pi<double>() * x(1)) / 2.0),
           0.0);
       nodes_to_v[node] = v;
     };
@@ -235,7 +235,7 @@ static void LGR_NOINLINE swinging_plate() {
   run(in);
 }
 
-static void LGR_NOINLINE spinning_cube() {
+static void HPC_NOINLINE spinning_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -260,7 +260,7 @@ static void LGR_NOINLINE spinning_cube() {
   run(in);
 }
 
-static void LGR_NOINLINE elastic_wave_2d() {
+static void HPC_NOINLINE elastic_wave_2d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -295,7 +295,7 @@ static void LGR_NOINLINE elastic_wave_2d() {
   run(in);
 }
 
-static void LGR_NOINLINE elastic_wave_3d() {
+static void HPC_NOINLINE elastic_wave_3d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -339,7 +339,7 @@ static void LGR_NOINLINE elastic_wave_3d() {
   run(in);
 }
 
-static void LGR_NOINLINE swinging_cube(bool stabilize) {
+static void HPC_NOINLINE swinging_cube(bool stabilize) {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -370,7 +370,7 @@ static void LGR_NOINLINE swinging_cube(bool stabilize) {
   double const E = 1.7e7;
   double const K = E / (3.0 * (1.0 - 2.0 * nu));
   double const G = E / (2.0 * (1.0 + nu));
-  double const w = pi * std::sqrt((3.0 * G) / (4.0 * rho));
+  double const w = hpc::pi<double>() * std::sqrt((3.0 * G) / (4.0 * rho));
   in.end_time = 0.10;
   in.K0[body] = K;
   in.G0[body] = G;
@@ -382,7 +382,7 @@ static void LGR_NOINLINE swinging_cube(bool stabilize) {
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
     auto functor = [=](node_index const node) {
-      constexpr double half_pi = pi / 2.0;
+      constexpr double half_pi = hpc::pi<double>() / 2.0;
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
           -std::sin(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::cos(half_pi * x(2)),
@@ -415,7 +415,7 @@ static void LGR_NOINLINE swinging_cube(bool stabilize) {
   run(in);
 }
 
-static void LGR_NOINLINE twisting_column() {
+static void HPC_NOINLINE twisting_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index y_min(1);
@@ -448,7 +448,7 @@ static void LGR_NOINLINE twisting_column() {
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
@@ -468,7 +468,7 @@ static void LGR_NOINLINE twisting_column() {
   run(in);
 }
 
-static void LGR_NOINLINE Noh_1D() {
+static void HPC_NOINLINE Noh_1D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -512,7 +512,7 @@ static void LGR_NOINLINE Noh_1D() {
   run(in);
 }
 
-static void LGR_NOINLINE Noh_2D() {
+static void HPC_NOINLINE Noh_2D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -561,7 +561,7 @@ static void LGR_NOINLINE Noh_2D() {
   run(in);
 }
 
-static void LGR_NOINLINE spinning_composite_cube() {
+static void HPC_NOINLINE spinning_composite_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -586,7 +586,7 @@ static void LGR_NOINLINE spinning_composite_cube() {
   run(in);
 }
 
-static void LGR_NOINLINE twisting_composite_column() {
+static void HPC_NOINLINE twisting_composite_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index y_min(1);
@@ -619,7 +619,7 @@ static void LGR_NOINLINE twisting_composite_column() {
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=](node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((pi / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
     lgr::for_each(nodes, functor);
@@ -638,7 +638,7 @@ static void LGR_NOINLINE twisting_composite_column() {
   run(in);
 }
 
-static void LGR_NOINLINE Noh_3D() {
+static void HPC_NOINLINE Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -693,7 +693,7 @@ static void LGR_NOINLINE Noh_3D() {
   run(in);
 }
 
-static void LGR_NOINLINE composite_Noh_3D() {
+static void HPC_NOINLINE composite_Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -749,7 +749,7 @@ static void LGR_NOINLINE composite_Noh_3D() {
   run(in);
 }
 
-static void LGR_NOINLINE Sod_1D() {
+static void HPC_NOINLINE Sod_1D() {
   constexpr material_index left(0);
   constexpr material_index right(1);
   constexpr material_index nmaterials(2);
@@ -792,7 +792,7 @@ static void LGR_NOINLINE Sod_1D() {
   run(in);
 }
 
-static void LGR_NOINLINE triple_point() {
+static void HPC_NOINLINE triple_point() {
   constexpr material_index left(0);
   constexpr material_index right_bottom(1);
   constexpr material_index right_top(2);

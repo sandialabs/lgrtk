@@ -2,7 +2,6 @@
 #include <iostream>
 
 #include <lgr_element_specific.hpp>
-#include <lgr_macros.hpp>
 #include <lgr_state.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
@@ -12,7 +11,7 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE initialize_bar_V(state& s) {
+static void HPC_NOINLINE initialize_bar_V(state& s) {
   auto const elems_to_nodes_iterator = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.begin();
@@ -33,7 +32,7 @@ static void LGR_NOINLINE initialize_bar_V(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_triangle_V(state& s)
+static void HPC_NOINLINE initialize_triangle_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
@@ -58,7 +57,7 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
+static void HPC_NOINLINE initialize_tetrahedron_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
@@ -81,7 +80,7 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
+static void HPC_NOINLINE initialize_composite_tetrahedron_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
@@ -122,7 +121,7 @@ void initialize_V(
   }
 }
 
-static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
+static void HPC_NOINLINE initialize_bar_grad_N(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
@@ -139,7 +138,7 @@ static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
+static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -167,7 +166,7 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
+static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -195,7 +194,7 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
+static void HPC_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
@@ -236,7 +235,7 @@ void initialize_grad_N(
   }
 }
 
-static void LGR_NOINLINE update_bar_h_min(input const&, state& s) {
+static void HPC_NOINLINE update_bar_h_min(input const&, state& s) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
@@ -248,7 +247,7 @@ static void LGR_NOINLINE update_bar_h_min(input const&, state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
+static void HPC_NOINLINE update_h_min_height(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
@@ -269,7 +268,7 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
+static void HPC_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
@@ -303,14 +302,14 @@ static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_triangle_h_min(input const& in, state& s) {
+static void HPC_NOINLINE update_triangle_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_triangle_h_min_inball(in, s); break;
   }
 }
 
-static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s) {
+static void HPC_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
@@ -344,14 +343,14 @@ static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
+static void HPC_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_tetrahedron_h_min_inball(in, s); break;
   }
 }
 
-static void LGR_NOINLINE update_composite_tetrahedron_h_min(state& s) {
+static void HPC_NOINLINE update_composite_tetrahedron_h_min(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
@@ -380,7 +379,7 @@ void update_h_min(input const& in, state& s)
   }
 }
 
-static void LGR_NOINLINE update_bar_h_art(state& s) {
+static void HPC_NOINLINE update_bar_h_art(state& s) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
@@ -392,7 +391,7 @@ static void LGR_NOINLINE update_bar_h_art(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_triangle_h_art(state& s) {
+static void HPC_NOINLINE update_triangle_h_art(state& s) {
   double const C_geom = std::sqrt(4.0 / std::sqrt(3.0));
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
@@ -408,7 +407,7 @@ static void LGR_NOINLINE update_triangle_h_art(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_tetrahedron_h_art(state& s) {
+static void HPC_NOINLINE update_tetrahedron_h_art(state& s) {
   double const C_geom = std::cbrt(12.0 / std::sqrt(2.0));
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
@@ -433,7 +432,7 @@ void update_h_art(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE update_nodal_mass_uniform(state& s, material_index const material) {
+static void HPC_NOINLINE update_nodal_mass_uniform(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
@@ -461,7 +460,7 @@ static void LGR_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
   lgr::for_each(s.node_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
+static void HPC_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
