@@ -30,11 +30,11 @@ public:
       new (m_data + i) T(b[i]);
     }
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE array() noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE array(array&& other) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE array(array const&) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE array& operator=(array const&) noexcept = default;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE array& operator=(array&& other) noexcept = default;
+  HPC_ALWAYS_INLINE array() noexcept = default;
+  HPC_ALWAYS_INLINE array(array&& other) noexcept = default;
+  HPC_ALWAYS_INLINE array(array const&) noexcept = default;
+  HPC_ALWAYS_INLINE array& operator=(array const&) noexcept = default;
+  HPC_ALWAYS_INLINE array& operator=(array&& other) noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr pointer data() noexcept { return m_data; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_pointer data() const noexcept { return m_data; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator begin() noexcept {

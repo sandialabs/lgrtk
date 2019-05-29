@@ -25,7 +25,13 @@ void uninitialized_default_construct(serial_policy, Range&& range) {
 }
 
 template<class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE void destroy_at(T* p)
+HPC_ALWAYS_INLINE HPC_DEVICE void device_destroy_at(T* p)
+{
+  p->~T();
+}
+
+template<class T>
+HPC_ALWAYS_INLINE void host_destroy_at(T* p)
 {
   p->~T();
 }
@@ -35,7 +41,7 @@ void destroy(serial_policy, Range&& range) {
   auto first = range.begin();
   auto const last = range.end();
   for (; first != last; ++first) {
-    ::hpc::destroy_at(std::addressof(*first));
+    ::hpc::host_destroy_at(std::addressof(*first));
   }
 }
 
