@@ -696,10 +696,8 @@ private:
     **********************************************************************************/
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
-        // fixme Local Constraint in input file
         Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Local Constraint");
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
-        // fixme Local Constraint Limit in input file
         mLocalMeasureLimit = tParams.get<Plato::Scalar>("Local Measure Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
         mMinErsatzValue = tParams.get<Plato::Scalar>("Min. Ersatz Material", 1e-9);
