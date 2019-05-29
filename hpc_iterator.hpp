@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>
 #include <iterator>
 #include <hpc_macros.hpp>
@@ -58,8 +59,8 @@ template <class T, class Index = std::ptrdiff_t>
 class pointer_iterator {
   T* m_pointer;
 #ifndef NDEBUG
-  T* const m_allocation_begin;
-  T* const m_allocation_end;
+  T* m_allocation_begin;
+  T* m_allocation_end;
 #endif
  public:
   using value_type = std::remove_const_t<T>;

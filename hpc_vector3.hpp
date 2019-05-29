@@ -20,13 +20,13 @@ public:
 private:
   scalar_type raw[3];
 public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr inline vector3(Scalar const x, Scalar const y, Scalar const z) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr vector3(Scalar const x, Scalar const y, Scalar const z) noexcept
     :raw{x, y, z}
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE vector3() noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(axis_index const i) const noexcept { return raw[i.get()]; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE inline scalar_type& operator()(axis_index const i) noexcept { return raw[i.get()]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE scalar_type& operator()(axis_index const i) noexcept { return raw[i.get()]; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 zero() noexcept { return vector3(0.0, 0.0, 0.0); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 x_axis() noexcept { return vector3(1.0, 0.0, 0.0); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 y_axis() noexcept { return vector3(0.0, 1.0, 0.0); }

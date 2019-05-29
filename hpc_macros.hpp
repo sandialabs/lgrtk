@@ -12,4 +12,4 @@
 #define HPC_HOST_DEVICE HPC_HOST HPC_DEVICE
 
 #define HPC_NOINLINE __attribute__((noinline))
-#define HPC_ALWAYS_INLINE __attribute__((always_inline))
+#define HPC_ALWAYS_INLINE __attribute__((always_inline)) inline
