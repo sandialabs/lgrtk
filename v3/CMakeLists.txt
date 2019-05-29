@@ -15,10 +15,8 @@ set(LGR_SOURCES
     lgr_physics.cpp
     lgr_element_specific.cpp
     lgr_meshing.cpp
-    lgr_memory_pool.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
-#   lgr_threads.cpp
     )
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
