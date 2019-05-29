@@ -7,7 +7,6 @@
 #include <lgr_print.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
-#include <lgr_reduce.hpp>
 
 namespace lgr {
 
@@ -157,10 +156,10 @@ void file_writer::operator()(
   auto have_nodal_pressure_or_energy = [&] (material_index const material) {
     return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!all_of(in.materials, have_nodal_pressure_or_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
   }
-  if (!all_of(in.enable_nodal_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }

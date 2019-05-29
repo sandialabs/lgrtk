@@ -1,6 +1,5 @@
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
-#include <lgr_reduce.hpp>
 
 #include <iostream>
 
@@ -17,7 +16,7 @@ void resize_state(input const& in, state& s) {
   auto have_nodal_pressure_or_energy = [&] (material_index const material) {
     return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!all_of(in.materials, have_nodal_pressure_or_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     s.p.resize(s.points.size());
   }
   s.K.resize(s.points.size());
@@ -26,7 +25,9 @@ void resize_state(input const& in, state& s) {
   s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
-  if (!all_of(in.enable_nodal_energy)) s.e.resize(s.points.size());
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+    s.e.resize(s.points.size());
+  }
   s.rho_e_dot.resize(s.points.size());
   s.material_mass.resize(in.materials.size());
   for (auto& mm : s.material_mass) mm.resize(s.nodes.size());

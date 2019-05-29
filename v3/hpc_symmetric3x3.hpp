@@ -57,13 +57,16 @@ public:
         operator()(S_XY), operator()(S_YY), operator()(S_YZ),
         operator()(S_XZ), operator()(S_YZ), operator()(S_ZZ));
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(symmetric_index slot) const noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar& operator()(symmetric_index slot) noexcept {
+    return raw[slot.get()];
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar const& operator()(symmetric_index slot) const noexcept {
     return raw[slot.get()];
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3<Scalar> zero() noexcept {
     return symmetric3x3<Scalar>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar operator()(axis_index i, axis_index j) const noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar& operator()(axis_index i, axis_index j) noexcept {
     if (i == 0 && j == 0) return operator()(S_XX);
     if (i == 0 && j == 1) return operator()(S_XY);
     if (i == 0 && j == 2) return operator()(S_XZ);
@@ -72,8 +75,18 @@ public:
     if (i == 1 && j == 2) return operator()(S_YZ);
     if (i == 2 && j == 0) return operator()(S_XZ);
     if (i == 2 && j == 1) return operator()(S_YZ);
-    if (i == 2 && j == 2) return operator()(S_ZZ);
-    return -1.0;
+    return operator()(S_ZZ);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar const& operator()(axis_index i, axis_index j) const noexcept {
+    if (i == 0 && j == 0) return operator()(S_XX);
+    if (i == 0 && j == 1) return operator()(S_XY);
+    if (i == 0 && j == 2) return operator()(S_XZ);
+    if (i == 1 && j == 0) return operator()(S_XY);
+    if (i == 1 && j == 1) return operator()(S_YY);
+    if (i == 1 && j == 2) return operator()(S_YZ);
+    if (i == 2 && j == 0) return operator()(S_XZ);
+    if (i == 2 && j == 1) return operator()(S_YZ);
+    return operator()(S_ZZ);
   }
 };
 
