@@ -25,7 +25,6 @@ class array_vector_reference {
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE array_vector_reference& operator=(array_vector_reference&&) = default;
   // not copyable
   HPC_HOST_DEVICE array_vector_reference(array_vector_reference const&) = delete;
-  HPC_HOST_DEVICE array_vector_reference& operator=(array_vector_reference const&) = delete;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit operator T() const noexcept {
     return ::hpc::array_traits<T>::load(m_iterator);
   }
@@ -37,6 +36,10 @@ class array_vector_reference {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE void store(T const& value) const noexcept {
     ::hpc::array_traits<T>::store(m_iterator, value);
+  }
+  template <class T2, layout L2, class O2>
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE void operator=(array_vector_reference<T2, L2, O2> const& ref) const noexcept {
+    ::hpc::array_traits<T>::store(m_iterator, ref.load());
   }
 };
 
