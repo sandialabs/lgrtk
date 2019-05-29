@@ -15,7 +15,7 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE advance_time(
+static void HPC_NOINLINE advance_time(
     input const& in,
     double const max_stable_dt,
     double const next_file_output_time,
@@ -28,7 +28,7 @@ static void LGR_NOINLINE advance_time(
   *dt = new_time - old_time;
 }
 
-static void LGR_NOINLINE update_u(state& s, double const dt) {
+static void HPC_NOINLINE update_u(state& s, double const dt) {
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.cbegin();
   auto functor = [=] (node_index const node) {
@@ -39,7 +39,7 @@ static void LGR_NOINLINE update_u(state& s, double const dt) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_v(state& s, double const dt, hpc::device_array_vector<hpc::vector3<double>, node_index> const& old_v_vector) {
+static void HPC_NOINLINE update_v(state& s, double const dt, hpc::device_array_vector<hpc::vector3<double>, node_index> const& old_v_vector) {
   auto const nodes_to_v = s.v.begin();
   auto const nodes_to_old_v = old_v_vector.cbegin();
   auto const nodes_to_a = s.a.cbegin();
@@ -52,7 +52,7 @@ static void LGR_NOINLINE update_v(state& s, double const dt, hpc::device_array_v
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_a(state& s) {
+static void HPC_NOINLINE update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
   auto const nodes_to_m = s.mass.cbegin();
   auto const nodes_to_a = s.a.begin();
@@ -65,7 +65,7 @@ static void LGR_NOINLINE update_a(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_x(state& s) {
+static void HPC_NOINLINE update_x(state& s) {
   auto const nodes_to_u = s.u.cbegin();
   auto const nodes_to_x = s.x.begin();
   auto functor = [=] (node_index const node) {
@@ -77,7 +77,7 @@ static void LGR_NOINLINE update_x(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p(state& s, material_index const material) {
+static void HPC_NOINLINE update_p(state& s, material_index const material) {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_p = s.p.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -91,7 +91,7 @@ static void LGR_NOINLINE update_p(state& s, material_index const material) {
   for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_reference(state& s) {
+static void HPC_NOINLINE update_reference(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
@@ -139,7 +139,7 @@ static void LGR_NOINLINE update_reference(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_c(state& s)
+static void HPC_NOINLINE update_c(state& s)
 {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_K = s.K.cbegin();
@@ -156,7 +156,7 @@ static void LGR_NOINLINE update_c(state& s)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_element_dt(state& s) {
+static void HPC_NOINLINE update_element_dt(state& s) {
   auto const points_to_c = s.c.cbegin();
   auto const elements_to_h_min = s.h_min.cbegin();
   auto const points_to_nu_art = s.nu_art.cbegin();
@@ -178,13 +178,13 @@ static void LGR_NOINLINE update_element_dt(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE find_max_stable_dt(state& s)
+static void HPC_NOINLINE find_max_stable_dt(state& s)
 {
   double const init = std::numeric_limits<double>::max();
   s.max_stable_dt = hpc::transform_reduce(hpc::device_policy(), s.element_dt, init, hpc::minimum<double>(), hpc::identity<double>());
 }
 
-static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index const material) {
+static void HPC_NOINLINE neo_Hookean(input const& in, state& s, material_index const material) {
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
@@ -213,7 +213,7 @@ static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index c
   lgr::for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
+static void HPC_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.cbegin();
   auto const points_to_sigma = s.sigma.begin();
@@ -239,7 +239,7 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index con
   lgr::for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_element_force(state& s)
+static void HPC_NOINLINE update_element_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -259,7 +259,7 @@ static void LGR_NOINLINE update_element_force(state& s)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_nodal_force(state& s) {
+static void HPC_NOINLINE update_nodal_force(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
@@ -285,7 +285,7 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   lgr::for_each(s.nodes, functor);
 }
 
-static void LGR_NOINLINE zero_acceleration(
+static void HPC_NOINLINE zero_acceleration(
     hpc::device_vector<node_index, int> const& domain,
     hpc::vector3<double> const axis,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* a_vector) {
@@ -298,7 +298,7 @@ static void LGR_NOINLINE zero_acceleration(
   lgr::for_each(domain, functor);
 }
 
-static void LGR_NOINLINE update_symm_grad_v(state& s)
+static void HPC_NOINLINE update_symm_grad_v(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -328,7 +328,7 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE stress_power(state& s)
+static void HPC_NOINLINE stress_power(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
@@ -342,7 +342,7 @@ static void LGR_NOINLINE stress_power(state& s)
   lgr::for_each(s.points, functor);
 }
 
-static void LGR_NOINLINE update_e(state& s, double const dt,
+static void HPC_NOINLINE update_e(state& s, double const dt,
     material_index const material,
     hpc::device_vector<double, point_index> const& old_e_vector)
 {
@@ -364,7 +364,7 @@ static void LGR_NOINLINE update_e(state& s, double const dt,
   for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
+static void HPC_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const points_to_c = s.c.cbegin();
@@ -396,7 +396,7 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_J(state& s) {
+static void HPC_NOINLINE volume_average_J(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_F = s.F_total.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -422,7 +422,7 @@ static void LGR_NOINLINE volume_average_J(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_rho(state& s) {
+static void HPC_NOINLINE volume_average_rho(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -443,7 +443,7 @@ static void LGR_NOINLINE volume_average_rho(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_e(state& s) {
+static void HPC_NOINLINE volume_average_e(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.begin();
@@ -466,7 +466,7 @@ static void LGR_NOINLINE volume_average_e(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_p(state& s) {
+static void HPC_NOINLINE volume_average_p(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -490,7 +490,7 @@ static void LGR_NOINLINE volume_average_p(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
+static void HPC_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
@@ -506,7 +506,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
   }
 }
 
-static void LGR_NOINLINE update_material_state(input const& in, state& s) {
+static void HPC_NOINLINE update_material_state(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.sigma, hpc::symmetric3x3<double>::zero());
   hpc::fill(hpc::device_policy(), s.G, double(0.0));
   for (auto const material : in.materials) {
@@ -514,7 +514,7 @@ static void LGR_NOINLINE update_material_state(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
+static void HPC_NOINLINE update_a_from_material_state(input const& in, state& s) {
   update_element_force(s);
   update_nodal_force(s);
   update_a(s);
@@ -523,7 +523,7 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   }
 }
 
-static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
+static void HPC_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.u, hpc::vector3<double>(0.0, 0.0, 0.0));
   hpc::device_array_vector<hpc::vector3<double>, node_index> old_v(s.nodes.size());
   hpc::copy(hpc::device_policy(), s.v, old_v);
@@ -605,7 +605,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
   }
 }
 
-static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
+static void HPC_NOINLINE velocity_verlet_step(input const& in, state& s) {
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
   hpc::fill(hpc::serial_policy(), s.u, hpc::vector3<double>(0.0, 0.0, 0.0));
@@ -629,7 +629,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
-static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
+static void HPC_NOINLINE time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
       midpoint_predictor_corrector_step(in, s);
@@ -640,7 +640,7 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE initialize_material_scalar(
+static void HPC_NOINLINE initialize_material_scalar(
     double const scalar,
     state& s,
     material_index const material,
@@ -655,7 +655,7 @@ static void LGR_NOINLINE initialize_material_scalar(
   for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE common_initialization(input const& in, state& s) {
+static void HPC_NOINLINE common_initialization(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);

@@ -3,12 +3,12 @@
 #include <memory>
 #include <vector>
 
-#include <lgr_macros.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
 #include <hpc_array_vector.hpp>
+#include <hpc_numeric.hpp>
 
 namespace lgr {
 
@@ -63,7 +63,7 @@ inline double distance(extruded_sine_wave const w, hpc::vector3<double> const pt
   auto const z = norm(proj) - w.z_offset;
   auto const rej = pt - proj;
   auto const x = rej * w.x_axis;
-  auto const angle = (x - w.sine_offset) * ((2.0 * pi) / (w.sine_period));
+  auto const angle = (x - w.sine_offset) * ((2.0 * hpc::pi<double>()) / (w.sine_period));
   auto const z_zero = w.sine_amplitude * std::sin(angle);
   return z_zero - z;
 }

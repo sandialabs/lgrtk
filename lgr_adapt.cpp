@@ -1,4 +1,3 @@
-#include <lgr_macros.hpp>
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>
@@ -11,7 +10,7 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE update_bar_quality(state& s) {
+static void HPC_NOINLINE update_bar_quality(state& s) {
   hpc::fill(hpc::device_policy(), s.quality, double(1.0));
 }
 
@@ -44,7 +43,7 @@ inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const x) {
   return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
-static void LGR_NOINLINE update_triangle_quality(state& s) {
+static void HPC_NOINLINE update_triangle_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
@@ -85,7 +84,7 @@ static void LGR_NOINLINE update_triangle_quality(state& s) {
 
    As such, our "quality" is the inverse of this quality measure to the fourth power
   */
-static void LGR_NOINLINE update_tetrahedron_quality(state& s) {
+static void HPC_NOINLINE update_tetrahedron_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
@@ -388,7 +387,7 @@ static inline void evaluate_triangle_collapse(
   }
 }
 
-static LGR_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
+static HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -474,7 +473,7 @@ static LGR_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s
   for_each(s.nodes, functor);
 }
 
-static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
+static HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -696,7 +695,7 @@ static inline void apply_triangle_collapse(apply_cavity const c,
   }
 }
 
-static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
+static HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 {
   apply_cavity c(s, a);
   hpc::fill(hpc::device_policy(), a.new_elements_are_same, true);
@@ -716,7 +715,7 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 }
 
 template <class Index>
-static LGR_NOINLINE void project(
+static HPC_NOINLINE void project(
     hpc::counting_range<Index> const old_things,
     hpc::device_vector<Index, Index> const& old_things_to_new_things_in,
     hpc::device_vector<Index, Index>& new_things_to_old_things_in) {
@@ -732,7 +731,7 @@ static LGR_NOINLINE void project(
   for_each(old_things, functor);
 }
 
-static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -758,7 +757,7 @@ static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
   for_each(a.new_elements, functor);
 }
 
-static LGR_NOINLINE void transfer_element_materials(adapt_state& a,
+static HPC_NOINLINE void transfer_element_materials(adapt_state& a,
     hpc::device_vector<material_index, element_index>& data) {
   hpc::device_vector<material_index, element_index> new_data(a.new_elements.size());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -774,7 +773,7 @@ static LGR_NOINLINE void transfer_element_materials(adapt_state& a,
 }
 
 template <class Range>
-static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
+static HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
     Range& data) {
   auto const points_in_element = s.points_in_element;
   using value_type = typename Range::value_type;
@@ -799,7 +798,7 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
   data = std::move(new_data);
 }
 
-static LGR_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
+static HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!in.enable_nodal_energy[material]) continue;
@@ -822,7 +821,7 @@ static LGR_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
 }
 
 template <class Range>
-static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
+static HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
   using value_type = typename Range::value_type;
   Range new_data(a.new_nodes.size());
   auto const old_nodes_to_data = data.cbegin();
