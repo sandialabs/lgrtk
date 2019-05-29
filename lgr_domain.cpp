@@ -1,7 +1,4 @@
 #include <lgr_domain.hpp>
-#include <lgr_fill.hpp>
-#include <lgr_scan.hpp>
-#include <lgr_reduce.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
 
@@ -14,30 +11,27 @@ void union_domain::add(std::unique_ptr<domain>&& uptr) {
 }
 
 void union_domain::mark(
-    device_vector<vector3<double>,
-    node_index> const& points,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
     int const marker,
-    device_vector<int, node_index>* markers) const {
+    hpc::device_vector<int, node_index>* markers) const {
   for (auto const& uptr : m_domains) {
     uptr->mark(points, marker, markers);
   }
 }
 
 void union_domain::mark(
-    device_vector<vector3<double>,
-    element_index> const& points,
+    hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
     material_index const marker,
-    device_vector<material_index, element_index>* markers) const {
+    hpc::device_vector<material_index, element_index>* markers) const {
   for (auto const& uptr : m_domains) {
     uptr->mark(points, marker, markers);
   }
 }
 
 void union_domain::mark(
-    device_vector<vector3<double>,
-    node_index> const& points,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
     material_index const marker,
-    device_vector<material_set, node_index>* markers) const {
+    hpc::device_vector<material_set, node_index>* markers) const {
   for (auto const& uptr : m_domains) {
     uptr->mark(points, marker, markers);
   }
@@ -45,14 +39,14 @@ void union_domain::mark(
 
 template <class Index, class IsInFunctor>
 static void collect_set(
-  counting_range<Index> const range,
+  hpc::counting_range<Index> const range,
   IsInFunctor is_in_functor,
-  device_vector<Index, int>& set_items
+  hpc::device_vector<Index, int>& set_items
   )
 {
-  device_vector<int, Index> offsets(range.size(), set_items.get_allocator());
-  transform_inclusive_scan(range, offsets, lgr::plus<int>(), is_in_functor);
-  int const set_size = transform_reduce(range, int(0), lgr::plus<int>(), is_in_functor);
+  hpc::device_vector<int, Index> offsets(range.size());
+  hpc::transform_inclusive_scan(hpc::device_policy(), range, offsets, hpc::plus<int>(), is_in_functor);
+  int const set_size = hpc::transform_reduce(hpc::device_policy(), range, int(0), hpc::plus<int>(), is_in_functor);
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets = offsets.cbegin();
@@ -61,23 +55,22 @@ static void collect_set(
       set_items_to_items[items_to_offsets[item] - 1] = item;
     }
   };
-  lgr::for_each(range, functor);
+  hpc::for_each(hpc::device_policy(), range, functor);
 }
 
 void assign_element_materials(input const& in, state& s) {
-  lgr::fill(s.material, material_index(0));
-  device_vector<vector3<double>, element_index>
-    centroid_vector(s.elements.size(), s.devpool);
+  hpc::fill(hpc::device_policy(), s.material, material_index(0));
+  hpc::device_array_vector<hpc::vector3<double>, element_index> centroid_vector(s.elements.size());
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_centroids = centroid_vector.begin();
   auto centroid_functor = [=] (element_index const element) {
-    auto centroid = vector3<double>::zero();
+    auto centroid = hpc::vector3<double>::zero();
     for (auto const element_node : elements_to_element_nodes[element]) {
       node_index const node = element_nodes_to_nodes[element_node];
-      vector3<double> const x = nodes_to_x[node];
+      auto const x = nodes_to_x[node].load();
       centroid = centroid + x;
     }
     centroid = centroid * N;
@@ -123,8 +116,8 @@ void compute_nodal_materials(input const& in, state& s) {
 }
 
 void collect_node_sets(input const& in, state& s) {
-  counting_range<material_index> const all_materials(in.materials.size() + in.boundaries.size());
-  s.node_sets.resize(all_materials.size(), s.devpool);
+  hpc::counting_range<material_index> const all_materials(in.materials.size() + in.boundaries.size());
+  s.node_sets.resize(all_materials.size());
   assert(s.nodal_materials.size() == s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.cbegin();
   for (auto const material : all_materials) {
@@ -138,7 +131,7 @@ void collect_node_sets(input const& in, state& s) {
 
 void collect_element_sets(input const& in, state& s)
 {
-  s.element_sets.resize(in.materials.size(), s.devpool);
+  s.element_sets.resize(in.materials.size());
   auto const elements_to_material = s.material.cbegin();
   for (auto const material : in.materials) {
     auto is_in_functor = [=](element_index const element) -> int {
@@ -156,7 +149,7 @@ std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) 
   return out;
 }
 
-std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double
+std::unique_ptr<domain> sphere_domain(hpc::vector3<double> const origin, double
     const radius) {
   lgr::sphere const s{origin, radius};
   auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
@@ -169,15 +162,15 @@ std::unique_ptr<domain> half_space_domain(plane const& p) {
   return out;
 }
 
-std::unique_ptr<domain> box_domain(vector3<double> const lower_left,
-    vector3<double> const upper_right) {
+std::unique_ptr<domain> box_domain(hpc::vector3<double> const lower_left,
+    hpc::vector3<double> const upper_right) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
-  out->clip({vector3<double>::x_axis(), lower_left(0)});
-  out->clip({-vector3<double>::x_axis(), -upper_right(0)});
-  out->clip({vector3<double>::y_axis(), lower_left(1)});
-  out->clip({-vector3<double>::y_axis(), -upper_right(1)});
-  out->clip({vector3<double>::z_axis(), lower_left(2)});
-  out->clip({-vector3<double>::z_axis(), -upper_right(2)});
+  out->clip({hpc::vector3<double>::x_axis(), lower_left(0)});
+  out->clip({-hpc::vector3<double>::x_axis(), -upper_right(0)});
+  out->clip({hpc::vector3<double>::y_axis(), lower_left(1)});
+  out->clip({-hpc::vector3<double>::y_axis(), -upper_right(1)});
+  out->clip({hpc::vector3<double>::z_axis(), lower_left(2)});
+  out->clip({-hpc::vector3<double>::z_axis(), -upper_right(2)});
   return out;
 }
 
