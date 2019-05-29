@@ -7,7 +7,6 @@
 #include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
 #include <lgr_binary_ops.hpp>
-#include <lgr_copy.hpp>
 #include <lgr_composite_tetrahedron.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
@@ -26,9 +25,9 @@ static void LGR_NOINLINE initialize_bar_V(state& s) {
     using l_t = node_in_element_index;
     auto const node0 = elems_to_nodes_iterator[element_nodes[l_t(0)]];
     auto const node1 = elems_to_nodes_iterator[element_nodes[l_t(1)]];
-    vector3<double> const x0 = nodes_to_x[node0];
-    vector3<double> const x1 = nodes_to_x[node1];
-    double const V = x1(0) - x0(0);
+    auto const x0 = nodes_to_x[node0].load();
+    auto const x1 = nodes_to_x[node1].load();
+    auto const V = x1(0) - x0(0);
     assert(V > 0.0);
     points_to_V[elements_to_points[element][fp]] = V;
   };
@@ -46,19 +45,14 @@ static void LGR_NOINLINE initialize_triangle_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    array<node_index, 3> nodes;
-    array<vector3<double>, 3> x;
+    hpc::array<node_index, 3> nodes;
+    hpc::array<hpc::vector3<double>, 3> x;
     for (int i = 0; i < 3; ++i) {
       node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
       nodes[i] = node;
-      x[i] = nodes_to_x[node];
+      x[i] = nodes_to_x[node].load();
     }
     double const area = triangle_area(x);
-    if (area <= 0.0) {
-      std::cout << "new element " << int(element) << " area " << area << '\n';
-      for (auto const x_a : x) std::cout << "x: " << x_a << '\n';
-      for (auto const node : nodes) std::cout << "node: " << int(node) << '\n';
-    }
     assert(area > 0.0);
     points_to_V[elements_to_points[element][fp]] = area;
   };
@@ -76,10 +70,10 @@ static void LGR_NOINLINE initialize_tetrahedron_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    array<vector3<double>, 4> x;
+    hpc::array<hpc::vector3<double>, 4> x;
     for (int i = 0; i < 4; ++i) {
       node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
-      x[i] = nodes_to_x[node];
+      x[i] = nodes_to_x[node].load();
     }
     double const volume = tetrahedron_volume(x);
     assert(volume > 0.0);
@@ -99,10 +93,10 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
   auto const points_in_element = s.points_in_element;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    array<vector3<double>, 10> node_coords;
+    hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[int(node_in_element)] = nodes_to_x[node];
+      node_coords[node_in_element.get()] = nodes_to_x[node].load();
     }
     auto const volumes = composite_tetrahedron::get_volumes(node_coords);
 #ifndef NDEBUG
@@ -112,7 +106,7 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_V(state& s)
 #endif
     auto const element_points = elements_to_points[element];
     for (auto const qp : points_in_element) {
-      points_to_V[element_points[qp]] = volumes[int(qp)];
+      points_to_V[element_points[qp]] = volumes[qp.get()];
     }
   };
   lgr::for_each(s.elements, functor);
@@ -136,8 +130,8 @@ static void LGR_NOINLINE initialize_bar_grad_N(state& s) {
   auto functor = [=] (point_index const point) {
     double const length = points_to_V[point];
     double const inv_length = 1.0 / length;
-    vector3<double> const grad_N0 = vector3<double>(-inv_length, 0.0, 0.0);
-    vector3<double> const grad_N1 = vector3<double>(inv_length, 0.0, 0.0);
+    hpc::vector3<double> const grad_N0 = hpc::vector3<double>(-inv_length, 0.0, 0.0);
+    hpc::vector3<double> const grad_N1 = hpc::vector3<double>(inv_length, 0.0, 0.0);
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
     point_nodes_to_grad_N[point_nodes[l_t(0)]] = grad_N0;
@@ -160,10 +154,10 @@ static void LGR_NOINLINE initialize_triangle_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    array<vector3<double>, 3> x;
+    hpc::array<hpc::vector3<double>, 3> x;
     for (int i = 0; i < 3; ++i) {
       node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
-      x[i] = nodes_to_x[node];
+      x[i] = nodes_to_x[node].load();
     }
     double const area = points_to_V[point];
     auto const grad_N = triangle_basis_gradients(x, area);
@@ -188,10 +182,10 @@ static void LGR_NOINLINE initialize_tetrahedron_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    array<vector3<double>, 4> x;
+    hpc::array<hpc::vector3<double>, 4> x;
     for (int i = 0; i < 4; ++i) {
       node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
-      x[i] = nodes_to_x[node];
+      x[i] = nodes_to_x[node].load();
     }
     double const volume = points_to_V[point];
     auto const grad_N = tetrahedron_basis_gradients(x, volume);
@@ -213,10 +207,10 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
   auto const points_in_element = s.points_in_element;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    array<vector3<double>, 10> node_coords;
+    hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[int(node_in_element)] = nodes_to_x[node];
+      node_coords[node_in_element.get()] = nodes_to_x[node].load();
     }
     auto const grad_N = composite_tetrahedron::get_basis_gradients(node_coords);
     auto const element_points = elements_to_points[element];
@@ -225,7 +219,7 @@ static void LGR_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const a : nodes_in_element) {
         auto const point_node = point_nodes[a];
-        point_nodes_to_grad_N[point_node] = grad_N[int(qp)][int(a)];
+        point_nodes_to_grad_N[point_node] = grad_N[qp.get()][a.get()];
       }
     }
   };
@@ -267,7 +261,7 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
     double min_height = std::numeric_limits<double>::max();
     auto const point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+      auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const height = 1.0 / norm(grad_N);
       min_height = lgr::min(min_height, height);
     }
@@ -300,7 +294,7 @@ static void LGR_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
     auto const point_nodes = points_to_point_nodes[point];
     double perimeter_over_twice_area = 0.0;
     for (auto const i : nodes_in_element) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_nodes[i]];
+      auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const edge_length_over_twice_area = norm(grad_N);
       perimeter_over_twice_area += edge_length_over_twice_area;
     }
@@ -341,7 +335,7 @@ static void LGR_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
     auto const point_nodes = points_to_point_nodes[point];
     double surface_area_over_thrice_volume = 0.0;
     for (auto const i : nodes_in_element) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_nodes[i]];
+      auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const face_area_over_thrice_volume = norm(grad_N);
       surface_area_over_thrice_volume += face_area_over_thrice_volume;
     }
@@ -366,10 +360,10 @@ static void LGR_NOINLINE update_composite_tetrahedron_h_min(state& s) {
   auto const nodes_in_element = s.nodes_in_element;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
-    array<vector3<double>, 10> node_coords;
+    hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[int(node_in_element)] = nodes_to_x[node];
+      node_coords[node_in_element.get()] = nodes_to_x[node].load();
     }
     auto const h_min = composite_tetrahedron::get_length(node_coords);
     elements_to_h_min[element] = h_min;
@@ -447,7 +441,7 @@ static void LGR_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
   auto const points_to_V = s.V.cbegin();
   assert(s.material_mass[material].size() == s.nodes.size());
   auto const nodes_to_m = s.material_mass[material].begin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] (node_index const node) {
@@ -490,20 +484,20 @@ static void LGR_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, mater
       if (element_material != material) continue;
       node_in_element_index const node_in_element = node_elements_to_nodes_in_element[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
-      array<vector3<double>, 10> node_coords;
+      hpc::array<hpc::vector3<double>, 10> node_coords;
       for (auto const node_in_element2 : nodes_in_element) {
         auto const node2 = element_nodes_to_nodes[element_nodes[node_in_element2]];
-        node_coords[int(node_in_element2)] = nodes_to_x[node2];
+        node_coords[node_in_element2.get()] = nodes_to_x[node2].load();
       }
       vector4<double> point_densities;
       auto const element_points = elements_to_points[element];
       for (auto const point_in_element : points_in_element) {
         auto const point = element_points[point_in_element];
-        point_densities(int(point_in_element)) = points_to_rho[point];
+        point_densities(point_in_element.get()) = points_to_rho[point];
       }
       auto const coef = composite_tetrahedron::lump_mass_matrix(
           composite_tetrahedron::get_consistent_mass_matrix(node_coords, point_densities));
-      m = m + coef[int(node_in_element)];
+      m = m + coef[node_in_element.get()];
     }
     nodes_to_m[node] = m;
   };
@@ -521,7 +515,7 @@ void update_nodal_mass(input const& in, state& s) {
         update_nodal_mass_composite_tetrahedron(s, material); break;
     }
   }
-  fill(s.mass, double(0.0));
+  hpc::fill(hpc::device_policy(), s.mass, double(0.0));
   for (auto const material : in.materials) {
     auto const nodes_to_total = s.mass.begin();
     auto const nodes_to_partial = s.material_mass[material].cbegin();

@@ -11,12 +11,11 @@
 namespace lgr {
 
 void propagate_connectivity(state& s) {
-  s.nodes_to_node_elements.resize(s.nodes.size());
-  s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  vector<int, device_allocator<int>, node_index> counts_vector(
-      s.nodes.size(), device_allocator<int>(s.devpool));
-  lgr::fill(counts_vector, int(0));
+  node_element_index node_element_count((s.elements.size() * s.nodes_in_element.size()).get());
+  s.node_elements_to_elements.resize(node_element_count);
+  s.node_elements_to_nodes_in_element.resize(node_element_count);
+  hpc::device_vector<int, node_index> counts_vector(s.nodes.size());
+  hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_count = counts_vector.begin();
@@ -36,7 +35,9 @@ void propagate_connectivity(state& s) {
   lgr::fill(counts_vector, int(0));
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.begin();
+#ifndef NDEBUG
   auto const num_node_elements = s.node_elements_to_elements.size();
+#endif
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.begin();
   auto const nodes_in_element = s.nodes_in_element;
   auto fill_functor = [=](element_index const element) {
@@ -51,11 +52,7 @@ void propagate_connectivity(state& s) {
       }
       auto const node_elements_range = nodes_to_node_elements[node];
       auto const node_element = node_elements_range[node_element_index(offset)];
-      if (node_element >= num_node_elements) {
-        std::cerr << "element " << int(element) << " node " << int(node)
-          << " trying to write to node_element " << int(node_element)
-          << " but total is " << int(node_element) << '\n';
-      }
+      assert(node_element < num_node_elements);
       node_elements_to_elements[node_element] = element;
       node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
@@ -70,8 +67,8 @@ static void LGR_NOINLINE initialize_bars_to_nodes(state& s) {
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    begin[element_nodes[l_t(0)]] = node_index(int(element));
-    begin[element_nodes[l_t(1)]] = node_index(int(element) + 1);
+    begin[element_nodes[l_t(0)]] = node_index(element.get());
+    begin[element_nodes[l_t(1)]] = node_index(element.get() + 1);
   };
   lgr::for_each(s.elements, functor);
 }
@@ -81,7 +78,7 @@ static void LGR_NOINLINE initialize_x_1D(input const& in, state& s) {
   auto const num_nodes = s.nodes.size();
   auto const l = in.x_domain_size;
   auto functor = [=](node_index const node) {
-    nodes_to_x[node] = vector3<double>(l * (double(int(node)) / double(int(num_nodes) - 1)), 0.0, 0.0);
+    nodes_to_x[node] = hpc::vector3<double>(l * (double(node.get()) / (double(num_nodes.get()) - 1)), 0.0, 0.0);
   };
   lgr::for_each(s.nodes, functor);
 }
@@ -89,7 +86,7 @@ static void LGR_NOINLINE initialize_x_1D(input const& in, state& s) {
 static void build_bar_mesh(input const& in, state& s) {
   s.elements.resize(element_index(in.elements_along_x));
   s.nodes_in_element.resize(node_in_element_index(2));
-  s.nodes.resize(node_index(int(s.elements.size()) + 1));
+  s.nodes.resize(node_index(s.elements.size().get() + 1));
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   initialize_bars_to_nodes(s);
   s.x.resize(s.nodes.size());
@@ -129,7 +126,7 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
     element_nodes_to_nodes[element_nodes[l_t(1)]] = g_t((j + 1) * nvx + (i + 0));
     element_nodes_to_nodes[element_nodes[l_t(2)]] = g_t((j + 0) * nvx + (i + 0));
   };
-  counting_range<int> quads(nq);
+  hpc::counting_range<int> quads(nq);
   lgr::for_each(quads, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
@@ -138,9 +135,9 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
   double const dx = x / nx;
   double const dy = y / ny;
   auto coordinates_functor = [=] (node_index const node) {
-    int const i = int(node) % nvx;
-    int const j = int(node) / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, 0.0);
+    int const i = node.get() % nvx;
+    int const j = node.get() / nvx;
+    nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, 0.0);
   };
   lgr::for_each(s.nodes, coordinates_functor);
 }
@@ -221,7 +218,7 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
     elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[1];
     elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
   };
-  counting_range<int> hexes(nh);
+  hpc::counting_range<int> hexes(nh);
   lgr::for_each(hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
@@ -232,11 +229,11 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
   double const dy = y / ny;
   double const dz = z / nz;
   auto coordinates_functor = [=] (node_index const node) {
-    int const ij = int(node) % nvxy;
-    int const k = int(node) / nvxy;
+    int const ij = node.get() % nvxy;
+    int const k = node.get() / nvxy;
     int const i = ij % nvx;
     int const j = ij / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, k * dz);
+    nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, k * dz);
   };
   lgr::for_each(s.nodes, coordinates_functor);
 }
@@ -350,7 +347,7 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
     elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[2][1][2];
     elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][1][1];
   };
-  counting_range<int> hexes(nh);
+  hpc::counting_range<int> hexes(nh);
   lgr::for_each(hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
@@ -361,11 +358,11 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
   double const dy = y / (ny * 2.0);
   double const dz = z / (nz * 2.0);
   auto coordinates_functor = [=] (node_index const node) {
-    int const ij = int(node) % nvxy;
-    int const k = int(node) / nvxy;
+    int const ij = node.get() % nvxy;
+    int const k = node.get() / nvxy;
     int const i = ij % nvx;
     int const j = ij / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, k * dz);
+    nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, k * dz);
   };
   lgr::for_each(s.nodes, coordinates_functor);
 }

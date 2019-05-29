@@ -82,6 +82,10 @@ public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index operator/(integral_type const n) const noexcept {
     return index(i / n);
   }
+  template <class Tag2, class Integral2>
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator ::hpc::index<Tag2, Integral2>() const noexcept {
+    return i;
+  }
 };
 
 template <class L, class R>

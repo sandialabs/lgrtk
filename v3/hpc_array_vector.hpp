@@ -67,6 +67,8 @@ class array_vector_reference<T const, L, O> {
   }
 };
 
+}
+
 template <class T, layout L, class O>
 class array_vector_iterator {
   public:
@@ -115,18 +117,18 @@ class array_vector_iterator {
     return ret;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE array_vector_iterator& operator+=(difference_type const n) noexcept {
-    m_iterator += std::ptrdiff_t(n);
+    m_iterator += n;
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE array_vector_iterator& operator-=(difference_type const n) noexcept {
-    m_iterator -= std::ptrdiff_t(n);
+    m_iterator -= n;
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr array_vector_iterator operator+(difference_type const n) const noexcept {
-    return array_vector_iterator(m_iterator + std::ptrdiff_t(n));
+    return array_vector_iterator(m_iterator + n);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr array_vector_iterator operator-(difference_type const n) const noexcept {
-    return array_vector_iterator(m_iterator - std::ptrdiff_t(n));
+    return array_vector_iterator(m_iterator - n);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type operator-(array_vector_iterator const& other) const noexcept {
     return difference_type(m_iterator - other.m_iterator);
@@ -147,8 +149,6 @@ class array_vector_iterator {
     return m_iterator >= other.m_iterator;
   }
 };
-
-}
 
 template <
   class T,
@@ -173,8 +173,8 @@ public:
   using const_reference = ::hpc::impl::array_vector_reference<value_type const, L, Index>;
   using pointer = T*;
   using const_pointer = T const*;
-  using iterator = ::hpc::impl::array_vector_iterator<T, L, Index>;
-  using const_iterator = ::hpc::impl::array_vector_iterator<T const, L, Index>;
+  using iterator = ::hpc::array_vector_iterator<T, L, Index>;
+  using const_iterator = ::hpc::array_vector_iterator<T const, L, Index>;
   constexpr array_vector() noexcept = default;
   array_vector(size_type count)
     :m_matrix(count, array_size())
