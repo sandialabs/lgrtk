@@ -32,6 +32,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
     Plato::Scalar mQuadratureWeight;
+    Plato::Scalar mCellMaterialDensity;
 
     PenaltyFunctionType mPenaltyFunction;
     Plato::ApplyWeighting<SpaceDim,1,PenaltyFunctionType> mApplyWeighting;
@@ -41,7 +42,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     Volume(Omega_h::Mesh& aMesh, 
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap& aDataMap, 
-           Teuchos::ParameterList&, 
+           Teuchos::ParameterList& aInputParams, 
            Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
             mPenaltyFunction(aPenaltyParams),
@@ -53,7 +54,34 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
       { 
         mQuadratureWeight /= Plato::Scalar(tDimIndex);
       }
-    
+
+      auto tMaterialModelInputs = aInputParams.get<Teuchos::ParameterList>("Material Model");
+      mCellMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
+    }
+
+    /**************************************************************************
+     * Unit testing constructor
+    /**************************************************************************/
+    Volume(Omega_h::Mesh& aMesh, 
+           Omega_h::MeshSets& aMeshSets,
+           Plato::DataMap& aDataMap) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
+            mPenaltyFunction(3.0, 0.0),
+            mApplyWeighting(mPenaltyFunction)
+    /**************************************************************************/
+    {
+      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+      for (Plato::OrdinalType tDimIndex=2; tDimIndex<=SpaceDim; tDimIndex++)
+      { 
+        mQuadratureWeight /= Plato::Scalar(tDimIndex);
+      }
+    }
+
+    /**************************************************************************/
+    void setMaterialDensity(const Plato::Scalar aMaterialDensity)
+    /**************************************************************************/
+    {
+      mCellMaterialDensity = aMaterialDensity;
     }
 
     /**************************************************************************/
@@ -68,6 +96,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
 
       Plato::ComputeCellVolume<SpaceDim> tComputeCellVolume;
 
+      auto tMaterialDensity  = mCellMaterialDensity;
       auto tQuadratureWeight = mQuadratureWeight;
       auto tApplyWeighting  = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
@@ -76,7 +105,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
         tComputeCellVolume(aCellOrdinal, aConfig, tCellVolume);
         tCellVolume *= tQuadratureWeight;
 
-        aResult(aCellOrdinal) = tCellVolume;
+        aResult(aCellOrdinal) = tMaterialDensity * tCellVolume;
 
         // apply weighting
         //
