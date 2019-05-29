@@ -4,18 +4,19 @@
 
 namespace hpc {
 
+class symmetric_tag {};
+using symmetric_index = index<symmetric_tag, int>;
+static constexpr symmetric_index S_XX{0};
+static constexpr symmetric_index S_YY{1};
+static constexpr symmetric_index S_ZZ{2};
+static constexpr symmetric_index S_XY{3};
+static constexpr symmetric_index S_YZ{4};
+static constexpr symmetric_index S_XZ{5};
+
 template <typename Scalar>
 struct symmetric3x3 {
 public:
   using scalar_type = Scalar;
-  enum slot_type {
-    XX = 0,
-    YY = 1,
-    ZZ = 2,
-    XY = 3,
-    YZ = 4,
-    XZ = 5,
-  };
 private:
   scalar_type raw[6];
 public:
@@ -24,23 +25,23 @@ public:
       Scalar const d, Scalar const e, Scalar const f,
       Scalar const g, Scalar const h, Scalar const i) noexcept
   {
-    raw[XX] = a;
-    raw[YY] = e;
-    raw[ZZ] = i;
-    raw[XY] = (b + d) * 0.5;
-    raw[YZ] = (f + h) * 0.5;
-    raw[XZ] = (c + g) * 0.5;
+    operator()(S_XX) = a;
+    operator()(S_YY) = e;
+    operator()(S_ZZ) = i;
+    operator()(S_XY) = (b + d) * 0.5;
+    operator()(S_YZ) = (f + h) * 0.5;
+    operator()(S_XZ) = (c + g) * 0.5;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3(
       Scalar const xx, Scalar const yy, Scalar const zz,
       Scalar const xy, Scalar const yz, Scalar const xz) noexcept
   {
-    raw[XX] = xx;
-    raw[YY] = yy;
-    raw[ZZ] = zz;
-    raw[XY] = xy;
-    raw[YZ] = yz;
-    raw[XZ] = xz;
+    operator()(S_XX) = xx;
+    operator()(S_YY) = yy;
+    operator()(S_ZZ) = zz;
+    operator()(S_XY) = xy;
+    operator()(S_YZ) = yz;
+    operator()(S_XZ) = xz;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr symmetric3x3(matrix3x3<Scalar> const t):
     symmetric3x3(
@@ -52,26 +53,26 @@ public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE symmetric3x3() = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<Scalar> full() const noexcept {
     return matrix3x3<Scalar>(
-        raw[XX], raw[XY], raw[XZ],
-        raw[XY], raw[YY], raw[YZ],
-        raw[XZ], raw[YZ], raw[ZZ]);
+        operator()(S_XX), operator()(S_XY), operator()(S_XZ),
+        operator()(S_XY), operator()(S_YY), operator()(S_YZ),
+        operator()(S_XZ), operator()(S_YZ), operator()(S_ZZ));
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(slot_type const slot) const noexcept {
-    return raw[slot];
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(symmetric_index slot) const noexcept {
+    return raw[slot.get()];
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3<Scalar> zero() noexcept {
     return symmetric3x3<Scalar>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar operator()(int const i, int const j) const noexcept {
-    if (i == 0 && j == 0) return raw[XX];
-    if (i == 0 && j == 1) return raw[XY];
-    if (i == 0 && j == 2) return raw[XZ];
-    if (i == 1 && j == 0) return raw[XY];
-    if (i == 1 && j == 1) return raw[YY];
-    if (i == 1 && j == 2) return raw[YZ];
-    if (i == 2 && j == 0) return raw[XZ];
-    if (i == 2 && j == 1) return raw[YZ];
-    if (i == 2 && j == 2) return raw[ZZ];
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar operator()(axis_index i, axis_index j) const noexcept {
+    if (i == 0 && j == 0) return operator()(S_XX);
+    if (i == 0 && j == 1) return operator()(S_XY);
+    if (i == 0 && j == 2) return operator()(S_XZ);
+    if (i == 1 && j == 0) return operator()(S_XY);
+    if (i == 1 && j == 1) return operator()(S_YY);
+    if (i == 1 && j == 2) return operator()(S_YZ);
+    if (i == 2 && j == 0) return operator()(S_XZ);
+    if (i == 2 && j == 1) return operator()(S_YZ);
+    if (i == 2 && j == 2) return operator()(S_ZZ);
     return -1.0;
   }
 };
@@ -79,14 +80,13 @@ public:
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
 operator+(symmetric3x3<T> left, symmetric3x3<T> right) noexcept {
-  using st = symmetric3x3<T>;
-  return st(
-      left(st::XX) + right(st::XX),
-      left(st::YY) + right(st::YY),
-      left(st::ZZ) + right(st::ZZ),
-      left(st::XY) + right(st::XY),
-      left(st::YZ) + right(st::YZ),
-      left(st::XZ) + right(st::XZ));
+  return symmetric3x3<T>(
+      left(0) + right(0),
+      left(1) + right(1),
+      left(2) + right(2),
+      left(3) + right(3),
+      left(4) + right(4),
+      left(5) + right(5));
 }
 
 template <class T>
@@ -99,14 +99,13 @@ operator+=(symmetric3x3<T>& left, symmetric3x3<T> right) noexcept {
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<L>
 operator+(symmetric3x3<L> left, R right) noexcept {
-  using st = symmetric3x3<L>;
-  return st(
-      left(st::XX) + right,
-      left(st::YY) + right,
-      left(st::ZZ) + right,
-      left(st::XY),
-      left(st::YZ),
-      left(st::XZ));
+  return symmetric3x3<L>(
+      left(0) + right,
+      left(1) + right,
+      left(2) + right,
+      left(3),
+      left(4),
+      left(5));
 }
 
 template <class L, class R>
@@ -127,12 +126,12 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
 operator-(symmetric3x3<T> left, symmetric3x3<T> right) noexcept {
   using st = symmetric3x3<T>;
   return st(
-      left(st::XX) - right(st::XX),
-      left(st::YY) - right(st::YY),
-      left(st::ZZ) - right(st::ZZ),
-      left(st::XY) - right(st::XY),
-      left(st::YZ) - right(st::YZ),
-      left(st::XZ) - right(st::XZ));
+      left(0) - right(0),
+      left(1) - right(1),
+      left(2) - right(2),
+      left(3) - right(3),
+      left(4) - right(4),
+      left(5) - right(5));
 }
 
 template <class T>
@@ -147,12 +146,12 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<L>
 operator-(symmetric3x3<L> left, R right) noexcept {
   using st = symmetric3x3<L>;
   return st(
-      left(st::XX) - right,
-      left(st::YY) - right,
-      left(st::ZZ) - right,
-      left(st::XY),
-      left(st::YZ),
-      left(st::XZ));
+      left(0) - right,
+      left(1) - right,
+      left(2) - right,
+      left(3),
+      left(4),
+      left(5));
 }
 
 template <class L, class R>
@@ -171,15 +170,14 @@ operator*(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept {
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 inner_product(symmetric3x3<L> left, symmetric3x3<R> right) noexcept {
-  using st = symmetric3x3<L>;
   auto const diagonal_inner_product =
-    (left(st::XX) * right(st::XX)) +
-    (left(st::YY) * right(st::YY)) +
-    (left(st::ZZ) * right(st::ZZ));
+    (left(S_XX) * right(S_XX)) +
+    (left(S_YY) * right(S_YY)) +
+    (left(S_ZZ) * right(S_ZZ));
   auto const triangular_inner_product =
-    (left(st::XY) * right(st::XY)) +
-    (left(st::YZ) * right(st::YZ)) +
-    (left(st::XZ) * right(st::XZ));
+    (left(S_XY) * right(S_XY)) +
+    (left(S_YZ) * right(S_YZ)) +
+    (left(S_XZ) * right(S_XZ));
   return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
@@ -210,12 +208,10 @@ transpose_times_self(matrix3x3<T> in) noexcept {
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> left, vector3<R> right) noexcept {
-  using out_t = vector3<decltype(L() * R())>;
-  using st = decltype(left);
-  return out_t(
-      left(st::XX) * right(0) + left(st::XY) * right(1) + left(st::XZ) * right(2),
-      left(st::XY) * right(0) + left(st::YY) * right(1) + left(st::YZ) * right(2),
-      left(st::XZ) * right(0) + left(st::YZ) * right(1) + left(st::ZZ) * right(2));
+  return vector3<decltype(L() * R())>(
+      left(S_XX) * right(X) + left(S_XY) * right(Y) + left(S_XZ) * right(Z),
+      left(S_XY) * right(X) + left(S_YY) * right(Y) + left(S_YZ) * right(Z),
+      left(S_XZ) * right(X) + left(S_YZ) * right(Y) + left(S_ZZ) * right(Z));
 }
 
 template <class L, class R>
@@ -228,12 +224,12 @@ template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> left, R right) noexcept {
   return symmetric3x3<decltype(L() * R())>(
-      left(left.XX) * right,
-      left(left.YY) * right,
-      left(left.ZZ) * right,
-      left(left.XY) * right,
-      left(left.YZ) * right,
-      left(left.XZ) * right);
+      left(0) * right,
+      left(1) * right,
+      left(2) * right,
+      left(3) * right,
+      left(4) * right,
+      left(5) * right);
 }
 
 template <class L, class R>
@@ -255,19 +251,18 @@ operator/(symmetric3x3<L> left, R right) noexcept {
   using st = symmetric3x3<decltype(L() / R())>;
   auto const factor = 1.0 / right;
   return st(
-      left(st::XX) * factor,
-      left(st::YY) * factor,
-      left(st::ZZ) * factor,
-      left(st::XY) * factor,
-      left(st::YZ) * factor,
-      left(st::XZ) * factor);
+      left(0) * factor,
+      left(1) * factor,
+      left(2) * factor,
+      left(3) * factor,
+      left(4) * factor,
+      left(5) * factor);
 }
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
 trace(symmetric3x3<T> x) noexcept {
-  using st = symmetric3x3<T>;
-  return x(st::XX) + x(st::YY) + x(st::ZZ);
+  return x(S_XX) + x(S_YY) + x(S_ZZ);
 }
 
 template <class T>
@@ -280,7 +275,8 @@ template <class T>
 class array_traits<symmetric3x3<T>> {
   public:
   using value_type = T;
-  HPC_HOST_DEVICE static constexpr std::ptrdiff_t size() noexcept { return 6; }
+  using size_type = symmetric_index;
+  HPC_HOST_DEVICE static constexpr size_type size() noexcept { return 6; }
   template <class Iterator>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static symmetric3x3<T> load(Iterator it) noexcept {
     return symmetric3x3<T>(
@@ -293,12 +289,12 @@ class array_traits<symmetric3x3<T>> {
   }
   template <class Iterator>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static void store(Iterator it, symmetric3x3<T> const& value) noexcept {
-    it[0] = value(symmetric3x3<T>::XX);
-    it[1] = value(symmetric3x3<T>::YY);
-    it[2] = value(symmetric3x3<T>::ZZ);
-    it[3] = value(symmetric3x3<T>::XY);
-    it[4] = value(symmetric3x3<T>::YZ);
-    it[5] = value(symmetric3x3<T>::XZ);
+    it[0] = value(0);
+    it[1] = value(1);
+    it[2] = value(2);
+    it[3] = value(3);
+    it[4] = value(4);
+    it[5] = value(5);
   }
 };
 

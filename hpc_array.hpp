@@ -75,12 +75,13 @@ template <class T, std::ptrdiff_t N, class I>
 class array_traits<::hpc::array<T, N, I>> {
   public:
   using value_type = T;
-  HPC_HOST_DEVICE static constexpr std::ptrdiff_t size() noexcept { return N; }
+  using size_type = I;
+  HPC_HOST_DEVICE static constexpr size_type size() noexcept { return N; }
   template <class Iterator>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static ::hpc::array<T, N, I> load(Iterator it) noexcept {
     ::hpc::array<T, N, I> result;
     auto it2 = result.begin();
-    for (std::ptrdiff_t i = 0; i < N; ++i, ++it, ++it2) {
+    for (size_type i = 0; i < N; ++i, ++it, ++it2) {
       *it2 = *it;
     }
     return result;
@@ -88,7 +89,7 @@ class array_traits<::hpc::array<T, N, I>> {
   template <class Iterator>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static void store(Iterator it, ::hpc::array<T, N, I> const& value) noexcept {
     auto it2 = value.begin();
-    for (std::ptrdiff_t i = 0; i < N; ++i, ++it, ++it2) {
+    for (size_type i = 0; i < N; ++i, ++it, ++it2) {
       *it = *it2;
     }
   }

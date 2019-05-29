@@ -2,11 +2,9 @@
 
 #include <map>
 
-#include <lgr_counting_range.hpp>
+#include <hpc_range.hpp>
 #include <hpc_range_sum.hpp>
-#include <lgr_vector3.hpp>
-#include <lgr_matrix3x3.hpp>
-#include <lgr_symmetric3x3.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
 #include <hpc_array_vector.hpp>
@@ -17,26 +15,26 @@ class state {
   public:
   int n = 0;
   double time = 0.0;
-  counting_range<element_index> elements{element_index(0)};
-  counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
-  counting_range<node_index> nodes{node_index(0)};
-  counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
-  counting_range<point_index> points{point_index(0)};
+  hpc::counting_range<element_index> elements{element_index(0)};
+  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
+  hpc::counting_range<node_index> nodes{node_index(0)};
+  hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
+  hpc::counting_range<point_index> points{point_index(0)};
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
   hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;
-  hpc::device_array_vector<vector3<double>, node_index> x; // current nodal positions
-  hpc::device_array_vector<vector3<double>, node_index> u; // nodal displacements since previous time state
-  hpc::device_array_vector<vector3<double>, node_index> v; // nodal velocities
-  hpc::device_array_vector<double, point_index> V; // measures (volume/area/length)
-  hpc::device_array_vector<vector3<double>, point_node_index> grad_N; // gradients of basis functions
-  hpc::device_array_vector<matrix3x3<double>, point_index> F_total; // deformation gradient since simulation start
-  hpc::device_array_vector<symmetric3x3<double>, point_index> sigma; // Cauchy stress tensor
-  hpc::device_array_vector<symmetric3x3<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
+  hpc::device_array_vector<hpc::vector3<double>, node_index> x; // current nodal positions
+  hpc::device_array_vector<hpc::vector3<double>, node_index> u; // nodal displacements since previous time state
+  hpc::device_array_vector<hpc::vector3<double>, node_index> v; // nodal velocities
+  hpc::device_vector<double, point_index> V; // measures (volume/area/length)
+  hpc::device_array_vector<hpc::vector3<double>, point_node_index> grad_N; // gradients of basis functions
+  hpc::device_array_vector<hpc::matrix3x3<double>, point_index> F_total; // deformation gradient since simulation start
+  hpc::device_array_vector<hpc::symmetric3x3<double>, point_index> sigma; // Cauchy stress tensor
+  hpc::device_array_vector<hpc::symmetric3x3<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
   hpc::device_vector<double, point_index> p; // pressure at elements (output only!)
-  hpc::device_array_vector<vector3<double>, point_index> v_prime; // fine-scale velocity
-  hpc::device_array_vector<vector3<double>, point_index> q; // element-center heat flux
+  hpc::device_array_vector<hpc::vector3<double>, point_index> v_prime; // fine-scale velocity
+  hpc::device_array_vector<hpc::vector3<double>, point_index> q; // element-center heat flux
   hpc::device_vector<double, point_node_index> W; // work done, per element-node pair (contribution to a node's work by an element)
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> p_h; // stabilized nodal pressure
@@ -44,14 +42,14 @@ class state {
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> K_h; // (tangent/effective) bulk modulus at nodes
   hpc::device_vector<double, point_index> G; // (tangent/effective) shear modulus
   hpc::device_vector<double, point_index> c; // sound speed / plane wave speed
-  hpc::device_array_vector<vector3<double>, point_node_index> element_f; // (internal) force per element-node pair (contribution to a node's force by an element)
-  hpc::device_array_vector<vector3<double>, node_index> f; // nodal (internal) forces
+  hpc::device_array_vector<hpc::vector3<double>, point_node_index> element_f; // (internal) force per element-node pair (contribution to a node's force by an element)
+  hpc::device_array_vector<hpc::vector3<double>, node_index> f; // nodal (internal) forces
   hpc::device_vector<double, point_index> rho; // element density
   hpc::device_vector<double, point_index> e; // element specific internal energy
   hpc::device_vector<double, point_index> rho_e_dot; // time derivative of internal energy density
   hpc::device_vector<double, node_index> mass; // total lumped nodal mass
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> material_mass; // per-material lumped nodal mass
-  hpc::device_array_vector<vector3<double>, node_index> a; // nodal acceleration
+  hpc::device_array_vector<hpc::vector3<double>, node_index> a; // nodal acceleration
   hpc::device_vector<double, element_index> h_min; // minimum characteristic element length, used for stable time step
   hpc::device_vector<double, element_index> h_art; // characteristic element length used for artificial viscosity
   hpc::device_vector<double, point_index> nu_art; // artificial kinematic viscosity scalar

@@ -308,7 +308,8 @@ template <class T>
 class array_traits<matrix3x3<T>> {
   public:
   using value_type = T;
-  HPC_HOST_DEVICE static constexpr std::ptrdiff_t size() noexcept { return 9; }
+  using size_type = decltype(axis_index() * axis_index());
+  HPC_HOST_DEVICE static constexpr size_type size() noexcept { return 9; }
   template <class Iterator>
   HPC_HOST_DEVICE static matrix3x3<T> load(Iterator it) noexcept {
     return matrix3x3<T>(

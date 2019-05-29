@@ -3,8 +3,7 @@
 #include <map>
 #include <string>
 
-#include <lgr_vector3.hpp>
-#include <lgr_counting_range.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
 #include <hpc_vector.hpp>
 
@@ -30,7 +29,7 @@ enum h_min_kind {
 class zero_acceleration_condition {
   public:
   material_index boundary;
-  vector3<double> axis;
+  hpc::vector3<double> axis;
 };
 
 class input {
@@ -39,8 +38,8 @@ class input {
   element_kind element;
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
   h_min_kind h_min = INBALL_DIAMETER;
-  counting_range<material_index> materials;
-  counting_range<material_index> boundaries;
+  hpc::counting_range<material_index> materials;
+  hpc::counting_range<material_index> boundaries;
   double end_time;
   double CFL = 0.9;
   int num_file_outputs;
@@ -70,11 +69,11 @@ class input {
   bool enable_p_averaging = false;
   bool enable_adapt = false;
   std::function<
-    void(counting_range<node_index> const,
-        hpc::device_array_vector<vector3<double>, node_index> const&,
-        hpc::device_array_vector<vector3<double>, node_index>*)> initial_v;
+    void(hpc::counting_range<node_index> const,
+        hpc::device_array_vector<hpc::vector3<double>, node_index> const&,
+        hpc::device_array_vector<hpc::vector3<double>, node_index>*)> initial_v;
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
-  std::function<void(hpc::device_array_vector<vector3<double>, node_index>*)> x_transform;
+  std::function<void(hpc::device_array_vector<hpc::vector3<double>, node_index>*)> x_transform;
   hpc::host_vector<std::unique_ptr<domain>, material_index> domains;
   input() = delete;
   input(material_index const material_count_in, material_index const boundary_count_in)
