@@ -92,14 +92,8 @@ template <class L, class R>
 class product_tag {};
 
 template <class L, class R, class LI, class RI>
-index<product_tag<L, R>, decltype(LI() * RI())>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE index<product_tag<L, R>, decltype(LI() * RI())>
 operator*(index<L, LI> left, index<R, RI> right) {
-  return left.get() * right.get();
-}
-
-template <class Tag, class LI, class RI>
-index<Tag, decltype(LI() * RI())>
-operator*(index<Tag, LI> left, index<Tag, RI> right) {
   return left.get() * right.get();
 }
 
