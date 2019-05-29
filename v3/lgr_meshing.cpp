@@ -5,7 +5,6 @@
 #include <lgr_meshing.hpp>
 #include <lgr_macros.hpp>
 #include <lgr_state.hpp>
-#include <lgr_fill.hpp>
 #include <lgr_input.hpp>
 
 namespace lgr {
@@ -32,7 +31,7 @@ void propagate_connectivity(state& s) {
   };
   lgr::for_each(s.elements, count_functor);
   s.nodes_to_node_elements.assign_sizes(counts_vector);
-  lgr::fill(counts_vector, int(0));
+  hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.begin();
 #ifndef NDEBUG

@@ -2,7 +2,6 @@
 
 #include <lgr_physics.hpp>
 #include <lgr_for_each.hpp>
-#include <lgr_fill.hpp>
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 #include <hpc_vector3.hpp>
@@ -28,7 +27,7 @@ static void LGR_NOINLINE zero_v(
     hpc::counting_range<node_index> const /*nodes*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v) {
-  lgr::fill(*v, hpc::vector3<double>::zero());
+  hpc::fill(hpc::device_policy(), *v, hpc::vector3<double>::zero());
 }
 
 static void LGR_NOINLINE spin_v(
