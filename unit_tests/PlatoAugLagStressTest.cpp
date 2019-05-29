@@ -68,10 +68,12 @@ Eigenvalues<3>::operator()(const Plato::OrdinalType & aCellOrdinal,
                            const bool & aIsStrainType) const
 {
     ResultType tTensor[3][3];
+
     // Fill diagonal elements
     tTensor[0][0] = aVoigtTensor(aCellOrdinal, 0);
     tTensor[1][1] = aVoigtTensor(aCellOrdinal, 1);
     tTensor[2][2] = aVoigtTensor(aCellOrdinal, 2);
+
     // Fill used off diagonal elements
     if (aIsStrainType)
     {
@@ -307,7 +309,6 @@ public:
      **********************************************************************************/
     AbstractLocalMeasure(const std::string & aName) : mName(aName)
     {
-        // Nothing yet
     }
 
     /******************************************************************************//**
@@ -438,17 +439,12 @@ public:
 /*! Tensile energy density functor.
  *  
  *  Given principal strains and lame constants, return the tensile energy density
+ *  (Assumes isotropic linear elasticity. In 2D assumes plane strain!)
  */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
 class TensileEnergyDensity : public Plato::SimplexMechanics<SpaceDim>
 {
-  private:
-
-    // using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    // using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    // using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
-
   public:
 
     template<typename StrainType, typename ResultType>
@@ -474,7 +470,6 @@ class TensileEnergyDensity : public Plato::SimplexMechanics<SpaceDim>
         tTensileEnergyDensity += (aLameLambda * tStrainTraceTensile * 
                                                 tStrainTraceTensile * static_cast<Plato::Scalar>(0.5));
         aTensileEnergyDensity(aCellOrdinal) = tTensileEnergyDensity;
-        //printf("(%f,%f,%f,%f)\n", aTensileEnergyDensity(aCellOrdinal), aLameLambda, aLameMu, tStrainTrace);
     }
 };
 
@@ -597,7 +592,6 @@ public:
 
         const Plato::Scalar tLameLambda = mLameConstantLambda;
         const Plato::Scalar tLameMu     = mLameConstantMu;
-        // printf("\n,[%f,%f]\n",tLameLambda,tLameMu);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
         {
             tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tVolume);
@@ -888,11 +882,6 @@ public:
         Plato::ScalarVectorT<ResultT> tLocalMeasureValueOverLimitMinusOne("local measure over limit minus one", tNumCells);
         Plato::ScalarVectorT<ResultT> tOutputPenalizedLocalMeasure("output penalized local measure", tNumCells);
 
-// Plato::ScalarVectorT<ResultT> tObjective("objective", tNumCells);
-// Plato::ScalarVectorT<ConfigT> tVolume("cell volume", tNumCells);
-// Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-// Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
-
         // ****** TRANSFER MEMBER ARRAYS TO DEVICE ******
         auto tLocalMeasureValueLimit = mLocalMeasureLimit;
         auto tAugLagPenalty = mAugLagPenalty;
@@ -900,14 +889,10 @@ public:
 
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
-// auto tCubWeight = tCubatureRule.getCubWeight();
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
         Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0 / tNumCells);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
-// tComputeGradient(aCellOrdinal, tGradient, aConfigWS, tVolume);
-// tVolume(aCellOrdinal) *= tCubWeight;
-            // Compute local constraint residual
             tLocalMeasureValueOverLimit(aCellOrdinal) = tLocalMeasureValue(aCellOrdinal) / tLocalMeasureValueLimit;
             tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
             tConstraintValue(aCellOrdinal) = ( tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) * 
@@ -920,17 +905,10 @@ public:
             tTrueConstraintValue(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) > static_cast<ResultT>(1.0) ?
                                                      tTrialConstraintValue(aCellOrdinal) : static_cast<ResultT>(0.0);
 
-
-// Compute objective contribution to augmented Lagrangian function
-// tObjective(aCellOrdinal) = ( Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControlWS) * tVolume(aCellOrdinal) * 0.01);
-
             // Compute constraint contribution to augmented Lagrangian function
             aResultWS(aCellOrdinal) = tLagrangianMultiplier * ( ( tLagrangeMultipliers(aCellOrdinal) *
                     tTrueConstraintValue(aCellOrdinal) ) + ( static_cast<Plato::Scalar>(0.5) * tAugLagPenalty *
                     tTrueConstraintValue(aCellOrdinal) * tTrueConstraintValue(aCellOrdinal) ) );
-
-// aResultWS(aCellOrdinal) += tObjective(aCellOrdinal);
-
         },"Compute Quadratic Augmented Lagrangian Function Without Objective");
 
         Plato::toMap(m_dataMap, tOutputPenalizedLocalMeasure, mLocalMeasureEvaluationType->getName());
@@ -996,238 +974,6 @@ public:
 };
 // class AugLagStressCriterionQuadratic
 
-
-/******************************************************************************//**
- * @brief Abstract aggregator (i.e. criterion) interface
- * @tparam EvaluationType evaluation type use to determine automatic differentiation
- *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
-**********************************************************************************/
-template<typename PhysicsT, typename EvaluationType>
-class AbstractAggregator
-{
-protected:
-    Omega_h::Mesh& mMesh; /*!< mesh database */
-    Plato::DataMap& mDataMap; /*!< PLATO Engine and PLATO Analyze data map - enables inputs from PLATO Engine */
-    Omega_h::MeshSets& mMeshSets; /*!< mesh side sets database */
-
-    const std::string mAggregatorName; /*!< my abstract aggregator name */
-
- 
-public:
-    /******************************************************************************//**
-     * @brief Abstract aggregator constructor
-     * @param [in] aMesh mesh database
-     * @param [in] aMeshSets mesh side sets database
-     * @param [in] aDataMap PLATO Engine and PLATO Analyze data map
-     * @param [in] aName my abstract scalar function name
-    **********************************************************************************/
-    AbstractAggregator(Omega_h::Mesh& aMesh,
-                       Omega_h::MeshSets& aMeshSets,
-                       Plato::DataMap& aDataMap,
-                       const std::string & aName) :
-            mMesh(aMesh),
-            mDataMap(aDataMap),
-            mMeshSets(aMeshSets),
-            mAggregatorName(aName)
-    {
-    }
-
-    /******************************************************************************//**
-     * @brief Abstract aggregator destructor
-    **********************************************************************************/
-    virtual ~AbstractAggregator(){}
-
-    /******************************************************************************//**
-     * @brief Evaluate abstract aggregator function
-     * @param [in] aState 2D container of state variables
-     * @param [in] aControl 2D container of control variables
-     * @param [in] aConfig 3D container of configuration/coordinates
-     * @param [out] aResult 1D container of cell criterion values
-     * @param [in] aTimeStep time step (default = 0)
-    **********************************************************************************/
-    virtual void
-    evaluate(const Plato::ScalarMultiVectorT<typename EvaluationType::StateScalarType> & aState,
-             const Plato::ScalarMultiVectorT<typename EvaluationType::ControlScalarType> & aControl,
-             const Plato::ScalarArray3DT<typename EvaluationType::ConfigScalarType> & aConfig,
-             Plato::ScalarVectorT<typename EvaluationType::ResultScalarType> & aResult,
-             Plato::Scalar aTimeStep = 0.0) const = 0;
-
-    /******************************************************************************//**
-     * @brief Update physics-based data in between optimization iterations
-     * @param [in] aState 2D container of state variables
-     * @param [in] aControl 2D container of control variables
-     * @param [in] aConfig 3D container of configuration/coordinates
-    **********************************************************************************/
-    virtual void updateProblem(const Plato::ScalarMultiVector & aState,
-                               const Plato::ScalarMultiVector & aControl,
-                               const Plato::ScalarArray3D & aConfig)
-    { return; }
-
-    /******************************************************************************//**
-     * @brief Get abstract aggregator evaluation and total gradient
-    **********************************************************************************/
-    virtual void postEvaluate(Plato::ScalarVector, Plato::Scalar)
-    { return; }
-
-    /******************************************************************************//**
-     * @brief Get abstract aggregator evaluation
-     * @param [out] aOutput aggregator evaluation
-    **********************************************************************************/
-    virtual void postEvaluate(Plato::Scalar& aOutput)
-    { return; }
-
-    /******************************************************************************//**
-     * @brief Return abstract aggregator name
-     * @return name
-    **********************************************************************************/
-    const decltype(mAggregatorName)& getName()
-    {
-        return mAggregatorName;
-    }
-};
-
-
-/******************************************************************************//**
- * @brief Weighted sum interface
- * @tparam EvaluationType evaluation type use to determine automatic differentiation
- *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
-**********************************************************************************/
-template<typename PhysicsT, typename EvaluationType>
-class WeightedSum2 : public AbstractAggregator<PhysicsT, EvaluationType>
-{
-protected:
-    const Plato::OrdinalType mNumCells;
-    std::vector<std::shared_ptr<AbstractScalarFunction<EvaluationType>>> mScalarFunctions;
-    std::vector<Plato::Scalar> mFunctionWeights;
-
-    void initialize (Teuchos::ParameterList & aInputParams)
-    {
-        typename PhysicsT::FunctionFactory tFactory;
-        mScalarFunctions.clear();
-        mFunctionWeights.clear();
-
-        auto tProblemSpecs = aInputParams.sublist("Plato Problem");
-
-        if (tProblemSpecs.isSublist("Weighted Sum"))
-        {
-            auto tProblemWeightedSum = tProblemSpecs.sublist("Weighted Sum");
-            auto tFunctionNamesTeuchos = tProblemWeightedSum.get<Teuchos::Array<std::string>>("Functions");
-            auto tFunctionWeightsTeuchos = tProblemWeightedSum.get<Teuchos::Array<double>>("Weights");
-
-            auto tFunctionNames = tFunctionNamesTeuchos.toVector();
-            auto tFunctionWeights = tFunctionWeightsTeuchos.toVector();
-
-            if (tFunctionNames.size() != tFunctionWeights.size())
-                throw std::runtime_error("Number of 'Functions' in 'Weighted Sum' parameter list does not equal the number of 'Weights'");
-
-            for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < tFunctionNames.size(); ++tFunctionIndex)
-            {
-                mScalarFunctions.push_back(
-                    tFactory.template createScalarFunction<EvaluationType>(
-                        this->mMesh, this->mMeshSets, this->mDataMap, aInputParams, tFunctionNames[tFunctionIndex]));
-                mFunctionWeights.push_back(tFunctionWeights[tFunctionIndex]);
-            }
-        }
-        else
-        {
-            mScalarFunctions.push_back(
-                tFactory.template createScalarFunction<EvaluationType>(
-                    this->mMesh, this->mMeshSets, this->mDataMap, aInputParams, this->mAggregatorName));
-            mFunctionWeights.push_back(1.0);
-        }
-    }
- 
-public:
-    /******************************************************************************//**
-     * @brief Weighted sum constructor
-     * @param [in] aMesh mesh database
-     * @param [in] aMeshSets mesh side sets database
-     * @param [in] aDataMap PLATO Engine and PLATO Analyze data map
-     * @param [in] aInputParams input parameters
-     * @param [in] aName my abstract scalar function name
-    **********************************************************************************/
-    WeightedSum2(Omega_h::Mesh& aMesh,
-                Omega_h::MeshSets& aMeshSets,
-                Plato::DataMap& aDataMap,
-                Teuchos::ParameterList & aInputParams,
-                const std::string & aName) :
-                AbstractAggregator<PhysicsT, EvaluationType>(aMesh, aMeshSets, aDataMap, aName),
-                mNumCells(aMesh.nelems())
-    {
-        initialize(aInputParams);
-        assert(mScalarFunctions.size() == mFunctionWeights.size());
-    }
-
-    /******************************************************************************//**
-     * @brief Weighted sum destructor
-    **********************************************************************************/
-    virtual ~WeightedSum2(){}
-
-    /******************************************************************************//**
-     * @brief Evaluate weighted sum function
-     * @param [in] aState 2D container of state variables
-     * @param [in] aControl 2D container of control variables
-     * @param [in] aConfig 3D container of configuration/coordinates
-     * @param [out] aResult 1D container of cell criterion values
-     * @param [in] aTimeStep time step (default = 0)
-    **********************************************************************************/
-    void
-    evaluate(const Plato::ScalarMultiVectorT<typename EvaluationType::StateScalarType> & aState,
-             const Plato::ScalarMultiVectorT<typename EvaluationType::ControlScalarType> & aControl,
-             const Plato::ScalarArray3DT<typename EvaluationType::ConfigScalarType> & aConfig,
-             Plato::ScalarVectorT<typename EvaluationType::ResultScalarType> & aResult,
-             Plato::Scalar aTimeStep = 0.0)
-    {
-        assert(aResult.extent(0) == mNumCells);
-        Plato::ScalarVectorT<typename EvaluationType::ResultScalarType> tResult("temp result", mNumCells);
-
-        for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctions.size(); ++tFunctionIndex)
-        {
-            mScalarFunctions[tFunctionIndex]->evaluate(aState, aControl, aConfig, tResult, aTimeStep);
-            const Plato::Scalar tCurrentFunctionWeight = mFunctionWeights[tFunctionIndex];
-            Kokkos::parallel_for(Kokkos::RangePolicy<>(0, mNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
-            {
-                aResult(tCellOrdinal) += tCurrentFunctionWeight * tResult(tCellOrdinal);
-            },"Weighted Sum Function Summation");
-        }
-    }
-
-    /******************************************************************************//**
-     * @brief Update physics-based data in between optimization iterations
-     * @param [in] aState 2D container of state variables
-     * @param [in] aControl 2D container of control variables
-     * @param [in] aConfig 3D container of configuration/coordinates
-    **********************************************************************************/
-    void updateProblem(const Plato::ScalarMultiVector & aState,
-                       const Plato::ScalarMultiVector & aControl,
-                       const Plato::ScalarArray3D & aConfig)
-    {
-        for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctions.size(); ++tFunctionIndex)
-        {
-            mScalarFunctions[tFunctionIndex]->updateProblem(aState, aControl, aConfig);
-        }
-    }
-
-    /******************************************************************************//**
-     * @brief Get weighted sum evaluation and total gradient
-    **********************************************************************************/
-    void postEvaluate(Plato::ScalarVector & aResultVector, Plato::Scalar & aResultScalar)
-    {
-        if (mScalarFunctions.size() == 1)
-            mScalarFunctions[0]->postEvaluate(aResultVector, aResultScalar);
-    }
-
-    /******************************************************************************//**
-     * @brief Get weighted sum evaluation
-     * @param [out] aOutput weighted sum evaluation
-    **********************************************************************************/
-    void postEvaluate(Plato::Scalar & aOutput)
-    {
-        if (mScalarFunctions.size() == 1)
-            mScalarFunctions[0]->postEvaluate(aOutput);
-    }
-
-};
 
 class ScalarFunctionBase
 {
@@ -1477,7 +1223,8 @@ public:
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionValue.size(); ++tFunctionIndex)
         {
             Plato::ScalarVectorT<ResultScalar> tTempResult("temp result", m_numCells);
-            m_dataMap.scalarVectors[mScalarFunctionValue[tFunctionIndex]->getName()] = tTempResult;
+            // TODO: Should the individual scalar function values/gradients be added to the data map?
+            //m_dataMap.scalarVectors[mScalarFunctionValue[tFunctionIndex]->getName()] = tTempResult;
             mScalarFunctionValue[tFunctionIndex]->evaluate(tStateWS, tControlWS, tConfigWS, tTempResult, aTimeStep);
             const Plato::Scalar tCurrentFunctionWeight = mFunctionWeights[tFunctionIndex];
             Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_numCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
@@ -1491,8 +1238,6 @@ public:
         // sum across elements
         //
         auto tReturnVal = Plato::local_result_sum<Plato::Scalar>(m_numCells, tResult);
-
-        //mScalarFunctionValue->postEvaluate(tReturnVal);
 
         return tReturnVal;
     }
@@ -1539,6 +1284,7 @@ public:
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionGradientX.size(); ++tFunctionIndex)
         {
             Plato::ScalarVectorT<ResultScalar> tTempResult("temp result", m_numCells);
+            // TODO: Should the individual scalar function values/gradients be added to the data map?
             //m_dataMap.scalarVectors[mScalarFunctionGradientX[tFunctionIndex]->getName()] = tTempResult;
             mScalarFunctionGradientX[tFunctionIndex]->evaluate(tStateWS, tControlWS, tConfigWS, tTempResult, aTimeStep);
             const Plato::Scalar tCurrentFunctionWeight = mFunctionWeights[tFunctionIndex];
@@ -1555,9 +1301,6 @@ public:
                                                                              m_configEntryOrdinal,
                                                                              tResult,
                                                                              tObjGradientX);
-        //Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        //mScalarFunctionGradientX->postEvaluate(tObjGradientX, tObjectiveValue);
 
         return tObjGradientX;
     }
@@ -1604,6 +1347,7 @@ public:
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionGradientU.size(); ++tFunctionIndex)
         {
             Plato::ScalarVectorT<ResultScalar> tTempResult("temp result", m_numCells);
+            // TODO: Should the individual scalar function values/gradients be added to the data map?
             //m_dataMap.scalarVectors[mScalarFunctionGradientU[tFunctionIndex]->getName()] = tTempResult;
             mScalarFunctionGradientU[tFunctionIndex]->evaluate(tStateWS, tControlWS, tConfigWS, tTempResult, aTimeStep);
             const Plato::Scalar tCurrentFunctionWeight = mFunctionWeights[tFunctionIndex];
@@ -1620,10 +1364,6 @@ public:
                                                                              m_stateEntryOrdinal,
                                                                              tResult,
                                                                              tObjGradientU);
-        //Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        //mScalarFunctionGradientU->postEvaluate(tObjGradientU, tObjectiveValue);
-
         return tObjGradientU;
     }
 
@@ -1669,6 +1409,7 @@ public:
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionGradientZ.size(); ++tFunctionIndex)
         {
             Plato::ScalarVectorT<ResultScalar> tTempResult("temp result", m_numCells);
+            // TODO: Should the individual scalar function values/gradients be added to the data map?
             //m_dataMap.scalarVectors[mScalarFunctionGradientZ[tFunctionIndex]->getName()] = tTempResult;
             mScalarFunctionGradientZ[tFunctionIndex]->evaluate(tStateWS, tControlWS, tConfigWS, tTempResult, aTimeStep);
             const Plato::Scalar tCurrentFunctionWeight = mFunctionWeights[tFunctionIndex];
@@ -1682,9 +1423,6 @@ public:
         //
         Plato::ScalarVector tObjGradientZ("objective gradient control", m_numNodes);
         Plato::assemble_scalar_gradient<m_numNodesPerCell>(m_numCells, m_controlEntryOrdinal, tResult, tObjGradientZ);
-        //Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        //mScalarFunctionGradientZ->postEvaluate(tObjGradientZ, tObjectiveValue);
 
         return tObjGradientZ;
     }
@@ -1853,6 +1591,41 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::ScalarFunctionBase 
 
 namespace AugLagStressTest
 {
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_Eigenvalue1D)
+{
+    constexpr Plato::OrdinalType tNumCells = 3;
+    constexpr Plato::OrdinalType tSpaceDim = 1;
+    constexpr Plato::OrdinalType tNumVoigtTerms = 1;
+    Plato::Eigenvalues<tSpaceDim> tComputeEigenvalues;
+    Plato::ScalarMultiVector tCauchyStrain("strain", tNumCells, tNumVoigtTerms);
+    auto tHostCauchyStrain = Kokkos::create_mirror(tCauchyStrain);
+    tHostCauchyStrain(0, 0) = 3.0;
+    tHostCauchyStrain(1, 0) = 0.5;
+    tHostCauchyStrain(2, 0) = -1.0;
+    Kokkos::deep_copy(tCauchyStrain, tHostCauchyStrain);
+
+    Plato::ScalarMultiVector tPrincipalStrains("principal strains", tNumCells, tSpaceDim);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+    {
+        tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
+    }, "Test Computing Eigenvalues");
+
+    constexpr Plato::Scalar tTolerance = 1e-8;
+    std::vector<Plato::Scalar> tGold1 = {3.0};
+    std::vector<Plato::Scalar> tGold2 = {0.5};
+    std::vector<Plato::Scalar> tGold3 = {-1.0};
+    auto tHostPrincipalStrains = Kokkos::create_mirror(tPrincipalStrains);
+    Kokkos::deep_copy(tHostPrincipalStrains, tPrincipalStrains);
+
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(0, tIndex), tGold1[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(1, tIndex), tGold2[tIndex], tTolerance);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tSpaceDim; tIndex++)
+        TEST_FLOATING_EQUALITY(tHostPrincipalStrains(2, tIndex), tGold3[tIndex], tTolerance);
+}
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_Eigenvalue2D)
 {
@@ -2145,7 +1918,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyScalarFuncBaseGradZ_3D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyScalarFuncBaseGradZ_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2180,7 +1953,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergySca
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyScalarFuncBaseGradU_2D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyScalarFuncBaseGradU_2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2216,7 +1989,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergySca
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyScalarFuncBaseGradU_3D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyScalarFuncBaseGradU_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2330,38 +2103,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     TEST_FLOATING_EQUALITY(9.37150704214, tObjFuncVal, tTolerance);
 }
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CellDensity)
-{
-    constexpr Plato::OrdinalType tNumCells = 2;
-    constexpr Plato::OrdinalType tNumNodesPerCell = 4;
-    Plato::ScalarMultiVector tCellControls("Control Workset", tNumCells, tNumNodesPerCell);
-    auto tHostCellControls = Kokkos::create_mirror(tCellControls);
-    tHostCellControls(0, 0) = 1.00;
-    tHostCellControls(1, 0) = 0.93;
-    tHostCellControls(0, 1) = 0.90;
-    tHostCellControls(1, 1) = 1.00;
-    tHostCellControls(0, 2) = 0.95;
-    tHostCellControls(1, 2) = 0.89;
-    tHostCellControls(0, 3) = 0.89;
-    tHostCellControls(1, 3) = 0.91;
-    Kokkos::deep_copy(tCellControls, tHostCellControls);
 
-    Plato::ScalarVector tCellDensity("Cell Density", tNumCells);
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
-    { tCellDensity(tCellOrdinal) = Plato::cell_density<tNumNodesPerCell>(tCellOrdinal, tCellControls); }, "Test cell density inline function");
-
-    constexpr Plato::Scalar tTolerance = 1e-4;
-    std::vector<Plato::Scalar> tGold = {0.935, 0.9325};
-    auto tHostCellDensity = Kokkos::create_mirror(tCellDensity);
-    Kokkos::deep_copy(tHostCellDensity, tCellDensity);
-    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
-    {
-        TEST_FLOATING_EQUALITY(tHostCellDensity(tIndex), tGold[tIndex], tTolerance);
-    }
-}
-
-
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCriterionGradZ_2D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCriterionGradZ_2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2387,7 +2130,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCri
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCriterionGradZ_3D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCriterionGradZ_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2413,7 +2156,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCri
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCriterionGradU_2D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCriterionGradU_2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -2440,7 +2183,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCri
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_QuadraticTensileEnergyCriterionGradU_3D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCriterionGradU_3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -3345,6 +3088,37 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_UpdateProblem2)
 }
 
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CellDensity)
+{
+    constexpr Plato::OrdinalType tNumCells = 2;
+    constexpr Plato::OrdinalType tNumNodesPerCell = 4;
+    Plato::ScalarMultiVector tCellControls("Control Workset", tNumCells, tNumNodesPerCell);
+    auto tHostCellControls = Kokkos::create_mirror(tCellControls);
+    tHostCellControls(0, 0) = 1.00;
+    tHostCellControls(1, 0) = 0.93;
+    tHostCellControls(0, 1) = 0.90;
+    tHostCellControls(1, 1) = 1.00;
+    tHostCellControls(0, 2) = 0.95;
+    tHostCellControls(1, 2) = 0.89;
+    tHostCellControls(0, 3) = 0.89;
+    tHostCellControls(1, 3) = 0.91;
+    Kokkos::deep_copy(tCellControls, tHostCellControls);
+
+    Plato::ScalarVector tCellDensity("Cell Density", tNumCells);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType tCellOrdinal)
+    { tCellDensity(tCellOrdinal) = Plato::cell_density<tNumNodesPerCell>(tCellOrdinal, tCellControls); }, "Test cell density inline function");
+
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<Plato::Scalar> tGold = {0.935, 0.9325};
+    auto tHostCellDensity = Kokkos::create_mirror(tCellDensity);
+    Kokkos::deep_copy(tHostCellDensity, tCellDensity);
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
+    {
+        TEST_FLOATING_EQUALITY(tHostCellDensity(tIndex), tGold[tIndex], tTolerance);
+    }
+}
+
+
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
@@ -3444,7 +3218,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume3D)
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises2D)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusTensileEnergy2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
     constexpr Plato::OrdinalType tMeshWidth = 1;
@@ -3515,6 +3289,211 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises2D)
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
     TEST_FLOATING_EQUALITY(tGoldWeightedSum, tObjFuncVal, tTolerance);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    Plato::WeightedSum<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
+
+    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
+    using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
+
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ>> tCriterionGradZ = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+
+    constexpr Plato::Scalar tYoungsModulus = 1.0;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ>>  tLocalMeasureGradZ = 
+        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+
+    tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
+    tCriterionGradZ->setLocalMeasure(tLocalMeasureGradZ, tLocalMeasurePODType);
+
+    tWeightedSum.allocateValue(tCriterionResidual);
+    tWeightedSum.allocateGradientZ(tCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(1.0);
+
+    const Plato::Scalar tMaterialDensity = 0.5;
+    const std::shared_ptr<Plato::Volume<GradientZ,Plato::MSIMP>> tMassCriterionGradZ = 
+          std::make_shared<Plato::Volume<GradientZ,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
+          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterion->setMaterialDensity(tMaterialDensity);
+    const Plato::Scalar tMassFunctionWeight = 0.75;
+    tWeightedSum.allocateValue(tMassCriterion);
+    tWeightedSum.allocateGradientZ(tMassCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(tMassFunctionWeight);
+
+    Plato::test_partial_control<GradientZ, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tWeightedSum);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    Plato::WeightedSum<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
+
+    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
+    using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
+
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ>> tCriterionGradZ = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+
+    constexpr Plato::Scalar tYoungsModulus = 1.0;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ>>  tLocalMeasureGradZ = 
+        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+
+    tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
+    tCriterionGradZ->setLocalMeasure(tLocalMeasureGradZ, tLocalMeasurePODType);
+
+    tWeightedSum.allocateValue(tCriterionResidual);
+    tWeightedSum.allocateGradientZ(tCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(1.0);
+
+    const Plato::Scalar tMaterialDensity = 0.5;
+    const std::shared_ptr<Plato::Volume<GradientZ,Plato::MSIMP>> tMassCriterionGradZ = 
+          std::make_shared<Plato::Volume<GradientZ,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
+          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterion->setMaterialDensity(tMaterialDensity);
+    const Plato::Scalar tMassFunctionWeight = 0.75;
+    tWeightedSum.allocateValue(tMassCriterion);
+    tWeightedSum.allocateGradientZ(tMassCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(tMassFunctionWeight);
+
+    Plato::test_partial_control<GradientZ, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tWeightedSum);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    Plato::WeightedSum<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
+
+    using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
+    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+
+    constexpr Plato::Scalar tYoungsModulus = 1.0;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian>>  tLocalMeasureGradU = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+
+    tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
+    tCriterionGradU->setLocalMeasure(tLocalMeasureGradU, tLocalMeasurePODType);
+    tWeightedSum.allocateValue(tCriterionResidual);
+    tWeightedSum.allocateGradientU(tCriterionGradU);
+    tWeightedSum.appendFunctionWeight(1.0);
+
+    const Plato::Scalar tMaterialDensity = 0.5;
+    const std::shared_ptr<Plato::Volume<Jacobian,Plato::MSIMP>> tMassCriterionGradZ = 
+          std::make_shared<Plato::Volume<Jacobian,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
+          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterion->setMaterialDensity(tMaterialDensity);
+    const Plato::Scalar tMassFunctionWeight = 0.75;
+    tWeightedSum.allocateValue(tMassCriterion);
+    tWeightedSum.allocateGradientU(tMassCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(tMassFunctionWeight);
+
+    Plato::test_partial_state<Jacobian, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tWeightedSum);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    Plato::WeightedSum<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
+
+    using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
+    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    
+    constexpr Plato::Scalar tYoungsModulus = 1.0;
+    constexpr Plato::Scalar tPoissonRatio = 0.3;
+    Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
+    Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian>>  tLocalMeasureGradU = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
+    tCriterionGradU->setLocalMeasure(tLocalMeasureGradU, tLocalMeasurePODType);
+    tWeightedSum.allocateValue(tCriterionResidual);
+    tWeightedSum.allocateGradientU(tCriterionGradU);
+    tWeightedSum.appendFunctionWeight(1.0);
+
+    const Plato::Scalar tMaterialDensity = 0.5;
+    const std::shared_ptr<Plato::Volume<Jacobian,Plato::MSIMP>> tMassCriterionGradZ = 
+          std::make_shared<Plato::Volume<Jacobian,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
+          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterion->setMaterialDensity(tMaterialDensity);
+    const Plato::Scalar tMassFunctionWeight = 0.75;
+    tWeightedSum.allocateValue(tMassCriterion);
+    tWeightedSum.allocateGradientU(tMassCriterionGradZ);
+    tWeightedSum.appendFunctionWeight(tMassFunctionWeight);
+
+    Plato::test_partial_state<Jacobian, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tWeightedSum);
 }
 
 
