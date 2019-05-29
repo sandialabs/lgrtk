@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.10.0...${CMAKE_VERSION})
 
 project(LGR VERSION 3.0.0 LANGUAGES CXX)
 
+option(LGR_ENABLE_CUDA "Build GPU support" OFF)
+
+if (LGR_ENABLE_CUDA)
+  enable_language(CUDA)
+endif()
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
 endif()
@@ -24,6 +30,10 @@ option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
 if (LGR_ENABLE_EXODUS)
   find_package(SEACASExodus REQUIRED)
   set(LGR_SOURCES ${LGR_SOURCES} lgr_exodus.cpp)
+endif()
+
+if (LGR_ENABLE_CUDA)
+  set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_executable(lgr ${LGR_SOURCES})
