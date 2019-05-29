@@ -110,7 +110,7 @@ class clipped_domain : public domain {
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
     auto functor = [=] (Index const i) {
-      hpc::vector3<double> const pt = points_begin[i];
+      auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
         is_in &= (distance(*clips_it, pt) >= 0.0);
