@@ -60,7 +60,7 @@ public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar& operator()(symmetric_index slot) noexcept {
     return raw[slot.get()];
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar const& operator()(symmetric_index slot) const noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(symmetric_index slot) const noexcept {
     return raw[slot.get()];
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3<Scalar> zero() noexcept {
@@ -77,7 +77,7 @@ public:
     if (i == 2 && j == 1) return operator()(S_YZ);
     return operator()(S_ZZ);
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar const& operator()(axis_index i, axis_index j) const noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar operator()(axis_index i, axis_index j) const noexcept {
     if (i == 0 && j == 0) return operator()(S_XX);
     if (i == 0 && j == 1) return operator()(S_XY);
     if (i == 0 && j == 2) return operator()(S_XZ);
