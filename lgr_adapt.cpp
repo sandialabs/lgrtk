@@ -589,7 +589,11 @@ static inline void apply_triangle_swap(apply_cavity const c,
     node_index const node,
     node_index const target_node) {
   hpc::array<element_index, 2> loop_elements;
+  loop_elements[0] = -1;
+  loop_elements[1] = -1;
   hpc::array<node_index, 2> loop_nodes;
+  loop_nodes[0] = -1;
+  loop_nodes[1] = -1;
   for (auto const node_element : c.nodes_to_node_elements[node]) {
     element_index const element = c.node_elements_to_elements[node_element];
     auto const element_nodes = c.elements_to_element_nodes[element];

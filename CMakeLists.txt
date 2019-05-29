@@ -8,21 +8,16 @@ if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
 endif()
 
-set(EXTRA_FLAGS)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  set(EXTRA_FLAGS "${EXTRA_FLAGS} -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
+if (LGR_ENABLE_CUDA)
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wall,-Wextra,-Werror --Werror cross-execution-space-call,reorder,deprecated-declarations")
+else()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
+  endif()
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
+  endif()
 endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(EXTRA_FLAGS "${EXTRA_FLAGS} -Wall -Wextra -Werror")
-endif()
-
-# if (LGR_ENABLE_CUDA)
-#   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} ${EXTRA_FLAGS}")
-# else()
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_FLAGS}")
-# endif()
 
 set(LGR_SOURCES
     lgr.cpp
