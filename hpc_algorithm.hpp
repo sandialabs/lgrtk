@@ -4,6 +4,7 @@
 #include <hpc_execution.hpp>
 #include <hpc_range.hpp>
 #include <hpc_functional.hpp>
+#include <hpc_transform_reduce.hpp>
 
 namespace hpc {
 
@@ -82,43 +83,6 @@ void fill(serial_policy, Range& r, T value) {
   }
 }
 
-template <class Range, class T, class BinaryOp, class UnaryOp>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE T transform_reduce(
-    local_policy, Range const& range, T init, BinaryOp binary_op, UnaryOp unary_op) noexcept {
-  auto first = range.begin();
-  auto const last = range.end();
-  for (; first != last; ++first) {
-    init = binary_op(std::move(init), unary_op(*first));
-  }
-  return init;
-}
-
-template <class Range, class T, class BinaryOp, class UnaryOp>
-T transform_reduce(
-    serial_policy, Range const& range, T init, BinaryOp binary_op, UnaryOp unary_op) {
-  auto first = range.begin();
-  auto const last = range.end();
-  for (; first != last; ++first) {
-    init = binary_op(std::move(init), unary_op(*first));
-  }
-  return init;
-}
-
-template <class Range, class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE T
-reduce(local_policy policy, Range const& range, T init) noexcept {
-  using input_value_type = typename Range::value_type;
-  auto const unop = [] (input_value_type const i) { return T(i); };
-  return transform_reduce(policy, range, init, plus<T>(), unop);
-}
-
-template <class Range, class T>
-T reduce(serial_policy policy, Range const& range, T init) {
-  using input_value_type = typename Range::value_type;
-  auto const unop = [] (input_value_type const i) { return T(i); };
-  return transform_reduce(policy, range, init, plus<T>(), unop);
-}
-
 template <class Range, class UnaryPredicate>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE
 bool any_of(local_policy policy, Range const& range, UnaryPredicate p) noexcept {
@@ -150,54 +114,6 @@ bool all_of(serial_policy policy, Range const& range, UnaryPredicate p) {
 template <class Range>
 bool all_of(serial_policy policy, Range const& range) {
   return all_of(policy, range, identity<bool>());
-}
-
-template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
-transform_inclusive_scan(local_policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
-{
-  auto first = input.begin();
-  auto last = input.end();
-  auto d_first = output.begin();
-  if (first == last) return;
-  auto sum = unary_op(*first);
-  *d_first = sum;
-  while (++first != last) {
-    sum = binary_op(std::move(sum), unary_op(*first));
-    *(++d_first) = sum;
-  }
-}
-
-template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
-void
-transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
-{
-  auto first = input.begin();
-  auto last = input.end();
-  auto d_first = output.begin();
-  if (first == last) return;
-  auto sum = unary_op(*first);
-  *d_first = sum;
-  while (++first != last) {
-    sum = binary_op(std::move(sum), unary_op(*first));
-    *(++d_first) = sum;
-  }
-}
-
-template <class ExecutionPolicy, class InputRange, class OutputRange>
-void offset_scan(ExecutionPolicy policy, InputRange const& input, OutputRange& output) {
-  auto it = output.begin();
-  auto const first = it;
-  ++it;
-  auto const second = it;
-  auto const first_range = ::hpc::iterator_range<decltype(it)>(first, second);
-  using input_value_type = typename InputRange::value_type;
-  using output_value_type = typename OutputRange::value_type;
-  ::hpc::fill(policy, first_range, output_value_type(0));
-  auto const end = output.end();
-  auto const rest = iterator_range<decltype(it)>(second, end);
-  ::hpc::transform_inclusive_scan(policy, input, rest, ::hpc::plus<output_value_type>(),
-      ::hpc::cast<output_value_type, input_value_type>());
 }
 
 }
