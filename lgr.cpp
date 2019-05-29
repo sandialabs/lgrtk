@@ -1,7 +1,6 @@
 #include <memory>
 
 #include <lgr_physics.hpp>
-#include <lgr_for_each.hpp>
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 #include <hpc_vector3.hpp>
@@ -20,7 +19,7 @@ static void HPC_NOINLINE set_exponential_wave_v(
     auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
     nodes_to_v[node] = hpc::vector3<double>(v_x, 0.0, 0.0);
   };
-  lgr::for_each(nodes, functor);
+  hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
 static void HPC_NOINLINE zero_v(
@@ -40,7 +39,7 @@ static void HPC_NOINLINE spin_v(
     auto const x = nodes_to_x[node].load();
     nodes_to_v[node] = 100.0 * hpc::vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
   };
-  lgr::for_each(nodes, functor);
+  hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
 static void HPC_NOINLINE elastic_wave() {
@@ -122,7 +121,7 @@ static void HPC_NOINLINE quadratic_in_x_v(
     auto const v_y = norm_x * norm_x;
     nodes_to_v[node] = hpc::vector3<double>(0.0, v_y, 0.0);
   };
-  lgr::for_each(nodes, functor);
+  hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
 static void HPC_NOINLINE Cooks_membrane_x(
@@ -139,7 +138,7 @@ static void HPC_NOINLINE Cooks_membrane_x(
         0.0);
     nodes_to_x[node] = new_x;
   };
-  lgr::for_each(nodes, functor);
+  hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
 static void HPC_NOINLINE Cooks_membrane() {
@@ -216,7 +215,7 @@ static void HPC_NOINLINE swinging_plate() {
           0.0);
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = swinging_plate_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -390,7 +389,7 @@ static void HPC_NOINLINE swinging_cube(bool stabilize) {
           std::cos(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::sin(half_pi * x(2)));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = swinging_cube_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -451,7 +450,7 @@ static void HPC_NOINLINE twisting_column() {
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = twisting_column_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -496,7 +495,7 @@ static void HPC_NOINLINE Noh_1D() {
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = inward_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -543,7 +542,7 @@ static void HPC_NOINLINE Noh_2D() {
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = inward_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -622,7 +621,7 @@ static void HPC_NOINLINE twisting_composite_column() {
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = twisting_column_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -672,7 +671,7 @@ static void HPC_NOINLINE Noh_3D() {
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = inward_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -727,7 +726,7 @@ static void HPC_NOINLINE composite_Noh_3D() {
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
       nodes_to_v[node] = v;
     };
-    lgr::for_each(nodes, functor);
+    hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = inward_v;
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);

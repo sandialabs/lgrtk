@@ -28,7 +28,7 @@ void propagate_connectivity(state& s) {
       }
     }
   };
-  lgr::for_each(s.elements, count_functor);
+  hpc::for_each(hpc::device_policy(), s.elements, count_functor);
   s.nodes_to_node_elements.assign_sizes(counts_vector);
   hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
@@ -55,7 +55,7 @@ void propagate_connectivity(state& s) {
       node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
   };
-  lgr::for_each(s.elements, fill_functor);
+  hpc::for_each(hpc::device_policy(), s.elements, fill_functor);
   s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
@@ -68,7 +68,7 @@ static void HPC_NOINLINE initialize_bars_to_nodes(state& s) {
     begin[element_nodes[l_t(0)]] = node_index(element.get());
     begin[element_nodes[l_t(1)]] = node_index(element.get() + 1);
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE initialize_x_1D(input const& in, state& s) {
@@ -78,7 +78,7 @@ static void HPC_NOINLINE initialize_x_1D(input const& in, state& s) {
   auto functor = [=](node_index const node) {
     nodes_to_x[node] = hpc::vector3<double>(l * (double(node.get()) / (double(num_nodes.get()) - 1)), 0.0, 0.0);
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void build_bar_mesh(input const& in, state& s) {
@@ -125,7 +125,7 @@ static void HPC_NOINLINE build_triangle_mesh(input const& in, state& s)
     element_nodes_to_nodes[element_nodes[l_t(2)]] = g_t((j + 0) * nvx + (i + 0));
   };
   hpc::counting_range<int> quads(nq);
-  lgr::for_each(quads, connectivity_functor);
+  hpc::for_each(hpc::device_policy(), quads, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
   double const x = in.x_domain_size;
@@ -137,7 +137,7 @@ static void HPC_NOINLINE build_triangle_mesh(input const& in, state& s)
     int const j = node.get() / nvx;
     nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, 0.0);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
 static void HPC_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
@@ -217,7 +217,7 @@ static void HPC_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
     elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
   };
   hpc::counting_range<int> hexes(nh);
-  lgr::for_each(hexes, connectivity_functor);
+  hpc::for_each(hpc::device_policy(), hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
   double const x = in.x_domain_size;
@@ -233,7 +233,7 @@ static void HPC_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
     int const j = ij / nvx;
     nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, k * dz);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
 static void HPC_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& s)
@@ -346,7 +346,7 @@ static void HPC_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
     elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][1][1];
   };
   hpc::counting_range<int> hexes(nh);
-  lgr::for_each(hexes, connectivity_functor);
+  hpc::for_each(hpc::device_policy(), hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
   double const x = in.x_domain_size;
@@ -362,7 +362,7 @@ static void HPC_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
     int const j = ij / nvx;
     nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, k * dz);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
 void build_mesh(input const& in, state& s) {

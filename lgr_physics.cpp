@@ -36,7 +36,7 @@ static void HPC_NOINLINE update_u(state& s, double const dt) {
     auto const v = nodes_to_v[node].load();
     nodes_to_u[node] = (dt * v) - old_u;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void HPC_NOINLINE update_v(state& s, double const dt, hpc::device_array_vector<hpc::vector3<double>, node_index> const& old_v_vector) {
@@ -49,7 +49,7 @@ static void HPC_NOINLINE update_v(state& s, double const dt, hpc::device_array_v
     auto const v = old_v + dt * a;
     nodes_to_v[node] = v;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void HPC_NOINLINE update_a(state& s) {
@@ -62,7 +62,7 @@ static void HPC_NOINLINE update_a(state& s) {
     auto const a = f / m;
     nodes_to_a[node] = a;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void HPC_NOINLINE update_x(state& s) {
@@ -74,7 +74,7 @@ static void HPC_NOINLINE update_x(state& s) {
     auto const new_x = old_x + u;
     nodes_to_x[node] = new_x;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void HPC_NOINLINE update_p(state& s, material_index const material) {
@@ -88,7 +88,7 @@ static void HPC_NOINLINE update_p(state& s, material_index const material) {
       points_to_p[point] = p;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_reference(state& s) {
@@ -136,7 +136,7 @@ static void HPC_NOINLINE update_reference(state& s) {
       points_to_rho[point] = new_rho;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_c(state& s)
@@ -153,7 +153,7 @@ static void HPC_NOINLINE update_c(state& s)
     auto const c = std::sqrt(M / rho);
     points_to_c[point] = c;
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 static void HPC_NOINLINE update_element_dt(state& s) {
@@ -175,7 +175,7 @@ static void HPC_NOINLINE update_element_dt(state& s) {
       points_to_dt[point] = dt;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE find_max_stable_dt(state& s)
@@ -210,7 +210,7 @@ static void HPC_NOINLINE neo_Hookean(input const& in, state& s, material_index c
       points_to_G[point] = G0;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
@@ -236,7 +236,7 @@ static void HPC_NOINLINE ideal_gas(input const& in, state& s, material_index con
       points_to_K[point] = K;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE update_element_force(state& s)
@@ -256,7 +256,7 @@ static void HPC_NOINLINE update_element_force(state& s)
       point_nodes_to_f[point_node] = f;
     }
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 static void HPC_NOINLINE update_nodal_force(state& s) {
@@ -282,7 +282,7 @@ static void HPC_NOINLINE update_nodal_force(state& s) {
     }
     nodes_to_f[node] = node_f;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void HPC_NOINLINE zero_acceleration(
@@ -295,7 +295,7 @@ static void HPC_NOINLINE zero_acceleration(
     auto const new_a = old_a - axis * (old_a * axis);
     nodes_to_a[node] = new_a;
   };
-  lgr::for_each(domain, functor);
+  hpc::for_each(hpc::device_policy(), domain, functor);
 }
 
 static void HPC_NOINLINE update_symm_grad_v(state& s)
@@ -325,7 +325,7 @@ static void HPC_NOINLINE update_symm_grad_v(state& s)
       points_to_symm_grad_v[point] = symm_grad_v;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE stress_power(state& s)
@@ -339,7 +339,7 @@ static void HPC_NOINLINE stress_power(state& s)
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
     points_to_rho_e_dot[point] = rho_e_dot;
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 static void HPC_NOINLINE update_e(state& s, double const dt,
@@ -361,7 +361,7 @@ static void HPC_NOINLINE update_e(state& s, double const dt,
       points_to_e[point] = e;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE apply_viscosity(input const& in, state& s) {
@@ -393,7 +393,7 @@ static void HPC_NOINLINE apply_viscosity(input const& in, state& s) {
       }
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE volume_average_J(state& s) {
@@ -419,7 +419,7 @@ static void HPC_NOINLINE volume_average_J(state& s) {
       points_to_F[point] = new_F;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE volume_average_rho(state& s) {
@@ -440,7 +440,7 @@ static void HPC_NOINLINE volume_average_rho(state& s) {
       points_to_rho[point] = average_rho;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE volume_average_e(state& s) {
@@ -463,7 +463,7 @@ static void HPC_NOINLINE volume_average_e(state& s) {
       points_to_e[point] = average_e;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE volume_average_p(state& s) {
@@ -487,7 +487,7 @@ static void HPC_NOINLINE volume_average_p(state& s) {
       points_to_sigma[point] = new_sigma;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 static void HPC_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
@@ -652,7 +652,7 @@ static void HPC_NOINLINE initialize_material_scalar(
       points_to_scalar[point] = scalar;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 static void HPC_NOINLINE common_initialization(input const& in, state& s) {
