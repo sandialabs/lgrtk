@@ -5,7 +5,7 @@
 
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
-#include <hpc_algorithm.hpp>
+#include <hpc_numeric.hpp>
 
 namespace hpc {
 
