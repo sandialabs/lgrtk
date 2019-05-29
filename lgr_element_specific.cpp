@@ -6,7 +6,6 @@
 #include <lgr_state.hpp>
 #include <lgr_for_each.hpp>
 #include <lgr_input.hpp>
-#include <lgr_binary_ops.hpp>
 #include <lgr_composite_tetrahedron.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
@@ -263,7 +262,7 @@ static void LGR_NOINLINE update_h_min_height(input const&, state& s) {
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const height = 1.0 / norm(grad_N);
-      min_height = lgr::min(min_height, height);
+      min_height = hpc::min(min_height, height);
     }
     elements_to_h_min[element] = min_height;
   };
