@@ -184,4 +184,20 @@ transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& ou
   }
 }
 
+template <class ExecutionPolicy, class InputRange, class OutputRange>
+void offset_scan(ExecutionPolicy policy, InputRange const& input, OutputRange& output) {
+  auto it = output.begin();
+  auto const first = it;
+  ++it;
+  auto const second = it;
+  auto const first_range = ::hpc::iterator_range<decltype(it)>(first, second);
+  using input_value_type = typename InputRange::value_type;
+  using output_value_type = typename OutputRange::value_type;
+  ::hpc::fill(policy, first_range, output_value_type(0));
+  auto const end = output.end();
+  auto const rest = iterator_range<decltype(it)>(second, end);
+  ::hpc::transform_inclusive_scan(policy, input, rest, ::hpc::plus<output_value_type>(),
+      ::hpc::cast<output_value_type, input_value_type>());
+}
+
 }

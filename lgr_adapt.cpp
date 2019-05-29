@@ -2,10 +2,8 @@
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>
-#include <lgr_array.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
-#include <lgr_reduce.hpp>
 #include <lgr_meshing.hpp>
 
 #include <iostream>
@@ -14,7 +12,7 @@
 namespace lgr {
 
 static void LGR_NOINLINE update_bar_quality(state& s) {
-  fill(s.quality, double(1.0));
+  hpc::fill(hpc::device_policy(), s.quality, double(1.0));
 }
 
 /* Per:
@@ -29,7 +27,7 @@ static void LGR_NOINLINE update_bar_quality(state& s) {
    We also use the fact that we already have area computed and that basis
    gradient magnitudes relate to opposite edge lengths.
   */
-inline double triangle_quality(array<vector3<double>, 3> const grad_N, double const area) {
+inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const grad_N, double const area) {
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
@@ -40,7 +38,7 @@ inline double triangle_quality(array<vector3<double>, 3> const grad_N, double co
   return q;
 }
 
-inline double triangle_quality(array<vector3<double>, 3> const x) {
+inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const x) {
   double const area = triangle_area(x);
   if (area <= 0.0) return area;
   return triangle_quality(triangle_basis_gradients(x, area), area);
@@ -58,9 +56,9 @@ static void LGR_NOINLINE update_triangle_quality(state& s) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    array<vector3<double>, 3> grad_N;
+    hpc::array<hpc::vector3<double>, 3> grad_N;
     for (auto const i : nodes_in_element) {
-      grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]];
+      grad_N[i.get()] = point_nodes_to_grad_N[point_nodes[i]].load();
     }
     auto const A = points_to_V[point];
     double const fast_quality = triangle_quality(grad_N, A);
@@ -101,7 +99,7 @@ static void LGR_NOINLINE update_tetrahedron_quality(state& s) {
     auto const point_nodes = points_to_point_nodes[point];
     auto sum_g_i_sq = 0.0;
     for (auto const i : nodes_in_element) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_nodes[i]];
+      auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const g_i_sq = (grad_N * grad_N);
       sum_g_i_sq += g_i_sq;
     }
@@ -121,10 +119,12 @@ void update_quality(input const& in, state& s) {
 }
 
 void update_min_quality(state& s) {
-  s.min_quality = transform_reduce(s.quality,
+  s.min_quality = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.quality,
       std::numeric_limits<double>::max(),
-      minimum<double>(),
-      identity<double>());
+      hpc::minimum<double>(),
+      hpc::identity<double>());
 }
 
 void initialize_h_adapt(state& s)
@@ -137,7 +137,7 @@ void initialize_h_adapt(state& s)
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_h_adapt = s.h_adapt.begin();
   auto functor = [=] (node_index const node) {
-    vector3<double> const x = nodes_to_x[node];
+    auto const x = nodes_to_x[node].load();
     double lsq_max = 0.0;
     double lsq_min = std::numeric_limits<double>::max();
     for (auto const node_element : nodes_to_node_elements[node]) {
@@ -147,10 +147,10 @@ void initialize_h_adapt(state& s)
         element_node_index const element_node = element_nodes[node_in_element];
         node_index const adj_node = element_nodes_to_nodes[element_node];
         if (adj_node != node) {
-          vector3<double> const adj_x = nodes_to_x[adj_node];
+          auto const adj_x = nodes_to_x[adj_node].load();
           auto const lsq = norm_squared(adj_x - x);
-          lsq_max = max(lsq_max, lsq);
-          lsq_min = min(lsq_min, lsq);
+          lsq_max = hpc::max(lsq_max, lsq);
+          lsq_min = hpc::min(lsq_min, lsq);
         }
       }
     }
@@ -171,46 +171,46 @@ enum cavity_op {
 };
 
 struct adapt_state {
-  device_vector<double, node_index> criteria;
-  device_vector<node_index, node_index> other_node;
-  device_vector<cavity_op, node_index> op;
-  device_vector<element_index, element_index> element_counts;
-  device_vector<node_index, node_index> node_counts;
-  device_vector<element_index, element_index> old_elements_to_new_elements;
-  device_vector<node_index, node_index> old_nodes_to_new_nodes;
-  device_vector<element_index, element_index> new_elements_to_old_elements;
-  device_vector<node_index, node_index> new_nodes_to_old_nodes;
-  device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
-  device_vector<bool, element_index> new_elements_are_same;
-  device_vector<bool, node_index> new_nodes_are_same;
-  device_vector<array<node_index, 2>, node_index> interpolate_from;
-  counting_range<element_index> new_elements;
-  counting_range<node_index> new_nodes;
+  hpc::device_vector<double, node_index> criteria;
+  hpc::device_vector<node_index, node_index> other_node;
+  hpc::device_vector<cavity_op, node_index> op;
+  hpc::device_vector<element_index, element_index> element_counts;
+  hpc::device_vector<node_index, node_index> node_counts;
+  hpc::device_vector<element_index, element_index> old_elements_to_new_elements;
+  hpc::device_vector<node_index, node_index> old_nodes_to_new_nodes;
+  hpc::device_vector<element_index, element_index> new_elements_to_old_elements;
+  hpc::device_vector<node_index, node_index> new_nodes_to_old_nodes;
+  hpc::device_vector<node_index, element_node_index> new_element_nodes_to_nodes;
+  hpc::device_vector<bool, element_index> new_elements_are_same;
+  hpc::device_vector<bool, node_index> new_nodes_are_same;
+  hpc::device_array_vector<hpc::array<node_index, 2, int>, node_index> interpolate_from;
+  hpc::counting_range<element_index> new_elements;
+  hpc::counting_range<node_index> new_nodes;
   adapt_state(state const&);
 };
 
 adapt_state::adapt_state(state const& s)
-  :criteria(s.nodes.size(), s.devpool)
-  ,other_node(s.nodes.size(), s.devpool)
-  ,op(s.nodes.size(), s.devpool)
-  ,element_counts(s.elements.size(), s.devpool)
-  ,node_counts(s.nodes.size(), s.devpool)
-  ,old_elements_to_new_elements(s.elements.size() + element_index(1), s.devpool)
-  ,old_nodes_to_new_nodes(s.nodes.size() + node_index(1), s.devpool)
-  ,new_elements_to_old_elements(s.devpool)
-  ,new_nodes_to_old_nodes(s.devpool)
-  ,new_element_nodes_to_nodes(s.devpool)
-  ,new_elements_are_same(s.devpool)
-  ,new_nodes_are_same(s.devpool)
-  ,interpolate_from(s.devpool)
+  :criteria(s.nodes.size())
+  ,other_node(s.nodes.size())
+  ,op(s.nodes.size())
+  ,element_counts(s.elements.size())
+  ,node_counts(s.nodes.size())
+  ,old_elements_to_new_elements(s.elements.size() + element_index(1))
+  ,old_nodes_to_new_nodes(s.nodes.size() + node_index(1))
+  ,new_elements_to_old_elements()
+  ,new_nodes_to_old_nodes()
+  ,new_element_nodes_to_nodes()
+  ,new_elements_are_same()
+  ,new_nodes_are_same()
+  ,interpolate_from()
   ,new_elements(element_index(0))
   ,new_nodes(node_index(0))
 {}
 
-template <int Capacity, class Index>
+template <std::ptrdiff_t Capacity, class Index>
 static inline int find_or_append(
     int& count,
-    array<Index, Capacity>& buffer,
+    hpc::array<Index, Capacity>& buffer,
     Index const index)
 {
   for (int i = 0; i < count; ++i) {
@@ -225,15 +225,15 @@ template <int nodes_per_element, int max_shell_elements, int max_shell_nodes>
 struct eval_cavity {
   int num_shell_elements;
   int num_shell_nodes;
-  array<node_index, max_shell_nodes> shell_nodes;
-  array<element_index, max_shell_elements> shell_elements;
-  array<array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
-  array<material_index, max_shell_elements> shell_elements_to_materials;
-  array<double, max_shell_elements> shell_element_qualities;
-  array<int, max_shell_elements> shell_elements_to_node_in_element;
-  array<vector3<double>, max_shell_nodes> shell_nodes_to_x;
-  array<double, max_shell_nodes> shell_nodes_to_h;
-  array<material_set, max_shell_nodes> shell_nodes_to_materials;
+  hpc::array<node_index, max_shell_nodes> shell_nodes;
+  hpc::array<element_index, max_shell_elements> shell_elements;
+  hpc::array<hpc::array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
+  hpc::array<material_index, max_shell_elements> shell_elements_to_materials;
+  hpc::array<double, max_shell_elements> shell_element_qualities;
+  hpc::array<int, max_shell_elements> shell_elements_to_node_in_element;
+  hpc::array<hpc::vector3<double>, max_shell_nodes> shell_nodes_to_x;
+  hpc::array<double, max_shell_nodes> shell_nodes_to_h;
+  hpc::array<material_set, max_shell_nodes> shell_nodes_to_materials;
 };
 
 template <int max_shell_elements, int max_shell_nodes>
@@ -244,9 +244,9 @@ static inline void evaluate_triangle_swap(
     double& best_improvement,
     int& best_swap_edge_node
     ) {
-  array<int, 2> loop_elements;
+  hpc::array<int, 2> loop_elements;
   loop_elements[0] = loop_elements[1] = -1;
-  array<int, 2> loop_nodes;
+  hpc::array<int, 2> loop_nodes;
   loop_nodes[0] = loop_nodes[1] = -1;
   for (int element = 0; element < c.num_shell_elements; ++element) {
     int const node_in_element = c.shell_elements_to_node_in_element[element];
@@ -267,9 +267,9 @@ static inline void evaluate_triangle_swap(
   }
   double const old_quality1 = c.shell_element_qualities[loop_elements[0]];
   double const old_quality2 = c.shell_element_qualities[loop_elements[1]];
-  double const quality_before = min(old_quality1, old_quality2);
+  double const quality_before = hpc::min(old_quality1, old_quality2);
   assert(quality_before > 0.0);
-  array<vector3<double>, 3> proposed_x;
+  hpc::array<hpc::vector3<double>, 3> proposed_x;
   proposed_x[0] = c.shell_nodes_to_x[center_node];
   proposed_x[1] = c.shell_nodes_to_x[loop_nodes[0]];
   proposed_x[2] = c.shell_nodes_to_x[loop_nodes[1]];
@@ -280,7 +280,7 @@ static inline void evaluate_triangle_swap(
   proposed_x[2] = c.shell_nodes_to_x[loop_nodes[0]];
   double const new_quality2 = triangle_quality(proposed_x);
   if (new_quality2 <= quality_before) return;
-  double const quality_after = min(new_quality1, new_quality2);
+  double const quality_after = hpc::min(new_quality1, new_quality2);
   double const improvement = ((quality_after - quality_before) / quality_before);
   if (improvement < 0.05) return;
   if (improvement > best_improvement) {
@@ -306,15 +306,15 @@ static inline void evaluate_triangle_split(
   auto const h2 = c.shell_nodes_to_h[edge_node];
   auto const x1 = c.shell_nodes_to_x[center_node];
   auto const x2 = c.shell_nodes_to_x[edge_node];
-  auto const h_min = min(h1, h2);
-  auto const h_max = max(h1, h2);
+  auto const h_min = hpc::min(h1, h2);
+  auto const h_max = hpc::max(h1, h2);
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
   if (lm <= std::sqrt(2.0)) return;
   if (lm <= longest_length) return;
   auto const midpoint_x = 0.5 * (x1 + x2);
   for (int element = 0; element < c.num_shell_elements; ++element) {
-    array<vector3<double>, 3> parent_x;
+    hpc::array<hpc::vector3<double>, 3> parent_x;
     int const center_node_in_element = c.shell_elements_to_node_in_element[element];
     int edge_node_in_element = -1;
     for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
@@ -323,7 +323,7 @@ static inline void evaluate_triangle_split(
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
     }
     if (edge_node_in_element == -1) continue;
-    array<vector3<double>, 3> child_x = parent_x;
+    hpc::array<hpc::vector3<double>, 3> child_x = parent_x;
     child_x[center_node_in_element] = midpoint_x;
     double const new_quality1 = triangle_quality(child_x);
     if (new_quality1 < min_acceptable_quality) return;
@@ -351,8 +351,8 @@ static inline void evaluate_triangle_collapse(
   auto const h2 = c.shell_nodes_to_h[edge_node];
   auto const x1 = c.shell_nodes_to_x[center_node];
   auto const x2 = c.shell_nodes_to_x[edge_node];
-  auto const h_min = min(h1, h2);
-  auto const h_max = max(h1, h2);
+  auto const h_min = hpc::min(h1, h2);
+  auto const h_max = hpc::max(h1, h2);
   auto const l = norm(x1 - x2);
   auto const lm = measure_edge(h_min, h_max, l);
   if (lm >= (1.0 / std::sqrt(2.0))) {
@@ -363,7 +363,7 @@ static inline void evaluate_triangle_collapse(
   }
   auto edge_materials = material_set::none();
   for (int element = 0; element < c.num_shell_elements; ++element) {
-    array<vector3<double>, 3> proposed_x;
+    hpc::array<hpc::vector3<double>, 3> proposed_x;
     int const center_node_in_element = c.shell_elements_to_node_in_element[element];
     int edge_node_in_element = -1;
     for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
@@ -421,18 +421,18 @@ static LGR_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s
         int const shell_node = find_or_append(c.num_shell_nodes, c.shell_nodes, node2);
         if (node2 == node) center_node = shell_node;
         if (shell_node + 1 == c.num_shell_nodes) {
-          c.shell_nodes_to_x[shell_node] = nodes_to_x[node2];
+          c.shell_nodes_to_x[shell_node] = nodes_to_x[node2].load();
           c.shell_nodes_to_h[shell_node] = nodes_to_h[node2];
           c.shell_nodes_to_materials[shell_node] = nodes_to_materials[node2];
         }
-        c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
+        c.shell_elements_to_shell_nodes[shell_element][node_in_element.get()] = shell_node;
       }
       material_index const material = elements_to_materials[element];
       c.shell_elements_to_materials[shell_element] = material;
-      double const quality = elements_to_qualities[element];
+      auto const quality = elements_to_qualities[element];
       c.shell_element_qualities[shell_element] = quality;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
-      c.shell_elements_to_node_in_element[shell_element] = int(node_in_element);
+      c.shell_elements_to_node_in_element[shell_element] = node_in_element.get();
     }
     double best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
@@ -483,8 +483,8 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_criteria = a.criteria.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
-  fill(a.element_counts, element_index(1));
-  fill(a.node_counts, node_index(1));
+  hpc::fill(hpc::device_policy(), a.element_counts, element_index(1));
+  hpc::fill(hpc::device_policy(), a.node_counts, node_index(1));
   auto const elements_to_new_counts = a.element_counts.begin();
   auto const nodes_to_new_counts = a.node_counts.begin();
   auto const nodes_to_op = a.op.begin();
@@ -554,22 +554,20 @@ static LGR_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
 }
 
 struct apply_cavity {
-  range_sum_iterator<node_index, node_element_index> nodes_to_node_elements;
-  struct_vector_iterator<element_index const, device_layout, node_element_index> node_elements_to_elements;
-  struct_vector_iterator<node_in_element_index const, device_layout, node_element_index> node_elements_to_nodes_in_element;
-  range_product<counting_iterator<element_node_index>,
-    device_layout, element_index, node_in_element_index> elements_to_element_nodes;
-  struct_vector_iterator<node_index const, device_layout, element_node_index> old_element_nodes_to_nodes;
-  struct_vector_iterator<element_index const, device_layout, element_index> old_elements_to_new_elements;
-  range_product<counting_iterator<element_node_index>,
-    device_layout, element_index, node_in_element_index> new_elements_to_element_nodes;
-  struct_vector_iterator<node_index const, device_layout, node_index> old_nodes_to_new_nodes;
-  struct_vector_iterator<node_index, device_layout, element_node_index> new_element_nodes_to_nodes;
-  struct_vector_iterator<bool, device_layout, element_index> new_elements_are_same;
-  struct_vector_iterator<node_index const, device_layout, node_index> nodes_to_other_nodes;
-  counting_range<node_in_element_index> nodes_in_element;
-  struct_vector_iterator<bool, device_layout, node_index> new_nodes_are_same;
-  struct_vector_iterator<array<node_index, 2>, device_layout, node_index> interpolate_from;
+  hpc::range_sum_iterator<node_element_index, node_index> nodes_to_node_elements;
+  hpc::pointer_iterator<element_index const, node_element_index> node_elements_to_elements;
+  hpc::pointer_iterator<node_in_element_index const, node_element_index> node_elements_to_nodes_in_element;
+  hpc::counting_product<hpc::device_layout, element_index, node_in_element_index> elements_to_element_nodes;
+  hpc::pointer_iterator<node_index const, element_node_index> old_element_nodes_to_nodes;
+  hpc::pointer_iterator<element_index const, element_index> old_elements_to_new_elements;
+  hpc::counting_product<hpc::device_layout, element_index, node_in_element_index> new_elements_to_element_nodes;
+  hpc::pointer_iterator<node_index const, node_index> old_nodes_to_new_nodes;
+  hpc::pointer_iterator<node_index, element_node_index> new_element_nodes_to_nodes;
+  hpc::pointer_iterator<bool, element_index> new_elements_are_same;
+  hpc::pointer_iterator<node_index const, node_index> nodes_to_other_nodes;
+  hpc::counting_range<node_in_element_index> nodes_in_element;
+  hpc::pointer_iterator<bool, node_index> new_nodes_are_same;
+  hpc::array_vector_iterator<hpc::array<node_index, 2, int>, hpc::device_layout, node_index> interpolate_from;
   apply_cavity(state const& s, adapt_state& a)
     :nodes_to_node_elements(s.nodes_to_node_elements.cbegin())
     ,node_elements_to_elements(s.node_elements_to_elements.cbegin())
@@ -591,14 +589,14 @@ struct apply_cavity {
 static inline void apply_triangle_swap(apply_cavity const c,
     node_index const node,
     node_index const target_node) {
-  array<element_index, 2> loop_elements;
-  array<node_index, 2> loop_nodes;
+  hpc::array<element_index, 2> loop_elements;
+  hpc::array<node_index, 2> loop_nodes;
   for (auto const node_element : c.nodes_to_node_elements[node]) {
     element_index const element = c.node_elements_to_elements[node_element];
     auto const element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index const node_in_element = c.node_elements_to_nodes_in_element[node_element];
-    node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
-    node_in_element_index const plus2 = node_in_element_index((int(node_in_element) + 2) % 3);
+    node_in_element_index const plus1 = node_in_element_index((node_in_element.get() + 1) % 3);
+    node_in_element_index const plus2 = node_in_element_index((node_in_element.get() + 2) % 3);
     node_index const node1 = c.old_element_nodes_to_nodes[element_nodes[plus1]];
     node_index const node2 = c.old_element_nodes_to_nodes[element_nodes[plus2]];
     if (node1 == target_node) {
@@ -634,7 +632,7 @@ static inline void apply_triangle_split(apply_cavity const c,
     element_index const element = c.node_elements_to_elements[node_element];
     auto const old_element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index target_node_in_element(-1);
-    array<node_index, 3, node_in_element_index> new_nodes;
+    hpc::array<node_index, 3, node_in_element_index> new_nodes;
     for (auto const node_in_element : c.nodes_in_element) {
       auto const old_element_node = old_element_nodes[node_in_element];
       node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
@@ -663,7 +661,7 @@ static inline void apply_triangle_split(apply_cavity const c,
     c.new_elements_are_same[new_element2] = false;
   }
   c.new_nodes_are_same[split_node] = false;
-  array<node_index, 2> interpolate_from;
+  hpc::array<node_index, 2, int> interpolate_from;
   interpolate_from[0] = center_node;
   interpolate_from[1] = target_node;
   c.interpolate_from[split_node] = interpolate_from;
@@ -677,7 +675,7 @@ static inline void apply_triangle_collapse(apply_cavity const c,
     element_index const element = c.node_elements_to_elements[node_element];
     auto const old_element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index target_node_in_element(-1);
-    array<node_index, 3, node_in_element_index> new_nodes;
+    hpc::array<node_index, 3, node_in_element_index> new_nodes;
     for (auto const node_in_element : c.nodes_in_element) {
       auto const old_element_node = old_element_nodes[node_in_element];
       node_index const old_node = c.old_element_nodes_to_nodes[old_element_node];
@@ -701,8 +699,8 @@ static inline void apply_triangle_collapse(apply_cavity const c,
 static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 {
   apply_cavity c(s, a);
-  fill(a.new_elements_are_same, true);
-  fill(a.new_nodes_are_same, true);
+  hpc::fill(hpc::device_policy(), a.new_elements_are_same, true);
+  hpc::fill(hpc::device_policy(), a.new_nodes_are_same, true);
   c.new_elements_are_same = a.new_elements_are_same.begin();
   auto const nodes_to_op = a.op.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
@@ -719,9 +717,9 @@ static LGR_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 
 template <class Index>
 static LGR_NOINLINE void project(
-    counting_range<Index> const old_things,
-    device_vector<Index, Index> const& old_things_to_new_things_in,
-    device_vector<Index, Index>& new_things_to_old_things_in) {
+    hpc::counting_range<Index> const old_things,
+    hpc::device_vector<Index, Index> const& old_things_to_new_things_in,
+    hpc::device_vector<Index, Index>& new_things_to_old_things_in) {
   auto const old_things_to_new_things = old_things_to_new_things_in.cbegin();
   auto const new_things_to_old_things = new_things_to_old_things_in.begin();
   auto functor = [=] (Index const old_thing) {
@@ -761,8 +759,8 @@ static LGR_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
 }
 
 static LGR_NOINLINE void transfer_element_materials(adapt_state& a,
-    device_vector<material_index, element_index>& data) {
-  device_vector<material_index, element_index> new_data(a.new_elements.size(), data.get_allocator());
+    hpc::device_vector<material_index, element_index>& data) {
+  hpc::device_vector<material_index, element_index> new_data(a.new_elements.size());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_elements_to_T = data.cbegin();
   auto const new_elements_to_T = new_data.begin();
@@ -775,11 +773,12 @@ static LGR_NOINLINE void transfer_element_materials(adapt_state& a,
   data = std::move(new_data);
 }
 
-template <class T>
+template <class Range>
 static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
-    device_vector<T, point_index>& data) {
+    Range& data) {
   auto const points_in_element = s.points_in_element;
-  device_vector<T, point_index> new_data(a.new_elements.size() * points_in_element.size(), data.get_allocator());
+  using value_type = typename Range::value_type;
+  Range new_data(a.new_elements.size() * points_in_element.size());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_points_to_T = data.cbegin();
   auto const new_points_to_T = new_data.begin();
@@ -792,7 +791,7 @@ static LGR_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
     for (auto const point_in_element : points_in_element) {
       auto const new_point = new_element_points[point_in_element];
       auto const old_point = old_element_points[point_in_element];
-      T const old_value = old_points_to_T[old_point];
+      auto const old_value = value_type(old_points_to_T[old_point]);
       new_points_to_T[new_point] = old_value;
     }
   };
@@ -804,8 +803,8 @@ static LGR_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!in.enable_nodal_energy[material]) continue;
-    device_vector<double, node_index>& old_data = s.e_h[material];
-    device_vector<double, node_index> new_data(a.new_nodes.size(), old_data.get_allocator());
+    hpc::device_vector<double, node_index>& old_data = s.e_h[material];
+    hpc::device_vector<double, node_index> new_data(a.new_nodes.size());
     auto const old_nodes_to_T = old_data.cbegin();
     auto const new_nodes_to_T = new_data.begin();
     auto functor = [=] (node_index const new_node) {
@@ -822,9 +821,10 @@ static LGR_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
   }
 }
 
-template <class T>
-static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vector<T, node_index>& data) {
-  device_vector<T, node_index> new_data(a.new_nodes.size(), data.get_allocator());
+template <class Range>
+static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
+  using value_type = typename Range::value_type;
+  Range new_data(a.new_nodes.size());
   auto const old_nodes_to_data = data.cbegin();
   auto const new_nodes_to_data = new_data.begin();
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
@@ -833,14 +833,14 @@ static LGR_NOINLINE void interpolate_nodal_data(adapt_state const& a, device_vec
   auto functor = [=] (node_index const new_node) {
     if (new_nodes_are_same[new_node]) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
-      new_nodes_to_data[new_node] = T(old_nodes_to_data[old_node]);
+      new_nodes_to_data[new_node] = value_type(old_nodes_to_data[old_node]);
     } else {
-      array<node_index, 2> const pair = interpolate_from[new_node];
+      auto const pair = interpolate_from[new_node].load();
       node_index const left = pair[0];
       node_index const right = pair[1];
       new_nodes_to_data[new_node] = 0.5 * (
-          T(old_nodes_to_data[left])
-        + T(old_nodes_to_data[right]));
+          value_type(old_nodes_to_data[left])
+        + value_type(old_nodes_to_data[right]));
     }
   };
   for_each(a.new_nodes, functor);
@@ -851,16 +851,16 @@ bool adapt(input const& in, state& s) {
   adapt_state a(s);
   evaluate_triangle_adapt(in, s, a);
   choose_triangle_adapt(s, a);
-  auto const num_chosen = transform_reduce(a.op, int(0), plus<int>(),
+  auto const num_chosen = hpc::transform_reduce(hpc::device_policy(), a.op, int(0), hpc::plus<int>(),
       [](cavity_op const op) { return op == cavity_op::NONE ? 0 : 1; });
   if (num_chosen == 0) return false;
   if (in.output_to_command_line) {
     std::cout << "adapting " << num_chosen << " cavities\n";
   }
-  auto const num_new_elements = reduce(a.element_counts, element_index(0));
-  auto const num_new_nodes = reduce(a.node_counts, node_index(0));
-  offset_scan(a.element_counts, a.old_elements_to_new_elements);
-  offset_scan(a.node_counts, a.old_nodes_to_new_nodes);
+  auto const num_new_elements = hpc::reduce(hpc::device_policy(), a.element_counts, element_index(0));
+  auto const num_new_nodes = hpc::reduce(hpc::device_policy(), a.node_counts, node_index(0));
+  hpc::offset_scan(hpc::device_policy(), a.element_counts, a.old_elements_to_new_elements);
+  hpc::offset_scan(hpc::device_policy(), a.node_counts, a.old_nodes_to_new_nodes);
   a.new_elements.resize(num_new_elements);
   a.new_nodes.resize(num_new_nodes);
   a.new_elements_to_old_elements.resize(num_new_elements);
@@ -874,16 +874,16 @@ bool adapt(input const& in, state& s) {
   apply_triangle_adapt(s, a);
   transfer_same_connectivity(s, a);
   transfer_element_materials(a, s.material);
-  transfer_point_data<double>(s, a, s.rho);
-  if (!all_of(in.enable_nodal_energy)) {
-    transfer_point_data<double>(s, a, s.e);
+  transfer_point_data(s, a, s.rho);
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+    transfer_point_data(s, a, s.e);
   } else {
     transfer_nodal_energy(in, a, s);
   }
-  transfer_point_data<matrix3x3<double>>(s, a, s.F_total);
-  interpolate_nodal_data<vector3<double>>(a, s.x);
-  interpolate_nodal_data<vector3<double>>(a, s.v);
-  interpolate_nodal_data<double>(a, s.h_adapt);
+  transfer_point_data(s, a, s.F_total);
+  interpolate_nodal_data(a, s.x);
+  interpolate_nodal_data(a, s.v);
+  interpolate_nodal_data(a, s.h_adapt);
   s.elements = a.new_elements;
   s.nodes = a.new_nodes;
   s.elements_to_nodes = std::move(a.new_element_nodes_to_nodes);

@@ -9,5 +9,6 @@ class serial_policy {};
 
 using host_policy = serial_policy;
 using device_policy = serial_policy;
+using host_to_device_policy = serial_policy;
 
 }

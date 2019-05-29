@@ -7,7 +7,7 @@ namespace lgr {
 
 void update_p_h(state& s, double const dt,
     material_index const material,
-    device_vector<double, node_index> const& old_p_h_vector) {
+    hpc::device_vector<double, node_index> const& old_p_h_vector) {
   auto const nodes_to_p_h = s.p_h[material].begin();
   auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
@@ -22,7 +22,7 @@ void update_p_h(state& s, double const dt,
 
 void update_e_h(state& s, double const dt,
     material_index const material,
-    device_vector<double, node_index> const& old_e_h_vector)
+    hpc::device_vector<double, node_index> const& old_e_h_vector)
 {
   auto const nodes_to_e_h_dot = s.e_h_dot[material].cbegin();
   auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
@@ -42,7 +42,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_p_h = s.p_h[material].cbegin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const points_to_sigma = s.sigma.begin();
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
@@ -55,7 +55,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
         double const p_h = nodes_to_p_h[node];
         point_p_h = point_p_h + N * p_h;
       }
-      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      auto const old_sigma = points_to_sigma[point].load();
       auto const new_sigma = deviator(old_sigma) - point_p_h;
       points_to_sigma[point] = new_sigma;
     }
@@ -77,23 +77,23 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s, material_inde
   auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const points_to_v_prime = s.v_prime.begin();
   auto const c_tau = in.c_tau[material];
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       auto const point_nodes = points_to_point_nodes[point];
       double const dt = points_to_dt[point];
       auto const tau = c_tau * dt;
-      auto grad_p = vector3<double>::zero();
-      auto a = vector3<double>::zero();
+      auto grad_p = hpc::vector3<double>::zero();
+      auto a = hpc::vector3<double>::zero();
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
-        node_index const node = element_nodes_to_nodes[element_node];
-        double const p_h = nodes_to_p_h[node];
-        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        auto const node = element_nodes_to_nodes[element_node];
+        auto const p_h = nodes_to_p_h[node];
+        auto const grad_N = point_nodes_to_grad_N[point_node].load();
         grad_p = grad_p + (grad_N * p_h);
-        vector3<double> const a_of_node = nodes_to_a[node];
+        auto const a_of_node = nodes_to_a[node].load();
         a = a + a_of_node;
       }
       a = a * N;
@@ -121,26 +121,26 @@ static void LGR_NOINLINE update_q(input const& in, state& s, material_index cons
   auto const points_to_K = s.K.cbegin();
   auto const points_to_q = s.q.begin();
   auto const c_tau = in.c_tau[material];
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       double const dt = points_to_dt[point];
       auto const tau = c_tau * dt;
-      auto grad_p = vector3<double>::zero();
-      auto a = vector3<double>::zero();
+      auto grad_p = hpc::vector3<double>::zero();
+      auto a = hpc::vector3<double>::zero();
       double p_h = 0.0;
       double dp_de = 0.0;
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
-        node_index const node = element_nodes_to_nodes[element_node];
-        double const p_h_of_node = nodes_to_p_h[node];
+        auto const node = element_nodes_to_nodes[element_node];
+        auto const p_h_of_node = nodes_to_p_h[node];
         p_h = p_h + p_h_of_node;
-        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        auto const grad_N = point_nodes_to_grad_N[point_node].load();
         grad_p = grad_p + (grad_N * p_h_of_node);
-        vector3<double> const a_of_node = nodes_to_a[node];
+        auto const a_of_node = nodes_to_a[node].load();
         a = a + a_of_node;
         double const dp_de_h = nodes_to_dp_de[node];
         dp_de += dp_de_h;
@@ -165,22 +165,22 @@ static void LGR_NOINLINE update_p_h_W(state& s, material_index const material)
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const point_nodes_to_W = s.W.begin();
-  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      symmetric3x3<double> symm_grad_v = points_to_symm_grad_v[point];
-      double const div_v = trace(symm_grad_v);
-      double const K = points_to_K[point];
-      double const V = points_to_V[point];
-      vector3<double> const v_prime = points_to_v_prime[point];
+      auto const symm_grad_v = points_to_symm_grad_v[point].load();
+      auto const div_v = trace(symm_grad_v);
+      auto const K = points_to_K[point];
+      auto const V = points_to_V[point];
+      auto const v_prime = points_to_v_prime[point].load();
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const point_node : point_nodes) {
-        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
-        double const p_h_dot =
+        auto const grad_N = point_nodes_to_grad_N[point_node].load();
+        auto const p_h_dot =
           -(N * (K * div_v)) + (grad_N * (K * v_prime));
-        double const W = p_h_dot * V;
+        auto const W = p_h_dot * V;
         point_nodes_to_W[point_node] = W;
       }
     }
@@ -195,19 +195,19 @@ static void LGR_NOINLINE update_e_h_W(state& s, material_index const material)
   auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const point_nodes_to_W = s.W.begin();
-  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      double const rho_e_dot = points_to_rho_e_dot[point];
-      double const V = points_to_V[point];
-      vector3<double> const q = points_to_q[point];
+      auto const rho_e_dot = points_to_rho_e_dot[point];
+      auto const V = points_to_V[point];
+      auto const q = points_to_q[point].load();
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const point_node : point_nodes) {
-        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
-        double const rho_e_h_dot = (N * rho_e_dot) + (grad_N * q);
-        double const W = rho_e_h_dot * V;
+        auto const grad_N = point_nodes_to_grad_N[point_node].load();
+        auto const rho_e_h_dot = (N * rho_e_dot) + (grad_N * q);
+        auto const W = rho_e_h_dot * V;
         point_nodes_to_W[point_node] = W;
       }
     }
@@ -226,7 +226,7 @@ static void LGR_NOINLINE update_p_h_dot(state& s, material_index const material)
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_material = s.material.cbegin();
-  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto functor = [=] (node_index const node) {
     double node_W = 0.0;
     double node_V = 0.0;
@@ -287,7 +287,7 @@ static void LGR_NOINLINE update_e_h_dot(state& s, material_index const material)
 void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   auto const nodes_to_rho = s.rho_h[material].cbegin();
   auto const nodes_to_e = s.e_h[material].cbegin();
-  fill(s.p_h[material], double(0.0));
+  hpc::fill(hpc::device_policy(), s.p_h[material], double(0.0));
   auto const nodes_to_p = s.p_h[material].begin();
   auto const nodes_to_K = s.K_h[material].begin();
   auto const nodes_to_dp_de = s.dp_de_h[material].begin();
@@ -314,9 +314,9 @@ void update_nodal_density(state& s, material_index const material)
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const nodes_to_m = s.material_mass[material].cbegin();
-  fill(s.rho_h[material], double(0.0));
+  hpc::fill(hpc::device_policy(), s.rho_h[material], double(0.0));
   auto const nodes_to_rho_h = s.rho_h[material].begin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] (node_index const node) {
@@ -351,7 +351,7 @@ void interpolate_K(state& s, material_index const material)
       for (auto const element_node : element_nodes) {
         node_index const node = element_nodes_to_nodes[element_node];
         double const K_h = nodes_to_K_h[node];
-        K = lgr::max(K, K_h);
+        K = hpc::max(K, K_h);
       }
       points_to_K[point] = K;
     }
@@ -366,14 +366,14 @@ void interpolate_rho(state& s, material_index const material)
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const nodes_to_rho_h = s.rho_h[material].cbegin();
   auto const points_to_rho = s.rho.begin();
-  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       double rho = 0.0;
       for (auto const element_node : element_nodes) {
-        node_index const node = element_nodes_to_nodes[element_node];
-        double const rho_h = nodes_to_rho_h[node];
+        auto const node = element_nodes_to_nodes[element_node];
+        auto const rho_h = nodes_to_rho_h[node];
         rho = rho + rho_h;
       }
       rho = rho * N;

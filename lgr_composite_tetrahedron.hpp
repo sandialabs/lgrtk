@@ -1,27 +1,27 @@
 #pragma once
 
-#include <lgr_vector3.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_vector4.hpp>
-#include <lgr_matrix3x3.hpp>
+#include <hpc_matrix3x3.hpp>
 #include <lgr_matrix4x4.hpp>
-#include <lgr_array.hpp>
+#include <hpc_array.hpp>
 
 namespace lgr {
 
 namespace composite_tetrahedron {
 
-using S_t = array<array<vector3<double>, 10>, 12>;
-using gamma_t = array<array<array<double, 10>, 10>, 12>;
-using subtet_proj_t = array<matrix4x4<double>, 12>;
-using subtet_int_t = array<array<double, 4>, 12>;
-using O_t = array<matrix3x3<double>, 12>;
-using SOL_t = array<array<vector3<double>, 10>, 4>;
+using S_t = hpc::array<hpc::array<hpc::vector3<double>, 10>, 12>;
+using gamma_t = hpc::array<hpc::array<hpc::array<double, 10>, 10>, 12>;
+using subtet_proj_t = hpc::array<matrix4x4<double>, 12>;
+using subtet_int_t = hpc::array<hpc::array<double, 4>, 12>;
+using O_t = hpc::array<hpc::matrix3x3<double>, 12>;
+using SOL_t = hpc::array<hpc::array<hpc::vector3<double>, 10>, 4>;
 
 inline S_t get_S() noexcept {
   S_t S;
   for (auto& a : S) {
     for (auto& b : a) {
-      b = vector3<double>::zero();
+      b = hpc::vector3<double>::zero();
     }
   }
   S[0][0](0) = -2;
@@ -771,10 +771,10 @@ constexpr inline matrix4x4<double> get_parent_M_inv() noexcept {
      -24.0,-24.0,-24.0, 96.0);
 }
 
-inline O_t get_O(array<vector3<double>, 10> const x, S_t const S) noexcept {
+inline O_t get_O(hpc::array<hpc::vector3<double>, 10> const x, S_t const S) noexcept {
   O_t O;
   for (int tet = 0; tet < 12; ++tet) {
-    O[tet] = matrix3x3<double>::zero();
+    O[tet] = hpc::matrix3x3<double>::zero();
   }
   for (int tet = 0; tet < 12; ++tet) {
     for (int node = 0; node < 10; ++node) {
@@ -796,15 +796,15 @@ inline O_t get_O_inv(O_t const O) noexcept {
   return O_inv;
 }
 
-inline array<double, 12> get_O_det(O_t const O) noexcept {
-  array<double, 12> det_O;
+inline hpc::array<double, 12> get_O_det(O_t const O) noexcept {
+  hpc::array<double, 12> det_O;
   for (int tet = 0; tet < 12; ++tet) {
     det_O[tet] = determinant(O[tet]);
   }
   return det_O;
 }
 
-inline matrix4x4<double> get_M_inv(array<double, 12> const O_det) noexcept {
+inline matrix4x4<double> get_M_inv(hpc::array<double, 12> const O_det) noexcept {
   auto M = matrix4x4<double>::zero();
   auto const sub_tet_int_proj_M = get_subtet_proj_M();
   for (int tet = 0; tet < 12; ++tet) {
@@ -817,12 +817,12 @@ inline matrix4x4<double> get_M_inv(array<double, 12> const O_det) noexcept {
   return inverse(M);
 }
 
-inline SOL_t get_SOL(array<double, 12> O_det, O_t O_inv,
+inline SOL_t get_SOL(hpc::array<double, 12> O_det, O_t O_inv,
     subtet_int_t subtet_int, S_t S) noexcept {
   SOL_t SOL;
   for (auto& a : SOL)
   for (auto& b : a)
-    b = vector3<double>::zero();
+    b = hpc::vector3<double>::zero();
   for (int tet = 0; tet < 12; ++tet) {
     for (int node = 0; node < 10; ++node) {
       for (int dim1 = 0; dim1 < 3; ++dim1) {
@@ -839,9 +839,9 @@ inline SOL_t get_SOL(array<double, 12> O_det, O_t O_inv,
   return SOL;
 }
 
-inline array<double, 4> get_DOL(
-    array<double, 12> O_det, subtet_int_t subtet_int) noexcept {
-  array<double, 4> DOL;
+inline hpc::array<double, 4> get_DOL(
+    hpc::array<double, 12> O_det, subtet_int_t subtet_int) noexcept {
+  hpc::array<double, 4> DOL;
   for (auto& a : DOL) a = 0.0;
   for (int tet = 0; tet < 12; ++tet) {
     for (int pt = 0; pt < 4; ++pt) {
@@ -851,8 +851,8 @@ inline array<double, 4> get_DOL(
   return DOL;
 }
 
-inline array<vector3<double>, 4> get_ref_points() noexcept {
-  array<vector3<double>, 4> pts;
+inline hpc::array<hpc::vector3<double>, 4> get_ref_points() noexcept {
+  hpc::array<hpc::vector3<double>, 4> pts;
   pts[0](0) = 0.1381966011250105151795413165634361882280;
   pts[0](1) = 0.1381966011250105151795413165634361882280;
   pts[0](2) = 0.1381966011250105151795413165634361882280;
@@ -868,8 +868,8 @@ inline array<vector3<double>, 4> get_ref_points() noexcept {
   return pts;
 }
 
-inline array<double, 4> get_barycentric(vector3<double> const x) noexcept {
-  array<double, 4> xi;
+inline hpc::array<double, 4> get_barycentric(hpc::vector3<double> const x) noexcept {
+  hpc::array<double, 4> xi;
   xi[0] = 1.0 - x(0) - x(1) - x(2);
   xi[1] = x(0);
   xi[2] = x(1);
@@ -877,8 +877,8 @@ inline array<double, 4> get_barycentric(vector3<double> const x) noexcept {
   return xi;
 }
 
-inline array<vector3<double>, 4> get_subtet_coords(array<vector3<double>, 11> in, int subtet) noexcept {
-  array<vector3<double>, 4> out;
+inline hpc::array<hpc::vector3<double>, 4> get_subtet_coords(hpc::array<hpc::vector3<double>, 11> in, int subtet) noexcept {
+  hpc::array<hpc::vector3<double>, 4> out;
   switch (subtet) {
     case 0:
       out[0] = in[0];
@@ -956,7 +956,7 @@ inline array<vector3<double>, 4> get_subtet_coords(array<vector3<double>, 11> in
   return out;
 }
 
-inline double get_tet_diameter(array<vector3<double>, 4> const x) noexcept {
+inline double get_tet_diameter(hpc::array<hpc::vector3<double>, 4> const x) noexcept {
   auto const e10 = x[1] - x[0];
   auto const e20 = x[2] - x[0];
   auto const e30 = x[3] - x[0];
@@ -971,34 +971,34 @@ inline double get_tet_diameter(array<vector3<double>, 4> const x) noexcept {
   return (sa > 0.0) ? (vol / sa) : 0.0;
 }
 
-inline double get_length(array<vector3<double>, 10> in) noexcept {
-  array<vector3<double>, 11> node_coords_with_center;
+inline double get_length(hpc::array<hpc::vector3<double>, 10> in) noexcept {
+  hpc::array<hpc::vector3<double>, 11> node_coords_with_center;
   for (int i = 0; i < 10; ++i) node_coords_with_center[i] = in[i];
   node_coords_with_center[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
-  double min_length = std::numeric_limits<double>::max();
+  double min_length = hpc::numeric_limits<double>::max();
   for (int tet = 0; tet < 12; ++tet) {
     auto const x = get_subtet_coords(node_coords_with_center, tet);
     auto const length = get_tet_diameter(x);
-    min_length = lgr::min(min_length, length);
+    min_length = hpc::min(min_length, length);
   }
   constexpr double magic_number = 2.3;
   return min_length * magic_number;
 }
 
-inline array<vector3<double>, 12> get_centroids() noexcept {
-  array<vector3<double>, 12> xi;
-  xi[0] = vector3<double>( 0.125, 0.125, 0.125 );
-  xi[1] = vector3<double>( 0.625, 0.125, 0.125 );
-  xi[2] = vector3<double>( 0.125, 0.625, 0.125 );
-  xi[3] = vector3<double>( 0.125, 0.125, 0.625 );
-  xi[4] = vector3<double>( 0.4375, 0.1875, 0.1875 );
-  xi[5] = vector3<double>( 0.3125, 0.3125, 0.3125 );
-  xi[6] = vector3<double>( 0.1875, 0.1875, 0.4375 );
-  xi[7] = vector3<double>( 0.3125, 0.0625, 0.3125 );
-  xi[8] = vector3<double>( 0.3125, 0.3125, 0.0625 );
-  xi[9] = vector3<double>( 0.1875, 0.4375, 0.1875 );
-  xi[10] = vector3<double>( 0.0625, 0.3125, 0.3125 );
-  xi[11] = vector3<double>( 0.1875, 0.1875, 0.1875 );
+inline hpc::array<hpc::vector3<double>, 12> get_centroids() noexcept {
+  hpc::array<hpc::vector3<double>, 12> xi;
+  xi[0] = hpc::vector3<double>( 0.125, 0.125, 0.125 );
+  xi[1] = hpc::vector3<double>( 0.625, 0.125, 0.125 );
+  xi[2] = hpc::vector3<double>( 0.125, 0.625, 0.125 );
+  xi[3] = hpc::vector3<double>( 0.125, 0.125, 0.625 );
+  xi[4] = hpc::vector3<double>( 0.4375, 0.1875, 0.1875 );
+  xi[5] = hpc::vector3<double>( 0.3125, 0.3125, 0.3125 );
+  xi[6] = hpc::vector3<double>( 0.1875, 0.1875, 0.4375 );
+  xi[7] = hpc::vector3<double>( 0.3125, 0.0625, 0.3125 );
+  xi[8] = hpc::vector3<double>( 0.3125, 0.3125, 0.0625 );
+  xi[9] = hpc::vector3<double>( 0.1875, 0.4375, 0.1875 );
+  xi[10] = hpc::vector3<double>( 0.0625, 0.3125, 0.3125 );
+  xi[11] = hpc::vector3<double>( 0.1875, 0.1875, 0.1875 );
   return xi;
 }
 
@@ -1006,7 +1006,7 @@ inline double get_q(double const x) noexcept {
   return 0.25 * (1.0 - std::sqrt(5.0) + 4.0 * std::sqrt(5.0) * x);
 }
 
-inline vector4<double> get_Q(vector3<double> const xi) noexcept {
+inline vector4<double> get_Q(hpc::vector3<double> const xi) noexcept {
   return vector4<double>(
     get_q(1.0 - xi(0) - xi(1) - xi(2)),
     get_q(xi(0)),
@@ -1014,15 +1014,15 @@ inline vector4<double> get_Q(vector3<double> const xi) noexcept {
     get_q(xi(2)));
 }
 
-inline array<array<double, 10>, 10> get_consistent_mass_matrix(
-    array<vector3<double>, 10> const node_coords,
+inline hpc::array<hpc::array<double, 10>, 10> get_consistent_mass_matrix(
+    hpc::array<hpc::vector3<double>, 10> const node_coords,
     vector4<double> point_densities) noexcept {
   auto const S = get_S();
   auto const O = get_O(node_coords, S);
   auto const O_det = get_O_det(O);
   auto const C = get_centroids();
   auto const gamma = get_gamma();
-  array<array<double, 10>, 10> mass;
+  hpc::array<hpc::array<double, 10>, 10> mass;
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
       mass[i][j] = 0.0;
@@ -1043,8 +1043,8 @@ inline array<array<double, 10>, 10> get_consistent_mass_matrix(
   return mass;
 }
 
-inline array<double, 10> lump_mass_matrix(array<array<double, 10>, 10> const mass) noexcept {
-  array<double, 10> lumped;
+inline hpc::array<double, 10> lump_mass_matrix(hpc::array<hpc::array<double, 10>, 10> const mass) noexcept {
+  hpc::array<double, 10> lumped;
   for (int i = 0; i < 10; ++i) {
     lumped[i] = 0.0;
     for (int j = 0; j < 10; ++j) {
@@ -1054,13 +1054,13 @@ inline array<double, 10> lump_mass_matrix(array<array<double, 10>, 10> const mas
   return lumped;
 }
 
-inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
-    array<vector3<double>, 10> const node_coords) noexcept
+inline hpc::array<hpc::array<hpc::vector3<double>, 10>, 4> get_basis_gradients(
+    hpc::array<hpc::vector3<double>, 10> const node_coords) noexcept
 {
-  array<array<vector3<double>, 10>, 4> grad_N;
+  hpc::array<hpc::array<hpc::vector3<double>, 10>, 4> grad_N;
   for (auto& a : grad_N) {
     for (auto& b : a) {
-      b = vector3<double>::zero();
+      b = hpc::vector3<double>::zero();
     }
   }
   auto const ref_points = get_ref_points();
@@ -1087,12 +1087,12 @@ inline array<array<vector3<double>, 10>, 4> get_basis_gradients(
   return grad_N;
 }
 
-inline array<double, 4> get_volumes(
-    array<vector3<double>, 10> const node_coords) noexcept
+inline hpc::array<double, 4> get_volumes(
+    hpc::array<hpc::vector3<double>, 10> const node_coords) noexcept
 {
   // compute the projected |J| times integration weights
   constexpr double ip_weight = 1.0 / 24.0;
-  array<double, 4> volumes;
+  hpc::array<double, 4> volumes;
   for (auto& a : volumes) a = 0.0;
   auto const ref_points = get_ref_points();
   auto const sub_tet_int = get_subtet_int();

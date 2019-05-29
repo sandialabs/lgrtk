@@ -45,4 +45,11 @@ struct logical_and
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool operator()(bool const a, bool const b) const noexcept { return a && b; }
 };
 
+template <class To, class From>
+struct cast {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr To operator()(From const& a) noexcept {
+    return a;
+  }
+};
+
 }

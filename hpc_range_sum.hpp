@@ -9,8 +9,6 @@
 
 namespace hpc {
 
-namespace impl {
-
 template <class TargetIndex, class SourceIndex>
 class range_sum_iterator {
   TargetIndex const* m_ptr;
@@ -83,8 +81,6 @@ class range_sum_iterator {
   }
 };
 
-}
-
 template <class TargetIndex, class Allocator, class ExecutionPolicy, class SourceIndex>
 class range_sum {
   using vector_type = ::hpc::vector<TargetIndex, Allocator, ExecutionPolicy, SourceIndex>;
@@ -99,7 +95,7 @@ public:
   using const_reference = value_type;
   using pointer = TargetIndex*;
   using const_pointer = TargetIndex const*;
-  using iterator = ::hpc::impl::range_sum_iterator<TargetIndex, SourceIndex>;
+  using iterator = ::hpc::range_sum_iterator<TargetIndex, SourceIndex>;
   using const_iterator = iterator;
   constexpr range_sum() noexcept : m_vector() {}
   template <class RangeSizes>
