@@ -497,20 +497,20 @@ void Circuit::UpdateMatrixSize()
          N_matrix.size = nmat_size;
          M_matrix.size = nmat_size;
          NM_matrix.size = nmat_size;
-         N_matrix.entries.resize(nmat_size*nmat_size);
-         M_matrix.entries.resize(nmat_size*nmat_size);
-         NM_matrix.entries.resize(nmat_size*nmat_size);
+         N_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
+         M_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
+         NM_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
       }
       
-      AR_matrix.resize(nNum-gNum, std::vector<int>(rNum));
-      G_matrix.resize (rNum, std::vector<double>(rNum));
-      AC_matrix.resize(nNum-gNum, std::vector<int>(cNum));
-      C_matrix.resize (cNum, std::vector<double>(cNum));
-      AL_matrix.resize(nNum-gNum, std::vector<int>(lNum));
-      L_matrix.resize (lNum, std::vector<double>(lNum));
-      AV_matrix.resize(nNum-gNum, std::vector<int>(vNum));
-      V_vector.resize (vNum);
-      I_vector.resize (nNum-gNum);
+      AR_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(rNum)));
+      G_matrix.resize (std::size_t(rNum), std::vector<double>(std::size_t(rNum)));
+      AC_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(cNum)));
+      C_matrix.resize (std::size_t(cNum), std::vector<double>(std::size_t(cNum)));
+      AL_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(lNum)));
+      L_matrix.resize (std::size_t(lNum), std::vector<double>(std::size_t(lNum)));
+      AV_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(vNum)));
+      V_vector.resize (std::size_t(vNum));
+      I_vector.resize (std::size_t(nNum-gNum));
    }
 }
 
@@ -606,11 +606,11 @@ void Circuit::AssembleRMatrix() {
    for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
 
    std::size_t ibr_t;
-   std::size_t eVM_t = eValMap[i_t];
+   auto eVM_t = std::size_t(eValMap[i_t]);
 
    if (eType[i_t] == ETYPE_RESISTOR) {
       ir++;
-      ibr_t = ir;
+      ibr_t = std::size_t(ir);
       G_matrix[ibr_t][ibr_t] = rVal[eVM_t];
 
    for (std::size_t j_t=0; j_t<2   ; j_t++) {
@@ -645,11 +645,11 @@ void Circuit::AssembleCMatrix() {
    for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
 
    std::size_t ibr_t;
-   std::size_t eVM_t = eValMap[i_t];
+   auto eVM_t = std::size_t(eValMap[i_t]);
 
    if (eType[i_t] == ETYPE_CAPACITOR) {
       ic++;
-      ibr_t = ic;
+      ibr_t = std::size_t(ic);
       C_matrix[ibr_t][ibr_t] = cVal[eVM_t];
 
    for (std::size_t j_t=0; j_t<2   ; j_t++) {
@@ -684,11 +684,11 @@ void Circuit::AssembleLMatrix() {
    for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
 
    std::size_t ibr_t;
-   std::size_t eVM_t = eValMap[i_t];
+   auto eVM_t = std::size_t(eValMap[i_t]);
 
    if (eType[i_t] == ETYPE_INDUCTOR) {
       il++;
-      ibr_t = il;
+      ibr_t = std::size_t(il);
       L_matrix[ibr_t][ibr_t] = lVal[eVM_t];
 
    for (std::size_t j_t=0; j_t<2   ; j_t++) {
@@ -724,7 +724,7 @@ void Circuit::AssembleSourceMatrix()
    for (std::size_t i=0;i< fvVals.size(); i++) {
       if (abs(fvVals[i]) >= rthresh) {
          iv++;
-         std::size_t nn_t = iv;
+         auto nn_t = std::size_t(iv);
          V_vector[nn_t] = fvVals[i];
          std::size_t ieqn = ConvertNodeToEq<std::size_t>(fvNodes[i]);
          AV_matrix[ieqn][nn_t] = 1;
@@ -736,7 +736,7 @@ void Circuit::AssembleSourceMatrix()
    for (std::size_t i=0;i< ivVals.size(); i++) {
       if (abs(ivVals[i]) >= rthresh) {
          iv++;
-         std::size_t nn_t = iv;
+         auto nn_t = std::size_t(iv);
          V_vector[nn_t] = ivVals[i];
          std::size_t ieqn = ConvertNodeToEq<std::size_t>(ivNodes[i]);
          AV_matrix[ieqn][nn_t] = 1;
@@ -764,7 +764,7 @@ void Circuit::AssembleNMatrix()
 {
 
    // Put in AR*R*AR'
-   std::vector< std::vector<double> > GA(rNum, std::vector<double>(nNum-gNum));
+   std::vector< std::vector<double> > GA(std::size_t(rNum), std::vector<double>(std::size_t(nNum-gNum)));
 
    int ishift = 0;
    int jshift = 0;
@@ -869,7 +869,7 @@ void Circuit::ModifyCEquation()
 void Circuit::AssembleMMatrix()
 {
 
-   std::vector< std::vector<double> > CA(cNum, std::vector<double>(nNum-gNum));
+   std::vector< std::vector<double> > CA(std::size_t(cNum), std::vector<double>(std::size_t(nNum-gNum)));
 
    int ishift = 0;
    int jshift = 0;
