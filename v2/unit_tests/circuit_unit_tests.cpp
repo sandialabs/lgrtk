@@ -44,7 +44,7 @@ circuit:
    // Advance to t = 1 sec
    double dt = 0.01;
    double tfinal = 1.0;
-   int nstep = tfinal/dt; // intentional warning
+   int nstep = int(tfinal/dt); 
    for (int i=0;i<nstep;i++){
       circuit.Solve(dt);
    }
