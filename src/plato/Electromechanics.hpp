@@ -72,13 +72,14 @@ struct FunctionFactory
                          Omega_h::MeshSets& aMeshSets,
                          Plato::DataMap& aDataMap, 
                          Teuchos::ParameterList & aParamList, 
-                         std::string aStrScalarFunctionType)
+                         std::string aStrScalarFunctionType,
+                         std::string aStrScalarFunctionName)
     /******************************************************************************/
     {
 
         if(aStrScalarFunctionType == "Internal Electroelastic Energy")
         {
-            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionType).sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionName).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
@@ -101,7 +102,7 @@ struct FunctionFactory
         }
         else if(aStrScalarFunctionType == "Stress P-Norm")
         {
-            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionType).sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionName).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
@@ -124,7 +125,7 @@ struct FunctionFactory
         }
         else if(aStrScalarFunctionType == "Volume")
         {
-            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionType).sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionName).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {

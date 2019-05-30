@@ -2,28 +2,24 @@
 
 #include <memory>
 #include <cassert>
+#include <vector>
 
 #include <Omega_h_mesh.hpp>
 
+#include "plato/ScalarFunctionBase.hpp"
 #include "plato/WorksetBase.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include <Teuchos_ParameterList.hpp>
 
 namespace Plato
 {
 
-/******************************************************************************/
-/*! objective class
-
- This class takes as a template argument a scalar function in the form:
-
- and manages the evaluation of the function and derivatives wrt state
- and control. status
-
- */
-/******************************************************************************/
+/******************************************************************************//**
+ * @brief Physics scalar function class 
+ **********************************************************************************/
 template<typename PhysicsT>
-class ScalarFunction : public Plato::WorksetBase<PhysicsT>
+class PhysicsScalarFunction : public ScalarFunctionBase, public Plato::WorksetBase<PhysicsT>
 {
 private:
     using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degree of freedom per cell/element */
@@ -50,54 +46,70 @@ private:
 
     Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
 
-public:
-    /******************************************************************************//**
-     * @brief Primary scalar function constructor
-     * @param [in] aMesh mesh database
-     * @param [in] aMeshSets side sets database
-     * @param [in] aDataMap PLATO Engine and Analyze data map
+    std::string mFunctionName;/*!< User defined function name */
+
+	/******************************************************************************//**
+     * @brief Initialization of Physics Scalar Function
      * @param [in] aInputParams input parameters database
-     * @param [in] aMyName scalar function name
     **********************************************************************************/
-    ScalarFunction(Omega_h::Mesh& aMesh,
-                   Omega_h::MeshSets& aMeshSets,
-                   Plato::DataMap & aDataMap,
-                   Teuchos::ParameterList& aInputParams,
-                   const std::string & aFuncName) :
-            Plato::WorksetBase<PhysicsT>(aMesh),
-            m_dataMap(aDataMap)
+    void initialize (Omega_h::Mesh& aMesh, 
+                     Omega_h::MeshSets& aMeshSets, 
+                     Teuchos::ParameterList & aInputParams)
     {
         typename PhysicsT::FunctionFactory tFactory;
 
         auto tProblemSpecs = aInputParams.sublist("Plato Problem");
-        auto tProblemDefault = tProblemSpecs.sublist(aFuncName);
+        auto tProblemDefault = tProblemSpecs.sublist(mFunctionName);
         auto tFunctionType = tProblemDefault.get<std::string>("Type", ""); // Must be a hardcoded type name (e.g. Volume)
 
         mScalarFunctionValue =
-                tFactory.template createScalarFunction<Residual>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
-
+            tFactory.template createScalarFunction<Residual>(
+                aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionType, mFunctionName);
         mScalarFunctionGradientU =
-                tFactory.template createScalarFunction<Jacobian>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
-
-        mScalarFunctionGradientZ =
-                tFactory.template createScalarFunction<GradientZ>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
-
+            tFactory.template createScalarFunction<Jacobian>(
+                aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionType, mFunctionName);
         mScalarFunctionGradientX =
-                tFactory.template createScalarFunction<GradientX>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
+            tFactory.template createScalarFunction<GradientX>(
+                aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionType, mFunctionName);
+        mScalarFunctionGradientZ =
+            tFactory.template createScalarFunction<GradientZ>(
+                aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionType, mFunctionName);
+    }
+
+public:
+    /******************************************************************************//**
+     * @brief Primary physics scalar function constructor
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Engine and Analyze data map
+     * @param [in] aInputParams input parameters database
+     * @param [in] aName user defined function name
+    **********************************************************************************/
+    PhysicsScalarFunction(Omega_h::Mesh& aMesh,
+            Omega_h::MeshSets& aMeshSets,
+            Plato::DataMap & aDataMap,
+            Teuchos::ParameterList& aInputParams,
+            const std::string aName) :
+            Plato::WorksetBase<PhysicsT>(aMesh),
+            m_dataMap(aDataMap),
+            mFunctionName(aName)
+    {
+        initialize(aMesh, aMeshSets, aInputParams);
     }
 
     /******************************************************************************//**
-     * @brief Secondary scalar function constructor, used for unit testing
+     * @brief Secondary physics scalar function constructor, used for unit testing
      * @param [in] aMesh mesh database
      * @param [in] aMeshSets side sets database
     **********************************************************************************/
-    ScalarFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
+    PhysicsScalarFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
             Plato::WorksetBase<PhysicsT>(aMesh),
-            mScalarFunctionValue(nullptr),
-            mScalarFunctionGradientU(nullptr),
-            mScalarFunctionGradientX(nullptr),
-            mScalarFunctionGradientZ(nullptr),
-            m_dataMap(aDataMap)
+            mScalarFunctionValue(),
+            mScalarFunctionGradientU(),
+            mScalarFunctionGradientX(),
+            mScalarFunctionGradientZ(),
+            m_dataMap(aDataMap),
+            mFunctionName("Undefined Name")
     {
     }
 
@@ -160,11 +172,11 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Evaluate scalar function
+     * @brief Evaluate physics scalar function
      * @param [in] aState 1D view of state variables
      * @param [in] aControl 1D view of control variables
      * @param [in] aTimeStep time step (default = 0.0)
-     * @return scalar function evaluation
+     * @return scalar physics function evaluation
     **********************************************************************************/
     Plato::Scalar value(const Plato::ScalarVector & aState,
                         const Plato::ScalarVector & aControl,
@@ -178,13 +190,11 @@ public:
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
@@ -194,29 +204,28 @@ public:
 
         // create result view
         //
-        Plato::ScalarVectorT<ResultScalar> tResult("result", m_numCells);
-
-        m_dataMap.scalarVectors[mScalarFunctionValue->getName()] = tResult;
+        Plato::ScalarVectorT<ResultScalar> tResult("result workset", m_numCells);
 
         // evaluate function
         //
+        // TODO: Should the individual scalar function values/gradients be added to the data map?
+        //m_dataMap.scalarVectors[mScalarFunctionValue[tFunctionIndex]->getName()] = tTempResult;
         mScalarFunctionValue->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
+        //m_dataMap.scalarVectors[name()] = tResult;
 
         // sum across elements
         //
         auto tReturnVal = Plato::local_result_sum<Plato::Scalar>(m_numCells, tResult);
 
-        mScalarFunctionValue->postEvaluate(tReturnVal);
-
         return tReturnVal;
     }
 
     /******************************************************************************//**
-     * @brief Evaluate gradient of the scalar function with respect to (wrt) the configuration parameters
+     * @brief Evaluate gradient of the physics scalar function with respect to (wrt) the configuration parameters
      * @param [in] aState 1D view of state variables
      * @param [in] aControl 1D view of control variables
      * @param [in] aTimeStep time step (default = 0.0)
-     * @return 1D view with the gradient of the scalar function wrt the configuration parameters
+     * @return 1D view with the gradient of the physics scalar function wrt the configuration parameters
     **********************************************************************************/
     Plato::ScalarVector gradient_x(const Plato::ScalarVector & aState,
                                    const Plato::ScalarVector & aControl,
@@ -244,10 +253,11 @@ public:
 
         // create return view
         //
-        Plato::ScalarVectorT<ResultScalar> tResult("result", m_numCells);
+        Plato::ScalarVectorT<ResultScalar> tResult("result workset", m_numCells);
 
         // evaluate function
         //
+        // TODO: Should the individual scalar function values/gradients be added to the data map?
         mScalarFunctionGradientX->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
 
         // create and assemble to return view
@@ -257,19 +267,16 @@ public:
                                                                              m_configEntryOrdinal,
                                                                              tResult,
                                                                              tObjGradientX);
-        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        mScalarFunctionGradientX->postEvaluate(tObjGradientX, tObjectiveValue);
 
         return tObjGradientX;
     }
 
     /******************************************************************************//**
-     * @brief Evaluate gradient of the scalar function with respect to (wrt) the state variables
+     * @brief Evaluate gradient of the physics scalar function with respect to (wrt) the state variables
      * @param [in] aState 1D view of state variables
      * @param [in] aControl 1D view of control variables
      * @param [in] aTimeStep time step (default = 0.0)
-     * @return 1D view with the gradient of the scalar function wrt the state variables
+     * @return 1D view with the gradient of the physics scalar function wrt the state variables
     **********************************************************************************/
     Plato::ScalarVector gradient_u(const Plato::ScalarVector & aState,
                                    const Plato::ScalarVector & aControl,
@@ -297,7 +304,7 @@ public:
 
         // create return view
         //
-        Plato::ScalarVectorT<ResultScalar> tResult("result", m_numCells);
+        Plato::ScalarVectorT<ResultScalar> tResult("result workset", m_numCells);
 
         // evaluate function
         //
@@ -310,24 +317,20 @@ public:
                                                                              m_stateEntryOrdinal,
                                                                              tResult,
                                                                              tObjGradientU);
-        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        mScalarFunctionGradientU->postEvaluate(tObjGradientU, tObjectiveValue);
-
         return tObjGradientU;
     }
 
     /******************************************************************************//**
-     * @brief Evaluate gradient of the scalar function with respect to (wrt) the control variables
+     * @brief Evaluate gradient of the physics scalar function with respect to (wrt) the control variables
      * @param [in] aState 1D view of state variables
      * @param [in] aControl 1D view of control variables
      * @param [in] aTimeStep time step (default = 0.0)
-     * @return 1D view with the gradient of the scalar function wrt the control variables
+     * @return 1D view with the gradient of the physics scalar function wrt the control variables
     **********************************************************************************/
     Plato::ScalarVector gradient_z(const Plato::ScalarVector & aState,
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
-    {
+    {        
         using ConfigScalar = typename GradientZ::ConfigScalarType;
         using StateScalar = typename GradientZ::StateScalarType;
         using ControlScalar = typename GradientZ::ControlScalarType;
@@ -350,22 +353,57 @@ public:
 
         // create result
         //
-        Plato::ScalarVectorT<ResultScalar> tResult("elastic energy", m_numCells);
+        Plato::ScalarVectorT<ResultScalar> tResult("result workset", m_numCells);
 
         // evaluate function
         //
         mScalarFunctionGradientZ->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
 
+
         // create and assemble to return view
         //
         Plato::ScalarVector tObjGradientZ("objective gradient control", m_numNodes);
         Plato::assemble_scalar_gradient<m_numNodesPerCell>(m_numCells, m_controlEntryOrdinal, tResult, tObjGradientZ);
-        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
-
-        mScalarFunctionGradientZ->postEvaluate(tObjGradientZ, tObjectiveValue);
 
         return tObjGradientZ;
     }
-};
 
-} // namespace Plato
+    /******************************************************************************//**
+     * @brief Return user defined function name
+     * @return User defined function name
+    **********************************************************************************/
+    std::string name() const
+    {
+        return mFunctionName;
+    }
+};
+//class PhysicsScalarFunction
+
+}
+//namespace Plato
+
+#include "Thermal.hpp"
+#include "Mechanics.hpp"
+#include "Electromechanics.hpp"
+#include "Thermomechanics.hpp"
+
+#ifdef PLATO_1D
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermal<1>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Mechanics<1>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Electromechanics<1>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermomechanics<1>>;
+#endif
+
+#ifdef PLATO_2D
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermal<2>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Mechanics<2>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Electromechanics<2>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermomechanics<2>>;
+#endif
+
+#ifdef PLATO_3D
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermal<3>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Mechanics<3>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Electromechanics<3>>;
+extern template class Plato::PhysicsScalarFunction<::Plato::Thermomechanics<3>>;
+#endif

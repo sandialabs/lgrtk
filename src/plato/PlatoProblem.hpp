@@ -13,10 +13,10 @@
 #include "ApplyConstraints.hpp"
 
 #include "plato/VectorFunction.hpp"
-#include "plato/ScalarFunction.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
+#include "plato/ScalarFunctionBaseFactory.hpp"
 
 #ifdef HAVE_AMGX
 #include "plato/alg/AmgXSparseLinearProblem.hpp"
@@ -39,8 +39,8 @@ private:
     Plato::VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
 
     // optional
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mObjective; /*!< objective constraint interface */
+    std::shared_ptr<const Plato::ScalarFunctionBase> mConstraint; /*!< constraint constraint interface */
+    std::shared_ptr<const Plato::ScalarFunctionBase> mObjective; /*!< objective constraint interface */
 
     Plato::ScalarMultiVector mAdjoint;
     Plato::ScalarVector mResidual;
@@ -534,17 +534,17 @@ private:
     **********************************************************************************/
     void initialize(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams)
     {
-        if(aInputParams.isType<std::string>("Linear Constraint"))
+        Plato::ScalarFunctionBaseFactory tFunctionBaseFactory;
+        if(aInputParams.isType<std::string>("Constraint"))
         {
-            std::string tName = aInputParams.get<std::string>("Linear Constraint");
-            mConstraint =
-                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            std::string tName = aInputParams.get<std::string>("Constraint");
+            mConstraint = tFunctionBaseFactory.template create<SimplexPhysics>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
         if(aInputParams.isType<std::string>("Objective"))
         {
             std::string tName = aInputParams.get<std::string>("Objective");
-            mObjective = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mObjective = tFunctionBaseFactory.template create<SimplexPhysics>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);

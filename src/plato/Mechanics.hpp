@@ -293,30 +293,31 @@ struct FunctionFactory
                          Omega_h::MeshSets& aMeshSets,
                          Plato::DataMap& aDataMap, 
                          Teuchos::ParameterList & aInputParams,
+                         std::string aFuncType,
                          std::string aFuncName)
     {
 
-        if(aFuncName == "Internal Elastic Energy")
+        if(aFuncType == "Internal Elastic Energy")
         {
             return (Plato::MechanicsFactory::internal_elastic_energy<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }
-        else if(aFuncName == "Stress P-Norm")
+        else if(aFuncType == "Stress P-Norm")
         {
             return (Plato::MechanicsFactory::stress_p_norm<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }
-        else if(aFuncName == "Effective Energy")
+        else if(aFuncType == "Effective Energy")
         {
             return (Plato::MechanicsFactory::effective_energy<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }
-        else if(aFuncName == "Stress Constraint")
+        else if(aFuncType == "Stress Constraint")
         {
             return (Plato::MechanicsFactory::stress_constraint_linear<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
         }
-        else if(aFuncName == "Stress Constraint General")
+        else if(aFuncType == "Stress Constraint General")
         {
             return (Plato::MechanicsFactory::stress_constraint_general<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
         }
-        else if(aFuncName == "Volume")
+        else if(aFuncType == "Volume")
         {
             return (Plato::MechanicsFactory::volume<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }

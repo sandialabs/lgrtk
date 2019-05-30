@@ -87,11 +87,12 @@ struct FunctionFactory{
     Omega_h::MeshSets& aMeshSets,
     Plato::DataMap& aDataMap,
     Teuchos::ParameterList& aParamList,
-    std::string strScalarFunctionType )
+    std::string strScalarFunctionType,
+    std::string strScalarFunctionName )
   {
 
     if( strScalarFunctionType == "Internal Thermal Energy" ){
-      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      auto penaltyParams = aParamList.sublist(strScalarFunctionName).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
         return std::make_shared<Plato::InternalThermalEnergy<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
@@ -106,7 +107,7 @@ struct FunctionFactory{
       }
     } else
     if( strScalarFunctionType == "Flux P-Norm" ){
-      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      auto penaltyParams = aParamList.sublist(strScalarFunctionName).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
         return std::make_shared<Plato::FluxPNorm<EvaluationType, Plato::MSIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
@@ -121,7 +122,7 @@ struct FunctionFactory{
       }
     } else 
     if( strScalarFunctionType == "Volume" ){
-      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      auto penaltyParams = aParamList.sublist(strScalarFunctionName).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
         return std::make_shared<Plato::Volume<EvaluationType, Plato::MSIMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
