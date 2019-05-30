@@ -55,7 +55,7 @@ circuit:
 
    double vdrop_expect = fixedv_values[1]*(1-exp(-tfinal));
 
-   double thresh = 10*dt;
+   double thresh = dt;
 
    EXPECT_TRUE(Omega_h::are_close(vdrop, vdrop_expect, thresh, 0.0));
 }
@@ -168,7 +168,7 @@ circuit:
 
    double vdrop_expect = -initv_values[0]*(exp(-tfinal));
 
-   double thresh = 10.0*dt;
+   double thresh = dt;
 
    EXPECT_TRUE(Omega_h::are_close(vdrop, vdrop_expect, thresh, 0.0));
 }
@@ -225,7 +225,7 @@ circuit:
    double vdrop_capacitor = fixedv_values[1]*(1.0-exp(-tfinal));
    double vdrop_expect    = fixedv_values[1] - vdrop_capacitor;
 
-   double thresh = 10.0*dt;
+   double thresh = dt;
 
    EXPECT_TRUE(Omega_h::are_close(vdrop, vdrop_expect, thresh, 0.0));
 }
@@ -299,7 +299,7 @@ circuit:
    double current_expect = initv_values[0]/(inductance*A)*exp(-alpha*tfinal)*sin(A*tfinal);
    double vdrop_expect   = current_expect/conductance;
 
-   double thresh = 10.0*dt;
+   double thresh = 4.0*dt; // Relax a bit
 
    EXPECT_TRUE(Omega_h::are_close(vdrop, vdrop_expect, thresh, 0.0));
 }
@@ -373,7 +373,7 @@ circuit:
    double current_expect = initv_values[0]/(2.0*inductance*A)*exp(-alpha*tfinal)*(exp(A*tfinal)-exp(-A*tfinal));
    double vdrop_expect   = current_expect/conductance;
 
-   double thresh = 10.0*dt;
+   double thresh = dt;
 
    EXPECT_TRUE(Omega_h::are_close(vdrop, vdrop_expect, thresh, 0.0));
 }
