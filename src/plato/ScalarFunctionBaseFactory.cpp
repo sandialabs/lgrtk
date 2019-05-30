@@ -2,58 +2,24 @@
 #include "ScalarFunctionBaseFactory.hpp"
 #include "ScalarFunctionBaseFactory_def.hpp"
 
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Mechanics<2>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
 
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Mechanics<3>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
+#ifdef PLATO_1D
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermal<1>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Mechanics<1>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Electromechanics<1>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermomechanics<1>>;
+#endif
 
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Thermomechanics<2>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
+#ifdef PLATO_2D
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermal<2>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Mechanics<2>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Electromechanics<2>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermomechanics<2>>;
+#endif
 
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Thermomechanics<3>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
-
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Electromechanics<2>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
-
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Electromechanics<3>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
-
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Thermal<2>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
-
-template std::shared_ptr<Plato::ScalarFunctionBase> 
-    Plato::ScalarFunctionBaseFactory::create<Plato::Thermal<3>>(Omega_h::Mesh&,
-                                                                   Omega_h::MeshSets& ,
-                                                                   Plato::DataMap &,
-                                                                   Teuchos::ParameterList&,
-                                                                   const std::string);
+#ifdef PLATO_3D
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermal<3>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Mechanics<3>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Electromechanics<3>>;
+template class Plato::ScalarFunctionBaseFactory<::Plato::Thermomechanics<3>>;
+#endif

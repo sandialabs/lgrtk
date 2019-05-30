@@ -14,9 +14,9 @@ namespace Plato
      * @param [in] aInputParams parameter input
      * @param [in] aFunctionName name of function in parameter list
      **********************************************************************************/
-    template<typename PhysicsT>
+    template <typename PhysicsT>
     std::shared_ptr<Plato::ScalarFunctionBase> 
-    ScalarFunctionBaseFactory::create(Omega_h::Mesh& aMesh,
+    ScalarFunctionBaseFactory<PhysicsT>::create(Omega_h::Mesh& aMesh,
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap & aDataMap,
            Teuchos::ParameterList& aInputParams,

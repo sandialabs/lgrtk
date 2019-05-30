@@ -534,17 +534,17 @@ private:
     **********************************************************************************/
     void initialize(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams)
     {
-        Plato::ScalarFunctionBaseFactory tFunctionBaseFactory;
+        Plato::ScalarFunctionBaseFactory<SimplexPhysics> tFunctionBaseFactory;
         if(aInputParams.isType<std::string>("Constraint"))
         {
             std::string tName = aInputParams.get<std::string>("Constraint");
-            mConstraint = tFunctionBaseFactory.template create<SimplexPhysics>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mConstraint = tFunctionBaseFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
         if(aInputParams.isType<std::string>("Objective"))
         {
             std::string tName = aInputParams.get<std::string>("Objective");
-            mObjective = tFunctionBaseFactory.template create<SimplexPhysics>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mObjective = tFunctionBaseFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);

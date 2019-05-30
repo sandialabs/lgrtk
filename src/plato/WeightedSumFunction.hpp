@@ -48,7 +48,7 @@ private:
                      Omega_h::MeshSets& aMeshSets, 
                      Teuchos::ParameterList & aInputParams)
     {
-        Plato::ScalarFunctionBaseFactory tFactory;
+        Plato::ScalarFunctionBaseFactory<PhysicsT> tFactory;
 
         mScalarFunctionBaseContainer.clear();
         mFunctionWeights.clear();
@@ -72,7 +72,7 @@ private:
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < tFunctionNames.size(); ++tFunctionIndex)
         {
             mScalarFunctionBaseContainer.push_back(
-                tFactory.template create<PhysicsT>(
+                tFactory.create(
                     aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionNames[tFunctionIndex]));
         }
 
