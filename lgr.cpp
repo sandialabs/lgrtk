@@ -7,13 +7,17 @@
 
 namespace lgr {
 
-static void HPC_NOINLINE set_exponential_wave_v(
+HPC_NOINLINE void set_exponential_wave_v(
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
+void HPC_NOINLINE set_exponential_wave_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const d = x(0) - 0.5;
     auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
@@ -22,27 +26,36 @@ static void HPC_NOINLINE set_exponential_wave_v(
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-static void HPC_NOINLINE zero_v(
+HPC_NOINLINE void zero_v(
+    hpc::counting_range<node_index> const /*nodes*/,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v);
+void HPC_NOINLINE zero_v(
     hpc::counting_range<node_index> const /*nodes*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v) {
   hpc::fill(hpc::device_policy(), *v, hpc::vector3<double>::zero());
 }
 
-static void HPC_NOINLINE spin_v(
+HPC_NOINLINE void spin_v(
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
+void HPC_NOINLINE spin_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     nodes_to_v[node] = 100.0 * hpc::vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
   };
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-static void HPC_NOINLINE elastic_wave() {
+HPC_NOINLINE void elastic_wave();
+void elastic_wave() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -70,7 +83,8 @@ static void HPC_NOINLINE elastic_wave() {
   run(in);
 }
 
-static void HPC_NOINLINE gas_expansion() {
+HPC_NOINLINE void gas_expansion();
+void gas_expansion() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -88,7 +102,8 @@ static void HPC_NOINLINE gas_expansion() {
   run(in);
 }
 
-static void HPC_NOINLINE spinning_square() {
+HPC_NOINLINE void spinning_square();
+void spinning_square() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -109,13 +124,17 @@ static void HPC_NOINLINE spinning_square() {
   run(in);
 }
 
-static void HPC_NOINLINE quadratic_in_x_v(
+HPC_NOINLINE void quadratic_in_x_v(
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
+void quadratic_in_x_v(
     hpc::counting_range<node_index> const nodes,
     hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const norm_x = x(0) / 48.0;
     auto const v_y = norm_x * norm_x;
@@ -124,11 +143,13 @@ static void HPC_NOINLINE quadratic_in_x_v(
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-static void HPC_NOINLINE Cooks_membrane_x(
+HPC_NOINLINE void Cooks_membrane_x(
+    hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector);
+void Cooks_membrane_x(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector) {
   hpc::counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
-  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const unit_x = nodes_to_x[node].load();
     hpc::vector3<double> const new_x(
         unit_x(0) * 48.0,
@@ -141,7 +162,8 @@ static void HPC_NOINLINE Cooks_membrane_x(
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-static void HPC_NOINLINE Cooks_membrane() {
+HPC_NOINLINE void Cooks_membrane();
+void Cooks_membrane() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -173,7 +195,8 @@ static void HPC_NOINLINE Cooks_membrane() {
   run(in);
 }
 
-static void HPC_NOINLINE swinging_plate() {
+HPC_NOINLINE void swinging_plate();
+void HPC_NOINLINE swinging_plate() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -207,7 +230,7 @@ static void HPC_NOINLINE swinging_plate() {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 0.001;
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
           -std::sin((hpc::pi<double>() * x(0)) / 2.0) * std::cos((hpc::pi<double>() * x(1)) / 2.0),
@@ -234,7 +257,8 @@ static void HPC_NOINLINE swinging_plate() {
   run(in);
 }
 
-static void HPC_NOINLINE spinning_cube() {
+HPC_NOINLINE void spinning_cube();
+void spinning_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -259,7 +283,8 @@ static void HPC_NOINLINE spinning_cube() {
   run(in);
 }
 
-static void HPC_NOINLINE elastic_wave_2d() {
+HPC_NOINLINE void elastic_wave_2d();
+void elastic_wave_2d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -294,7 +319,8 @@ static void HPC_NOINLINE elastic_wave_2d() {
   run(in);
 }
 
-static void HPC_NOINLINE elastic_wave_3d() {
+HPC_NOINLINE void elastic_wave_3d();
+void elastic_wave_3d() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_boundary(1);
@@ -338,7 +364,8 @@ static void HPC_NOINLINE elastic_wave_3d() {
   run(in);
 }
 
-static void HPC_NOINLINE swinging_cube(bool stabilize) {
+HPC_NOINLINE void swinging_cube(bool stabilize);
+void swinging_cube(bool stabilize) {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -380,7 +407,7 @@ static void HPC_NOINLINE swinging_cube(bool stabilize) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       constexpr double half_pi = hpc::pi<double>() / 2.0;
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
@@ -414,7 +441,8 @@ static void HPC_NOINLINE swinging_cube(bool stabilize) {
   run(in);
 }
 
-static void HPC_NOINLINE twisting_column() {
+HPC_NOINLINE void twisting_column();
+void twisting_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index y_min(1);
@@ -445,7 +473,7 @@ static void HPC_NOINLINE twisting_column() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
@@ -467,7 +495,8 @@ static void HPC_NOINLINE twisting_column() {
   run(in);
 }
 
-static void HPC_NOINLINE Noh_1D() {
+HPC_NOINLINE void Noh_1D();
+void Noh_1D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -489,7 +518,7 @@ static void HPC_NOINLINE Noh_1D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -511,7 +540,8 @@ static void HPC_NOINLINE Noh_1D() {
   run(in);
 }
 
-static void HPC_NOINLINE Noh_2D() {
+HPC_NOINLINE void Noh_2D();
+void Noh_2D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -536,7 +566,7 @@ static void HPC_NOINLINE Noh_2D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -560,7 +590,8 @@ static void HPC_NOINLINE Noh_2D() {
   run(in);
 }
 
-static void HPC_NOINLINE spinning_composite_cube() {
+HPC_NOINLINE void spinning_composite_cube();
+void spinning_composite_cube() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index nboundaries(0);
@@ -585,7 +616,8 @@ static void HPC_NOINLINE spinning_composite_cube() {
   run(in);
 }
 
-static void HPC_NOINLINE twisting_composite_column() {
+HPC_NOINLINE void twisting_composite_column();
+void twisting_composite_column() {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
   constexpr material_index y_min(1);
@@ -616,7 +648,7 @@ static void HPC_NOINLINE twisting_composite_column() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
@@ -637,7 +669,8 @@ static void HPC_NOINLINE twisting_composite_column() {
   run(in);
 }
 
-static void HPC_NOINLINE Noh_3D() {
+HPC_NOINLINE void Noh_3D();
+void Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -665,7 +698,7 @@ static void HPC_NOINLINE Noh_3D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -692,7 +725,8 @@ static void HPC_NOINLINE Noh_3D() {
   run(in);
 }
 
-static void HPC_NOINLINE composite_Noh_3D() {
+HPC_NOINLINE void composite_Noh_3D();
+void composite_Noh_3D() {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
@@ -720,7 +754,7 @@ static void HPC_NOINLINE composite_Noh_3D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -748,7 +782,8 @@ static void HPC_NOINLINE composite_Noh_3D() {
   run(in);
 }
 
-static void HPC_NOINLINE Sod_1D() {
+HPC_NOINLINE void Sod_1D();
+void Sod_1D() {
   constexpr material_index left(0);
   constexpr material_index right(1);
   constexpr material_index nmaterials(2);
@@ -791,7 +826,8 @@ static void HPC_NOINLINE Sod_1D() {
   run(in);
 }
 
-static void HPC_NOINLINE triple_point() {
+HPC_NOINLINE void triple_point();
+void triple_point() {
   constexpr material_index left(0);
   constexpr material_index right_bottom(1);
   constexpr material_index right_top(2);
@@ -875,3 +911,4 @@ int main() {
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 }
+
