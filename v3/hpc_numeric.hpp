@@ -2,6 +2,11 @@
 
 #include <hpc_transform_reduce.hpp>
 
+#ifdef HPC_CUDA
+#include <thrust/execution_policy.h>
+#include <thrust/transform_scan.h>
+#endif
+
 namespace hpc {
 
 namespace impl {
@@ -50,7 +55,7 @@ transform_inclusive_scan(local_policy, InputRange const& input, OutputRange& out
 }
 
 template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
-void
+HPC_NOINLINE void
 transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
 {
   auto first = input.begin();
@@ -64,6 +69,44 @@ transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& ou
     *(++d_first) = sum;
   }
 }
+
+#ifdef HPC_CUDA
+
+namespace impl {
+
+template <class InputIterator, class OutputIterator, class BinaryOp, class UnaryOp>
+HPC_NOINLINE void
+transform_inclusive_scan(cuda_policy, InputIterator first, InputIterator last, OutputIterator d_first, BinaryOp binary_op, UnaryOp unary_op) noexcept
+{
+  thrust::transform_inclusive_scan(thrust::device, first, last, d_first, unary_op, binary_op);
+}
+
+template <class T, class Index, class UnaryOp>
+HPC_NOINLINE void
+transform_inclusive_scan(cuda_policy,
+    ::hpc::counting_iterator<Index> first,
+    ::hpc::counting_iterator<Index> last,
+    ::hpc::pointer_iterator<T, Index> d_first,
+    ::hpc::plus<T>,
+    UnaryOp unary_op) noexcept
+{
+  ::hpc::counting_iterator<Index> old_zero(0);
+  ::thrust::counting_iterator<int> new_first(int(first - old_zero));
+  ::thrust::counting_iterator<int> new_last(int(last - old_zero));
+  T* new_d_first = &(*d_first);
+  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<T>());
+}
+
+}
+
+template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
+HPC_NOINLINE void
+transform_inclusive_scan(cuda_policy policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
+{
+  ::hpc::impl::transform_inclusive_scan(policy, input.begin(), input.end(), output.begin(), binary_op, unary_op);
+}
+
+#endif
 
 template <class ExecutionPolicy, class InputRange, class OutputRange>
 void offset_scan(ExecutionPolicy policy, InputRange const& input, OutputRange& output) {
