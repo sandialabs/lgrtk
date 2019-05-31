@@ -50,7 +50,7 @@ static void collect_set(
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets = offsets.cbegin();
-  auto functor = [=] (Index const item) {
+  auto functor = [=] HPC_DEVICE (Index const item) {
     if (is_in_functor(item) != 0) {
       set_items_to_items[items_to_offsets[item] - 1] = item;
     }
@@ -66,7 +66,7 @@ void assign_element_materials(input const& in, state& s) {
   auto const nodes_to_x = s.x.cbegin();
   double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_centroids = centroid_vector.begin();
-  auto centroid_functor = [=] (element_index const element) {
+  auto centroid_functor = [=] HPC_DEVICE (element_index const element) {
     auto centroid = hpc::vector3<double>::zero();
     for (auto const element_node : elements_to_element_nodes[element]) {
       node_index const node = element_nodes_to_nodes[element_node];
@@ -91,7 +91,7 @@ void compute_nodal_materials(input const& in, state& s) {
   auto const elements_to_materials = s.material.cbegin();
   s.nodal_materials.resize(s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.begin();
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const node_elements = nodes_to_node_elements[node];
     auto node_materials = material_set::none();
     for (auto const node_element : node_elements) {
@@ -114,7 +114,7 @@ void collect_node_sets(input const& in, state& s) {
   assert(s.nodal_materials.size() == s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.cbegin();
   for (auto const material : all_materials) {
-    auto is_in_functor = [=](node_index const node) -> int {
+    auto is_in_functor = [=] HPC_DEVICE (node_index const node) -> int {
       material_set const materials = nodes_to_materials[node];
       return (materials.contains(material_set(material))) ? 1 : 0;
     };
@@ -127,7 +127,7 @@ void collect_element_sets(input const& in, state& s)
   s.element_sets.resize(in.materials.size());
   auto const elements_to_material = s.material.cbegin();
   for (auto const material : in.materials) {
-    auto is_in_functor = [=](element_index const element) -> int {
+    auto is_in_functor = [=] HPC_DEVICE (element_index const element) -> int {
       material_index const element_material = elements_to_material[element];
       return (element_material == material) ? 1 : 0;
     };
