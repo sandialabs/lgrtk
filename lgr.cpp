@@ -13,7 +13,7 @@ static void HPC_NOINLINE set_exponential_wave_v(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const d = x(0) - 0.5;
     auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
@@ -35,7 +35,7 @@ static void HPC_NOINLINE spin_v(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     nodes_to_v[node] = 100.0 * hpc::vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
   };
@@ -115,7 +115,7 @@ static void HPC_NOINLINE quadratic_in_x_v(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const norm_x = x(0) / 48.0;
     auto const v_y = norm_x * norm_x;
@@ -128,7 +128,7 @@ static void HPC_NOINLINE Cooks_membrane_x(
     hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector) {
   hpc::counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
     auto const unit_x = nodes_to_x[node].load();
     hpc::vector3<double> const new_x(
         unit_x(0) * 48.0,
@@ -207,7 +207,7 @@ static void HPC_NOINLINE swinging_plate() {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 0.001;
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
           -std::sin((hpc::pi<double>() * x(0)) / 2.0) * std::cos((hpc::pi<double>() * x(1)) / 2.0),
@@ -380,7 +380,7 @@ static void HPC_NOINLINE swinging_cube(bool stabilize) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       constexpr double half_pi = hpc::pi<double>() / 2.0;
       auto const x = nodes_to_x[node].load();
       auto const v = (U0 * w) * hpc::vector3<double>(
@@ -445,7 +445,7 @@ static void HPC_NOINLINE twisting_column() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
@@ -489,7 +489,7 @@ static void HPC_NOINLINE Noh_1D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -536,7 +536,7 @@ static void HPC_NOINLINE Noh_2D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -616,7 +616,7 @@ static void HPC_NOINLINE twisting_composite_column() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
@@ -665,7 +665,7 @@ static void HPC_NOINLINE Noh_3D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
@@ -720,7 +720,7 @@ static void HPC_NOINLINE composite_Noh_3D() {
     hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
-    auto functor = [=](node_index const node) {
+    auto functor = [=] HPC_HOST_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
       auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));

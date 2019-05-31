@@ -6,6 +6,12 @@
 #include <hpc_functional.hpp>
 #include <hpc_transform_reduce.hpp>
 
+#ifdef HPC_CUDA
+#include <thrust/execution_policy.h>
+#include <thrust/for_each.h>
+#include <thrust/fill.h>
+#endif
+
 namespace hpc {
 
 template <class Range, class UnaryFunction>
@@ -21,6 +27,13 @@ void for_each(serial_policy, Range&& r, UnaryFunction f) {
     f(*it);
   }
 }
+
+#ifdef HPC_CUDA
+template <class Range, class UnaryFunction>
+void for_each(cuda_policy, Range&& r, UnaryFunction f) {
+  thrust::for_each(thrust::device, r.begin(), r.end(), f);
+}
+#endif
 
 template <class FromRange, class ToRange>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void copy(local_policy, FromRange const& from, ToRange& to) noexcept
@@ -82,6 +95,13 @@ void fill(serial_policy, Range& r, T value) {
     *first = value;
   }
 }
+
+#ifdef HPC_CUDA
+template <class Range, class T>
+void fill(cuda_policy, Range& r, T value) {
+  thrust::fill(thrust::device, r.begin(), r.end(), value);
+}
+#endif
 
 template <class Range, class UnaryPredicate>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE
