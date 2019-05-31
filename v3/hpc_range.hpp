@@ -308,6 +308,9 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex> {
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator operator-(difference_type const n) const noexcept {
     return outer_iterator(m_begin - n * m_inner_size, m_inner_size);
   }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type operator-(outer_iterator const& other) const noexcept {
+    return difference_type((m_begin - other.m_begin) / m_inner_size);
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator[](difference_type const n) const noexcept {
     return *((*this) + n);
   }
@@ -386,6 +389,9 @@ class outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex> {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator operator-(difference_type const n) const noexcept {
     return outer_iterator(m_begin - (n * InnerIndex(1)), m_outer_size, m_inner_size);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type operator-(outer_iterator const& other) const noexcept {
+    return difference_type((m_begin - other.m_begin) / InnerIndex(1));
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator[](difference_type const n) const noexcept {
     return *((*this) + n);

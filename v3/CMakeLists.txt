@@ -9,7 +9,7 @@ if (LGR_ENABLE_CUDA)
 endif()
 
 if (LGR_ENABLE_CUDA)
-  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wall,-Wextra,-Werror --Werror cross-execution-space-call,reorder,deprecated-declarations")
+  set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wall,-Wextra,-Werror --Werror cross-execution-space-call,deprecated-declarations --expt-extended-lambda")
 else()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
