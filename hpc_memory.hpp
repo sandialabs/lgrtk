@@ -3,16 +3,80 @@
 #include <memory>
 #include <type_traits>
 
+#include <hpc_macros.hpp>
 #include <hpc_execution.hpp>
 
 namespace hpc {
 
 template <class T>
 using host_allocator = std::allocator<T>;
+
+#ifdef HPC_CUDA
+
+template <class T>
+class device_allocator {
+ public:
+  using value_type = T;
+  using pointer = T*;
+  using const_pointer = T const*;
+  using reference = T&;
+  using const_reference = T const&;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  template< class U > struct rebind { typedef ::hpc::device_allocator<U> other; };
+  using is_always_equal = std::true_type;
+  constexpr bool operator==(device_allocator const&) const noexcept { return true; }
+  constexpr bool operator!=(device_allocator const&) const noexcept { return false; }
+  T* allocate(std::size_t n) {
+    void* ptr;
+    auto err = cudaMalloc(&ptr, n);
+    if (err != cudaSuccess) {
+      throw std::bad_alloc();
+    }
+    return static_cast<T*>(ptr);
+  }
+  void deallocate(T* p, std::size_t) {
+    auto err = cudaFree(p);
+    assert(cudaSuccess == err);
+  }
+};
+
+template <class T>
+class pinned_allocator {
+ public:
+  using value_type = T;
+  using pointer = T*;
+  using const_pointer = T const*;
+  using reference = T&;
+  using const_reference = T const&;
+  using size_type = std::size_t;
+  using difference_type = std::ptrdiff_t;
+  template< class U > struct rebind { typedef ::hpc::pinned_allocator<U> other; };
+  using is_always_equal = std::true_type;
+  constexpr bool operator==(pinned_allocator const&) const noexcept { return true; }
+  constexpr bool operator!=(pinned_allocator const&) const noexcept { return false; }
+  T* allocate(std::size_t n) {
+    void* ptr;
+    auto err = cudaMallocHost(&ptr, n);
+    if (err != cudaSuccess) {
+      throw std::bad_alloc();
+    }
+    return static_cast<T*>(ptr);
+  }
+  void deallocate(T* p, std::size_t) {
+    auto err = cudaFreeHost(p);
+    assert(cudaSuccess == err);
+  }
+};
+
+#else
+
 template <class T>
 using pinned_allocator = std::allocator<T>;
 template <class T>
 using device_allocator = std::allocator<T>;
+
+#endif
 
 template <class Range>
 void uninitialized_default_construct(serial_policy, Range&& range) {
