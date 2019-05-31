@@ -20,6 +20,7 @@ else()
 endif()
 
 set(LGR_SOURCES
+#   test.cpp
     lgr.cpp
     lgr_state.cpp
     lgr_print.cpp
@@ -57,3 +58,4 @@ if (LGR_ENABLE_EXODUS)
   target_include_directories(lgr PRIVATE "${SEACASExodus_TPL_INCLUDE_DIRS}")
 # target_link_libraries(lgr PRIVATE "${SEACASExodus_TPL_LIBRARIES}")
 endif()
+target_include_directories(lgr PRIVATE "/ascldap/users/daibane/src/thrust")

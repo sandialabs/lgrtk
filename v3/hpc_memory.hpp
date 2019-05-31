@@ -5,6 +5,7 @@
 
 #include <hpc_macros.hpp>
 #include <hpc_execution.hpp>
+#include <hpc_algorithm.hpp>
 
 namespace hpc {
 
@@ -79,7 +80,7 @@ using device_allocator = std::allocator<T>;
 #endif
 
 template <class Range>
-void uninitialized_default_construct(serial_policy, Range&& range) {
+HPC_NOINLINE void uninitialized_default_construct(serial_policy, Range&& range) {
   using range_type = std::decay_t<Range>;
   auto first = range.begin();
   auto const last = range.end();
@@ -87,6 +88,20 @@ void uninitialized_default_construct(serial_policy, Range&& range) {
     ::new (static_cast<void*>(std::addressof(*first))) typename range_type::value_type;
   }
 }
+
+#ifdef HPC_CUDA
+
+template <class Range>
+HPC_NOINLINE void uninitialized_default_construct(cuda_policy policy, Range&& range) {
+  using range_type = std::decay_t<Range>;
+  using reference_type = typename range_type::reference;
+  auto functor = [=] HPC_DEVICE (reference_type ref) {
+    ::new (static_cast<void*>(&ref)) typename range_type::value_type;
+  };
+  for_each(policy, range, functor);
+}
+
+#endif
 
 template<class T>
 HPC_ALWAYS_INLINE HPC_DEVICE void device_destroy_at(T* p)
@@ -101,12 +116,26 @@ HPC_ALWAYS_INLINE void host_destroy_at(T* p)
 }
 
 template <class Range>
-void destroy(serial_policy, Range&& range) {
+HPC_NOINLINE void destroy(serial_policy, Range&& range) {
   auto first = range.begin();
   auto const last = range.end();
   for (; first != last; ++first) {
     ::hpc::host_destroy_at(std::addressof(*first));
   }
 }
+
+#ifdef HPC_CUDA
+
+template <class Range>
+HPC_NOINLINE void destroy(cuda_policy policy, Range&& range) {
+  using range_type = std::decay_t<Range>;
+  using reference_type = typename range_type::reference;
+  auto functor = [=] HPC_DEVICE (reference_type ref) { 
+    ::hpc::device_destroy_at(&ref);
+  };
+  ::hpc::for_each(policy, range, functor);
+}
+
+#endif
 
 }

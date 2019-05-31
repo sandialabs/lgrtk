@@ -68,7 +68,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void move(local_policy, InputRange& input, Out
 }
 
 template <class InputRange, class OutputRange>
-void move(serial_policy, InputRange& input, OutputRange& output)
+HPC_NOINLINE void move(serial_policy, InputRange& input, OutputRange& output)
 {
   auto first = input.begin();
   auto const last = input.end();
@@ -77,6 +77,24 @@ void move(serial_policy, InputRange& input, OutputRange& output)
     *d_first++ = std::move(*first++);
   }
 }
+
+#ifdef HPC_CUDA
+
+template <class InputRange, class OutputRange>
+HPC_NOINLINE void move(cuda_policy policy, InputRange& input, OutputRange& output)
+{
+  using size_type = typename InputRange::size_type;
+  auto const input_begin = input.begin();
+  auto const output_begin = output.begin();
+  auto functor = [=] HPC_DEVICE (size_type const i) {
+    output_begin[i] = std::move(input_begin[i]);
+  };
+  auto size = input.size();
+  auto range = ::hpc::counting_range<size_type>(size);
+  ::hpc::for_each(policy, range, functor);
+}
+
+#endif
 
 template <class Range, class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void fill(local_policy, Range& r, T value) noexcept {
@@ -88,7 +106,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void fill(local_policy, Range& r, T value) noe
 }
 
 template <class Range, class T>
-void fill(serial_policy, Range& r, T value) {
+HPC_NOINLINE void fill(serial_policy, Range& r, T value) {
   auto first = r.begin();
   auto const last = r.end();
   for (; first != last; ++first) {
@@ -98,7 +116,7 @@ void fill(serial_policy, Range& r, T value) {
 
 #ifdef HPC_CUDA
 template <class Range, class T>
-void fill(cuda_policy, Range& r, T value) {
+HPC_NOINLINE void fill(cuda_policy, Range& r, T value) {
   thrust::fill(thrust::device, r.begin(), r.end(), value);
 }
 #endif

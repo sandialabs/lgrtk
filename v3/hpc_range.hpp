@@ -15,6 +15,7 @@ class iterator_range<Iterator, std::input_iterator_tag> {
   Iterator m_end;
  public:
   using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+  using size_type = difference_type;
   using reference = typename std::iterator_traits<Iterator>::reference;
   using value_type = typename std::iterator_traits<Iterator>::value_type;
   using iterator = Iterator;
@@ -22,7 +23,7 @@ class iterator_range<Iterator, std::input_iterator_tag> {
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator begin() const noexcept { return m_begin; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator end() const noexcept { return m_end; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE void resize(difference_type n) noexcept { m_end = ::hpc::advance(m_begin, n); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type size() const noexcept { return ::hpc::distance(m_begin, m_end); }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr size_type size() const noexcept { return ::hpc::distance(m_begin, m_end); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool empty() const noexcept { return m_begin == m_end; }
 };
 
