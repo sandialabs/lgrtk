@@ -36,4 +36,9 @@ bool all_of(Range const& range) {
   return all_of(range, identity<bool>());
 }
 
+template <class Range>
+bool any_of(Range const& range) {
+  return any_of(range, identity<bool>());
+}
+
 }
