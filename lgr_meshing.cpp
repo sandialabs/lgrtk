@@ -62,7 +62,7 @@ void propagate_connectivity(state& s) {
 HPC_NOINLINE void initialize_bars_to_nodes(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const begin = s.elements_to_nodes.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
     begin[element_nodes[l_t(0)]] = node_index(element.get());
@@ -108,7 +108,7 @@ HPC_NOINLINE void build_triangle_mesh(input const& in, state& s)
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const element_nodes_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const quad) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const quad) {
     int const i = quad % nx;
     int const j = quad / nx;
     auto tri = element_index(quad * 2 + 0);
@@ -132,7 +132,7 @@ HPC_NOINLINE void build_triangle_mesh(input const& in, state& s)
   double const y = in.y_domain_size;
   double const dx = x / nx;
   double const dy = y / ny;
-  auto coordinates_functor = [=] (node_index const node) {
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const i = node.get() % nvx;
     int const j = node.get() / nvx;
     nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, 0.0);
@@ -162,7 +162,7 @@ HPC_NOINLINE void build_tetrahedron_mesh(input const& in, state& s)
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const elements_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const hex) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const hex) {
     int const ij = hex % nxy;
     int const k = hex / nxy;
     int const i = ij % nx;
@@ -226,7 +226,7 @@ HPC_NOINLINE void build_tetrahedron_mesh(input const& in, state& s)
   double const dx = x / nx;
   double const dy = y / ny;
   double const dz = z / nz;
-  auto coordinates_functor = [=] (node_index const node) {
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const ij = node.get() % nvxy;
     int const k = node.get() / nvxy;
     int const i = ij % nvx;
@@ -259,7 +259,7 @@ HPC_NOINLINE void build_10_node_tetrahedron_mesh(input const& in, state& s)
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const elements_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const hex) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const hex) {
     int const ij = hex % nxy;
     int const k = hex / nxy;
     int const i = ij % nx;
@@ -355,7 +355,7 @@ HPC_NOINLINE void build_10_node_tetrahedron_mesh(input const& in, state& s)
   double const dx = x / (nx * 2.0);
   double const dy = y / (ny * 2.0);
   double const dz = z / (nz * 2.0);
-  auto coordinates_functor = [=] (node_index const node) {
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const ij = node.get() % nvxy;
     int const k = node.get() / nvxy;
     int const i = ij % nvx;

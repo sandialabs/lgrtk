@@ -120,7 +120,7 @@ transform_inclusive_scan(cuda_policy,
   TStored* const new_first = &(*first);
   TStored* const new_last = &(*last);
   TResult* const new_d_first = &(*d_first);
-  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<T>());
+  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<TResult>());
 }
 
 }
