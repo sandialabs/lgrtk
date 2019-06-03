@@ -38,7 +38,13 @@ void union_domain::mark(
 }
 
 template <class Index, class IsInFunctor>
-static void collect_set(
+HPC_NOINLINE void collect_set(
+  hpc::counting_range<Index> const range,
+  IsInFunctor is_in_functor,
+  hpc::device_vector<Index, int>& set_items
+  );
+template <class Index, class IsInFunctor>
+void collect_set(
   hpc::counting_range<Index> const range,
   IsInFunctor is_in_functor,
   hpc::device_vector<Index, int>& set_items

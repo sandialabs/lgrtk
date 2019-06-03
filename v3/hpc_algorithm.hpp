@@ -47,7 +47,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void copy(local_policy, FromRange const& from,
 }
 
 template <class FromRange, class ToRange>
-void copy(serial_policy, FromRange const& from, ToRange& to) {
+HPC_NOINLINE void copy(serial_policy, FromRange const& from, ToRange& to) {
   auto first = from.begin();
   auto const last = from.end();
   auto d_first = to.begin();
@@ -55,6 +55,23 @@ void copy(serial_policy, FromRange const& from, ToRange& to) {
     *d_first++ = *first++;
   }
 }
+
+#ifdef HPC_CUDA
+
+template <class FromRange, class ToRange>
+HPC_NOINLINE void copy(cuda_policy, FromRange const& from, ToRange& to) {
+  auto const first = from.begin();
+  auto const d_first = to.begin();
+  auto functor = [=] HPC_DEVICE (typename FromRange::size_type const i) {
+    d_first[i] = FromRange::value_type(first[i]);
+  };
+  int n = int(from.size());
+  thrust::counting_iterator<int> new_first(0);
+  thrust::counting_iterator<int> new_last(n);
+  thrust::for_each(thrust::device, new_first, new_last, functor);
+}
+
+#endif
 
 template <class InputRange, class OutputRange>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void move(local_policy, InputRange& input, OutputRange& output) noexcept
