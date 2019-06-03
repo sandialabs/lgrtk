@@ -20,7 +20,6 @@ else()
 endif()
 
 set(LGR_SOURCES
-#   test.cpp
     lgr.cpp
     lgr_state.cpp
     lgr_print.cpp
@@ -28,6 +27,8 @@ set(LGR_SOURCES
     lgr_domain.cpp
     lgr_physics.cpp
     lgr_bar.cpp
+    lgr_triangle.cpp
+    lgr_tetrahedron.cpp
     lgr_element_specific.cpp
     lgr_meshing.cpp
     lgr_stabilized.cpp
