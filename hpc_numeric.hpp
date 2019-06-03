@@ -32,11 +32,22 @@ reduce(local_policy policy, Range const& range, T init) noexcept {
 }
 
 template <class Range, class T>
-T reduce(serial_policy policy, Range const& range, T init) {
+HPC_NOINLINE T reduce(serial_policy policy, Range const& range, T init) {
   using input_value_type = typename Range::value_type;
   auto const unop = [] (input_value_type const i) { return T(i); };
   return transform_reduce(policy, range, init, plus<T>(), unop);
 }
+
+#ifdef HPC_CUDA
+
+template <class Range, class T>
+HPC_NOINLINE T reduce(cuda_policy policy, Range const& range, T init) {
+  using input_value_type = typename Range::value_type;
+  auto const unop = [] HPC_DEVICE (input_value_type const i) { return T(i); };
+  return hpc::transform_reduce(policy, range, init, hpc::plus<T>(), unop);
+}
+
+#endif
 
 template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
@@ -94,6 +105,21 @@ transform_inclusive_scan(cuda_policy,
   ::thrust::counting_iterator<int> new_first(int(first - old_zero));
   ::thrust::counting_iterator<int> new_last(int(last - old_zero));
   T* new_d_first = &(*d_first);
+  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<T>());
+}
+
+template <class TStored, class TResult, class Index, class UnaryOp>
+HPC_NOINLINE void
+transform_inclusive_scan(cuda_policy,
+    ::hpc::pointer_iterator<TStored, Index> first,
+    ::hpc::pointer_iterator<TStored, Index> last,
+    ::hpc::pointer_iterator<TResult, Index> d_first,
+    ::hpc::plus<TResult>,
+    UnaryOp unary_op) noexcept
+{
+  TStored* const new_first = &(*first);
+  TStored* const new_last = &(*last);
+  TResult* const new_d_first = &(*d_first);
   thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<T>());
 }
 
