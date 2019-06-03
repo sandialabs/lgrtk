@@ -27,6 +27,7 @@ set(LGR_SOURCES
     lgr_vtk.cpp
     lgr_domain.cpp
     lgr_physics.cpp
+    lgr_bar.cpp
     lgr_element_specific.cpp
     lgr_meshing.cpp
     lgr_stabilized.cpp
