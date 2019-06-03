@@ -84,7 +84,7 @@ HPC_NOINLINE void update_triangle_quality(state& s) noexcept {
 
    As such, our "quality" is the inverse of this quality measure to the fourth power
   */
-static void HPC_NOINLINE update_tetrahedron_quality(state& s) {
+HPC_NOINLINE void update_tetrahedron_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
