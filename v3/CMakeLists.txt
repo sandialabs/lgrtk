@@ -32,6 +32,7 @@ set(LGR_SOURCES
     lgr_element_specific.cpp
     lgr_composite_nodal_mass.cpp
     lgr_composite_h_min.cpp
+    lgr_composite_gradient.cpp
     lgr_composite_tetrahedron.cpp
     lgr_meshing.cpp
     lgr_stabilized.cpp
