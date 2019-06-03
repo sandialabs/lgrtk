@@ -5,17 +5,17 @@
 
 namespace lgr {
 
-inline double triangle_area(hpc::array<hpc::vector3<double>, 3> const x) {
+HPC_HOST_DEVICE inline double triangle_area(hpc::array<hpc::vector3<double>, 3> const x) noexcept {
   return 0.5 * (cross((x[1] - x[0]), (x[2] - x[0]))(2));
 }
 
-inline double tetrahedron_volume(hpc::array<hpc::vector3<double>, 4> const x) {
+HPC_HOST_DEVICE inline double tetrahedron_volume(hpc::array<hpc::vector3<double>, 4> const x) {
   return (1.0 / 6.0) * (cross((x[1] - x[0]), (x[2] - x[0])) * (x[3] - x[0]));
 }
 
-inline auto triangle_basis_gradients(
+HPC_HOST_DEVICE inline auto triangle_basis_gradients(
     hpc::array<hpc::vector3<double>, 3> const x,
-    double const area) {
+    double const area) noexcept {
   hpc::vector3<double> edge_vectors[3];
   edge_vectors[0] = x[1] - x[0];
   edge_vectors[1] = x[2] - x[0];
@@ -29,9 +29,9 @@ inline auto triangle_basis_gradients(
   return grad_N;
 }
 
-inline auto tetrahedron_basis_gradients(
+HPC_HOST_DEVICE inline auto tetrahedron_basis_gradients(
     hpc::array<hpc::vector3<double>, 4> const x,
-    double const volume) {
+    double const volume) noexcept {
   hpc::vector3<double> ev[5];
   ev[0] = x[1] - x[0];
   ev[1] = x[2] - x[0];
