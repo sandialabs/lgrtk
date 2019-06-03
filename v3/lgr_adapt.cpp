@@ -10,7 +10,7 @@
 
 namespace lgr {
 
-static void HPC_NOINLINE update_bar_quality(state& s) {
+HPC_NOINLINE void update_bar_quality(state& s) {
   hpc::fill(hpc::device_policy(), s.quality, double(1.0));
 }
 
@@ -26,7 +26,7 @@ static void HPC_NOINLINE update_bar_quality(state& s) {
    We also use the fact that we already have area computed and that basis
    gradient magnitudes relate to opposite edge lengths.
   */
-inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const grad_N, double const area) {
+inline HPC_HOST_DEVICE double triangle_quality(hpc::array<hpc::vector3<double>, 3> const grad_N, double const area) noexcept {
   double sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
@@ -37,13 +37,13 @@ inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const grad_N,
   return q;
 }
 
-inline double triangle_quality(hpc::array<hpc::vector3<double>, 3> const x) {
+inline HPC_HOST_DEVICE double triangle_quality(hpc::array<hpc::vector3<double>, 3> const x) noexcept {
   double const area = triangle_area(x);
   if (area <= 0.0) return area;
   return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
-static void HPC_NOINLINE update_triangle_quality(state& s) {
+HPC_NOINLINE void update_triangle_quality(state& s) noexcept {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
@@ -138,7 +138,7 @@ void initialize_h_adapt(state& s)
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     double lsq_max = 0.0;
-    double lsq_min = std::numeric_limits<double>::max();
+    double lsq_min = hpc::numeric_limits<double>::max();
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       auto const element_nodes = elements_to_element_nodes[element];
@@ -207,7 +207,7 @@ adapt_state::adapt_state(state const& s)
 {}
 
 template <std::ptrdiff_t Capacity, class Index>
-static inline int find_or_append(
+inline HPC_HOST_DEVICE int find_or_append(
     int& count,
     hpc::array<Index, Capacity>& buffer,
     Index const index)
@@ -236,7 +236,7 @@ struct eval_cavity {
 };
 
 template <int max_shell_elements, int max_shell_nodes>
-static inline void evaluate_triangle_swap(
+inline HPC_DEVICE void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
@@ -288,12 +288,12 @@ static inline void evaluate_triangle_swap(
   }
 }
 
-static inline double measure_edge(double const h_min, double const h_max, double const l) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double measure_edge(double const h_min, double const h_max, double const l) noexcept {
   return l / (0.5 * (h_min + h_max));
 }
 
 template <int max_shell_elements, int max_shell_nodes>
-static inline void evaluate_triangle_split(
+inline HPC_DEVICE void evaluate_triangle_split(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
@@ -336,7 +336,7 @@ static inline void evaluate_triangle_split(
 }
 
 template <int max_shell_elements, int max_shell_nodes>
-static inline void evaluate_triangle_collapse(
+inline HPC_DEVICE void evaluate_triangle_collapse(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
@@ -585,7 +585,7 @@ struct apply_cavity {
   {}
 };
 
-static inline void apply_triangle_swap(apply_cavity const c,
+inline HPC_DEVICE void apply_triangle_swap(apply_cavity const c,
     node_index const node,
     node_index const target_node) {
   hpc::array<element_index, 2> loop_elements;
@@ -626,7 +626,7 @@ static inline void apply_triangle_swap(apply_cavity const c,
   c.new_elements_are_same[new_element2] = false;
 }
 
-static inline void apply_triangle_split(apply_cavity const c,
+inline HPC_DEVICE void apply_triangle_split(apply_cavity const c,
     node_index const center_node,
     node_index const target_node) {
   node_index const new_center_node = c.old_nodes_to_new_nodes[center_node];
@@ -670,7 +670,7 @@ static inline void apply_triangle_split(apply_cavity const c,
   c.interpolate_from[split_node] = interpolate_from;
 }
 
-static inline void apply_triangle_collapse(apply_cavity const c,
+inline HPC_DEVICE void apply_triangle_collapse(apply_cavity const c,
     node_index const center_node,
     node_index const target_node) {
   node_index const new_target_node = c.old_nodes_to_new_nodes[target_node];
@@ -855,7 +855,7 @@ bool adapt(input const& in, state& s) {
   evaluate_triangle_adapt(in, s, a);
   choose_triangle_adapt(s, a);
   auto const num_chosen = hpc::transform_reduce(hpc::device_policy(), a.op, int(0), hpc::plus<int>(),
-      [](cavity_op const op) { return op == cavity_op::NONE ? 0 : 1; });
+      [] HPC_DEVICE (cavity_op const op) { return op == cavity_op::NONE ? 0 : 1; });
   if (num_chosen == 0) return false;
   if (in.output_to_command_line) {
     std::cout << "adapting " << num_chosen << " cavities\n";
