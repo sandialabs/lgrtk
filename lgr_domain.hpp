@@ -14,7 +14,7 @@ namespace lgr {
 struct all_space {
 };
 
-constexpr inline double distance(all_space const, hpc::vector3<double> const) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr double distance(all_space const, hpc::vector3<double> const) noexcept {
   return 1.0;
 };
 
@@ -23,7 +23,7 @@ struct plane {
   double origin;
 };
 
-constexpr inline double distance(plane const pl, hpc::vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr double distance(plane const pl, hpc::vector3<double> const pt) noexcept {
   return pl.normal * pt - pl.origin;
 };
 
@@ -32,7 +32,7 @@ struct sphere {
   double radius;
 };
 
-inline double distance(sphere const s, hpc::vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(sphere const s, hpc::vector3<double> const pt) noexcept {
   return s.radius - norm(pt - s.origin);
 };
 
@@ -42,7 +42,7 @@ struct cylinder {
   double radius;
 };
 
-inline double distance(cylinder const s, hpc::vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(cylinder const s, hpc::vector3<double> const pt) noexcept {
   auto const pt_on_plane = pt - (pt * s.axis) * s.axis;
   auto const origin_on_plane = s.origin - (s.origin * s.axis) * s.axis;
   return s.radius - norm(pt_on_plane - origin_on_plane);
@@ -57,7 +57,7 @@ struct extruded_sine_wave {
   double sine_amplitude;
 };
 
-inline double distance(extruded_sine_wave const w, hpc::vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(extruded_sine_wave const w, hpc::vector3<double> const pt) noexcept {
   auto const proj = (pt * w.z_axis) * w.z_axis;
   auto const z = norm(proj) - w.z_offset;
   auto const rej = pt - proj;
@@ -108,7 +108,7 @@ class clipped_domain : public domain {
     auto const clips_begin = m_host_clips.cbegin();
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
-    auto functor = [=] (Index const i) {
+    auto functor = [=] HPC_DEVICE (Index const i) {
       auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
@@ -142,7 +142,7 @@ class clipped_domain : public domain {
     auto const clips_begin = m_host_clips.cbegin();
     auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
-    auto functor = [=] (node_index const i) {
+    auto functor = [=] HPC_DEVICE (node_index const i) {
       auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
       for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {

@@ -10,13 +10,13 @@
 
 namespace lgr {
 
-static void HPC_NOINLINE initialize_bar_V(state& s) {
+HPC_NOINLINE void initialize_bar_V(state& s) {
   auto const elems_to_nodes_iterator = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
@@ -31,14 +31,14 @@ static void HPC_NOINLINE initialize_bar_V(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_triangle_V(state& s)
+HPC_NOINLINE void initialize_triangle_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
@@ -56,14 +56,14 @@ static void HPC_NOINLINE initialize_triangle_V(state& s)
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_tetrahedron_V(state& s)
+HPC_NOINLINE void initialize_tetrahedron_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
@@ -79,7 +79,7 @@ static void HPC_NOINLINE initialize_tetrahedron_V(state& s)
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_composite_tetrahedron_V(state& s)
+HPC_NOINLINE void initialize_composite_tetrahedron_V(state& s)
 {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
@@ -88,7 +88,7 @@ static void HPC_NOINLINE initialize_composite_tetrahedron_V(state& s)
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const points_in_element = s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
@@ -120,11 +120,11 @@ void initialize_V(
   }
 }
 
-static void HPC_NOINLINE initialize_bar_grad_N(state& s) {
+HPC_NOINLINE void initialize_bar_grad_N(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
-  auto functor = [=] (point_index const point) {
+  auto functor = [=] HPC_DEVICE (point_index const point) {
     double const length = points_to_V[point];
     double const inv_length = 1.0 / length;
     hpc::vector3<double> const grad_N0 = hpc::vector3<double>(-inv_length, 0.0, 0.0);
@@ -137,7 +137,7 @@ static void HPC_NOINLINE initialize_bar_grad_N(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
+HPC_NOINLINE void initialize_triangle_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -145,7 +145,7 @@ static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     auto const point = elements_to_points[element][fp];
@@ -165,7 +165,7 @@ static void HPC_NOINLINE initialize_triangle_grad_N(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
+HPC_NOINLINE void initialize_tetrahedron_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -173,7 +173,7 @@ static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     auto const point = elements_to_points[element][fp];
@@ -193,7 +193,7 @@ static void HPC_NOINLINE initialize_tetrahedron_grad_N(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
+HPC_NOINLINE void initialize_composite_tetrahedron_grad_N(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
@@ -202,7 +202,7 @@ static void HPC_NOINLINE initialize_composite_tetrahedron_grad_N(state& s) {
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const points_in_element = s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
@@ -234,11 +234,11 @@ void initialize_grad_N(
   }
 }
 
-static void HPC_NOINLINE update_bar_h_min(input const&, state& s) {
+HPC_NOINLINE void update_bar_h_min(input const&, state& s) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     elements_to_h_min[element] = double(points_to_V[point]);
@@ -246,16 +246,16 @@ static void HPC_NOINLINE update_bar_h_min(input const&, state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_h_min_height(input const&, state& s) {
+HPC_NOINLINE void update_h_min_height(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
-    double min_height = std::numeric_limits<double>::max();
+    double min_height = hpc::numeric_limits<double>::max();
     auto const point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
@@ -267,14 +267,14 @@ static void HPC_NOINLINE update_h_min_height(input const&, state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
+HPC_NOINLINE void update_triangle_h_min_inball(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     /* find the radius of the inscribed circle.
        first fun fact: the area of a triangle equals one half
        times the radius of the inscribed circle times the perimeter
@@ -301,21 +301,21 @@ static void HPC_NOINLINE update_triangle_h_min_inball(input const&, state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_triangle_h_min(input const& in, state& s) {
+HPC_NOINLINE void update_triangle_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_triangle_h_min_inball(in, s); break;
   }
 }
 
-static void HPC_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s) {
+HPC_NOINLINE void update_tetrahedron_h_min_inball(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     /* find the radius of the inscribed sphere.
        first fun fact: the volume of a tetrahedron equals one third
        times the radius of the inscribed sphere times the surface area
@@ -342,20 +342,20 @@ static void HPC_NOINLINE update_tetrahedron_h_min_inball(input const&, state& s)
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_tetrahedron_h_min(input const& in, state& s) {
+HPC_NOINLINE void update_tetrahedron_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_tetrahedron_h_min_inball(in, s); break;
   }
 }
 
-static void HPC_NOINLINE update_composite_tetrahedron_h_min(state& s) {
+HPC_NOINLINE void update_composite_tetrahedron_h_min(state& s) {
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
@@ -378,11 +378,11 @@ void update_h_min(input const& in, state& s)
   }
 }
 
-static void HPC_NOINLINE update_bar_h_art(state& s) {
+HPC_NOINLINE void update_bar_h_art(state& s) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     elements_to_h_art[element] = double(points_to_V[point]);
@@ -390,12 +390,12 @@ static void HPC_NOINLINE update_bar_h_art(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_triangle_h_art(state& s) {
+HPC_NOINLINE void update_triangle_h_art(state& s) {
   double const C_geom = std::sqrt(4.0 / std::sqrt(3.0));
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     double area = 0.0;
     for (auto const point : elements_to_points[element]) {
       area += points_to_V[point];
@@ -406,12 +406,12 @@ static void HPC_NOINLINE update_triangle_h_art(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE update_tetrahedron_h_art(state& s) {
+HPC_NOINLINE void update_tetrahedron_h_art(state& s) {
   double const C_geom = std::cbrt(12.0 / std::sqrt(2.0));
   auto const points_to_V = s.V.cbegin();
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     double volume = 0.0;
     for (auto const point : elements_to_points[element]) {
       volume += points_to_V[point];
@@ -431,7 +431,7 @@ void update_h_art(input const& in, state& s) {
   }
 }
 
-static void HPC_NOINLINE update_nodal_mass_uniform(state& s, material_index const material) {
+HPC_NOINLINE void update_nodal_mass_uniform(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
@@ -441,7 +441,7 @@ static void HPC_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
   auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     double m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
@@ -459,7 +459,7 @@ static void HPC_NOINLINE update_nodal_mass_uniform(state& s, material_index cons
   hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
+HPC_NOINLINE void update_nodal_mass_composite_tetrahedron(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();
@@ -472,7 +472,7 @@ static void HPC_NOINLINE update_nodal_mass_composite_tetrahedron(state& s, mater
   auto const points_in_element = s.points_in_element;
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
   auto const elements_to_material = s.material.cbegin();
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     double m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
@@ -516,7 +516,7 @@ void update_nodal_mass(input const& in, state& s) {
   for (auto const material : in.materials) {
     auto const nodes_to_total = s.mass.begin();
     auto const nodes_to_partial = s.material_mass[material].cbegin();
-    auto functor = [=] (node_index const node) {
+    auto functor = [=] HPC_DEVICE (node_index const node) {
       double m_total = nodes_to_total[node];
       double const m_partial = nodes_to_partial[node];
       m_total = m_total + m_partial;
