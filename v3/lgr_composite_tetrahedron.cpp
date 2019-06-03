@@ -37,7 +37,8 @@ HPC_HOST_DEVICE inline hpc::array<double, 4> get_volumes(
   auto const ref_points = get_ref_points();
   auto const sub_tet_int = get_subtet_int();
   auto const S = get_S();
-  auto const O = get_O(node_coords, S);
+  O_t O;
+  get_O(node_coords, S, O);
   auto const O_det = get_O_det(O);
   auto const DOL = get_DOL(O_det, sub_tet_int);
   auto const parent_M_inv = get_parent_M_inv();
