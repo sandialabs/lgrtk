@@ -39,7 +39,8 @@ HPC_HOST_DEVICE hpc::array<hpc::array<double, 10>, 10> get_consistent_mass_matri
     hpc::array<hpc::vector3<double>, 10> const node_coords,
     vector4<double> point_densities) noexcept {
   auto const S = get_S();
-  auto const O = get_O(node_coords, S);
+  O_t O;
+  get_O(node_coords, S, O);
   auto const O_det = get_O_det(O);
   auto const C = get_centroids();
   auto const gamma = get_gamma();

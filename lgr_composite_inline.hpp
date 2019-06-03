@@ -510,21 +510,31 @@ HPC_HOST_DEVICE inline gamma_t get_gamma() noexcept {
   return gamma;
 }
 
-HPC_HOST_DEVICE inline O_t get_O(hpc::array<hpc::vector3<double>, 10> const x, S_t const S) noexcept {
-  O_t O;
+HPC_NOINLINE HPC_HOST_DEVICE void get_O_body(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O, int tet, int node, int dim1, int dim2) noexcept {
+  O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2);
+}
+
+HPC_NOINLINE HPC_HOST_DEVICE void get_O_loop3_and_4(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O, int tet, int node) noexcept {
+  for (int dim1 = 0; dim1 < 3; ++dim1) {
+    for (int dim2 = 0; dim2 < 3; ++dim2) {
+      get_O_body(x, S, O, tet, node, dim1, dim2);
+    }
+  }
+}
+
+HPC_NOINLINE HPC_HOST_DEVICE void get_O_loop2(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O, int tet) noexcept {
+  for (int node = 0; node < 10; ++node) {
+    get_O_loop3_and_4(x, S, O, tet, node);
+  }
+}
+
+HPC_NOINLINE HPC_HOST_DEVICE void get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexcept {
   for (int tet = 0; tet < 12; ++tet) {
     O[tet] = hpc::matrix3x3<double>::zero();
   }
   for (int tet = 0; tet < 12; ++tet) {
-    for (int node = 0; node < 10; ++node) {
-      for (int dim1 = 0; dim1 < 3; ++dim1) {
-        for (int dim2 = 0; dim2 < 3; ++dim2) {
-          O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2);
-        }
-      }
-    }
+    get_O_loop2(x, S, O, tet);
   }
-  return O;
 }
 
 HPC_HOST_DEVICE inline hpc::array<double, 12> get_O_det(O_t const O) noexcept {
