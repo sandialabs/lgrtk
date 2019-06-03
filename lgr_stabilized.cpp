@@ -62,7 +62,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_v_prime(input const& in, state& s, material_index const material)
+HPC_NOINLINE void update_v_prime(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -104,7 +104,7 @@ static void HPC_NOINLINE update_v_prime(input const& in, state& s, material_inde
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_q(input const& in, state& s, material_index const material)
+HPC_NOINLINE void update_q(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -156,7 +156,7 @@ static void HPC_NOINLINE update_q(input const& in, state& s, material_index cons
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_p_h_W(state& s, material_index const material)
+HPC_NOINLINE void update_p_h_W(state& s, material_index const material)
 {
   auto const points_to_K = s.K.cbegin();
   auto const points_to_v_prime = s.v_prime.cbegin();
@@ -187,7 +187,7 @@ static void HPC_NOINLINE update_p_h_W(state& s, material_index const material)
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_e_h_W(state& s, material_index const material)
+HPC_NOINLINE void update_e_h_W(state& s, material_index const material)
 {
   auto const points_to_q = s.q.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -214,7 +214,7 @@ static void HPC_NOINLINE update_e_h_W(state& s, material_index const material)
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_p_h_dot(state& s, material_index const material)
+HPC_NOINLINE void update_p_h_dot(state& s, material_index const material)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -250,7 +250,7 @@ static void HPC_NOINLINE update_p_h_dot(state& s, material_index const material)
   hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
-static void HPC_NOINLINE update_e_h_dot(state& s, material_index const material)
+HPC_NOINLINE void update_e_h_dot(state& s, material_index const material)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
