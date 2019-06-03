@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hpc_macros.hpp>
+
 namespace lgr {
 
 template <typename Scalar>
@@ -9,18 +11,18 @@ public:
 private:
   scalar_type raw[4];
 public:
-  explicit constexpr inline vector4(Scalar const x, Scalar const y, Scalar const z, Scalar const w) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr vector4(Scalar const x, Scalar const y, Scalar const z, Scalar const w) noexcept
     :raw{x, y, z, w}
   {
   }
-  inline vector4() noexcept = default;
-  constexpr inline scalar_type operator()(int const i) const noexcept { return raw[i]; }
-  inline scalar_type& operator()(int const i) noexcept { return raw[i]; }
-  static constexpr inline vector4 zero() noexcept { return vector4(0.0, 0.0, 0.0, 0.0); }
+  HPC_ALWAYS_INLINE vector4() noexcept = default;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(int const i) const noexcept { return raw[i]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE scalar_type& operator()(int const i) noexcept { return raw[i]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector4 zero() noexcept { return vector4(0.0, 0.0, 0.0, 0.0); }
 };
 
 template <typename Scalar>
-constexpr inline Scalar
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar
 inner_product(vector4<Scalar> const left,
     vector4<Scalar> const right) noexcept {
   return
@@ -31,7 +33,7 @@ inner_product(vector4<Scalar> const left,
 }
 
 template <typename Scalar>
-constexpr inline Scalar
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar
 operator*(vector4<Scalar> const left,
     vector4<Scalar> const right) noexcept {
   return inner_product(left, right);

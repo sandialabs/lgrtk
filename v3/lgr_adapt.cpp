@@ -51,7 +51,7 @@ static void HPC_NOINLINE update_triangle_quality(state& s) {
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
@@ -92,7 +92,7 @@ static void HPC_NOINLINE update_tetrahedron_quality(state& s) {
     s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
@@ -135,7 +135,7 @@ void initialize_h_adapt(state& s)
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_h_adapt = s.h_adapt.begin();
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     double lsq_max = 0.0;
     double lsq_min = std::numeric_limits<double>::max();
@@ -387,7 +387,7 @@ static inline void evaluate_triangle_collapse(
   }
 }
 
-static HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
+HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -404,7 +404,7 @@ static HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s
   auto const nodes_in_element = s.nodes_in_element;
   auto const nodes_to_op = a.op.begin();
   auto const boundary_materials = material_set::all(in.materials.size() + in.boundaries.size()) - material_set::all(in.materials.size());
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     eval_cavity<3, 32, 32> c;
     c.num_shell_nodes = 0;
     c.num_shell_elements = 0;
@@ -473,7 +473,7 @@ static HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
+HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -487,7 +487,7 @@ static HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
   auto const elements_to_new_counts = a.element_counts.begin();
   auto const nodes_to_new_counts = a.node_counts.begin();
   auto const nodes_to_op = a.op.begin();
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     cavity_op const op = nodes_to_op[node];
     if (op == cavity_op::NONE) {
       return;
@@ -699,7 +699,7 @@ static inline void apply_triangle_collapse(apply_cavity const c,
   }
 }
 
-static HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
+HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 {
   apply_cavity c(s, a);
   hpc::fill(hpc::device_policy(), a.new_elements_are_same, true);
@@ -707,7 +707,7 @@ static HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
   c.new_elements_are_same = a.new_elements_are_same.begin();
   auto const nodes_to_op = a.op.cbegin();
   auto const nodes_to_other_nodes = a.other_node.cbegin();
-  auto functor = [=] (node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     cavity_op const op = nodes_to_op[node];
     if (cavity_op::NONE == op) return;
     node_index const target_node = nodes_to_other_nodes[node];
@@ -719,13 +719,13 @@ static HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
 }
 
 template <class Index>
-static HPC_NOINLINE void project(
+HPC_NOINLINE void project(
     hpc::counting_range<Index> const old_things,
     hpc::device_vector<Index, Index> const& old_things_to_new_things_in,
     hpc::device_vector<Index, Index>& new_things_to_old_things_in) {
   auto const old_things_to_new_things = old_things_to_new_things_in.cbegin();
   auto const new_things_to_old_things = new_things_to_old_things_in.begin();
-  auto functor = [=] (Index const old_thing) {
+  auto functor = [=] HPC_DEVICE (Index const old_thing) {
     Index first = old_things_to_new_things[old_thing];
     Index const last = old_things_to_new_things[old_thing + Index(1)];
     for (; first < last; ++first) {
@@ -735,7 +735,7 @@ static HPC_NOINLINE void project(
   hpc::for_each(hpc::device_policy(), old_things, functor);
 }
 
-static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -744,7 +744,7 @@ static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
   auto const new_element_nodes_to_nodes = a.new_element_nodes_to_nodes.begin();
   auto const new_elements_are_same = a.new_elements_are_same.cbegin();
   auto const old_nodes_to_new_nodes = a.old_nodes_to_new_nodes.cbegin();
-  auto functor = [=] (element_index const new_element) {
+  auto functor = [=] HPC_DEVICE (element_index const new_element) {
     if (new_elements_are_same[new_element]) {
       auto const new_element_nodes = new_elements_to_element_nodes[new_element];
       element_index const old_element = new_elements_to_old_elements[new_element];
@@ -761,13 +761,13 @@ static HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state&
   hpc::for_each(hpc::device_policy(), a.new_elements, functor);
 }
 
-static HPC_NOINLINE void transfer_element_materials(adapt_state& a,
+HPC_NOINLINE void transfer_element_materials(adapt_state& a,
     hpc::device_vector<material_index, element_index>& data) {
   hpc::device_vector<material_index, element_index> new_data(a.new_elements.size());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
   auto const old_elements_to_T = data.cbegin();
   auto const new_elements_to_T = new_data.begin();
-  auto functor = [=] (element_index const new_element) {
+  auto functor = [=] HPC_DEVICE (element_index const new_element) {
     element_index const old_element = new_elements_to_old_elements[new_element];
     new_elements_to_T[new_element] =
       material_index(old_elements_to_T[old_element]);
@@ -777,7 +777,7 @@ static HPC_NOINLINE void transfer_element_materials(adapt_state& a,
 }
 
 template <class Range>
-static HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
+HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
     Range& data) {
   auto const points_in_element = s.points_in_element;
   using value_type = typename Range::value_type;
@@ -787,7 +787,7 @@ static HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
   auto const new_points_to_T = new_data.begin();
   auto const old_elements_to_points = s.elements * points_in_element;
   auto const new_elements_to_points = a.new_elements * points_in_element;
-  auto functor = [=] (element_index const new_element) {
+  auto functor = [=] HPC_DEVICE (element_index const new_element) {
     element_index const old_element = new_elements_to_old_elements[new_element];
     auto const new_element_points = new_elements_to_points[new_element];
     auto const old_element_points = old_elements_to_points[old_element];
@@ -802,7 +802,7 @@ static HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& 
   data = std::move(new_data);
 }
 
-static HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
+HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!in.enable_nodal_energy[material]) continue;
@@ -810,7 +810,7 @@ static HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
     hpc::device_vector<double, node_index> new_data(a.new_nodes.size());
     auto const old_nodes_to_T = old_data.cbegin();
     auto const new_nodes_to_T = new_data.begin();
-    auto functor = [=] (node_index const new_node) {
+    auto functor = [=] HPC_DEVICE (node_index const new_node) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
       double const old_value = old_nodes_to_T[old_node];
       assert(old_value > 0.0);
@@ -825,7 +825,7 @@ static HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state cons
 }
 
 template <class Range>
-static HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
+HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
   using value_type = typename Range::value_type;
   Range new_data(a.new_nodes.size());
   auto const old_nodes_to_data = data.cbegin();
@@ -833,7 +833,7 @@ static HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& dat
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   auto const new_nodes_are_same = a.new_nodes_are_same.cbegin();
   auto const interpolate_from = a.interpolate_from.cbegin();
-  auto functor = [=] (node_index const new_node) {
+  auto functor = [=] HPC_DEVICE (node_index const new_node) {
     if (new_nodes_are_same[new_node]) {
       node_index const old_node = new_nodes_to_old_nodes[new_node];
       new_nodes_to_data[new_node] = value_type(old_nodes_to_data[old_node]);
