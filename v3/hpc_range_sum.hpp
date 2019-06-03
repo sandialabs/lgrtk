@@ -149,7 +149,7 @@ public:
     ::hpc::fill(get_execution_policy(), first_range, TargetIndex(0));
     auto const end = m_vector.end();
     auto const rest = iterator_range<decltype(it)>(second, end);
-    auto const unop = [] (subrange_size_type const i) { return TargetIndex(std::ptrdiff_t(i)); };
+    auto const unop = [] HPC_HOST_DEVICE (subrange_size_type const i) { return TargetIndex(std::ptrdiff_t(i)); };
     ::hpc::transform_inclusive_scan(get_execution_policy(), sizes, rest, ::hpc::plus<TargetIndex>(), unop);
   }
   allocator_type get_allocator() const noexcept { return m_vector.get_allocator(); }

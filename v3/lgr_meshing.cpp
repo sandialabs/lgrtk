@@ -17,7 +17,7 @@ void propagate_connectivity(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_count = counts_vector.begin();
-  auto count_functor = [=](element_index const element) {
+  auto count_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       node_index const node = element_nodes_to_nodes[element_node];
@@ -38,7 +38,7 @@ void propagate_connectivity(state& s) {
 #endif
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.begin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto fill_functor = [=](element_index const element) {
+  auto fill_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const node_in_element : nodes_in_element) {
       element_node_index const element_node = element_nodes[node_in_element];
@@ -59,7 +59,7 @@ void propagate_connectivity(state& s) {
   s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
-static void HPC_NOINLINE initialize_bars_to_nodes(state& s) {
+HPC_NOINLINE void initialize_bars_to_nodes(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const begin = s.elements_to_nodes.begin();
   auto functor = [=] (element_index const element) {
@@ -71,11 +71,11 @@ static void HPC_NOINLINE initialize_bars_to_nodes(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void HPC_NOINLINE initialize_x_1D(input const& in, state& s) {
+HPC_NOINLINE void initialize_x_1D(input const& in, state& s) {
   auto const nodes_to_x = s.x.begin();
   auto const num_nodes = s.nodes.size();
   auto const l = in.x_domain_size;
-  auto functor = [=](node_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     nodes_to_x[node] = hpc::vector3<double>(l * (double(node.get()) / (double(num_nodes.get()) - 1)), 0.0, 0.0);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -91,7 +91,7 @@ static void build_bar_mesh(input const& in, state& s) {
   initialize_x_1D(in, s);
 }
 
-static void HPC_NOINLINE build_triangle_mesh(input const& in, state& s)
+HPC_NOINLINE void build_triangle_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -140,7 +140,7 @@ static void HPC_NOINLINE build_triangle_mesh(input const& in, state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-static void HPC_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE void build_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -236,7 +236,7 @@ static void HPC_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-static void HPC_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE void build_10_node_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
