@@ -40,11 +40,11 @@ public:
         0.0, 0.0, 0.0,
         0.0, 0.0, 0.0);
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(axis_index i, axis_index j) const noexcept {
-    return raw[i.get()][j.get()];
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(int const i, int const j) const noexcept {
+    return raw[i][j];
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar& operator()(axis_index i, axis_index j) noexcept {
-    return raw[i.get()][j.get()];
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar& operator()(int const i, int const j) noexcept {
+    return raw[i][j];
   }
 };
 

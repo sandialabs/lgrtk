@@ -6,7 +6,7 @@ namespace lgr {
 
 namespace composite_tetrahedron {
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_O_inv(O_t const O, O_t& O_inv) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE void get_O_inv(O_t const& O, O_t& O_inv) noexcept {
   for (int tet = 0; tet < 12; ++tet) {
     O_inv[tet] = inverse(O[tet]);
   }
@@ -207,7 +207,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_subtet_proj_M(subtet_proj_t& sub_tet_int_p
   sub_tet_int_proj_M[11](3, 3) = 0.0004557291666666667;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE matrix4x4<double> get_M_inv(hpc::array<double, 12> const O_det) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE void get_M_inv(hpc::array<double, 12> const& O_det, matrix4x4<double>& M_inv) noexcept {
   auto M = matrix4x4<double>::zero();
   subtet_proj_t sub_tet_int_proj_M;
   get_subtet_proj_M(sub_tet_int_proj_M);
@@ -218,12 +218,11 @@ HPC_NOINLINE HPC_HOST_DEVICE matrix4x4<double> get_M_inv(hpc::array<double, 12> 
       }
     }
   }
-  return inverse(M);
+  M_inv = inverse(M);
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE SOL_t get_SOL(hpc::array<double, 12> O_det, O_t O_inv,
-    subtet_int_t subtet_int, S_t S) noexcept {
-  SOL_t SOL;
+HPC_NOINLINE HPC_HOST_DEVICE void get_SOL(hpc::array<double, 12> const& O_det, O_t const& O_inv,
+    subtet_int_t const& subtet_int, S_t const& S, SOL_t& SOL) noexcept {
   for (auto& a : SOL)
   for (auto& b : a)
     b = hpc::vector3<double>::zero();
@@ -240,36 +239,34 @@ HPC_NOINLINE HPC_HOST_DEVICE SOL_t get_SOL(hpc::array<double, 12> O_det, O_t O_i
       }
     }
   }
-  return SOL;
 }
 
 HPC_NOINLINE HPC_HOST_DEVICE void get_basis_gradients(
-    hpc::array<hpc::vector3<double>, 10> const node_coords,
+    hpc::array<hpc::vector3<double>, 10> const& node_coords,
     hpc::array<hpc::array<hpc::vector3<double>, 10>, 4>& grad_N
     ) noexcept
 {
-  (void)node_coords;
-  (void)grad_N;
   for (auto& a : grad_N) {
     for (auto& b : a) {
       b = hpc::vector3<double>::zero();
     }
   }
-  auto const ref_points = get_ref_points();
-  (void)ref_points;
-  auto const subtet_int = get_subtet_int();
-  (void)subtet_int;
-  auto const S = get_S();
-  (void)S;
+  hpc::array<hpc::vector3<double>, 4> ref_points;
+  get_ref_points(ref_points);
+  subtet_int_t subtet_int;
+  get_subtet_int(subtet_int);
+  S_t S;
+  get_S(S);
   O_t O;
   get_O(node_coords, S, O);
-  (void)O;
-#if 0
   O_t O_inv;
   get_O_inv(O, O_inv);
-  auto const O_det = get_O_det(O);
-  auto const M_inv = get_M_inv(O_det);
-  auto const SOL = get_SOL(O_det, O_inv, subtet_int, S);
+  hpc::array<double, 12> O_det;
+  get_O_det(O, O_det);
+  matrix4x4<double> M_inv;
+  get_M_inv(O_det, M_inv);
+  SOL_t SOL;
+  get_SOL(O_det, O_inv, subtet_int, S, SOL);
   for (int node = 0; node < 10; ++node) {
     for (int pt = 0; pt < 4; ++pt) {
       auto const lambda = get_barycentric(ref_points[pt]);
@@ -283,7 +280,6 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_basis_gradients(
       }
     }
   }
-#endif
 }
 
 }

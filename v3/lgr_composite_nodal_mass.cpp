@@ -6,11 +6,11 @@ namespace lgr {
 
 namespace composite_tetrahedron {
 
-HPC_HOST_DEVICE inline double get_q(double const x) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double get_q(double const x) noexcept {
   return 0.25 * (1.0 - std::sqrt(5.0) + 4.0 * std::sqrt(5.0) * x);
 }
 
-HPC_HOST_DEVICE inline vector4<double> get_Q(hpc::vector3<double> const xi) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE vector4<double> get_Q(hpc::vector3<double> const xi) noexcept {
   return vector4<double>(
     get_q(1.0 - xi(0) - xi(1) - xi(2)),
     get_q(xi(0)),
@@ -18,8 +18,7 @@ HPC_HOST_DEVICE inline vector4<double> get_Q(hpc::vector3<double> const xi) noex
     get_q(xi(2)));
 }
 
-HPC_HOST_DEVICE inline hpc::array<hpc::vector3<double>, 12> get_centroids() noexcept {
-  hpc::array<hpc::vector3<double>, 12> xi;
+HPC_NOINLINE HPC_HOST_DEVICE void get_centroids(hpc::array<hpc::vector3<double>, 12>& xi) noexcept {
   xi[0] = hpc::vector3<double>( 0.125, 0.125, 0.125 );
   xi[1] = hpc::vector3<double>( 0.625, 0.125, 0.125 );
   xi[2] = hpc::vector3<double>( 0.125, 0.625, 0.125 );
@@ -32,19 +31,22 @@ HPC_HOST_DEVICE inline hpc::array<hpc::vector3<double>, 12> get_centroids() noex
   xi[9] = hpc::vector3<double>( 0.1875, 0.4375, 0.1875 );
   xi[10] = hpc::vector3<double>( 0.0625, 0.3125, 0.3125 );
   xi[11] = hpc::vector3<double>( 0.1875, 0.1875, 0.1875 );
-  return xi;
 }
 
-HPC_HOST_DEVICE hpc::array<hpc::array<double, 10>, 10> get_consistent_mass_matrix(
-    hpc::array<hpc::vector3<double>, 10> const node_coords,
-    vector4<double> point_densities) noexcept {
-  auto const S = get_S();
+HPC_NOINLINE HPC_HOST_DEVICE void get_consistent_mass_matrix(
+    hpc::array<hpc::vector3<double>, 10> const& node_coords,
+    vector4<double> const& point_densities,
+    hpc::array<hpc::array<double, 10>, 10>& mass) noexcept {
+  S_t S;
+  get_S(S);
   O_t O;
   get_O(node_coords, S, O);
-  auto const O_det = get_O_det(O);
-  auto const C = get_centroids();
-  auto const gamma = get_gamma();
-  hpc::array<hpc::array<double, 10>, 10> mass;
+  hpc::array<double, 12> O_det;
+  get_O_det(O, O_det);
+  hpc::array<hpc::vector3<double>, 12> C;
+  get_centroids(C);
+  gamma_t gamma;
+  get_gamma(gamma);
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
       mass[i][j] = 0.0;
@@ -62,18 +64,18 @@ HPC_HOST_DEVICE hpc::array<hpc::array<double, 10>, 10> get_consistent_mass_matri
       }
     }
   }
-  return mass;
 }
 
-HPC_HOST_DEVICE hpc::array<double, 10> lump_mass_matrix(hpc::array<hpc::array<double, 10>, 10> const mass) noexcept {
-  hpc::array<double, 10> lumped;
+HPC_NOINLINE HPC_HOST_DEVICE void lump_mass_matrix(
+    hpc::array<hpc::array<double, 10>, 10> const& mass,
+    hpc::array<double, 10>& lumped
+    ) noexcept {
   for (int i = 0; i < 10; ++i) {
     lumped[i] = 0.0;
     for (int j = 0; j < 10; ++j) {
       lumped[i] += mass[i][j];
     }
   }
-  return lumped;
 }
 
 }
@@ -111,8 +113,10 @@ void update_nodal_mass_composite_tetrahedron(state& s, material_index const mate
         auto const point = element_points[point_in_element];
         point_densities(point_in_element.get()) = points_to_rho[point];
       }
-      auto const coef = composite_tetrahedron::lump_mass_matrix(
-          composite_tetrahedron::get_consistent_mass_matrix(node_coords, point_densities));
+      hpc::array<hpc::array<double, 10>, 10> consistent_mass_matrix;
+      composite_tetrahedron::get_consistent_mass_matrix(node_coords, point_densities, consistent_mass_matrix);
+      hpc::array<double, 10> coef;
+      composite_tetrahedron::lump_mass_matrix(consistent_mass_matrix, coef);
       m = m + coef[node_in_element.get()];
     }
     nodes_to_m[node] = m;

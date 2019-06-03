@@ -59,8 +59,8 @@ public:
     return N == 0;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr size_type size() const noexcept { return size_type(N); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator[](size_type i) noexcept { return begin()[i]; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_reference operator[](size_type i) const noexcept { return begin()[i]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator[](int const i) noexcept { return m_data[i]; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_reference operator[](int const i) const noexcept { return m_data[i]; }
 };
 
 template <class T, std::ptrdiff_t N, class I>
