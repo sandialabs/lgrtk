@@ -59,6 +59,7 @@ template <class T, class Index = std::ptrdiff_t>
 class pointer_iterator {
   T* m_pointer;
 #ifndef NDEBUG
+#error "need to be fast on GPUs right now"
   T* m_allocation_begin;
   T* m_allocation_end;
 #endif
