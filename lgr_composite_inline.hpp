@@ -16,7 +16,7 @@ using subtet_int_t = hpc::array<hpc::array<double, 4>, 12>;
 using O_t = hpc::array<hpc::matrix3x3<double>, 12>;
 using SOL_t = hpc::array<hpc::array<hpc::vector3<double>, 10>, 4>;
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_S(S_t& S) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_S(S_t& S) noexcept {
   for (auto& a : S) {
     for (auto& b : a) {
       b = hpc::vector3<double>::zero();
@@ -144,7 +144,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_S(S_t& S) noexcept {
   S[11][9](2) = 0.6666666666666666;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_gamma(gamma_t& gamma) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_gamma(gamma_t& gamma) noexcept {
   for (auto& a : gamma) {
     for (auto& b : a) {
       for (auto& c : b) {
@@ -506,7 +506,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_gamma(gamma_t& gamma) noexcept {
   gamma[11][9][9] = 0.000028935185185185186;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexcept {
   for (int tet = 0; tet < 12; ++tet) {
     O[tet] = hpc::matrix3x3<double>::zero();
   }
@@ -521,13 +521,13 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_O(hpc::array<hpc::vector3<double>, 10> con
   }
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_O_det(O_t const& O, hpc::array<double, 12>& det_O) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_O_det(O_t const& O, hpc::array<double, 12>& det_O) noexcept {
   for (int tet = 0; tet < 12; ++tet) {
     det_O[tet] = determinant(O[tet]);
   }
 }
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::array<double, 4> get_barycentric(hpc::vector3<double> const x) noexcept {
+static HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::array<double, 4> get_barycentric(hpc::vector3<double> const x) noexcept {
   hpc::array<double, 4> xi;
   xi[0] = 1.0 - x(0) - x(1) - x(2);
   xi[1] = x(0);
@@ -536,7 +536,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::array<double, 4> get_barycentric(hpc::vec
   return xi;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_ref_points(hpc::array<hpc::vector3<double>, 4>& pts) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_ref_points(hpc::array<hpc::vector3<double>, 4>& pts) noexcept {
   pts[0](0) = 0.1381966011250105151795413165634361882280;
   pts[0](1) = 0.1381966011250105151795413165634361882280;
   pts[0](2) = 0.1381966011250105151795413165634361882280;
@@ -551,7 +551,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_ref_points(hpc::array<hpc::vector3<double>
   pts[3](2) = 0.5854101966249684544613760503096914353161;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_subtet_int(subtet_int_t& subtet_int) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_subtet_int(subtet_int_t& subtet_int) noexcept {
   assert(subtet_int.size() == 12);
   assert(subtet_int[0].size() == 4);
   subtet_int[0][0] = 0.013020833333333334;
