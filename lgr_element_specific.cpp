@@ -4,6 +4,7 @@
 #include <lgr_composite_tetrahedron.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
+#include <lgr_element_specific.hpp>
 
 namespace lgr {
 
@@ -29,7 +30,7 @@ void initialize_grad_N(
   }
 }
 
-HPC_NOINLINE void update_h_min_height(input const&, state& s) {
+HPC_NOINLINE inline void update_h_min_height(input const&, state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_h_min = s.h_min.begin();
   auto const points_to_point_nodes =
@@ -50,14 +51,14 @@ HPC_NOINLINE void update_h_min_height(input const&, state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void update_triangle_h_min(input const& in, state& s) {
+HPC_NOINLINE inline void update_triangle_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_triangle_h_min_inball(in, s); break;
   }
 }
 
-HPC_NOINLINE void update_tetrahedron_h_min(input const& in, state& s) {
+HPC_NOINLINE inline void update_tetrahedron_h_min(input const& in, state& s) {
   switch (in.h_min) {
     case MINIMUM_HEIGHT: update_h_min_height(in, s); break;
     case INBALL_DIAMETER: update_tetrahedron_h_min_inball(in, s); break;
@@ -83,7 +84,7 @@ void update_h_art(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE void update_nodal_mass_uniform(state& s, material_index const material) {
+HPC_NOINLINE inline void update_nodal_mass_uniform(state& s, material_index const material) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const points_to_rho = s.rho.cbegin();

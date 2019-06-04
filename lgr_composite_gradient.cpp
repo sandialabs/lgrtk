@@ -6,13 +6,13 @@ namespace lgr {
 
 namespace composite_tetrahedron {
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_O_inv(O_t const& O, O_t& O_inv) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_O_inv(O_t const& O, O_t& O_inv) noexcept {
   for (int tet = 0; tet < 12; ++tet) {
     O_inv[tet] = inverse(O[tet]);
   }
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_subtet_proj_M(subtet_proj_t& sub_tet_int_proj_M) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_subtet_proj_M(subtet_proj_t& sub_tet_int_proj_M) noexcept {
   sub_tet_int_proj_M[0](0, 0) = 0.008333333333333333;
   sub_tet_int_proj_M[0](0, 1) = 0.0015625;
   sub_tet_int_proj_M[0](0, 2) = 0.0015625;
@@ -207,7 +207,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_subtet_proj_M(subtet_proj_t& sub_tet_int_p
   sub_tet_int_proj_M[11](3, 3) = 0.0004557291666666667;
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_M_inv(hpc::array<double, 12> const& O_det, matrix4x4<double>& M_inv) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_M_inv(hpc::array<double, 12> const& O_det, matrix4x4<double>& M_inv) noexcept {
   auto M = matrix4x4<double>::zero();
   subtet_proj_t sub_tet_int_proj_M;
   get_subtet_proj_M(sub_tet_int_proj_M);
@@ -221,7 +221,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_M_inv(hpc::array<double, 12> const& O_det,
   M_inv = inverse(M);
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_SOL(hpc::array<double, 12> const& O_det, O_t const& O_inv,
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_SOL(hpc::array<double, 12> const& O_det, O_t const& O_inv,
     subtet_int_t const& subtet_int, S_t const& S, SOL_t& SOL) noexcept {
   for (auto& a : SOL)
   for (auto& b : a)
@@ -241,7 +241,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_SOL(hpc::array<double, 12> const& O_det, O
   }
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_basis_gradients(
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_basis_gradients(
     hpc::array<hpc::vector3<double>, 10> const& node_coords,
     hpc::array<hpc::array<hpc::vector3<double>, 10>, 4>& grad_N
     ) noexcept
@@ -293,7 +293,7 @@ void initialize_composite_tetrahedron_grad_N(state& s) {
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const points_in_element = s.points_in_element;
-  auto functor = [=] HPC_NOINLINE HPC_DEVICE (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {

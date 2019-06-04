@@ -101,7 +101,7 @@ HPC_HOST_DEVICE inline double get_tet_diameter(hpc::array<hpc::vector3<double>, 
   return (sa > 0.0) ? (vol / sa) : 0.0;
 }
 
-HPC_HOST_DEVICE double get_length(hpc::array<hpc::vector3<double>, 10> in) noexcept {
+HPC_HOST_DEVICE inline double get_length(hpc::array<hpc::vector3<double>, 10> in) noexcept {
   hpc::array<hpc::vector3<double>, 11> node_coords_with_center;
   for (int i = 0; i < 10; ++i) node_coords_with_center[i] = in[i];
   node_coords_with_center[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;

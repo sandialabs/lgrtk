@@ -59,7 +59,7 @@ void propagate_connectivity(state& s) {
   s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
-HPC_NOINLINE void initialize_bars_to_nodes(state& s) {
+HPC_NOINLINE inline void initialize_bars_to_nodes(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const begin = s.elements_to_nodes.begin();
   auto functor = [=] HPC_DEVICE (element_index const element) {
@@ -71,7 +71,7 @@ HPC_NOINLINE void initialize_bars_to_nodes(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void initialize_x_1D(input const& in, state& s) {
+HPC_NOINLINE inline void initialize_x_1D(input const& in, state& s) {
   auto const nodes_to_x = s.x.begin();
   auto const num_nodes = s.nodes.size();
   auto const l = in.x_domain_size;
@@ -91,7 +91,7 @@ static void build_bar_mesh(input const& in, state& s) {
   initialize_x_1D(in, s);
 }
 
-HPC_NOINLINE void build_triangle_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -140,7 +140,7 @@ HPC_NOINLINE void build_triangle_mesh(input const& in, state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-HPC_NOINLINE void build_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -236,7 +236,7 @@ HPC_NOINLINE void build_tetrahedron_mesh(input const& in, state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-HPC_NOINLINE void build_10_node_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_10_node_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
