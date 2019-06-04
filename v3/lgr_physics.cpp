@@ -34,7 +34,7 @@ void advance_time(
   *dt = new_time - old_time;
 }
 
-HPC_NOINLINE void update_u(state& s, double const dt) {
+HPC_NOINLINE inline void update_u(state& s, double const dt) {
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
@@ -45,7 +45,7 @@ HPC_NOINLINE void update_u(state& s, double const dt) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void update_v(state& s, double const dt, hpc::device_array_vector<hpc::vector3<double>, node_index> const& old_v_vector) {
+HPC_NOINLINE inline void update_v(state& s, double const dt, hpc::device_array_vector<hpc::vector3<double>, node_index> const& old_v_vector) {
   auto const nodes_to_v = s.v.begin();
   auto const nodes_to_old_v = old_v_vector.cbegin();
   auto const nodes_to_a = s.a.cbegin();
@@ -58,7 +58,7 @@ HPC_NOINLINE void update_v(state& s, double const dt, hpc::device_array_vector<h
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void update_a(state& s) {
+HPC_NOINLINE inline void update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
   auto const nodes_to_m = s.mass.cbegin();
   auto const nodes_to_a = s.a.begin();
@@ -71,7 +71,7 @@ HPC_NOINLINE void update_a(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void update_x(state& s) {
+HPC_NOINLINE inline void update_x(state& s) {
   auto const nodes_to_u = s.u.cbegin();
   auto const nodes_to_x = s.x.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
@@ -83,7 +83,7 @@ HPC_NOINLINE void update_x(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void update_p(state& s, material_index const material) {
+HPC_NOINLINE inline void update_p(state& s, material_index const material) {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_p = s.p.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -97,7 +97,7 @@ HPC_NOINLINE void update_p(state& s, material_index const material) {
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE void update_reference(state& s) {
+HPC_NOINLINE inline void update_reference(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
@@ -145,7 +145,7 @@ HPC_NOINLINE void update_reference(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void update_c(state& s)
+HPC_NOINLINE inline void update_c(state& s)
 {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_K = s.K.cbegin();
@@ -162,7 +162,7 @@ HPC_NOINLINE void update_c(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_NOINLINE void update_element_dt(state& s) {
+HPC_NOINLINE inline void update_element_dt(state& s) {
   auto const points_to_c = s.c.cbegin();
   auto const elements_to_h_min = s.h_min.cbegin();
   auto const points_to_nu_art = s.nu_art.cbegin();
@@ -184,13 +184,13 @@ HPC_NOINLINE void update_element_dt(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void find_max_stable_dt(state& s)
+HPC_NOINLINE inline void find_max_stable_dt(state& s)
 {
   double const init = std::numeric_limits<double>::max();
   s.max_stable_dt = hpc::transform_reduce(hpc::device_policy(), s.element_dt, init, hpc::minimum<double>(), hpc::identity<double>());
 }
 
-HPC_NOINLINE void neo_Hookean(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index const material) {
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
@@ -219,7 +219,7 @@ HPC_NOINLINE void neo_Hookean(input const& in, state& s, material_index const ma
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE void ideal_gas(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index const material) {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.cbegin();
   auto const points_to_sigma = s.sigma.begin();
@@ -245,7 +245,7 @@ HPC_NOINLINE void ideal_gas(input const& in, state& s, material_index const mate
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE void update_element_force(state& s)
+HPC_NOINLINE inline void update_element_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -265,7 +265,7 @@ HPC_NOINLINE void update_element_force(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_NOINLINE void update_nodal_force(state& s) {
+HPC_NOINLINE inline void update_nodal_force(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
@@ -291,7 +291,7 @@ HPC_NOINLINE void update_nodal_force(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void zero_acceleration(
+HPC_NOINLINE inline void zero_acceleration(
     hpc::device_vector<node_index, int> const& domain,
     hpc::vector3<double> const axis,
     hpc::device_array_vector<hpc::vector3<double>, node_index>* a_vector) {
@@ -304,7 +304,7 @@ HPC_NOINLINE void zero_acceleration(
   hpc::for_each(hpc::device_policy(), domain, functor);
 }
 
-HPC_NOINLINE void update_symm_grad_v(state& s)
+HPC_NOINLINE inline void update_symm_grad_v(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -334,7 +334,7 @@ HPC_NOINLINE void update_symm_grad_v(state& s)
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void stress_power(state& s)
+HPC_NOINLINE inline void stress_power(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
@@ -348,7 +348,7 @@ HPC_NOINLINE void stress_power(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_NOINLINE void update_e(state& s, double const dt,
+HPC_NOINLINE inline void update_e(state& s, double const dt,
     material_index const material,
     hpc::device_vector<double, point_index> const& old_e_vector)
 {
@@ -370,7 +370,7 @@ HPC_NOINLINE void update_e(state& s, double const dt,
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE void apply_viscosity(input const& in, state& s) {
+HPC_NOINLINE inline void apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const points_to_c = s.c.cbegin();
@@ -402,7 +402,7 @@ HPC_NOINLINE void apply_viscosity(input const& in, state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void volume_average_J(state& s) {
+HPC_NOINLINE inline void volume_average_J(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_F = s.F_total.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -428,7 +428,7 @@ HPC_NOINLINE void volume_average_J(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void volume_average_rho(state& s) {
+HPC_NOINLINE inline void volume_average_rho(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -449,7 +449,7 @@ HPC_NOINLINE void volume_average_rho(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void volume_average_e(state& s) {
+HPC_NOINLINE inline void volume_average_e(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.begin();
@@ -472,7 +472,7 @@ HPC_NOINLINE void volume_average_e(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void volume_average_p(state& s) {
+HPC_NOINLINE inline void volume_average_p(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -496,7 +496,7 @@ HPC_NOINLINE void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE void update_single_material_state(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
@@ -512,7 +512,7 @@ HPC_NOINLINE void update_single_material_state(input const& in, state& s, materi
   }
 }
 
-HPC_NOINLINE void update_material_state(input const& in, state& s) {
+HPC_NOINLINE inline void update_material_state(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.sigma, hpc::symmetric3x3<double>::zero());
   hpc::fill(hpc::device_policy(), s.G, double(0.0));
   for (auto const material : in.materials) {
@@ -520,7 +520,7 @@ HPC_NOINLINE void update_material_state(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE void update_a_from_material_state(input const& in, state& s) {
+HPC_NOINLINE inline void update_a_from_material_state(input const& in, state& s) {
   update_element_force(s);
   update_nodal_force(s);
   update_a(s);
@@ -529,7 +529,7 @@ HPC_NOINLINE void update_a_from_material_state(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE void midpoint_predictor_corrector_step(input const& in, state& s) {
+HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.u, hpc::vector3<double>(0.0, 0.0, 0.0));
   hpc::device_array_vector<hpc::vector3<double>, node_index> old_v(s.nodes.size());
   hpc::copy(hpc::device_policy(), s.v, old_v);
@@ -611,7 +611,7 @@ HPC_NOINLINE void midpoint_predictor_corrector_step(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE void velocity_verlet_step(input const& in, state& s) {
+HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
   hpc::fill(hpc::serial_policy(), s.u, hpc::vector3<double>(0.0, 0.0, 0.0));
@@ -635,7 +635,7 @@ HPC_NOINLINE void velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
-HPC_NOINLINE void time_integrator_step(input const& in, state& s) {
+HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
       midpoint_predictor_corrector_step(in, s);
@@ -646,7 +646,7 @@ HPC_NOINLINE void time_integrator_step(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE void initialize_material_scalar(
+HPC_NOINLINE inline void initialize_material_scalar(
     double const scalar,
     state& s,
     material_index const material,
@@ -661,7 +661,7 @@ HPC_NOINLINE void initialize_material_scalar(
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE void common_initialization(input const& in, state& s) {
+HPC_NOINLINE inline void common_initialization(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);

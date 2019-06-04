@@ -18,7 +18,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE vector4<double> get_Q(hpc::vector3<double> con
     get_q(xi(2)));
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_centroids(hpc::array<hpc::vector3<double>, 12>& xi) noexcept {
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_centroids(hpc::array<hpc::vector3<double>, 12>& xi) noexcept {
   xi[0] = hpc::vector3<double>( 0.125, 0.125, 0.125 );
   xi[1] = hpc::vector3<double>( 0.625, 0.125, 0.125 );
   xi[2] = hpc::vector3<double>( 0.125, 0.625, 0.125 );
@@ -33,7 +33,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_centroids(hpc::array<hpc::vector3<double>,
   xi[11] = hpc::vector3<double>( 0.1875, 0.1875, 0.1875 );
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void get_consistent_mass_matrix(
+HPC_NOINLINE HPC_HOST_DEVICE inline void get_consistent_mass_matrix(
     hpc::array<hpc::vector3<double>, 10> const& node_coords,
     vector4<double> const& point_densities,
     hpc::array<hpc::array<double, 10>, 10>& mass) noexcept {
@@ -66,7 +66,7 @@ HPC_NOINLINE HPC_HOST_DEVICE void get_consistent_mass_matrix(
   }
 }
 
-HPC_NOINLINE HPC_HOST_DEVICE void lump_mass_matrix(
+HPC_NOINLINE HPC_HOST_DEVICE inline void lump_mass_matrix(
     hpc::array<hpc::array<double, 10>, 10> const& mass,
     hpc::array<double, 10>& lumped
     ) noexcept {

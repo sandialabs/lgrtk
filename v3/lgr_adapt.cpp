@@ -10,7 +10,7 @@
 
 namespace lgr {
 
-HPC_NOINLINE void update_bar_quality(state& s) {
+HPC_NOINLINE inline void update_bar_quality(state& s) {
   hpc::fill(hpc::device_policy(), s.quality, double(1.0));
 }
 
@@ -43,7 +43,7 @@ inline HPC_HOST_DEVICE double triangle_quality(hpc::array<hpc::vector3<double>, 
   return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
-HPC_NOINLINE void update_triangle_quality(state& s) noexcept {
+HPC_NOINLINE inline void update_triangle_quality(state& s) noexcept {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
@@ -84,7 +84,7 @@ HPC_NOINLINE void update_triangle_quality(state& s) noexcept {
 
    As such, our "quality" is the inverse of this quality measure to the fourth power
   */
-HPC_NOINLINE void update_tetrahedron_quality(state& s) {
+HPC_NOINLINE inline void update_tetrahedron_quality(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const elements_to_quality = s.quality.begin();
@@ -387,7 +387,7 @@ inline HPC_DEVICE void evaluate_triangle_collapse(
   }
 }
 
-HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
+HPC_NOINLINE inline void evaluate_triangle_adapt(input const& in, state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -473,7 +473,7 @@ HPC_NOINLINE void evaluate_triangle_adapt(input const& in, state const& s, adapt
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-HPC_NOINLINE void choose_triangle_adapt(state const& s, adapt_state& a)
+HPC_NOINLINE inline void choose_triangle_adapt(state const& s, adapt_state& a)
 {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
@@ -699,7 +699,7 @@ inline HPC_DEVICE void apply_triangle_collapse(apply_cavity const c,
   }
 }
 
-HPC_NOINLINE void apply_triangle_adapt(state const& s, adapt_state& a)
+HPC_NOINLINE inline void apply_triangle_adapt(state const& s, adapt_state& a)
 {
   apply_cavity c(s, a);
   hpc::fill(hpc::device_policy(), a.new_elements_are_same, true);
@@ -735,7 +735,7 @@ HPC_NOINLINE void project(
   hpc::for_each(hpc::device_policy(), old_things, functor);
 }
 
-HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
+HPC_NOINLINE inline void transfer_same_connectivity(state const& s, adapt_state& a) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -761,7 +761,7 @@ HPC_NOINLINE void transfer_same_connectivity(state const& s, adapt_state& a) {
   hpc::for_each(hpc::device_policy(), a.new_elements, functor);
 }
 
-HPC_NOINLINE void transfer_element_materials(adapt_state& a,
+HPC_NOINLINE inline void transfer_element_materials(adapt_state& a,
     hpc::device_vector<material_index, element_index>& data) {
   hpc::device_vector<material_index, element_index> new_data(a.new_elements.size());
   auto const new_elements_to_old_elements = a.new_elements_to_old_elements.cbegin();
@@ -802,7 +802,7 @@ HPC_NOINLINE void transfer_point_data(state const& s, adapt_state const& a,
   data = std::move(new_data);
 }
 
-HPC_NOINLINE void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
+HPC_NOINLINE inline void transfer_nodal_energy(input const& in, adapt_state const& a, state& s) {
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!in.enable_nodal_energy[material]) continue;
