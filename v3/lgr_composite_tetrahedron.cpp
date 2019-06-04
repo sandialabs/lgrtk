@@ -34,12 +34,16 @@ HPC_HOST_DEVICE inline hpc::array<double, 4> get_volumes(
   constexpr double ip_weight = 1.0 / 24.0;
   hpc::array<double, 4> volumes;
   for (auto& a : volumes) a = 0.0;
-  auto const ref_points = get_ref_points();
-  auto const sub_tet_int = get_subtet_int();
-  auto const S = get_S();
+  hpc::array<hpc::vector3<double>, 4> ref_points;
+  get_ref_points(ref_points);
+  subtet_int_t sub_tet_int;
+  get_subtet_int(sub_tet_int);
+  S_t S;
+  get_S(S);
   O_t O;
   get_O(node_coords, S, O);
-  auto const O_det = get_O_det(O);
+  hpc::array<double, 12> O_det;
+  get_O_det(O, O_det);
   auto const DOL = get_DOL(O_det, sub_tet_int);
   auto const parent_M_inv = get_parent_M_inv();
   for (int pt = 0; pt < 4; ++pt) {
