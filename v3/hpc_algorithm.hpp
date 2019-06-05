@@ -178,4 +178,9 @@ bool all_of(serial_policy policy, Range const& range) {
   return all_of(policy, range, identity<bool>());
 }
 
+template <class Range>
+bool any_of(serial_policy policy, Range const& range) {
+  return any_of(policy, range, identity<bool>());
+}
+
 }

@@ -34,6 +34,7 @@ class state {
   hpc::device_array_vector<hpc::symmetric3x3<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
   hpc::device_vector<double, point_index> p; // pressure at elements (output only!)
   hpc::device_array_vector<hpc::vector3<double>, point_index> v_prime; // fine-scale velocity
+  hpc::device_vector<double, point_index> p_prime; // fine-scale pressure
   hpc::device_array_vector<hpc::vector3<double>, point_index> q; // element-center heat flux
   hpc::device_vector<double, point_node_index> W; // work done, per element-node pair (contribution to a node's work by an element)
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure

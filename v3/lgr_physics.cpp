@@ -496,7 +496,9 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
+    double const dt,
+    hpc::device_vector<double, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
@@ -508,15 +510,21 @@ HPC_NOINLINE inline void update_single_material_state(input const& in, state& s,
     }
   }
   if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
-    update_sigma_with_p_h(s, material);
+    if (in.enable_p_prime[material]) {
+      update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
+    } else {
+      update_sigma_with_p_h(s, material);
+    }
   }
 }
 
-HPC_NOINLINE inline void update_material_state(input const& in, state& s) {
+HPC_NOINLINE inline void update_material_state(input const& in, state& s,
+    double const dt,
+    hpc::host_vector<hpc::device_vector<double, node_index>, material_index> const& old_p_h) {
   hpc::fill(hpc::device_policy(), s.sigma, hpc::symmetric3x3<double>::zero());
   hpc::fill(hpc::device_policy(), s.G, double(0.0));
   for (auto const material : in.materials) {
-    update_single_material_state(in, s, material);
+    update_single_material_state(in, s, material, dt, old_p_h[material]);
   }
 }
 
@@ -543,6 +551,10 @@ HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, stat
       hpc::copy(hpc::device_policy(), s.p_h[material], old_p_h[material]);
     }
     if (in.enable_nodal_energy[material]) {
+      if (in.enable_p_prime[material]) {
+        old_p_h[material].resize(s.nodes.size());
+        hpc::copy(hpc::device_policy(), s.p_h[material], old_p_h[material]);
+      }
       old_e_h[material].resize(s.nodes.size());
       hpc::copy(hpc::device_policy(), s.e_h[material], old_e_h[material]);
     }
@@ -588,7 +600,7 @@ HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, stat
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
-    update_material_state(in, s);
+    update_material_state(in, s, half_dt, old_p_h);
     for (auto const material : in.materials) {
       if (in.enable_nodal_energy[material]) {
         interpolate_K(s, material);
@@ -612,6 +624,7 @@ HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, stat
 }
 
 HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
+  hpc::host_vector<hpc::device_vector<double, node_index>, material_index> old_p_h(in.materials.size());
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
   hpc::fill(hpc::serial_policy(), s.u, hpc::vector3<double>(0.0, 0.0, 0.0));
@@ -620,7 +633,7 @@ HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
   update_reference(s);
   if (in.enable_J_averaging) volume_average_J(s);
   update_h_min(in, s);
-  update_material_state(in, s);
+  update_material_state(in, s, s.dt, old_p_h);
   update_c(s);
   update_element_dt(s);
   find_max_stable_dt(s);
@@ -661,7 +674,7 @@ HPC_NOINLINE inline void initialize_material_scalar(
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE inline void common_initialization(input const& in, state& s) {
+HPC_NOINLINE inline void common_initialization_part1(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
@@ -677,7 +690,11 @@ HPC_NOINLINE inline void common_initialization(input const& in, state& s) {
   }
   update_symm_grad_v(s);
   update_h_min(in, s);
-  update_material_state(in, s);
+}
+
+HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) {
+  hpc::host_vector<hpc::device_vector<double, node_index>, material_index> old_p_h(in.materials.size());
+  update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
       interpolate_K(s, material);
@@ -728,7 +745,8 @@ void run(input const& in) {
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   hpc::fill(hpc::device_policy(), s.F_total, hpc::matrix3x3<double>::identity());
-  common_initialization(in, s);
+  common_initialization_part1(in, s);
+  common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
@@ -751,16 +769,13 @@ void run(input const& in) {
       }
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
-//      output_file(in, file_output_index, s);
-//      ++file_output_index;
         for (int i = 0; i < 4; ++i) {
           adapt(in, s);
           resize_state(in, s);
           collect_element_sets(in, s);
           collect_node_sets(in, s);
-          common_initialization(in, s);
-//        output_file(in, file_output_index, s);
-//        ++file_output_index;
+          common_initialization_part1(in, s);
+          common_initialization_part2(in, s);
         }
       }
       ++s.n;
