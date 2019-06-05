@@ -67,6 +67,9 @@ void propagate_connectivity(state& s) {
       }
       hpc::swap(node_elements_to_elements[node_element], node_elements_to_elements[min_node_element]);
     }
+    for (node_element_index i(*(node_elements.begin())); i < (*(node_elements.end())) - 1; ++i) {
+      assert(node_elements_to_elements[i] < node_elements_to_elements[i + 1]);
+    }
   };
   hpc::for_each(hpc::device_policy(), s.nodes, sort_functor);
   s.points.resize(s.elements.size() * s.points_in_element.size());
