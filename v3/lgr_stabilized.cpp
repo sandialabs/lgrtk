@@ -105,6 +105,77 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s, material_inde
   lgr::for_each(s.element_sets[material], functor);
 }
 
+static void LGR_NOINLINE update_p_prime(input const& in, state& s, material_index const material)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const points_to_dt = s.element_dt.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_c = s.c.cbegin();
+  auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
+  auto const points_to_p_prime = s.p_prime.begin();
+  auto const c_tau = in.c_tau[material];
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const point : elements_to_points[element]) {
+      auto const point_nodes = points_to_point_nodes[point];
+      double const dt = points_to_dt[point];
+      auto const tau = c_tau * dt;
+      symmetric3x3<double> symm_grad_v = points_to_symm_grad_v[point];
+      double const div_v = trace(symm_grad_v);
+      double p_h_dot = 0.0;
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node = point_nodes[node_in_element];
+        node_index const node = element_nodes_to_nodes[element_node];
+        double const p_h_dot_of_node = nodes_to_p_h_dot[node];
+	p_h_dot = p_h_dot + p_h_dot_of_node;
+      }
+      p_h_dot = p_h_dot * N;
+      double const rho = points_to_rho[point];
+      double const c = points_to_c[point];
+      auto const p_prime = - tau * ( p_h_dot + rho * c * c * div_v );
+      points_to_p_prime[point] = p_prime;
+    }
+  };
+  lgr::for_each(s.element_sets[material], functor);
+}
+
+void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material) {
+  update_p_prime(in, s, material);
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_element_points = s.elements * s.points_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const points_to_p_prime = s.p_prime.begin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const element_points = elements_to_element_points[element];
+    for (auto const point : element_points) {
+      double point_p_h = 0.0;
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const node = element_nodes_to_nodes[element_node];
+        double const p_h = nodes_to_p_h[node];
+        point_p_h = point_p_h + N * p_h;
+      }
+      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      double const p_prime = points_to_p_prime[point];
+      auto const new_sigma = deviator(old_sigma) - point_p_h - p_prime;
+      points_to_sigma[point] = new_sigma;
+    }
+  };
+  lgr::for_each(s.element_sets[material], functor);
+}
+
 static void LGR_NOINLINE update_q(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;

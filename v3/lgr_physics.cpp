@@ -509,7 +509,11 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
     }
   }
   if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
-    update_sigma_with_p_h(s, material);
+    if (in.enable_p_prime[material]) {
+      update_sigma_with_p_h_p_prime(in, s, material);
+    } else {
+      update_sigma_with_p_h(s, material);
+    }
   }
 }
 
