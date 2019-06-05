@@ -106,6 +106,7 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s, material_inde
 }
 
 static LGR_NOINLINE void update_p_prime(input const& in, state& s, material_index const material,
+    double const dt,
     device_vector<double, node_index> const& old_p_h_vector)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
@@ -121,7 +122,6 @@ static LGR_NOINLINE void update_p_prime(input const& in, state& s, material_inde
   auto const points_to_p_prime = s.p_prime.begin();
   auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
-  auto const dt = s.dt;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
@@ -153,8 +153,9 @@ static LGR_NOINLINE void update_p_prime(input const& in, state& s, material_inde
 }
 
 void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material,
+    double const dt,
     device_vector<double, node_index> const& old_p_h_vector) {
-  update_p_prime(in, s, material, old_p_h_vector);
+  update_p_prime(in, s, material, dt, old_p_h_vector);
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();

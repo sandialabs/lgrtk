@@ -498,6 +498,7 @@ static void LGR_NOINLINE volume_average_p(state& s) {
 }
 
 static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material,
+    double const dt,
     device_vector<double, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
@@ -511,7 +512,7 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
   }
   if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
     if (in.enable_p_prime[material]) {
-      update_sigma_with_p_h_p_prime(in, s, material, old_p_h);
+      update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
     } else {
       update_sigma_with_p_h(s, material);
     }
@@ -519,11 +520,12 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
 }
 
 static void LGR_NOINLINE update_material_state(input const& in, state& s,
+    double const dt,
     host_vector<device_vector<double, node_index>, material_index> const& old_p_h) {
   lgr::fill(s.sigma, symmetric3x3<double>::zero());
   lgr::fill(s.G, double(0.0));
   for (auto const material : in.materials) {
-    update_single_material_state(in, s, material, old_p_h[material]);
+    update_single_material_state(in, s, material, dt, old_p_h[material]);
   }
 }
 
@@ -599,7 +601,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
-    update_material_state(in, s, old_p_h);
+    update_material_state(in, s, half_dt, old_p_h);
     for (auto const material : in.materials) {
       if (in.enable_nodal_energy[material]) {
         interpolate_K(s, material);
@@ -632,7 +634,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_reference(s);
   if (in.enable_J_averaging) volume_average_J(s);
   update_h_min(in, s);
-  update_material_state(in, s, old_p_h);
+  update_material_state(in, s, s.dt, old_p_h);
   update_c(s);
   update_element_dt(s);
   find_max_stable_dt(s);
@@ -690,7 +692,7 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   }
   update_symm_grad_v(s);
   update_h_min(in, s);
-  update_material_state(in, s, old_p_h);
+  update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
       interpolate_K(s, material);
