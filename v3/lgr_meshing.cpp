@@ -5,6 +5,7 @@
 #include <lgr_meshing.hpp>
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
+#include <hpc_atomic.hpp>
 
 namespace lgr {
 
@@ -21,11 +22,8 @@ void propagate_connectivity(state& s) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       node_index const node = element_nodes_to_nodes[element_node];
-      { // needs to be atomic!
-      int count = nodes_to_count[node];
-      ++count;
-      nodes_to_count[node] = count;
-      }
+      hpc::atomic_ref<int> count(nodes_to_count[node]);
+      count++;
     }
   };
   hpc::for_each(hpc::device_policy(), s.elements, count_functor);
@@ -43,11 +41,8 @@ void propagate_connectivity(state& s) {
     for (auto const node_in_element : nodes_in_element) {
       element_node_index const element_node = element_nodes[node_in_element];
       node_index const node = element_nodes_to_nodes[element_node];
-      int offset;
-      { // needs to be atomic!
-      offset = nodes_to_count[node];
-      nodes_to_count[node] = offset + 1;
-      }
+      hpc::atomic_ref<int> count(nodes_to_count[node]);
+      int const offset = count++;
       auto const node_elements_range = nodes_to_node_elements[node];
       auto const node_element = node_elements_range[node_element_index(offset)];
       assert(node_element < num_node_elements);
