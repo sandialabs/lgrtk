@@ -63,14 +63,16 @@ class counting_range : public iterator_range<counting_iterator<T>> {
   using base_type = iterator_range<counting_iterator<T>>;
  public:
   using difference_type = typename base_type::difference_type;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_range(T first, T last):
-  iterator_range<counting_iterator<T>>(counting_iterator<T>(first), counting_iterator<T>(last))
+  using iterator = typename base_type::iterator;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(T first, T last) noexcept :
+  counting_range(iterator(first), iterator(last))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_range(difference_type size_in):
-  iterator_range<counting_iterator<T>>(counting_iterator<T>(T(0)), counting_iterator<T>(T(0) + size_in))
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_range(difference_type size_in) noexcept :
+  counting_range(iterator(T(0)), iterator(T(0) + size_in))
   {
   }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(iterator begin_in, iterator end_in) noexcept : base_type(begin_in, end_in) {}
 };
 
 template <class T>

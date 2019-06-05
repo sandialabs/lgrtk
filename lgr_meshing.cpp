@@ -51,6 +51,24 @@ void propagate_connectivity(state& s) {
     }
   };
   hpc::for_each(hpc::device_policy(), s.elements, fill_functor);
+  auto sort_functor = [=] HPC_DEVICE (node_index const node) {
+    auto const node_elements = nodes_to_node_elements[node];
+    hpc::counting_range<node_element_index> const except_last(node_elements.begin(), node_elements.end() - 1);
+    for (auto const node_element : except_last) {
+      hpc::counting_range<node_element_index> const remaining(node_element + 1, node_elements.end());
+      element_index min_element(node_elements_to_elements[node_element]);
+      auto min_node_element = node_element;
+      for (auto const node_element2 : remaining) {
+        auto const element = node_elements_to_elements[node_element2];
+        if (element < min_element) {
+          min_element = element; 
+          min_node_element = node_element2;
+        }
+      }
+      hpc::swap(node_elements_to_elements[node_element], node_elements_to_elements[min_node_element]);
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, sort_functor);
   s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
