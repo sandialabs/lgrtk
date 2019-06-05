@@ -157,9 +157,11 @@ template <
   class ExecutionPolicy = ::hpc::serial_policy,
   class Index = std::ptrdiff_t>
 class array_vector {
+public:
   using array_value_type = typename ::hpc::array_traits<T>::value_type;
   using array_size_type = typename ::hpc::array_traits<T>::size_type;
   static constexpr array_size_type array_size() noexcept { return ::hpc::array_traits<T>::size(); }
+private:
   using matrix_allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<array_value_type>;
   using matrix_type = ::hpc::matrix<array_value_type, L, matrix_allocator_type, ExecutionPolicy, Index, array_size_type>;
   matrix_type m_matrix;
@@ -205,6 +207,8 @@ public:
   constexpr execution_policy get_execution_policy() const noexcept { return m_matrix.get_execution_policy(); }
   constexpr reference operator[](size_type i) noexcept { return begin()[i]; }
   constexpr const_reference operator[](size_type i) const noexcept { return begin()[i]; }
+  array_value_type* data() noexcept { return m_matrix.data(); }
+  array_value_type const* data() const noexcept { return m_matrix.data(); }
 };
 
 template <class T, class Index = std::ptrdiff_t>
@@ -213,5 +217,36 @@ template <class T, class Index = std::ptrdiff_t>
 using device_array_vector = array_vector<T, ::hpc::device_layout, ::hpc::device_allocator<T>, ::hpc::device_policy, Index>;
 template <class T, class Index = std::ptrdiff_t>
 using pinned_array_vector = array_vector<T, ::hpc::device_layout, ::hpc::pinned_allocator<T>, ::hpc::host_policy, Index>;
+
+template <class T, layout L, class A, class P, class I>
+void copy(array_vector<T, L, A, P, I> const& from, array_vector<T, L, A, P, I>& to) {
+  hpc::copy(from.get_execution_policy(), from, to);
+}
+
+#ifdef HPC_CUDA
+
+template <class T, class Index>
+void copy(pinned_array_vector<T, Index> const& from, device_array_vector<T, Index>& to) {
+  assert(from.size() == to.size());
+  auto const num_arrays = from.size();
+  auto const array_size = from.array_size();
+  auto const size = std::size_t(num_arrays * array_size);
+  auto const from_ptr = from.data();
+  auto const to_ptr = to.data();
+  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyHostToDevice);
+}
+
+template <class T, class Index>
+void copy(device_array_vector<T, Index> const& from, pinned_array_vector<T, Index>& to) {
+  assert(from.size() == to.size());
+  auto const num_arrays = from.size();
+  auto const array_size = from.array_size();
+  auto const size = std::size_t(num_arrays * array_size);
+  auto const from_ptr = from.data();
+  auto const to_ptr = to.data();
+  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyDeviceToHost);
+}
+
+#endif
 
 }
