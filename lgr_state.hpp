@@ -39,6 +39,7 @@ class state {
   device_vector<symmetric3x3<double>, point_index> symm_grad_v{devpool}; // symmetrized gradient of velocity
   device_vector<double, point_index> p{devpool}; // pressure at elements (output only!)
   device_vector<vector3<double>, point_index> v_prime{devpool}; // fine-scale velocity
+  device_vector<double, point_index> p_prime{devpool}; // fine-scale pressure
   device_vector<vector3<double>, point_index> q{devpool}; // element-center heat flux
   device_vector<double, point_node_index> W{devpool}; // work done, per element-node pair (contribution to a node's work by an element)
   host_vector<device_vector<double, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure
