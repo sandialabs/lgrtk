@@ -59,7 +59,6 @@ template <class T, class Index = std::ptrdiff_t>
 class pointer_iterator {
   T* m_pointer;
 #ifndef NDEBUG
-#error "need to be fast on GPUs right now"
   T* m_allocation_begin;
   T* m_allocation_end;
 #endif
@@ -167,7 +166,7 @@ class counting_iterator {
   using reference = T;
   using pointer = T const*;
   using iterator_category = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_iterator(T value_in) noexcept : m_value(value_in) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_iterator(T value_in) noexcept : m_value(value_in) {}
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool operator==(counting_iterator const& other) const noexcept {
     return m_value == other.m_value;
   }
