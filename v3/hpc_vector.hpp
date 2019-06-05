@@ -165,4 +165,31 @@ using device_vector = vector<T, ::hpc::device_allocator<T>, ::hpc::device_policy
 template <class T, class Index = std::ptrdiff_t>
 using pinned_vector = vector<T, ::hpc::pinned_allocator<T>, ::hpc::host_policy, Index>;
 
+template <class T, class A, class P, class I>
+void copy(vector<T, A, P, I> const& from, vector<T, A, P, I>& to) {
+  hpc::copy(from.get_execution_policy(), from, to);
+}
+
+#ifdef HPC_CUDA
+
+template <class T, class Index>
+void copy(pinned_vector<T, Index> const& from, device_vector<T, Index>& to) {
+  assert(from.size() == to.size());
+  std::size_t size = std::size_t(from.size());
+  auto const from_ptr = from.data();
+  auto const to_ptr = to.data();
+  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyHostToDevice);
+}
+
+template <class T, class Index>
+void copy(device_vector<T, Index> const& from, pinned_vector<T, Index>& to) {
+  assert(from.size() == to.size());
+  std::size_t size = std::size_t(to.size());
+  auto const from_ptr = from.data();
+  auto const to_ptr = to.data();
+  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyDeviceToHost);
+}
+
+#endif
+
 }
