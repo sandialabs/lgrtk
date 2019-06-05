@@ -675,8 +675,7 @@ static void LGR_NOINLINE initialize_material_scalar(
   for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE common_initialization(input const& in, state& s) {
-  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
+static void LGR_NOINLINE common_initialization_part1(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
@@ -692,6 +691,10 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   }
   update_symm_grad_v(s);
   update_h_min(in, s);
+}
+
+static void LGR_NOINLINE common_initialization_part2(input const& in, state& s) {
+  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
   update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
@@ -740,7 +743,8 @@ void run(input const& in) {
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   lgr::fill(s.F_total, matrix3x3<double>::identity());
-  common_initialization(in, s);
+  common_initialization_part1(in, s);
+  common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);
   file_writer output_file(in.name);
   s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
@@ -763,16 +767,13 @@ void run(input const& in) {
       }
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
-//      output_file(in, file_output_index, s);
-//      ++file_output_index;
         for (int i = 0; i < 4; ++i) {
           adapt(in, s);
           resize_state(in, s);
           collect_element_sets(in, s);
           collect_node_sets(in, s);
-          common_initialization(in, s);
-//        output_file(in, file_output_index, s);
-//        ++file_output_index;
+          common_initialization_part1(in, s);
+          common_initialization_part2(in, s);
         }
       }
       ++s.n;
