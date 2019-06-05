@@ -51,9 +51,6 @@ void resize_state(input const& in, state& s) {
       s.p_h_dot[material].resize(s.nodes.size());
       s.v_prime.resize(s.points.size());
       s.W.resize(s.points.size() * s.nodes_in_element.size());
-      if (in.enable_p_prime[material]) {
-	s.p_prime.resize(s.points.size());
-      }
     }
     if (in.enable_nodal_energy[material]) {
       s.p_h[material].resize(s.nodes.size());
@@ -64,6 +61,10 @@ void resize_state(input const& in, state& s) {
       s.q.resize(s.points.size());
       s.W.resize(s.points.size() * s.nodes_in_element.size());
       s.dp_de_h[material].resize(s.nodes.size());
+      if (in.enable_p_prime[material]) {
+        std::cerr << "resizing p_prime!\n";
+        s.p_prime.resize(s.points.size());
+      }
     }
   }
   s.material.resize(s.elements.size());

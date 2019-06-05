@@ -182,9 +182,6 @@ void file_writer::operator()(
   }
   if (any_of(in.enable_nodal_energy)) {
     write_vtk_vectors(stream, "q", s.elements, s.points_in_element, s.q);
-  }
-  if (any_of(in.enable_nodal_pressure)) {
-    write_vtk_vectors(stream, "v_prime", s.elements, s.points_in_element, s.v_prime);
     if (any_of(in.enable_p_prime)) {
       write_vtk_scalars(stream, "p_prime", s.elements, s.points_in_element, s.p_prime);
     }
