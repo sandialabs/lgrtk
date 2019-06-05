@@ -540,15 +540,22 @@ void Noh_1D() {
   run(in);
 }
 
-HPC_NOINLINE void Noh_2D();
-void Noh_2D() {
+HPC_NOINLINE inline void Noh_2D(bool nodal_energy, bool p_prime ) {
   constexpr material_index gas(0);
   constexpr material_index nmaterials(1);
   constexpr material_index x_min(1);
   constexpr material_index y_min(2);
   constexpr material_index nboundaries(2);
   input in(nmaterials, nboundaries);
-  in.name = "Noh_2D";
+  if (nodal_energy) {
+    if (p_prime) {
+      in.name = "Noh_2D_p_h_p_prime";
+    } else {
+      in.name = "Noh_2D_p_h";
+    }
+  } else {
+      in.name = "Noh_2D";
+  }      
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
@@ -585,7 +592,8 @@ void Noh_2D() {
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 1.0;
   in.quadratic_artificial_viscosity = 0.5;
-  in.enable_nodal_energy[gas] = true;
+  in.enable_nodal_energy[gas] = nodal_energy;
+  in.enable_p_prime[gas] = p_prime;
   in.c_tau[gas] = 1.0;
   run(in);
 }
@@ -903,7 +911,9 @@ int main() {
   if ((0)) lgr::swinging_cube(false);
   if ((0)) lgr::twisting_column();
   if ((0)) lgr::Noh_1D();
-  if ((0)) lgr::Noh_2D();
+  if ((0)) lgr::Noh_2D(false,false);
+  if ((0)) lgr::Noh_2D(true,false);
+  if ((1)) lgr::Noh_2D(true,true);
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();

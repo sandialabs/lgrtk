@@ -60,6 +60,7 @@ class input {
   hpc::host_vector<double, material_index> gamma;
   hpc::host_vector<bool, material_index> enable_nodal_pressure;
   hpc::host_vector<bool, material_index> enable_nodal_energy;
+  hpc::host_vector<bool, material_index> enable_p_prime;
   hpc::host_vector<double, material_index> c_tau;
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
@@ -89,6 +90,7 @@ class input {
     ,gamma(material_count_in)
     ,enable_nodal_pressure(material_count_in, false)
     ,enable_nodal_energy(material_count_in, false)
+    ,enable_p_prime(material_count_in, false)
     ,c_tau(material_count_in, 0.5)
     ,domains(material_count_in + boundary_count_in)
   {}

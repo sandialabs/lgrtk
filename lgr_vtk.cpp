@@ -90,6 +90,21 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
   }
 }
 
+static void write_vtk_vectors(std::ostream& stream, char const* name,
+    hpc::counting_range<element_index> const elements,
+    hpc::counting_range<point_in_element_index> const points_in_element,
+    hpc::device_array_vector<hpc::vector3<double>, point_index> const& vec) {
+  auto const elements_to_points = elements * points_in_element;
+  for (auto const qp : points_in_element) {
+    std::string suffix = (points_in_element.size().get() == 1) ? "" : (std::string("_") + std::to_string(qp.get()));
+    stream << "VECTORS " << name << suffix << " double\n";
+    for (auto const e : elements) {
+      auto const p = elements_to_points[e][qp];
+      stream << hpc::vector3<double>(vec.begin()[p]) << "\n";
+    }
+  }
+}
+
 template <class Index>
 static void write_vtk_vectors(std::ostream& stream, char const* name,
     hpc::device_array_vector<hpc::vector3<double>, Index> const& vec) {
@@ -162,6 +177,12 @@ void file_writer::operator()(
   if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
+  }
+  if (hpc::any_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+    write_vtk_vectors(stream, "q", s.elements, s.points_in_element, s.q);
+    if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
+      write_vtk_scalars(stream, "p_prime", s.elements, s.points_in_element, s.p_prime);
+    }
   }
   write_vtk_scalars(stream, "time_step", s.elements, s.points_in_element, s.element_dt);
   if (in.enable_adapt) {

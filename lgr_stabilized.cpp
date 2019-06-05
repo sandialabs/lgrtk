@@ -104,6 +104,85 @@ HPC_NOINLINE inline void update_v_prime(input const& in, state& s, material_inde
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
+HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_index const material,
+    double const dt,
+    hpc::device_vector<double, node_index> const& old_p_h_vector)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
+  auto const points_to_dt = s.element_dt.cbegin();
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_c = s.c.cbegin();
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
+  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
+  auto const points_to_p_prime = s.p_prime.begin();
+  auto const c_tau = in.c_tau[material];
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const point : elements_to_points[element]) {
+      double const point_dt = points_to_dt[point];
+      auto const tau = c_tau * point_dt;
+      auto const symm_grad_v = points_to_symm_grad_v[point].load();
+      double const div_v = trace(symm_grad_v);
+      double p_dot = 0.0;
+      if (dt != 0.0) {
+        double old_p = 0.0;
+        double p = 0.0;
+        for (auto const node_in_element : nodes_in_element) {
+          auto const element_node = element_nodes[node_in_element];
+          node_index const node = element_nodes_to_nodes[element_node];
+          double const p_h = nodes_to_p_h[node];
+          p += p_h * N;
+          double const old_p_h = nodes_to_old_p_h[node];
+          old_p += old_p_h * N;
+        }
+        p_dot = (p - old_p) / dt;
+      }
+      double const rho = points_to_rho[point];
+      double const c = points_to_c[point];
+      auto const p_prime = - tau * ( p_dot + rho * c * c * div_v );
+      points_to_p_prime[point] = p_prime;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
+void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material,
+    double const dt,
+    hpc::device_vector<double, node_index> const& old_p_h_vector) {
+  update_p_prime(in, s, material, dt, old_p_h_vector);
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_element_points = s.elements * s.points_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const nodes_in_element = s.nodes_in_element;
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
+  auto const N = 1.0 / double(s.nodes_in_element.size().get());
+  auto const points_to_p_prime = s.p_prime.begin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto functor = [=] (element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    auto const element_points = elements_to_element_points[element];
+    for (auto const point : element_points) {
+      double point_p_h = 0.0;
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const node = element_nodes_to_nodes[element_node];
+        double const p_h = nodes_to_p_h[node];
+        point_p_h = point_p_h + N * p_h;
+      }
+      auto const old_sigma = points_to_sigma[point].load();
+      double const p_prime = points_to_p_prime[point];
+      auto const new_sigma = deviator(old_sigma) - point_p_h - p_prime;
+      points_to_sigma[point] = new_sigma;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
 HPC_NOINLINE inline void update_q(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
