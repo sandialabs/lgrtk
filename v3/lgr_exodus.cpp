@@ -64,7 +64,7 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
         &nentries, &nnodes_per_entry, &nedges_per_entry, &nfaces_per_entry, &nattr_per_entry);
     assert(exodus_error_code == 0);
     if (nentries == 0) continue;
-    assert(nnodes_per_entry == int(s.nodes_in_element.size()));
+    assert(nnodes_per_entry == s.nodes_in_element.size().get());
     if (nedges_per_entry < 0) nedges_per_entry = 0;
     if (nfaces_per_entry < 0) nfaces_per_entry = 0;
     hpc::host_vector<int> edge_conn(nentries * nedges_per_entry);
