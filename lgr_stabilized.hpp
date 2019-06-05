@@ -9,7 +9,8 @@ class input;
 class state;
 
 void update_sigma_with_p_h(state& s, material_index const material);
-void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material);
+void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material,
+    device_vector<double, node_index> const& old_p_h_vector);
 void update_p_h(state& s, double const dt,
     material_index const material,
     device_vector<double, node_index> const& old_p_h_vector);

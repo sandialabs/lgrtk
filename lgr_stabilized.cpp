@@ -105,49 +105,56 @@ static void LGR_NOINLINE update_v_prime(input const& in, state& s, material_inde
   lgr::for_each(s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_p_prime(input const& in, state& s, material_index const material)
+static LGR_NOINLINE void update_p_prime(input const& in, state& s, material_index const material,
+    device_vector<double, node_index> const& old_p_h_vector)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const nodes_in_element = s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const points_to_dt = s.element_dt.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_c = s.c.cbegin();
-  auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
+  auto const nodes_to_p_h = s.p_h[material].cbegin();
+  auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const points_to_p_prime = s.p_prime.begin();
   auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(int(s.nodes_in_element.size()));
+  auto const dt = s.dt;
   auto functor = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      auto const point_nodes = points_to_point_nodes[point];
-      double const dt = points_to_dt[point];
-      auto const tau = c_tau * dt;
+      double const point_dt = points_to_dt[point];
+      auto const tau = c_tau * point_dt;
       symmetric3x3<double> symm_grad_v = points_to_symm_grad_v[point];
       double const div_v = trace(symm_grad_v);
-      double p_h_dot = 0.0;
-      for (auto const node_in_element : nodes_in_element) {
-        auto const element_node = element_nodes[node_in_element];
-        auto const point_node = point_nodes[node_in_element];
-        node_index const node = element_nodes_to_nodes[element_node];
-        double const p_h_dot_of_node = nodes_to_p_h_dot[node];
-	p_h_dot = p_h_dot + p_h_dot_of_node;
+      double p_dot = 0.0;
+      if (dt != 0.0) {
+        double old_p = 0.0;
+        double p = 0.0;
+        for (auto const node_in_element : nodes_in_element) {
+          auto const element_node = element_nodes[node_in_element];
+          node_index const node = element_nodes_to_nodes[element_node];
+          double const p_h = nodes_to_p_h[node];
+          p += p_h * N;
+          double const old_p_h = nodes_to_old_p_h[node];
+          old_p += old_p_h * N;
+        }
+        p_dot = (p - old_p) / dt;
       }
-      p_h_dot = p_h_dot * N;
       double const rho = points_to_rho[point];
       double const c = points_to_c[point];
-      auto const p_prime = - tau * ( p_h_dot + rho * c * c * div_v );
+      auto const p_prime = - tau * ( p_dot + rho * c * c * div_v );
       points_to_p_prime[point] = p_prime;
     }
   };
   lgr::for_each(s.element_sets[material], functor);
 }
 
-void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material) {
-  update_p_prime(in, s, material);
+void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material,
+    device_vector<double, node_index> const& old_p_h_vector) {
+  update_p_prime(in, s, material, old_p_h_vector);
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();

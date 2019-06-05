@@ -497,7 +497,8 @@ static void LGR_NOINLINE volume_average_p(state& s) {
   lgr::for_each(s.elements, functor);
 }
 
-static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material) {
+static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material,
+    device_vector<double, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
@@ -510,18 +511,19 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
   }
   if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
     if (in.enable_p_prime[material]) {
-      update_sigma_with_p_h_p_prime(in, s, material);
+      update_sigma_with_p_h_p_prime(in, s, material, old_p_h);
     } else {
       update_sigma_with_p_h(s, material);
     }
   }
 }
 
-static void LGR_NOINLINE update_material_state(input const& in, state& s) {
+static void LGR_NOINLINE update_material_state(input const& in, state& s,
+    host_vector<device_vector<double, node_index>, material_index> const& old_p_h) {
   lgr::fill(s.sigma, symmetric3x3<double>::zero());
   lgr::fill(s.G, double(0.0));
   for (auto const material : in.materials) {
-    update_single_material_state(in, s, material);
+    update_single_material_state(in, s, material, old_p_h[material]);
   }
 }
 
@@ -548,6 +550,10 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
       lgr::copy(s.p_h[material], old_p_h[material]);
     }
     if (in.enable_nodal_energy[material]) {
+      if (in.enable_p_prime[material]) {
+        old_p_h[material].resize(s.nodes.size());
+        lgr::copy(s.p_h[material], old_p_h[material]);
+      }
       old_e_h[material].resize(s.nodes.size());
       lgr::copy(s.e_h[material], old_e_h[material]);
     }
@@ -593,7 +599,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     update_symm_grad_v(s);
     update_h_min(in, s);
     if (in.enable_viscosity) update_h_art(in, s);
-    update_material_state(in, s);
+    update_material_state(in, s, old_p_h);
     for (auto const material : in.materials) {
       if (in.enable_nodal_energy[material]) {
         interpolate_K(s, material);
@@ -617,6 +623,7 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
 }
 
 static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
+  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
   lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
@@ -625,7 +632,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_reference(s);
   if (in.enable_J_averaging) volume_average_J(s);
   update_h_min(in, s);
-  update_material_state(in, s);
+  update_material_state(in, s, old_p_h);
   update_c(s);
   update_element_dt(s);
   find_max_stable_dt(s);
@@ -667,6 +674,7 @@ static void LGR_NOINLINE initialize_material_scalar(
 }
 
 static void LGR_NOINLINE common_initialization(input const& in, state& s) {
+  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
@@ -682,7 +690,7 @@ static void LGR_NOINLINE common_initialization(input const& in, state& s) {
   }
   update_symm_grad_v(s);
   update_h_min(in, s);
-  update_material_state(in, s);
+  update_material_state(in, s, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
       interpolate_K(s, material);
