@@ -87,7 +87,7 @@ namespace impl {
 
 template <class InputIterator, class OutputIterator, class BinaryOp, class UnaryOp>
 HPC_NOINLINE void
-transform_inclusive_scan(cuda_policy, InputIterator first, InputIterator last, OutputIterator d_first, BinaryOp binary_op, UnaryOp unary_op) noexcept
+transform_inclusive_scan(cuda_policy, InputIterator first, InputIterator last, OutputIterator d_first, BinaryOp binary_op, UnaryOp unary_op)
 {
   thrust::transform_inclusive_scan(thrust::device, first, last, d_first, unary_op, binary_op);
 }
@@ -99,7 +99,7 @@ transform_inclusive_scan(cuda_policy,
     ::hpc::counting_iterator<Index> last,
     ::hpc::pointer_iterator<T, Index> d_first,
     ::hpc::plus<T>,
-    UnaryOp unary_op) noexcept
+    UnaryOp unary_op)
 {
   ::hpc::counting_iterator<Index> old_zero(0);
   ::thrust::counting_iterator<int> new_first(int(first - old_zero));
@@ -115,10 +115,11 @@ transform_inclusive_scan(cuda_policy,
     ::hpc::pointer_iterator<TStored, Index> last,
     ::hpc::pointer_iterator<TResult, Index> d_first,
     ::hpc::plus<TResult>,
-    UnaryOp unary_op) noexcept
+    UnaryOp unary_op)
 {
+  auto const size = std::ptrdiff_t(last - first);
   TStored* const new_first = &(*first);
-  TStored* const new_last = &(*last);
+  TStored* const new_last = new_first + size;
   TResult* const new_d_first = &(*d_first);
   thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<TResult>());
 }
@@ -127,7 +128,7 @@ transform_inclusive_scan(cuda_policy,
 
 template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
 HPC_NOINLINE void
-transform_inclusive_scan(cuda_policy policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
+transform_inclusive_scan(cuda_policy policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op)
 {
   ::hpc::impl::transform_inclusive_scan(policy, input.begin(), input.end(), output.begin(), binary_op, unary_op);
 }

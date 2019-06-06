@@ -20,12 +20,6 @@ void propagate_connectivity(state& s) {
   auto const num_element_nodes = s.elements_to_nodes.size();
   auto const nodes_to_count = counts_vector.begin();
   auto const num_nodes = counts_vector.size();
-  auto check_functor = [=] HPC_DEVICE(element_node_index const element_node) {
-    node_index const check_node = element_nodes_to_nodes[element_node];
-    assert(check_node >= node_index(0));
-  };
-  hpc::for_each(hpc::device_policy(), hpc::make_counting_range(s.elements_to_nodes.size()), check_functor);
-  fprintf(stderr, "ran check functor right before badness!\n");
   auto count_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
@@ -157,36 +151,18 @@ HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
   hpc::counting_range<int> quads(nq);
   hpc::for_each(hpc::device_policy(), quads, connectivity_functor);
   fprintf(stderr, "ran connectivity functor!\n");
-  auto check_functor = [=] HPC_DEVICE(element_node_index const element_node) {
-    auto const check_node1 = element_nodes_to_nodes[element_node];
-    assert(check_node1 >= node_index(0));
-  };
-  hpc::for_each(hpc::device_policy(), hpc::make_counting_range(s.elements_to_nodes.size()), check_functor);
-  fprintf(stderr, "ran check functor!\n");
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
   double const x = in.x_domain_size;
   double const y = in.y_domain_size;
   double const dx = x / nx;
   double const dy = y / ny;
-  auto check_functor3 = [=] HPC_DEVICE(element_node_index const element_node) {
-    auto const check_node3 = element_nodes_to_nodes[element_node];
-    assert(check_node3 >= node_index(0));
-  };
-  hpc::for_each(hpc::device_policy(), hpc::make_counting_range(s.elements_to_nodes.size()), check_functor3);
-  fprintf(stderr, "ran check functor before coordinates functor!\n");
   auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const i = node.get() % nvx;
     int const j = node.get() / nvx;
     nodes_to_x[node] = hpc::vector3<double>(i * dx, j * dy, 0.0);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
-  auto check_functor4 = [=] HPC_DEVICE(element_node_index const element_node) {
-    auto const check_node4 = element_nodes_to_nodes[element_node];
-    assert(check_node4 >= node_index(0));
-  };
-  hpc::for_each(hpc::device_policy(), hpc::make_counting_range(s.elements_to_nodes.size()), check_functor4);
-  fprintf(stderr, "ran check functor after coordinates functor!\n");
 }
 
 HPC_NOINLINE inline void build_tetrahedron_mesh(input const& in, state& s)
@@ -421,13 +397,6 @@ void build_mesh(input const& in, state& s) {
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
     case COMPOSITE_TETRAHEDRON: build_10_node_tetrahedron_mesh(in, s); break;
   }
-  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto check_functor = [=] HPC_DEVICE(element_node_index const element_node) {
-    node_index const check_node2 = element_nodes_to_nodes[element_node];
-    assert(check_node2 >= node_index(0));
-  };
-  hpc::for_each(hpc::device_policy(), hpc::make_counting_range(s.elements_to_nodes.size()), check_functor);
-  fprintf(stderr, "ran check functor before propagate_connectivity!\n");
   propagate_connectivity(s);
 }
 
