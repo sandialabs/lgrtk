@@ -17,17 +17,11 @@ void propagate_connectivity(state& s) {
   hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const num_element_nodes = s.elements_to_nodes.size();
   auto const nodes_to_count = counts_vector.begin();
-  auto const num_nodes = counts_vector.size();
   auto count_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
-      assert(element_node >= element_node_index(0));
-      assert(element_node < num_element_nodes);
       node_index const node = element_nodes_to_nodes[element_node];
-      assert(node >= node_index(0));
-      assert(node < num_nodes);
       hpc::atomic_ref<int> count(nodes_to_count[node]);
       count++;
     }

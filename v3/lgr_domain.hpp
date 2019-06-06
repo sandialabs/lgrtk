@@ -103,16 +103,19 @@ class clipped_domain : public domain {
       Marker const marker,
       hpc::device_vector<Marker, Index>* markers) const {
     hpc::counting_range<Index> const range(points.size());
+    hpc::pinned_vector<plane, std::size_t> pinned_clips(m_host_clips.size());
+    hpc::copy(hpc::serial_policy(), m_host_clips, pinned_clips);
+    hpc::device_vector<plane, std::size_t> device_clips(m_host_clips.size());
+    hpc::copy(pinned_clips, device_clips);
+    auto const clips_range = hpc::make_iterator_range(device_clips.begin(), device_clips.end());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
-    auto const clips_begin = m_host_clips.cbegin();
-    auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
     auto functor = [=] HPC_DEVICE (Index const i) {
       auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
-      for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
-        is_in &= (distance(*clips_it, pt) >= 0.0);
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
       }
       if (is_in) {
         markers_begin[i] = marker;
@@ -137,16 +140,19 @@ class clipped_domain : public domain {
       material_index const marker,
       hpc::device_vector<material_set, node_index>* markers) const override {
     hpc::counting_range<node_index> const range(points.size());
+    hpc::pinned_vector<plane, std::size_t> pinned_clips(m_host_clips.size());
+    hpc::copy(hpc::serial_policy(), m_host_clips, pinned_clips);
+    hpc::device_vector<plane, std::size_t> device_clips(m_host_clips.size());
+    hpc::copy(pinned_clips, device_clips);
+    auto const clips_range = hpc::make_iterator_range(device_clips.begin(), device_clips.end());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
-    auto const clips_begin = m_host_clips.cbegin();
-    auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
     auto functor = [=] HPC_DEVICE (node_index const i) {
       auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
-      for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
-        is_in &= (distance(*clips_it, pt) >= 0.0);
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
       }
       if (is_in) {
         material_set set = markers_begin[i];
