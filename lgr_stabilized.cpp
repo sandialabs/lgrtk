@@ -121,7 +121,7 @@ HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_inde
   auto const points_to_p_prime = s.p_prime.begin();
   auto const c_tau = in.c_tau[material];
   auto const N = 1.0 / double(s.nodes_in_element.size().get());
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       double const point_dt = points_to_dt[point];
@@ -163,7 +163,7 @@ void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index con
   auto const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const points_to_p_prime = s.p_prime.begin();
   auto const points_to_sigma = s.sigma.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
     for (auto const point : element_points) {
