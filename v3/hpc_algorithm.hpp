@@ -29,7 +29,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void for_each(local_policy, Range&& r, UnaryFu
 }
 
 template <class Range, class UnaryFunction>
-void for_each(serial_policy, Range&& r, UnaryFunction f) {
+HPC_NOINLINE void for_each(serial_policy, Range&& r, UnaryFunction f) {
   for (auto it = r.begin(), end = r.end(); it != end; ++it) {
     f(*it);
   }
@@ -37,7 +37,7 @@ void for_each(serial_policy, Range&& r, UnaryFunction f) {
 
 #ifdef HPC_CUDA
 template <class Range, class UnaryFunction>
-void for_each(cuda_policy, Range&& r, UnaryFunction f) {
+HPC_NOINLINE void for_each(cuda_policy, Range&& r, UnaryFunction f) {
   thrust::for_each(thrust::device, r.begin(), r.end(), f);
 }
 #endif
