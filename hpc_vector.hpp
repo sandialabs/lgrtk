@@ -178,7 +178,7 @@ void copy(pinned_vector<T, Index> const& from, device_vector<T, Index>& to) {
   std::size_t size = std::size_t(from.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
-  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyHostToDevice);
+  cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
 }
 
 template <class T, class Index>
@@ -187,7 +187,7 @@ void copy(device_vector<T, Index> const& from, pinned_vector<T, Index>& to) {
   std::size_t size = std::size_t(to.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
-  cudaMemcpy(to_ptr, from_ptr, size, cudaMemcpyDeviceToHost);
+  cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
 }
 
 #endif

@@ -30,7 +30,7 @@ class device_allocator {
   constexpr bool operator!=(device_allocator const&) const noexcept { return false; }
   T* allocate(std::size_t n) {
     void* ptr;
-    auto err = cudaMalloc(&ptr, n);
+    auto err = cudaMalloc(&ptr, n * sizeof(T));
     if (err != cudaSuccess) {
       throw std::bad_alloc();
     }
