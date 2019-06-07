@@ -118,6 +118,11 @@ using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension
 using specific_energy_dimension = divide_dimensions_t<energy_dimension, mass_dimension>;
 using velocity_gradient_dimension = divide_dimensions_t<velocity_dimension, length_dimension>;
 using viscosity_dimension = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
+using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
+using heat_flux_dimension = divide_dimensions_t<power_dimension, area_dimension>;
+using pressure_rate_dimension = divide_dimensions_t<pressure_dimension, time_dimension>;
+using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_dimension>;
+using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
 
 template <class T, class Dimension>
 class quantity {
@@ -167,10 +172,17 @@ operator+(T left, quantity<T, D> right) noexcept
 }
 
 template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity<T, D>
+operator-(quantity<T, D> x) noexcept
+{
+  return quantity<T, D>(-T(x));
+}
+
+template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(quantity<T, D> left, quantity<T, D> right) noexcept
 {
-  return quantity<T, D>(L(left) - R(right));
+  return quantity<T, D>(T(left) - T(right));
 }
 
 template <class T, class D>
@@ -185,7 +197,7 @@ template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(quantity<T, D> left, T right) noexcept
 {
-  return quantity<T, D>(L(left) - right);
+  return quantity<T, D>(T(left) - right);
 }
 
 template <class T, class D>
@@ -278,14 +290,14 @@ operator/(T left, quantity<T, D> right) noexcept
 }
 
 template <class T, class D>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE T sqrt(quantity<T, D> x) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto sqrt(quantity<T, D> x) noexcept
 {
   using std::sqrt;
   return quantity<T, root_dimension_t<D, 2>>(sqrt(T(x)));
 }
 
 template <class T, class D>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE T cbrt(quantity<T, D> x) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto cbrt(quantity<T, D> x) noexcept
 {
   using std::cbrt;
   return quantity<T, root_dimension_t<D, 3>>(cbrt(T(x)));
@@ -331,5 +343,15 @@ template <class T>
 using density = quantity<T, density_dimension>;
 template <class T>
 using viscosity = quantity<T, viscosity_dimension>;
+template <class T>
+using velocity_gradient = matrix3x3<quantity<T, velocity_gradient_dimension>>;
+template <class T>
+using symmetric_velocity_gradient = symmetric3x3<quantity<T, velocity_gradient_dimension>>;
+template <class T>
+using heat_flux = vector3<quantity<T, heat_flux_dimension>>;
+template <class T>
+using pressure_rate = quantity<T, pressure_rate_dimension>;
+template <class T>
+using energy_density_rate = quantity<T, energy_density_rate_dimension>;
 
 }
