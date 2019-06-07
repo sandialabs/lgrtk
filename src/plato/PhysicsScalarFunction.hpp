@@ -58,9 +58,8 @@ private:
     {
         typename PhysicsT::FunctionFactory tFactory;
 
-        auto tProblemSpecs = aInputParams.sublist("Plato Problem");
-        auto tProblemDefault = tProblemSpecs.sublist(mFunctionName);
-        auto tFunctionType = tProblemDefault.get<std::string>("Type", ""); // Must be a hardcoded type name (e.g. Volume)
+        auto tProblemDefault = aInputParams.sublist(mFunctionName);
+        auto tFunctionType = tProblemDefault.get<std::string>("Scalar Function Type", ""); // Must be a hardcoded type name (e.g. Volume)
 
         mScalarFunctionValue =
             tFactory.template createScalarFunction<Residual>(
@@ -208,14 +207,14 @@ public:
 
         // evaluate function
         //
-        // TODO: Should the individual scalar function values/gradients be added to the data map?
-        //m_dataMap.scalarVectors[mScalarFunctionValue[tFunctionIndex]->getName()] = tTempResult;
         mScalarFunctionValue->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
-        //m_dataMap.scalarVectors[name()] = tResult;
+        m_dataMap.scalarVectors[name()] = tResult;
 
         // sum across elements
         //
         auto tReturnVal = Plato::local_result_sum<Plato::Scalar>(m_numCells, tResult);
+
+        //printf("%s value %f \n", mFunctionName.c_str(), tReturnVal);
 
         return tReturnVal;
     }
@@ -366,6 +365,15 @@ public:
         Plato::assemble_scalar_gradient<m_numNodesPerCell>(m_numCells, m_controlEntryOrdinal, tResult, tObjGradientZ);
 
         return tObjGradientZ;
+    }
+
+    /******************************************************************************//**
+     * @brief Set function name
+     * @param [in] function name
+    **********************************************************************************/
+    void setFunctionName(const std::string aFunctionName)
+    {
+        mFunctionName = aFunctionName;
     }
 
     /******************************************************************************//**

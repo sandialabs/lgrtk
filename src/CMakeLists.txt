@@ -41,6 +41,7 @@ SET(LGRV1_SOURCES
 )
 
 SET(PLATO_SOURCES
+  plato/Plato_AugLagStressCriterionQuadratic.cpp
   plato/Plato_AugLagStressCriterionGeneral.cpp
   plato/Plato_AugLagStressCriterion.cpp
   plato/Plato_StructuralMass.cpp
@@ -68,6 +69,17 @@ SET(PLATO_SOURCES
   plato/alg/Cubature.cpp
   plato/alg/ParallelComm.cpp
   plato/alg/AmgXConfigs.cpp
+  plato/ScalarFunctionBaseFactory.cpp
+  plato/WeightedSumFunction.cpp
+  plato/PhysicsScalarFunction.cpp
+  plato/LocalMeasureFactory.cpp
+  plato/TensileEnergyDensity.cpp
+  plato/TensileEnergyDensityLocalMeasure.cpp
+  plato/VonMisesLocalMeasure.cpp
+  plato/LeastSquaresFunction.cpp
+  plato/DivisionFunction.cpp
+  plato/MassMoment.cpp
+  plato/MassPropertiesFunction.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/src)

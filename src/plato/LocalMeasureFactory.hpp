@@ -17,12 +17,13 @@ class LocalMeasureFactory
 {
 /**********************************************************************************/
 public:
+    LocalMeasureFactory (){}
+    ~LocalMeasureFactory (){}
     std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType>> 
-    create(Teuchos::ParameterList& aInputParams)
+    create(Teuchos::ParameterList& aInputParams, const std::string & aFuncName)
     {
-        auto tProblemSpecs = aInputParams.sublist("Plato Problem");
-        auto tProblemLocalConstraint = tProblemSpecs.sublist("AL Constraint");
-        auto tLocalMeasure = tProblemLocalConstraint.get<std::string>("Local Measure", "VonMises");
+        auto tFunctionSpecs = aInputParams.sublist(aFuncName);
+        auto tLocalMeasure = tFunctionSpecs.get<std::string>("Local Measure", "VonMises");
 
         if(tLocalMeasure == "VonMises")
         {
@@ -35,7 +36,7 @@ public:
         }
         else
         {
-            throw std::runtime_error("Unknown 'Local Constraint' specified in 'Plato Problem' ParameterList");
+            throw std::runtime_error("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList");
         }
     }
 };
@@ -44,7 +45,7 @@ public:
 }
 //namespace Plato
 
-#include "plato/Mechanics.hpp"
+#include "plato/SimplexMechanics.hpp"
 
 #ifdef PLATO_1D
 extern template class Plato::LocalMeasureFactory<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;

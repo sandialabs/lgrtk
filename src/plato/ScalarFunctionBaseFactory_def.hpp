@@ -3,6 +3,9 @@
 #include "plato/ScalarFunctionBase.hpp"
 #include "plato/WeightedSumFunction.hpp"
 #include "plato/PhysicsScalarFunction.hpp"
+#include "plato/DivisionFunction.hpp"
+#include "plato/LeastSquaresFunction.hpp"
+#include "plato/MassPropertiesFunction.hpp"
 
 namespace Plato
 {
@@ -22,22 +25,33 @@ namespace Plato
            Teuchos::ParameterList& aInputParams,
            const std::string aFunctionName)
     {
-        auto tProblemSpecs = aInputParams.sublist("Plato Problem");
-        auto tProblemFunction = tProblemSpecs.sublist(aFunctionName);
-        auto tFunctionType = tProblemFunction.get<std::string>("Type", "");
+        auto tProblemFunction = aInputParams.sublist(aFunctionName);
+        auto tFunctionType = tProblemFunction.get<std::string>("Type", "Not Defined");
 
         if(tFunctionType == "Weighted Sum")
         {
             return std::make_shared<WeightedSumFunction<PhysicsT>>(aMesh, aMeshSets, aDataMap, aInputParams, aFunctionName);
         }
-        else if(tFunctionType == "Physics Based")
+        else if(tFunctionType == "Division")
+        {
+            return std::make_shared<DivisionFunction<PhysicsT>>(aMesh, aMeshSets, aDataMap, aInputParams, aFunctionName);
+        }
+        else if(tFunctionType == "Least Squares")
+        {
+            return std::make_shared<LeastSquaresFunction<PhysicsT>>(aMesh, aMeshSets, aDataMap, aInputParams, aFunctionName);
+        }
+        else if(tFunctionType == "Scalar Function")
         {
             return std::make_shared<PhysicsScalarFunction<PhysicsT>>(aMesh, aMeshSets, aDataMap, aInputParams, aFunctionName);
         }
+        else if(tFunctionType == "Mass Properties")
+        {
+            return std::make_shared<MassPropertiesFunction<PhysicsT>>(aMesh, aMeshSets, aDataMap, aInputParams, aFunctionName);
+        }
         else
         {
-            const std::string tErrorString = std::string("Unknown function 'Type' specified in function name ") + 
-                                             aFunctionName + " ParameterList";
+            const std::string tErrorString = std::string("Unknown function Type '") + tFunctionType +
+                            "' specified in function name " + aFunctionName + " ParameterList";
             throw std::runtime_error(tErrorString);
         }
     }

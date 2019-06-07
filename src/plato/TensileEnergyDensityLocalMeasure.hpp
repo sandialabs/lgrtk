@@ -143,7 +143,7 @@ public:
 }
 //namespace Plato
 
-#include "plato/Mechanics.hpp"
+#include "plato/SimplexMechanics.hpp"
 
 #ifdef PLATO_1D
 extern template class Plato::TensileEnergyDensityLocalMeasure<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;

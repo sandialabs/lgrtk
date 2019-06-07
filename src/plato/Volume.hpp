@@ -6,6 +6,12 @@
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/AbstractScalarFunction.hpp"
+#include "plato/SimplexMechanics.hpp"
+#include "plato/WorksetBase.hpp"
+#include "plato/Plato_TopOptFunctors.hpp"
+#include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "ImplicitFunctors.hpp"
+#include "plato/PlatoMathHelpers.hpp"
 
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
@@ -17,11 +23,14 @@ namespace Plato
 
 /******************************************************************************/
 template<typename EvaluationType, typename PenaltyFunctionType>
-class Volume : public Plato::AbstractScalarFunction<EvaluationType>
+class Volume : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
+               public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
-    static constexpr int SpaceDim = EvaluationType::SpatialDim;
+    static constexpr int mSpaceDim = EvaluationType::SpatialDim;
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
     
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
     using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
@@ -31,11 +40,11 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
-    Plato::Scalar mQuadratureWeight;
     Plato::Scalar mCellMaterialDensity;
+    Plato::Scalar mMassOfFullDesignVolume;
 
     PenaltyFunctionType mPenaltyFunction;
-    Plato::ApplyWeighting<SpaceDim,1,PenaltyFunctionType> mApplyWeighting;
+    Plato::ApplyWeighting<mSpaceDim,1,PenaltyFunctionType> mApplyWeighting;
 
   public:
     /**************************************************************************/
@@ -46,17 +55,15 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
            Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
             mPenaltyFunction(aPenaltyParams),
-            mApplyWeighting(mPenaltyFunction)
+            mApplyWeighting(mPenaltyFunction),
+            mCellMaterialDensity(1.0),
+            mMassOfFullDesignVolume(1.0)
     /**************************************************************************/
     {
-      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
-      for (Plato::OrdinalType tDimIndex=2; tDimIndex<=SpaceDim; tDimIndex++)
-      { 
-        mQuadratureWeight /= Plato::Scalar(tDimIndex);
-      }
-
       auto tMaterialModelInputs = aInputParams.get<Teuchos::ParameterList>("Material Model");
       mCellMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
+
+      computeMassOfFullDesignVolume ();
     }
 
     /**************************************************************************
@@ -67,14 +74,12 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
            Plato::DataMap& aDataMap) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
             mPenaltyFunction(3.0, 0.0),
-            mApplyWeighting(mPenaltyFunction)
+            mApplyWeighting(mPenaltyFunction),
+            mCellMaterialDensity(1.0),
+            mMassOfFullDesignVolume(1.0)
     /**************************************************************************/
     {
-      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
-      for (Plato::OrdinalType tDimIndex=2; tDimIndex<=SpaceDim; tDimIndex++)
-      { 
-        mQuadratureWeight /= Plato::Scalar(tDimIndex);
-      }
+
     }
 
     /**************************************************************************/
@@ -82,6 +87,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     /**************************************************************************/
     {
       mCellMaterialDensity = aMaterialDensity;
+      computeMassOfFullDesignVolume ();
     }
 
     /**************************************************************************/
@@ -94,24 +100,62 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     {
       auto tNumCells = mMesh.nelems();
 
-      Plato::ComputeCellVolume<SpaceDim> tComputeCellVolume;
+      Plato::ComputeCellVolume<mSpaceDim> tComputeCellVolume;
 
-      auto tMaterialDensity  = mCellMaterialDensity;
-      auto tQuadratureWeight = mQuadratureWeight;
-      auto tApplyWeighting  = mApplyWeighting;
+      auto tCellMaterialDensity  = mCellMaterialDensity;
+
+      auto tMassOfFullDesignVolume = mMassOfFullDesignVolume;
+
+      Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
+      auto tCubWeight = tCubatureRule.getCubWeight();
+      auto tBasisFunc = tCubatureRule.getBasisFunctions();
+
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
       {
         ConfigScalarType tCellVolume;
         tComputeCellVolume(aCellOrdinal, aConfig, tCellVolume);
-        tCellVolume *= tQuadratureWeight;
+        tCellVolume *= tCubWeight;
 
-        aResult(aCellOrdinal) = tMaterialDensity * tCellVolume;
+        auto tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, aControl);
 
-        // apply weighting
-        //
-        tApplyWeighting(aCellOrdinal, aResult, aControl);
-    
-      },"volume");
+        aResult(aCellOrdinal) = 
+               ( tCellMass * tCellMaterialDensity * tCellVolume ) / tMassOfFullDesignVolume;
+
+      },"volume fraction if one global material density");
+    }
+
+    /******************************************************************************//**
+     * @brief Compute structural mass (i.e. structural mass with ersatz densities set to one)
+    **********************************************************************************/
+    void computeMassOfFullDesignVolume()
+    {
+      auto tNumCells = mMesh.nelems();
+      Plato::NodeCoordinate<mSpaceDim> tCoordinates(&mMesh);
+      Plato::ScalarArray3D tConfig("configuration", tNumCells, mNumNodesPerCell, mSpaceDim);
+      Plato::workset_config_scalar<mSpaceDim, mNumNodesPerCell>(tNumCells, tCoordinates, tConfig);
+      Plato::ComputeCellVolume<mSpaceDim> tComputeCellVolume;
+
+      Plato::ScalarVector tTotalMass("total mass", tNumCells);
+      Plato::ScalarMultiVector tDensities("densities", tNumCells, mNumNodesPerCell);
+      Kokkos::deep_copy(tDensities, 1.0);
+
+      Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
+      auto tCellMaterialDensity = mCellMaterialDensity;
+      auto tCubWeight = tCubatureRule.getCubWeight();
+      auto tBasisFunc = tCubatureRule.getBasisFunctions();
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+      {
+          Plato::Scalar tCellVolume = 0;
+          tComputeCellVolume(aCellOrdinal, tConfig, tCellVolume);
+          tCellVolume *= tCubWeight;
+
+          auto tCellMass = Plato::cell_mass<mNumNodesPerCell>(aCellOrdinal, tBasisFunc, tDensities);
+
+          tTotalMass(aCellOrdinal) = tCellMass * tCellMaterialDensity * tCellVolume;
+          
+      },"compute mass of full design volume");
+
+      Plato::local_sum(tTotalMass, mMassOfFullDesignVolume);
     }
 };
 // class Volume

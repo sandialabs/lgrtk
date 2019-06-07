@@ -6,6 +6,7 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
+#include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
 #include "plato/Plato_AugLagStressCriterionGeneral.hpp"
 #include "plato/Plato_AugLagStressCriterion.hpp"
 #include "plato/SimplexMechanics.hpp"
@@ -92,12 +93,35 @@ inline std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>>
 stress_constraint_general(Omega_h::Mesh& aMesh,
                           Omega_h::MeshSets& aMeshSets,
                           Plato::DataMap& aDataMap,
-                          Teuchos::ParameterList & aInputParams)
+                          Teuchos::ParameterList & aInputParams,
+                          const std::string & aFuncName)
 {
     std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
-    tOutput = std::make_shared < AugLagStressCriterionGeneral<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams);
+    tOutput = std::make_shared <Plato::AugLagStressCriterionGeneral<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
     return (tOutput);
 }
+
+
+/******************************************************************************//**
+ * @brief Create augmented Lagrangian local constraint criterion with quadratic constraint formulation
+ * @param [in] aMesh mesh database
+ * @param [in] aMeshSets side sets database
+ * @param [in] aDataMap PLATO Analyze physics-based database
+ * @param [in] aInputParams input parameters
+**********************************************************************************/
+template<typename EvaluationType>
+inline std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>>
+stress_constraint_quadratic(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList & aInputParams,
+                            const std::string & aFuncName)
+{
+    std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
+    tOutput = std::make_shared <Plato::AugLagStressCriterionQuadratic<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+    return (tOutput);
+}
+
 
 /******************************************************************************//**
  * @brief Create internal elastic energy criterion
@@ -315,7 +339,11 @@ struct FunctionFactory
         }
         else if(aFuncType == "Stress Constraint General")
         {
-            return (Plato::MechanicsFactory::stress_constraint_general<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
+            return (Plato::MechanicsFactory::stress_constraint_general<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
+        }
+        else if(aFuncType == "Stress Constraint Quadratic")
+        {
+            return std::make_shared<Plato::AugLagStressCriterionQuadratic<EvaluationType>>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
         }
         else if(aFuncType == "Volume")
         {

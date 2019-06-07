@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <memory>
 
 #include "plato/Simp.hpp"
 #include "plato/ToMap.hpp"
@@ -10,7 +11,8 @@
 #include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
-#include "plato/AbstractLocalMeasure.hpp"
+//#include "plato/VonMisesLocalMeasure.hpp"
+//#include "plato/AbstractLocalMeasure.hpp"
 #include "plato/LocalMeasureFactory.hpp"
 
 namespace Plato
@@ -72,7 +74,7 @@ private:
     **********************************************************************************/
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
-        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Local Constraint");
+        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>(this->getName());
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mLocalMeasureLimit = tParams.get<Plato::Scalar>("Local Measure Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
@@ -98,12 +100,14 @@ public:
      * @param [in] aMeshSets side sets database
      * @param [in] aDataMap PLATO Engine and Analyze data map
      * @param [in] aInputParams input parameters database
+     * @param [in] aFuncName user defined function name
      **********************************************************************************/
     AugLagStressCriterionQuadratic(Omega_h::Mesh & aMesh,
                                    Omega_h::MeshSets & aMeshSets,
                                    Plato::DataMap & aDataMap,
-                                   Teuchos::ParameterList & aInputParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Local Constraint Quadratic"),
+                                   Teuchos::ParameterList & aInputParams,
+                                   const std::string & aFuncName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFuncName),
             mPenalty(3),
             mLocalMeasureLimit(1),
             mAugLagPenalty(0.1),
@@ -111,17 +115,15 @@ public:
             mAugLagPenaltyUpperBound(100),
             mInitialLagrangeMultipliersValue(0.01),
             mAugLagPenaltyExpansionMultiplier(1.05),
-            mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems()),
-            mLocalMeasureEvaluationType(nullptr),
-            mLocalMeasurePODType(nullptr)
+            mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
         this->initialize(aInputParams);
 
         Plato::LocalMeasureFactory<EvaluationType> tLocalMeasureValueFactory1;
-        mLocalMeasureEvaluationType = tLocalMeasureValueFactory1.create(aInputParams);
+        mLocalMeasureEvaluationType = tLocalMeasureValueFactory1.create(aInputParams, aFuncName);
 
         Plato::LocalMeasureFactory<Residual> tLocalMeasureValueFactory2;
-        mLocalMeasurePODType = tLocalMeasureValueFactory2.create(aInputParams);
+        mLocalMeasurePODType = tLocalMeasureValueFactory2.create(aInputParams, aFuncName);
     }
 
     /******************************************************************************//**
@@ -264,13 +266,14 @@ public:
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
+        // Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0); // ############# NOTE #############
         Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0 / tNumCells);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {
             tLocalMeasureValueOverLimit(aCellOrdinal) = tLocalMeasureValue(aCellOrdinal) / tLocalMeasureValueLimit;
             tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
-            tConstraintValue(aCellOrdinal) = ( tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) * 
-                                               tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) );
+            tConstraintValue(aCellOrdinal) = ( //pow(tLocalMeasureValueOverLimitMinusOne(aCellOrdinal), 4) +
+                                               pow(tLocalMeasureValueOverLimitMinusOne(aCellOrdinal), 2) );
 
             ControlT tDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             ControlT tMaterialPenalty = tSIMP(tDensity);
@@ -329,8 +332,8 @@ public:
             // Compute local constraint residual
             tLocalMeasureValueOverLimit(aCellOrdinal) = tLocalMeasureValue(aCellOrdinal) / tLocalMeasureValueLimit;
             tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) = tLocalMeasureValueOverLimit(aCellOrdinal) - static_cast<Plato::Scalar>(1.0);
-            tConstraintValue(aCellOrdinal) = ( tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) * 
-                                               tLocalMeasureValueOverLimitMinusOne(aCellOrdinal) );
+            tConstraintValue(aCellOrdinal) = ( //pow(tLocalMeasureValueOverLimitMinusOne(aCellOrdinal), 4) +
+                                               pow(tLocalMeasureValueOverLimitMinusOne(aCellOrdinal), 2) );
 
             Plato::Scalar tDensity = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControlWS);
             Plato::Scalar tMaterialPenalty = tSIMP(tDensity);
