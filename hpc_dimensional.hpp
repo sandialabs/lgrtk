@@ -115,7 +115,9 @@ using volume_dimension = multiply_dimensions_t<area_dimension, length_dimension>
 using gradient_dimension = divide_dimensions_t<no_dimension, length_dimension>;
 using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
 using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
+using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
 using specific_energy_dimension = divide_dimensions_t<energy_dimension, mass_dimension>;
+using specific_energy_rate_dimension = divide_dimensions_t<specific_energy_dimension, time_dimension>;
 using velocity_gradient_dimension = divide_dimensions_t<velocity_dimension, length_dimension>;
 using dynamic_viscosity_dimension = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
 using kinematic_viscosity_dimension = divide_dimensions_t<area_dimension, time_dimension>;
@@ -124,6 +126,7 @@ using heat_flux_dimension = divide_dimensions_t<power_dimension, area_dimension>
 using pressure_rate_dimension = divide_dimensions_t<pressure_dimension, time_dimension>;
 using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_dimension>;
 using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
+using pressure_gradient_dimension = divide_dimensions_t<pressure_dimension, length_dimension>;
 
 template <class T, class Dimension>
 class quantity {
@@ -417,6 +420,8 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto cbrt(quantity<T, D> x) noexcept
 }
 
 template <class T>
+using dimensionless = quantity<T, no_dimension>;
+template <class T>
 using length = quantity<T, length_dimension>;
 template <class T>
 using mass = quantity<T, mass_dimension>;
@@ -451,7 +456,11 @@ using force = vector3<quantity<T, force_dimension>>;
 template <class T>
 using energy = quantity<T, energy_dimension>;
 template <class T>
+using power = quantity<T, power_dimension>;
+template <class T>
 using specific_energy = quantity<T, specific_energy_dimension>;
+template <class T>
+using specific_energy_rate = quantity<T, specific_energy_rate_dimension>;
 template <class T>
 using density = quantity<T, density_dimension>;
 template <class T>
@@ -468,5 +477,7 @@ template <class T>
 using pressure_rate = quantity<T, pressure_rate_dimension>;
 template <class T>
 using energy_density_rate = quantity<T, energy_density_rate_dimension>;
+template <class T>
+using pressure_gradient = vector3<quantity<T, pressure_gradient_dimension>>;
 
 }

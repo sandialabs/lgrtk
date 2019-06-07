@@ -39,7 +39,7 @@ HPC_NOINLINE inline void update_h_min_height(input const&, state& s) {
   auto functor = [=] HPC_DEVICE (element_index const element) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
-    double min_height = hpc::numeric_limits<double>::max();
+    hpc::length<double> min_height = hpc::numeric_limits<double>::max();
     auto const point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
@@ -95,15 +95,15 @@ HPC_NOINLINE inline void update_nodal_mass_uniform(state& s, material_index cons
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double m(0.0);
+    hpc::mass<double> m(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       element_index const element = node_elements_to_elements[node_element];
       material_index const element_material = elements_to_material[element];
       if (element_material != material) continue;
       for (auto const point : elements_to_points[element]) {
-        double const rho = points_to_rho[point];
-        double const V = points_to_V[point];
+        auto const rho = points_to_rho[point];
+        auto const V = points_to_V[point];
         m = m + (rho * V) * N;
       }
     }
@@ -123,13 +123,13 @@ void update_nodal_mass(input const& in, state& s) {
         update_nodal_mass_composite_tetrahedron(s, material); break;
     }
   }
-  hpc::fill(hpc::device_policy(), s.mass, double(0.0));
+  hpc::fill(hpc::device_policy(), s.mass, hpc::mass<double>(0.0));
   for (auto const material : in.materials) {
     auto const nodes_to_total = s.mass.begin();
     auto const nodes_to_partial = s.material_mass[material].cbegin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
-      double m_total = nodes_to_total[node];
-      double const m_partial = nodes_to_partial[node];
+      auto m_total = nodes_to_total[node];
+      auto const m_partial = nodes_to_partial[node];
       m_total = m_total + m_partial;
       nodes_to_total[node] = m_total;
     };

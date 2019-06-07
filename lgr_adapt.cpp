@@ -26,20 +26,22 @@ HPC_NOINLINE inline void update_bar_quality(state& s) {
    We also use the fact that we already have area computed and that basis
    gradient magnitudes relate to opposite edge lengths.
   */
-inline HPC_HOST_DEVICE double triangle_quality(hpc::array<hpc::vector3<double>, 3> const grad_N, double const area) noexcept {
-  double sum_g_i_sq = 0.0;
+inline HPC_HOST_DEVICE hpc::dimensionless<double> triangle_quality(
+    hpc::array<hpc::basis_gradient<double>, 3> const grad_N,
+    hpc::area<double> const area) noexcept {
+  decltype(1.0 / hpc::area<double>()) sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
     auto const g_i_sq = (grad_N[i] * grad_N[i]);
     sum_g_i_sq += g_i_sq;
   }
-  double const denom = (area * sum_g_i_sq);
-  double const q = 1.0 / denom;
+  auto const denom = (area * sum_g_i_sq);
+  auto const q = 1.0 / denom;
   return q;
 }
 
-inline HPC_HOST_DEVICE double triangle_quality(hpc::array<hpc::vector3<double>, 3> const x) noexcept {
-  double const area = triangle_area(x);
-  if (area <= 0.0) return area;
+inline HPC_HOST_DEVICE hpc::dimensionless<double> triangle_quality(hpc::array<hpc::position<double>, 3> const x) noexcept {
+  auto const area = triangle_area(x);
+  if (area <= 0.0) return -1.0;
   return triangle_quality(triangle_basis_gradients(x, area), area);
 }
 
@@ -55,12 +57,12 @@ HPC_NOINLINE inline void update_triangle_quality(state& s) noexcept {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    hpc::array<hpc::vector3<double>, 3> grad_N;
+    hpc::array<hpc::basis_gradient<double>, 3> grad_N;
     for (auto const i : nodes_in_element) {
       grad_N[i.get()] = point_nodes_to_grad_N[point_nodes[i]].load();
     }
-    auto const A = points_to_V[point];
-    double const fast_quality = triangle_quality(grad_N, A);
+    auto const A = points_to_V[point] / hpc::length<double>(1.0);
+    auto const fast_quality = triangle_quality(grad_N, A);
     elements_to_quality[element] = fast_quality;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
@@ -96,7 +98,7 @@ HPC_NOINLINE inline void update_tetrahedron_quality(state& s) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    auto sum_g_i_sq = 0.0;
+    decltype(1.0 / hpc::area<double>()) sum_g_i_sq = 0.0;
     for (auto const i : nodes_in_element) {
       auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const g_i_sq = (grad_N * grad_N);
@@ -118,12 +120,13 @@ void update_quality(input const& in, state& s) {
 }
 
 void update_min_quality(state& s) {
+  hpc::dimensionless<double> const init = std::numeric_limits<double>::max();
   s.min_quality = hpc::transform_reduce(
       hpc::device_policy(),
       s.quality,
-      std::numeric_limits<double>::max(),
-      hpc::minimum<double>(),
-      hpc::identity<double>());
+      init,
+      hpc::minimum<hpc::dimensionless<double>>(),
+      hpc::identity<hpc::dimensionless<double>>());
 }
 
 void initialize_h_adapt(state& s)
@@ -137,8 +140,8 @@ void initialize_h_adapt(state& s)
   auto const nodes_to_h_adapt = s.h_adapt.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
-    double lsq_max = 0.0;
-    double lsq_min = hpc::numeric_limits<double>::max();
+    hpc::area<double> lsq_max = 0.0;
+    hpc::area<double> lsq_min = hpc::numeric_limits<double>::max();
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element]; 
       auto const element_nodes = elements_to_element_nodes[element];
@@ -153,10 +156,10 @@ void initialize_h_adapt(state& s)
         }
       }
     }
-    double const h_min = std::sqrt(lsq_min);
-    double const h_max = std::sqrt(lsq_max);
-    double const alpha = std::sqrt(h_max / h_min);
-    double const h_avg = h_min * alpha;
+    auto const h_min = sqrt(lsq_min);
+    auto const h_max = sqrt(lsq_max);
+    auto const alpha = sqrt(h_max / h_min);
+    auto const h_avg = h_min * alpha;
     nodes_to_h_adapt[node] = h_avg;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -228,10 +231,10 @@ struct eval_cavity {
   hpc::array<element_index, max_shell_elements> shell_elements;
   hpc::array<hpc::array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
   hpc::array<material_index, max_shell_elements> shell_elements_to_materials;
-  hpc::array<double, max_shell_elements> shell_element_qualities;
+  hpc::array<hpc::dimensionless<double>, max_shell_elements> shell_element_qualities;
   hpc::array<int, max_shell_elements> shell_elements_to_node_in_element;
-  hpc::array<hpc::vector3<double>, max_shell_nodes> shell_nodes_to_x;
-  hpc::array<double, max_shell_nodes> shell_nodes_to_h;
+  hpc::array<hpc::position<double>, max_shell_nodes> shell_nodes_to_x;
+  hpc::array<hpc::length<double>, max_shell_nodes> shell_nodes_to_h;
   hpc::array<material_set, max_shell_nodes> shell_nodes_to_materials;
 };
 
@@ -240,7 +243,7 @@ inline HPC_DEVICE void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
-    double& best_improvement,
+    hpc::dimensionless<double>& best_improvement,
     int& best_swap_edge_node
     ) {
   hpc::array<int, 2> loop_elements;
@@ -264,23 +267,23 @@ inline HPC_DEVICE void evaluate_triangle_swap(
   if (c.shell_elements_to_materials[loop_elements[0]] != c.shell_elements_to_materials[loop_elements[1]]) {
     return;
   }
-  double const old_quality1 = c.shell_element_qualities[loop_elements[0]];
-  double const old_quality2 = c.shell_element_qualities[loop_elements[1]];
-  double const quality_before = hpc::min(old_quality1, old_quality2);
+  auto const old_quality1 = c.shell_element_qualities[loop_elements[0]];
+  auto const old_quality2 = c.shell_element_qualities[loop_elements[1]];
+  auto const quality_before = hpc::min(old_quality1, old_quality2);
   assert(quality_before > 0.0);
-  hpc::array<hpc::vector3<double>, 3> proposed_x;
+  hpc::array<hpc::position<double>, 3> proposed_x;
   proposed_x[0] = c.shell_nodes_to_x[center_node];
   proposed_x[1] = c.shell_nodes_to_x[loop_nodes[0]];
   proposed_x[2] = c.shell_nodes_to_x[loop_nodes[1]];
-  double const new_quality1 = triangle_quality(proposed_x);
+  auto const new_quality1 = triangle_quality(proposed_x);
   if (new_quality1 <= quality_before) return;
   proposed_x[0] = c.shell_nodes_to_x[edge_node];
   proposed_x[1] = c.shell_nodes_to_x[loop_nodes[1]];
   proposed_x[2] = c.shell_nodes_to_x[loop_nodes[0]];
-  double const new_quality2 = triangle_quality(proposed_x);
+  auto const new_quality2 = triangle_quality(proposed_x);
   if (new_quality2 <= quality_before) return;
-  double const quality_after = hpc::min(new_quality1, new_quality2);
-  double const improvement = ((quality_after - quality_before) / quality_before);
+  auto const quality_after = hpc::min(new_quality1, new_quality2);
+  auto const improvement = ((quality_after - quality_before) / quality_before);
   if (improvement < 0.05) return;
   if (improvement > best_improvement) {
     best_improvement = improvement;
@@ -288,7 +291,10 @@ inline HPC_DEVICE void evaluate_triangle_swap(
   }
 }
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE double measure_edge(double const h_min, double const h_max, double const l) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::dimensionless<double> measure_edge(
+    hpc::length<double> const h_min,
+    hpc::length<double> const h_max,
+    hpc::length<double> const l) noexcept {
   return l / (0.5 * (h_min + h_max));
 }
 
@@ -297,7 +303,7 @@ inline HPC_DEVICE void evaluate_triangle_split(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
-    double& longest_length,
+    hpc::dimensionless<double>& longest_length,
     int& best_split_edge_node
     ) {
   constexpr double min_acceptable_quality = 0.2;
@@ -313,7 +319,7 @@ inline HPC_DEVICE void evaluate_triangle_split(
   if (lm <= longest_length) return;
   auto const midpoint_x = 0.5 * (x1 + x2);
   for (int element = 0; element < c.num_shell_elements; ++element) {
-    hpc::array<hpc::vector3<double>, 3> parent_x;
+    hpc::array<hpc::position<double>, 3> parent_x;
     int const center_node_in_element = c.shell_elements_to_node_in_element[element];
     int edge_node_in_element = -1;
     for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
@@ -322,13 +328,13 @@ inline HPC_DEVICE void evaluate_triangle_split(
       if (shell_node == edge_node) edge_node_in_element = node_in_element;
     }
     if (edge_node_in_element == -1) continue;
-    hpc::array<hpc::vector3<double>, 3> child_x = parent_x;
+    hpc::array<hpc::position<double>, 3> child_x = parent_x;
     child_x[center_node_in_element] = midpoint_x;
-    double const new_quality1 = triangle_quality(child_x);
+    auto const new_quality1 = triangle_quality(child_x);
     if (new_quality1 < min_acceptable_quality) return;
     child_x[center_node_in_element] = c.shell_nodes_to_x[center_node];
     child_x[edge_node_in_element] = midpoint_x;
-    double const new_quality2 = triangle_quality(child_x);
+    auto const new_quality2 = triangle_quality(child_x);
     if (new_quality2 < min_acceptable_quality) return;
   }
   longest_length = lm;
@@ -341,7 +347,7 @@ inline HPC_DEVICE void evaluate_triangle_collapse(
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
     material_set const boundary_materials,
-    double& shortest_length,
+    hpc::dimensionless<double>& shortest_length,
     int& best_collapse_edge_node
     ) {
   if (!c.shell_nodes_to_materials[edge_node].contains(c.shell_nodes_to_materials[center_node])) return;
@@ -362,7 +368,7 @@ inline HPC_DEVICE void evaluate_triangle_collapse(
   }
   auto edge_materials = material_set::none();
   for (int element = 0; element < c.num_shell_elements; ++element) {
-    hpc::array<hpc::vector3<double>, 3> proposed_x;
+    hpc::array<hpc::position<double>, 3> proposed_x;
     int const center_node_in_element = c.shell_elements_to_node_in_element[element];
     int edge_node_in_element = -1;
     for (int node_in_element = 0; node_in_element < 3; ++node_in_element) {
@@ -374,7 +380,7 @@ inline HPC_DEVICE void evaluate_triangle_collapse(
     }
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
-    double const new_quality = triangle_quality(proposed_x);
+    auto const new_quality = triangle_quality(proposed_x);
     if (new_quality < min_acceptable_quality) {
       return;
     }
@@ -433,11 +439,11 @@ HPC_NOINLINE inline void evaluate_triangle_adapt(input const& in, state const& s
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       c.shell_elements_to_node_in_element[shell_element] = node_in_element.get();
     }
-    double best_swap_improvement = 0.0;
+    hpc::dimensionless<double> best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
-    double longest_split_edge = 0.0;
+    hpc::dimensionless<double> longest_split_edge = 0.0;
     int best_split_edge_node = -1;
-    double shortest_collapse_edge = 1.0;
+    hpc::dimensionless<double> shortest_collapse_edge = 1.0;
     int best_collapse_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;
@@ -454,15 +460,15 @@ HPC_NOINLINE inline void evaluate_triangle_adapt(input const& in, state const& s
           shortest_collapse_edge, best_collapse_edge_node);
     }
     if (best_collapse_edge_node != -1) {
-      nodes_to_criteria[node] = 1.0 / shortest_collapse_edge;
+      nodes_to_criteria[node] = double(1.0 / shortest_collapse_edge);
       nodes_to_other_nodes[node] = c.shell_nodes[best_collapse_edge_node];
       nodes_to_op[node] = cavity_op::COLLAPSE;
     } else if (best_split_edge_node != -1) {
-      nodes_to_criteria[node] = longest_split_edge;
+      nodes_to_criteria[node] = double(longest_split_edge);
       nodes_to_other_nodes[node] = c.shell_nodes[best_split_edge_node];
       nodes_to_op[node] = cavity_op::SPLIT;
     } else if (best_swap_edge_node != -1) {
-      nodes_to_criteria[node] = best_swap_improvement;
+      nodes_to_criteria[node] = double(best_swap_improvement);
       nodes_to_other_nodes[node] = c.shell_nodes[best_swap_edge_node];
       nodes_to_op[node] = cavity_op::SWAP;
     } else {
@@ -806,13 +812,13 @@ HPC_NOINLINE inline void transfer_nodal_energy(input const& in, adapt_state cons
   auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
   for (auto const material : in.materials) {
     if (!in.enable_nodal_energy[material]) continue;
-    hpc::device_vector<double, node_index>& old_data = s.e_h[material];
-    hpc::device_vector<double, node_index> new_data(a.new_nodes.size());
+    hpc::device_vector<hpc::specific_energy<double>, node_index>& old_data = s.e_h[material];
+    hpc::device_vector<hpc::specific_energy<double>, node_index> new_data(a.new_nodes.size());
     auto const old_nodes_to_T = old_data.cbegin();
     auto const new_nodes_to_T = new_data.begin();
     auto functor = [=] HPC_DEVICE (node_index const new_node) {
-      node_index const old_node = new_nodes_to_old_nodes[new_node];
-      double const old_value = old_nodes_to_T[old_node];
+      auto const old_node = new_nodes_to_old_nodes[new_node];
+      auto const old_value = old_nodes_to_T[old_node];
       assert(old_value > 0.0);
       new_nodes_to_T[new_node] = old_value;
     };

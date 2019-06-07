@@ -16,12 +16,12 @@ void initialize_tetrahedron_V(state& s)
     constexpr point_in_element_index fp(0);
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    hpc::array<hpc::vector3<double>, 4> x;
+    hpc::array<hpc::position<double>, 4> x;
     for (int i = 0; i < 4; ++i) {
-      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
       x[i] = nodes_to_x[node].load();
     }
-    double const volume = tetrahedron_volume(x);
+    auto const volume = tetrahedron_volume(x);
     assert(volume > 0.0);
     points_to_V[elements_to_points[element][fp]] = volume;
   };
@@ -42,12 +42,12 @@ void initialize_tetrahedron_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    hpc::array<hpc::vector3<double>, 4> x;
+    hpc::array<hpc::position<double>, 4> x;
     for (int i = 0; i < 4; ++i) {
-      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
       x[i] = nodes_to_x[node].load();
     }
-    double const volume = points_to_V[point];
+    auto const volume = points_to_V[point];
     auto const grad_N = tetrahedron_basis_gradients(x, volume);
     for (int i = 0; i < 4; ++i) {
       point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
@@ -78,13 +78,13 @@ void update_tetrahedron_h_min_inball(input const&, state& s) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    double surface_area_over_thrice_volume = 0.0;
+    decltype(hpc::area<double>() / hpc::volume<double>()) surface_area_over_thrice_volume = 0.0;
     for (auto const i : nodes_in_element) {
       auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const face_area_over_thrice_volume = norm(grad_N);
       surface_area_over_thrice_volume += face_area_over_thrice_volume;
     }
-    double const radius = 1.0 / surface_area_over_thrice_volume;
+    auto const radius = 1.0 / surface_area_over_thrice_volume;
     elements_to_h_min[element] = 2.0 * radius;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
@@ -96,11 +96,11 @@ void update_tetrahedron_h_art(state& s) {
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] HPC_DEVICE (element_index const element) {
-    double volume = 0.0;
+    hpc::volume<double> volume = 0.0;
     for (auto const point : elements_to_points[element]) {
       volume += points_to_V[point];
     }
-    double const h_art = C_geom * std::cbrt(volume);
+    auto const h_art = C_geom * cbrt(volume);
     elements_to_h_art[element] = h_art;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);

@@ -181,7 +181,7 @@ HPC_NOINLINE inline void update_element_dt(state& s) {
 
 HPC_NOINLINE inline void find_max_stable_dt(state& s)
 {
-  double const init = std::numeric_limits<double>::max();
+  hpc::time<double> const init(std::numeric_limits<double>::max());
   s.max_stable_dt = hpc::transform_reduce(
       hpc::device_policy(),
       s.element_dt,
@@ -745,7 +745,7 @@ void run(input const& in) {
   }
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
-  hpc::fill(hpc::device_policy(), s.F_total, hpc::matrix3x3<double>::identity());
+  hpc::fill(hpc::device_policy(), s.F_total, hpc::deformation_gradient<double>::identity());
   common_initialization_part1(in, s);
   common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);
