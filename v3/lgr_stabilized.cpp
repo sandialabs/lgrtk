@@ -4,31 +4,31 @@
 
 namespace lgr {
 
-void update_p_h(state& s, double const dt,
+void update_p_h(state& s, hpc::time<double> const dt,
     material_index const material,
-    hpc::device_vector<double, node_index> const& old_p_h_vector) {
+    hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h_vector) {
   auto const nodes_to_p_h = s.p_h[material].begin();
   auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const nodes_to_p_h_dot = s.p_h_dot[material].cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double const old_p_h = nodes_to_old_p_h[node];
-    double const p_h_dot = nodes_to_p_h_dot[node];
-    double const p_h = old_p_h + dt * p_h_dot;
+    auto const old_p_h = nodes_to_old_p_h[node];
+    auto const p_h_dot = nodes_to_p_h_dot[node];
+    auto const p_h = old_p_h + dt * p_h_dot;
     nodes_to_p_h[node] = p_h;
   };
   hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
 }
 
-void update_e_h(state& s, double const dt,
+void update_e_h(state& s, hpc::time<double> const dt,
     material_index const material,
-    hpc::device_vector<double, node_index> const& old_e_h_vector)
+    hpc::device_vector<hpc::specific_energy<double>, node_index> const& old_e_h_vector)
 {
   auto const nodes_to_e_h_dot = s.e_h_dot[material].cbegin();
   auto const nodes_to_old_e_h = old_e_h_vector.cbegin();
   auto const nodes_to_e_h = s.e_h[material].begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const e_h_dot = nodes_to_e_h_dot[node];
-    double const old_e_h = nodes_to_old_e_h[node];
+    auto const old_e_h = nodes_to_old_e_h[node];
     auto const e_h = old_e_h + dt * e_h_dot;
     nodes_to_e_h[node] = e_h;
   };
@@ -47,11 +47,11 @@ void update_sigma_with_p_h(state& s, material_index const material) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
     for (auto const point : element_points) {
-      double point_p_h = 0.0;
+      hpc::pressure<double> point_p_h = 0.0;
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const node = element_nodes_to_nodes[element_node];
-        double const p_h = nodes_to_p_h[node];
+        auto const p_h = nodes_to_p_h[node];
         point_p_h = point_p_h + N * p_h;
       }
       auto const old_sigma = points_to_sigma[point].load();
@@ -81,10 +81,10 @@ HPC_NOINLINE inline void update_v_prime(input const& in, state& s, material_inde
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       auto const point_nodes = points_to_point_nodes[point];
-      double const dt = points_to_dt[point];
+      auto const dt = points_to_dt[point];
       auto const tau = c_tau * dt;
-      auto grad_p = hpc::vector3<double>::zero();
-      auto a = hpc::vector3<double>::zero();
+      auto grad_p = hpc::pressure_gradient<double>::zero();
+      auto a = hpc::acceleration<double>::zero();
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
@@ -96,7 +96,7 @@ HPC_NOINLINE inline void update_v_prime(input const& in, state& s, material_inde
         a = a + a_of_node;
       }
       a = a * N;
-      double const rho = points_to_rho[point];
+      auto const rho = points_to_rho[point];
       auto const v_prime = -(tau / rho) * (rho * a + grad_p);
       points_to_v_prime[point] = v_prime;
     }
@@ -105,8 +105,8 @@ HPC_NOINLINE inline void update_v_prime(input const& in, state& s, material_inde
 }
 
 HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_index const material,
-    double const dt,
-    hpc::device_vector<double, node_index> const& old_p_h_vector)
+    hpc::time<double> const dt,
+    hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h_vector)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -124,26 +124,26 @@ HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_inde
   auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      double const point_dt = points_to_dt[point];
+      auto const point_dt = points_to_dt[point];
       auto const tau = c_tau * point_dt;
       auto const symm_grad_v = points_to_symm_grad_v[point].load();
-      double const div_v = trace(symm_grad_v);
-      double p_dot = 0.0;
+      auto const div_v = trace(symm_grad_v);
+      hpc::pressure_rate<double> p_dot = 0.0;
       if (dt != 0.0) {
-        double old_p = 0.0;
-        double p = 0.0;
+        hpc::pressure<double> old_p = 0.0;
+        hpc::pressure<double> p = 0.0;
         for (auto const node_in_element : nodes_in_element) {
           auto const element_node = element_nodes[node_in_element];
           node_index const node = element_nodes_to_nodes[element_node];
-          double const p_h = nodes_to_p_h[node];
+          auto const p_h = nodes_to_p_h[node];
           p += p_h * N;
-          double const old_p_h = nodes_to_old_p_h[node];
+          auto const old_p_h = nodes_to_old_p_h[node];
           old_p += old_p_h * N;
         }
         p_dot = (p - old_p) / dt;
       }
-      double const rho = points_to_rho[point];
-      double const c = points_to_c[point];
+      auto const rho = points_to_rho[point];
+      auto const c = points_to_c[point];
       auto const p_prime = - tau * ( p_dot + rho * c * c * div_v );
       points_to_p_prime[point] = p_prime;
     }
@@ -152,8 +152,8 @@ HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_inde
 }
 
 void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index const material,
-    double const dt,
-    hpc::device_vector<double, node_index> const& old_p_h_vector) {
+    hpc::time<double> const dt,
+    hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h_vector) {
   update_p_prime(in, s, material, dt, old_p_h_vector);
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
@@ -167,15 +167,15 @@ void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index con
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
     for (auto const point : element_points) {
-      double point_p_h = 0.0;
+      hpc::pressure<double> point_p_h = 0.0;
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const node = element_nodes_to_nodes[element_node];
-        double const p_h = nodes_to_p_h[node];
+        auto const p_h = nodes_to_p_h[node];
         point_p_h = point_p_h + N * p_h;
       }
       auto const old_sigma = points_to_sigma[point].load();
-      double const p_prime = points_to_p_prime[point];
+      auto const p_prime = points_to_p_prime[point];
       auto const new_sigma = deviator(old_sigma) - point_p_h - p_prime;
       points_to_sigma[point] = new_sigma;
     }
@@ -203,12 +203,12 @@ HPC_NOINLINE inline void update_q(input const& in, state& s, material_index cons
   auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      double const dt = points_to_dt[point];
+      auto const dt = points_to_dt[point];
       auto const tau = c_tau * dt;
-      auto grad_p = hpc::vector3<double>::zero();
-      auto a = hpc::vector3<double>::zero();
-      double p_h = 0.0;
-      double dp_de = 0.0;
+      auto grad_p = hpc::pressure_gradient<double>::zero();
+      auto a = hpc::acceleration<double>::zero();
+      hpc::pressure<double> p_h = 0.0;
+      dp_de_t dp_de = 0.0;
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
@@ -220,15 +220,22 @@ HPC_NOINLINE inline void update_q(input const& in, state& s, material_index cons
         grad_p = grad_p + (grad_N * p_h_of_node);
         auto const a_of_node = nodes_to_a[node].load();
         a = a + a_of_node;
-        double const dp_de_h = nodes_to_dp_de[node];
+        auto const dp_de_h = nodes_to_dp_de[node];
         dp_de += dp_de_h;
       }
       a = a * N;
       p_h = p_h * N;
       dp_de = dp_de * N;
-      double const rho = points_to_rho[point];
-      double const K = points_to_K[point];
-      auto const q = -(tau * K / dp_de) * (rho * a + grad_p);
+      auto const rho = points_to_rho[point];
+      auto const K = points_to_K[point];
+      decltype(hpc::density<double>() * hpc::acceleration<double>())
+      accel_term = (rho * a + grad_p);
+      hpc::pressure<double> const fake_p(1.0);
+      hpc::quantity<double, hpc::no_dimension> p_over_p_term = K / fake_p;
+      decltype(hpc::time<double>() / hpc::density<double>())
+      time_over_density_term = -(tau / dp_de);
+      hpc::velocity<double> const v_prime = time_over_density_term * p_over_p_term * accel_term;
+      hpc::heat_flux<double> const q = fake_p * v_prime;
       points_to_q[point] = q;
     }
   };
@@ -306,8 +313,8 @@ HPC_NOINLINE inline void update_p_h_dot(state& s, material_index const material)
   auto const elements_to_material = s.material.cbegin();
   double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double node_W = 0.0;
-    double node_V = 0.0;
+    hpc::power<double> node_W = 0.0;
+    hpc::volume<double> node_V = 0.0;
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
@@ -317,8 +324,8 @@ HPC_NOINLINE inline void update_p_h_dot(state& s, material_index const material)
       for (auto const point : elements_to_points[element]) {
         auto const point_nodes = points_to_point_nodes[point];
         auto const point_node = point_nodes[node_in_element];
-        double const W = point_nodes_to_W[point_node];
-        double const V = points_to_V[point];
+        auto const W = point_nodes_to_W[point_node];
+        auto const V = points_to_V[point];
         node_W = node_W + W;
         node_V = node_V + (N * V);
       }
@@ -341,7 +348,7 @@ HPC_NOINLINE inline void update_e_h_dot(state& s, material_index const material)
   auto const nodes_to_m = s.material_mass[material].cbegin();
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double node_W = 0.0;
+    hpc::power<double> node_W = 0.0;
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       element_index const element = node_elements_to_elements[node_element];
@@ -351,11 +358,11 @@ HPC_NOINLINE inline void update_e_h_dot(state& s, material_index const material)
       for (auto const point : elements_to_points[element]) {
         auto const point_nodes = points_to_point_nodes[point];
         auto const point_node = point_nodes[node_in_element];
-        double const W = point_nodes_to_W[point_node];
+        auto const W = point_nodes_to_W[point_node];
         node_W = node_W + W;
       }
     }
-    double const m = nodes_to_m[node];
+    auto const m = nodes_to_m[node];
     auto const e_h_dot = node_W / m;
     nodes_to_e_h_dot[node] = e_h_dot;
   };
@@ -371,9 +378,9 @@ void nodal_ideal_gas(input const& in, state& s, material_index const material) {
   auto const nodes_to_dp_de = s.dp_de_h[material].begin();
   auto const gamma = in.gamma[material];
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double const rho = nodes_to_rho[node];
+    auto const rho = nodes_to_rho[node];
     assert(rho > 0.0);
-    double const e = nodes_to_e[node];
+    auto const e = nodes_to_e[node];
     assert(e > 0.0);
     auto const p = (gamma - 1.0) * (rho * e);
     assert(p > 0.0);
@@ -398,7 +405,7 @@ void update_nodal_density(state& s, material_index const material)
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    double node_V(0.0);
+    hpc::volume<double> node_V(0.0);
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       element_index const element = node_elements_to_elements[node_element];
@@ -409,7 +416,7 @@ void update_nodal_density(state& s, material_index const material)
         node_V = node_V + (N * V);
       }
     }
-    double const m = nodes_to_m[node];
+    auto const m = nodes_to_m[node];
     nodes_to_rho_h[node] = m / node_V;
   };
   hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);
@@ -425,10 +432,10 @@ void interpolate_K(state& s, material_index const material)
   auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      double K = 0.0;
+      hpc::pressure<double> K = 0.0;
       for (auto const element_node : element_nodes) {
         node_index const node = element_nodes_to_nodes[element_node];
-        double const K_h = nodes_to_K_h[node];
+        auto const K_h = nodes_to_K_h[node];
         K = hpc::max(K, K_h);
       }
       points_to_K[point] = K;
@@ -448,7 +455,7 @@ void interpolate_rho(state& s, material_index const material)
   auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      double rho = 0.0;
+      hpc::density<double> rho = 0.0;
       for (auto const element_node : element_nodes) {
         auto const node = element_nodes_to_nodes[element_node];
         auto const rho_h = nodes_to_rho_h[node];

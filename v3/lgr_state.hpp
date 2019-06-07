@@ -12,7 +12,8 @@
 
 namespace lgr {
 
-using dp_de_t = decltype(hpc::pressure<double>() / hpc::energy<double>());
+using dp_de_t = decltype(hpc::pressure<double>() / hpc::specific_energy<double>());
+static_assert(std::is_same<dp_de_t, hpc::density<double>>::value, "dp_de should be a density");
 
 class state {
   public:
@@ -39,7 +40,7 @@ class state {
   hpc::device_array_vector<hpc::velocity<double>, point_index> v_prime; // fine-scale velocity
   hpc::device_vector<hpc::pressure<double>, point_index> p_prime; // fine-scale pressure
   hpc::device_array_vector<hpc::heat_flux<double>, point_index> q; // element-center heat flux
-  hpc::device_vector<hpc::energy<double>, point_node_index> W; // work done, per element-node pair (contribution to a node's work by an element)
+  hpc::device_vector<hpc::power<double>, point_node_index> W; // work done, per element-node pair (contribution to a node's work by an element)
   hpc::host_vector<hpc::device_vector<hpc::pressure_rate<double>, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure
   hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> p_h; // stabilized nodal pressure
   hpc::device_vector<hpc::pressure<double>, point_index> K; // (tangent/effective) bulk modulus
@@ -59,19 +60,19 @@ class state {
   hpc::device_vector<hpc::kinematic_viscosity<double>, point_index> nu_art; // artificial kinematic viscosity scalar
   hpc::device_vector<hpc::time<double>, point_index> element_dt; // stable time step of each element
   hpc::host_vector<hpc::device_vector<hpc::specific_energy<double>, node_index>, material_index> e_h; // nodal specific internal energy
-  hpc::host_vector<hpc::device_vector<double, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy
+  hpc::host_vector<hpc::device_vector<hpc::specific_energy_rate<double>, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy
   hpc::host_vector<hpc::device_vector<hpc::density<double>, node_index>, material_index> rho_h; // nodal density
   hpc::host_vector<hpc::device_vector<dp_de_t, node_index>, material_index> dp_de_h; // nodal derivative of pressure with respect to energy, at constant density
   hpc::device_vector<material_index, element_index> material; // element material
   hpc::device_vector<material_set, node_index> nodal_materials; // nodal material set
-  hpc::device_vector<double, element_index> quality; // inverse element quality
+  hpc::device_vector<hpc::dimensionless<double>, element_index> quality; // inverse element quality
   hpc::device_vector<hpc::length<double>, node_index> h_adapt; // desired edge length
   hpc::host_vector<hpc::device_vector<node_index, int>, material_index> node_sets;
   hpc::host_vector<hpc::device_vector<element_index, int>, material_index> element_sets;
   hpc::time<double> next_file_output_time;
   hpc::time<double> dt = 0.0;
   hpc::time<double> max_stable_dt;
-  double min_quality;
+  hpc::dimensionless<double> min_quality;
 };
 
 class input;

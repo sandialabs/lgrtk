@@ -17,15 +17,16 @@ void initialize_triangle_V(state& s)
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
     hpc::array<node_index, 3> nodes;
-    hpc::array<hpc::vector3<double>, 3> x;
+    hpc::array<hpc::position<double>, 3> x;
     for (int i = 0; i < 3; ++i) {
-      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
       nodes[i] = node;
       x[i] = nodes_to_x[node].load();
     }
-    double const area = triangle_area(x);
+    auto const area = triangle_area(x);
     assert(area > 0.0);
-    points_to_V[elements_to_points[element][fp]] = area;
+    auto const volume = area * hpc::length<double>(1.0);
+    points_to_V[elements_to_points[element][fp]] = volume;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
@@ -44,12 +45,13 @@ void initialize_triangle_grad_N(state& s) {
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
     using l_t = node_in_element_index;
-    hpc::array<hpc::vector3<double>, 3> x;
+    hpc::array<hpc::position<double>, 3> x;
     for (int i = 0; i < 3; ++i) {
-      node_index const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
+      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
       x[i] = nodes_to_x[node].load();
     }
-    double const area = points_to_V[point];
+    auto const volume = points_to_V[point];
+    auto const area = volume / hpc::length<double>(1.0);
     auto const grad_N = triangle_basis_gradients(x, area);
     for (int i = 0; i < 3; ++i) {
       point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
@@ -80,13 +82,13 @@ void update_triangle_h_min_inball(input const&, state& s) {
     constexpr point_in_element_index fp(0);
     auto const point = elements_to_points[element][fp];
     auto const point_nodes = points_to_point_nodes[point];
-    double perimeter_over_twice_area = 0.0;
+    decltype(hpc::length<double>() / hpc::area<double>()) perimeter_over_twice_area = 0.0;
     for (auto const i : nodes_in_element) {
       auto const grad_N = point_nodes_to_grad_N[point_nodes[i]].load();
       auto const edge_length_over_twice_area = norm(grad_N);
       perimeter_over_twice_area += edge_length_over_twice_area;
     }
-    double const radius = 1.0 / perimeter_over_twice_area;
+    auto const radius = 1.0 / perimeter_over_twice_area;
     elements_to_h_min[element] = 2.0 * radius;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
@@ -98,11 +100,11 @@ void update_triangle_h_art(state& s) {
   auto const elements_to_h_art = s.h_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] HPC_DEVICE (element_index const element) {
-    double area = 0.0;
+    hpc::area<double> area = 0.0;
     for (auto const point : elements_to_points[element]) {
-      area += points_to_V[point];
+      area += (points_to_V[point] / hpc::length<double>(1.0));
     }
-    double const h_art = C_geom * std::sqrt(area);
+    auto const h_art = C_geom * sqrt(area);
     elements_to_h_art[element] = h_art;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
