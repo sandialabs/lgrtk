@@ -69,8 +69,9 @@ transform_reduce(
     TResult init,
     BinaryOp binary_op,
     UnaryOp unary_op) {
+  auto const size = std::size_t(last - first);
   TStored* const new_first = &(*first);
-  TStored* const new_last = &(*last);
+  TStored* const new_last = new_first + size;
   return ::thrust::transform_reduce(::thrust::device, new_first, new_last, unary_op, init, binary_op);
 }
 
