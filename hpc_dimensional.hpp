@@ -129,7 +129,11 @@ class quantity {
   T m_impl;
   public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept : m_impl(in) {}
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity() noexcept = default;
+  HPC_ALWAYS_INLINE constexpr quantity() noexcept = default;
+  HPC_ALWAYS_INLINE constexpr quantity(quantity const& in) noexcept = default;
+  HPC_ALWAYS_INLINE quantity& operator=(quantity const& in) noexcept = default;
+  template <class Dimension2>
+  HPC_ALWAYS_INLINE constexpr explicit quantity(quantity<T, Dimension2> const& in) noexcept : quantity(T(in)) {}
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T() const noexcept { return m_impl; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T get() const noexcept { return m_impl; }
 };
@@ -153,7 +157,7 @@ template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator+(quantity<T, D> left, T right) noexcept
 {
-  return quantity<T, D>(L(left) + right);
+  return quantity<T, D>(T(left) + right);
 }
 
 template <class T, class D>
@@ -287,6 +291,114 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator/(T left, quantity<T, D> right) noexcept
 {
   return quantity<T, divide_dimensions_t<no_dimension, D>>(left / T(right));
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator==(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) == T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator==(quantity<T, D> left, T right) noexcept {
+  return T(left) == right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator==(T left, quantity<T, D> right) noexcept {
+  return left == T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator!=(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) != T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator!=(quantity<T, D> left, T right) noexcept {
+  return T(left) != right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator!=(T left, quantity<T, D> right) noexcept {
+  return left != T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) > T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>(quantity<T, D> left, T right) noexcept {
+  return T(left) > right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>(T left, quantity<T, D> right) noexcept {
+  return left > T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) < T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<(quantity<T, D> left, T right) noexcept {
+  return T(left) < right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<(T left, quantity<T, D> right) noexcept {
+  return left < T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>=(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) >= T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>=(quantity<T, D> left, T right) noexcept {
+  return T(left) >= right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator>=(T left, quantity<T, D> right) noexcept {
+  return left >= T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<=(quantity<T, D> left, quantity<T, D> right) noexcept {
+  return T(left) <= T(right);
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<=(quantity<T, D> left, T right) noexcept {
+  return T(left) <= right;
+}
+
+template <class T, class D>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
+operator<=(T left, quantity<T, D> right) noexcept {
+  return left <= T(right);
 }
 
 template <class T, class D>

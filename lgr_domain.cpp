@@ -66,14 +66,14 @@ void collect_set(
 
 void assign_element_materials(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.material, material_index(0));
-  hpc::device_array_vector<hpc::vector3<double>, element_index> centroid_vector(s.elements.size());
+  hpc::device_array_vector<hpc::position<double>, element_index> centroid_vector(s.elements.size());
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   double const N = 1.0 / double(s.nodes_in_element.size().get());
   auto const elements_to_centroids = centroid_vector.begin();
   auto centroid_functor = [=] HPC_DEVICE (element_index const element) {
-    auto centroid = hpc::vector3<double>::zero();
+    auto centroid = hpc::position<double>::zero();
     for (auto const element_node : elements_to_element_nodes[element]) {
       node_index const node = element_nodes_to_nodes[element_node];
       auto const x = nodes_to_x[node].load();

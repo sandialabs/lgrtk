@@ -22,30 +22,22 @@ HPC_NOINLINE inline void set_exponential_wave_v(
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-HPC_NOINLINE void zero_v(
+HPC_NOINLINE inline void zero_v(
     hpc::counting_range<node_index> const /*nodes*/,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v);
-void HPC_NOINLINE zero_v(
-    hpc::counting_range<node_index> const /*nodes*/,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& /*x_vector*/,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v) {
-  hpc::fill(hpc::device_policy(), *v, hpc::vector3<double>::zero());
+    hpc::device_array_vector<hpc::position<double>, node_index> const& /*x_vector*/,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v) {
+  hpc::fill(hpc::device_policy(), *v, hpc::velocity<double>::zero());
 }
 
-HPC_NOINLINE void spin_v(
+HPC_NOINLINE inline void spin_v(
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
-void HPC_NOINLINE spin_v(
-    hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
-    nodes_to_v[node] = 100.0 * hpc::vector3<double>(-(x(1) - 0.5), (x(0) - 0.5), 0.0);
+    nodes_to_v[node] = 100.0 * hpc::velocity<double>(-(double(x(1)) - 0.5), (double(x(0)) - 0.5), 0.0);
   };
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
@@ -120,38 +112,32 @@ void spinning_square() {
   run(in);
 }
 
-HPC_NOINLINE void quadratic_in_x_v(
+HPC_NOINLINE inline void quadratic_in_x_v(
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
-void quadratic_in_x_v(
-    hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
-    auto const norm_x = x(0) / 48.0;
+    auto const norm_x = double(x(0) / 48.0);
     auto const v_y = norm_x * norm_x;
-    nodes_to_v[node] = hpc::vector3<double>(0.0, v_y, 0.0);
+    nodes_to_v[node] = hpc::velocity<double>(0.0, v_y, 0.0);
   };
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
 
-HPC_NOINLINE void Cooks_membrane_x(
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector);
-void Cooks_membrane_x(
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* x_vector) {
+HPC_NOINLINE inline void Cooks_membrane_x(
+    hpc::device_array_vector<hpc::position<double>, node_index>* x_vector) {
   hpc::counting_range<node_index> const nodes(x_vector->size());
   auto const nodes_to_x = x_vector->begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const unit_x = nodes_to_x[node].load();
-    hpc::vector3<double> const new_x(
+    hpc::position<double> const new_x(
         unit_x(0) * 48.0,
         unit_x(1) * 44.0 +
         unit_x(0) * 16.0 +
-        unit_x(0) * (1.0 - unit_x(1)) * 28.0,
+        double(unit_x(0) * (1.0 - unit_x(1)) * 28.0),
         0.0);
     nodes_to_x[node] = new_x;
   };
@@ -221,16 +207,16 @@ void HPC_NOINLINE swinging_plate() {
   in.G0[body] = G;
   auto swinging_plate_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 0.001;
     auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
-      auto const v = (U0 * w) * hpc::vector3<double>(
-          -std::sin((hpc::pi<double>() * x(0)) / 2.0) * std::cos((hpc::pi<double>() * x(1)) / 2.0),
-          std::cos((hpc::pi<double>() * x(0)) / 2.0) * std::sin((hpc::pi<double>() * x(1)) / 2.0),
+      auto const v = (U0 * w) * hpc::velocity<double>(
+          -std::sin((hpc::pi<double>() * double(x(0))) / 2.0) * std::cos((hpc::pi<double>() * double(x(1))) / 2.0),
+          std::cos((hpc::pi<double>() * double(x(0))) / 2.0) * std::sin((hpc::pi<double>() * double(x(1))) / 2.0),
           0.0);
       nodes_to_v[node] = v;
     };
@@ -398,18 +384,21 @@ void swinging_cube(bool stabilize) {
   in.G0[body] = G;
   auto swinging_cube_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     double const U0 = 5.0e-4;
     auto functor = [=] HPC_DEVICE (node_index const node) {
       constexpr double half_pi = hpc::pi<double>() / 2.0;
-      auto const x = nodes_to_x[node].load();
-      auto const v = (U0 * w) * hpc::vector3<double>(
-          -std::sin(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::cos(half_pi * x(2)),
-          std::cos(half_pi * x(0)) * std::sin(half_pi * x(1)) * std::cos(half_pi * x(2)),
-          std::cos(half_pi * x(0)) * std::cos(half_pi * x(1)) * std::sin(half_pi * x(2)));
+      auto const pos = nodes_to_x[node].load();
+      auto const x = double(pos(0));
+      auto const y = double(pos(1));
+      auto const z = double(pos(2));
+      auto const v = (U0 * w) * hpc::velocity<double>(
+          -std::sin(half_pi * x) * std::cos(half_pi * y) * std::cos(half_pi * z),
+          std::cos(half_pi * x) * std::sin(half_pi * y) * std::cos(half_pi * z),
+          std::cos(half_pi * x) * std::cos(half_pi * y) * std::sin(half_pi * z));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -465,13 +454,16 @@ void twisting_column() {
   in.G0[body] = G;
   auto twisting_column_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
-      auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const pos = nodes_to_x[node].load();
+      auto const x = double(pos(0));
+      auto const y = double(pos(1));
+      auto const z = double(pos(2));
+      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * y) * hpc::velocity<double>((z - 0.5), 0.0, -(x - 0.5));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -510,14 +502,14 @@ void Noh_1D() {
   in.e0[gas] = 1.0e-4;
   auto inward_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0.0) ? hpc::velocity<double>::zero() : hpc::velocity<double>(-(x / n));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -565,14 +557,14 @@ HPC_NOINLINE inline void Noh_2D(bool nodal_energy, bool p_prime ) {
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0.0) ? hpc::velocity<double>::zero() : hpc::velocity<double>(-(x / n));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -648,13 +640,13 @@ void twisting_composite_column() {
   in.G0[body] = G;
   auto twisting_column_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
-      auto const x = nodes_to_x[node].load();
-      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::vector3<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::velocity<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -698,14 +690,14 @@ void Noh_3D() {
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0.0) ? hpc::velocity<double>::zero() : hpc::velocity<double>(-(x / n));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -754,14 +746,14 @@ void composite_Noh_3D() {
   in.e0[gas] = 1.0e-14;
   auto inward_v = [=] (
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto functor = [=] HPC_DEVICE (node_index const node) {
       auto const x = nodes_to_x[node].load();
       auto const n = norm(x);
-      auto const v = (n == 0) ? hpc::vector3<double>::zero() : (-(x / n));
+      auto const v = (n == 0.0) ? hpc::velocity<double>::zero() : hpc::velocity<double>(-(x / n));
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);

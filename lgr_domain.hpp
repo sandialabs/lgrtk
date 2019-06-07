@@ -8,22 +8,23 @@
 #include <lgr_material_set.hpp>
 #include <hpc_array_vector.hpp>
 #include <hpc_numeric.hpp>
+#include <hpc_dimensional.hpp>
 
 namespace lgr {
 
 struct all_space {
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr double distance(all_space const, hpc::vector3<double> const) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(all_space const, hpc::vector3<double> const) noexcept {
   return 1.0;
 };
 
 struct plane {
   hpc::vector3<double> normal;
-  double origin;
+  hpc::length<double> origin;
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr double distance(plane const pl, hpc::vector3<double> const pt) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(plane const pl, hpc::vector3<double> const pt) noexcept {
   return pl.normal * pt - pl.origin;
 };
 
