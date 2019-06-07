@@ -25,6 +25,12 @@ public:
   {
   }
   HPC_ALWAYS_INLINE vector3() noexcept = default;
+  HPC_ALWAYS_INLINE vector3(vector3<scalar_type> const&) noexcept = default;
+  HPC_ALWAYS_INLINE vector3& operator=(vector3<scalar_type> const&) noexcept = default;
+  template <class S2>
+  HPC_ALWAYS_INLINE explicit vector3(vector3<S2> const& other) noexcept
+    :vector3(scalar_type(other(0)), scalar_type(other(1)), scalar_type(other(2)))
+  {}
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(axis_index const i) const noexcept { return raw[i.get()]; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE scalar_type& operator()(axis_index const i) noexcept { return raw[i.get()]; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr vector3 zero() noexcept { return vector3(0.0, 0.0, 0.0); }

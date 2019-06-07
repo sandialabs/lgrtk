@@ -17,12 +17,12 @@ static void start_vtk_file(std::ostream& stream) {
   stream << "DATASET UNSTRUCTURED_GRID\n";
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_points(std::ostream& stream,
-    hpc::device_array_vector<hpc::vector3<double>, Index> const& x) {
+    hpc::device_array_vector<hpc::vector3<Quantity>, Index> const& x) {
   stream << "POINTS " << x.size().get() << " double\n";
   for (auto ref : x) {
-    stream << ref.load() << "\n";
+    stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
@@ -55,13 +55,13 @@ static void write_vtk_point_data(std::ostream& stream, state const& s) {
   stream << "POINT_DATA " << s.nodes.size().get() << "\n";
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_scalars(std::ostream& stream, std::string const& name,
-    hpc::device_vector<double, Index> const& vec) {
+    hpc::device_vector<Quantity, Index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
-  for (double const val : vec) {
-    stream << val << "\n";
+  for (Quantity const val : vec) {
+    stream << double(val) << "\n";
   }
 }
 
@@ -74,10 +74,11 @@ static void write_vtk_materials(std::ostream& stream,
   }
 }
 
+template <class Quantity>
 static void write_vtk_scalars(std::ostream& stream, char const* name,
     hpc::counting_range<element_index> const elements,
     hpc::counting_range<point_in_element_index> const points_in_element,
-    hpc::device_vector<double, point_index> const& vec) {
+    hpc::device_vector<Quantity, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
     std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(qp.get()));
@@ -90,27 +91,28 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
   }
 }
 
+template <class Quantity>
 static void write_vtk_vectors(std::ostream& stream, char const* name,
     hpc::counting_range<element_index> const elements,
     hpc::counting_range<point_in_element_index> const points_in_element,
-    hpc::device_array_vector<hpc::vector3<double>, point_index> const& vec) {
+    hpc::device_array_vector<hpc::vector3<Quantity>, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
     std::string suffix = (points_in_element.size().get() == 1) ? "" : (std::string("_") + std::to_string(qp.get()));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
-      stream << hpc::vector3<double>(vec.begin()[p]) << "\n";
+      stream << hpc::vector3<double>(vec.begin()[p].load()) << "\n";
     }
   }
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_vectors(std::ostream& stream, char const* name,
-    hpc::device_array_vector<hpc::vector3<double>, Index> const& vec) {
+    hpc::device_array_vector<hpc::vector3<Quantity>, Index> const& vec) {
   stream << "VECTORS " << name << " double\n";
   for (auto const ref : vec) {
-    stream << ref.load() << "\n";
+    stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
