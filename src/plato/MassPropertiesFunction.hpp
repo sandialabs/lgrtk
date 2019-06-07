@@ -12,6 +12,7 @@
 #include "plato/PhysicsScalarFunction.hpp"
 #include "plato/DivisionFunction.hpp"
 #include "plato/LeastSquaresFunction.hpp"
+#include "plato/WeightedSumFunction.hpp"
 #include "plato/MassMoment.hpp"
 
 #include <Teuchos_ParameterList.hpp>
@@ -98,37 +99,53 @@ private:
             else if (tPropertyName == "CGx")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "FirstX"));
+                      getFirstMomentOverMassRatio(aMesh, aMeshSets, "FirstX"));
             }
             else if (tPropertyName == "CGy")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "FirstY"));
+                      getFirstMomentOverMassRatio(aMesh, aMeshSets, "FirstY"));
             }
             else if (tPropertyName == "CGz")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "FirstZ"));
+                      getFirstMomentOverMassRatio(aMesh, aMeshSets, "FirstZ"));
             }
             else if (tPropertyName == "Ixx")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "SecondXX"));
+                      getMomentOfInertia(aMesh, aMeshSets, "XX"));
             }
             else if (tPropertyName == "Iyy")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "SecondYY"));
+                      getMomentOfInertia(aMesh, aMeshSets, "YY"));
             }
             else if (tPropertyName == "Izz")
             {
                 mLeastSquaresFunction->allocateScalarFunctionBase(
-                      getMomentOverMassRatio(aMesh, aMeshSets, "SecondZZ"));
+                      getMomentOfInertia(aMesh, aMeshSets, "ZZ"));
+            }
+            else if (tPropertyName == "Ixy")
+            {
+                mLeastSquaresFunction->allocateScalarFunctionBase(
+                      getMomentOfInertia(aMesh, aMeshSets, "XY"));
+            }
+            else if (tPropertyName == "Ixz")
+            {
+                mLeastSquaresFunction->allocateScalarFunctionBase(
+                      getMomentOfInertia(aMesh, aMeshSets, "XZ"));
+            }
+            else if (tPropertyName == "Iyz")
+            {
+                mLeastSquaresFunction->allocateScalarFunctionBase(
+                      getMomentOfInertia(aMesh, aMeshSets, "YZ"));
             }
             else
             {
                 const std::string tErrorString = std::string("Specified mass property '") +
-                tPropertyName + "'' not implemented. Options are: Mass, CGx, CGy, CGz, Ixx, Iyy, Izz";
+                tPropertyName + "' not implemented. Options are: Mass, CGx, CGy, CGz, " 
+                              + "Ixx, Iyy, Izz, Ixy, Ixz, Iyz";
                 throw std::runtime_error(tErrorString);
             }
             mLeastSquaresFunction->appendFunctionWeight(tPropertyWeight);
@@ -176,14 +193,14 @@ private:
     }
 
     /******************************************************************************//**
-     * @brief Create the mass moment divided by the mass function (CG or Moment of Inertia)
+     * @brief Create the 'first mass moment divided by the mass' function (CG)
     **********************************************************************************/
     std::shared_ptr<ScalarFunctionBase>
-    getMomentOverMassRatio(Omega_h::Mesh& aMesh, 
+    getFirstMomentOverMassRatio(Omega_h::Mesh& aMesh, 
                            Omega_h::MeshSets& aMeshSets, 
                            const std::string & aMomentType)
     {
-        const std::string tNumeratorName = std::string("CG/Inertia Numerator (Moment type = ")
+        const std::string tNumeratorName = std::string("CG Numerator (Moment type = ")
                                          + aMomentType + ")";
         std::shared_ptr<Plato::PhysicsScalarFunction<PhysicsT>> tNumerator =
              std::make_shared<Plato::PhysicsScalarFunction<PhysicsT>>(aMesh, m_dataMap);
@@ -213,7 +230,7 @@ private:
         tNumeratorGradientX->setCalculationType(aMomentType);
         tNumerator->allocateGradientX(tNumeratorGradientX);
 
-        const std::string tDenominatorName = std::string("CG/Inertia Mass Denominator (Moment type = ")
+        const std::string tDenominatorName = std::string("CG Mass Denominator (Moment type = ")
                                            + aMomentType + ")";
         std::shared_ptr<Plato::PhysicsScalarFunction<PhysicsT>> tDenominator = 
              getMassFunction(aMesh, aMeshSets);
@@ -226,6 +243,115 @@ private:
         return tMomentOverMassRatioFunction;
     }
 
+    /******************************************************************************//**
+     * @brief Create the second mass moment function
+    **********************************************************************************/
+    std::shared_ptr<ScalarFunctionBase>
+    getSecondMassMoment(Omega_h::Mesh& aMesh, 
+                        Omega_h::MeshSets& aMeshSets, 
+                        const std::string & aMomentType)
+    {
+        const std::string tInertiaName = std::string("Second Mass Moment (Moment type = ")
+                                         + aMomentType + ")";
+        std::shared_ptr<Plato::PhysicsScalarFunction<PhysicsT>> tSecondMomentFunction =
+             std::make_shared<Plato::PhysicsScalarFunction<PhysicsT>>(aMesh, m_dataMap);
+        tSecondMomentFunction->setFunctionName(tInertiaName);
+
+        std::shared_ptr<Plato::MassMoment<Residual>> tValue = 
+             std::make_shared<Plato::MassMoment<Residual>>(aMesh, aMeshSets, m_dataMap);
+        tValue->setMaterialDensity(mMaterialDensity);
+        tValue->setCalculationType(aMomentType);
+        tSecondMomentFunction->allocateValue(tValue);
+
+        std::shared_ptr<Plato::MassMoment<Jacobian>> tGradientU = 
+             std::make_shared<Plato::MassMoment<Jacobian>>(aMesh, aMeshSets, m_dataMap);
+        tGradientU->setMaterialDensity(mMaterialDensity);
+        tGradientU->setCalculationType(aMomentType);
+        tSecondMomentFunction->allocateGradientU(tGradientU);
+
+        std::shared_ptr<Plato::MassMoment<GradientZ>> tGradientZ = 
+             std::make_shared<Plato::MassMoment<GradientZ>>(aMesh, aMeshSets, m_dataMap);
+        tGradientZ->setMaterialDensity(mMaterialDensity);
+        tGradientZ->setCalculationType(aMomentType);
+        tSecondMomentFunction->allocateGradientZ(tGradientZ);
+
+        std::shared_ptr<Plato::MassMoment<GradientX>> tGradientX = 
+             std::make_shared<Plato::MassMoment<GradientX>>(aMesh, aMeshSets, m_dataMap);
+        tGradientX->setMaterialDensity(mMaterialDensity);
+        tGradientX->setCalculationType(aMomentType);
+        tSecondMomentFunction->allocateGradientX(tGradientX);
+
+        return tSecondMomentFunction;
+    }
+
+
+    /******************************************************************************//**
+     * @brief Create the moment of inertia function
+    **********************************************************************************/
+    std::shared_ptr<ScalarFunctionBase>
+    getMomentOfInertia(Omega_h::Mesh& aMesh, 
+                       Omega_h::MeshSets& aMeshSets, 
+                       const std::string & aAxes)
+    {
+        std::shared_ptr<Plato::WeightedSumFunction<PhysicsT>> tMomentOfInertiaFunction = 
+               std::make_shared<Plato::WeightedSumFunction<PhysicsT>>(aMesh, m_dataMap);;
+
+        if (aAxes == "XX")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondYY"));
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondZZ"));
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+        }
+        else if (aAxes == "YY")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondXX"));
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondZZ"));
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+        }
+        else if (aAxes == "ZZ")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondXX"));
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondYY"));
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+            tMomentOfInertiaFunction->appendFunctionWeight(1.0);
+        }
+        else if (aAxes == "XY")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondXY"));
+            tMomentOfInertiaFunction->appendFunctionWeight(-1.0);
+        }
+        else if (aAxes == "XZ")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondXZ"));
+            tMomentOfInertiaFunction->appendFunctionWeight(-1.0);
+        }
+        else if (aAxes == "YZ")
+        {
+            tMomentOfInertiaFunction->allocateScalarFunctionBase(
+                getSecondMassMoment(aMesh, aMeshSets, "SecondYZ"));
+            tMomentOfInertiaFunction->appendFunctionWeight(-1.0);
+        }
+        else
+        {
+            const std::string tErrorString = std::string("Specified axes '") +
+            aAxes + "' not implemented for moment of inertia calculation. " 
+                          + "Options are: XX, YY, ZZ, XY, XZ, YZ";
+            throw std::runtime_error(tErrorString);
+        }
+
+        return tMomentOfInertiaFunction;
+    }
+
 public:
     /******************************************************************************//**
      * @brief Primary Mass Properties Function constructor
@@ -236,10 +362,10 @@ public:
      * @param [in] aName user defined function name
     **********************************************************************************/
     MassPropertiesFunction(Omega_h::Mesh& aMesh,
-                Omega_h::MeshSets& aMeshSets,
-                Plato::DataMap & aDataMap,
-                Teuchos::ParameterList& aInputParams,
-                const std::string aName) :
+                           Omega_h::MeshSets& aMeshSets,
+                           Plato::DataMap & aDataMap,
+                           Teuchos::ParameterList& aInputParams,
+                           const std::string aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap),
             mFunctionName(aName),

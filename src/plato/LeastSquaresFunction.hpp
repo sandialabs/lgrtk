@@ -35,11 +35,14 @@ private:
 
     std::vector<Plato::Scalar> mFunctionWeights; /*!< Vector of function weights */
     std::vector<Plato::Scalar> mFunctionGoldValues; /*!< Vector of function gold values */
+    std::vector<Plato::Scalar> mFunctionNormalization; /*!< Vector of function normalization values */
     std::vector<std::shared_ptr<Plato::ScalarFunctionBase>> mScalarFunctionBaseContainer; /*!< Vector of ScalarFunctionBase objects */
 
     Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
 
     std::string mFunctionName; /*!< User defined function name */
+
+    const Plato::Scalar mFunctionNormalizationCutoff = 0.1;
 
 	/******************************************************************************//**
      * @brief Initialization of Least Squares Function
@@ -54,6 +57,7 @@ private:
         mScalarFunctionBaseContainer.clear();
         mFunctionWeights.clear();
         mFunctionGoldValues.clear();
+        mFunctionNormalization.clear();
 
         auto tProblemFunctionName = aInputParams.sublist(mFunctionName);
 
@@ -86,6 +90,11 @@ private:
                     aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionNames[tFunctionIndex]));
             mFunctionWeights.push_back(tFunctionWeights[tFunctionIndex]);
             mFunctionGoldValues.push_back(tFunctionGoldValues[tFunctionIndex]);
+            
+            if (tFunctionGoldValues[tFunctionIndex] > mFunctionNormalizationCutoff)
+                mFunctionNormalization.push_back(tFunctionGoldValues[tFunctionIndex]);
+            else
+                mFunctionNormalization.push_back(1.0);
         }
 
     }
@@ -139,6 +148,10 @@ public:
     void appendGoldFunctionValue(Plato::Scalar aGoldValue)
     {
         mFunctionGoldValues.push_back(aGoldValue);
+        if (aGoldValue > mFunctionNormalizationCutoff)
+            mFunctionNormalization.push_back(aGoldValue);
+        else
+            mFunctionNormalization.push_back(1.0);
     }
 
     /******************************************************************************//**
@@ -174,13 +187,19 @@ public:
                         const Plato::ScalarVector & aControl,
                         Plato::Scalar aTimeStep = 0.0) const
     {
+        assert(mFunctionWeights.size() == mScalarFunctionBaseContainer.size());
+        assert(mFunctionGoldValues.size() == mScalarFunctionBaseContainer.size());
+        assert(mFunctionNormalization.size() == mScalarFunctionBaseContainer.size());
+
         Plato::Scalar tResult = 0.0;
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {
             const Plato::Scalar tFunctionWeight = mFunctionWeights[tFunctionIndex];
             const Plato::Scalar tFunctionGoldValue = mFunctionGoldValues[tFunctionIndex];
+            const Plato::Scalar tFunctionScale = mFunctionNormalization[tFunctionIndex];
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
-            tResult += tFunctionWeight * std::pow((tFunctionValue - tFunctionGoldValue), 2);
+            tResult += tFunctionWeight * 
+                       std::pow((tFunctionValue - tFunctionGoldValue) / tFunctionScale, 2);
         }
         return tResult;
     }
@@ -202,12 +221,13 @@ public:
         {
             const Plato::Scalar tFunctionWeight = mFunctionWeights[tFunctionIndex];
             const Plato::Scalar tFunctionGoldValue = mFunctionGoldValues[tFunctionIndex];
+            const Plato::Scalar tFunctionScale = mFunctionNormalization[tFunctionIndex];
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
             Plato::ScalarVector tFunctionGradX = mScalarFunctionBaseContainer[tFunctionIndex]->gradient_x(aState, aControl, aTimeStep);
             Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & tDof)
             {
                 tGradientX(tDof) += 2.0 * tFunctionWeight * (tFunctionValue - tFunctionGoldValue) 
-                                        * tFunctionGradX(tDof);
+                                        * tFunctionGradX(tDof) / (tFunctionScale * tFunctionScale);
             },"Least Squares Function Summation Grad X");
         }
         return tGradientX;
@@ -230,12 +250,13 @@ public:
         {
             const Plato::Scalar tFunctionWeight = mFunctionWeights[tFunctionIndex];
             const Plato::Scalar tFunctionGoldValue = mFunctionGoldValues[tFunctionIndex];
+            const Plato::Scalar tFunctionScale = mFunctionNormalization[tFunctionIndex];
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
             Plato::ScalarVector tFunctionGradU = mScalarFunctionBaseContainer[tFunctionIndex]->gradient_u(aState, aControl, aTimeStep);
             Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & tDof)
             {
                 tGradientU(tDof) += 2.0 * tFunctionWeight * (tFunctionValue - tFunctionGoldValue) 
-                                        * tFunctionGradU(tDof);
+                                        * tFunctionGradU(tDof) / (tFunctionScale * tFunctionScale);
             },"Least Squares Function Summation Grad U");
         }
         return tGradientU;
@@ -258,12 +279,13 @@ public:
         {
             const Plato::Scalar tFunctionWeight = mFunctionWeights[tFunctionIndex];
             const Plato::Scalar tFunctionGoldValue = mFunctionGoldValues[tFunctionIndex];
+            const Plato::Scalar tFunctionScale = mFunctionNormalization[tFunctionIndex];
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
             Plato::ScalarVector tFunctionGradZ = mScalarFunctionBaseContainer[tFunctionIndex]->gradient_z(aState, aControl, aTimeStep);
             Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & tDof)
             {
                 tGradientZ(tDof) += 2.0 * tFunctionWeight * (tFunctionValue - tFunctionGoldValue) 
-                                        * tFunctionGradZ(tDof);
+                                        * tFunctionGradZ(tDof) / (tFunctionScale * tFunctionScale);
             },"Least Squares Function Summation Grad Z");
         }
         return tGradientZ;

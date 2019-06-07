@@ -103,6 +103,12 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
         computeSecondMoment(aControl, aConfig, aResult, 1, 1, aTimeStep);
       else if (mCalculationType == "SecondZZ")
         computeSecondMoment(aControl, aConfig, aResult, 2, 2, aTimeStep);
+      else if (mCalculationType == "SecondXY")
+        computeSecondMoment(aControl, aConfig, aResult, 0, 1, aTimeStep);
+      else if (mCalculationType == "SecondXZ")
+        computeSecondMoment(aControl, aConfig, aResult, 0, 2, aTimeStep);
+      else if (mCalculationType == "SecondYZ")
+        computeSecondMoment(aControl, aConfig, aResult, 1, 2, aTimeStep);
       else
         throw std::runtime_error("In 'MassMoment.hpp' specified calculation type not implemented.");
     }

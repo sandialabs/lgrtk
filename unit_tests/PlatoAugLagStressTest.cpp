@@ -2056,18 +2056,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPropertiesValue3D)
 
     Teuchos::RCP<Teuchos::ParameterList> tParams =
     Teuchos::getParametersFromXmlString(
-    "<ParameterList name='Plato Problem'>                                      \n"
-    "  <Parameter name='Objective' type='string' value='My Mass Properties'/>  \n"
-    "  <ParameterList name='My Mass Properties'>                               \n"
-    "      <Parameter name='Type' type='string' value='Mass Properties'/>      \n"
-    "      <Parameter name='Properties' type='Array(string)' value='{Mass,CGx,CGy,CGz}'/>  \n"
-    "      <Parameter name='Weights' type='Array(double)' value='{2.0,1.0,2.0,3.0}'/>      \n"
-    "      <Parameter name='Gold Values' type='Array(double)' value='{0.2,0.45,0.55,0.75}'/>  \n"
-    "  </ParameterList>                                                        \n"
-    "  <ParameterList name='Material Model'>                                   \n"
-    "      <Parameter  name='Density' type='double' value='0.5'/>              \n"
-    "  </ParameterList>                                                        \n"
-    "</ParameterList>                                                          \n"
+    "<ParameterList name='Plato Problem'>                                                     \n"
+    "  <Parameter name='Objective' type='string' value='My Mass Properties'/>                 \n"
+    "  <ParameterList name='My Mass Properties'>                                              \n"
+    "      <Parameter name='Type' type='string' value='Mass Properties'/>                     \n"
+    "      <Parameter name='Properties' type='Array(string)' value='{Mass,CGx,CGy,CGz}'/>     \n"
+    "      <Parameter name='Weights' type='Array(double)' value='{2.0,0.1,2.0,3.0}'/>         \n"
+    "      <Parameter name='Gold Values' type='Array(double)' value='{0.2,0.05,0.55,0.75}'/>  \n"
+    "  </ParameterList>                                                                       \n"
+    "  <ParameterList name='Material Model'>                                                  \n"
+    "      <Parameter  name='Density' type='double' value='0.5'/>                             \n"
+    "  </ParameterList>                                                                       \n"
+    "</ParameterList>                                                                         \n"
   );
 
     // ALLOCATE PLATO CRITERION
@@ -2078,8 +2078,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPropertiesValue3D)
 
     auto tObjFuncVal = tMassProperties.value(tState, tControl, 0.0);
 
-    Plato::Scalar tGoldValue = 2.0*pow(0.2-0.4, 2) + 1.0*pow(0.5-0.45,2) 
-                             + 2.0*pow(0.5-0.55,2) + 3.0*pow(0.5-0.75,2);
+    Plato::Scalar tGoldValue = 2.0*pow((0.4-0.2)/0.2, 2) + 0.1*pow((0.5-0.05),2) // no normalization for gold<0.1
+                             + 2.0*pow((0.5-0.55)/0.55,2) + 3.0*pow((0.5-0.75)/0.75,2);
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
