@@ -7,21 +7,17 @@
 
 namespace lgr {
 
-HPC_NOINLINE void set_exponential_wave_v(
+HPC_NOINLINE inline void set_exponential_wave_v(
     hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector);
-void HPC_NOINLINE set_exponential_wave_v(
-    hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& x_vector,
-    hpc::device_array_vector<hpc::vector3<double>, node_index>* v_vector) {
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
   auto const nodes_to_x = x_vector.cbegin();
   auto const nodes_to_v = v_vector->begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const d = x(0) - 0.5;
-    auto const v_x = 1.0e-4 * std::exp(-(d * d) / (2 * (0.05 * 0.05)));
-    nodes_to_v[node] = hpc::vector3<double>(v_x, 0.0, 0.0);
+    auto const v_x = 1.0e-4 * std::exp(double(-(d * d) / (2 * (0.05 * 0.05))));
+    nodes_to_v[node] = hpc::velocity<double>(v_x, 0.0, 0.0);
   };
   hpc::for_each(hpc::device_policy(), nodes, functor);
 }
