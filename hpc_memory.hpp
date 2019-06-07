@@ -29,15 +29,19 @@ class device_allocator {
   constexpr bool operator==(device_allocator const&) const noexcept { return true; }
   constexpr bool operator!=(device_allocator const&) const noexcept { return false; }
   T* allocate(std::size_t n) {
+    auto err = cudaDeviceSynchronize();
+    assert(err == cudaSuccess);
     void* ptr;
-    auto err = cudaMalloc(&ptr, n * sizeof(T));
+    err = cudaMalloc(&ptr, n * sizeof(T));
     if (err != cudaSuccess) {
       throw std::bad_alloc();
     }
     return static_cast<T*>(ptr);
   }
   void deallocate(T* p, std::size_t) {
-    auto err = cudaFree(p);
+    auto err = cudaDeviceSynchronize();
+    assert(err == cudaSuccess);
+    err = cudaFree(p);
     assert(cudaSuccess == err);
   }
 };
@@ -57,15 +61,19 @@ class pinned_allocator {
   constexpr bool operator==(pinned_allocator const&) const noexcept { return true; }
   constexpr bool operator!=(pinned_allocator const&) const noexcept { return false; }
   T* allocate(std::size_t n) {
+    auto err = cudaDeviceSynchronize();
+    assert(err == cudaSuccess);
     void* ptr;
-    auto err = cudaMallocHost(&ptr, n);
+    err = cudaMallocHost(&ptr, n * sizeof(T));
     if (err != cudaSuccess) {
       throw std::bad_alloc();
     }
     return static_cast<T*>(ptr);
   }
   void deallocate(T* p, std::size_t) {
-    auto err = cudaFreeHost(p);
+    auto err = cudaDeviceSynchronize();
+    assert(err == cudaSuccess);
+    err = cudaFreeHost(p);
     assert(cudaSuccess == err);
   }
 };
