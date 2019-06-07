@@ -228,14 +228,7 @@ HPC_NOINLINE inline void update_q(input const& in, state& s, material_index cons
       dp_de = dp_de * N;
       auto const rho = points_to_rho[point];
       auto const K = points_to_K[point];
-      decltype(hpc::density<double>() * hpc::acceleration<double>())
-      accel_term = (rho * a + grad_p);
-      hpc::pressure<double> const fake_p(1.0);
-      hpc::quantity<double, hpc::no_dimension> p_over_p_term = K / fake_p;
-      decltype(hpc::time<double>() / hpc::density<double>())
-      time_over_density_term = -(tau / dp_de);
-      hpc::velocity<double> const v_prime = time_over_density_term * p_over_p_term * accel_term;
-      hpc::heat_flux<double> const q = fake_p * v_prime;
+      auto const q = -(tau * K / dp_de) * (rho * a + grad_p);
       points_to_q[point] = q;
     }
   };
