@@ -11,7 +11,7 @@ void union_domain::add(std::unique_ptr<domain>&& uptr) {
 }
 
 void union_domain::mark(
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+    hpc::device_array_vector<hpc::position<double>, node_index> const& points,
     int const marker,
     hpc::device_vector<int, node_index>* markers) const {
   for (auto const& uptr : m_domains) {
@@ -20,7 +20,7 @@ void union_domain::mark(
 }
 
 void union_domain::mark(
-    hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
+    hpc::device_array_vector<hpc::position<double>, element_index> const& points,
     material_index const marker,
     hpc::device_vector<material_index, element_index>* markers) const {
   for (auto const& uptr : m_domains) {
@@ -29,7 +29,7 @@ void union_domain::mark(
 }
 
 void union_domain::mark(
-    hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+    hpc::device_array_vector<hpc::position<double>, node_index> const& points,
     material_index const marker,
     hpc::device_vector<material_set, node_index>* markers) const {
   for (auto const& uptr : m_domains) {
@@ -148,7 +148,7 @@ std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) 
   return out;
 }
 
-std::unique_ptr<domain> sphere_domain(hpc::vector3<double> const origin, double
+std::unique_ptr<domain> sphere_domain(hpc::position<double> const origin, double
     const radius) {
   lgr::sphere const s{origin, radius};
   auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
@@ -161,8 +161,8 @@ std::unique_ptr<domain> half_space_domain(plane const& p) {
   return out;
 }
 
-std::unique_ptr<domain> box_domain(hpc::vector3<double> const lower_left,
-    hpc::vector3<double> const upper_right) {
+std::unique_ptr<domain> box_domain(hpc::position<double> const lower_left,
+    hpc::position<double> const upper_right) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({hpc::vector3<double>::x_axis(), lower_left(0)});
   out->clip({-hpc::vector3<double>::x_axis(), -upper_right(0)});

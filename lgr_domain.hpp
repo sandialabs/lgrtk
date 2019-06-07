@@ -15,7 +15,7 @@ namespace lgr {
 struct all_space {
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(all_space const, hpc::vector3<double> const) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(all_space const, hpc::position<double> const) noexcept {
   return 1.0;
 };
 
@@ -24,26 +24,26 @@ struct plane {
   hpc::length<double> origin;
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(plane const pl, hpc::vector3<double> const pt) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(plane const pl, hpc::position<double> const pt) noexcept {
   return pl.normal * pt - pl.origin;
 };
 
 struct sphere {
-  hpc::vector3<double> origin;
-  double radius;
+  hpc::position<double> origin;
+  hpc::length<double> radius;
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(sphere const s, hpc::vector3<double> const pt) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::length<double> distance(sphere const s, hpc::position<double> const pt) noexcept {
   return s.radius - norm(pt - s.origin);
 };
 
 struct cylinder {
   hpc::vector3<double> axis;
-  hpc::vector3<double> origin;
-  double radius;
+  hpc::position<double> origin;
+  hpc::length<double> radius;
 };
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(cylinder const s, hpc::vector3<double> const pt) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::length<double> distance(cylinder const s, hpc::position<double> const pt) noexcept {
   auto const pt_on_plane = pt - (pt * s.axis) * s.axis;
   auto const origin_on_plane = s.origin - (s.origin * s.axis) * s.axis;
   return s.radius - norm(pt_on_plane - origin_on_plane);
@@ -74,15 +74,15 @@ class domain {
     domain(domain&&) = default;
     virtual ~domain();
     virtual void mark(
-        hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, node_index> const& points,
         int const marker,
         hpc::device_vector<int, node_index>* markers) const = 0;
     virtual void mark(
-        hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, element_index> const& points,
         material_index const marker,
         hpc::device_vector<material_index, element_index>* markers) const = 0;
     virtual void mark(
-        hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, node_index> const& points,
         material_index const marker,
         hpc::device_vector<material_set, node_index>* markers) const = 0;
 };
@@ -100,7 +100,7 @@ class clipped_domain : public domain {
   }
   template <class Index, class Marker>
   void mark_tmpl(
-      hpc::device_array_vector<hpc::vector3<double>, Index> const& points,
+      hpc::device_array_vector<hpc::position<double>, Index> const& points,
       Marker const marker,
       hpc::device_vector<Marker, Index>* markers) const {
     hpc::counting_range<Index> const range(points.size());
@@ -125,19 +125,19 @@ class clipped_domain : public domain {
     hpc::for_each(hpc::device_policy(), range, functor);
   }
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       int const marker,
       hpc::device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
       hpc::device_vector<material_index, element_index>* markers) const override {
     this->mark_tmpl<element_index, material_index>(points, marker, markers);
   }
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       material_index const marker,
       hpc::device_vector<material_set, node_index>* markers) const override {
     hpc::counting_range<node_index> const range(points.size());
@@ -170,23 +170,23 @@ class union_domain : public domain {
   public:
   void add(std::unique_ptr<domain>&& uptr);
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       int const marker,
       hpc::device_vector<int, node_index>* markers) const override;
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
       hpc::device_vector<material_index, element_index>* markers) const override;
   void mark(
-      hpc::device_array_vector<hpc::vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       material_index const marker,
       hpc::device_vector<material_set, node_index>* markers) const override;
 };
 
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);
-std::unique_ptr<domain> sphere_domain(hpc::vector3<double> const origin, double const radius);
+std::unique_ptr<domain> sphere_domain(hpc::position<double> const origin, double const radius);
 std::unique_ptr<domain> half_space_domain(plane const& p);
-std::unique_ptr<domain> box_domain(hpc::vector3<double> const lower_left, hpc::vector3<double> const upper_right);
+std::unique_ptr<domain> box_domain(hpc::position<double> const lower_left, hpc::position<double> const upper_right);
 
 class input;
 class state;

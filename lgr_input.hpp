@@ -64,8 +64,8 @@ class input {
   hpc::host_vector<bool, material_index> enable_p_prime;
   hpc::host_vector<double, material_index> c_tau;
   bool enable_viscosity = false;
-  hpc::viscosity<double> linear_artificial_viscosity = 0.0;
-  hpc::viscosity<double> quadratic_artificial_viscosity = 0.0;
+  double linear_artificial_viscosity = 0.0;
+  double quadratic_artificial_viscosity = 0.0;
   bool enable_J_averaging = false;
   bool enable_rho_averaging = false;
   bool enable_e_averaging = false;
