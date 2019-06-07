@@ -56,7 +56,7 @@ class state {
   hpc::device_array_vector<hpc::acceleration<double>, node_index> a; // nodal acceleration
   hpc::device_vector<hpc::length<double>, element_index> h_min; // minimum characteristic element length, used for stable time step
   hpc::device_vector<hpc::length<double>, element_index> h_art; // characteristic element length used for artificial viscosity
-  hpc::device_vector<hpc::viscosity<double>, point_index> nu_art; // artificial kinematic viscosity scalar
+  hpc::device_vector<hpc::kinematic_viscosity<double>, point_index> nu_art; // artificial kinematic viscosity scalar
   hpc::device_vector<hpc::time<double>, point_index> element_dt; // stable time step of each element
   hpc::host_vector<hpc::device_vector<hpc::specific_energy<double>, node_index>, material_index> e_h; // nodal specific internal energy
   hpc::host_vector<hpc::device_vector<double, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy

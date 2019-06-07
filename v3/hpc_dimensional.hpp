@@ -117,7 +117,8 @@ using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
 using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
 using specific_energy_dimension = divide_dimensions_t<energy_dimension, mass_dimension>;
 using velocity_gradient_dimension = divide_dimensions_t<velocity_dimension, length_dimension>;
-using viscosity_dimension = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
+using dynamic_viscosity_dimension = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
+using kinematic_viscosity_dimension = divide_dimensions_t<area_dimension, time_dimension>;
 using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
 using heat_flux_dimension = divide_dimensions_t<power_dimension, area_dimension>;
 using pressure_rate_dimension = divide_dimensions_t<pressure_dimension, time_dimension>;
@@ -454,7 +455,9 @@ using specific_energy = quantity<T, specific_energy_dimension>;
 template <class T>
 using density = quantity<T, density_dimension>;
 template <class T>
-using viscosity = quantity<T, viscosity_dimension>;
+using dynamic_viscosity = quantity<T, dynamic_viscosity_dimension>;
+template <class T>
+using kinematic_viscosity = quantity<T, kinematic_viscosity_dimension>;
 template <class T>
 using velocity_gradient = matrix3x3<quantity<T, velocity_gradient_dimension>>;
 template <class T>
