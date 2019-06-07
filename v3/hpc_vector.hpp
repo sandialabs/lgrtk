@@ -175,17 +175,17 @@ void copy(vector<T, A, P, I> const& from, vector<T, A, P, I>& to) {
 template <class T, class Index>
 void copy(pinned_vector<T, Index> const& from, device_vector<T, Index>& to) {
   assert(from.size() == to.size());
-  std::size_t size = std::size_t(from.size());
+  std::size_t const size = std::size_t(from.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
-  err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
+  auto err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
   assert(cudaSuccess == err);
 }
 
 template <class T, class Index>
 void copy(device_vector<T, Index> const& from, pinned_vector<T, Index>& to) {
   assert(from.size() == to.size());
-  std::size_t size = std::size_t(to.size());
+  std::size_t const size = std::size_t(to.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
   auto err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
