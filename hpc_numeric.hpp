@@ -67,7 +67,7 @@ transform_inclusive_scan(local_policy, InputRange const& input, OutputRange& out
 
 template <class InputRange, class OutputRange, class BinaryOp, class UnaryOp>
 HPC_NOINLINE void
-transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op) noexcept
+transform_inclusive_scan(serial_policy, InputRange const& input, OutputRange& output, BinaryOp binary_op, UnaryOp unary_op)
 {
   auto first = input.begin();
   auto last = input.end();
