@@ -1,7 +1,5 @@
 #include <cassert>
 
-#include <iostream>
-
 #include <lgr_meshing.hpp>
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
@@ -109,7 +107,6 @@ static void build_bar_mesh(input const& in, state& s) {
 
 HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
 {
-  fprintf(stderr, "building triangle mesh!\n");
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
   assert(in.elements_along_y >= 1);
@@ -123,7 +120,6 @@ HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
   int const nt = nq * 2;
   s.elements.resize(element_index(nt));
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
-  fprintf(stderr, "resized elements_to_nodes to %d\n", s.elements_to_nodes.size().get());
   auto const element_nodes_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto connectivity_functor = [=] HPC_DEVICE (int const quad) {
@@ -144,7 +140,6 @@ HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
   };
   hpc::counting_range<int> quads(nq);
   hpc::for_each(hpc::device_policy(), quads, connectivity_functor);
-  fprintf(stderr, "ran connectivity functor!\n");
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
   auto const x = in.x_domain_size;
