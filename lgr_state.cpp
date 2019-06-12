@@ -1,8 +1,6 @@
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 
-#include <iostream>
-
 namespace lgr {
 
 void resize_state(input const& in, state& s) {
@@ -63,7 +61,6 @@ void resize_state(input const& in, state& s) {
       s.W.resize(s.points.size() * s.nodes_in_element.size());
       s.dp_de_h[material].resize(s.nodes.size());
       if (in.enable_p_prime[material]) {
-        std::cerr << "resizing p_prime!\n";
         s.p_prime.resize(s.points.size());
       }
     }
