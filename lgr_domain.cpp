@@ -19,6 +19,7 @@ void union_domain::mark(
   }
 }
 
+#ifdef HPC_STRONG_INDICES
 void union_domain::mark(
     hpc::device_array_vector<hpc::position<double>, element_index> const& points,
     material_index const marker,
@@ -27,6 +28,7 @@ void union_domain::mark(
     uptr->mark(points, marker, markers);
   }
 }
+#endif
 
 void union_domain::mark(
     hpc::device_array_vector<hpc::position<double>, node_index> const& points,
@@ -70,7 +72,7 @@ void assign_element_materials(input const& in, state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  double const N = 1.0 / double(s.nodes_in_element.size().get());
+  double const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const elements_to_centroids = centroid_vector.begin();
   auto centroid_functor = [=] HPC_DEVICE (element_index const element) {
     auto centroid = hpc::position<double>::zero();

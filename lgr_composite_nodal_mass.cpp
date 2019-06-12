@@ -105,19 +105,19 @@ void update_nodal_mass_composite_tetrahedron(state& s, material_index const mate
       hpc::array<hpc::vector3<double>, 10> node_coords;
       for (auto const node_in_element2 : nodes_in_element) {
         auto const node2 = element_nodes_to_nodes[element_nodes[node_in_element2]];
-        node_coords[node_in_element2.get()] = hpc::vector3<double>(nodes_to_x[node2].load());
+        node_coords[int(node_in_element2)] = hpc::vector3<double>(nodes_to_x[node2].load());
       }
       vector4<double> point_densities;
       auto const element_points = elements_to_points[element];
       for (auto const point_in_element : points_in_element) {
         auto const point = element_points[point_in_element];
-        point_densities(point_in_element.get()) = double(points_to_rho[point]);
+        point_densities(int(point_in_element)) = double(points_to_rho[point]);
       }
       hpc::array<hpc::array<double, 10>, 10> consistent_mass_matrix;
       composite_tetrahedron::get_consistent_mass_matrix(node_coords, point_densities, consistent_mass_matrix);
       hpc::array<double, 10> coef;
       composite_tetrahedron::lump_mass_matrix(consistent_mass_matrix, coef);
-      m = m + coef[node_in_element.get()];
+      m = m + coef[int(node_in_element)];
     }
     nodes_to_m[node] = m;
   };

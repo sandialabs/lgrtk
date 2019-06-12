@@ -32,7 +32,7 @@ class material_set {
   std::uint64_t bits;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr material_set(std::uint64_t const bits_in) noexcept : bits(bits_in) {}
 public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr material_set(material_index const material) noexcept : bits(std::uint64_t(1) << material.get()) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr material_set(material_index const material) noexcept : bits(std::uint64_t(1) << int(material)) {}
   HPC_ALWAYS_INLINE material_set() noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr material_set operator|(material_set const other) const noexcept {
     return material_set(bits | other.bits);
@@ -47,7 +47,7 @@ public:
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr static material_set none() noexcept { return material_set(std::uint64_t(0)); }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr static material_set all(material_index const size) noexcept {
-    return material_set((std::uint64_t(1) << size.get()) - 1);
+    return material_set((std::uint64_t(1) << int(size)) - 1);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool operator==(material_set const other) const noexcept { return bits == other.bits; }
 };

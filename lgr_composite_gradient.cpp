@@ -298,7 +298,7 @@ void initialize_composite_tetrahedron_grad_N(state& s) {
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[node_in_element.get()] = hpc::vector3<double>(nodes_to_x[node].load());
+      node_coords[int(node_in_element)] = hpc::vector3<double>(nodes_to_x[node].load());
     }
     hpc::array<hpc::array<hpc::vector3<double>, 10>, 4> grad_N;
     composite_tetrahedron::get_basis_gradients(node_coords, grad_N);
@@ -308,7 +308,7 @@ void initialize_composite_tetrahedron_grad_N(state& s) {
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const a : nodes_in_element) {
         auto const point_node = point_nodes[a];
-        point_nodes_to_grad_N[point_node] = hpc::basis_gradient<double>(grad_N[qp.get()][a.get()]);
+        point_nodes_to_grad_N[point_node] = hpc::basis_gradient<double>(grad_N[int(qp)][int(a)]);
       }
     }
   };

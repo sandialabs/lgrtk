@@ -59,7 +59,7 @@ HPC_NOINLINE inline void update_triangle_quality(state& s) noexcept {
     auto const point_nodes = points_to_point_nodes[point];
     hpc::array<hpc::basis_gradient<double>, 3> grad_N;
     for (auto const i : nodes_in_element) {
-      grad_N[i.get()] = point_nodes_to_grad_N[point_nodes[i]].load();
+      grad_N[int(i)] = point_nodes_to_grad_N[point_nodes[i]].load();
     }
     auto const A = points_to_V[point] / hpc::length<double>(1.0);
     auto const fast_quality = triangle_quality(grad_N, A);
@@ -430,14 +430,14 @@ HPC_NOINLINE inline void evaluate_triangle_adapt(input const& in, state const& s
           c.shell_nodes_to_h[shell_node] = nodes_to_h[node2];
           c.shell_nodes_to_materials[shell_node] = nodes_to_materials[node2];
         }
-        c.shell_elements_to_shell_nodes[shell_element][node_in_element.get()] = shell_node;
+        c.shell_elements_to_shell_nodes[shell_element][int(node_in_element)] = shell_node;
       }
       material_index const material = elements_to_materials[element];
       c.shell_elements_to_materials[shell_element] = material;
       auto const quality = elements_to_qualities[element];
       c.shell_element_qualities[shell_element] = quality;
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
-      c.shell_elements_to_node_in_element[shell_element] = node_in_element.get();
+      c.shell_elements_to_node_in_element[shell_element] = int(node_in_element);
     }
     hpc::dimensionless<double> best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
@@ -604,8 +604,8 @@ inline HPC_DEVICE void apply_triangle_swap(apply_cavity const c,
     element_index const element = c.node_elements_to_elements[node_element];
     auto const element_nodes = c.elements_to_element_nodes[element];
     node_in_element_index const node_in_element = c.node_elements_to_nodes_in_element[node_element];
-    node_in_element_index const plus1 = node_in_element_index((node_in_element.get() + 1) % 3);
-    node_in_element_index const plus2 = node_in_element_index((node_in_element.get() + 2) % 3);
+    node_in_element_index const plus1 = node_in_element_index((int(node_in_element) + 1) % 3);
+    node_in_element_index const plus2 = node_in_element_index((int(node_in_element) + 2) % 3);
     node_index const node1 = c.old_element_nodes_to_nodes[element_nodes[plus1]];
     node_index const node2 = c.old_element_nodes_to_nodes[element_nodes[plus2]];
     if (node1 == target_node) {

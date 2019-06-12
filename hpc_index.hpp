@@ -6,6 +6,8 @@
 
 namespace hpc {
 
+#ifdef HPC_STRONG_INDICES
+
 template <class Tag, class Integral = std::ptrdiff_t>
 class index {
   Integral i;
@@ -107,5 +109,12 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index<L, decltype(LI() / RI())>
 operator/(index<product_tag<L, R>, LI> left, index<R, RI> right) noexcept {
   return left.get() / right.get();
 }
+
+#else
+
+template <class Tag, class Integral = std::ptrdiff_t>
+using index = Integral;
+
+#endif
 
 }
