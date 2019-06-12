@@ -91,7 +91,7 @@ HPC_NOINLINE inline void update_nodal_mass_uniform(state& s, material_index cons
   auto const points_to_V = s.V.cbegin();
   assert(s.material_mass[material].size() == s.nodes.size());
   auto const nodes_to_m = s.material_mass[material].begin();
-  auto const N = 1.0 / double(s.nodes_in_element.size().get());
+  auto const N = 1.0 / double(int(s.nodes_in_element.size()));
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {

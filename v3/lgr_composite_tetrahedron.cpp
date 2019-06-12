@@ -75,7 +75,7 @@ void initialize_composite_tetrahedron_V(state& s)
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[node_in_element.get()] = hpc::vector3<double>(nodes_to_x[node].load());
+      node_coords[int(node_in_element)] = hpc::vector3<double>(nodes_to_x[node].load());
     }
     auto const volumes = composite_tetrahedron::get_volumes(node_coords);
 #ifndef NDEBUG
@@ -85,7 +85,7 @@ void initialize_composite_tetrahedron_V(state& s)
 #endif
     auto const element_points = elements_to_points[element];
     for (auto const qp : points_in_element) {
-      points_to_V[element_points[qp]] = volumes[qp.get()];
+      points_to_V[element_points[qp]] = volumes[int(qp)];
     }
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);

@@ -20,25 +20,25 @@ static void start_vtk_file(std::ostream& stream) {
 template <class Quantity, class Index>
 static void write_vtk_points(std::ostream& stream,
     hpc::device_array_vector<hpc::vector3<Quantity>, Index> const& x) {
-  stream << "POINTS " << x.size().get() << " double\n";
+  stream << "POINTS " << int(x.size()) << " double\n";
   for (auto ref : x) {
     stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
 static void write_vtk_cells(std::ostream& stream, input const& in, state const& s) {
-  stream << "CELLS " << s.elements.size().get() << " " << (s.elements.size() * (s.nodes_in_element.size() + 1)).get() << "\n";
+  stream << "CELLS " << int(s.elements.size()) << " " << int(s.elements.size() * (s.nodes_in_element.size() + 1)) << "\n";
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
-    stream << s.nodes_in_element.size().get();
+    stream << int(s.nodes_in_element.size());
     for (auto const element_node : element_nodes) {
       node_index const node = element_nodes_to_nodes[element_node];
-      stream << " " << node.get();
+      stream << " " << int(node);
     }
     stream << "\n";
   }
-  stream << "CELL_TYPES " << s.elements.size().get() << "\n";
+  stream << "CELL_TYPES " << int(s.elements.size()) << "\n";
   int cell_type = -1;
   switch (in.element) {
     case BAR: cell_type = 3; break;
@@ -52,7 +52,7 @@ static void write_vtk_cells(std::ostream& stream, input const& in, state const& 
 }
 
 static void write_vtk_point_data(std::ostream& stream, state const& s) {
-  stream << "POINT_DATA " << s.nodes.size().get() << "\n";
+  stream << "POINT_DATA " << int(s.nodes.size()) << "\n";
 }
 
 template <class Quantity, class Index>
@@ -70,7 +70,7 @@ static void write_vtk_materials(std::ostream& stream,
   stream << "SCALARS material int 1\n";
   stream << "LOOKUP_TABLE default\n";
   for (material_index const val : vec) {
-    stream << val.get() << "\n";
+    stream << int(val) << "\n";
   }
 }
 
@@ -81,7 +81,7 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
     hpc::device_vector<Quantity, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(qp.get()));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
     stream << "SCALARS " << name << suffix << " double 1\n";
     stream << "LOOKUP_TABLE default\n";
     for (auto const e : elements) {
@@ -98,7 +98,7 @@ static void write_vtk_vectors(std::ostream& stream, char const* name,
     hpc::device_array_vector<hpc::vector3<Quantity>, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size().get() == 1) ? "" : (std::string("_") + std::to_string(qp.get()));
+    std::string suffix = (int(points_in_element.size()) == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
@@ -117,7 +117,7 @@ static void write_vtk_vectors(std::ostream& stream, char const* name,
 }
 
 static void write_vtk_cell_data(std::ostream& stream, state const& s) {
-  stream << "CELL_DATA " << s.elements.size().get() << "\n";
+  stream << "CELL_DATA " << int(s.elements.size()) << "\n";
 }
 
 void file_writer::operator()(
@@ -142,7 +142,7 @@ void file_writer::operator()(
   for (material_index const material : in.materials) {
     if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
       std::stringstream name_stream;
-      name_stream << "nodal_pressure_" << material.get();
+      name_stream << "nodal_pressure_" << int(material);
       auto name = name_stream.str();
       assert(s.p_h[material].size() == s.nodes.size());
       write_vtk_scalars(stream, name, s.p_h[material]);
@@ -150,14 +150,14 @@ void file_writer::operator()(
     if (in.enable_nodal_energy[material]) {
       {
         std::stringstream name_stream;
-        name_stream << "nodal_energy_" << material.get();
+        name_stream << "nodal_energy_" << int(material);
         auto name = name_stream.str();
         assert(s.e_h[material].size() == s.nodes.size());
         write_vtk_scalars(stream, name, s.e_h[material]);
       }
       {
         std::stringstream name_stream;
-        name_stream << "nodal_density_" << material.get();
+        name_stream << "nodal_density_" << int(material);
         auto name = name_stream.str();
         assert(s.rho_h[material].size() == s.nodes.size());
         write_vtk_scalars(stream, name, s.rho_h[material]);

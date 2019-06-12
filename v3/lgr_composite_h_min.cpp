@@ -128,7 +128,7 @@ void update_composite_tetrahedron_h_min(state& s) {
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
       auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[node_in_element.get()] = hpc::vector3<double>(nodes_to_x[node].load());
+      node_coords[int(node_in_element)] = hpc::vector3<double>(nodes_to_x[node].load());
     }
     auto const h_min = composite_tetrahedron::get_length(node_coords);
     elements_to_h_min[element] = h_min;

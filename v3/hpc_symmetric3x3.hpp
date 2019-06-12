@@ -58,10 +58,10 @@ public:
         operator()(S_XZ), operator()(S_YZ), operator()(S_ZZ));
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar& operator()(symmetric_index const slot) noexcept {
-    return raw[slot.get()];
+    return raw[int(slot)];
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(symmetric_index const slot) const noexcept {
-    return raw[slot.get()];
+    return raw[int(slot)];
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3<Scalar> zero() noexcept {
     return symmetric3x3<Scalar>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
