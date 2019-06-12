@@ -768,7 +768,7 @@ void run(input const& in) {
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
-        std::cout << "outputting file n " << file_output_index << " time " << s.time.get() << "\n";
+        std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
       }
       output_file(in, file_output_index, s);
       ++file_output_index;
@@ -778,7 +778,7 @@ void run(input const& in) {
     }
     while (s.time < s.next_file_output_time) {
       if (in.output_to_command_line) {
-        std::cout << "step " << s.n << " time " << s.time.get() << " dt " << s.max_stable_dt.get() << "\n";
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.max_stable_dt) << "\n";
       }
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
@@ -796,12 +796,12 @@ void run(input const& in) {
   }
   if (num_file_outputs) {
     if (in.output_to_command_line) {
-      std::cout << "outputting last file n " << file_output_index << " time " << s.time.get() << "\n";
+      std::cout << "outputting last file n " << file_output_index << " time " << double(s.time) << "\n";
     }
     output_file(in, file_output_index, s);
   }
   if (in.output_to_command_line) {
-    std::cout << "final time " << s.time.get() << "\n";
+    std::cout << "final time " << double(s.time) << "\n";
   }
 }
 

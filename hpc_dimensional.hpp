@@ -128,6 +128,8 @@ using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_di
 using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
 using pressure_gradient_dimension = divide_dimensions_t<pressure_dimension, length_dimension>;
 
+#ifdef HPC_DIMENSIONAL_ANALYSIS
+
 template <class T, class Dimension>
 class quantity {
   T m_impl;
@@ -418,6 +420,13 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto cbrt(quantity<T, D> x) noexcept
   using std::cbrt;
   return quantity<T, root_dimension_t<D, 3>>(cbrt(T(x)));
 }
+
+#else
+
+template <class T, class D>
+using quantity = T;
+
+#endif
 
 template <class T>
 using dimensionless = quantity<T, no_dimension>;
