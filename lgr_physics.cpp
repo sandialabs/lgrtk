@@ -582,7 +582,9 @@ HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, stat
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    if (last_pc) update_v(s, s.dt, old_v);
+    if (last_pc) {
+      update_v(s, s.dt, old_v);
+    }
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
@@ -695,6 +697,10 @@ HPC_NOINLINE inline void common_initialization_part1(input const& in, state& s) 
 
 HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) {
   hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
+  if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
+    hpc::fill(hpc::device_policy(), s.element_dt, hpc::time<double>(0.0));
+    hpc::fill(hpc::device_policy(), s.c, hpc::speed<double>(0.0));
+  }
   update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
@@ -716,6 +722,12 @@ HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) 
     }
     if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) {
       update_p(s, material);
+    }
+    if (in.enable_nodal_energy[material]) {
+      hpc::fill(hpc::device_policy(), s.q, hpc::heat_flux<double>::zero());
+      if (in.enable_p_prime[material]) {
+        hpc::fill(hpc::device_policy(), s.p_prime, hpc::pressure<double>(0));
+      }
     }
   }
 }
