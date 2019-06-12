@@ -318,6 +318,31 @@ if (LGR_ENABLE_PLATO)
   build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/TransientThermomechUnitTests)
   add_test(NAME runTransientThermomechUnitTests COMMAND ${ES_MPI_TEST})
 
+  set(TransientTwoFieldThermomechTests_SOURCES
+    TwoFieldTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(TransientTwoFieldThermomechTests_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(TransientTwoFieldThermomechUnitTests
+    ${TransientTwoFieldThermomechTests_SOURCES}
+    ${TransientTwoFieldThermomechTests_HEADERS}
+  )
+
+  target_link_libraries(TransientTwoFieldThermomechUnitTests
+    lgrtk
+    ${Trilinos_LIBRARIES}
+    ${Trilinos_TPL_LIBRARIES}
+    )
+  target_include_directories(TransientTwoFieldThermomechUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/TransientTwoFieldThermomechUnitTests)
+  add_test(NAME runTransientTwoFieldThermomechUnitTests COMMAND ${ES_MPI_TEST})
+
   target_link_libraries(DerivativeUnitTests 
     lgrtk
     ${Trilinos_LIBRARIES} 
