@@ -4,16 +4,9 @@
 
 #include <lgr_state.hpp>
 #include <lgr_physics.hpp>
-#include <lgr_counting_range.hpp>
-#include <lgr_vector3.hpp>
-#include <lgr_matrix3x3.hpp>
-#include <lgr_symmetric3x3.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <lgr_print.hpp>
 #include <lgr_vtk.hpp>
-#include <lgr_for_each.hpp>
-#include <lgr_reduce.hpp>
-#include <lgr_fill.hpp>
-#include <lgr_copy.hpp>
 #include <lgr_element_specific.hpp>
 #include <lgr_meshing.hpp>
 #include <lgr_input.hpp>
@@ -22,12 +15,12 @@
 
 namespace lgr {
 
-static void LGR_NOINLINE advance_time(
+HPC_NOINLINE inline void advance_time(
     input const& in,
-    double const max_stable_dt,
-    double const next_file_output_time,
-    double* time,
-    double* dt) {
+    hpc::time<double> const max_stable_dt,
+    hpc::time<double> const next_file_output_time,
+    hpc::time<double>* time,
+    hpc::time<double>* dt) {
   auto const old_time = *time;
   auto new_time = next_file_output_time;
   new_time = std::min(new_time, old_time + (max_stable_dt * in.CFL));
@@ -35,70 +28,71 @@ static void LGR_NOINLINE advance_time(
   *dt = new_time - old_time;
 }
 
-static void LGR_NOINLINE update_u(state& s, double const dt) {
+HPC_NOINLINE inline void update_u(state& s, hpc::time<double> const dt) {
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.cbegin();
-  auto functor = [=] (node_index const node) {
-    vector3<double> const old_u = nodes_to_u[node];
-    vector3<double> const v = nodes_to_v[node];
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const old_u = nodes_to_u[node].load();
+    auto const v = nodes_to_v[node].load();
     nodes_to_u[node] = (dt * v) - old_u;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_v(state& s, double const dt, device_vector<vector3<double>, node_index> const& old_v_vector) {
+HPC_NOINLINE inline void update_v(state& s, hpc::time<double> const dt,
+    hpc::device_array_vector<hpc::velocity<double>, node_index> const& old_v_vector) {
   auto const nodes_to_v = s.v.begin();
   auto const nodes_to_old_v = old_v_vector.cbegin();
   auto const nodes_to_a = s.a.cbegin();
-  auto functor = [=] (node_index const node) {
-    vector3<double> const old_v = nodes_to_old_v[node];
-    vector3<double> const a = nodes_to_a[node];
-    vector3<double> const v = old_v + dt * a;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const old_v = nodes_to_old_v[node].load();
+    auto const a = nodes_to_a[node].load();
+    auto const v = old_v + dt * a;
     nodes_to_v[node] = v;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_a(state& s) {
+HPC_NOINLINE inline void update_a(state& s) {
   auto const nodes_to_f = s.f.cbegin();
   auto const nodes_to_m = s.mass.cbegin();
   auto const nodes_to_a = s.a.begin();
-  auto functor = [=] (node_index const node) {
-    vector3<double> const f = nodes_to_f[node];
-    double const m = nodes_to_m[node];
-    vector3<double> const a = f / m;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const f = nodes_to_f[node].load();
+    auto const m = nodes_to_m[node];
+    auto const a = f / m;
     nodes_to_a[node] = a;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_x(state& s) {
+HPC_NOINLINE inline void update_x(state& s) {
   auto const nodes_to_u = s.u.cbegin();
   auto const nodes_to_x = s.x.begin();
-  auto functor = [=] (node_index const node) {
-    vector3<double> const old_x = nodes_to_x[node];
-    vector3<double> const u = nodes_to_u[node];
-    vector3<double> const new_x = old_x + u;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const old_x = nodes_to_x[node].load();
+    auto const u = nodes_to_u[node].load();
+    auto const new_x = old_x + u;
     nodes_to_x[node] = new_x;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static void LGR_NOINLINE update_p(state& s, material_index const material) {
+HPC_NOINLINE inline void update_p(state& s, material_index const material) {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_p = s.p.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      symmetric3x3<double> const sigma = points_to_sigma[point];
+      auto const sigma = points_to_sigma[point].load();
       auto const p = -(1.0 / 3.0) * trace(sigma);
       points_to_p[point] = p;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_reference(state& s) {
+HPC_NOINLINE inline void update_reference(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_element_points = s.elements * s.points_in_element;
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
@@ -109,32 +103,32 @@ static void LGR_NOINLINE update_reference(state& s) {
   auto const points_to_V = s.V.begin();
   auto const points_to_rho = s.rho.begin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_element_points[element];
     for (auto const point : element_points) {
       auto const point_nodes = points_to_point_nodes[point];
-      auto F_incr = matrix3x3<double>::identity();
+      auto F_incr = hpc::deformation_gradient<double>::identity();
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
         auto const node = element_nodes_to_nodes[element_node];
-        vector3<double> const u = nodes_to_u[node];
-        vector3<double> const old_grad_N = point_nodes_to_grad_N[point_node];
+        auto const u = nodes_to_u[node].load();
+        auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
         F_incr = F_incr + outer_product(u, old_grad_N);
       }
       auto const F_inverse_transpose = transpose(inverse(F_incr));
       for (auto const point_node : point_nodes) {
-        vector3<double> const old_grad_N = point_nodes_to_grad_N[point_node];
+        auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
         auto const new_grad_N = F_inverse_transpose * old_grad_N;
         point_nodes_to_grad_N[point_node] = new_grad_N;
       }
-      matrix3x3<double> const old_F_total = points_to_F_total[point];
-      matrix3x3<double> const new_F_total = F_incr * old_F_total;
+      auto const old_F_total = points_to_F_total[point].load();
+      auto const new_F_total = F_incr * old_F_total;
       points_to_F_total[point] = new_F_total;
       auto const J = determinant(F_incr);
       assert(J > 0.0);
-      double const old_V = points_to_V[point];
+      auto const old_V = points_to_V[point];
       auto const new_V = J * old_V;
       assert(new_V > 0.0);
       points_to_V[point] = new_V;
@@ -143,55 +137,60 @@ static void LGR_NOINLINE update_reference(state& s) {
       points_to_rho[point] = new_rho;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE update_c(state& s)
+HPC_NOINLINE inline void update_c(state& s)
 {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_K = s.K.cbegin();
   auto const points_to_G = s.G.cbegin();
   auto const points_to_c = s.c.begin();
-  auto functor = [=] (point_index const point) {
-    double const rho = points_to_rho[point];
-    double const K = points_to_K[point];
-    double const G = points_to_G[point];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const rho = points_to_rho[point];
+    auto const K = points_to_K[point];
+    auto const G = points_to_G[point];
     auto const M = K + (4.0 / 3.0) * G;
-    auto const c = std::sqrt(M / rho);
+    auto const c = sqrt(M / rho);
     points_to_c[point] = c;
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-static void LGR_NOINLINE update_element_dt(state& s) {
+HPC_NOINLINE inline void update_element_dt(state& s) {
   auto const points_to_c = s.c.cbegin();
   auto const elements_to_h_min = s.h_min.cbegin();
   auto const points_to_nu_art = s.nu_art.cbegin();
   auto const points_to_dt = s.element_dt.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double const h_min = elements_to_h_min[element];
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    auto const h_min = elements_to_h_min[element];
     for (auto const point : elements_to_points[element]) {
       auto const c = points_to_c[point];
       auto const nu_art = points_to_nu_art[point];
       auto const h_sq = h_min * h_min;
       auto const c_sq = c * c;
       auto const nu_art_sq = nu_art * nu_art;
-      auto const dt = h_sq / (nu_art + std::sqrt(nu_art_sq + (c_sq * h_sq)));
+      auto const dt = h_sq / (nu_art + sqrt(nu_art_sq + (c_sq * h_sq)));
       assert(dt > 0.0);
       points_to_dt[point] = dt;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE find_max_stable_dt(state& s)
+HPC_NOINLINE inline void find_max_stable_dt(state& s)
 {
-  double const init = std::numeric_limits<double>::max();
-  s.max_stable_dt = lgr::transform_reduce(s.element_dt, init, lgr::minimum<double>(), lgr::identity<double>());
+  hpc::time<double> const init(std::numeric_limits<double>::max());
+  s.max_stable_dt = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.element_dt,
+      init,
+      hpc::minimum<hpc::time<double>>(),
+      hpc::identity<hpc::time<double>>());
 }
 
-static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index const material) {
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
@@ -199,13 +198,13 @@ static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index c
   auto const K0 = in.K0[material];
   auto const G0 = in.G0[material];
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      matrix3x3<double> const F = points_to_F_total[point];
+      auto const F = points_to_F_total[point].load();
       auto const J = determinant(F);
       auto const Jinv = 1.0 / J;
       auto const half_K0 = 0.5 * K0;
-      auto const Jm13 = 1.0 / std::cbrt(J);
+      auto const Jm13 = 1.0 / cbrt(J);
       auto const Jm23 = Jm13 * Jm13;
       auto const Jm53 = (Jm23 * Jm23) * Jm13;
       auto const B = self_times_transpose(F);
@@ -217,25 +216,25 @@ static void LGR_NOINLINE neo_Hookean(input const& in, state& s, material_index c
       points_to_G[point] = G0;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index const material) {
+HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index const material) {
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
   auto const gamma = in.gamma[material];
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      double const rho = points_to_rho[point];
+      auto const rho = points_to_rho[point];
       assert(rho > 0.0);
-      double const e = points_to_e[point];
+      auto const e = points_to_e[point];
       assert(e > 0.0);
       auto const p = (gamma - 1.0) * (rho * e);
       assert(p > 0.0);
-      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      auto const old_sigma = points_to_sigma[point].load();
       auto const new_sigma = deviator(old_sigma) - p;
       points_to_sigma[point] = new_sigma;
       auto const K = gamma * p;
@@ -243,30 +242,30 @@ static void LGR_NOINLINE ideal_gas(input const& in, state& s, material_index con
       points_to_K[point] = K;
     }
   };
-  lgr::for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE update_element_force(state& s)
+HPC_NOINLINE inline void update_element_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const point_nodes_to_f = s.element_f.begin();
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
-  auto functor = [=] (point_index const point) {
-    symmetric3x3<double> const sigma = points_to_sigma[point];
-    double const V = points_to_V[point];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const sigma = points_to_sigma[point].load();
+    auto const V = points_to_V[point];
     auto const point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
-      vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+      auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const f = -(sigma * grad_N) * V;
       point_nodes_to_f[point_node] = f;
     }
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-static void LGR_NOINLINE update_nodal_force(state& s) {
+HPC_NOINLINE inline void update_nodal_force(state& s) {
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
@@ -274,8 +273,8 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
   auto const nodes_to_f = s.f.begin();
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (node_index const node) {
-    auto node_f = vector3<double>::zero();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto node_f = hpc::force<double>::zero();
     auto const node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
       auto const element = node_elements_to_elements[node_element];
@@ -283,29 +282,29 @@ static void LGR_NOINLINE update_nodal_force(state& s) {
       for (auto const point : elements_to_points[element]) {
         auto const point_nodes = points_to_point_nodes[point];
         auto const point_node = point_nodes[node_in_element];
-        vector3<double> const point_f = point_nodes_to_f[point_node];
+        auto const point_f = point_nodes_to_f[point_node].load();
         node_f = node_f + point_f;
       }
     }
     nodes_to_f[node] = node_f;
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-static void LGR_NOINLINE zero_acceleration(
-    device_vector<node_index, int> const& domain,
-    vector3<double> const axis,
-    device_vector<vector3<double>, node_index>* a_vector) {
+HPC_NOINLINE inline void zero_acceleration(
+    hpc::device_vector<node_index, int> const& domain,
+    hpc::vector3<double> const axis,
+    hpc::device_array_vector<hpc::acceleration<double>, node_index>* a_vector) {
   auto const nodes_to_a = a_vector->begin();
-  auto functor = [=] (node_index const node) {
-    vector3<double> const old_a = nodes_to_a[node];
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const old_a = nodes_to_a[node].load();
     auto const new_a = old_a - axis * (old_a * axis);
     nodes_to_a[node] = new_a;
   };
-  lgr::for_each(domain, functor);
+  hpc::for_each(hpc::device_policy(), domain, functor);
 }
 
-static void LGR_NOINLINE update_symm_grad_v(state& s)
+HPC_NOINLINE inline void update_symm_grad_v(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -315,63 +314,63 @@ static void LGR_NOINLINE update_symm_grad_v(state& s)
   auto const nodes_to_v = s.v.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.begin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      auto grad_v = matrix3x3<double>::zero();
+      auto grad_v = hpc::velocity_gradient<double>::zero();
       auto const element_nodes = elements_to_element_nodes[element];
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const node_in_element : nodes_in_element) {
         auto const element_node = element_nodes[node_in_element];
         auto const point_node = point_nodes[node_in_element];
         node_index const node = element_nodes_to_nodes[element_node];
-        vector3<double> const v = nodes_to_v[node];
-        vector3<double> const grad_N = point_nodes_to_grad_N[point_node];
+        auto const v = nodes_to_v[node].load();
+        auto const grad_N = point_nodes_to_grad_N[point_node].load();
         grad_v = grad_v + outer_product(v, grad_N);
       }
-      symmetric3x3<double> const symm_grad_v(grad_v);
+      hpc::symmetric_velocity_gradient<double> const symm_grad_v(grad_v);
       points_to_symm_grad_v[point] = symm_grad_v;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE stress_power(state& s)
+HPC_NOINLINE inline void stress_power(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const points_to_rho_e_dot = s.rho_e_dot.begin();
-  auto functor = [=] (point_index const point) {
-    symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
-    symmetric3x3<double> const sigma = points_to_sigma[point];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const symm_grad_v = points_to_symm_grad_v[point].load();
+    auto const sigma = points_to_sigma[point].load();
     auto const rho_e_dot = inner_product(sigma, symm_grad_v);
     points_to_rho_e_dot[point] = rho_e_dot;
   };
-  lgr::for_each(s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-static void LGR_NOINLINE update_e(state& s, double const dt,
+HPC_NOINLINE inline void update_e(state& s, hpc::time<double> const dt,
     material_index const material,
-    device_vector<double, point_index> const& old_e_vector)
+    hpc::device_vector<hpc::specific_energy<double>, point_index> const& old_e_vector)
 {
   auto const points_to_rho_e_dot = s.rho_e_dot.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_old_e = old_e_vector.cbegin();
   auto const points_to_e = s.e.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto const rho_e_dot = points_to_rho_e_dot[point];
-      double const rho = points_to_rho[point];
+      auto const rho = points_to_rho[point];
       auto const e_dot = rho_e_dot / rho;
-      double const old_e = points_to_old_e[point];
+      auto const old_e = points_to_old_e[point];
       auto const e = old_e + dt * e_dot;
       points_to_e[point] = e;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
+HPC_NOINLINE inline void apply_viscosity(input const& in, state& s) {
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const elements_to_h_art = s.h_art.cbegin();
   auto const points_to_c = s.c.cbegin();
@@ -381,64 +380,64 @@ static void LGR_NOINLINE apply_viscosity(input const& in, state& s) {
   auto const points_to_sigma = s.sigma.begin();
   auto const points_to_nu_art = s.nu_art.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double const h_art = elements_to_h_art[element];
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    auto const h_art = elements_to_h_art[element];
     for (auto const point : elements_to_points[element]) {
-      symmetric3x3<double> const symm_grad_v = points_to_symm_grad_v[point];
-      double const div_v = trace(symm_grad_v);
+      auto const symm_grad_v = points_to_symm_grad_v[point].load();
+      auto const div_v = trace(symm_grad_v);
       if (div_v >= 0.0) {
         points_to_nu_art[point] = 0.0;
       } else {
-        double const c = points_to_c[point];
-        double const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
+        auto const c = points_to_c[point];
+        auto const nu_art = c1 * ((-div_v) * (h_art * h_art)) + c2 * c * h_art;
         points_to_nu_art[point] = nu_art;
-        double const rho = points_to_rho[point];
+        auto const rho = points_to_rho[point];
         auto const sigma_art = (rho * nu_art) * symm_grad_v;
-        symmetric3x3<double> const sigma = points_to_sigma[point];
+        auto const sigma = points_to_sigma[point].load();
         auto const sigma_tilde = sigma + sigma_art;
         points_to_sigma[point] = sigma_tilde;
       }
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_J(state& s) {
+HPC_NOINLINE inline void volume_average_J(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_F = s.F_total.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double total_V0 = 0.0;
-    double total_V = 0.0;
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    hpc::volume<double> total_V0 = 0.0;
+    hpc::volume<double> total_V = 0.0;
     for (auto const point : elements_to_points[element]) {
-      matrix3x3<double> const F = points_to_F[point];
+      auto const F = points_to_F[point].load();
       auto const J = determinant(F);
-      double const V = points_to_V[point];
+      auto const V = points_to_V[point];
       auto const V0 = V / J;
       total_V0 += V0;
       total_V += V;
     }
     auto const average_J = total_V / total_V0;
     for (auto const point : elements_to_points[element]) {
-      matrix3x3<double> const old_F = points_to_F[point];
+      auto const old_F = points_to_F[point].load();
       auto const old_J = determinant(old_F);
-      auto const new_F = std::cbrt(average_J / old_J) * old_F;
+      auto const new_F = cbrt(average_J / old_J) * old_F;
       points_to_F[point] = new_F;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_rho(state& s) {
+HPC_NOINLINE inline void volume_average_rho(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double mass = 0.0;
-    double total_V = 0.0;
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    hpc::mass<double> mass = 0.0;
+    hpc::volume<double> total_V = 0.0;
     for (auto const point : elements_to_points[element]) {
-      double const rho = points_to_rho[point];
-      double const V = points_to_V[point];
+      auto const rho = points_to_rho[point];
+      auto const V = points_to_V[point];
       mass += V * rho;
       total_V += V;
     }
@@ -447,21 +446,21 @@ static void LGR_NOINLINE volume_average_rho(state& s) {
       points_to_rho[point] = average_rho;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_e(state& s) {
+HPC_NOINLINE inline void volume_average_e(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_e = s.e.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double energy = 0.0;
-    double mass = 0.0;
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    hpc::energy<double> energy = 0.0;
+    hpc::mass<double> mass = 0.0;
     for (auto const point : elements_to_points[element]) {
-      double const rho = points_to_rho[point];
-      double const e = points_to_e[point];
-      double const V = points_to_V[point];
+      auto const rho = points_to_rho[point];
+      auto const e = points_to_e[point];
+      auto const V = points_to_V[point];
       energy += V * (rho * e);
       mass += V * rho;
     }
@@ -470,36 +469,36 @@ static void LGR_NOINLINE volume_average_e(state& s) {
       points_to_e[point] = average_e;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE volume_average_p(state& s) {
+HPC_NOINLINE inline void volume_average_p(state& s) {
   auto const points_to_V = s.V.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
-    double total_V = 0.0;
-    double average_p = 0.0;
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    hpc::volume<double> total_V = 0.0;
+    decltype(hpc::pressure<double>() * hpc::volume<double>()) p_integral = 0.0;
     for (auto const point : elements_to_points[element]) {
-      symmetric3x3<double> const sigma = points_to_sigma[point];
-      double const p = -(1.0 / 3.0) * trace(sigma);
-      double const V = points_to_V[point];
-      average_p += V * p;
+      auto const sigma = points_to_sigma[point].load();
+      auto const p = -(1.0 / 3.0) * trace(sigma);
+      auto const V = points_to_V[point];
+      p_integral += V * p;
       total_V += V;
     }
-    average_p /= total_V;
+    auto const average_p = p_integral / total_V;
     for (auto const point : elements_to_points[element]) {
-      symmetric3x3<double> const old_sigma = points_to_sigma[point];
+      auto const old_sigma = points_to_sigma[point].load();
       auto const new_sigma = deviator(old_sigma) - average_p;
       points_to_sigma[point] = new_sigma;
     }
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE update_single_material_state(input const& in, state& s, material_index const material,
-    double const dt,
-    device_vector<double, node_index> const& old_p_h) {
+HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
+    hpc::time<double> const dt,
+    hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
@@ -519,17 +518,17 @@ static void LGR_NOINLINE update_single_material_state(input const& in, state& s,
   }
 }
 
-static void LGR_NOINLINE update_material_state(input const& in, state& s,
-    double const dt,
-    host_vector<device_vector<double, node_index>, material_index> const& old_p_h) {
-  lgr::fill(s.sigma, symmetric3x3<double>::zero());
-  lgr::fill(s.G, double(0.0));
+HPC_NOINLINE inline void update_material_state(input const& in, state& s,
+    hpc::time<double> const dt,
+    hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> const& old_p_h) {
+  hpc::fill(hpc::device_policy(), s.sigma, hpc::symmetric_stress<double>::zero());
+  hpc::fill(hpc::device_policy(), s.G, hpc::pressure<double>(0.0));
   for (auto const material : in.materials) {
     update_single_material_state(in, s, material, dt, old_p_h[material]);
   }
 }
 
-static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s) {
+HPC_NOINLINE inline void update_a_from_material_state(input const& in, state& s) {
   update_element_force(s);
   update_nodal_force(s);
   update_a(s);
@@ -538,26 +537,26 @@ static void LGR_NOINLINE update_a_from_material_state(input const& in, state& s)
   }
 }
 
-static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, state& s) {
-  lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
-  device_vector<vector3<double>, node_index> old_v(s.nodes.size(), s.devpool);
-  lgr::copy(s.v, old_v);
-  device_vector<double, point_index> old_e(s.points.size(), s.devpool);
-  lgr::copy(s.e, old_e);
-  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
-  host_vector<device_vector<double, node_index>, material_index> old_e_h(in.materials.size(), s.devpool);
+HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, state& s) {
+  hpc::fill(hpc::device_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
+  hpc::device_array_vector<hpc::velocity<double>, node_index> old_v(s.nodes.size());
+  hpc::copy(hpc::device_policy(), s.v, old_v);
+  hpc::device_vector<hpc::specific_energy<double>, point_index> old_e(s.points.size());
+  hpc::copy(hpc::device_policy(), s.e, old_e);
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
+  hpc::host_vector<hpc::device_vector<hpc::specific_energy<double>, node_index>, material_index> old_e_h(in.materials.size());
   for (auto const material : in.materials) {
     if (in.enable_nodal_pressure[material]) {
       old_p_h[material].resize(s.nodes.size());
-      lgr::copy(s.p_h[material], old_p_h[material]);
+      hpc::copy(hpc::device_policy(), s.p_h[material], old_p_h[material]);
     }
     if (in.enable_nodal_energy[material]) {
       if (in.enable_p_prime[material]) {
         old_p_h[material].resize(s.nodes.size());
-        lgr::copy(s.p_h[material], old_p_h[material]);
+        hpc::copy(hpc::device_policy(), s.p_h[material], old_p_h[material]);
       }
       old_e_h[material].resize(s.nodes.size());
-      lgr::copy(s.e_h[material], old_e_h[material]);
+      hpc::copy(hpc::device_policy(), s.e_h[material], old_e_h[material]);
     }
   }
   constexpr int npc = 2;
@@ -583,7 +582,9 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    if (last_pc) update_v(s, s.dt, old_v);
+    if (last_pc) {
+      update_v(s, s.dt, old_v);
+    }
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
@@ -624,11 +625,11 @@ static void LGR_NOINLINE midpoint_predictor_corrector_step(input const& in, stat
   }
 }
 
-static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
-  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
+HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
   advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
   update_v(s, s.dt / 2.0, s.v);
-  lgr::fill(s.u, vector3<double>(0.0, 0.0, 0.0));
+  hpc::fill(hpc::serial_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
   update_u(s, s.dt);
   update_x(s);
   update_reference(s);
@@ -649,7 +650,7 @@ static void LGR_NOINLINE velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
-static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
+HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
       midpoint_predictor_corrector_step(in, s);
@@ -660,22 +661,23 @@ static void LGR_NOINLINE time_integrator_step(input const& in, state& s) {
   }
 }
 
-static void LGR_NOINLINE initialize_material_scalar(
-    double const scalar,
+template <class Quantity>
+HPC_NOINLINE inline void initialize_material_scalar(
+    Quantity const scalar,
     state& s,
     material_index const material,
-    device_vector<double, point_index>& out) {
+    hpc::device_vector<Quantity, point_index>& out) {
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_scalar = out.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       points_to_scalar[point] = scalar;
     }
   };
-  for_each(s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-static void LGR_NOINLINE common_initialization_part1(input const& in, state& s) {
+HPC_NOINLINE inline void common_initialization_part1(input const& in, state& s) {
   initialize_V(in, s);
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
@@ -693,8 +695,12 @@ static void LGR_NOINLINE common_initialization_part1(input const& in, state& s) 
   update_h_min(in, s);
 }
 
-static void LGR_NOINLINE common_initialization_part2(input const& in, state& s) {
-  host_vector<device_vector<double, node_index>, material_index> old_p_h(in.materials.size(), s.devpool);
+HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) {
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
+  if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
+    hpc::fill(hpc::device_policy(), s.element_dt, hpc::time<double>(0.0));
+    hpc::fill(hpc::device_policy(), s.c, hpc::speed<double>(0.0));
+  }
   update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
     if (in.enable_nodal_energy[material]) {
@@ -702,8 +708,11 @@ static void LGR_NOINLINE common_initialization_part2(input const& in, state& s) 
     }
   }
   update_c(s);
-  if (in.enable_viscosity) apply_viscosity(in, s);
-  else lgr::fill(s.nu_art, double(0.0));
+  if (in.enable_viscosity) {
+    apply_viscosity(in, s);
+  } else {
+    hpc::fill(hpc::device_policy(), s.nu_art, hpc::kinematic_viscosity<double>(0.0));
+  }
   update_element_dt(s);
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
@@ -714,13 +723,19 @@ static void LGR_NOINLINE common_initialization_part2(input const& in, state& s) 
     if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) {
       update_p(s, material);
     }
+    if (in.enable_nodal_energy[material]) {
+      hpc::fill(hpc::device_policy(), s.q, hpc::heat_flux<double>::zero());
+      if (in.enable_p_prime[material]) {
+        hpc::fill(hpc::device_policy(), s.p_prime, hpc::pressure<double>(0));
+      }
+    }
   }
 }
 
 void run(input const& in) {
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
-  double const file_output_period = num_file_outputs ? in.end_time / num_file_outputs : 0.0;
+  auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
   state s;
   build_mesh(in, s);
   if (in.x_transform) in.x_transform(&s.x);
@@ -732,17 +747,17 @@ void run(input const& in) {
   for (auto const material : in.materials) {
     initialize_material_scalar(in.rho0[material], s, material, s.rho);
     if (in.enable_nodal_pressure[material]) {
-      lgr::fill(s.p_h[material], double(0.0));
+      hpc::fill(hpc::device_policy(), s.p_h[material], double(0.0));
     }
     if (in.enable_nodal_energy[material]) {
-      lgr::fill(s.e_h[material], in.e0[material]);
+      hpc::fill(hpc::device_policy(), s.e_h[material], in.e0[material]);
     } else {
       initialize_material_scalar(in.e0[material], s, material, s.e);
     }
   }
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
-  lgr::fill(s.F_total, matrix3x3<double>::identity());
+  hpc::fill(hpc::device_policy(), s.F_total, hpc::deformation_gradient<double>::identity());
   common_initialization_part1(in, s);
   common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);
@@ -753,17 +768,17 @@ void run(input const& in) {
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
-        std::cout << "outputting file n " << file_output_index << " time " << s.time << "\n";
+        std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
       }
       output_file(in, file_output_index, s);
       ++file_output_index;
       ++file_period_index;
-      s.next_file_output_time = file_period_index * file_output_period;
+      s.next_file_output_time = double(file_period_index) * file_output_period;
       s.next_file_output_time = std::min(s.next_file_output_time, in.end_time);
     }
     while (s.time < s.next_file_output_time) {
       if (in.output_to_command_line) {
-        std::cout << "step " << s.n << " time " << s.time << " dt " << s.max_stable_dt << "\n";
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.max_stable_dt) << "\n";
       }
       time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
@@ -781,12 +796,12 @@ void run(input const& in) {
   }
   if (num_file_outputs) {
     if (in.output_to_command_line) {
-      std::cout << "outputting last file n " << file_output_index << " time " << s.time << "\n";
+      std::cout << "outputting last file n " << file_output_index << " time " << double(s.time) << "\n";
     }
     output_file(in, file_output_index, s);
   }
   if (in.output_to_command_line) {
-    std::cout << "final time " << s.time << "\n";
+    std::cout << "final time " << double(s.time) << "\n";
   }
 }
 

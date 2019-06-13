@@ -1,102 +1,111 @@
 #include <cassert>
 
-#include <iostream>
-
 #include <lgr_meshing.hpp>
-#include <lgr_macros.hpp>
 #include <lgr_state.hpp>
-#include <lgr_fill.hpp>
 #include <lgr_input.hpp>
+#include <hpc_atomic.hpp>
 
 namespace lgr {
 
 void propagate_connectivity(state& s) {
-  s.nodes_to_node_elements.resize(s.nodes.size());
-  s.node_elements_to_elements.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  s.node_elements_to_nodes_in_element.resize(node_element_index(int(s.elements.size() * s.nodes_in_element.size())));
-  vector<int, device_allocator<int>, node_index> counts_vector(
-      s.nodes.size(), device_allocator<int>(s.devpool));
-  lgr::fill(counts_vector, int(0));
+  node_element_index node_element_count(int(s.elements.size() * s.nodes_in_element.size()));
+  s.node_elements_to_elements.resize(node_element_count);
+  s.node_elements_to_nodes_in_element.resize(node_element_count);
+  hpc::device_vector<int, node_index> counts_vector(s.nodes.size());
+  hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_count = counts_vector.begin();
-  auto count_functor = [=](element_index const element) {
+  auto count_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const element_node : element_nodes) {
       node_index const node = element_nodes_to_nodes[element_node];
-      { // needs to be atomic!
-      int count = nodes_to_count[node];
-      ++count;
-      nodes_to_count[node] = count;
-      }
+      hpc::atomic_ref<int> count(nodes_to_count[node]);
+      count++;
     }
   };
-  lgr::for_each(s.elements, count_functor);
+  hpc::for_each(hpc::device_policy(), s.elements, count_functor);
   s.nodes_to_node_elements.assign_sizes(counts_vector);
-  lgr::fill(counts_vector, int(0));
+  hpc::fill(hpc::device_policy(), counts_vector, int(0));
   auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements = s.node_elements_to_elements.begin();
+#ifndef NDEBUG
   auto const num_node_elements = s.node_elements_to_elements.size();
+#endif
   auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.begin();
   auto const nodes_in_element = s.nodes_in_element;
-  auto fill_functor = [=](element_index const element) {
+  auto fill_functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const node_in_element : nodes_in_element) {
       element_node_index const element_node = element_nodes[node_in_element];
       node_index const node = element_nodes_to_nodes[element_node];
-      int offset;
-      { // needs to be atomic!
-      offset = nodes_to_count[node];
-      nodes_to_count[node] = offset + 1;
-      }
+      hpc::atomic_ref<int> count(nodes_to_count[node]);
+      int const offset = count++;
       auto const node_elements_range = nodes_to_node_elements[node];
       auto const node_element = node_elements_range[node_element_index(offset)];
-      if (node_element >= num_node_elements) {
-        std::cerr << "element " << int(element) << " node " << int(node)
-          << " trying to write to node_element " << int(node_element)
-          << " but total is " << int(node_element) << '\n';
-      }
+      assert(node_element < num_node_elements);
       node_elements_to_elements[node_element] = element;
       node_elements_to_nodes_in_element[node_element] = node_in_element;
     }
   };
-  lgr::for_each(s.elements, fill_functor);
+  hpc::for_each(hpc::device_policy(), s.elements, fill_functor);
+  auto sort_functor = [=] HPC_DEVICE (node_index const node) {
+    auto const node_elements = nodes_to_node_elements[node];
+    hpc::counting_range<node_element_index> const except_last(node_elements.begin(), node_elements.end() - 1);
+    for (auto const node_element : except_last) {
+      hpc::counting_range<node_element_index> const remaining(node_element + 1, node_elements.end());
+      element_index min_element(node_elements_to_elements[node_element]);
+      auto min_node_element = node_element;
+      for (auto const node_element2 : remaining) {
+        auto const element = node_elements_to_elements[node_element2];
+        if (element < min_element) {
+          min_element = element; 
+          min_node_element = node_element2;
+        }
+      }
+      hpc::swap(node_elements_to_elements[node_element], node_elements_to_elements[min_node_element]);
+    }
+    for (node_element_index i(*(node_elements.begin())); i < (*(node_elements.end())) - 1; ++i) {
+      assert(node_elements_to_elements[i] < node_elements_to_elements[i + 1]);
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, sort_functor);
   s.points.resize(s.elements.size() * s.points_in_element.size());
 }
 
-static void LGR_NOINLINE initialize_bars_to_nodes(state& s) {
+HPC_NOINLINE inline void initialize_bars_to_nodes(state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const begin = s.elements_to_nodes.begin();
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
     begin[element_nodes[l_t(0)]] = node_index(int(element));
     begin[element_nodes[l_t(1)]] = node_index(int(element) + 1);
   };
-  lgr::for_each(s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-static void LGR_NOINLINE initialize_x_1D(input const& in, state& s) {
+HPC_NOINLINE inline void initialize_x_1D(input const& in, state& s) {
   auto const nodes_to_x = s.x.begin();
   auto const num_nodes = s.nodes.size();
   auto const l = in.x_domain_size;
-  auto functor = [=](node_index const node) {
-    nodes_to_x[node] = vector3<double>(l * (double(int(node)) / double(int(num_nodes) - 1)), 0.0, 0.0);
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    nodes_to_x[node] = hpc::position<double>(l * (double(int(node)) / (double(int(num_nodes)) - 1)), 0.0, 0.0);
   };
-  lgr::for_each(s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 static void build_bar_mesh(input const& in, state& s) {
   s.elements.resize(element_index(in.elements_along_x));
   s.nodes_in_element.resize(node_in_element_index(2));
-  s.nodes.resize(node_index(int(s.elements.size()) + 1));
+  s.nodes.resize(int(s.elements.size()) + 1);
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   initialize_bars_to_nodes(s);
   s.x.resize(s.nodes.size());
   initialize_x_1D(in, s);
 }
 
-static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -113,7 +122,7 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const element_nodes_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const quad) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const quad) {
     int const i = quad % nx;
     int const j = quad / nx;
     auto tri = element_index(quad * 2 + 0);
@@ -129,23 +138,23 @@ static void LGR_NOINLINE build_triangle_mesh(input const& in, state& s)
     element_nodes_to_nodes[element_nodes[l_t(1)]] = g_t((j + 1) * nvx + (i + 0));
     element_nodes_to_nodes[element_nodes[l_t(2)]] = g_t((j + 0) * nvx + (i + 0));
   };
-  counting_range<int> quads(nq);
-  lgr::for_each(quads, connectivity_functor);
+  hpc::counting_range<int> quads(nq);
+  hpc::for_each(hpc::device_policy(), quads, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
-  double const x = in.x_domain_size;
-  double const y = in.y_domain_size;
-  double const dx = x / nx;
-  double const dy = y / ny;
-  auto coordinates_functor = [=] (node_index const node) {
+  auto const x = in.x_domain_size;
+  auto const y = in.y_domain_size;
+  auto const dx = x / double(nx);
+  auto const dy = y / double(ny);
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const i = int(node) % nvx;
     int const j = int(node) / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, 0.0);
+    nodes_to_x[node] = hpc::position<double>(double(i) * dx, double(j) * dy, 0.0);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -167,7 +176,7 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const elements_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const hex) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const hex) {
     int const ij = hex % nxy;
     int const k = hex / nxy;
     int const i = ij % nx;
@@ -221,27 +230,27 @@ static void LGR_NOINLINE build_tetrahedron_mesh(input const& in, state& s)
     elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[1];
     elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
   };
-  counting_range<int> hexes(nh);
-  lgr::for_each(hexes, connectivity_functor);
+  hpc::counting_range<int> hexes(nh);
+  hpc::for_each(hpc::device_policy(), hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
-  double const x = in.x_domain_size;
-  double const y = in.y_domain_size;
-  double const z = in.z_domain_size;
-  double const dx = x / nx;
-  double const dy = y / ny;
-  double const dz = z / nz;
-  auto coordinates_functor = [=] (node_index const node) {
+  auto const x = in.x_domain_size;
+  auto const y = in.y_domain_size;
+  auto const z = in.z_domain_size;
+  auto const dx = x / double(nx);
+  auto const dy = y / double(ny);
+  auto const dz = z / double(nz);
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const ij = int(node) % nvxy;
-    int const k = int(node) / nvxy;
-    int const i = ij % nvx;
-    int const j = ij / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, k * dz);
+    auto const k = double(int(node) / nvxy);
+    auto const i = double(ij % nvx);
+    auto const j = double(ij / nvx);
+    nodes_to_x[node] = hpc::position<double>(i * dx, j * dy, k * dz);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& s)
+HPC_NOINLINE inline void build_10_node_tetrahedron_mesh(input const& in, state& s)
 {
   assert(in.elements_along_x >= 1);
   int const nx = in.elements_along_x;
@@ -264,7 +273,7 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   auto const elements_to_nodes = s.elements_to_nodes.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] (int const hex) {
+  auto connectivity_functor = [=] HPC_DEVICE (int const hex) {
     int const ij = hex % nxy;
     int const k = hex / nxy;
     int const i = ij % nx;
@@ -350,24 +359,24 @@ static void LGR_NOINLINE build_10_node_tetrahedron_mesh(input const& in, state& 
     elements_to_nodes[element_nodes[l_t(8)]] = hex_nodes[2][1][2];
     elements_to_nodes[element_nodes[l_t(9)]] = hex_nodes[2][1][1];
   };
-  counting_range<int> hexes(nh);
-  lgr::for_each(hexes, connectivity_functor);
+  hpc::counting_range<int> hexes(nh);
+  hpc::for_each(hpc::device_policy(), hexes, connectivity_functor);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
-  double const x = in.x_domain_size;
-  double const y = in.y_domain_size;
-  double const z = in.z_domain_size;
-  double const dx = x / (nx * 2.0);
-  double const dy = y / (ny * 2.0);
-  double const dz = z / (nz * 2.0);
-  auto coordinates_functor = [=] (node_index const node) {
+  auto const x = in.x_domain_size;
+  auto const y = in.y_domain_size;
+  auto const z = in.z_domain_size;
+  auto const dx = x / (nx * 2.0);
+  auto const dy = y / (ny * 2.0);
+  auto const dz = z / (nz * 2.0);
+  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
     int const ij = int(node) % nvxy;
-    int const k = int(node) / nvxy;
-    int const i = ij % nvx;
-    int const j = ij / nvx;
-    nodes_to_x[node] = vector3<double>(i * dx, j * dy, k * dz);
+    auto const k = double(int(node) / nvxy);
+    auto const i = double(ij % nvx);
+    auto const j = double(ij / nvx);
+    nodes_to_x[node] = hpc::position<double>(i * dx, j * dy, k * dz);
   };
-  lgr::for_each(s.nodes, coordinates_functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
 void build_mesh(input const& in, state& s) {

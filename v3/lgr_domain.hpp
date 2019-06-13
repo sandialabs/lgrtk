@@ -3,68 +3,67 @@
 #include <memory>
 #include <vector>
 
-#include <lgr_macros.hpp>
-#include <lgr_vector3.hpp>
-#include <lgr_for_each.hpp>
-#include <lgr_counting_range.hpp>
-#include <lgr_device_vector.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_material_set.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_numeric.hpp>
+#include <hpc_dimensional.hpp>
 
 namespace lgr {
 
 struct all_space {
 };
 
-constexpr inline double distance(all_space const, vector3<double> const) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(all_space const, hpc::position<double> const) noexcept {
   return 1.0;
 };
 
 struct plane {
-  vector3<double> normal;
-  double origin;
+  hpc::vector3<double> normal;
+  hpc::length<double> origin;
 };
 
-constexpr inline double distance(plane const pl, vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr hpc::length<double> distance(plane const pl, hpc::position<double> const pt) noexcept {
   return pl.normal * pt - pl.origin;
 };
 
 struct sphere {
-  vector3<double> origin;
-  double radius;
+  hpc::position<double> origin;
+  hpc::length<double> radius;
 };
 
-inline double distance(sphere const s, vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::length<double> distance(sphere const s, hpc::position<double> const pt) noexcept {
   return s.radius - norm(pt - s.origin);
 };
 
 struct cylinder {
-  vector3<double> axis;
-  vector3<double> origin;
-  double radius;
+  hpc::vector3<double> axis;
+  hpc::position<double> origin;
+  hpc::length<double> radius;
 };
 
-inline double distance(cylinder const s, vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::length<double> distance(cylinder const s, hpc::position<double> const pt) noexcept {
   auto const pt_on_plane = pt - (pt * s.axis) * s.axis;
   auto const origin_on_plane = s.origin - (s.origin * s.axis) * s.axis;
   return s.radius - norm(pt_on_plane - origin_on_plane);
 };
 
 struct extruded_sine_wave {
-  vector3<double> z_axis;
-  vector3<double> x_axis;
+  hpc::vector3<double> z_axis;
+  hpc::vector3<double> x_axis;
   double z_offset;
   double sine_period;
   double sine_offset;
   double sine_amplitude;
 };
 
-inline double distance(extruded_sine_wave const w, vector3<double> const pt) {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE double distance(extruded_sine_wave const w, hpc::vector3<double> const pt) noexcept {
   auto const proj = (pt * w.z_axis) * w.z_axis;
   auto const z = norm(proj) - w.z_offset;
   auto const rej = pt - proj;
   auto const x = rej * w.x_axis;
-  auto const angle = (x - w.sine_offset) * ((2.0 * pi) / (w.sine_period));
+  auto const angle = (x - w.sine_offset) * ((2.0 * hpc::pi<double>()) / (w.sine_period));
   auto const z_zero = w.sine_amplitude * std::sin(angle);
   return z_zero - z;
 }
@@ -75,17 +74,19 @@ class domain {
     domain(domain&&) = default;
     virtual ~domain();
     virtual void mark(
-        device_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, node_index> const& points,
         int const marker,
-        device_vector<int, node_index>* markers) const = 0;
+        hpc::device_vector<int, node_index>* markers) const = 0;
+#ifdef HPC_STRONG_INDICES
     virtual void mark(
-        device_vector<vector3<double>, element_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, element_index> const& points,
         material_index const marker,
-        device_vector<material_index, element_index>* markers) const = 0;
+        hpc::device_vector<material_index, element_index>* markers) const = 0;
+#endif
     virtual void mark(
-        device_vector<vector3<double>, node_index> const& points,
+        hpc::device_array_vector<hpc::position<double>, node_index> const& points,
         material_index const marker,
-        device_vector<material_set, node_index>* markers) const = 0;
+        hpc::device_vector<material_set, node_index>* markers) const = 0;
 };
 
 template <class SourceDomain>
@@ -101,54 +102,62 @@ class clipped_domain : public domain {
   }
   template <class Index, class Marker>
   void mark_tmpl(
-      device_vector<vector3<double>, Index> const& points,
+      hpc::device_array_vector<hpc::position<double>, Index> const& points,
       Marker const marker,
-      device_vector<Marker, Index>* markers) const {
-    counting_range<Index> const range(points.size());
+      hpc::device_vector<Marker, Index>* markers) const {
+    hpc::counting_range<Index> const range(points.size());
+    hpc::pinned_vector<plane, std::size_t> pinned_clips(m_host_clips.size());
+    hpc::copy(hpc::serial_policy(), m_host_clips, pinned_clips);
+    hpc::device_vector<plane, std::size_t> device_clips(m_host_clips.size());
+    hpc::copy(pinned_clips, device_clips);
+    auto const clips_range = hpc::make_iterator_range(device_clips.begin(), device_clips.end());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
-    auto const clips_begin = m_host_clips.cbegin();
-    auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
-    auto functor = [=] (Index const i) {
-      vector3<double> const pt = points_begin[i];
+    auto functor = [=] HPC_DEVICE (Index const i) {
+      auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
-      for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
-        is_in &= (distance(*clips_it, pt) >= 0.0);
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
       }
       if (is_in) {
         markers_begin[i] = marker;
       }
     };
-    lgr::for_each(range, functor);
+    hpc::for_each(hpc::device_policy(), range, functor);
   }
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       int const marker,
-      device_vector<int, node_index>* markers) const override {
+      hpc::device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
+#ifdef HPC_STRONG_INDICES
   void mark(
-      device_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
-      device_vector<material_index, element_index>* markers) const override {
+      hpc::device_vector<material_index, element_index>* markers) const override {
     this->mark_tmpl<element_index, material_index>(points, marker, markers);
   }
+#endif
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       material_index const marker,
-      device_vector<material_set, node_index>* markers) const override {
-    counting_range<node_index> const range(points.size());
+      hpc::device_vector<material_set, node_index>* markers) const override {
+    hpc::counting_range<node_index> const range(points.size());
+    hpc::pinned_vector<plane, std::size_t> pinned_clips(m_host_clips.size());
+    hpc::copy(hpc::serial_policy(), m_host_clips, pinned_clips);
+    hpc::device_vector<plane, std::size_t> device_clips(m_host_clips.size());
+    hpc::copy(pinned_clips, device_clips);
+    auto const clips_range = hpc::make_iterator_range(device_clips.begin(), device_clips.end());
     auto const points_begin = points.cbegin();
     auto const markers_begin = markers->begin();
-    auto const clips_begin = m_host_clips.cbegin();
-    auto const clips_end = m_host_clips.cend();
     auto const source = m_source;
-    auto functor = [=] (node_index const i) {
-      vector3<double> const pt = points_begin[i];
+    auto functor = [=] HPC_DEVICE (node_index const i) {
+      auto const pt = points_begin[i].load();
       bool is_in = (distance(source, pt) >= 0.0);
-      for (auto clips_it = clips_begin; is_in && (clips_it != clips_end); ++clips_it) {
-        is_in &= (distance(*clips_it, pt) >= 0.0);
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
       }
       if (is_in) {
         material_set set = markers_begin[i];
@@ -156,7 +165,7 @@ class clipped_domain : public domain {
         markers_begin[i] = set;
       }
     };
-    lgr::for_each(range, functor);
+    hpc::for_each(hpc::device_policy(), range, functor);
   }
 };
 
@@ -165,23 +174,25 @@ class union_domain : public domain {
   public:
   void add(std::unique_ptr<domain>&& uptr);
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       int const marker,
-      device_vector<int, node_index>* markers) const override;
+      hpc::device_vector<int, node_index>* markers) const override;
+#ifdef HPC_STRONG_INDICES
   void mark(
-      device_vector<vector3<double>, element_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
-      device_vector<material_index, element_index>* markers) const override;
+      hpc::device_vector<material_index, element_index>* markers) const override;
+#endif
   void mark(
-      device_vector<vector3<double>, node_index> const& points,
+      hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       material_index const marker,
-      device_vector<material_set, node_index>* markers) const override;
+      hpc::device_vector<material_set, node_index>* markers) const override;
 };
 
 std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps);
-std::unique_ptr<domain> sphere_domain(vector3<double> const origin, double const radius);
+std::unique_ptr<domain> sphere_domain(hpc::position<double> const origin, double const radius);
 std::unique_ptr<domain> half_space_domain(plane const& p);
-std::unique_ptr<domain> box_domain(vector3<double> const lower_left, vector3<double> const upper_right);
+std::unique_ptr<domain> box_domain(hpc::position<double> const lower_left, hpc::position<double> const upper_right);
 
 class input;
 class state;

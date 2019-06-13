@@ -5,10 +5,8 @@
 
 #include <lgr_vtk.hpp>
 #include <lgr_print.hpp>
-#include <lgr_range_product.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
-#include <lgr_reduce.hpp>
 
 namespace lgr {
 
@@ -19,17 +17,17 @@ static void start_vtk_file(std::ostream& stream) {
   stream << "DATASET UNSTRUCTURED_GRID\n";
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_points(std::ostream& stream,
-    device_vector<vector3<double>, Index> const& x) {
+    hpc::device_array_vector<hpc::vector3<Quantity>, Index> const& x) {
   stream << "POINTS " << int(x.size()) << " double\n";
-  for (vector3<double> p : x) {
-    stream << p << "\n";
+  for (auto ref : x) {
+    stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
 static void write_vtk_cells(std::ostream& stream, input const& in, state const& s) {
-  stream << "CELLS " << int(s.elements.size()) << " " << (int(s.elements.size()) * (int(s.nodes_in_element.size()) + 1)) << "\n";
+  stream << "CELLS " << int(s.elements.size()) << " " << int(s.elements.size() * (s.nodes_in_element.size() + 1)) << "\n";
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
@@ -57,18 +55,18 @@ static void write_vtk_point_data(std::ostream& stream, state const& s) {
   stream << "POINT_DATA " << int(s.nodes.size()) << "\n";
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_scalars(std::ostream& stream, std::string const& name,
-    device_vector<double, Index> const& vec) {
+    hpc::device_vector<Quantity, Index> const& vec) {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
-  for (double const val : vec) {
-    stream << val << "\n";
+  for (Quantity const val : vec) {
+    stream << double(val) << "\n";
   }
 }
 
 static void write_vtk_materials(std::ostream& stream,
-    device_vector<material_index, element_index> const& vec) {
+    hpc::device_vector<material_index, element_index> const& vec) {
   stream << "SCALARS material int 1\n";
   stream << "LOOKUP_TABLE default\n";
   for (material_index const val : vec) {
@@ -76,13 +74,14 @@ static void write_vtk_materials(std::ostream& stream,
   }
 }
 
+template <class Quantity>
 static void write_vtk_scalars(std::ostream& stream, char const* name,
-    counting_range<element_index> const elements,
-    counting_range<point_in_element_index> const points_in_element,
-    device_vector<double, point_index> const& vec) {
+    hpc::counting_range<element_index> const elements,
+    hpc::counting_range<point_in_element_index> const points_in_element,
+    hpc::device_vector<Quantity, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (int(points_in_element.size()) == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
     stream << "SCALARS " << name << suffix << " double 1\n";
     stream << "LOOKUP_TABLE default\n";
     for (auto const e : elements) {
@@ -92,27 +91,28 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
   }
 }
 
+template <class Quantity>
 static void write_vtk_vectors(std::ostream& stream, char const* name,
-    counting_range<element_index> const elements,
-    counting_range<point_in_element_index> const points_in_element,
-    device_vector<vector3<double>, point_index> const& vec) {
+    hpc::counting_range<element_index> const elements,
+    hpc::counting_range<point_in_element_index> const points_in_element,
+    hpc::device_array_vector<hpc::vector3<Quantity>, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
     std::string suffix = (int(points_in_element.size()) == 1) ? "" : (std::string("_") + std::to_string(int(qp)));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
-      stream << vector3<double>(vec.begin()[p]) << "\n";
+      stream << hpc::vector3<double>(vec.begin()[p].load()) << "\n";
     }
   }
 }
 
-template <class Index>
+template <class Quantity, class Index>
 static void write_vtk_vectors(std::ostream& stream, char const* name,
-    device_vector<vector3<double>, Index> const& vec) {
+    hpc::device_array_vector<hpc::vector3<Quantity>, Index> const& vec) {
   stream << "VECTORS " << name << " double\n";
-  for (vector3<double> const val : vec) {
-    stream << val << "\n";
+  for (auto const ref : vec) {
+    stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
@@ -173,16 +173,16 @@ void file_writer::operator()(
   auto have_nodal_pressure_or_energy = [&] (material_index const material) {
     return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!all_of(in.materials, have_nodal_pressure_or_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     write_vtk_scalars(stream, "pressure", s.elements, s.points_in_element, s.p);
   }
-  if (!all_of(in.enable_nodal_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
     write_vtk_scalars(stream, "energy", s.elements, s.points_in_element, s.e);
     write_vtk_scalars(stream, "density", s.elements, s.points_in_element, s.rho);
   }
-  if (any_of(in.enable_nodal_energy)) {
+  if (hpc::any_of(hpc::serial_policy(), in.enable_nodal_energy)) {
     write_vtk_vectors(stream, "q", s.elements, s.points_in_element, s.q);
-    if (any_of(in.enable_p_prime)) {
+    if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
       write_vtk_scalars(stream, "p_prime", s.elements, s.points_in_element, s.p_prime);
     }
   }
