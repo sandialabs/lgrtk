@@ -88,7 +88,7 @@ public:
             Omega_h::MeshSets& aMeshSets,
             Plato::DataMap & aDataMap,
             Teuchos::ParameterList& aInputParams,
-            const std::string aName) :
+            std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap),
             mFunctionName(aName)
@@ -214,7 +214,7 @@ public:
         //
         auto tReturnVal = Plato::local_result_sum<Plato::Scalar>(m_numCells, tResult);
 
-        //printf("%s value %f \n", mFunctionName.c_str(), tReturnVal);
+        mScalarFunctionValue->postEvaluate(tReturnVal);
 
         return tReturnVal;
     }
@@ -267,6 +267,9 @@ public:
                                                                              tResult,
                                                                              tObjGradientX);
 
+        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
+        mScalarFunctionGradientX->postEvaluate(tObjGradientX, tObjectiveValue);
+
         return tObjGradientX;
     }
 
@@ -316,6 +319,8 @@ public:
                                                                              m_stateEntryOrdinal,
                                                                              tResult,
                                                                              tObjGradientU);
+        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
+        mScalarFunctionGradientU->postEvaluate(tObjGradientU, tObjectiveValue);
         return tObjGradientU;
     }
 
@@ -364,6 +369,8 @@ public:
         Plato::ScalarVector tObjGradientZ("objective gradient control", m_numNodes);
         Plato::assemble_scalar_gradient<m_numNodesPerCell>(m_numCells, m_controlEntryOrdinal, tResult, tObjGradientZ);
 
+        Plato::Scalar tObjectiveValue = Plato::assemble_scalar_func_value<Plato::Scalar>(m_numCells, tResult);
+        mScalarFunctionGradientZ->postEvaluate(tObjGradientZ, tObjectiveValue);
         return tObjGradientZ;
     }
 

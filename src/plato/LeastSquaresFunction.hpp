@@ -89,12 +89,8 @@ private:
                 tFactory.create(
                     aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionNames[tFunctionIndex]));
             mFunctionWeights.push_back(tFunctionWeights[tFunctionIndex]);
-            mFunctionGoldValues.push_back(tFunctionGoldValues[tFunctionIndex]);
-            
-            if (tFunctionGoldValues[tFunctionIndex] > mFunctionNormalizationCutoff)
-                mFunctionNormalization.push_back(tFunctionGoldValues[tFunctionIndex]);
-            else
-                mFunctionNormalization.push_back(1.0);
+
+            appendGoldFunctionValue(tFunctionGoldValues[tFunctionIndex]);
         }
 
     }
@@ -112,7 +108,7 @@ public:
                 Omega_h::MeshSets& aMeshSets,
                 Plato::DataMap & aDataMap,
                 Teuchos::ParameterList& aInputParams,
-                const std::string aName) :
+                std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap),
             mFunctionName(aName)
@@ -148,8 +144,9 @@ public:
     void appendGoldFunctionValue(Plato::Scalar aGoldValue)
     {
         mFunctionGoldValues.push_back(aGoldValue);
-        if (aGoldValue > mFunctionNormalizationCutoff)
-            mFunctionNormalization.push_back(aGoldValue);
+
+        if (std::abs(aGoldValue) > mFunctionNormalizationCutoff)
+            mFunctionNormalization.push_back(std::abs(aGoldValue));
         else
             mFunctionNormalization.push_back(1.0);
     }
@@ -200,6 +197,19 @@ public:
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
             tResult += tFunctionWeight * 
                        std::pow((tFunctionValue - tFunctionGoldValue) / tFunctionScale, 2);
+
+            Plato::Scalar tPercentDiff = std::abs(tFunctionGoldValue) > 0.0 ? 
+                                         100.0 * (tFunctionValue - tFunctionGoldValue) / tFunctionGoldValue :
+                                         (tFunctionValue - tFunctionGoldValue);
+            printf("%20s = %12.4e * ((%12.4e - %12.4e) / %12.4e)^2 =  %12.4e (PercDiff = %10.1f)\n", 
+                   mScalarFunctionBaseContainer[tFunctionIndex]->name().c_str(),
+                   tFunctionWeight,
+                   tFunctionValue, 
+                   tFunctionGoldValue,
+                   tFunctionScale,
+                   tFunctionWeight * 
+                             std::pow((tFunctionValue - tFunctionGoldValue) / tFunctionScale, 2),
+                   tPercentDiff);
         }
         return tResult;
     }

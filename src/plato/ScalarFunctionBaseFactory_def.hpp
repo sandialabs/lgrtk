@@ -23,7 +23,7 @@ namespace Plato
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap & aDataMap,
            Teuchos::ParameterList& aInputParams,
-           const std::string aFunctionName)
+           std::string& aFunctionName)
     {
         auto tProblemFunction = aInputParams.sublist(aFunctionName);
         auto tFunctionType = tProblemFunction.get<std::string>("Type", "Not Defined");

@@ -80,6 +80,7 @@ SET(PLATO_SOURCES
   plato/DivisionFunction.cpp
   plato/MassMoment.cpp
   plato/MassPropertiesFunction.cpp
+  plato/IntermediateDensityPenalty.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/src)

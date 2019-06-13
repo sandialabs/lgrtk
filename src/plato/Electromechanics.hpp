@@ -83,17 +83,17 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::InternalElectroelasticEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else
             {
@@ -106,17 +106,17 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::EMStressPNorm<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else
             {
@@ -129,17 +129,17 @@ struct FunctionFactory
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
-                return std::make_shared<Plato::Volume<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::Volume<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "RAMP")
             {
-                return std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else 
             if(tPenaltyType == "Heaviside")
             {
-                return std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+                return std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams, aStrScalarFunctionName);
             }
             else
             {

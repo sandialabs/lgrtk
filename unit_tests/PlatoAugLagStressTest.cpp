@@ -1604,9 +1604,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume2D)
     Plato::WeightedSumFunction<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<Residual>> tCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tCriterion->setMaterialDensity(tMaterialDensity);
+    tCriterion->setCalculationType("Mass");
 
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFunc = 
           std::make_shared<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>>(*tMesh, tDataMap);
@@ -1620,7 +1621,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume2D)
     auto tObjFuncVal = tWeightedSum.value(tState, tControl, 0.0);
 
     Plato::Scalar tGoldValue = pow(static_cast<Plato::Scalar>(tMeshWidth), tSpaceDim) 
-                               * tPseudoDensity * tFunctionWeight;
+                               * tPseudoDensity * tFunctionWeight * tMaterialDensity;
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
@@ -1658,9 +1659,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume3D)
     Plato::WeightedSumFunction<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<Residual>> tCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tCriterion->setMaterialDensity(tMaterialDensity);
+    tCriterion->setCalculationType("Mass");
 
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFunc = 
           std::make_shared<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>>(*tMesh, tDataMap);
@@ -1674,7 +1676,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassInsteadOfVolume3D)
     auto tObjFuncVal = tWeightedSum.value(tState, tControl, 0.0);
 
     Plato::Scalar tGoldValue = pow(static_cast<Plato::Scalar>(tMeshWidth), tSpaceDim) 
-                               * tPseudoDensity * tFunctionWeight;
+                               * tPseudoDensity * tFunctionWeight * tMaterialDensity;
 
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
@@ -1715,9 +1717,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusTensileEnergy2D)
     Plato::WeightedSumFunction<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<Residual>> tMassCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tMassCriterion->setMaterialDensity(tMaterialDensity);
+    tMassCriterion->setCalculationType("Mass");
 
     const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tTensileEnergyCriterion = 
     std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
@@ -1755,7 +1758,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusTensileEnergy2D)
     auto tObjFuncVal = tWeightedSum.value(tState, tControl, 0.0);
 
     Plato::Scalar tMassGoldValue = pow(static_cast<Plato::Scalar>(tMeshWidth), tSpaceDim) 
-                                   * tPseudoDensity * tMassFunctionWeight;
+                                   * tPseudoDensity * tMassFunctionWeight * tMaterialDensity;
 
     Plato::Scalar tTensileEnergyGoldValue = tTensileEnergyFunctionWeight * 163.304492775;
 
@@ -1813,11 +1816,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_2D)
     tWeightedSum.appendFunctionWeight(tVonMisesFunctionWeight);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<GradientZ,Plato::MSIMP>> tMassCriterionGradZ = 
-          std::make_shared<Plato::Volume<GradientZ,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<GradientZ>> tMassCriterionGradZ = 
+          std::make_shared<Plato::MassMoment<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterionGradZ->setMaterialDensity(tMaterialDensity);
+    tMassCriterionGradZ->setCalculationType("Mass");
+
+    const std::shared_ptr<Plato::MassMoment<Residual>> tMassCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tMassCriterion->setMaterialDensity(tMaterialDensity);
+    tMassCriterion->setCalculationType("Mass");
 
     // Append function two
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFuncMass = 
@@ -1880,11 +1887,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_3D)
     tWeightedSum.appendFunctionWeight(tVonMisesFunctionWeight);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<GradientZ,Plato::MSIMP>> tMassCriterionGradZ = 
-          std::make_shared<Plato::Volume<GradientZ,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<GradientZ>> tMassCriterionGradZ = 
+          std::make_shared<Plato::MassMoment<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterionGradZ->setMaterialDensity(tMaterialDensity);
+    tMassCriterionGradZ->setCalculationType("Mass");
+
+    const std::shared_ptr<Plato::MassMoment<Residual>> tMassCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tMassCriterion->setMaterialDensity(tMaterialDensity);
+    tMassCriterion->setCalculationType("Mass");
 
     // Append function two
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFuncMass = 
@@ -1947,11 +1958,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_2D)
     tWeightedSum.appendFunctionWeight(tVonMisesFunctionWeight);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<Jacobian,Plato::MSIMP>> tMassCriterionGradU = 
-          std::make_shared<Plato::Volume<Jacobian,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<Jacobian>> tMassCriterionGradU = 
+          std::make_shared<Plato::MassMoment<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterionGradU->setMaterialDensity(tMaterialDensity);
+    tMassCriterionGradU->setCalculationType("Mass");
+
+    const std::shared_ptr<Plato::MassMoment<Residual>> tMassCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tMassCriterion->setMaterialDensity(tMaterialDensity);
+    tMassCriterion->setCalculationType("Mass");
 
     // Append function two
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFuncMass = 
@@ -2014,11 +2029,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_3D)
     tWeightedSum.appendFunctionWeight(tVonMisesFunctionWeight);
 
     const Plato::Scalar tMaterialDensity = 0.5;
-    const std::shared_ptr<Plato::Volume<Jacobian,Plato::MSIMP>> tMassCriterionGradU = 
-          std::make_shared<Plato::Volume<Jacobian,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::Volume<Residual,Plato::MSIMP>> tMassCriterion = 
-          std::make_shared<Plato::Volume<Residual,Plato::MSIMP>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::MassMoment<Jacobian>> tMassCriterionGradU = 
+          std::make_shared<Plato::MassMoment<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    tMassCriterionGradU->setMaterialDensity(tMaterialDensity);
+    tMassCriterionGradU->setCalculationType("Mass");
+
+    const std::shared_ptr<Plato::MassMoment<Residual>> tMassCriterion = 
+          std::make_shared<Plato::MassMoment<Residual>>(*tMesh, tMeshSets, tDataMap);
     tMassCriterion->setMaterialDensity(tMaterialDensity);
+    tMassCriterion->setCalculationType("Mass");
 
     // Append function two
     const std::shared_ptr<Plato::PhysicsScalarFunction<Plato::Mechanics<tSpaceDim>>> tPhysicsScalarFuncMass = 
@@ -2073,8 +2092,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPropertiesValue3D)
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
+    std::string tFuncName = "My Mass Properties";
     Plato::MassPropertiesFunction<Plato::Mechanics<tSpaceDim>> 
-          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, std::string("My Mass Properties"));
+          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, tFuncName);
 
     auto tObjFuncVal = tMassProperties.value(tState, tControl, 0.0);
 
@@ -2127,8 +2147,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPropertiesGradZ_3D)
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
+    std::string tFuncName = "My Mass Properties";
     Plato::MassPropertiesFunction<Plato::Mechanics<tSpaceDim>> 
-          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, std::string("My Mass Properties"));
+          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, tFuncName);
 
     Plato::test_partial_control<GradientZ, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tMassProperties);
 }
@@ -2174,8 +2195,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPropertiesGradU_3D) // All state deriva
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
+    std::string tFuncName = "My Mass Properties";
     Plato::MassPropertiesFunction<Plato::Mechanics<tSpaceDim>> 
-          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, std::string("My Mass Properties"));
+          tMassProperties(*tMesh, tMeshSets, tDataMap, *tParams, tFuncName);
 
     Plato::test_partial_state<Jacobian, Plato::SimplexMechanics<tSpaceDim>>(*tMesh, tMassProperties);
 }

@@ -240,6 +240,7 @@ private:
              std::make_shared<Plato::DivisionFunction<PhysicsT>>(aMesh, m_dataMap);
         tMomentOverMassRatioFunction->allocateNumeratorFunction(tNumerator);
         tMomentOverMassRatioFunction->allocateDenominatorFunction(tDenominator);
+        tMomentOverMassRatioFunction->setFunctionName(std::string("CG ") + aMomentType);
         return tMomentOverMassRatioFunction;
     }
 
@@ -294,7 +295,8 @@ private:
                        const std::string & aAxes)
     {
         std::shared_ptr<Plato::WeightedSumFunction<PhysicsT>> tMomentOfInertiaFunction = 
-               std::make_shared<Plato::WeightedSumFunction<PhysicsT>>(aMesh, m_dataMap);;
+               std::make_shared<Plato::WeightedSumFunction<PhysicsT>>(aMesh, m_dataMap);
+        tMomentOfInertiaFunction->setFunctionName(std::string("Inertia ") + aAxes);
 
         if (aAxes == "XX")
         {
@@ -365,7 +367,7 @@ public:
                            Omega_h::MeshSets& aMeshSets,
                            Plato::DataMap & aDataMap,
                            Teuchos::ParameterList& aInputParams,
-                           const std::string aName) :
+                           std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap),
             mFunctionName(aName),

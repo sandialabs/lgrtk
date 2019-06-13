@@ -41,7 +41,7 @@ public:
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap & aDataMap,
            Teuchos::ParameterList& aInputParams,
-           const std::string aFunctionName);
+           std::string& aFunctionName);
 };
 // class ScalarFunctionBaseFactory
 

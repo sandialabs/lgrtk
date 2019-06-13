@@ -46,12 +46,12 @@ public:
         }
         else if(tProblemPhysics == "Thermal")
         {
-            // if(tProblemPDE == "Heat Equation") {
-            //   return std::make_shared<HeatEquationProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            // } 
-            // else {
-            //   return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            // }
+            if(tProblemPDE == "Heat Equation") {
+              // return std::make_shared<HeatEquationProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
+            else {
+              return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         else if(tProblemPhysics == "StructuralDynamics")
         {
@@ -59,15 +59,16 @@ public:
         }
         else if(tProblemPhysics == "Electromechanical")
         {
-            // return std::make_shared<Problem<::Plato::Electromechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            return std::make_shared<Problem<::Plato::Electromechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
         }
         else if(tProblemPhysics == "Thermomechanical")
         {
-            // if(tProblemPDE == "First Order") {
-            //   return std::make_shared<HeatEquationProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            // } else {
-            //   return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            // }
+            if(tProblemPDE == "First Order") {
+              // return std::make_shared<HeatEquationProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } 
+            else {
+              return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         return nullptr;
     }

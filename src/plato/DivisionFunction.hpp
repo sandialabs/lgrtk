@@ -75,7 +75,7 @@ public:
                 Omega_h::MeshSets& aMeshSets,
                 Plato::DataMap & aDataMap,
                 Teuchos::ParameterList& aInputParams,
-                const std::string aName) :
+                std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap),
             mFunctionName(aName)
@@ -138,6 +138,9 @@ public:
         Plato::Scalar tNumeratorValue = mScalarFunctionBaseNumerator->value(aState, aControl, aTimeStep);
         Plato::Scalar tDenominatorValue = mScalarFunctionBaseDenominator->value(aState, aControl, aTimeStep);
         Plato::Scalar tResult = tNumeratorValue / tDenominatorValue;
+        // if (tDenominatorValue == 0.0)
+        //     tResult = tNumeratorValue;
+        //printf("%s = %f / %f = %f \n", mFunctionName.c_str(), tNumeratorValue, tDenominatorValue, tResult);
         return tResult;
     }
 
@@ -224,6 +227,15 @@ public:
         },"Division Function Grad Z");
 
         return tGradientZ;
+    }
+
+    /******************************************************************************//**
+     * @brief Set function name
+     * @param [in] function name
+    **********************************************************************************/
+    void setFunctionName(const std::string aFunctionName)
+    {
+        mFunctionName = aFunctionName;
     }
 
     /******************************************************************************//**

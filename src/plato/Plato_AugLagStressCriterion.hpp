@@ -46,6 +46,7 @@ private:
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
     using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractScalarFunction<EvaluationType>::m_functionName;
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
@@ -96,7 +97,7 @@ private:
     **********************************************************************************/
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
-        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
+        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>(m_functionName);
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
@@ -132,8 +133,9 @@ public:
     AugLagStressCriterion(Omega_h::Mesh & aMesh,
                           Omega_h::MeshSets & aMeshSets,
                           Plato::DataMap & aDataMap,
-                          Teuchos::ParameterList & aInputParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
+                          Teuchos::ParameterList & aInputParams,
+                          std::string& aFunctionName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             mPenalty(3),
             mStressLimit(1),
             mAugLagPenalty(0.1),

@@ -67,8 +67,9 @@ class InternalThermoelasticEnergy :
                           Omega_h::MeshSets& aMeshSets,
                           Plato::DataMap& aDataMap,
                           Teuchos::ParameterList& aProblemParams,
-                          Teuchos::ParameterList& aPenaltyParams ) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermoelastic Energy"),
+                          Teuchos::ParameterList& aPenaltyParams,
+                          std::string& aFunctionName ) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_indicatorFunction(aPenaltyParams),
             m_applyStressWeighting(m_indicatorFunction),
             m_applyFluxWeighting(m_indicatorFunction),

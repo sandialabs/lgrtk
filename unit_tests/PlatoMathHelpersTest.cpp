@@ -17,7 +17,7 @@
 
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/Mechanics.hpp"
-#include "plato/ScalarFunction.hpp"
+#include "plato/PhysicsScalarFunction.hpp"
 #include "plato/VectorFunction.hpp"
 #include "plato/ApplyProjection.hpp"
 #include "plato/HyperbolicTangentProjection.hpp"
@@ -243,9 +243,11 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixTimesVectorPlusVecto
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Elastic Energy'>                              \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                              \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
@@ -270,7 +272,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixTimesVectorPlusVecto
   //
   Plato::DataMap tDataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, tDataMap, *tParams, tParams->get<std::string>("Objective"));
 
   auto dfdx = eeScalarFunction.gradient_x(u,z);
