@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <hpc_macros.hpp>
 
 namespace hpc {
 
