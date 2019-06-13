@@ -199,20 +199,21 @@ struct FunctionFactory
                             Omega_h::MeshSets& aMeshSets,
                             Plato::DataMap& aDataMap,
                             Teuchos::ParameterList& aParamList,
-                            std::string strScalarFunctionType )
+                            std::string strScalarFunctionType,
+                            std::string aStrScalarFunctionName )
     /******************************************************************************/
     {
         if( strScalarFunctionType == "Internal Thermoelastic Energy" ){
-            auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+            auto penaltyParams = aParamList.sublist(aStrScalarFunctionName).sublist("Penalty Function");
             std::string penaltyType = penaltyParams.get<std::string>("Type");
             if( penaltyType == "SIMP" ){
-                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams);
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams, aStrScalarFunctionName);
             } else
             if( penaltyType == "RAMP" ){
-                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::RAMP>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams, aStrScalarFunctionName);
             } else
             if( penaltyType == "Heaviside" ){
-                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
+                return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::Heaviside>>(aMesh,aMeshSets,aDataMap,aParamList,penaltyParams, aStrScalarFunctionName);
             } else {
                 throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }

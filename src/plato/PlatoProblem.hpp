@@ -245,7 +245,7 @@ public:
     **********************************************************************************/
     Plato::Scalar constraintValue(const Plato::ScalarVector & aControl)
     {
-        if(mObjective == nullptr)
+        if(mConstraint == nullptr)
         {
             std::ostringstream tErrorMessage;
             tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
