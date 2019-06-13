@@ -72,7 +72,7 @@ void assign_element_materials(input const& in, state& s) {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
-  double const N = 1.0 / double(int(s.nodes_in_element.size()));
+  double const N = 1.0 / double(weaken(s.nodes_in_element.size()));
   auto const elements_to_centroids = centroid_vector.begin();
   auto centroid_functor = [=] HPC_DEVICE (element_index const element) {
     auto centroid = hpc::position<double>::zero();

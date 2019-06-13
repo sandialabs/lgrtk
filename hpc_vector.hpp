@@ -4,6 +4,7 @@
 #include <hpc_execution.hpp>
 #include <hpc_iterator.hpp>
 #include <hpc_algorithm.hpp>
+#include <hpc_index.hpp>
 
 namespace hpc {
 
@@ -92,22 +93,22 @@ public:
   T* data() noexcept { return m_data; }
   T const* data() const noexcept { return m_data; }
   iterator begin() noexcept {
-    return iterator(m_data, m_data, m_data + std::ptrdiff_t(m_size));
+    return iterator(m_data, m_data, m_data + m_size);
   }
   const_iterator begin() const noexcept {
-    return const_iterator(m_data, m_data, m_data + std::ptrdiff_t(m_size));
+    return const_iterator(m_data, m_data, m_data + m_size);
   }
   const_iterator cbegin() const noexcept {
-    return const_iterator(m_data, m_data, m_data + std::ptrdiff_t(m_size));
+    return const_iterator(m_data, m_data, m_data + m_size);
   }
   iterator end() noexcept {
-    return iterator(m_data + std::ptrdiff_t(m_size), m_data, m_data + std::ptrdiff_t(m_size));
+    return iterator(m_data + m_size, m_data, m_data + m_size);
   }
   const_iterator end() const noexcept {
-    return const_iterator(m_data + std::ptrdiff_t(m_size), m_data, m_data + std::ptrdiff_t(m_size));
+    return const_iterator(m_data + m_size, m_data, m_data + m_size);
   }
   const_iterator cend() const noexcept {
-    return const_iterator(m_data + std::ptrdiff_t(m_size), m_data, m_data + std::ptrdiff_t(m_size));
+    return const_iterator(m_data + m_size, m_data, m_data + m_size);
   }
   bool empty() const noexcept {
     return m_size == 0;
@@ -118,7 +119,7 @@ public:
       if (!std::is_trivially_destructible<value_type>::value) {
         ::hpc::destroy(m_execution_policy, *this);
       }
-      allocator_traits::deallocate(m_allocator, m_data, std::size_t(m_size));
+      allocator_traits::deallocate(m_allocator, m_data, std::size_t(hpc::weaken(m_size)));
     }
     m_data = nullptr;
     m_size = size_type(0);
@@ -131,7 +132,7 @@ public:
     }
     if (m_size == size_type(0)) {
       clear();
-      m_data = allocator_traits::allocate(m_allocator, std::size_t(count));
+      m_data = allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
       m_size = count;
       if (!std::is_trivially_constructible<T>::value) {
         ::hpc::uninitialized_default_construct(m_execution_policy, *this);
@@ -140,8 +141,8 @@ public:
     }
     auto const mid = ::hpc::min(m_size, count);
     auto const move_from_range = ::hpc::make_iterator_range(begin(), begin() + mid);
-    auto const new_data = allocator_traits::allocate(m_allocator, std::size_t(count));
-    iterator const new_begin(new_data, new_data, new_data + std::ptrdiff_t(count));
+    auto const new_data = allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
+    iterator const new_begin(new_data, new_data, new_data + count);
     auto const move_into_range = ::hpc::make_iterator_range(new_begin, new_begin + mid);
     ::hpc::move(m_execution_policy, move_from_range, move_into_range);
     clear();

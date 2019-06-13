@@ -48,18 +48,18 @@ class range_sum_iterator {
     return ret;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE range_sum_iterator& operator+=(difference_type const n) noexcept {
-    m_ptr += std::ptrdiff_t(n);
+    m_ptr = m_ptr + n;
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE range_sum_iterator& operator-=(difference_type const n) noexcept {
-    m_ptr -= std::ptrdiff_t(n);
+    m_ptr = m_ptr - n;
     return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr range_sum_iterator operator+(difference_type const n) const noexcept {
-    return range_sum_iterator(m_ptr + std::ptrdiff_t(n));
+    return range_sum_iterator(m_ptr + n);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr range_sum_iterator operator-(difference_type const n) const noexcept {
-    return range_sum_iterator(m_ptr - std::ptrdiff_t(n));
+    return range_sum_iterator(m_ptr - n);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type operator-(range_sum_iterator const& other) const noexcept {
     return difference_type(m_ptr - other.m_ptr);
