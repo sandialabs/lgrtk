@@ -8,7 +8,7 @@
 namespace lgr {
 
 void propagate_connectivity(state& s) {
-  node_element_index node_element_count(weaken(s.elements.size() * s.nodes_in_element.size()));
+  node_element_index node_element_count(hpc::weaken(s.elements.size() * s.nodes_in_element.size()));
   s.node_elements_to_elements.resize(node_element_count);
   s.node_elements_to_nodes_in_element.resize(node_element_count);
   hpc::device_vector<int, node_index> counts_vector(s.nodes.size());
@@ -79,8 +79,8 @@ HPC_NOINLINE inline void initialize_bars_to_nodes(state& s) {
   auto functor = [=] HPC_DEVICE (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     using l_t = node_in_element_index;
-    begin[element_nodes[l_t(0)]] = node_index(weaken(element));
-    begin[element_nodes[l_t(1)]] = node_index(weaken(element) + 1);
+    begin[element_nodes[l_t(0)]] = node_index(hpc::weaken(element));
+    begin[element_nodes[l_t(1)]] = node_index(hpc::weaken(element) + 1);
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
@@ -90,7 +90,7 @@ HPC_NOINLINE inline void initialize_x_1D(input const& in, state& s) {
   auto const num_nodes = s.nodes.size();
   auto const l = in.x_domain_size;
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    nodes_to_x[node] = hpc::position<double>(l * (double(weaken(node)) / (double(weaken(num_nodes)) - 1)), 0.0, 0.0);
+    nodes_to_x[node] = hpc::position<double>(l * (double(hpc::weaken(node)) / (double(hpc::weaken(num_nodes)) - 1)), 0.0, 0.0);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -98,7 +98,7 @@ HPC_NOINLINE inline void initialize_x_1D(input const& in, state& s) {
 static void build_bar_mesh(input const& in, state& s) {
   s.elements.resize(element_index(in.elements_along_x));
   s.nodes_in_element.resize(node_in_element_index(2));
-  s.nodes.resize(weaken(s.elements.size()) + 1);
+  s.nodes.resize(hpc::weaken(s.elements.size()) + 1);
   s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
   initialize_bars_to_nodes(s);
   s.x.resize(s.nodes.size());
@@ -147,8 +147,8 @@ HPC_NOINLINE inline void build_triangle_mesh(input const& in, state& s)
   auto const dx = x / double(nx);
   auto const dy = y / double(ny);
   auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
-    int const i = weaken(node) % nvx;
-    int const j = weaken(node) / nvx;
+    int const i = hpc::weaken(node) % nvx;
+    int const j = hpc::weaken(node) / nvx;
     nodes_to_x[node] = hpc::position<double>(double(i) * dx, double(j) * dy, 0.0);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
@@ -241,8 +241,8 @@ HPC_NOINLINE inline void build_tetrahedron_mesh(input const& in, state& s)
   auto const dy = y / double(ny);
   auto const dz = z / double(nz);
   auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
-    int const ij = weaken(node) % nvxy;
-    auto const k = double(weaken(node) / nvxy);
+    int const ij = hpc::weaken(node) % nvxy;
+    auto const k = double(hpc::weaken(node) / nvxy);
     auto const i = double(ij % nvx);
     auto const j = double(ij / nvx);
     nodes_to_x[node] = hpc::position<double>(i * dx, j * dy, k * dz);
@@ -370,8 +370,8 @@ HPC_NOINLINE inline void build_10_node_tetrahedron_mesh(input const& in, state& 
   auto const dy = y / (ny * 2.0);
   auto const dz = z / (nz * 2.0);
   auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
-    int const ij = weaken(node) % nvxy;
-    auto const k = double(weaken(node) / nvxy);
+    int const ij = hpc::weaken(node) % nvxy;
+    auto const k = double(hpc::weaken(node) / nvxy);
     auto const i = double(ij % nvx);
     auto const j = double(ij / nvx);
     nodes_to_x[node] = hpc::position<double>(i * dx, j * dy, k * dz);
