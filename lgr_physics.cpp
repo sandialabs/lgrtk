@@ -34,7 +34,10 @@ HPC_NOINLINE inline void update_u(state& s, hpc::time<double> const dt) {
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const old_u = nodes_to_u[node].load();
     auto const v = nodes_to_v[node].load();
-    nodes_to_u[node] = (dt * v) - old_u;
+    auto const u = (dt * v) - old_u;
+    if (node == 0 || node == 1) printf("node %d v %.17e u %.17e dt %.17e\n",
+        hpc::weaken(node), double(v(0)), double(u(0)), double(dt));
+    nodes_to_u[node] = u;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -48,6 +51,8 @@ HPC_NOINLINE inline void update_v(state& s, hpc::time<double> const dt,
     auto const old_v = nodes_to_old_v[node].load();
     auto const a = nodes_to_a[node].load();
     auto const v = old_v + dt * a;
+    if (node == 1) printf("update_v v %.17e old_v %.17e dt %.17e a %.17e\n",
+        double(v(0)), double(old_v(0)), double(dt), double(a(0)));
     nodes_to_v[node] = v;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -61,6 +66,7 @@ HPC_NOINLINE inline void update_a(state& s) {
     auto const f = nodes_to_f[node].load();
     auto const m = nodes_to_m[node];
     auto const a = f / m;
+    if (node == 1) printf("update_a f %.17e m %.17e a %.17e\n", f(0), m, a(0));
     nodes_to_a[node] = a;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -172,6 +178,7 @@ HPC_NOINLINE inline void update_element_dt(state& s) {
       auto const c_sq = c * c;
       auto const nu_art_sq = nu_art * nu_art;
       auto const dt = h_sq / (nu_art + sqrt(nu_art_sq + (c_sq * h_sq)));
+      if (point == 0) printf("h_min %.17e c %.17e nu_art %.17e\n", h_min, c, nu_art);
       assert(dt > 0.0);
       points_to_dt[point] = dt;
     }
@@ -188,6 +195,7 @@ HPC_NOINLINE inline void find_max_stable_dt(state& s)
       init,
       hpc::minimum<hpc::time<double>>(),
       hpc::identity<hpc::time<double>>());
+  assert(s.max_stable_dt < 1.0);
 }
 
 HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index const material) {
@@ -259,6 +267,8 @@ HPC_NOINLINE inline void update_element_force(state& s)
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const f = -(sigma * grad_N) * V;
+      if (point == 0) printf("pt/node %d f %.17e grad_N %.17e V %.17e\n",
+          point_node, f(0), grad_N(0), V);
       point_nodes_to_f[point_node] = f;
     }
   };
@@ -283,6 +293,8 @@ HPC_NOINLINE inline void update_nodal_force(state& s) {
         auto const point_nodes = points_to_point_nodes[point];
         auto const point_node = point_nodes[node_in_element];
         auto const point_f = point_nodes_to_f[point_node].load();
+        if (node == 1) printf("node_elem %d elem %d point %d node_in_element %d point_node %d f %.17e\n",
+            node_element, element, point, node_in_element, point_node, point_f(0));
         node_f = node_f + point_f;
       }
     }

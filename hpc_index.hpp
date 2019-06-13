@@ -5,10 +5,6 @@
 
 #include <hpc_macros.hpp>
 
-#ifndef NDEBUG
-#define HPC_STRONG_INDICES
-#endif
-
 namespace hpc {
 
 template <class Integral>

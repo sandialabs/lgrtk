@@ -58,7 +58,7 @@ advance(Iterator first,  typename std::iterator_traits<Iterator>::difference_typ
 template <class T, class Index = std::ptrdiff_t>
 class pointer_iterator {
   T* m_pointer;
-#ifndef NDEBUG
+#ifdef HPC_CHECK_BOUNDS
   T* m_allocation_begin;
   T* m_allocation_end;
 #endif
@@ -70,11 +70,11 @@ class pointer_iterator {
   using iterator_category = std::random_access_iterator_tag;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr pointer_iterator(T* pointer_in) noexcept
     :m_pointer(pointer_in)
-#ifndef NDEBUG
+#ifdef HPC_CHECK_BOUNDS
     ,m_allocation_begin(nullptr),m_allocation_end(pointer(nullptr) + ::hpc::numeric_limits<std::ptrdiff_t>::max())
 #endif
   {}
-#ifdef NDEBUG
+#ifndef HPC_CHECK_BOUNDS
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T*, T*) noexcept
     :m_pointer(pointer_in)
   {}
