@@ -5,7 +5,7 @@
 namespace lgr {
 
 inline double get_N(state& s) {
-  return 1.0 / double(weaken(s.nodes_in_element.size()));
+  return 1.0 / double(hpc::weaken(s.nodes_in_element.size()));
 }
 
 void update_p_h(state& s, hpc::time<double> const dt,

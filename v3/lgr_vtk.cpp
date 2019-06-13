@@ -81,7 +81,7 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
     hpc::pinned_vector<Quantity, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(weaken(qp)));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "SCALARS " << name << suffix << " double 1\n";
     stream << "LOOKUP_TABLE default\n";
     for (auto const e : elements) {
@@ -98,7 +98,7 @@ static void write_vtk_vectors(std::ostream& stream, char const* name,
     hpc::pinned_array_vector<hpc::vector3<Quantity>, point_index> const& vec) {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(weaken(qp)));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
