@@ -120,7 +120,7 @@ static void write_vtk_cell_data(std::ostream& stream, state const& s) {
   stream << "CELL_DATA " << int(s.elements.size()) << "\n";
 }
 
-void file_writer::operator()(
+void file_writer::write(
     input const& in,
     int const file_output_index,
     state const& s
