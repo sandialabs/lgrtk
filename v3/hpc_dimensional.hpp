@@ -4,10 +4,6 @@
 #include <hpc_matrix3x3.hpp>
 #include <hpc_symmetric3x3.hpp>
 
-#ifndef NDEBUG
-#define HPC_DIMENSIONAL_ANALYSIS
-#endif
-
 namespace hpc {
 
 template

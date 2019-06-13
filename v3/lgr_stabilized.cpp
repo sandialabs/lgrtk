@@ -33,7 +33,9 @@ void update_e_h(state& s, hpc::time<double> const dt,
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const e_h_dot = nodes_to_e_h_dot[node];
     auto const old_e_h = nodes_to_old_e_h[node];
+    assert(old_e_h > 0.0);
     auto const e_h = old_e_h + dt * e_h_dot;
+    assert(e_h > 0.0);
     nodes_to_e_h[node] = e_h;
   };
   hpc::for_each(hpc::device_policy(), s.node_sets[material], functor);

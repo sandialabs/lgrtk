@@ -64,6 +64,7 @@ void propagate_connectivity(state& s) {
         }
       }
       hpc::swap(node_elements_to_elements[node_element], node_elements_to_elements[min_node_element]);
+      hpc::swap(node_elements_to_nodes_in_element[node_element], node_elements_to_nodes_in_element[min_node_element]);
     }
     for (node_element_index i(*(node_elements.begin())); i < (*(node_elements.end())) - 1; ++i) {
       assert(node_elements_to_elements[i] < node_elements_to_elements[i + 1]);

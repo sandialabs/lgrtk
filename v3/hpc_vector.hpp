@@ -179,7 +179,11 @@ void copy(pinned_vector<T, Index> const& from, device_vector<T, Index>& to) {
   std::size_t const size = std::size_t(from.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
-  auto err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
+  auto err = cudaDeviceSynchronize();
+  assert(cudaSuccess == err);
+  err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyHostToDevice);
+  assert(cudaSuccess == err);
+  err = cudaDeviceSynchronize();
   assert(cudaSuccess == err);
 }
 
@@ -189,7 +193,11 @@ void copy(device_vector<T, Index> const& from, pinned_vector<T, Index>& to) {
   std::size_t const size = std::size_t(to.size());
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
-  auto err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
+  auto err = cudaDeviceSynchronize();
+  assert(cudaSuccess == err);
+  err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(T), cudaMemcpyDeviceToHost);
+  assert(cudaSuccess == err);
+  err = cudaDeviceSynchronize();
   assert(cudaSuccess == err);
 }
 

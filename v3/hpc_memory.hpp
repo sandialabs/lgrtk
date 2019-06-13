@@ -40,8 +40,10 @@ class device_allocator {
   }
   void deallocate(T* p, std::size_t) {
     auto err = cudaDeviceSynchronize();
+    (void)err;
     assert(err == cudaSuccess);
     err = cudaFree(p);
+    (void)err;
     assert(cudaSuccess == err);
   }
 };
@@ -72,8 +74,10 @@ class pinned_allocator {
   }
   void deallocate(T* p, std::size_t) {
     auto err = cudaDeviceSynchronize();
+    (void)err;
     assert(err == cudaSuccess);
     err = cudaFreeHost(p);
+    (void)err;
     assert(cudaSuccess == err);
   }
 };

@@ -898,10 +898,10 @@ int main() {
   if ((0)) lgr::swinging_cube(true);
   if ((0)) lgr::swinging_cube(false);
   if ((0)) lgr::twisting_column();
-  if ((0)) lgr::Noh_1D();
+  if ((1)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D(false,false);
   if ((0)) lgr::Noh_2D(true,false);
-  if ((1)) lgr::Noh_2D(true,true);
+  if ((0)) lgr::Noh_2D(true,true);
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
