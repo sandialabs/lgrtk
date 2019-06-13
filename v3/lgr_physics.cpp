@@ -770,7 +770,7 @@ void run(input const& in) {
       if (in.output_to_command_line) {
         std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
       }
-      output_file(in, file_output_index, s);
+      output_file.write(in, file_output_index, s);
       ++file_output_index;
       ++file_period_index;
       s.next_file_output_time = double(file_period_index) * file_output_period;
@@ -798,7 +798,7 @@ void run(input const& in) {
     if (in.output_to_command_line) {
       std::cout << "outputting last file n " << file_output_index << " time " << double(s.time) << "\n";
     }
-    output_file(in, file_output_index, s);
+    output_file.write(in, file_output_index, s);
   }
   if (in.output_to_command_line) {
     std::cout << "final time " << double(s.time) << "\n";
