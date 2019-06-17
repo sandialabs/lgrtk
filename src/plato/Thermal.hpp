@@ -153,7 +153,7 @@ struct FunctionFactory{
       return std::make_shared<Plato::ThermalFluxRate<EvaluationType>>(aMesh, aMeshSets, aDataMap,aParamList);
     } else
     if( strScalarFunctionType == "Internal Thermal Energy" ){
-      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      auto penaltyParams = aParamList.sublist(strScalarFunctionName).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
         return std::make_shared<Plato::InternalThermalEnergyInc<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams, strScalarFunctionName);
@@ -168,7 +168,7 @@ struct FunctionFactory{
       }
     } else
     if( strScalarFunctionType == "Temperature Average" ){
-      auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
+      auto penaltyParams = aParamList.sublist(strScalarFunctionName).sublist("Penalty Function");
       std::string penaltyType = penaltyParams.get<std::string>("Type");
       if( penaltyType == "SIMP" ){
         return std::make_shared<Plato::TemperatureAverageInc<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap,aParamList,penaltyParams, strScalarFunctionName);
