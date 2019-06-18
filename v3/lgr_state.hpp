@@ -2,77 +2,77 @@
 
 #include <map>
 
-#include <lgr_counting_range.hpp>
-#include <lgr_range_sum.hpp>
-#include <lgr_vector3.hpp>
-#include <lgr_matrix3x3.hpp>
-#include <lgr_symmetric3x3.hpp>
-#include <lgr_host_vector.hpp>
+#include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_device_vector.hpp>
 #include <lgr_material_set.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
 
 namespace lgr {
+
+using dp_de_t = decltype(hpc::pressure<double>() / hpc::specific_energy<double>());
+static_assert(std::is_same<dp_de_t, hpc::density<double>>::value, "dp_de should be a density");
 
 class state {
   public:
   int n = 0;
-  double time = 0.0;
-  counting_range<element_index> elements{element_index(0)};
-  counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
-  counting_range<node_index> nodes{node_index(0)};
-  counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
-  counting_range<point_index> points{point_index(0)};
-  mutable device_memory_pool devpool;
-  mutable pinned_memory_pool pinpool;
-  device_vector<node_index, element_node_index> elements_to_nodes{devpool};
-  range_sum<node_element_index, device_allocator<node_element_index>, node_index> nodes_to_node_elements{device_allocator<node_element_index>{devpool}};
-  device_vector<element_index, node_element_index> node_elements_to_elements{devpool};
-  device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element{devpool};
-  device_vector<vector3<double>, node_index> x{devpool}; // current nodal positions
-  device_vector<vector3<double>, node_index> u{devpool}; // nodal displacements since previous time state
-  device_vector<vector3<double>, node_index> v{devpool}; // nodal velocities
-  device_vector<double, point_index> V{devpool}; // measures (volume/area/length)
-  device_vector<vector3<double>, point_node_index> grad_N{devpool}; // gradients of basis functions
-  device_vector<matrix3x3<double>, point_index> F_total{devpool}; // deformation gradient since simulation start
-  device_vector<symmetric3x3<double>, point_index> sigma{devpool}; // Cauchy stress tensor
-  device_vector<symmetric3x3<double>, point_index> symm_grad_v{devpool}; // symmetrized gradient of velocity
-  device_vector<double, point_index> p{devpool}; // pressure at elements (output only!)
-  device_vector<vector3<double>, point_index> v_prime{devpool}; // fine-scale velocity
-  device_vector<vector3<double>, point_index> q{devpool}; // element-center heat flux
-  device_vector<double, point_node_index> W{devpool}; // work done, per element-node pair (contribution to a node's work by an element)
-  host_vector<device_vector<double, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure
-  host_vector<device_vector<double, node_index>, material_index> p_h; // stabilized nodal pressure
-  device_vector<double, point_index> K{devpool}; // (tangent/effective) bulk modulus
-  host_vector<device_vector<double, node_index>, material_index> K_h; // (tangent/effective) bulk modulus at nodes
-  device_vector<double, point_index> G{devpool}; // (tangent/effective) shear modulus
-  device_vector<double, point_index> c{devpool}; // sound speed / plane wave speed
-  device_vector<vector3<double>, point_node_index> element_f{devpool}; // (internal) force per element-node pair (contribution to a node's force by an element)
-  device_vector<vector3<double>, node_index> f{devpool}; // nodal (internal) forces
-  device_vector<double, point_index> rho{devpool}; // element density
-  device_vector<double, point_index> e{devpool}; // element specific internal energy
-  device_vector<double, point_index> rho_e_dot{devpool}; // time derivative of internal energy density
-  device_vector<double, node_index> mass{devpool}; // total lumped nodal mass
-  host_vector<device_vector<double, node_index>, material_index> material_mass; // per-material lumped nodal mass
-  device_vector<vector3<double>, node_index> a{devpool}; // nodal acceleration
-  device_vector<double, element_index> h_min{devpool}; // minimum characteristic element length, used for stable time step
-  device_vector<double, element_index> h_art{devpool}; // characteristic element length used for artificial viscosity
-  device_vector<double, point_index> nu_art{devpool}; // artificial kinematic viscosity scalar
-  device_vector<double, point_index> element_dt{devpool}; // stable time step of each element
-  host_vector<device_vector<double, node_index>, material_index> e_h; // nodal specific internal energy
-  host_vector<device_vector<double, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy
-  host_vector<device_vector<double, node_index>, material_index> rho_h; // nodal density
-  host_vector<device_vector<double, node_index>, material_index> dp_de_h; // nodal derivative of pressure with respect to energy, at constant density
-  device_vector<material_index, element_index> material{devpool}; // element material
-  device_vector<material_set, node_index> nodal_materials{devpool}; // nodal material set
-  device_vector<double, element_index> quality{devpool}; // inverse element quality
-  device_vector<double, node_index> h_adapt{devpool}; // desired edge length
-  host_vector<device_vector<node_index, int>, material_index> node_sets;
-  host_vector<device_vector<element_index, int>, material_index> element_sets;
-  double next_file_output_time;
-  double dt = 0.0;
-  double max_stable_dt;
-  double min_quality;
+  hpc::time<double> time = 0.0;
+  hpc::counting_range<element_index> elements{element_index(0)};
+  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
+  hpc::counting_range<node_index> nodes{node_index(0)};
+  hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
+  hpc::counting_range<point_index> points{point_index(0)};
+  hpc::device_vector<node_index, element_node_index> elements_to_nodes;
+  hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
+  hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
+  hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;
+  hpc::device_array_vector<hpc::position<double>, node_index> x; // current nodal positions
+  hpc::device_array_vector<hpc::displacement<double>, node_index> u; // nodal displacements since previous time state
+  hpc::device_array_vector<hpc::velocity<double>, node_index> v; // nodal velocities
+  hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes
+  hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
+  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total; // deformation gradient since simulation start
+  hpc::device_array_vector<hpc::symmetric_stress<double>, point_index> sigma; // Cauchy stress tensor
+  hpc::device_array_vector<hpc::symmetric_velocity_gradient<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
+  hpc::device_vector<hpc::pressure<double>, point_index> p; // pressure at elements (output only!)
+  hpc::device_array_vector<hpc::velocity<double>, point_index> v_prime; // fine-scale velocity
+  hpc::device_vector<hpc::pressure<double>, point_index> p_prime; // fine-scale pressure
+  hpc::device_array_vector<hpc::heat_flux<double>, point_index> q; // element-center heat flux
+  hpc::device_vector<hpc::power<double>, point_node_index> W; // work done, per element-node pair (contribution to a node's work by an element)
+  hpc::host_vector<hpc::device_vector<hpc::pressure_rate<double>, node_index>, material_index> p_h_dot; // time derivative of stabilized nodal pressure
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> p_h; // stabilized nodal pressure
+  hpc::device_vector<hpc::pressure<double>, point_index> K; // (tangent/effective) bulk modulus
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> K_h; // (tangent/effective) bulk modulus at nodes
+  hpc::device_vector<hpc::pressure<double>, point_index> G; // (tangent/effective) shear modulus
+  hpc::device_vector<hpc::speed<double>, point_index> c; // sound speed / plane wave speed
+  hpc::device_array_vector<hpc::force<double>, point_node_index> element_f; // (internal) force per element-node pair (contribution to a node's force by an element)
+  hpc::device_array_vector<hpc::force<double>, node_index> f; // nodal (internal) forces
+  hpc::device_vector<hpc::density<double>, point_index> rho; // element density
+  hpc::device_vector<hpc::specific_energy<double>, point_index> e; // element specific internal energy
+  hpc::device_vector<hpc::energy_density_rate<double>, point_index> rho_e_dot; // time derivative of internal energy density
+  hpc::device_vector<hpc::mass<double>, node_index> mass; // total lumped nodal mass
+  hpc::host_vector<hpc::device_vector<hpc::mass<double>, node_index>, material_index> material_mass; // per-material lumped nodal mass
+  hpc::device_array_vector<hpc::acceleration<double>, node_index> a; // nodal acceleration
+  hpc::device_vector<hpc::length<double>, element_index> h_min; // minimum characteristic element length, used for stable time step
+  hpc::device_vector<hpc::length<double>, element_index> h_art; // characteristic element length used for artificial viscosity
+  hpc::device_vector<hpc::kinematic_viscosity<double>, point_index> nu_art; // artificial kinematic viscosity scalar
+  hpc::device_vector<hpc::time<double>, point_index> element_dt; // stable time step of each element
+  hpc::host_vector<hpc::device_vector<hpc::specific_energy<double>, node_index>, material_index> e_h; // nodal specific internal energy
+  hpc::host_vector<hpc::device_vector<hpc::specific_energy_rate<double>, node_index>, material_index> e_h_dot; // time derivative of nodal specific internal energy
+  hpc::host_vector<hpc::device_vector<hpc::density<double>, node_index>, material_index> rho_h; // nodal density
+  hpc::host_vector<hpc::device_vector<dp_de_t, node_index>, material_index> dp_de_h; // nodal derivative of pressure with respect to energy, at constant density
+  hpc::device_vector<material_index, element_index> material; // element material
+  hpc::device_vector<material_set, node_index> nodal_materials; // nodal material set
+  hpc::device_vector<hpc::dimensionless<double>, element_index> quality; // inverse element quality
+  hpc::device_vector<hpc::length<double>, node_index> h_adapt; // desired edge length
+  hpc::host_vector<hpc::device_vector<node_index, int>, material_index> node_sets;
+  hpc::host_vector<hpc::device_vector<element_index, int>, material_index> element_sets;
+  hpc::time<double> next_file_output_time;
+  hpc::time<double> dt = 0.0;
+  hpc::time<double> max_stable_dt;
+  hpc::dimensionless<double> min_quality;
 };
 
 class input;
