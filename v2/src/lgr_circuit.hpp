@@ -11,168 +11,146 @@ namespace lgr {
 class Circuit
 {
    private:
-      // Node counts:
-      int nNum; // Total number of nodes (includes grounds)
-      int gNum; // Number of grounds
-
-      // Element counts:
-      int eNum; // Total number of elements
-      int rNum; // Number of resistors
-      int vNum; // Number of voltage sources
-      int cNum; // Number of capacitors
-
+      // Node counts
+      int nNum;    // Total number of nodes (includes grounds)
+      int gNum;    // Number of grounds (V = 0)
       int gNumMax; // Max node number of ground nodes
       int nNumMin; // Minimum overall node number
 
+      // Element counts
+      int eNum;  // Total number of elements
+      int rNum;  // Number of resistors
+      int cNum;  // Number of capacitors
+      int lNum;  // Number of inductors
+      int vNum;  // Number of constraints
       int eMesh; // Mesh element number
 
-      // Element type integers:
-      const int ETYPE_RESISTOR = 1;
-      const int ETYPE_CAPACITOR = 2;
-      const int ETYPE_VSOURCE = 3;
-
-      // Matrix information:
-      //    The system being solved is:
-      //
-      //                   dx
-      //       A * x + B * -- = r
-      //                   dt
-      //
-      //    * Note that for x', we use a simple backward difference method by saving
-      //      the previous time steps solution. This only comes into play from capacitors
-      //
-      //    * To start, initial voltage across capacitor is required. As a result, we initially
-      //      solve:
-      //
-      //       A * x = r
-      //
-      //      where the inital specified voltage across the capacitors are treated as a voltage source
-      //    
-      //
-      //    A[i][j]:
-      //       * Conducatance matrix from resistors
-      //       * Also stores voltage drop constraint when present
-      //
-      //       * 0 <= i < nNum - gNum:
-      //          - i equation is a KCL equation for (i + nNumMin) node, excluding grounds
-      //       * nNum - gNum <= i < NA:
-      //          - i equation is a voltage drop equation constraint at node (i + nNumMin)
-      //       * 0 <= j < nNum - gNum:
-      //          - j corresponds to unknown voltage for (j + nNumMin) node, excluding grounds
-      //       * nNum - gNum <= j < NA:
-      //          - j corresponds to unknown current that flows through nodes (j + nNumMin) and (i + nNumMin)
-      //    B[i][j]:
-      //       * Capacitance matrix from capacitors
-      //       * Does NOT store voltages; capacitors with given voltage are treated as voltage drop constraint in A
-      //       * Similar ordering and interpretation as A[][]
-      //    r[i]:
-      //       * System right side forcing for (i + nNumMin) node
-      //    x[j]:
-      //       * System solution
-      //       * 0 <= j < nNum - gNum: Voltage, due to KCL
-      //       * nNum - gNum <= j < NA: Current, due to voltage constraint
-      int NA;
-      MediumMatrix A, B;
-      MediumVector r, x;
-//    double **A, **B;  
-//    double *r, *x;
-
-      // When solution is advanced in time, dt is used
+      // Time step to advance circuit by (L/C only)
       double dt;
 
-      // When true or false, the second and first equations above are solved, respectuflly
-      bool solveOnly;
-      // When true, the pointer array memory will be created
+      // Logic switches
       bool firstCall;
-      // When true, the user has specified a mesh
       bool usingMesh;
-      // When true, the user has specified a circuit
       bool usingCircuit;
 
-      // Element and node maps:
-      //    i: element number (0 <= i < eNum)
-      //    j: node number (0 <= i < 2)
-      //
-      // enMap[i][j]:
-      //    * Given i element, gives nodes across it
-      std::vector< std::vector<int> > enMap;
-      //
-      // eType[i]:
-      //    * Given i element, gives what type it is
-      std::vector<int> eType;
-      //
-      // eValMap[i]:
-      //    * Given i element, what xVal is stored
-      //    * Must check eType[i] first to see what element
-      //      list to look at:
-      //      
-      //       l = eType[i]
-      //       m = eValMap[i]
-      //
-      //       if l == ETYPE_RESISTOR:
-      //          rVal[m] gives conductance of resistor
-      //       if l == ETYPE_CAPACITOR:
-      //          cVal[m] gives capacitance of capacitor
-      //          v0Val[m][0] gives specified initial voltage at node enMap[i][0]
-      //          v0Val[m][1] gives specified initial voltage at node enMap[i][1]
-      //       if l == ETYPE_VSOURCE:
-      //          vVal[m][0] gives specified initial voltage at node enMap[i][0]
-      //          vVal[m][1] gives specified initial voltage at node enMap[i][1]
-      std::vector<int> eValMap;
-      std::vector<int> eNumMap;
-      std::vector<double> rVal;
-      std::vector<double> cVal;
-      std::vector< std::vector<double> > vVal;
-      std::vector< std::vector<double> > v0Val;
+      // Element types
+      const int ETYPE_RESISTOR  = 1;
+      const int ETYPE_CAPACITOR = 2;
+      const int ETYPE_INDUCTOR  = 3;
 
-      // gNodes[k]:
-      //    * 0 <= k < gNum ground node number list
+      // Nearly zero number
+      const double rthresh = 1E-12;
+
+      // Full assembled matrix/vectors: (N + M) * x = NM * x = b
+      int nmat_size;
+      MediumMatrix N_matrix;
+      MediumMatrix M_matrix;
+      MediumMatrix NM_matrix;
+      MediumVector b_vector;
+      MediumVector x_vector;
+
+      // Non-square matricies/vectors
+      std::vector< std::vector<int> > AR_matrix;
+      std::vector< std::vector<double> > G_matrix;
+      std::vector< std::vector<int> > AC_matrix;
+      std::vector< std::vector<double> > C_matrix;
+      std::vector< std::vector<int> > AL_matrix;
+      std::vector< std::vector<double> > L_matrix;
+      std::vector< std::vector<int> > AV_matrix;
+      std::vector<double> V_vector;
+      std::vector<double> I_vector;
+
+      // Various element/node maps
+      std::vector< std::vector<int> > enMap; // Element to node
+      std::vector<int> eType;                // Element type
+      std::vector<int> eValMap;              // Element to value map
+      std::vector<int> eNumMap;              // Element to user number map
+      std::vector<double> rVal;              // Resistance values
+      std::vector<double> cVal;              // Capacitance values
+      std::vector<double> lVal;              // Inductance values
+
+      // Fixed voltage and/or current nodes
+      std::vector<double> fvVals; // fixed voltage values
+      std::vector<int> fvNodes;   // fixed voltage nodes
+      std::vector<double> fiVals; // fixed current values
+      std::vector<int> fiNodes;   // fixed current nodes
+
+      // Initial voltage and/or current nodes
+      std::vector<double> ivVals; // initial voltage values
+      std::vector<int> ivNodes;   // initial voltage nodes
+      std::vector<double> iiVals; // initial current values
+      std::vector<int> iiNodes;   // initial current nodes
+
+      // Ground node list
       std::vector<int> gNodes;
 
-      void Initialize();
+      // Specifying circuit
       void AddElement(std::string eTypein, int &e);
       void AddNodes(std::vector<int> &nodes);
       void AddConductance(double &data);
       void AddCapacitance(double &data);
-      void AddVoltage(std::vector<double> &data);
-      void AddCVoltage(std::vector<double> &data);
-      void AddGround(double &data);
+      void AddInductance(double &data);
+
+      // Setup routines
+      template <typename T> T
+      ConvertNodeToEq(int node);
       void ComponentMap();
       void NodeCount();
-      void AssembleMatrix();
-      void SolveMatrix();
-
+      void UpdateGrounds();
+      void UpdateMatrixSize();
       void ParseYAML(Omega_h::InputMap& pl);
 
+      // Solve routines
+      void AssembleMatrix();
+         void ZeroMatrix();
+         void AssembleRMatrix();
+         void AssembleCMatrix();
+         void AssembleLMatrix();
+         void AssembleSourceMatrix();
+         void AssembleNMatrix();
+         void ModifyCEquation();
+         void AssembleMMatrix();
+         void AssembleNMMatrix();
+         void AssemblebVector();
+      void SolveMatrix();
+
+
    public:
+      // Constructors
       Circuit();
       ~Circuit();
+
+      // Typical user interaction with circuit routines
       void Setup(Omega_h::InputMap& pl);
-      void Setup();
-      void SayInfo();
-      void SayMatrix();
-      void SayVoltages();
+      void Solve(double dtin); 
+      double GetNodeVoltage(int nodein); 
+      double GetMeshAnodeVoltage(); 
+      double GetMeshCathodeVoltage(); 
+      void SetElementConductance(int e, double c); 
+      void SetMeshConductance(double c); 
 
-      void Solve(); // Initial solve without advance in time
-      void Solve(double dtin); // Solve with advance in time
-      double GetNodeVoltage(int nodein); // Measure voltage at user specified node
-      double GetMeshAnodeVoltage(); // Measure voltage at mesh anode
-      double GetMeshCathodeVoltage(); // Get voltage at mesh cathode
-      void SetElementConductance(int e, double c); // Change resistor conductance of user specified element e to c , where e is in the list of eNumMap[]
-      void SetMeshConductance(double c); // Change mesh conductance of eMesh element
-
+      // Count Number of components
       int GetNumNodes();
       int GetNumElements();
       int GetNumResistors();
       int GetNumCapacitors();
-      int GetNumVSources();
+      int GetNumInductors();
       int GetNumGrounds();
 
-      void AddGroundsUser(std::vector<int> &nodes);
-      void AddMeshUser(int &e);
-      void AddResistorUser(int &e, std::vector<int> &nodes, double &con);
-      void AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap, std::vector<double> &v0);
-      void AddVSourceUser(int &e, std::vector<int> &nodes, std::vector<double> &v);
+      // Routines below used for testing
+      void Setup();
+      void AddMeshUser     (int &e);
+      void AddResistorUser (int &e, std::vector<int> &nodes, double &con);
+      void AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap);
+      void AddInductorUser (int &e, std::vector<int> &nodes, double &ind);
+      void AddFixedVUser   (std::vector<int> &nodes, std::vector<double> &vals);
+      void AddInitialVUser (std::vector<int> &nodes, std::vector<double> &vals);
+      void AddFixedIUser   (std::vector<int> &nodes, std::vector<double> &vals);
+      void AddInitialIUser (std::vector<int> &nodes, std::vector<double> &vals);
+
+      void SayInfo();
+      void SayMatrix();
+      void SayVoltages();
 };
 
 }  // namespace lgr

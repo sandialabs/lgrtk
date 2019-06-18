@@ -7,23 +7,24 @@ namespace lgr {
 Circuit::Circuit()
 {
    nNum    = 0;
-   eNum    = 0;
-   rNum    = 0;
-   vNum    = 0;
-   cNum    = 0;
    gNum    = 0;
-
    gNumMax = 0;
    nNumMin = 0;
 
-   eMesh = -1; // < 0 means mesh isn't set yet
+   eNum    = 0;
+   rNum    = 0;
+   cNum    = 0;
+   lNum    = 0;
+   vNum    = 0;
+   eMesh   = -1; // < 0 => not yet set
 
-   NA      = 0;
+   dt = 0.0;
 
-   solveOnly    = true;
    firstCall    = true;
    usingCircuit = false;
    usingMesh    = false;
+
+   nmat_size = 0;
 }
 
 Circuit::~Circuit()
@@ -31,33 +32,41 @@ Circuit::~Circuit()
 }
 
 void Circuit::AddResistorUser(int &e, std::vector<int> &nodes, double &con) {
-
    AddElement("resistor",e);
    AddNodes(nodes);
    AddConductance(con);
 }
 
-void Circuit::AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap, std::vector<double> &v0) {
-
+void Circuit::AddCapacitorUser(int &e, std::vector<int> &nodes, double &cap) {
    AddElement("capacitor",e);
    AddNodes(nodes);
    AddCapacitance(cap);
-   AddCVoltage(v0);
 }
 
-void Circuit::AddVSourceUser(int &e, std::vector<int> &nodes, std::vector<double> &v) {
-
-   AddElement("vsource",e);
+void Circuit::AddInductorUser(int &e, std::vector<int> &nodes, double &ind) {
+   AddElement("inductor",e);
    AddNodes(nodes);
-   AddVoltage(v);
+   AddInductance(ind);
 }
 
-void Circuit::AddGroundsUser(std::vector<int> &nodes) {
+void Circuit::AddFixedVUser(std::vector<int> &nodes, std::vector<double> &vals) {
+   fvNodes = nodes;
+   fvVals  = vals;
+}
 
-  std::size_t nadd = nodes.size();
-   for (std::size_t i=0;i<nadd;i++) {
-      gNodes.push_back(nodes[i]);
-   }
+void Circuit::AddInitialVUser(std::vector<int> &nodes, std::vector<double> &vals) {
+   ivNodes = nodes;
+   ivVals  = vals;
+}
+
+void Circuit::AddFixedIUser(std::vector<int> &nodes, std::vector<double> &vals) {
+   fiNodes = nodes;
+   fiVals  = vals;
+}
+
+void Circuit::AddInitialIUser(std::vector<int> &nodes, std::vector<double> &vals) {
+   iiNodes = nodes;
+   iiVals  = vals;
 }
 
 void Circuit::AddMeshUser(int &e) {
@@ -65,194 +74,6 @@ void Circuit::AddMeshUser(int &e) {
    eMesh = e;
 }
 
-void Circuit::Setup(Omega_h::InputMap& pl)
-{
-   ParseYAML(pl);
-   Setup();
-}
-
-void Circuit::Setup()
-{
-   Initialize();
-   Solve();
-   SayVoltages();
-}
-
-double Circuit::GetMeshAnodeVoltage()
-{
-   if (!usingMesh) return 0.0;
-
-   int efind = -1;
-   try {
-      for (int i=0;i<eNum;i++) {
-         if (eNumMap[std::size_t(i)] == eMesh) {
-            efind = i;
-            break;
-         }
-      }
-      if (efind < 0) {
-         throw 1; // Invalid mesh element number
-      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
-         throw 2; // Valid element number, but e is not resistor and thus not a mesh
-      } 
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve GetMeshAnodeVoltage() execption " << ex << std::endl;
-   }
-
-   return GetNodeVoltage(enMap[std::size_t(efind)][1]);
-}
-
-double Circuit::GetMeshCathodeVoltage()
-{
-   if (!usingMesh) return 0.0;
-
-   int efind = -1;
-   try {
-      for (int i=0;i<eNum;i++) {
-         if (eNumMap[std::size_t(i)] == eMesh) {
-            efind = i;
-            break;
-         }
-      }
-      if (efind < 0) {
-         throw 1; // Invalid mesh element number
-      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
-         throw 2; // Valid element number, but e is not resistor and thus not a mesh
-      }
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve GetMeshCathodVoltage() execption " << ex << std::endl;
-   }
-
-   return GetNodeVoltage(enMap[std::size_t(efind)][0]);
-}
-
-double Circuit::GetNodeVoltage(int nodein)
-{
-
-   try {
-      if (nodein < nNumMin || nodein >= nNumMin + nNum) {
-         throw 1; // Invalid node number
-      }
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve GetNodeVoltage() execption " << ex << std::endl;
-   }
-   int iflg = 0;
-   for (int i=0; i<gNum; i++) {
-      if (nodein == gNodes[std::size_t(i)]) {
-         iflg = 1;
-         break;
-      }
-   }
-
-   double voltage;
-   if (iflg == 1) {
-      voltage = 0.0; 
-   } else {
-      if (nodein >= gNumMax) nodein = nodein - gNum;
-      voltage = x(nodein - nNumMin);
-   }
-
-  return voltage;
-}
-
-void Circuit::SetElementConductance(int e, double c)
-{
-   int efind = -1;
-   try {
-      for (int i=0;i<eNum;i++) {
-         if (eNumMap[std::size_t(i)] == e) {
-            efind = i;
-            break;
-         }
-      }
-      if (efind < 0) {
-         throw 1; // Invalid element number
-      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
-         throw 2; // Valid element number, but e is not resistor
-      } else if (c <= 0) {
-         throw 3; // Invalid capacitance
-      }
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve SetElementConductance() execption " << ex << std::endl;
-   }
-
-   rVal[std::size_t(eValMap[std::size_t(efind)])] = c;
-}
-
-void Circuit::SetMeshConductance(double c)
-{
-   if (usingMesh) SetElementConductance(eMesh, c);
-}
-
-int Circuit::GetNumNodes()
-{
-   return nNum;
-}
-
-int Circuit::GetNumElements()
-{
-   return eNum;
-}
-
-int Circuit::GetNumResistors()
-{
-   return rNum;
-}
-
-int Circuit::GetNumCapacitors()
-{
-   return cNum;
-}
-
-int Circuit::GetNumVSources()
-{
-   return vNum;
-}
-
-int Circuit::GetNumGrounds()
-{
-   return gNum;
-}
-
-void Circuit::Initialize()
-{
-   // firstCall means we can't add components but
-   // only edit them after first Setup()
-   if ((eNum > 0) && (firstCall)) {
-      ComponentMap();
-      NodeCount();
-   }
-   SayInfo();
-}
-
-void Circuit::Solve()
-{
-   AssembleMatrix();
-   SolveMatrix();
-}
-
-void Circuit::Solve(double dtin)
-{
-   try {
-      if (dtin <= 0) {
-         throw 1; // Invalid time step
-      }
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve Solve() execption " << ex << std::endl;
-   }
-   dt = dtin;
-
-   solveOnly = false;
-   Solve();
-   solveOnly = true;
-}
-
-  
 void Circuit::ParseYAML(Omega_h::InputMap& pl)
 {
 
@@ -260,13 +81,79 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
       // Alright, we do have a circuit in the yaml file
       auto& circuit_pl = pl.get_map("circuit");
 
-      // Ground specification
-      if (circuit_pl.is_list("ground nodes")) {
-         auto& gNodes_pl = circuit_pl.get_list("ground nodes");
-         for (int i=0; i < gNodes_pl.size(); i++) {
-            gNodes.push_back(gNodes_pl.get<int>(i));
-         }
-      } // gNodes_pl
+      // Fixed
+      if (circuit_pl.is_map("fixed")) {
+         auto& fixedv_pl = circuit_pl.get_map("fixed");
+
+         // Add voltage nodes
+         if (fixedv_pl.is_list("voltage nodes")){
+            auto& fvn_pl = fixedv_pl.get_list("voltage nodes");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               fvNodes.push_back(fvn_pl.get<int>(j));
+            }
+         } 
+
+         // Add voltage values
+         if (fixedv_pl.is_list("voltage values")){
+            auto& fvn_pl = fixedv_pl.get_list("voltage values");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               fvVals.push_back(fvn_pl.get<double>(j));
+            }
+         } 
+
+         // Add current nodes
+         if (fixedv_pl.is_list("current nodes")){
+            auto& fvn_pl = fixedv_pl.get_list("current nodes");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               fiNodes.push_back(fvn_pl.get<int>(j));
+            }
+         } 
+
+         // Add current values
+         if (fixedv_pl.is_list("current values")){
+            auto& fvn_pl = fixedv_pl.get_list("current values");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               fiVals.push_back(fvn_pl.get<double>(j));
+            }
+         } 
+      }
+
+      // Initial
+      if (circuit_pl.is_map("initial")) {
+         auto& fixedv_pl = circuit_pl.get_map("initial");
+
+         // Add voltage nodes
+         if (fixedv_pl.is_list("voltage nodes")){
+            auto& fvn_pl = fixedv_pl.get_list("voltage nodes");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               ivNodes.push_back(fvn_pl.get<int>(j));
+            }
+         } 
+
+         // Add voltage values
+         if (fixedv_pl.is_list("voltage values")){
+            auto& fvn_pl = fixedv_pl.get_list("voltage values");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               ivVals.push_back(fvn_pl.get<double>(j));
+            }
+         } 
+
+         // Add current nodes
+         if (fixedv_pl.is_list("current nodes")){
+            auto& fvn_pl = fixedv_pl.get_list("current nodes");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               iiNodes.push_back(fvn_pl.get<int>(j));
+            }
+         } 
+
+         // Add current values
+         if (fixedv_pl.is_list("current values")){
+            auto& fvn_pl = fixedv_pl.get_list("current values");
+            for (int j=0; j < fvn_pl.size(); j++) {
+               iiVals.push_back(fvn_pl.get<double>(j));
+            }
+         } 
+      }
 
       // Mesh element number
       if (circuit_pl.is<int>("mesh element")) {
@@ -347,259 +234,718 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                    double ccval = static_cast<double>(cmap_pl.get<int>("capacitance"));
                    AddCapacitance(ccval);
                 }
-
-                // Add capacitor initial voltage
-                if (cmap_pl.is_list("initial voltage")){
-                
-                   auto& cvnodes_pl = cmap_pl.get_list("initial voltage");
-                   std::vector<double> cvnodes;
-                   for (int j=0; j < cvnodes_pl.size(); j++) {
-                      if (cvnodes_pl.is<double>(j)) {
-                         cvnodes.push_back(cvnodes_pl.get<double>(j));
-                      } else if (cvnodes_pl.is<int>(j)) {
-                         int val = cvnodes_pl.get<int>(j);
-                         double rval = 1.0*val;
-                         cvnodes.push_back(rval);
-                      }
-                   }
-                
-                   AddCVoltage(cvnodes);
-                } 
             }
          }
       } // capacitors
 
-      // Voltage sources
-      if (circuit_pl.is_list("voltage sources")) {
-         auto& vsources_pl = circuit_pl.get_list("voltage sources");
+      // Inductors
+      if (circuit_pl.is_list("inductors")) {
+         auto& inductors_pl = circuit_pl.get_list("inductors");
 
-         for (int i=0; i < vsources_pl.size(); i++) {
-            if (vsources_pl.is_map(i)) {
-                auto& vmap_pl = vsources_pl.get_map(i);
+         for (int i=0; i < inductors_pl.size(); i++) {
+            if (inductors_pl.is_map(i)) {
+                auto& cmap_pl = inductors_pl.get_map(i);
 
                 // Add element number
-                if (vmap_pl.is<int>("element")) {
-                   int e = vmap_pl.get<int>("element");
-                   AddElement("vsource",e);
+                if (cmap_pl.is<int>("element")) {
+                   int e = cmap_pl.get<int>("element");
+                   AddElement("inductor",e);
                 }
 
-                // Add voltage nodes
-                if (vmap_pl.is_list("nodes")){
+                // Add capacitor nodes
+                if (cmap_pl.is_list("nodes")){
                 
-                   auto& vnodes_pl = vmap_pl.get_list("nodes");
-                   std::vector<int> vnodes;
-                   for (int j=0; j < vnodes_pl.size(); j++) {
-                      vnodes.push_back(vnodes_pl.get<int>(j));
+                   auto& cnodes_pl = cmap_pl.get_list("nodes");
+                   std::vector<int> cnodes;
+                   for (int j=0; j < cnodes_pl.size(); j++) {
+                      cnodes.push_back(cnodes_pl.get<int>(j));
                    }
                 
-                   AddNodes(vnodes);
+                   AddNodes(cnodes);
                 } 
 
-                // Add voltage source voltage
-                if (vmap_pl.is_list("voltage")){
-                
-                   auto& vvnodes_pl = vmap_pl.get_list("voltage");
-                   std::vector<double> vvnodes;
-                   for (int j=0; j < vvnodes_pl.size(); j++) {
-                      if (vvnodes_pl.is<double>(j)) {
-                         vvnodes.push_back(vvnodes_pl.get<double>(j));
-                      } else if (vvnodes_pl.is<int>(j)) {
-                         int val = vvnodes_pl.get<int>(j);
-                         double rval = 1.0*val;
-                         vvnodes.push_back(rval);
-                      }
-                   }
-                
-                   AddVoltage(vvnodes);
+                // Add inductor inductance
+                if (cmap_pl.is<double>("inductance")) {
+                   double ccval = cmap_pl.get<double>("inductance");
+                   AddInductance(ccval);
                 } 
+                if (cmap_pl.is<int>("inductance")) {
+                   double ccval = static_cast<double>(cmap_pl.get<int>("inductance"));
+                   AddInductance(ccval);
+                }
             }
          }
-      } // voltage sources
-
+      } // Inductors
    } // Circuit
 }
 
-void Circuit::AssembleMatrix()
+double Circuit::GetMeshAnodeVoltage()
 {
+   if (!usingMesh) return 0.0;
 
-   // Matrix sizes
-   if (solveOnly) {
-      NA = nNum - gNum + vNum + cNum; 
-   } else {
-      // Note that NA:NA+cNum are not being used this time around although they're there
-      NA = nNum - gNum + vNum; 
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[std::size_t(i)] == eMesh) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid mesh element number
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor and thus not a mesh
+      } 
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetMeshAnodeVoltage() execption " << ex << std::endl;
    }
 
-   if (NA > 0) usingCircuit = true;
+   return GetNodeVoltage(enMap[std::size_t(efind)][1]);
+}
+
+double Circuit::GetMeshCathodeVoltage()
+{
+   if (!usingMesh) return 0.0;
+
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[std::size_t(i)] == eMesh) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid mesh element number
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor and thus not a mesh
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetMeshCathodVoltage() execption " << ex << std::endl;
+   }
+
+   return GetNodeVoltage(enMap[std::size_t(efind)][0]);
+}
+
+double Circuit::GetNodeVoltage(int nodein)
+{
+
+   try {
+      if (nodein < nNumMin || nodein >= nNumMin + nNum) {
+         throw 1; // Invalid node number
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetNodeVoltage() execption " << ex << std::endl;
+   }
+   int iflg = 0;
+   for (int i=0; i<gNum; i++) {
+      if (nodein == gNodes[std::size_t(i)]) {
+         iflg = 1;
+         break;
+      }
+   }
+
+   double voltage;
+   if (iflg == 1) {
+      voltage = 0.0; 
+   } else {
+      int ieqn = ConvertNodeToEq<int>(nodein);
+      voltage = x_vector(ieqn);
+   }
+
+  return voltage;
+}
+
+void Circuit::SetElementConductance(int e, double c)
+{
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[std::size_t(i)] == e) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid element number
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor
+      } else if (c <= 0) {
+         throw 3; // Invalid capacitance
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve SetElementConductance() execption " << ex << std::endl;
+   }
+
+   rVal[std::size_t(eValMap[std::size_t(efind)])] = c;
+}
+
+void Circuit::SetMeshConductance(double c)
+{
+   if (usingMesh) SetElementConductance(eMesh, c);
+}
+
+int Circuit::GetNumNodes()
+{
+   return nNum;
+}
+
+int Circuit::GetNumElements()
+{
+   return eNum;
+}
+
+int Circuit::GetNumResistors()
+{
+   return rNum;
+}
+
+int Circuit::GetNumCapacitors()
+{
+   return cNum;
+}
+
+int Circuit::GetNumInductors()
+{
+   return lNum;
+}
+
+int Circuit::GetNumGrounds()
+{
+   return gNum;
+}
+
+void Circuit::Setup(Omega_h::InputMap& pl)
+{
+   ParseYAML(pl);
+   Setup();
+}
+
+void Circuit::Setup()
+{
+   if (eNum > 0) {
+      ComponentMap();
+      NodeCount();
+   }
+   UpdateGrounds();
+   SayInfo();
+
+   UpdateMatrixSize();
+   ZeroMatrix();
+
+   firstCall = false;
+
+   UpdateGrounds();
+   UpdateMatrixSize();
+}
+
+
+void Circuit::Solve(double dtin)
+{
+   try {
+      if (dtin <= 0) {
+         throw 1; // Invalid time step
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve Solve() execption " << ex << std::endl;
+   }
+   dt = dtin;
+
+   if (usingCircuit) {
+      AssembleMatrix();
+      SolveMatrix();
+   }
+}
+
+void Circuit::UpdateMatrixSize()
+{
+   // Count number of voltage constraints
+   int vnd = 0;
+   for (std::size_t i = 0; i<fvNodes.size(); i++) {
+      if (abs(fvVals[i]) > rthresh) vnd++;
+   }
+   if (firstCall) {
+      for (std::size_t i = 0; i<ivNodes.size(); i++) {
+         if (abs(ivVals[i]) > rthresh) vnd++;
+      }
+   }
+
+   // Total matrix size
+   nmat_size = nNum - gNum + lNum + vnd;
+
+   if (nmat_size > 0) {
+      usingCircuit = true;
+   } else {
+      usingCircuit = false;
+   }
 
    if (usingCircuit) {
 
-   // Setup the array memory
+      // Setup the array memory
+      if (firstCall) {
+         N_matrix = MediumMatrix(nmat_size);
+         M_matrix = MediumMatrix(nmat_size);
+         NM_matrix = MediumMatrix(nmat_size);
+         b_vector = MediumVector(nmat_size);
+         x_vector = MediumVector(nmat_size);
+      } else {
+         N_matrix.size = nmat_size;
+         M_matrix.size = nmat_size;
+         NM_matrix.size = nmat_size;
+         N_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
+         M_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
+         NM_matrix.entries.resize(std::size_t(nmat_size*nmat_size));
+      }
+      
+      AR_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(rNum)));
+      G_matrix.resize (std::size_t(rNum), std::vector<double>(std::size_t(rNum)));
+      AC_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(cNum)));
+      C_matrix.resize (std::size_t(cNum), std::vector<double>(std::size_t(cNum)));
+      AL_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(lNum)));
+      L_matrix.resize (std::size_t(lNum), std::vector<double>(std::size_t(lNum)));
+      AV_matrix.resize(std::size_t(nNum-gNum), std::vector<int>(std::size_t(vNum)));
+      V_vector.resize (std::size_t(vNum));
+      I_vector.resize (std::size_t(nNum-gNum));
+   }
+}
+
+void Circuit::ZeroMatrix() {
+
+   for (int i=0; i< nmat_size; i++) {
+   for (int j=0; j< nmat_size; j++) {
+      N_matrix(i,j) = 0.0;
+      M_matrix(i,j) = 0.0;
+      NM_matrix(i,j) = 0.0;
+   }
+   }
+   for (int i=0; i<nmat_size; i++) {
+      b_vector(i) = 0.0;
+   }
+   // Initial condition and only on first call
    if (firstCall) {
-      A = MediumMatrix(NA);
-      B = MediumMatrix(NA);
-      r = MediumVector(NA);
-      x = MediumVector(NA);
-
-      firstCall = false;
-   }
-
-   for (int i=0; i<NA; i++) {
-      for (int j=0; j<NA; j++) {
-         A(i, j) = 0.0;
-         B(i, j) = 0.0;
+      for (int i = 0; i<nmat_size; i++) {
+         x_vector(i) = 0.0;
       }
-      r(i) = 0;
+   
+      for (std::size_t i = 0; i<ivNodes.size(); i++) {
+         int ieqn = ConvertNodeToEq<int>(ivNodes[i]);
+         if (abs(ivVals[i]) > rthresh) x_vector(ieqn) = ivVals[i];
+      }
+      for (std::size_t i = 0; i<fvNodes.size(); i++) {
+         int ieqn = ConvertNodeToEq<int>(fvNodes[i]);
+         if (abs(fvVals[i]) > rthresh) x_vector(ieqn) = fvVals[i];
+      }
+      for (std::size_t i = 0; i<iiNodes.size(); i++) {
+         int ieqn = ConvertNodeToEq<int>(iiNodes[i]);
+         ieqn+=nNum-gNum; // shift
+         x_vector(ieqn) = iiVals[i];
+      }
+      for (std::size_t i = 0; i<fiNodes.size(); i++) {
+         int ieqn = ConvertNodeToEq<int>(fiNodes[i]);
+         ieqn+=nNum-gNum; // shift
+         x_vector(ieqn) = fiVals[i];
+      }
    }
 
+   for (std::size_t i=0; i<std::size_t(nNum-gNum); i++) {
+   for (std::size_t j=0; j<std::size_t(rNum); j++) {
+      AR_matrix[i][j] = 0;
+   }
+   }
+   for (std::size_t i=0; i<std::size_t(rNum); i++) {
+   for (std::size_t j=0; j<std::size_t(rNum); j++) {
+      G_matrix[i][j] = 0.0;
+   }
+   }
 
-   int ii,jj,kk;
-   int jva = -1;
-   int node1,node2;
-   int iflg1,iflg2;
+   for (std::size_t i=0; i<std::size_t(nNum-gNum); i++) {
+   for (std::size_t j=0; j<std::size_t(cNum); j++) {
+      AC_matrix[i][j] = 0;
+   }
+   }
+   for (std::size_t i=0; i<std::size_t(cNum); i++) {
+   for (std::size_t j=0; j<std::size_t(cNum); j++) {
+      C_matrix[i][j] = 0.0;
+   }
+   }
+
+   for (std::size_t i=0; i<std::size_t(nNum-gNum); i++) {
+   for (std::size_t j=0; j<std::size_t(lNum); j++) {
+      AL_matrix[i][j] = 0;
+   }
+   }
+   for (std::size_t i=0; i<std::size_t(lNum); i++) {
+   for (std::size_t j=0; j<std::size_t(lNum); j++) {
+      L_matrix[i][j] = 0.0;
+   }
+   }
+
+   for (std::size_t i=0; i<std::size_t(nNum-gNum); i++) {
+   for (std::size_t j=0; j<std::size_t(vNum); j++) {
+      AV_matrix[i][j] = 0;
+   }
+   }
+   for (std::size_t i=0; i<std::size_t(vNum); i++) {
+      V_vector[i] = 0.0;
+   }
+
+   for (std::size_t i=0; i<std::size_t(nNum-gNum); i++) {
+      I_vector[i] = 0.0;
+   }
+}
+
+void Circuit::AssembleRMatrix() {
+
+   int ir=-1;
    // Loop over elements
-   for (int i=0; i<eNum; i++) {
-      node1 = enMap[std::size_t(i)][0];
-      node2 = enMap[std::size_t(i)][1];
+   for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
 
-      iflg1 = 0;
-      iflg2 = 0;
-      for (int j=0; j < gNum; j++) {
-         if (node1 == gNodes[std::size_t(j)]) iflg1 = 1;
-         if (node2 == gNodes[std::size_t(j)]) iflg2 = 1;
+   std::size_t ibr_t;
+   auto eVM_t = std::size_t(eValMap[i_t]);
+
+   if (eType[i_t] == ETYPE_RESISTOR) {
+      ir++;
+      ibr_t = std::size_t(ir);
+      G_matrix[ibr_t][ibr_t] = rVal[eVM_t];
+
+   for (std::size_t j_t=0; j_t<2   ; j_t++) {
+
+      int iflg = 0;
+      int node = enMap[i_t][j_t];
+
+      for (std::size_t k_t=0; k_t<std::size_t(gNum); k_t++) {
+         if (node == gNodes[k_t]) {
+            iflg = 1;
+            break;
+         }
       }
 
-      // KCL is first in matrix
-      ii = node1 - nNumMin;
-      jj = node2 - nNumMin;
-      if (ii >= gNumMax - nNumMin) ii = ii - gNum;
-      if (jj >= gNumMax - nNumMin) jj = jj - gNum;
+      if (iflg == 0) {
 
-      if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
-         if ((iflg1 == 0) & (iflg2 == 0)) {
-            // Myself equation ii
-            A(ii, ii) += rVal[std::size_t(eValMap[std::size_t(i)])];
-            A(ii, jj) -= rVal[std::size_t(eValMap[std::size_t(i)])];
+         int sign = 1; // Start node
+         if (j_t == 1) sign = -1; // End node
+         
+         std::size_t ieqn = ConvertNodeToEq<std::size_t>(node);
+         AR_matrix[ieqn][ibr_t] = sign;
+      }
+   }
+   }
+   }
+}
 
-            // Neighbor equation jj
-            A(jj, ii) -= rVal[std::size_t(eValMap[std::size_t(i)])];
-            A(jj, jj) += rVal[std::size_t(eValMap[std::size_t(i)])];
-         } else if (iflg2 == 1) {
-            // Myself equation ii only
-            A(ii, ii) += rVal[std::size_t(eValMap[std::size_t(i)])];
-         } else if (iflg1 == 1) {
-            // Neighbor equation jj only
-            A(jj, jj) += rVal[std::size_t(eValMap[std::size_t(i)])];
+void Circuit::AssembleCMatrix() {
+
+   int ic=-1;
+   // Loop over elements
+   for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
+
+   std::size_t ibr_t;
+   auto eVM_t = std::size_t(eValMap[i_t]);
+
+   if (eType[i_t] == ETYPE_CAPACITOR) {
+      ic++;
+      ibr_t = std::size_t(ic);
+      C_matrix[ibr_t][ibr_t] = cVal[eVM_t];
+
+   for (std::size_t j_t=0; j_t<2   ; j_t++) {
+
+      int iflg = 0;
+      int node = enMap[i_t][j_t];
+
+      for (std::size_t k_t=0; k_t<std::size_t(gNum); k_t++) {
+         if (node == gNodes[k_t]) {
+            iflg = 1;
+            break;
          }
-      } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
-         if ((iflg1 == 0) & (iflg2 == 0)) {
-            // Myself equation ii
-            B(ii, ii) += cVal[std::size_t(eValMap[std::size_t(i)])];
-            B(ii, jj) -= cVal[std::size_t(eValMap[std::size_t(i)])];
+      }
 
-            // Neighbor equation jj
-            B(jj, ii) -= cVal[std::size_t(eValMap[std::size_t(i)])];
-            B(jj, jj) += cVal[std::size_t(eValMap[std::size_t(i)])];
-         } else if (iflg2 == 1) {
-            // Myself equation ii only
-            B(ii, ii) += cVal[std::size_t(eValMap[std::size_t(i)])];
-         } else if (iflg1 == 1) {
-            // Neighbor equation jj only
-            B(jj, jj) += cVal[std::size_t(eValMap[std::size_t(i)])];
+      if (iflg == 0) {
+
+         int sign = 1; // Start node
+         if (j_t == 1) sign = -1; // End node
+         
+         std::size_t ieqn = ConvertNodeToEq<std::size_t>(node);
+         AC_matrix[ieqn][ibr_t] = sign;
+      }
+   }
+   }
+   }
+}
+
+void Circuit::AssembleLMatrix() {
+
+   int il=-1;
+   // Loop over elements
+   for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++) {
+
+   std::size_t ibr_t;
+   auto eVM_t = std::size_t(eValMap[i_t]);
+
+   if (eType[i_t] == ETYPE_INDUCTOR) {
+      il++;
+      ibr_t = std::size_t(il);
+      L_matrix[ibr_t][ibr_t] = lVal[eVM_t];
+
+   for (std::size_t j_t=0; j_t<2   ; j_t++) {
+
+      int iflg = 0;
+      int node = enMap[i_t][j_t];
+
+      for (std::size_t k_t=0; k_t<std::size_t(gNum); k_t++) {
+         if (node == gNodes[k_t]) {
+            iflg = 1;
+            break;
          }
+      }
 
-         // Treat capacitor as voltage source initially
-         if (solveOnly) {
-            jva++;
-            kk = nNum - gNum + jva;
-   
-            if ((iflg1 == 0) & (iflg2 == 0)) {
-               // Contribution to KCL at nodes
-               A(ii, kk) = 1.0;
-               A(jj, kk) = 1.0;
-   
-               // Voltage drop constraint
-               A(kk, ii) = -1.0;
-               A(kk, jj) = 1.0;
-            } else if (iflg2 == 1) {
-               // Contribution to KCL at nodes (non ground)
-               A(ii, kk) = 1.0;
-   
-               // Voltage drop constraint
-               A(kk, ii) = -1.0;
-            } else if (iflg1 == 1) {
-               // Contribution to KCL at nodes (non ground)
-               A(jj, kk) = 1.0;
-   
-               // Voltage drop constraint
-               A(kk, jj) = 1.0;
-            }
-   
-            // Voltage drop constraint
-            r(kk) = r(kk) + (v0Val[std::size_t(eValMap[std::size_t(i)])][1]-v0Val[std::size_t(eValMap[std::size_t(i)])][0]); 
+      if (iflg == 0) {
 
-         }
-
-      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
-         jva++;
-         kk = nNum - gNum + jva;
-
-         if ((iflg1 == 0) & (iflg2 == 0)) {
-            // Contribution to KCL at nodes
-            A(ii, kk) = 1.0;
-            A(jj, kk) = 1.0;
-
-            // Voltage drop constraint
-            A(kk, ii) = -1.0;
-            A(kk, jj) = 1.0;
-         } else if (iflg2 == 1) {
-            // Contribution to KCL at nodes (non ground)
-            A(ii, kk) = 1.0;
-
-            // Voltage drop constraint
-            A(kk, ii) = -1.0;
-         } else if (iflg1 == 1) {
-            // Contribution to KCL at nodes (non ground)
-            A(jj, kk) = 1.0;
-
-            // Voltage drop constraint
-            A(kk, jj) = 1.0;
-         }
-
-         // Voltage drop constraint
-         r(kk) = r(kk) + (vVal[std::size_t(eValMap[std::size_t(i)])][1]-vVal[std::size_t(eValMap[std::size_t(i)])][0]); 
+         int sign = 1; // Start node
+         if (j_t == 1) sign = -1; // End node
+         
+         std::size_t ieqn = ConvertNodeToEq<std::size_t>(node);
+         AL_matrix[ieqn][ibr_t] = sign;
       }
    }
 
-   } // NA > 0
+   }
+   }
+}
+
+void Circuit::AssembleSourceMatrix()
+{
+   // fixed voltage sources
+   int iv=-1;
+   for (std::size_t i=0;i< fvVals.size(); i++) {
+      if (abs(fvVals[i]) >= rthresh) {
+         iv++;
+         auto nn_t = std::size_t(iv);
+         V_vector[nn_t] = fvVals[i];
+         std::size_t ieqn = ConvertNodeToEq<std::size_t>(fvNodes[i]);
+         AV_matrix[ieqn][nn_t] = 1;
+      }
+   }
+
+   // initial voltage sources
+   if (firstCall) {
+   for (std::size_t i=0;i< ivVals.size(); i++) {
+      if (abs(ivVals[i]) >= rthresh) {
+         iv++;
+         auto nn_t = std::size_t(iv);
+         V_vector[nn_t] = ivVals[i];
+         std::size_t ieqn = ConvertNodeToEq<std::size_t>(ivNodes[i]);
+         AV_matrix[ieqn][nn_t] = 1;
+      }
+   }
+   }
+
+   // Should add search below to not add if ground node check
+   // fixed current sources
+   for (std::size_t i=0; i<fiVals.size(); i++) {
+      std::size_t ieqn = ConvertNodeToEq<std::size_t>(fiNodes[i]);
+      I_vector[ieqn] = fiVals[i];
+   }
+
+   // initial current sources
+   if (firstCall) {
+   for (std::size_t i=0; i<iiVals.size(); i++) {
+      std::size_t ieqn = ConvertNodeToEq<std::size_t>(iiNodes[i]);
+      I_vector[ieqn] = iiVals[i];
+   }
+   }
+}
+
+void Circuit::AssembleNMatrix()
+{
+
+   // Put in AR*R*AR'
+   std::vector< std::vector<double> > GA(std::size_t(rNum), std::vector<double>(std::size_t(nNum-gNum)));
+
+   int ishift = 0;
+   int jshift = 0;
+   for (int i=0;i<rNum     ;i++) {
+   for (int j=0;j<nNum-gNum;j++) {
+      for (int k=0; k<rNum; k++) {
+         GA[std::size_t(i)][std::size_t(j)]+= G_matrix[std::size_t(i)][std::size_t(k)]*AR_matrix[std::size_t(j)][std::size_t(k)];
+      }
+   }
+   }
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<nNum-gNum;j++) {
+      N_matrix(ishift+i,jshift+j) = 0.0;
+      for (int k=0; k<rNum; k++) {
+         N_matrix(ishift+i,jshift+j)+=AR_matrix[std::size_t(i)][std::size_t(k)]*GA[std::size_t(k)][std::size_t(j)];
+      }
+   }
+   }
+
+   // Put in AL
+   ishift = 0;
+   jshift = nNum-gNum;
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<lNum;j++) {
+      N_matrix(ishift+i,jshift+j) = AL_matrix[std::size_t(i)][std::size_t(j)];
+   }
+   }
+
+   // Put in AL'
+   ishift = nNum-gNum;
+   jshift = 0;
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<lNum;j++) {
+      N_matrix(ishift+j,jshift+i) = -dt*AL_matrix[std::size_t(i)][std::size_t(j)];
+   }
+   }
+
+   // Put in AV
+   ishift = 0;
+   jshift = nNum-gNum+lNum;
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<vNum;j++) {
+      N_matrix(ishift+i,jshift+j) = AV_matrix[std::size_t(i)][std::size_t(j)];
+   }
+   }
+
+   // Put in AV'
+   ishift = nNum-gNum+lNum;
+   jshift = 0;
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<vNum;j++) {
+      N_matrix(ishift+j,jshift+i) = AV_matrix[std::size_t(i)][std::size_t(j)];
+   }
+   }
+
+   ModifyCEquation();
+}
+
+void Circuit::ModifyCEquation()
+{
+
+   std::vector<int> cnused;
+   for (std::size_t i_t=0; i_t<std::size_t(eNum); i_t++){
+   if (eType[i_t] == ETYPE_CAPACITOR) {
+   for (std::size_t j_t=0; j_t<2   ; j_t++){
+      int iflg = 0;
+
+      int node = enMap[i_t][j_t];
+
+      for (std::size_t k_t=0; k_t<std::size_t(gNum); k_t++) {
+         if (node == gNodes[k_t]) {
+            iflg = 1;
+            break;
+         }
+      }
+
+      if (iflg == 0) {
+         for (std::size_t k_t=0; k_t < cnused.size(); k_t++) {
+            if(node == cnused[k_t]) {
+               iflg = 1;
+               break;
+            }
+         }
+      }
+
+      if (iflg == 0) {
+         cnused.push_back(node);
+
+         int ieqn = ConvertNodeToEq<int>(node);
+         
+         // dt formalism
+         for (int k=0; k < nmat_size; k++) {
+            N_matrix(ieqn, k) = N_matrix(ieqn, k)*dt;
+         }
+         I_vector[std::size_t(ieqn)] = I_vector[std::size_t(ieqn)]*dt;
+      }
+   }
+   }
+   }
+}
+
+void Circuit::AssembleMMatrix()
+{
+
+   std::vector< std::vector<double> > CA(std::size_t(cNum), std::vector<double>(std::size_t(nNum-gNum)));
+
+   int ishift = 0;
+   int jshift = 0;
+   for (int i=0;i<cNum     ;i++) {
+   for (int j=0;j<nNum-gNum;j++) {
+      for (int k=0; k<cNum; k++) {
+         CA[std::size_t(i)][std::size_t(j)]+= C_matrix[std::size_t(i)][std::size_t(k)]*AC_matrix[std::size_t(j)][std::size_t(k)];
+      }
+   }
+   }
+   for (int i=0;i<nNum-gNum;i++) {
+   for (int j=0;j<nNum-gNum;j++) {
+      M_matrix(ishift+i,jshift+j) = 0.0;
+      for (int k=0; k<cNum; k++) {
+         M_matrix(ishift+i,jshift+j)+=AC_matrix[std::size_t(i)][std::size_t(k)]*CA[std::size_t(k)][std::size_t(j)];
+      }
+   }
+   }
+   ishift = nNum-gNum;
+   jshift = nNum-gNum;
+   for (int i=0;i<lNum;i++) {
+   for (int j=0;j<lNum;j++) {
+      M_matrix(ishift+i,jshift+j) = L_matrix[std::size_t(i)][std::size_t(j)];
+   }
+   }
+}
+
+void Circuit::AssembleNMMatrix()
+{
+   for (int i=0;i<nmat_size;i++) {
+   for (int j=0;j<nmat_size;j++) {
+      NM_matrix(i,j) = N_matrix(i,j) + M_matrix(i,j);
+   }
+   }
+}
+
+void Circuit::AssemblebVector()
+{
+   int ishift = 0;
+   for (int i=0;i<nNum-gNum; i++) {
+      b_vector(ishift+i) = - I_vector[std::size_t(i)];
+   }
+   ishift = nNum-gNum+lNum;
+   for (int i=0;i<vNum;i++) {
+      b_vector(ishift+i) = V_vector[std::size_t(i)];
+   }
+      
+   for (int i=0;i<nmat_size;i++) {
+   for (int j=0;j<nmat_size;j++) {
+      b_vector(i) += M_matrix(i,j)*x_vector(j);
+   }
+   }
+
+}
+
+
+void Circuit::AssembleMatrix()
+{
+   ZeroMatrix();
+
+   AssembleRMatrix();
+   AssembleCMatrix();
+   AssembleLMatrix();
+   AssembleSourceMatrix();
+
+   AssembleNMatrix();
+   AssembleMMatrix();
+   AssembleNMMatrix();
+
+   AssemblebVector();
 }
 
 void Circuit::SolveMatrix()
 {
-  
-   if (cNum > 0) { // Only if capacitors is B added
-   if (!solveOnly) {
-      // A + alpha*B
-      for (int i=0; i<NA; i++) {
-      for (int j=0; j<NA; j++) {
-         A(i, j) += 1.0/dt*B(i, j);
-      }
-      }
-      
-      // RHS = r - alpha*B*x_{i-1}
-      for (int i=0; i<NA; i++) {
-      for (int j=0; j<NA; j++) {
-         r(i) += 1.0/dt*B(i, j)*x(j);
-      }
-      }
-   } 
-   }
-
-   // Gaussian Elimination
-   if (usingCircuit) {
-      gaussian_elimination(A, r);
-      back_substitution(A, r, x);
-   }
+   gaussian_elimination(NM_matrix, b_vector);
+   back_substitution(NM_matrix, b_vector, x_vector);
 }
 
 void Circuit::AddElement(std::string eTypein, int &e)
@@ -613,20 +959,28 @@ void Circuit::AddElement(std::string eTypein, int &e)
    if (eTypein.compare("resistor") == 0) {
       rNum++;
       eType.push_back(ETYPE_RESISTOR);
-   } else if (eTypein.compare("vsource") == 0) {
-      vNum++;
-      eType.push_back(ETYPE_VSOURCE);
    } else if (eTypein.compare("capacitor") == 0) {
       cNum++;
       eType.push_back(ETYPE_CAPACITOR);
+   } else if (eTypein.compare("inductor") == 0) {
+      lNum++;
+      eType.push_back(ETYPE_INDUCTOR);
    }
+}
+
+template <typename T>
+T Circuit::ConvertNodeToEq(int node)
+{
+   node = node - nNumMin;
+   if (node >= gNumMax - nNumMin) node = node - gNum;
+   return T(node);
 }
 
 void Circuit::ComponentMap()
 {
    int ir = -1;
    int ic = -1;
-   int iv = -1;
+   int il = -1;
    for (int i=0; i<eNum; i++){
       if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
          ir++;
@@ -634,9 +988,46 @@ void Circuit::ComponentMap()
       } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
          ic++;
          eValMap.push_back(ic);
-      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
-         iv++;
-         eValMap.push_back(iv);
+      } else if (eType[std::size_t(i)] == ETYPE_INDUCTOR) {
+         il++;
+         eValMap.push_back(il);
+      }
+   }
+}
+
+void Circuit::UpdateGrounds()
+{
+   gNodes.clear();
+   vNum = 0;
+
+   // ground nodes
+   for (std::size_t j=0; j <fvNodes.size(); j++) {
+      double nodev = fvVals[j];
+      if (abs(nodev) <= rthresh ) {
+         gNodes.push_back(fvNodes[j]);
+      } else {
+         vNum++;
+      }
+   }
+
+   if (firstCall) {
+   for (std::size_t j=0; j <ivNodes.size(); j++) {
+      double nodev = ivVals[j];
+      if (abs(nodev) <= rthresh ) {
+         gNodes.push_back(ivNodes[j]);
+      } else {
+         vNum++;
+      }
+   }
+   }
+
+   // Count ground nodes
+   gNum = int(gNodes.size());
+   if (gNum == 0) {
+      gNumMax = nNum;
+   } else {
+      for (int i=0; i<gNum; i++){
+         if (gNodes[std::size_t(i)] > gNumMax) gNumMax = gNodes[std::size_t(i)];
       }
    }
 }
@@ -666,52 +1057,6 @@ void Circuit::NodeCount()
    }
    if (iflg == 0) nNum++;
    }
-
-   // Since voltage sources/capacitors may have initial voltage, we check if any
-   // voltages are at ground AND they are not specified in gNodes
-   //
-   double rthresh = 1E-6;
-   for (int i=0;i<eNum;i++){ // check each element,
-
-      // First, check capacitors
-      if (eType[std::size_t(i)] == ETYPE_CAPACITOR) { // is it a capacitor?
-         for (int j=0;j<2;j++) { // check each capacitor node
-            if (abs(v0Val[std::size_t(eValMap[std::size_t(i)])][std::size_t(j)]) <= rthresh) { // is this node a ground?
-               iflg = 0;
-               int gNumCurrent = int(gNodes.size());
-               for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
-                  if (gNodes[std::size_t(k)] == enMap[std::size_t(i)][std::size_t(j)]) iflg = 1; // yes we did
-               }
-               if (iflg == 0) gNodes.push_back(enMap[std::size_t(i)][std::size_t(j)]); // no we didn't, so add it
-            }
-         }
-      }
-
-      // Then, check voltage sources
-      if (eType[std::size_t(i)] == ETYPE_VSOURCE) { // is it a voltage source?
-         for (int j=0;j<2;j++) { // check each node
-            if (abs(vVal[std::size_t(eValMap[std::size_t(i)])][std::size_t(j)]) <= rthresh) { // is this node a ground?
-               iflg = 0;
-               int gNumCurrent = int(gNodes.size());
-               for (int k=0;k<gNumCurrent;k++) {            // have we set it as a ground yet?
-                  if (gNodes[std::size_t(k)] == enMap[std::size_t(i)][std::size_t(j)]) iflg = 1; // yes we did
-               }
-               if (iflg == 0) gNodes.push_back(enMap[std::size_t(i)][std::size_t(j)]); // no we didn't, so add it
-            }
-         }
-      }
-   }
-
-   // Count ground nodes
-   gNum = int(gNodes.size());
-   if (gNum == 0) {
-      gNumMax = nNum;
-   } else {
-      for (int i=0; i<gNum; i++){
-         if (gNodes[std::size_t(i)] > gNumMax) gNumMax = gNodes[std::size_t(i)];
-      }
-   }
-
 }
 
 void Circuit::AddNodes(std::vector<int> &nodes)
@@ -730,14 +1075,9 @@ void Circuit::AddCapacitance(double &data)
    cVal.push_back(data);
 }
 
-void Circuit::AddCVoltage(std::vector<double> &data)
+void Circuit::AddInductance(double &data)
 {
-   v0Val.push_back(data);
-}
-
-void Circuit::AddVoltage(std::vector<double> &data)
-{
-   vVal.push_back(data);
+   lVal.push_back(data);
 }
 
 void Circuit::SayInfo()
@@ -749,7 +1089,7 @@ void Circuit::SayInfo()
    std::cout << "...elements     : "  << GetNumElements()   << std::endl;
    std::cout << "   ...resistors : "  << GetNumResistors()  << std::endl;
    std::cout << "   ...capacitors: "  << GetNumCapacitors() << std::endl;
-   std::cout << "   ...vsources  : "  << GetNumVSources()   << std::endl;
+   std::cout << "   ...inductors : "  << GetNumInductors()  << std::endl;
    std::cout << std::endl;
 }
 
@@ -768,14 +1108,14 @@ void Circuit::SayVoltages()
    for (int i=0; i<eNum; i++){
       node1 = enMap[std::size_t(i)][0]; 
       node2 = enMap[std::size_t(i)][1]; 
-      voltage = GetNodeVoltage(node2) - GetNodeVoltage(node1);
+      voltage = GetNodeVoltage(node1) - GetNodeVoltage(node2);
 
       if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
-         std::cout << "..." << 1.0/rVal[std::size_t(eValMap[std::size_t(i)])] << " ohm resistor (nodes "     << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+         std::cout << "..." << 1.0/rVal[std::size_t(eValMap[std::size_t(i)])] << " ohm resistor (nodes "     << node1 << " minus " << node2 << "): " << voltage << " V" << std::endl;
       } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
-         std::cout << "..." << cVal[std::size_t(eValMap[std::size_t(i)])]     << " farad capacitor (nodes "  << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
-      } else if (eType[std::size_t(i)] == ETYPE_VSOURCE) {
-         std::cout << "..." << vVal[std::size_t(eValMap[std::size_t(i)])][1] - vVal[std::size_t(eValMap[std::size_t(i)])][0] << " V voltage source (nodes " << node1 << " and " << node2 << "): " << voltage << " V" << std::endl;
+         std::cout << "..." << cVal[std::size_t(eValMap[std::size_t(i)])]     << " farad capacitor (nodes "  << node1 << " minus " << node2 << "): " << voltage << " V" << std::endl;
+      } else if (eType[std::size_t(i)] == ETYPE_INDUCTOR) {
+         std::cout << "..." << lVal[std::size_t(eValMap[std::size_t(i)])]     << " Henry inductor (nodes "  << node1 << " minus " << node2 << "): " << voltage << " V" << std::endl;
       }
    }
 
@@ -789,31 +1129,95 @@ void Circuit::SayMatrix()
    std::cout << "**** CIRCUIT MATRIX INFORMATION: ****" << std::endl;
    std::cout << "*************************************" << std::endl;
 
-   std::cout << "A: " << std::endl;
-   for (int i=0; i<NA; i++){
-      for (int j=0; j<NA; j++) std::cout << A(i, j) << " ";
+
+   std::cout << "N: " << std::endl;
+   for (int i=0; i<nmat_size; i++){
+      for (int j=0; j<nmat_size; j++) std::cout << N_matrix(i, j) << " ";
       std::cout << std::endl;
    }
    std::cout << std::endl;
 
-   std::cout << "B: " << std::endl;
-   for (int i=0; i<NA; i++){
-      for (int j=0; j<NA; j++) std::cout << B(i, j) << " ";
+   std::cout << "M: " << std::endl;
+   for (int i=0; i<nmat_size; i++){
+      for (int j=0; j<nmat_size; j++) std::cout << M_matrix(i, j) << " ";
       std::cout << std::endl;
    }
    std::cout << std::endl;
 
-   std::cout << "r: " << std::endl;
-   for (int i=0; i<NA; i++){
-      std::cout << r(i) << std::endl;
+   std::cout << "NM: " << std::endl;
+   for (int i=0; i<nmat_size; i++){
+      for (int j=0; j<nmat_size; j++) std::cout << NM_matrix(i, j) << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "b: " << std::endl;
+   for (int i=0; i<nmat_size; i++) {
+      std::cout << b_vector(i) << std::endl;
    }
    std::cout << std::endl;
 
    std::cout << "x: " << std::endl;
-   for (int i=0; i<NA; i++){
-      std::cout << x(i) << std::endl;
+   for (int i=0; i<nmat_size; i++) {
+      std::cout << x_vector(i) << std::endl;
    }
    std::cout << std::endl;
+
+   std::cout << "AR: " << std::endl;
+   for (int i=0; i<nNum-gNum; i++){
+      for (int j=0; j<rNum; j++) std::cout << AR_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "G: " << std::endl;
+   for (int i=0; i<rNum; i++){
+      for (int j=0; j<rNum; j++) std::cout << G_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "AC: " << std::endl;
+   for (int i=0; i<nNum-gNum; i++){
+      for (int j=0; j<cNum; j++) std::cout << AC_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "C: " << std::endl;
+   for (int i=0; i<cNum; i++){
+      for (int j=0; j<cNum; j++) std::cout << C_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "AV: " << std::endl;
+   for (int i=0; i<nNum-gNum; i++){
+      for (int j=0; j<vNum; j++) std::cout << AV_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "V: " << std::endl;
+   for (int i=0; i<vNum; i++){
+      std::cout << V_vector[std::size_t(i)] << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "AL: " << std::endl;
+   for (int i=0; i<nNum-gNum; i++){
+      for (int j=0; j<lNum; j++) std::cout << AL_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
+   std::cout << "L: " << std::endl;
+   for (int i=0; i<lNum; i++){
+      for (int j=0; j<lNum; j++) std::cout << L_matrix[std::size_t(i)][std::size_t(j)] << " ";
+      std::cout << std::endl;
+   }
+   std::cout << std::endl;
+
 
    std::cout << std::endl;
 }
