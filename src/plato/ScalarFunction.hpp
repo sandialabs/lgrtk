@@ -178,13 +178,11 @@ public:
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
@@ -195,7 +193,6 @@ public:
         // create result view
         //
         Plato::ScalarVectorT<ResultScalar> tResult("result", m_numCells);
-
         m_dataMap.scalarVectors[mScalarFunctionValue->getName()] = tResult;
 
         // evaluate function

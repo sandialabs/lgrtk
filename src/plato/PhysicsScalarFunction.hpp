@@ -204,11 +204,11 @@ public:
         // create result view
         //
         Plato::ScalarVectorT<ResultScalar> tResult("result workset", m_numCells);
+        m_dataMap.scalarVectors[mScalarFunctionValue->getName()] = tResult;
 
         // evaluate function
         //
         mScalarFunctionValue->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
-        m_dataMap.scalarVectors[name()] = tResult;
 
         // sum across elements
         //
@@ -256,7 +256,6 @@ public:
 
         // evaluate function
         //
-        // TODO: Should the individual scalar function values/gradients be added to the data map?
         mScalarFunctionGradientX->evaluate(tStateWS, tControlWS, tConfigWS, tResult, aTimeStep);
 
         // create and assemble to return view
