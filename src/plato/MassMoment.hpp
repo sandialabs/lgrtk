@@ -138,7 +138,9 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
       else if (mCalculationType == "SecondYZ")
         computeSecondMoment(aControl, aConfig, aResult, 1, 2, aTimeStep);
       else
+      {
         THROWERR("Specified mass moment calculation type not implemented.")
+      }
     }
 
     /******************************************************************************//**

@@ -17,6 +17,7 @@
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
 #include "plato/ScalarFunctionBaseFactory.hpp"
+#include "plato/AnalyzeMacros.hpp"
 
 #ifdef HAVE_AMGX
 #include "plato/alg/AmgXSparseLinearProblem.hpp"
@@ -175,12 +176,8 @@ public:
 
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE VALUE REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -202,12 +199,8 @@ public:
 
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT VALUE REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -224,12 +217,8 @@ public:
     {
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE VALUE REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -247,12 +236,8 @@ public:
     {
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT VALUE REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -273,12 +258,8 @@ public:
 
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE GRADIENT REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         // compute dfdz: partial of objective wrt z
@@ -335,12 +316,8 @@ public:
 
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE CONFIGURATION GRADIENT REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         // compute partial derivative wrt x
@@ -394,12 +371,8 @@ public:
     {
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT GRADIENT REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -420,12 +393,8 @@ public:
 
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT GRADIENT REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -442,12 +411,8 @@ public:
     {
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE GRADIENT REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -464,12 +429,8 @@ public:
     {
         if(mObjective == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: OBJECTIVE CONFIGURATION GRADIENT REQUESTED BUT OBJECTIVE PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT OBJECTIVE FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "OBJECTIVE POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -486,12 +447,8 @@ public:
     {
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT CONFIGURATION GRADIENT REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
@@ -512,12 +469,8 @@ public:
 
         if(mConstraint == nullptr)
         {
-            std::ostringstream tErrorMessage;
-            tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
-                    << ", LINE: " << __LINE__
-                    << ", MESSAGE: CONSTRAINT CONFIGURATION GRADIENT REQUESTED BUT CONSTRAINT PTR WAS NOT DEFINED BY THE USER."
-                    << " USER SHOULD MAKE SURE THAT CONSTRAINT FUNCTION IS DEFINED IN INPUT FILE. **************\n\n";
-            throw std::runtime_error(tErrorMessage.str().c_str());
+            const std::string tErrorMessage = "CONSTRAINT POINTER WAS NOT DEFINED BY THE USER.";
+            THROWERR(tErrorMessage)
         }
 
         const Plato::OrdinalType tTIME_STEP_INDEX = 0;
