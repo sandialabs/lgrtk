@@ -9,6 +9,8 @@
 #include "plato/WorksetBase.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/ScalarFunctionBaseFactory.hpp"
+#include "plato/AnalyzeMacros.hpp"
+
 #include <Teuchos_ParameterList.hpp>
 
 namespace Plato
@@ -65,7 +67,7 @@ private:
         {
             const std::string tErrorString = std::string("Number of 'Functions' in '") + mFunctionName + 
                                                          "' parameter list does not equal the number of 'Weights'";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < tFunctionNames.size(); ++tFunctionIndex)
@@ -154,7 +156,7 @@ public:
                         Plato::Scalar aTimeStep = 0.0) const
     {
         assert(mScalarFunctionBaseContainer.size() == mFunctionWeights.size());
-        
+
         Plato::Scalar tResult = 0.0;
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {
@@ -162,7 +164,6 @@ public:
             Plato::Scalar tFunctionValue = mScalarFunctionBaseContainer[tFunctionIndex]->value(aState, aControl, aTimeStep);
             tResult += tFunctionWeight * tFunctionValue;
         }
-        // printf("%s value %f \n", mFunctionName.c_str(), tResult);
         return tResult;
     }
 
@@ -242,7 +243,7 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Set function name
+     * @brief Set user defined function name
      * @param [in] function name
     **********************************************************************************/
     void setFunctionName(const std::string aFunctionName)

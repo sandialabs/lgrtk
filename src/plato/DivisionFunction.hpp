@@ -138,9 +138,11 @@ public:
         Plato::Scalar tNumeratorValue = mScalarFunctionBaseNumerator->value(aState, aControl, aTimeStep);
         Plato::Scalar tDenominatorValue = mScalarFunctionBaseDenominator->value(aState, aControl, aTimeStep);
         Plato::Scalar tResult = tNumeratorValue / tDenominatorValue;
-        // if (tDenominatorValue == 0.0)
-        //     tResult = tNumeratorValue;
-        //printf("%s = %f / %f = %f \n", mFunctionName.c_str(), tNumeratorValue, tDenominatorValue, tResult);
+        if (tDenominatorValue == 0.0)
+        {
+            THROWERR("Denominator of division function evaluated to 0!")
+        }
+        
         return tResult;
     }
 
@@ -230,7 +232,7 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Set function name
+     * @brief Set user defined function name
      * @param [in] function name
     **********************************************************************************/
     void setFunctionName(const std::string aFunctionName)

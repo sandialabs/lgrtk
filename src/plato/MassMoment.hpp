@@ -10,36 +10,48 @@
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/PlatoMathHelpers.hpp"
+#include "plato/AnalyzeMacros.hpp"
+
 #include <Teuchos_ParameterList.hpp>
 
 namespace Plato
 {
 
-/******************************************************************************/
+/******************************************************************************//**
+ * @brief Mass moment class
+ * @tparam EvaluationType evaluation type use to determine automatic differentiation
+ *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
+**********************************************************************************/
 template<typename EvaluationType>
 class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
                    public Plato::AbstractScalarFunction<EvaluationType>
 /******************************************************************************/
 {
   private:
-    static constexpr int mSpaceDim = EvaluationType::SpatialDim;
+    static constexpr int mSpaceDim = EvaluationType::SpatialDim; /*!< space dimension */
     static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
     static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
     
-    using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh object */
+    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< data map object */
 
-    using StateScalarType   = typename EvaluationType::StateScalarType;
-    using ControlScalarType = typename EvaluationType::ControlScalarType;
-    using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
-    using ResultScalarType  = typename EvaluationType::ResultScalarType;
+    using StateScalarType   = typename EvaluationType::StateScalarType;  /*!< state variables automatic differentiation type */
+    using ControlScalarType = typename EvaluationType::ControlScalarType; /*!< control variables automatic differentiation type */
+    using ConfigScalarType  = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
+    using ResultScalarType  = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
 
-    Plato::Scalar mCellMaterialDensity;
+    Plato::Scalar mCellMaterialDensity; /*!< material density */
 
-    std::string mCalculationType;
+    std::string mCalculationType; /*!< calculation type = Mass, CGx, CGy, CGz, Ixx, Iyy, Izz, Ixy, Ixz, Iyz */
 
   public:
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Primary constructor
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Engine and Analyze data map
+     * @param [in] aInputParams input parameters database
+     **********************************************************************************/
     MassMoment(Omega_h::Mesh& aMesh, 
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap& aDataMap, 
@@ -53,9 +65,12 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
       mCellMaterialDensity = tMaterialModelInputs.get<Plato::Scalar>("Density", 1.0);
     }
 
-    /**************************************************************************
-     * Unit testing constructor
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Unit testing constructor
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Engine and Analyze data map
+     **********************************************************************************/
     MassMoment(Omega_h::Mesh& aMesh, 
                Omega_h::MeshSets& aMeshSets,
                Plato::DataMap& aDataMap) :
@@ -67,21 +82,34 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
 
     }
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief set material density
+     * @param [in] aMaterialDensity material density
+     **********************************************************************************/
     void setMaterialDensity(const Plato::Scalar aMaterialDensity)
     /**************************************************************************/
     {
       mCellMaterialDensity = aMaterialDensity;
     }
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief set calculation type
+     * @param [in] aCalculationType calculation type string
+     **********************************************************************************/
     void setCalculationType(const std::string & aCalculationType)
     /**************************************************************************/
     {
       mCalculationType = aCalculationType;
     }
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Evaluate mass moment function
+     * @param [in] aState 2D container of state variables
+     * @param [in] aControl 2D container of control variables
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [out] aResult 1D container of cell criterion values
+     * @param [in] aTimeStep time step (default = 0)
+    **********************************************************************************/
     void evaluate(const Plato::ScalarMultiVectorT<StateScalarType> & aState,
                   const Plato::ScalarMultiVectorT<ControlScalarType> & aControl,
                   const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
@@ -110,10 +138,16 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
       else if (mCalculationType == "SecondYZ")
         computeSecondMoment(aControl, aConfig, aResult, 1, 2, aTimeStep);
       else
-        throw std::runtime_error("In 'MassMoment.hpp' specified calculation type not implemented.");
+        THROWERR("Specified mass moment calculation type not implemented.")
     }
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Compute structural mass
+     * @param [in] aControl 2D container of control variables
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [out] aResult 1D container of cell criterion values
+     * @param [in] aTimeStep time step (default = 0)
+    **********************************************************************************/
     void computeStructuralMass(const Plato::ScalarMultiVectorT<ControlScalarType> & aControl,
                                const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
                                Plato::ScalarVectorT<ResultScalarType> & aResult,
@@ -143,7 +177,14 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
       }, "mass calculation");
     }
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Compute first mass moment
+     * @param [in] aControl 2D container of control variables
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [in] aComponent vector component (e.g. x = 0 , y = 1, z = 2)
+     * @param [out] aResult 1D container of cell criterion values
+     * @param [in] aTimeStep time step (default = 0)
+    **********************************************************************************/
     void computeFirstMoment(const Plato::ScalarMultiVectorT<ControlScalarType> & aControl,
                             const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
                             Plato::ScalarVectorT<ResultScalarType> & aResult,
@@ -184,7 +225,15 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
     }
 
 
-    /**************************************************************************/
+    /******************************************************************************//**
+     * @brief Compute second mass moment
+     * @param [in] aControl 2D container of control variables
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [in] aComponent1 vector component (e.g. x = 0 , y = 1, z = 2)
+     * @param [in] aComponent2 vector component (e.g. x = 0 , y = 1, z = 2)
+     * @param [out] aResult 1D container of cell criterion values
+     * @param [in] aTimeStep time step (default = 0)
+    **********************************************************************************/
     void computeSecondMoment(const Plato::ScalarMultiVectorT<ControlScalarType> & aControl,
                              const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
                              Plato::ScalarVectorT<ResultScalarType> & aResult,
@@ -228,7 +277,12 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
       }, "second moment calculation");
     }
 
-    /******************************************************************************/
+    /******************************************************************************//**
+     * @brief Map quadrature points to physical domain
+     * @param [in] aRefPoint incoming quadrature points
+     * @param [in] aConfig 3D container of configuration/coordinates
+     * @param [out] aMappedPoints points mapped to physical domain
+    **********************************************************************************/
     void mapQuadraturePoint(const Plato::ScalarVector & aRefPoint,
                             const Plato::ScalarArray3DT<ConfigScalarType> & aConfig,
                             Plato::ScalarMultiVectorT<ConfigScalarType> & aMappedPoints) const

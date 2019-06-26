@@ -206,19 +206,16 @@ public:
         // workset control
         // 
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         // 
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-
         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create result view
         //
         Plato::ScalarVectorT<ResultScalar> tResult("result",m_numCells);
-
         m_dataMap.scalarVectors[mScalarFunctionValue->getName()] = tResult;
 
 
@@ -234,13 +231,11 @@ public:
         // workset state
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
@@ -286,13 +281,11 @@ public:
         // workset control
         // 
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         // 
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-
         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create return view
@@ -307,13 +300,11 @@ public:
         // workset state
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
@@ -443,13 +434,11 @@ public:
         // workset control
         // 
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset",m_numCells,m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
         // 
         Plato::ScalarArray3DT<ConfigScalar> tConfigWS("config workset",m_numCells, m_numNodesPerCell, m_numSpatialDims);
-
         Plato::WorksetBase<PhysicsT>::worksetConfig(tConfigWS);
 
         // create result view
@@ -467,13 +456,11 @@ public:
         // workset state
         //
         auto tState = Kokkos::subview(aStates, tStepIndex, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tState, tStateWS);
 
         // workset prev state
         //
         auto tPrevState = Kokkos::subview(aStates, tStepIndex-1, Kokkos::ALL());
-
         Plato::WorksetBase<PhysicsT>::worksetState(tPrevState, tPrevStateWS);
 
         // evaluate function
@@ -493,7 +480,7 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Set function name
+     * @brief Set user defined function name
      * @param [in] function name
     **********************************************************************************/
     void setFunctionName(const std::string aFunctionName)

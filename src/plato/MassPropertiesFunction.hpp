@@ -14,6 +14,7 @@
 #include "plato/LeastSquaresFunction.hpp"
 #include "plato/WeightedSumFunction.hpp"
 #include "plato/MassMoment.hpp"
+#include "plato/AnalyzeMacros.hpp"
 
 #include <Teuchos_ParameterList.hpp>
 
@@ -38,7 +39,7 @@ private:
 
     std::string mFunctionName; /*!< User defined function name */
 
-    Plato::Scalar mMaterialDensity;
+    Plato::Scalar mMaterialDensity; /*!< material density */
 
 	/******************************************************************************//**
      * @brief Initialization of Mass Properties Function
@@ -80,14 +81,14 @@ private:
         {
             const std::string tErrorString = std::string("Number of 'Properties' in '") + mFunctionName + 
                                                          "' parameter list does not equal the number of 'Weights'";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         if (tPropertyNames.size() != tPropertyGoldValues.size())
         {
             const std::string tErrorString = std::string("Number of 'Gold Values' in '") + mFunctionName + 
                                                          "' parameter list does not equal the number of 'Properties'";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         mLeastSquaresFunction = std::make_shared<Plato::LeastSquaresFunction<PhysicsT>>(aMesh, m_dataMap);
@@ -151,7 +152,7 @@ private:
                 const std::string tErrorString = std::string("Specified mass property '") +
                 tPropertyName + "' not implemented. Options are: Mass, CGx, CGy, CGz, " 
                               + "Ixx, Iyy, Izz, Ixy, Ixz, Iyz";
-                throw std::runtime_error(tErrorString);
+                THROWERR(tErrorString)
             }
             mLeastSquaresFunction->appendFunctionWeight(tPropertyWeight);
             mLeastSquaresFunction->appendGoldFunctionValue(tPropertyGoldValue);
@@ -368,7 +369,7 @@ private:
             const std::string tErrorString = std::string("Specified axes '") +
             aAxes + "' not implemented for moment of inertia calculation. " 
                           + "Options are: XX, YY, ZZ, XY, XZ, YZ";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         return tMomentOfInertiaFunction;

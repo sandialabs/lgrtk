@@ -374,7 +374,7 @@ public:
     }
 
     /******************************************************************************//**
-     * @brief Set function name
+     * @brief Set user defined function name
      * @param [in] function name
     **********************************************************************************/
     void setFunctionName(const std::string aFunctionName)

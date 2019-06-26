@@ -266,7 +266,6 @@ public:
         // ****** COMPUTE AUGMENTED LAGRANGIAN FUNCTION ******
         Plato::LinearTetCubRuleDegreeOne<mSpaceDim> tCubatureRule;
         auto tBasisFunc = tCubatureRule.getBasisFunctions();
-        // Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0); // ############# NOTE #############
         Plato::Scalar tLagrangianMultiplier = static_cast<Plato::Scalar>(1.0 / tNumCells);
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
         {

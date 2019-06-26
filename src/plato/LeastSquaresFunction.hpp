@@ -9,6 +9,8 @@
 #include "plato/WorksetBase.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/ScalarFunctionBaseFactory.hpp"
+#include "plato/AnalyzeMacros.hpp"
+
 #include <Teuchos_ParameterList.hpp>
 
 namespace Plato
@@ -42,7 +44,7 @@ private:
 
     std::string mFunctionName; /*!< User defined function name */
 
-    const Plato::Scalar mFunctionNormalizationCutoff = 0.1;
+    const Plato::Scalar mFunctionNormalizationCutoff = 0.1; /*!< if (|GoldValue| > 0.1) then ((f - f_gold) / f_gold)^2 ; otherwise  (f - f_gold)^2 */
 
 	/******************************************************************************//**
      * @brief Initialization of Least Squares Function
@@ -73,14 +75,14 @@ private:
         {
             const std::string tErrorString = std::string("Number of 'Functions' in '") + mFunctionName + 
                                                          "' parameter list does not equal the number of 'Weights'";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         if (tFunctionNames.size() != tFunctionGoldValues.size())
         {
             const std::string tErrorString = std::string("Number of 'Gold Values' in '") + mFunctionName + 
                                                          "' parameter list does not equal the number of 'Functions'";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString)
         }
 
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < tFunctionNames.size(); ++tFunctionIndex)

@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "plato/SimplexFadTypes.hpp"
+#include "AnalyzeMacros.hpp"
 
 #include "plato/VonMisesLocalMeasure.hpp"
 #include "plato/TensileEnergyDensityLocalMeasure.hpp"
@@ -36,7 +37,7 @@ public:
         }
         else
         {
-            throw std::runtime_error("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList")
         }
     }
 };

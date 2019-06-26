@@ -23,9 +23,9 @@ class VonMisesLocalMeasure :
         public AbstractLocalMeasure<EvaluationType>
 {
 private:
-    using AbstractLocalMeasure<EvaluationType>::mSpaceDim;
-    using AbstractLocalMeasure<EvaluationType>::mNumVoigtTerms;
-    using AbstractLocalMeasure<EvaluationType>::mNumNodesPerCell;
+    using AbstractLocalMeasure<EvaluationType>::mSpaceDim; /*!< space dimension */
+    using AbstractLocalMeasure<EvaluationType>::mNumVoigtTerms; /*!< number of voigt tensor terms */
+    using AbstractLocalMeasure<EvaluationType>::mNumNodesPerCell; /*!< number of nodes per cell */
     Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */

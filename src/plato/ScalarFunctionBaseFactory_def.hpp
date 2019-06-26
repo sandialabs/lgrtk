@@ -6,6 +6,7 @@
 #include "plato/DivisionFunction.hpp"
 #include "plato/LeastSquaresFunction.hpp"
 #include "plato/MassPropertiesFunction.hpp"
+#include "plato/AnalyzeMacros.hpp"
 
 namespace Plato
 {
@@ -52,7 +53,7 @@ namespace Plato
         {
             const std::string tErrorString = std::string("Unknown function Type '") + tFunctionType +
                             "' specified in function name " + aFunctionName + " ParameterList";
-            throw std::runtime_error(tErrorString);
+            THROWERR(tErrorString);
         }
     }
 
