@@ -33,7 +33,7 @@
 #include <plato/SimplexFadTypes.hpp>
 #include <plato/WorksetBase.hpp>
 #include <plato/VectorFunctionInc.hpp>
-#include <plato/ScalarFunctionInc.hpp>
+#include <plato/PhysicsScalarFunctionInc.hpp>
 #include <plato/StateValues.hpp>
 #include "plato/ApplyConstraints.hpp"
 #include "plato/SimplexThermal.hpp"
@@ -614,9 +614,11 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalThermalEnergy3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Heat Equation'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Thermal Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Thermal Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Thermal Energy'>                              \n"
+    "  <ParameterList name='My Internal Thermal Energy'>                           \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Thermal Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
@@ -640,7 +642,7 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, InternalThermalEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunctionInc<::Plato::Thermal<spaceDim>>
+  Plato::PhysicsScalarFunctionInc<::Plato::Thermal<spaceDim>>
     scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
   auto timeStep = params->sublist("Time Integration").get<double>("Time Step");

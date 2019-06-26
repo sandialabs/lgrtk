@@ -30,7 +30,7 @@
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/WorksetBase.hpp"
 #include "plato/VectorFunction.hpp"
-#include "plato/ScalarFunction.hpp"
+#include "plato/PhysicsScalarFunction.hpp"
 #include "plato/StateValues.hpp"
 #include "plato/ApplyConstraints.hpp"
 #include "plato/SimplexElectromechanics.hpp"
@@ -84,9 +84,11 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                \n"
     "  <Parameter name='PDE Constraint' type='string' value='Electroelastostatics'/>     \n"
-    "  <Parameter name='Objective' type='string' value='Internal Electroelastic Energy'/>\n"
+    "  <Parameter name='Objective' type='string' value='My Internal Electroelastic Energy'/>\n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                         \n"
-    "  <ParameterList name='Internal Electroelastic Energy'>                             \n"
+    "  <ParameterList name='My Internal Electroelastic Energy'>                             \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Electroelastic Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                         \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                        \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                           \n"
@@ -243,7 +245,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
 
   // create objective
   //
-  Plato::ScalarFunction<::Plato::Electromechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Electromechanics<spaceDim>>
     scalarFunction(*mesh, tMeshSets, tDataMap, *params, params->get<std::string>("Objective"));
 
   // compute and test objective value

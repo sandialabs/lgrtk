@@ -61,27 +61,31 @@ class ScalarFunctionInc : public Plato::WorksetBase<PhysicsT>
                       Omega_h::MeshSets& aMeshSets,
                       Plato::DataMap & aDataMap,
                       Teuchos::ParameterList& aParamList,
-                      const std::string & aScalarFunctionType ) :
+                      const std::string & aFunctionName ) :
             Plato::WorksetBase<PhysicsT>(aMesh),
             m_dataMap(aDataMap)
     /**************************************************************************/
     {
+      auto tProblemSpecs = aParamList.sublist("Plato Problem");
+      auto tProblemDefault = tProblemSpecs.sublist(aFunctionName);
+      auto tFunctionType = tProblemDefault.get<std::string>("Type", ""); // Must be a hardcoded type name (e.g. Volume)
+
       typename PhysicsT::FunctionFactory tFactory;
 
       mScalarFunctionValue
-        = tFactory.template createScalarFunctionInc<Residual>(aMesh, aMeshSets, aDataMap, aParamList, aScalarFunctionType);
+        = tFactory.template createScalarFunctionInc<Residual>(aMesh, aMeshSets, aDataMap, aParamList, tFunctionType, aFunctionName);
 
       mScalarFunctionGradientU
-        = tFactory.template createScalarFunctionInc<Jacobian>(aMesh, aMeshSets, aDataMap, aParamList, aScalarFunctionType);
+        = tFactory.template createScalarFunctionInc<Jacobian>(aMesh, aMeshSets, aDataMap, aParamList, tFunctionType, aFunctionName);
 
       mScalarFunctionGradientP
-        = tFactory.template createScalarFunctionInc<JacobianP>(aMesh, aMeshSets, aDataMap, aParamList, aScalarFunctionType);
+        = tFactory.template createScalarFunctionInc<JacobianP>(aMesh, aMeshSets, aDataMap, aParamList, tFunctionType, aFunctionName);
 
       mScalarFunctionGradientZ
-        = tFactory.template createScalarFunctionInc<GradientZ>(aMesh, aMeshSets, aDataMap, aParamList, aScalarFunctionType);
+        = tFactory.template createScalarFunctionInc<GradientZ>(aMesh, aMeshSets, aDataMap, aParamList, tFunctionType, aFunctionName);
 
       mScalarFunctionGradientX
-        = tFactory.template createScalarFunctionInc<GradientX>(aMesh, aMeshSets, aDataMap, aParamList, aScalarFunctionType);
+        = tFactory.template createScalarFunctionInc<GradientX>(aMesh, aMeshSets, aDataMap, aParamList, tFunctionType, aFunctionName);
     }
 
     /**************************************************************************/

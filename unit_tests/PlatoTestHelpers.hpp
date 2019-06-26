@@ -474,7 +474,7 @@ inline void print_2d_coords(const Omega_h::Mesh& aMesh, const Omega_h::LOs& aNod
 inline void print_3d_coords(const Omega_h::Mesh& aMesh, const Omega_h::LOs& aNodeOrdinals)
 {
     auto tSpaceDim = aMesh.dim();
-    assert(tSpaceDim == static_cast<Omega_h::Int>(2));
+    assert(tSpaceDim == static_cast<Omega_h::Int>(3));
     auto tCoords = aMesh.coords();
     auto tNumNodes = aNodeOrdinals.size();
 

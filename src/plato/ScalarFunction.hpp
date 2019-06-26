@@ -69,17 +69,21 @@ public:
     {
         typename PhysicsT::FunctionFactory tFactory;
 
+        auto tProblemSpecs = aInputParams.sublist("Plato Problem");
+        auto tProblemDefault = tProblemSpecs.sublist(aFuncName);
+        auto tFunctionType = tProblemDefault.get<std::string>("Type", ""); // Must be a hardcoded type name (e.g. Volume)
+
         mScalarFunctionValue =
-                tFactory.template createScalarFunction<Residual>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+                tFactory.template createScalarFunction<Residual>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
 
         mScalarFunctionGradientU =
-                tFactory.template createScalarFunction<Jacobian>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+                tFactory.template createScalarFunction<Jacobian>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
 
         mScalarFunctionGradientZ =
-                tFactory.template createScalarFunction<GradientZ>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+                tFactory.template createScalarFunction<GradientZ>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
 
         mScalarFunctionGradientX =
-                tFactory.template createScalarFunction<GradientX>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+                tFactory.template createScalarFunction<GradientX>(aMesh, aMeshSets, aDataMap, aInputParams, tFunctionType, aFuncName);
     }
 
     /******************************************************************************//**
@@ -174,13 +178,11 @@ public:
         // workset state
         //
         Plato::ScalarMultiVectorT<StateScalar> tStateWS("state workset", m_numCells, m_numDofsPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetState(aState, tStateWS);
 
         // workset control
         //
         Plato::ScalarMultiVectorT<ControlScalar> tControlWS("control workset", m_numCells, m_numNodesPerCell);
-
         Plato::WorksetBase<PhysicsT>::worksetControl(aControl, tControlWS);
 
         // workset config
@@ -191,7 +193,6 @@ public:
         // create result view
         //
         Plato::ScalarVectorT<ResultScalar> tResult("result", m_numCells);
-
         m_dataMap.scalarVectors[mScalarFunctionValue->getName()] = tResult;
 
         // evaluate function

@@ -55,8 +55,9 @@ class FluxPNorm :
               Omega_h::MeshSets& aMeshSets,
               Plato::DataMap& aDataMap, 
               Teuchos::ParameterList& aProblemParams, 
-              Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Flux P-Norm"),
+              Teuchos::ParameterList& aPenaltyParams,
+              std::string aFunctionName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
@@ -71,7 +72,7 @@ class FluxPNorm :
         m_quadratureWeight /= Plato::Scalar(d);
       }
 
-      auto params = aProblemParams.get<Teuchos::ParameterList>("Flux P-Norm");
+      auto params = aProblemParams.get<Teuchos::ParameterList>(aFunctionName);
 
       m_exponent = params.get<double>("Exponent");
     }

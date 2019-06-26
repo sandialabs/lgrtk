@@ -39,7 +39,7 @@
 #include <plato/VectorFunction.hpp>
 #include <plato/AbstractScalarFunction.hpp>
 #include <plato/InternalElasticEnergy.hpp>
-#include <plato/ScalarFunction.hpp>
+#include <plato/PhysicsScalarFunction.hpp>
 #include "plato/ApplyConstraints.hpp"
 #include "plato/PlatoProblem.hpp"
 #include "plato/Mechanics.hpp"
@@ -292,7 +292,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ElastostaticResidual3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
     "  <ParameterList name='Elastostatics'>                                        \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
@@ -305,6 +305,10 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ElastostaticResidual3D )
     "      <Parameter name='Poissons Ratio' type='double' value='0.3'/>            \n"
     "      <Parameter name='Youngs Modulus' type='double' value='1.0e6'/>          \n"
     "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                           \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
     "  </ParameterList>                                                            \n"
     "</ParameterList>                                                              \n"
   );
@@ -495,18 +499,20 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Elastic Energy'>                              \n"
-    "    <ParameterList name='Penalty Function'>                                   \n"
-    "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
-    "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
-    "    </ParameterList>                                                          \n"
-    "  </ParameterList>                                                            \n"
     "  <ParameterList name='Material Model'>                                       \n"
     "    <ParameterList name='Isotropic Linear Elastic'>                           \n"
     "      <Parameter name='Poissons Ratio' type='double' value='0.3'/>            \n"
     "      <Parameter name='Youngs Modulus' type='double' value='1.0e6'/>          \n"
+    "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                           \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
+    "    <ParameterList name='Penalty Function'>                                   \n"
+    "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
+    "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
     "    </ParameterList>                                                          \n"
     "  </ParameterList>                                                            \n"
     "</ParameterList>                                                              \n"
@@ -516,7 +522,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -680,9 +686,11 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Stress P-Norm'/>           \n"
+    "  <Parameter name='Objective' type='string' value='My Stress P-Norm'/>        \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                  \n"
-    "  <ParameterList name='Stress P-Norm'>                                        \n"
+    "  <ParameterList name='My Stress P-Norm'>                                     \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Stress P-Norm'/>  \n"
     "    <Parameter name='Exponent' type='double' value='12.0'/>                   \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
@@ -702,7 +710,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -821,9 +829,11 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                         \n"
-    "  <Parameter name='Objective' type='string' value='Effective Energy'/>                       \n"
+    "  <Parameter name='Objective' type='string' value='My Effective Energy'/>                       \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                                 \n"
-    "  <ParameterList name='Effective Energy'>                                                    \n"
+    "  <ParameterList name='My Effective Energy'>                                                    \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Effective Energy'/>  \n"
     "    <Parameter name='Assumed Strain' type='Array(double)' value='{1.0,0.0,0.0,0.0,0.0,0.0}'/>\n"
     "    <ParameterList name='Penalty Function'>                                                  \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                                 \n"
@@ -888,7 +898,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1046,9 +1056,11 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                         \n"
-    "  <Parameter name='Objective' type='string' value='Effective Energy'/>                       \n"
+    "  <Parameter name='Objective' type='string' value='My Effective Energy'/>                       \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                                 \n"
-    "  <ParameterList name='Effective Energy'>                                                    \n"
+    "  <ParameterList name='My Effective Energy'>                                                    \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Effective Energy'/>  \n"
     "    <Parameter name='Assumed Strain' type='Array(double)' value='{0.0,0.0,0.0,1.0,0.0,0.0}'/>\n"
     "    <ParameterList name='Penalty Function'>                                                  \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                                 \n"
@@ -1094,7 +1106,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1245,7 +1257,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ThermostaticResidual3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Thermostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Thermal Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Thermal Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
     "  <ParameterList name='Thermostatics'>                                        \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
@@ -1257,6 +1269,10 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ThermostaticResidual3D )
     "    <ParameterList name='Isotropic Linear Thermal'>                           \n"
     "      <Parameter name='Conductivity Coefficient' type='double' value='100.'/> \n"
     "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                           \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
     "  </ParameterList>                                                            \n"
     "</ParameterList>                                                              \n"
   );
@@ -1416,9 +1432,11 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Thermostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Thermal Energy'/> \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Thermal Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Internal Thermal Energy'>                              \n"
+    "  <ParameterList name='My Internal Thermal Energy'>                              \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Thermal Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
@@ -1436,7 +1454,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Thermal<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Thermal<spaceDim>>
     eeScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1564,9 +1582,11 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Thermostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Flux P-Norm'/>             \n"
+    "  <Parameter name='Objective' type='string' value='My Flux P-Norm'/>             \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                  \n"
-    "  <ParameterList name='Flux P-Norm'>                                          \n"
+    "  <ParameterList name='My Flux P-Norm'>                                          \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Flux P-Norm'/>  \n"
     "    <Parameter name='Exponent' type='double' value='12.0'/>                   \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
@@ -1585,7 +1605,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Thermal<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Thermal<spaceDim>>
     scalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Objective"));
 
 
@@ -1735,14 +1755,20 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
     "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
-    "  <Parameter name='Objective' type='string' value='Internal Elastic Energy'/> \n"
-    "  <Parameter name='Linear Constraint' type='string' value='Volume'/>          \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
+    "  <Parameter name='Linear Constraint' type='string' value='My Volume'/>          \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Volume'>                                               \n"
+    "  <ParameterList name='My Volume'>                                               \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Volume'/>  \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
     "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                           \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
     "  </ParameterList>                                                            \n"
     "</ParameterList>                                                              \n"
   );
@@ -1751,7 +1777,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   //
   Plato::DataMap dataMap;
   Omega_h::MeshSets tMeshSets;
-  Plato::ScalarFunction<::Plato::Mechanics<spaceDim>>
+  Plato::PhysicsScalarFunction<::Plato::Mechanics<spaceDim>>
     volScalarFunction(*mesh, tMeshSets, dataMap, *params, params->get<std::string>("Linear Constraint"));
 
 

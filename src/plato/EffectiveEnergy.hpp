@@ -59,8 +59,9 @@ class EffectiveEnergy :
                     Omega_h::MeshSets& aMeshSets,
                     Plato::DataMap& aDataMap,
                     Teuchos::ParameterList& aProblemParams,
-                    Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Effective Energy"),
+                    Teuchos::ParameterList& aPenaltyParams,
+                    std::string& aFunctionName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/
@@ -69,7 +70,7 @@ class EffectiveEnergy :
       auto materialModel = mmfactory.create();
       m_cellStiffness = materialModel->getStiffnessMatrix();
 
-      Teuchos::ParameterList& tParams = aProblemParams.sublist(m_functionName);
+      Teuchos::ParameterList& tParams = aProblemParams.sublist(aFunctionName);
       auto tAssumedStrain = tParams.get<Teuchos::Array<double>>("Assumed Strain");
       assert(tAssumedStrain.size() == m_numVoigtTerms);
       for( Plato::OrdinalType iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++)

@@ -48,7 +48,8 @@ public:
         {
             if(tProblemPDE == "Heat Equation") {
               return std::make_shared<HeatEquationProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            } else {
+            }
+            else {
               return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
             }
         }
@@ -64,7 +65,8 @@ public:
         {
             if(tProblemPDE == "First Order") {
               return std::make_shared<HeatEquationProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            } else {
+            } 
+            else {
               return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
             }
         }
