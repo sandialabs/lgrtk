@@ -42,6 +42,8 @@ private:
 
 	/******************************************************************************//**
      * @brief Initialization of Mass Properties Function
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
      * @param [in] aInputParams input parameters database
     **********************************************************************************/
     void initialize (Omega_h::Mesh& aMesh, 
@@ -56,6 +58,9 @@ private:
 
     /******************************************************************************//**
      * @brief Create the least squares mass properties function
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aInputParams input parameters database
     **********************************************************************************/
     void createLeastSquaresFunction(Omega_h::Mesh& aMesh, 
                                     Omega_h::MeshSets& aMeshSets,
@@ -155,6 +160,9 @@ private:
 
     /******************************************************************************//**
      * @brief Create the mass function only
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @return physics scalar function
     **********************************************************************************/
     std::shared_ptr<PhysicsScalarFunction<PhysicsT>>
     getMassFunction(Omega_h::Mesh& aMesh, 
@@ -194,6 +202,10 @@ private:
 
     /******************************************************************************//**
      * @brief Create the 'first mass moment divided by the mass' function (CG)
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aMomentType mass moment type (FirstX, FirstY, FirstZ)
+     * @return scalar function base
     **********************************************************************************/
     std::shared_ptr<ScalarFunctionBase>
     getFirstMomentOverMassRatio(Omega_h::Mesh& aMesh, 
@@ -246,6 +258,10 @@ private:
 
     /******************************************************************************//**
      * @brief Create the second mass moment function
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aMomentType second mass moment type (XX, XY, YY, ...)
+     * @return scalar function base
     **********************************************************************************/
     std::shared_ptr<ScalarFunctionBase>
     getSecondMassMoment(Omega_h::Mesh& aMesh, 
@@ -288,6 +304,10 @@ private:
 
     /******************************************************************************//**
      * @brief Create the moment of inertia function
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aAxes axes about which to compute the moment of inertia (XX, YY, ..)
+     * @return scalar function base
     **********************************************************************************/
     std::shared_ptr<ScalarFunctionBase>
     getMomentOfInertia(Omega_h::Mesh& aMesh, 

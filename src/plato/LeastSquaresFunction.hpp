@@ -139,7 +139,7 @@ public:
 
     /******************************************************************************//**
      * @brief Add function gold value
-     * @param [in] aWGoldValue function gold value
+     * @param [in] aGoldValue function gold value
     **********************************************************************************/
     void appendGoldFunctionValue(Plato::Scalar aGoldValue)
     {
@@ -149,6 +149,23 @@ public:
             mFunctionNormalization.push_back(std::abs(aGoldValue));
         else
             mFunctionNormalization.push_back(1.0);
+    }
+
+    /******************************************************************************//**
+     * @brief Set function normalization
+     * @param [in] aFunctionNormalization function normalization value
+     * @param [in] aFunctionIndex function index
+    **********************************************************************************/
+    void setFunctionNormalization(Plato::Scalar aFunctionNormalization,
+                                  Plato::OrdinalType aFunctionIndex)
+    {
+        assert(aFunctionIndex < mFunctionNormalization.size());
+
+        // Dont allow the function normalization to be "too small"
+        if (std::abs(aFunctionNormalization) > mFunctionNormalizationCutoff)
+            mFunctionNormalization[aFunctionIndex] = std::abs(aFunctionNormalization);
+        else
+            mFunctionNormalization[aFunctionIndex] = mFunctionNormalizationCutoff;
     }
 
     /******************************************************************************//**

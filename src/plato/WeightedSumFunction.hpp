@@ -153,6 +153,8 @@ public:
                         const Plato::ScalarVector & aControl,
                         Plato::Scalar aTimeStep = 0.0) const
     {
+        assert(mScalarFunctionBaseContainer.size() == mFunctionWeights.size());
+        
         Plato::Scalar tResult = 0.0;
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {
