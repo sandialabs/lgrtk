@@ -33,7 +33,6 @@
 #include <plato/SimplexFadTypes.hpp>
 #include <plato/WorksetBase.hpp>
 #include <plato/VectorFunctionInc.hpp>
-#include <plato/ScalarFunctionInc.hpp>
 #include <plato/StateValues.hpp>
 #include "plato/ApplyConstraints.hpp"
 #include "plato/SimplexThermal.hpp"

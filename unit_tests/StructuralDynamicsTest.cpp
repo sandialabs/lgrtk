@@ -15,8 +15,8 @@
 #include "plato/Simp.hpp"
 #include "plato/ExpVolume.hpp"
 #include "plato/WorksetBase.hpp"
-#include "plato/ScalarFunction.hpp"
 #include "plato/VectorFunction.hpp"
+#include "plato/PhysicsScalarFunction.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/DynamicCompliance.hpp"
@@ -510,7 +510,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicCompliance)
     tResidual = std::make_shared<Plato::DynamicCompliance<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateValue(tResidual);
 
     // ALLOCATE STATES
@@ -557,7 +557,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradZ)
     tJacobianControl = std::make_shared<Plato::DynamicCompliance<JacobianZ, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientZ(tJacobianControl);
 
     // ALLOCATE STATES
@@ -616,7 +616,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradX)
     tJacobianConfig = std::make_shared<Plato::DynamicCompliance<JacobianX, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientX(tJacobianConfig);
 
     // ALLOCATE STATES
@@ -674,7 +674,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, DynamicComplianceGradU)
     tJacobianState = std::make_shared<Plato::DynamicCompliance<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientU(tJacobianState);
 
     // ALLOCATE STATES
@@ -748,7 +748,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeValue)
     tResidual = std::make_shared<Plato::ExpVolume<ResidualT, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateValue(tResidual);
 
     // ALLOCATE STATES
@@ -795,7 +795,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradZ)
     tJacobianControl = std::make_shared<Plato::ExpVolume<JacobianZ, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientZ(tJacobianControl);
 
     // ALLOCATE STATES
@@ -851,7 +851,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradU)
     tJacobianState = std::make_shared<Plato::ExpVolume<JacobianU, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientU(tJacobianState);
 
     // ALLOCATE STATES
@@ -903,7 +903,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ExpVolumeGradX)
     tJacobianConfig = std::make_shared<Plato::ExpVolume<JacobianX, Plato::MSIMP, Plato::HyperbolicTangentProjection>>(*tMesh, tMeshSets, tDataMap);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientX(tJacobianConfig);
 
     // ALLOCATE STATES
@@ -1310,7 +1310,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfitValue)
     tResidual = std::make_shared<Plato::FrequencyResponseMisfit<ResidualT>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
     
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateValue(tResidual);
 
     // ALLOCATE CONTROLS FOR ELASTOSTATICS EXAMPLE
@@ -1366,7 +1366,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradZ)
     tGradControl = std::make_shared<Plato::FrequencyResponseMisfit<JacobianZ>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientZ(tGradControl);
 
     // ALLOCATE CONTROLS FOR ELASTOSTATICS EXAMPLE
@@ -1428,7 +1428,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradX)
     tJacobianConfig = std::make_shared<Plato::FrequencyResponseMisfit<JacobianX>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientX(tJacobianConfig);
 
     // ALLOCATE CONTROLS FOR ELASTOSTATICS EXAMPLE
@@ -1490,7 +1490,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, FrequencyResponseMisfit_GradU)
     tJacobianState = std::make_shared<Plato::FrequencyResponseMisfit<JacobianU>>(*tMesh, tMeshSets, tDataMap, tFreqArray, tExpStates);
 
     // ALLOCATE SCALAR FUNCTION
-    Plato::ScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
+    Plato::PhysicsScalarFunction<Plato::StructuralDynamics<tSpaceDim>> tScalarFunction(*tMesh, tDataMap);
     tScalarFunction.allocateGradientU(tJacobianState);
 
     // ALLOCATE CONTROLS FOR ELASTOSTATICS EXAMPLE

@@ -161,6 +161,33 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runAugLagStressUnitTests COMMAND ${ES_MPI_TEST})
 #end: AugLagStressTest unit test
 
+#begin: MassPropertiesTest unit test
+  set(MassPropertiesTest_SOURCES
+    MassPropertiesTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(MassPropertiesTest_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(MassPropertiesUnitTests
+    ${MassPropertiesTest_SOURCES}
+    ${MassPropertiesTest_HEADERS}
+  )
+
+  target_link_libraries(MassPropertiesUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(MassPropertiesUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/MassPropertiesUnitTests)
+  add_test(NAME runMassPropertiesUnitTests COMMAND ${ES_MPI_TEST})
+#end: MassPropertiesTest unit test
+
 #begin: PlatoMathHelpers unit test
   set(PlatoMathHelpers_SOURCES
     PlatoMathHelpersTest.cpp

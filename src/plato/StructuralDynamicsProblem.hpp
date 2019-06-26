@@ -21,7 +21,7 @@
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/ApplyConstraints.hpp"
 
-#include "plato/ScalarFunction.hpp"
+#include "plato/PhysicsScalarFunction.hpp"
 #include "plato/VectorFunction.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
@@ -65,8 +65,8 @@ private:
     std::shared_ptr<const Plato::VectorFunction<SimplexPhysics>> mEquality;
 
     // optional
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mObjective;
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint;
+    std::shared_ptr<const Plato::PhysicsScalarFunction<SimplexPhysics>> mObjective;
+    std::shared_ptr<const Plato::PhysicsScalarFunction<SimplexPhysics>> mConstraint;
     std::shared_ptr<const Plato::VectorFunction<SimplexPhysics>> mAdjointProb;
 
 public:
@@ -667,13 +667,13 @@ private:
         if(aParamList.isType<std::string>("Constraint"))
         {
             std::string tConstraintName = aParamList.get<std::string>("Constraint");
-            mConstraint = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tConstraintName);
+            mConstraint = std::make_shared<Plato::PhysicsScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tConstraintName);
         }
 
         if(aParamList.isType<std::string>("Objective"))
         {
             std::string tObjectiveName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tObjectiveName);
+            mObjective = std::make_shared<Plato::PhysicsScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tObjectiveName);
 
             auto tLength = mEquality->size();
             mMyAdjoint = Plato::ScalarMultiVector("MyAdjoint", 1, tLength);
