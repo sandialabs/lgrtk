@@ -48,10 +48,10 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
       s.points_in_element.resize(point_in_element_index(4));
       break;
   }
-  s.nodes.resize(init_params.num_nodes);
-  s.elements.resize(init_params.num_elem);
+  s.nodes.resize(int(init_params.num_nodes));
+  s.elements.resize(int(init_params.num_elem));
   s.material.resize(s.elements.size());
-  hpc::host_vector<int> host_conn((s.elements.size() * s.nodes_in_element.size()).get());
+  hpc::host_vector<int> host_conn(int(s.elements.size() * s.nodes_in_element.size()));
   int offset = 0;
   for (int i = 0; i < init_params.num_elem_blk; ++i) {
     char elem_type[MAX_STR_LENGTH + 1];
@@ -64,13 +64,13 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
         &nentries, &nnodes_per_entry, &nedges_per_entry, &nfaces_per_entry, &nattr_per_entry);
     assert(exodus_error_code == 0);
     if (nentries == 0) continue;
-    assert(nnodes_per_entry == s.nodes_in_element.size().get());
+    assert(nnodes_per_entry == int(s.nodes_in_element.size()));
     if (nedges_per_entry < 0) nedges_per_entry = 0;
     if (nfaces_per_entry < 0) nfaces_per_entry = 0;
     hpc::host_vector<int> edge_conn(nentries * nedges_per_entry);
     hpc::host_vector<int> face_conn(nentries * nfaces_per_entry);
     exodus_error_code = ex_get_conn(exodus_file, EX_ELEM_BLOCK, block_ids[i],
-        host_conn.data() + offset * s.nodes_in_element.size().get(), edge_conn.data(),
+        host_conn.data() + offset * int(s.nodes_in_element.size()), edge_conn.data(),
         face_conn.data());
     assert(exodus_error_code == 0);
     auto material_begin = s.material.begin() + element_index(offset);
@@ -87,13 +87,13 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
   for (auto const element : s.elements) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const node_in_element : s.nodes_in_element) {
-      auto const host_index = (element * s.nodes_in_element.size()).get() + node_in_element.get();
+      auto const host_index = int(element * s.nodes_in_element.size()) + int(node_in_element);
       auto const element_node = element_nodes[node_in_element];
       pinned_conn[element_node] = node_index(host_conn[host_index] - 1);
     }
   }
   s.elements_to_nodes.resize(pinned_conn.size());
-  hpc::copy(hpc::host_to_device_policy(), pinned_conn, s.elements_to_nodes);
+  hpc::copy(pinned_conn, s.elements_to_nodes);
   pinned_conn.clear();
   hpc::host_vector<double, node_index> host_coords[3];
   for (int i = 0; i < 3; ++i) host_coords[i].resize(s.nodes.size());
@@ -110,7 +110,7 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
         host_coords[2][node]);
   }
   s.x.resize(s.nodes.size());
-  hpc::copy(hpc::host_to_device_policy(), pinned_coords, s.x);
+  hpc::copy(pinned_coords, s.x);
   propagate_connectivity(s);
 }
 
