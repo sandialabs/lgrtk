@@ -91,7 +91,7 @@ class pointer_iterator {
     return m_pointer != other.m_pointer;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference operator*() const noexcept {
-#ifndef NDEBUG
+#ifdef HPC_CHECK_BOUNDS
     assert(m_allocation_begin <= m_pointer);
     assert(m_pointer < m_allocation_end);
 #endif
@@ -125,14 +125,14 @@ class pointer_iterator {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr pointer_iterator operator+(difference_type const n) const noexcept {
     return pointer_iterator(m_pointer + n
-#ifndef NDEBUG
+#ifdef HPC_CHECK_BOUNDS
         , m_allocation_begin, m_allocation_end
 #endif
         );
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr pointer_iterator operator-(difference_type const n) const noexcept {
     return pointer_iterator(m_pointer - n
-#ifndef NDEBUG
+#ifdef HPC_CHECK_BOUNDS
         , m_allocation_begin, m_allocation_end
 #endif
         );
