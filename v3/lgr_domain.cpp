@@ -147,20 +147,20 @@ std::unique_ptr<domain> epsilon_around_plane_domain(plane const& p, double eps) 
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({p.normal, p.origin - eps});
   out->clip({-p.normal, -p.origin - eps});
-  return out;
+  return std::move(out);
 }
 
 std::unique_ptr<domain> sphere_domain(hpc::position<double> const origin, double
     const radius) {
   lgr::sphere const s{origin, radius};
   auto out = std::make_unique<clipped_domain<lgr::sphere>>(s);
-  return out;
+  return std::move(out);
 }
 
 std::unique_ptr<domain> half_space_domain(plane const& p) {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip(p);
-  return out;
+  return std::move(out);
 }
 
 std::unique_ptr<domain> box_domain(hpc::position<double> const lower_left,
@@ -172,7 +172,7 @@ std::unique_ptr<domain> box_domain(hpc::position<double> const lower_left,
   out->clip({-hpc::vector3<double>::y_axis(), -upper_right(1)});
   out->clip({hpc::vector3<double>::z_axis(), lower_left(2)});
   out->clip({-hpc::vector3<double>::z_axis(), -upper_right(2)});
-  return out;
+  return std::move(out);
 }
 
 }
