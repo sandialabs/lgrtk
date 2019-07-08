@@ -11,10 +11,8 @@ class cuda_policy {};
 using host_policy = serial_policy;
 #ifdef HPC_CUDA
 using device_policy = cuda_policy;
-class host_to_device_policy {};
 #else
 using device_policy = serial_policy;
-using host_to_device_policy = serial_policy;
 #endif
 
 }
