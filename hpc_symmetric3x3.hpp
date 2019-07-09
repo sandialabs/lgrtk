@@ -311,7 +311,7 @@ norm(symmetric3x3<T> const x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
-invert(symmetric3x3<T> const x) noexcept {
+inverse(symmetric3x3<T> const x) noexcept {
   T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
                         T const yy = x(S_YY); T const yz = x(S_YZ);
                                               T const zz = x(S_ZZ);

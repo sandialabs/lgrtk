@@ -504,7 +504,7 @@ radial_return(Properties const props, hpc::symmetric_stress<double> const Te,
     auto const j23 = j13 * j13;
     auto const Be = Bbe * j23;
     auto const Ve = sqrt_spd(Be);
-    Fp = invert(Ve) * F;
+    Fp = inverse(Ve) * F;
     if (flag == StateFlag::REMAPPED) {
       // Correct pressure term
       auto p = trace(T);
@@ -570,7 +570,7 @@ update(Properties const props, hpc::deformation_gradient<double> const F,
 
   // Determine the stress predictor.
   hpc::symmetric_stress<double> Te;
-  auto const Fe = F * invert(Fp);
+  auto const Fe = F * inverse(Fp);
   ErrorCode err_c = ErrorCode::NOT_SET;
   IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {
     Te = linear_elastic_stress(props, Fe);
