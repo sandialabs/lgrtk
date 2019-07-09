@@ -346,6 +346,51 @@ void elastic_wave_3d() {
   run(in);
 }
 
+HPC_NOINLINE void plastic_wave_3d();
+void plastic_wave_3d() {
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  constexpr material_index x_boundary(1);
+  constexpr material_index y_boundary(2);
+  constexpr material_index z_boundary(3);
+  constexpr material_index nboundaries(3);
+  input in(nmaterials, nboundaries);
+  in.name = "plastic_wave_3d";
+  in.element = TETRAHEDRON;
+  in.end_time = 2.0e-3;
+  in.num_file_outputs = 100;
+  in.elements_along_x = 1000;
+  in.elements_along_y = 1;
+  in.y_domain_size = 1.0e-3;
+  in.elements_along_z = 1;
+  in.z_domain_size = 1.0e-3;
+  in.rho0[body] = 1000.0;
+  in.enable_hyper_ep[body] = true;
+  in.K0[body] = 1.0e9;
+  in.G0[body] = 0.0;
+  in.initial_v = set_exponential_wave_v;
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  auto x_domain = std::make_unique<union_domain>();
+  x_domain->add(epsilon_around_plane_domain({x_axis, 0.0}, eps));
+  x_domain->add(epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
+  in.domains[x_boundary] = std::move(x_domain);
+  in.zero_acceleration_conditions.push_back({x_boundary, x_axis});
+  auto y_domain = std::make_unique<union_domain>();
+  y_domain->add(epsilon_around_plane_domain({y_axis, 0.0}, eps));
+  y_domain->add(epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
+  in.domains[y_boundary] = std::move(y_domain);
+  in.zero_acceleration_conditions.push_back({y_boundary, y_axis});
+  auto z_domain = std::make_unique<union_domain>();
+  z_domain->add(epsilon_around_plane_domain({z_axis, 0.0}, eps));
+  z_domain->add(epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps));
+  in.domains[z_boundary] = std::move(z_domain);
+  in.zero_acceleration_conditions.push_back({z_boundary, z_axis});
+  run(in);
+}
+
 HPC_NOINLINE void swinging_cube(bool stabilize);
 void swinging_cube(bool stabilize) {
   constexpr material_index body(0);
@@ -543,7 +588,7 @@ HPC_NOINLINE inline void Noh_2D(bool nodal_energy, bool p_prime ) {
     }
   } else {
       in.name = "Noh_2D";
-  }      
+  }
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
@@ -895,6 +940,7 @@ int main() {
   if ((0)) lgr::spinning_cube();
   if ((0)) lgr::elastic_wave_2d();
   if ((0)) lgr::elastic_wave_3d();
+  if ((1)) lgr::plastic_wave_3d();
   if ((0)) lgr::swinging_cube(true);
   if ((0)) lgr::swinging_cube(false);
   if ((0)) lgr::twisting_column();
@@ -905,7 +951,7 @@ int main() {
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
-  if ((1)) lgr::twisting_composite_column();
+  if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 }

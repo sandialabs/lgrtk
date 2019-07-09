@@ -304,6 +304,25 @@ deviator(matrix3x3<T> x) noexcept {
   return x - ((1.0 / 3.0) * trace(x));
 }
 
+
+template <class T>
+HPC_HOST_DEVICE constexpr matrix3x3<T>
+invert(matrix3x3<T> x) noexcept {
+  T const xx = x(0,0); T const xy = x(0,1); T const xz = x(0,2);
+  T const yx = x(1,0); T const yy = x(1,1); T const yz = x(1,2);
+  T const zx = x(2,0); T const zy = x(2,1); T const zz = x(2,2);
+  T const i_xx = (yy*zz - yz*zy)/(xx*yy*zz - xx*yz*zy - xy*yx*zz + xy*yz*zx + xz*yx*zy - xz*yy*zx);
+  T const i_xy = (-xy*zz + xz*zy)/(xx*yy*zz - xx*yz*zy - xy*yx*zz + xy*yz*zx + xz*yx*zy - xz*yy*zx);
+  T const i_xz = (xy*yz - xz*yy)/(xx*yy*zz - xx*yz*zy - xy*yx*zz + xy*yz*zx + xz*yx*zy - xz*yy*zx);
+  T const i_yx = (-yx*zz + yz*zx)/(xx*yy*zz - xx*yz*zy - xy*yx*zz + xy*yz*zx + xz*yx*zy - xz*yy*zx);
+  T const i_yy = xx*(xx*zz - xz*zx)/((xx*yy - xy*yx)*(xx*zz - xz*zx) - (xx*yz - xz*yx)*(xx*zy - xy*zx));
+  T const i_yz = -xx*(xx*yz - xz*yx)/((xx*yy - xy*yx)*(xx*zz - xz*zx) - (xx*yz - xz*yx)*(xx*zy - xy*zx));
+  T const i_zx = (yx*zy - yy*zx)/(xx*yy*zz - xx*yz*zy - xy*yx*zz + xy*yz*zx + xz*yx*zy - xz*yy*zx);
+  T const i_zy = -xx*(xx*zy - xy*zx)/((xx*yy - xy*yx)*(xx*zz - xz*zx) - (xx*yz - xz*yx)*(xx*zy - xy*zx));
+  T const i_zz = xx*(xx*yy - xy*yx)/((xx*yy - xy*yx)*(xx*zz - xz*zx) - (xx*yz - xz*yx)*(xx*zy - xy*zx));
+  return matrix3x3<T>(i_xx, i_xy, i_xz, i_yx, i_yy, i_yz, i_zx, i_zy, i_zz);
+}
+
 template <class T>
 class array_traits<matrix3x3<T>> {
   public:

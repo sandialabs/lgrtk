@@ -12,6 +12,7 @@
 #include <lgr_input.hpp>
 #include <lgr_stabilized.hpp>
 #include <lgr_adapt.hpp>
+#include <lgr_hyper_ep.hpp>
 
 namespace lgr {
 
@@ -213,6 +214,87 @@ HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index c
       auto const devB = deviator(B);
       auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
       points_to_sigma[point] = sigma;
+      auto const K = half_K0 * (J + Jinv);
+      points_to_K[point] = K;
+      points_to_G[point] = G0;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
+HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_index const material) {
+  // Constant state
+  auto const points_to_dt = s.dt;
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_temp = s.temp.cbegin();
+
+  // Variables to be updated
+  auto points_to_Fp_total = s.Fp_total.begin();
+  auto points_to_sigma = s.sigma.begin();
+  auto points_to_ep = s.ep.begin();
+  auto points_to_ep_dot = s.ep_dot.begin();
+  auto points_to_dp = s.dp.begin();
+  auto points_to_localized = s.localized.begin();
+
+  // Elastic parameters to be updated
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
+
+  // Material properties
+  hyper_ep::Properties props;
+  props.E = in.E[material];
+  props.Nu = in.Nu[material];
+  props.A = in.A[material];
+  props.B = in.B[material];
+  props.n = in.n[material];
+  props.C1 = in.C1[material];
+  props.C2 = in.C2[material];
+  props.C3 = in.C3[material];
+  props.C4 = in.C4[material];
+  props.allow_no_tension = in.allow_no_tension[material];
+  props.allow_no_shear = in.allow_no_shear[material];
+  props.set_stress_to_zero = in.set_stress_to_zero[material];
+  props.D1 = in.D1[material];
+  props.D2 = in.D2[material];
+  props.D3 = in.D3[material];
+  props.D4 = in.D4[material];
+  props.D5 = in.D5[material];
+  props.D6 = in.D6[material];
+  props.D7 = in.D7[material];
+  props.DC = in.DC[material];
+  props.eps_f_min = in.eps_f_min[material];
+
+  // Derived properties
+  auto const K0 = props.E / 3. / (1. - 2. * props.Nu);
+  auto const G0 = props.E / 2. / (1. + props.Nu);
+
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] HPC_DEVICE (element_index const element) {
+    for (auto const point : elements_to_points[element]) {
+      auto const dt = points_to_dt;
+      auto const F = points_to_F_total[point].load();
+      auto const temp = points_to_temp[point];
+      auto Fp = points_to_Fp_total[point].load();
+      auto T = points_to_sigma[point].load();
+
+      auto ep = points_to_ep[point];
+      auto ep_dot = points_to_ep_dot[point];
+      auto dp = points_to_dp[point];
+      auto localized = points_to_localized[point];
+
+      auto err_c = hyper_ep::update(
+         props, F, dt, temp, T, Fp, ep, ep_dot, dp, localized);
+      assert(err_c == hyper_ep::ErrorCode::SUCCESS);
+
+      points_to_ep[point] = ep;
+      points_to_ep_dot[point] = ep_dot;
+      points_to_dp[point] = dp;
+      points_to_localized[point] = localized;
+      points_to_sigma[point] = T;
+
+      auto const J = determinant(F);
+      auto const Jinv = 1.0 / J;
+      auto const half_K0 = 0.5 * K0;
       auto const K = half_K0 * (J + Jinv);
       points_to_K[point] = K;
       points_to_G[point] = G0;
@@ -503,6 +585,9 @@ HPC_NOINLINE inline void update_single_material_state(input const& in, state& s,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
+  }
+  else if (in.enable_hyper_ep[material]) {
+    hyper_ep_update(in, s, material);
   }
   if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy[material]) {
