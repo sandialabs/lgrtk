@@ -283,6 +283,13 @@ trace(symmetric3x3<T> const x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+sym(matrix3x3<T> const x) noexcept {
+  // The constructor that takes a full matrix implicity takes its symmetric part
+  return symmetric3x3<T>(x);
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
 iso(symmetric3x3<T> const x) noexcept {
   return ((1.0 / 3.0) * trace(x)) * symmetric3x3<T>::identity();
 }

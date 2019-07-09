@@ -525,7 +525,7 @@ linear_elastic_stress(Properties const props, hpc::deformation_gradient<double> 
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
   auto const G = E / 2.0 / (1.0 + nu);
   auto const grad_u = Fe - hpc::deformation_gradient<double>::identity();
-  auto const strain = (1.0 / 2.0) * hpc::symmetric_deformation<double>(grad_u + transpose(grad_u));
+  auto const strain = sym(grad_u);
   auto const isotropic_strain = iso(strain);
   auto const deviatoric_strain = deviator(strain);
   return (3.0 * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
@@ -549,7 +549,7 @@ hyper_elastic_stress(Properties const props, hpc::deformation_gradient<double> c
   auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
   auto const EG = 2.0 * C10 / jac;
   // Deviatoric left Cauchy-Green deformation tensor
-  auto Bb = Fb * transpose(Fb);
+  auto Bb = self_times_transpose(Fb);
   // Deviatoric Cauchy stress
   auto const TRBb = trace(Bb) / 3.0;
   for (int i = 0; i < 3; ++i) Bb(i, i) -= TRBb;
