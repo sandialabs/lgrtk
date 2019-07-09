@@ -299,9 +299,15 @@ trace(matrix3x3<T> x) noexcept {
 }
 
 template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+iso(matrix3x3<T> const x) noexcept {
+  return ((1.0 / 3.0) * trace(x)) * matrix3x3<T>::identity();
+}
+
+template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 deviator(matrix3x3<T> x) noexcept {
-  return x - ((1.0 / 3.0) * trace(x));
+  return x - iso(x);
 }
 
 template <class T>
