@@ -55,6 +55,7 @@ class input {
   hpc::host_vector<hpc::density<double>, material_index> rho0;
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
   hpc::host_vector<bool, material_index> enable_neo_Hookean;
+  hpc::host_vector<bool, material_index> enable_hyper_ep;
   hpc::host_vector<hpc::pressure<double>, material_index> K0;
   hpc::host_vector<hpc::pressure<double>, material_index> G0;
   hpc::host_vector<bool, material_index> enable_ideal_gas;
@@ -63,6 +64,36 @@ class input {
   hpc::host_vector<bool, material_index> enable_nodal_energy;
   hpc::host_vector<bool, material_index> enable_p_prime;
   hpc::host_vector<double, material_index> c_tau;
+
+  // Inputs for the hyper elastic-plastic model
+  hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
+  hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
+
+  // Plasticity
+  hpc::host_vector<hpc::pressure<double>, material_index> A;  // Yield strength in shear
+  hpc::host_vector<hpc::pressure<double>, material_index> B;  // hardenint modules
+  hpc::host_vector<double, material_index> n;  // hardening exponent
+  hpc::host_vector<double, material_index> C1;
+  hpc::host_vector<double, material_index> C2;
+  hpc::host_vector<double, material_index> C3;
+  hpc::host_vector<double, material_index> C4;
+  hpc::host_vector<double, material_index> ep_dot_0;
+
+  // Damage
+  hpc::host_vector<bool, material_index> allow_no_tension;
+  hpc::host_vector<bool, material_index> allow_no_shear;
+  hpc::host_vector<bool, material_index> set_stress_to_zero;
+  hpc::host_vector<double, material_index> D1;
+  hpc::host_vector<double, material_index> D2;
+  hpc::host_vector<double, material_index> D3;
+  hpc::host_vector<double, material_index> D4;
+  hpc::host_vector<double, material_index> D5;
+  hpc::host_vector<double, material_index> D6;
+  hpc::host_vector<double, material_index> D7;
+  hpc::host_vector<double, material_index> D8;
+  hpc::host_vector<double, material_index> DC;
+  hpc::host_vector<double, material_index> eps_f_min;
+
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
@@ -85,6 +116,7 @@ class input {
     ,rho0(material_count_in)
     ,e0(material_count_in, double(0.0))
     ,enable_neo_Hookean(material_count_in, false)
+    ,enable_hyper_ep(material_count_in, false)
     ,K0(material_count_in)
     ,G0(material_count_in, double(0.0))
     ,enable_ideal_gas(material_count_in, false)

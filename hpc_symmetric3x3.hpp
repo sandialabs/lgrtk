@@ -51,6 +51,9 @@ public:
   {
   }
   HPC_ALWAYS_INLINE symmetric3x3() = default;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3 identity() noexcept {
+    return symmetric3x3(1.0, 1.0, 1.0, 0.0, 0.0, 0.0);
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<Scalar> full() const noexcept {
     return matrix3x3<Scalar>(
         operator()(S_XX), operator()(S_XY), operator()(S_XZ),
@@ -280,9 +283,40 @@ trace(symmetric3x3<T> const x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
-deviator(symmetric3x3<T> const x) noexcept {
-  return x - ((1.0 / 3.0) * trace(x));
+iso(symmetric3x3<T> const x) noexcept {
+  return ((1.0 / 3.0) * trace(x)) * symmetric3x3<T>::identity();
 }
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+deviator(symmetric3x3<T> const x) noexcept {
+  return x - iso(x);
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm(symmetric3x3<T> const x) noexcept {
+  T norm_sq = x(S_XX) * x(S_XX) + x(S_YY) * x(S_YY) + x(S_ZZ) * x(S_ZZ)
+            + 2.0 * (x(S_XY) * x(S_XY) + x(S_YZ) * x(S_YZ) + x(S_XZ) * x(S_XZ));
+  return std::sqrt(norm_sq);
+}
+
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+invert(symmetric3x3<T> const x) noexcept {
+  T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
+                        T const yy = x(S_YY); T const yz = x(S_YZ);
+                                              T const zz = x(S_ZZ);
+  T const i_xx = (yy*zz - yz*yz)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
+  T const i_yy = xx*(xx*zz - xz*xz)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
+  T const i_zz = xx*(xx*yy - xy*xy)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
+  T const i_xy = (-xy*zz + xz*yz)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
+  T const i_yz = -xx*(xx*yz - xz*xy)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
+  T const i_xz = (xy*yz - xz*yy)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
+  return symmetric3x3<T>(i_xx, i_yy, i_zz, i_xy, i_yz, i_xz);
+}
+
 
 template <class T>
 class array_traits<symmetric3x3<T>> {
