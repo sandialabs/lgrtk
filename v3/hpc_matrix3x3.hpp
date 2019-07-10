@@ -307,7 +307,12 @@ iso(matrix3x3<T> const x) noexcept {
 template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 deviator(matrix3x3<T> x) noexcept {
-  return x - iso(x);
+  auto x_dev = matrix3x3<T>(x);
+  auto const a = (1.0 / 3.0) * trace(x);
+  x_dev(0,0) -= a;
+  x_dev(1,1) -= a;
+  x_dev(2,2) -= a;
+  return x_dev;
 }
 
 template <class T>
