@@ -171,7 +171,7 @@ find_bbe(hpc::symmetric_stress<double> const tau, double const mu)
   auto const txy = .5 * (tau(0, 1) + tau(1, 0));
   auto const txz = .5 * (tau(0, 2) + tau(2, 0));
   auto const tyz = .5 * (tau(1, 2) + tau(2, 1));
-  auto Be = deviator(tau) / mu;
+  auto Be = deviatoric_part(tau) / mu;
   double bzz_old = 1;
   double bzz_new = 1;
   for (int i = 0; i < maxit; i++) {
@@ -435,7 +435,7 @@ radial_return(Properties const props, hpc::symmetric_stress<double> const Te,
   if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
   // check yield
   auto Y = flow_stress(props, temp, ep, epdot, dp);
-  auto const S0 = deviator(Te);
+  auto const S0 = deviatoric_part(Te);
   auto const norm_S0 = norm(S0);
   auto f = norm_S0 / sq2 - Y / sq3;
   if (f <= tol1) {
@@ -527,7 +527,7 @@ linear_elastic_stress(Properties const props, hpc::deformation_gradient<double> 
   auto const grad_u = Fe - hpc::deformation_gradient<double>::identity();
   auto const strain = symmetric_part(grad_u);
   auto const isotropic_strain = isotropic_part(strain);
-  auto const deviatoric_strain = deviator(strain);
+  auto const deviatoric_strain = deviatoric_part(strain);
   return (3.0 * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
 }
 
