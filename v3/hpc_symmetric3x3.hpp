@@ -308,9 +308,7 @@ deviator(symmetric3x3<T> const x) noexcept {
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
 norm(symmetric3x3<T> const x) noexcept {
-  T norm_sq = x(S_XX) * x(S_XX) + x(S_YY) * x(S_YY) + x(S_ZZ) * x(S_ZZ)
-            + 2.0 * (x(S_XY) * x(S_XY) + x(S_YZ) * x(S_YZ) + x(S_XZ) * x(S_XZ));
-  return std::sqrt(norm_sq);
+  return std::sqrt(inner_product(x, x));
 }
 
 template <typename T>
@@ -368,4 +366,3 @@ class array_traits<symmetric3x3<T>> {
 };
 
 }
-
