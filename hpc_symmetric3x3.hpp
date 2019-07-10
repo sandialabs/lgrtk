@@ -297,7 +297,12 @@ iso(symmetric3x3<T> const x) noexcept {
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
 deviator(symmetric3x3<T> const x) noexcept {
-  return x - iso(x);
+  auto x_dev = symmetric3x3<T>(x);
+  auto const a = (1.0 / 3.0) * trace(x);
+  x_dev(S_XX) -= a;
+  x_dev(S_YY) -= a;
+  x_dev(S_YY) -= a;
+  return x_dev;
 }
 
 template <class T>
