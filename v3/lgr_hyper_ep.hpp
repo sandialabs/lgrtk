@@ -525,8 +525,8 @@ linear_elastic_stress(Properties const props, hpc::deformation_gradient<double> 
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
   auto const G = E / 2.0 / (1.0 + nu);
   auto const grad_u = Fe - hpc::deformation_gradient<double>::identity();
-  auto const strain = sym(grad_u);
-  auto const isotropic_strain = iso(strain);
+  auto const strain = symmetric_part(grad_u);
+  auto const isotropic_strain = isotropic_part(strain);
   auto const deviatoric_strain = deviator(strain);
   return (3.0 * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
 }

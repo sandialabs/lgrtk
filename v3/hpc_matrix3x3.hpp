@@ -301,7 +301,7 @@ trace(matrix3x3<T> x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
-iso(matrix3x3<T> const x) noexcept {
+isotropic_part(matrix3x3<T> const x) noexcept {
   return ((1.0 / 3.0) * trace(x)) * matrix3x3<T>::identity();
 }
 
