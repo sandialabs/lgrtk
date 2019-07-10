@@ -289,6 +289,7 @@ inverse(matrix3x3<T> const x) {
   auto const I = (a * e - b * d);
   using denom_t = matrix3x3<std::remove_const_t<decltype(A)>>;
   auto const denom = denom_t(A, D, G, B, E, H, C, F, I);
+  // (tjf: jul 2019) why is the variable called `denom` when it is the numerator?
   return denom / determinant(x);
 }
 

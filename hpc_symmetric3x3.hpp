@@ -313,6 +313,15 @@ norm(symmetric3x3<T> const x) noexcept {
   return std::sqrt(norm_sq);
 }
 
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+determinant(symmetric3x3<T> const x) noexcept {
+  T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
+                        T const yy = x(S_YY); T const yz = x(S_YZ);
+                                              T const zz = x(S_ZZ);
+  return (xx * yy * zz) - (xx * yz * yz) - (xy * xy * zz) +
+          2.0 * (xy * xz * yz) - (xz * xz * yy);
+}
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
@@ -320,15 +329,16 @@ inverse(symmetric3x3<T> const x) noexcept {
   T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
                         T const yy = x(S_YY); T const yz = x(S_YZ);
                                               T const zz = x(S_ZZ);
-  T const i_xx = (yy*zz - yz*yz)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
-  T const i_yy = xx*(xx*zz - xz*xz)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
-  T const i_zz = xx*(xx*yy - xy*xy)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
-  T const i_xy = (-xy*zz + xz*yz)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
-  T const i_yz = -xx*(xx*yz - xz*xy)/((xx*yy - xy*xy)*(xx*zz - xz*xz) - (xx*yz - xz*xy)*(xx*yz - xy*xz));
-  T const i_xz = (xy*yz - xz*yy)/(xx*yy*zz - xx*yz*yz - xy*xy*zz + xy*yz*xz + xz*xy*yz - xz*yy*xz);
-  return symmetric3x3<T>(i_xx, i_yy, i_zz, i_xy, i_yz, i_xz);
+  auto const A =  (yy * zz - yz * yz);
+  auto const B =  (xx * zz - xz * xz);
+  auto const C =  (xx * yy - xy * xy);
+  auto const D = -(xy * zz - xz * yz);
+  auto const E = -(xx * yz - xz * xy);
+  auto const F =  (xy * yz - xz * yy);
+  using top_t = symmetric3x3<std::remove_const_t<decltype(A)>>;
+  auto const top = top_t(A, B, C, D, E, F);
+  return top / determinant(x);
 }
-
 
 template <class T>
 class array_traits<symmetric3x3<T>> {
