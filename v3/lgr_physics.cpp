@@ -211,7 +211,7 @@ HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index c
       auto const Jm23 = Jm13 * Jm13;
       auto const Jm53 = (Jm23 * Jm23) * Jm13;
       auto const B = self_times_transpose(F);
-      auto const devB = deviator(B);
+      auto const devB = deviatoric_part(B);
       auto const sigma = half_K0 * (J - Jinv) + (G0 * Jm53) * devB;
       points_to_sigma[point] = sigma;
       auto const K = half_K0 * (J + Jinv);
@@ -319,7 +319,7 @@ HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index con
       auto const p = (gamma - 1.0) * (rho * e);
       assert(p > 0.0);
       auto const old_sigma = points_to_sigma[point].load();
-      auto const new_sigma = deviator(old_sigma) - p;
+      auto const new_sigma = deviatoric_part(old_sigma) - p;
       points_to_sigma[point] = new_sigma;
       auto const K = gamma * p;
       assert(K > 0.0);
@@ -573,7 +573,7 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
     auto const average_p = p_integral / total_V;
     for (auto const point : elements_to_points[element]) {
       auto const old_sigma = points_to_sigma[point].load();
-      auto const new_sigma = deviator(old_sigma) - average_p;
+      auto const new_sigma = deviatoric_part(old_sigma) - average_p;
       points_to_sigma[point] = new_sigma;
     }
   };

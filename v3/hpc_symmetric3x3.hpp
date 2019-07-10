@@ -296,7 +296,7 @@ isotropic_part(symmetric3x3<T> const x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
-deviator(symmetric3x3<T> const x) noexcept {
+deviatoric_part(symmetric3x3<T> const x) noexcept {
   auto x_dev = symmetric3x3<T>(x);
   auto const a = (1.0 / 3.0) * trace(x);
   x_dev(S_XX) -= a;
