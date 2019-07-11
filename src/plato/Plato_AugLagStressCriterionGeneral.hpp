@@ -87,7 +87,7 @@ private:
     **********************************************************************************/
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
-        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>("Stress Constraint");
+        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>(this->getName());
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.25);
@@ -118,8 +118,9 @@ public:
     AugLagStressCriterionGeneral(Omega_h::Mesh & aMesh,
                                  Omega_h::MeshSets & aMeshSets,
                                  Plato::DataMap & aDataMap,
-                                 Teuchos::ParameterList & aInputParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress Constraint"),
+                                 Teuchos::ParameterList & aInputParams,
+                                 const std::string & aFuncName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFuncName),
             mPenalty(3),
             mStressLimit(1),
             mAugLagPenalty(0.1),

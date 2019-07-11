@@ -52,8 +52,9 @@ class TemperatureAverageInc :
                         Omega_h::MeshSets& aMeshSets,
                         Plato::DataMap& aDataMap,
                         Teuchos::ParameterList& aProblemParams,
-                        Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Temperature Average"),
+                        Teuchos::ParameterList& aPenaltyParams,
+                        std::string& aFunctionName) :
+            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction) {}

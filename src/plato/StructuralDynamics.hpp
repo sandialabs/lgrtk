@@ -106,16 +106,17 @@ struct FunctionFactory
                          Omega_h::MeshSets& aMeshSets, 
                          Plato::DataMap& aDataMap, 
                          Teuchos::ParameterList & aParamList, 
-                         const std::string & aFunctionType)
+                         const std::string & aFunctionType,
+                         const std::string & aFunctionName)
     /******************************************************************************/
     {
         if(aFunctionType == "Dynamic Compliance")
         {
-            assert(aParamList.isSublist(aFunctionType));
+            assert(aParamList.isSublist(aFunctionName));
             assert(aParamList.isSublist("Frequency Steps"));
-            assert(aParamList.sublist(aFunctionType).isSublist("Penalty Function"));
+            assert(aParamList.sublist(aFunctionName).isSublist("Penalty Function"));
 
-            auto tPenaltyParams = aParamList.sublist(aFunctionType).sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aFunctionName).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
@@ -135,10 +136,10 @@ struct FunctionFactory
         }
         else if(aFunctionType == "Volume")
         {
-            assert(aParamList.isSublist(aFunctionType));
-            assert(aParamList.sublist(aFunctionType).isSublist("Penalty Function"));
+            assert(aParamList.isSublist(aFunctionName));
+            assert(aParamList.sublist(aFunctionName).isSublist("Penalty Function"));
 
-            auto tPenaltyParams = aParamList.sublist(aFunctionType).sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aFunctionName).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {

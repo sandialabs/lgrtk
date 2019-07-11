@@ -42,8 +42,9 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
            Omega_h::MeshSets& aMeshSets,
            Plato::DataMap& aDataMap, 
            Teuchos::ParameterList&, 
-           Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Volume"),
+           Teuchos::ParameterList& aPenaltyParams,
+           std::string& aFunctionName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             mPenaltyFunction(aPenaltyParams),
             mApplyWeighting(mPenaltyFunction)
     /**************************************************************************/

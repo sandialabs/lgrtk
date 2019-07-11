@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hpc_macros.hpp>
+
 namespace lgr {
 
 template <typename Scalar>
@@ -9,7 +11,7 @@ public:
 private:
   scalar_type raw[4][4];
 public:
-  constexpr inline matrix4x4(
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix4x4(
       Scalar const a, Scalar const b, Scalar const c, Scalar const d,
       Scalar const e, Scalar const f, Scalar const g, Scalar const h,
       Scalar const i, Scalar const j, Scalar const k, Scalar const l,
@@ -17,31 +19,31 @@ public:
     :raw{{a, b, c, d}, {e, f, g, h}, {i, j, k, l}, {m, n, o, p}}
   {
   }
-  inline matrix4x4() noexcept = default;
-  static constexpr inline matrix4x4 identity() noexcept {
+  HPC_ALWAYS_INLINE matrix4x4() noexcept = default;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr matrix4x4 identity() noexcept {
     return matrix4x4(
         1.0, 0.0, 0.0, 0.0,
         0.0, 1.0, 0.0, 0.0,
         0.0, 0.0, 1.0, 0.0,
         0.0, 0.0, 0.0, 1.0);
   }
-  static constexpr inline matrix4x4 zero() noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr matrix4x4 zero() noexcept {
     return matrix4x4(
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0,
         0.0, 0.0, 0.0, 0.0);
   }
-  constexpr inline Scalar operator()(int const i, int const j) const noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar operator()(int const i, int const j) const noexcept {
     return raw[i][j];
   }
-  inline Scalar& operator()(int const i, int const j) noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE Scalar& operator()(int const i, int const j) noexcept {
     return raw[i][j];
   }
 };
 
 template <typename Scalar>
-constexpr inline matrix4x4<Scalar>
+HPC_HOST_DEVICE constexpr inline matrix4x4<Scalar>
 operator*(matrix4x4<Scalar> const left,
     Scalar const right) noexcept {
   return matrix4x4<Scalar>(
@@ -52,14 +54,14 @@ operator*(matrix4x4<Scalar> const left,
 }
 
 template <typename Scalar>
-constexpr inline matrix4x4<Scalar>
+HPC_HOST_DEVICE constexpr inline matrix4x4<Scalar>
 operator/(matrix4x4<Scalar> const left,
     Scalar const right) noexcept {
   return left * (1.0 / right);
 }
 
 template <class Scalar>
-constexpr inline Scalar determinant(matrix4x4<Scalar> const a) {
+HPC_HOST_DEVICE constexpr inline Scalar determinant(matrix4x4<Scalar> const a) {
   return a(0, 3) * a(1, 2) * a(2, 1) * a(3, 0) -
          a(0, 2) * a(1, 3) * a(2, 1) * a(3, 0) -
          a(0, 3) * a(1, 1) * a(2, 2) * a(3, 0) +
@@ -87,7 +89,7 @@ constexpr inline Scalar determinant(matrix4x4<Scalar> const a) {
 }
 
 template <class Scalar>
-constexpr inline matrix4x4<Scalar> inverse(matrix4x4<Scalar> const a) {
+HPC_HOST_DEVICE constexpr inline matrix4x4<Scalar> inverse(matrix4x4<Scalar> const a) {
   return matrix4x4<Scalar>(
       (-a(1, 3) * a(2, 2) * a(3, 1) + a(1, 2) * a(2, 3) * a(3, 1) +
           a(1, 3) * a(2, 1) * a(3, 2) - a(1, 1) * a(2, 3) * a(3, 2) -

@@ -56,8 +56,9 @@ class EMStressPNorm :
                   Omega_h::MeshSets& aMeshSets,
                   Plato::DataMap& aDataMap, 
                   Teuchos::ParameterList& aProblemParams, 
-                  Teuchos::ParameterList& aPenaltyParams) :
-              Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Stress P-Norm"),
+                  Teuchos::ParameterList& aPenaltyParams,
+                  std::string& aFunctionName) :
+              Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
               m_indicatorFunction(aPenaltyParams),
               m_applyWeighting(m_indicatorFunction),
               m_CubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
@@ -66,7 +67,7 @@ class EMStressPNorm :
       Plato::ElectroelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
       m_materialModel = mmfactory.create();
 
-      auto params = aProblemParams.get<Teuchos::ParameterList>("Stress P-Norm");
+      auto params = aProblemParams.get<Teuchos::ParameterList>(aFunctionName);
 
       TensorNormFactory<m_numVoigtTerms, EvaluationType> normFactory;
       m_norm = normFactory.create(params);

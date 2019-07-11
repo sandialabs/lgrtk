@@ -64,8 +64,9 @@ class InternalThermalEnergy :
                           Omega_h::MeshSets& aMeshSets,
                           Plato::DataMap& aDataMap,
                           Teuchos::ParameterList& aProblemParams,
-                          Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermal Energy"),
+                          Teuchos::ParameterList& aPenaltyParams,
+                          std::string& aFunctionName) :
+            Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     {
@@ -185,8 +186,9 @@ class InternalThermalEnergyInc :
                              Omega_h::MeshSets& aMeshSets,
                              Plato::DataMap& aDataMap,
                              Teuchos::ParameterList& aProblemParams,
-                             Teuchos::ParameterList& aPenaltyParams) :
-            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Internal Thermal Energy"),
+                             Teuchos::ParameterList& aPenaltyParams,
+                             std::string& aFunctionName) :
+            Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
             m_indicatorFunction(aPenaltyParams),
             m_applyWeighting(m_indicatorFunction)
     /**************************************************************************/

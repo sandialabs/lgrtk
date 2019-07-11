@@ -15,12 +15,15 @@
 #include "plato/Thermal.hpp"
 #include "plato/Mechanics.hpp"
 #include "plato/VectorFunctionInc.hpp"
-#include "plato/ScalarFunction.hpp"
-#include "plato/ScalarFunctionInc.hpp"
+#include "plato/ScalarFunctionBase.hpp"
+#include "plato/ScalarFunctionIncBase.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
 #include "plato/ComputedField.hpp"
+
+#include "plato/ScalarFunctionBaseFactory.hpp"
+#include "plato/ScalarFunctionIncBaseFactory.hpp"
 
 #ifdef HAVE_AMGX
 #include "plato/alg/AmgXSparseLinearProblem.hpp"
@@ -44,8 +47,8 @@ private:
     Plato::Scalar mTimeStep;
 
     // optional
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint;
-    std::shared_ptr<const Plato::ScalarFunctionInc<SimplexPhysics>> mObjective;
+    std::shared_ptr<const Plato::ScalarFunctionBase>    mConstraint;
+    std::shared_ptr<const Plato::ScalarFunctionIncBase> mObjective;
 
     Plato::ScalarMultiVector mAdjoints;
     Plato::ScalarVector mResidual;
@@ -232,7 +235,7 @@ public:
     Plato::Scalar constraintValue(const Plato::ScalarVector & aControl)
     /******************************************************************************/
     {
-        if(mObjective == nullptr)
+        if(mConstraint == nullptr)
         {
             std::ostringstream tErrorMessage;
             tErrorMessage << "\n\n************** ERROR IN FILE: " << __FILE__ << ", FUNCTION: " << __PRETTY_FUNCTION__
@@ -536,17 +539,18 @@ private:
             }
         }
 
-        if(aParamList.isType<std::string>("Linear Constraint"))
+        Plato::ScalarFunctionBaseFactory<SimplexPhysics> tFunctionBaseFactory;
+        Plato::ScalarFunctionIncBaseFactory<SimplexPhysics> tFunctionIncBaseFactory;
+        if(aParamList.isType<std::string>("Constraint"))
         {
-            std::string tName = aParamList.get<std::string>("Linear Constraint");
-            mConstraint =
-                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+            std::string tName = aParamList.get<std::string>("Constraint");
+            mConstraint = tFunctionBaseFactory.create(aMesh, aMeshSets, mDataMap, aParamList, tName);
         }
 
         if(aParamList.isType<std::string>("Objective"))
         {
             std::string tName = aParamList.get<std::string>("Objective");
-            mObjective = std::make_shared<Plato::ScalarFunctionInc<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aParamList, tName);
+            mObjective = tFunctionIncBaseFactory.create(aMesh, aMeshSets, mDataMap, aParamList, tName);
 
             auto tLength = mEqualityConstraint.size();
             mAdjoints = Plato::ScalarMultiVector("MyAdjoint", mNumSteps, tLength);
