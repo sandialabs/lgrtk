@@ -78,15 +78,15 @@ class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
-class TwoFieldTMKinematics : public Plato::SimplexTwoFieldThermomechanics<SpaceDim>
+class StabilizedTMKinematics : public Plato::SimplexStabilizedThermomechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexTwoFieldThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexTwoFieldThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexTwoFieldThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexTwoFieldThermomechanics<SpaceDim>::m_PDofOffset;
-    using Plato::SimplexTwoFieldThermomechanics<SpaceDim>::m_TDofOffset;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numVoigtTerms;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_PDofOffset;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_TDofOffset;
 
   public:
 

@@ -31,6 +31,7 @@ void output(Teuchos::ParameterList & aParamList,
     auto tProblemSpecs = aParamList.sublist("Plato Problem");
     assert(tProblemSpecs.isParameter("Physics"));
     auto tPhysics = tProblemSpecs.get < std::string > ("Physics");
+    auto tPDE     = tProblemSpecs.get < std::string > ("PDE Constraint");
 
     if(tPhysics == "Electromechanical")
     {
@@ -58,24 +59,54 @@ void output(Teuchos::ParameterList & aParamList,
     {
         const Plato::Scalar tRestartTime = 0.;
         Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer(aOutputFilePath, &aMesh, SpatialDim, tRestartTime);
+ 
+        if( tPDE == "Elliptic" || tPDE == "Parabolic" )
+        {
+            auto nSteps = aState.extent(0);
+            for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
+              auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
 
-        auto nSteps = aState.extent(0);
-        for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
-          auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
+              auto tNumVertices = aMesh.nverts();
+              Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
+              Plato::copy<SpatialDim+1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tTemp);
 
-          auto tNumVertices = aMesh.nverts();
-          Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
-          Plato::copy<SpatialDim+1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tTemp);
+              auto tNumDisp = tNumVertices * SpatialDim;
+              Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
+              Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
 
-          auto tNumDisp = tNumVertices * SpatialDim;
-          Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
-          Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
+              aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                  Omega_h::Reals(tDisp));
+              aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
 
-          aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                  Omega_h::Reals(tDisp));
-          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+              Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+              tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+            }
+        } else
+        if( tPDE == "Stabilized Elliptic" )
+        {
+            auto nSteps = aState.extent(0);
+            for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
+              auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
 
-          Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
-          tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+              auto tNumVertices = aMesh.nverts();
+              Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
+              Plato::copy<SpatialDim+2 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim+1, tNumVertices, tSubView, tTemp);
+
+              Omega_h::Write<Omega_h::Real> tPress(tNumVertices, "Pressure");
+              Plato::copy<SpatialDim+2 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tPress);
+
+              auto tNumDisp = tNumVertices * SpatialDim;
+              Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
+              Plato::copy<SpatialDim+2, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
+
+              aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                    Omega_h::Reals(tDisp));
+              aMesh.add_tag(Omega_h::VERT, "Pressure",      1 /*output_num_dof_per_node*/, Omega_h::Reals(tPress));
+              aMesh.add_tag(Omega_h::VERT, "Temperature",   1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+
+              Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+              tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+           }
+        } else {
+            throw std::runtime_error("Unknown PDE");
         }
     } else
     if(tPhysics == "Mechanical")

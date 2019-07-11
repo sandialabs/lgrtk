@@ -10,11 +10,11 @@ namespace Plato
 /******************************************************************************/
 /*! Weighting functor.
   
-    Given a voigt tensor and density, apply weighting to the voigt tensor.
+    Given an input view and density, apply weighting to the input view.
     Assumes single point integration.
 */
 /******************************************************************************/
-template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumVoigtTerms, typename PenaltyFunction>
+template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumTerms, typename PenaltyFunction>
 class ApplyWeighting : public Plato::Simplex<SpaceDim>
 {
   private:
@@ -27,10 +27,10 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
     ApplyWeighting(PenaltyFunction penaltyFunction) :
       m_penaltyFunction(penaltyFunction) {}
 
-    template<typename TensorScalarType, typename WeightScalarType>
+    template<typename InputScalarType, typename WeightScalarType>
     DEVICE_TYPE inline void
     operator()( Plato::OrdinalType cellOrdinal,
-                Kokkos::View<TensorScalarType**, Kokkos::LayoutRight, Plato::MemSpace> const& voigtTensor,
+                Kokkos::View<InputScalarType**, Kokkos::LayoutRight, Plato::MemSpace> const& inputOutput,
                 Kokkos::View<WeightScalarType**, Kokkos::LayoutRight, Plato::MemSpace> const& rho) const {
 
       // apply weighting
@@ -40,8 +40,8 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
         cellDensity += rho(cellOrdinal, iNode);
       }
       cellDensity = (cellDensity/m_numNodesPerCell);
-      for( Plato::OrdinalType iVoigt=0; iVoigt<NumVoigtTerms; iVoigt++){
-        voigtTensor(cellOrdinal,iVoigt) *= m_penaltyFunction(cellDensity);
+      for( Plato::OrdinalType iTerm=0; iTerm<NumTerms; iTerm++){
+        inputOutput(cellOrdinal,iTerm) *= m_penaltyFunction(cellDensity);
       }
     }
     template<typename InputScalarType,
@@ -60,8 +60,8 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
         cellDensity += rho(cellOrdinal, iNode);
       }
       cellDensity = (cellDensity/m_numNodesPerCell);
-      for( Plato::OrdinalType iVoigt=0; iVoigt<NumVoigtTerms; iVoigt++){
-        output(cellOrdinal,iVoigt) = m_penaltyFunction(cellDensity)*input(cellOrdinal, iVoigt);
+      for( Plato::OrdinalType iTerm=0; iTerm<NumTerms; iTerm++){
+        output(cellOrdinal,iTerm) = m_penaltyFunction(cellDensity)*input(cellOrdinal, iTerm);
       }
     }
     template<typename ResultScalarType, typename WeightScalarType>

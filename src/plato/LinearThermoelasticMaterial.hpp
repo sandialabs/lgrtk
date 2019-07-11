@@ -29,6 +29,9 @@ namespace Plato {
     Omega_h::Matrix<SpatialDim, SpatialDim> m_cellThermalConductivity;
     Plato::Scalar m_cellReferenceTemperature;
 
+    Plato::Scalar m_temperatureScaling;
+    Plato::Scalar m_pressureScaling;
+
   public:
     LinearThermoelasticMaterial();
     decltype(m_cellDensity)               getMassDensity()          const {return m_cellDensity;}
@@ -37,6 +40,8 @@ namespace Plato {
     decltype(m_cellThermalExpansionCoef)  getThermalExpansion()     const {return m_cellThermalExpansionCoef;}
     decltype(m_cellThermalConductivity)   getThermalConductivity()  const {return m_cellThermalConductivity;}
     decltype(m_cellReferenceTemperature)  getReferenceTemperature() const {return m_cellReferenceTemperature;}
+    decltype(m_temperatureScaling)        getTemperatureScaling()   const {return m_temperatureScaling;}
+    decltype(m_pressureScaling)           getPressureScaling()      const {return m_pressureScaling;}
 };
 
 /******************************************************************************/
@@ -56,6 +61,9 @@ LinearThermoelasticMaterial()
       m_cellThermalConductivity(i,j) = 0.0;
 
   m_cellReferenceTemperature = 0.0;
+
+  m_temperatureScaling = 1.0;
+  m_pressureScaling = 1.0;
 }
 
 /******************************************************************************/

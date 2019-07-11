@@ -9,7 +9,20 @@ namespace Plato
 /******************************************************************************/
 /*! Pressure Divergence functor.
   
-    Given a pressure, compute the pressure divergence.
+    Given a pressure, p, and divergence matrix, b, compute the pressure divergence.
+
+    f_{e,j(I,i)} = s v p_{e} b_{e,I,i}
+
+            e:  element index
+            I:  local node index
+            i:  dimension index
+            s:  scale factor.  1.0 by default.
+            v:  cell volume.  Single value per cell, so single point integration is assumed.
+        p_{e}:  pressure in element, e
+    b_{e,I,i}:  basis derivative of local node I of element e with respect to dimenion i
+       j(I,i):  strided 1D index of local dof i for local node I.
+                j(I,i) = I*NumDofsPerNode + i + DofOffset
+
 */
 /******************************************************************************/
 template<int SpaceDim, int NumDofsPerNode=SpaceDim, int DofOffset=0>

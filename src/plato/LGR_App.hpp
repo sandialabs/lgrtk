@@ -23,7 +23,7 @@
 
 #include "Mechanics.hpp"
 #include "Thermal.hpp"
-#include "PlatoProblem.hpp"
+#include "PlatoAbstractProblem.hpp"
 #include "plato/alg/ParseInput.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"

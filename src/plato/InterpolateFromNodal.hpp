@@ -60,11 +60,11 @@ public:
     *   \param aStateValues      cell interpolated state at the cubature points 
     *
     *******************************************************************************/
-    template<typename StateType>
+    template<typename InStateType, typename OutStateType>
     DEVICE_TYPE inline void operator()(const Plato::OrdinalType & aCellOrdinal,
                                        const Plato::ScalarVector & aBasisFunctions,
-                                       const Plato::ScalarMultiVectorT<StateType> & aNodalCellStates,
-                                       const Plato::ScalarVectorT<StateType> & aStateValues) const
+                                       const Plato::ScalarMultiVectorT<InStateType> & aNodalCellStates,
+                                       const Plato::ScalarVectorT<OutStateType> & aStateValues) const
     {
 
         aStateValues(aCellOrdinal) = 0.0;
@@ -92,11 +92,11 @@ public:
     *   \param aStateValues      cell interpolated state at the cubature points
     *
     *******************************************************************************/
-    template<typename StateType>
+    template<typename InStateType, typename OutStateType>
     DEVICE_TYPE inline void operator()(const Plato::OrdinalType & aCellOrdinal,
                                        const Plato::ScalarVector & aBasisFunctions,
-                                       const Plato::ScalarMultiVectorT<StateType> & aNodalCellStates,
-                                       const Plato::ScalarMultiVectorT<StateType> & aStateValues) const
+                                       const Plato::ScalarMultiVectorT<InStateType> & aNodalCellStates,
+                                       const Plato::ScalarMultiVectorT<OutStateType> & aStateValues) const
     {
 
 

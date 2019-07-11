@@ -10,14 +10,17 @@ namespace Plato {
   template<typename SimplexPhysics>
   struct SimplexFadTypes {
 
-    using StateFad   = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numDofsPerNode*
-                                         SimplexPhysics::m_numNodesPerCell>;
-    using ControlFad = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numNodesPerCell>;
-    using ConfigFad  = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numSpatialDims*
-                                         SimplexPhysics::m_numNodesPerCell>;
+    using StateFad     = Sacado::Fad::SFad<Plato::Scalar,
+                                           SimplexPhysics::m_numDofsPerNode*
+                                           SimplexPhysics::m_numNodesPerCell>;
+    using ControlFad   = Sacado::Fad::SFad<Plato::Scalar,
+                                           SimplexPhysics::m_numNodesPerCell>;
+    using ConfigFad    = Sacado::Fad::SFad<Plato::Scalar,
+                                           SimplexPhysics::m_numSpatialDims*
+                                           SimplexPhysics::m_numNodesPerCell>;
+    using NodeStateFad = Sacado::Fad::SFad<Plato::Scalar,
+                                           SimplexPhysics::m_numSpatialDims*
+                                           SimplexPhysics::m_numNodesPerCell>;
   };
 
 
@@ -25,9 +28,10 @@ namespace Plato {
   //
   template <typename TypesT, typename T>
   struct is_fad {
-    static constexpr bool value = std::is_same< T, typename TypesT::StateFad   >::value ||
-                                  std::is_same< T, typename TypesT::ControlFad >::value ||
-                                  std::is_same< T, typename TypesT::ConfigFad  >::value;
+    static constexpr bool value = std::is_same< T, typename TypesT::StateFad     >::value ||
+                                  std::is_same< T, typename TypesT::ControlFad   >::value ||
+                                  std::is_same< T, typename TypesT::ConfigFad    >::value ||
+                                  std::is_same< T, typename TypesT::NodeStateFad >::value;
   };
   
 
@@ -58,6 +62,7 @@ namespace Plato {
 
 
 
+#ifdef NOPE
   // Create a template struct that determines the appropriate FadType:
   //
   // default: No type. Compiler error is generated for any parameter combination
@@ -104,6 +109,8 @@ namespace Plato {
     Plato::Scalar>
     { using scalar_type = Plato::Scalar; };
 
+#endif
+
 
 template <typename SimplexPhysicsT>
 struct EvaluationTypes
@@ -117,6 +124,7 @@ struct ResidualTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using StateScalarType     = Plato::Scalar;
   using PrevStateScalarType = Plato::Scalar;
+  using NodeStateScalarType = Plato::Scalar;
   using ControlScalarType   = Plato::Scalar;
   using ConfigScalarType    = Plato::Scalar;
   using ResultScalarType    = Plato::Scalar;
@@ -129,6 +137,7 @@ struct JacobianTypes : EvaluationTypes<SimplexPhysicsT>
 
   using StateScalarType     = SFadType;
   using PrevStateScalarType = Plato::Scalar;
+  using NodeStateScalarType = Plato::Scalar;
   using ControlScalarType   = Plato::Scalar;
   using ConfigScalarType    = Plato::Scalar;
   using ResultScalarType    = SFadType;
@@ -141,6 +150,20 @@ struct JacobianPTypes : EvaluationTypes<SimplexPhysicsT>
 
   using StateScalarType     = Plato::Scalar;
   using PrevStateScalarType = SFadType;
+  using NodeStateScalarType = Plato::Scalar;
+  using ControlScalarType   = Plato::Scalar;
+  using ConfigScalarType    = Plato::Scalar;
+  using ResultScalarType    = SFadType;
+};
+
+template <typename SimplexPhysicsT>
+struct JacobianNTypes : EvaluationTypes<SimplexPhysicsT>
+{
+  using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::NodeStateFad;
+
+  using StateScalarType     = Plato::Scalar;
+  using PrevStateScalarType = Plato::Scalar;
+  using NodeStateScalarType = SFadType;
   using ControlScalarType   = Plato::Scalar;
   using ConfigScalarType    = Plato::Scalar;
   using ResultScalarType    = SFadType;
@@ -153,6 +176,7 @@ struct GradientXTypes : EvaluationTypes<SimplexPhysicsT>
 
   using StateScalarType     = Plato::Scalar;
   using PrevStateScalarType = Plato::Scalar;
+  using NodeStateScalarType = Plato::Scalar;
   using ControlScalarType   = Plato::Scalar;
   using ConfigScalarType    = SFadType;
   using ResultScalarType    = SFadType;
@@ -165,6 +189,7 @@ struct GradientZTypes : EvaluationTypes<SimplexPhysicsT>
 
   using StateScalarType     = Plato::Scalar;
   using PrevStateScalarType = Plato::Scalar;
+  using NodeStateScalarType = Plato::Scalar;
   using ControlScalarType   = SFadType;
   using ConfigScalarType    = Plato::Scalar;
   using ResultScalarType    = SFadType;
@@ -175,6 +200,7 @@ template <typename SimplexPhysicsT>
 struct Evaluation {
    using Residual  = ResidualTypes<SimplexPhysicsT>;
    using Jacobian  = JacobianTypes<SimplexPhysicsT>;
+   using JacobianN = JacobianNTypes<SimplexPhysicsT>;
    using JacobianP = JacobianPTypes<SimplexPhysicsT>;
    using GradientZ = GradientZTypes<SimplexPhysicsT>;
    using GradientX = GradientXTypes<SimplexPhysicsT>;

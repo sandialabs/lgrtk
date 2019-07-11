@@ -11,7 +11,10 @@
 #include "plato/AbstractVectorFunction.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/ThermoelastostaticResidual.hpp"
+#include "plato/StabilizedThermoelastostaticResidual.hpp"
+#include "plato/PressureGradientProjectionResidual.hpp"
 #include "plato/TransientThermomechResidual.hpp"
+//#include "plato/TransientStabilizedThermomechResidual.hpp"
 #include "plato/InternalThermoelasticEnergy.hpp"
 #include "plato/Volume.hpp"
 //#include "plato/TMStressPNorm.hpp"
@@ -31,31 +34,71 @@ struct FunctionFactory
     /******************************************************************************/
     template<typename EvaluationType>
     std::shared_ptr<Plato::AbstractVectorFunction<EvaluationType>>
-    createVectorFunction(Omega_h::Mesh& aMesh, 
+    createVectorFunction(Omega_h::Mesh& aMesh,
                          Omega_h::MeshSets& aMeshSets,
-                         Plato::DataMap& aDataMap, 
-                         Teuchos::ParameterList& aParamList, 
+                         Plato::DataMap& aDataMap,
+                         Teuchos::ParameterList& aParamList,
                          std::string aStrVectorFunctionType)
     /******************************************************************************/
     {
 
-        if(aStrVectorFunctionType == "Thermoelastostatics")
+        if(aStrVectorFunctionType == "Elliptic")
         {
-            auto tPenaltyParams = aParamList.sublist("Thermoelastostatics").sublist("Penalty Function");
+            auto tPenaltyParams = aParamList.sublist(aStrVectorFunctionType).sublist("Penalty Function");
             std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
             if(tPenaltyType == "SIMP")
             {
                 return std::make_shared<Plato::ThermoelastostaticResidual<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
-            else 
+            else
             if(tPenaltyType == "RAMP")
             {
                 return std::make_shared<Plato::ThermoelastostaticResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
-            else 
+            else
             if(tPenaltyType == "Heaviside")
             {
                 return std::make_shared<Plato::ThermoelastostaticResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else
+            {
+                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+        }
+    }
+
+    /******************************************************************************/
+    template<typename EvaluationType>
+    std::shared_ptr<Plato::AbstractVectorFunctionVMS<EvaluationType>>
+    createVectorFunctionVMS(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList& aParamList,
+                            std::string aStrVectorFunctionType)
+    /******************************************************************************/
+    {
+
+        if(aStrVectorFunctionType == "Stabilized Elliptic")
+        {
+            auto tPenaltyParams = aParamList.sublist(aStrVectorFunctionType).sublist("Penalty Function");
+            std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
+            if(tPenaltyType == "SIMP")
+            {
+                return std::make_shared<Plato::StabilizedThermoelastostaticResidual<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else
+            if(tPenaltyType == "RAMP")
+            {
+                return std::make_shared<Plato::StabilizedThermoelastostaticResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else
+            if(tPenaltyType == "Heaviside")
+            {
+                return std::make_shared<Plato::StabilizedThermoelastostaticResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
             }
             else
             {
@@ -77,7 +120,7 @@ struct FunctionFactory
                             std::string strVectorFunctionType )
     /******************************************************************************/
     {
-        if( strVectorFunctionType == "First Order" )
+        if( strVectorFunctionType == "Parabolic" )
         {
             auto penaltyParams = aParamList.sublist(strVectorFunctionType).sublist("Penalty Function");
             std::string penaltyType = penaltyParams.get<std::string>("Type");
@@ -112,6 +155,7 @@ struct FunctionFactory
     /******************************************************************************/
     {
 
+#ifdef NOPE
         if(aStrScalarFunctionType == "Internal Thermoelastic Energy")
         {
             auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionType).sublist("Penalty Function");
@@ -135,7 +179,6 @@ struct FunctionFactory
                 throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
-#ifdef NOPE
         else 
         if(aStrScalarFunctionType == "Stress P-Norm")
         {
@@ -161,7 +204,6 @@ struct FunctionFactory
             }
         }
         else 
-#endif
         if(aStrScalarFunctionType == "Volume")
         {
             auto tPenaltyParams = aParamList.sublist(aStrScalarFunctionType).sublist("Penalty Function");
@@ -189,6 +231,9 @@ struct FunctionFactory
         {
             throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
         }
+#else
+        throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
+#endif
     }
     /******************************************************************************/
     template <typename EvaluationType>
@@ -200,6 +245,7 @@ struct FunctionFactory
                             std::string strScalarFunctionType )
     /******************************************************************************/
     {
+#ifdef NOPE
         if( strScalarFunctionType == "Internal Thermoelastic Energy" ){
             auto penaltyParams = aParamList.sublist(strScalarFunctionType).sublist("Penalty Function");
             std::string penaltyType = penaltyParams.get<std::string>("Type");
@@ -217,10 +263,62 @@ struct FunctionFactory
         } else {
             throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
+#else
+        throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+#endif
     }
 }; // struct FunctionFactory
 
 } // namespace ThermomechanicsFactory
+
+namespace ProjectionFactory
+{
+
+/******************************************************************************/
+struct FunctionFactory
+{
+    /******************************************************************************/
+    template<typename EvaluationType>
+    std::shared_ptr<Plato::AbstractVectorFunctionVMS<EvaluationType>>
+    createVectorFunctionVMS(Omega_h::Mesh& aMesh, 
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap, 
+                            Teuchos::ParameterList& aParamList, 
+                            std::string aStrVectorFunctionType)
+    /******************************************************************************/
+    {
+
+        if(aStrVectorFunctionType == "State Gradient Projection")
+        {
+            auto tPenaltyParams = aParamList.sublist(aStrVectorFunctionType).sublist("Penalty Function");
+            std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
+            if(tPenaltyType == "SIMP")
+            {
+                return std::make_shared<Plato::PressureGradientProjectionResidual<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else 
+            if(tPenaltyType == "RAMP")
+            {
+                return std::make_shared<Plato::PressureGradientProjectionResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else 
+            if(tPenaltyType == "Heaviside")
+            {
+                return std::make_shared<Plato::PressureGradientProjectionResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aParamList, tPenaltyParams);
+            }
+            else
+            {
+                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+        }
+    }
+}; // struct FunctionFactory
+
+} // namespace ProjectionFactory
 
 template<Plato::OrdinalType SpaceDimParam>
 class Thermomechanics: public Plato::SimplexThermomechanics<SpaceDimParam>
@@ -228,6 +326,35 @@ class Thermomechanics: public Plato::SimplexThermomechanics<SpaceDimParam>
 public:
     using FunctionFactory = typename Plato::ThermomechanicsFactory::FunctionFactory;
     using SimplexT = SimplexThermomechanics<SpaceDimParam>;
+    static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
+};
+
+template<
+  Plato::OrdinalType SpaceDimParam,
+  Plato::OrdinalType TotalDofsParam = SpaceDimParam,
+  Plato::OrdinalType ProjectionDofOffset = 0,
+  Plato::OrdinalType NumProjectionDofs = 1>
+class Projection: public Plato::SimplexProjection<SpaceDimParam>
+{
+public:
+    using FunctionFactory = typename Plato::ProjectionFactory::FunctionFactory;
+    using SimplexT        = SimplexProjection<SpaceDimParam, TotalDofsParam, ProjectionDofOffset, NumProjectionDofs>;
+    static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
+};
+
+template<Plato::OrdinalType SpaceDimParam>
+class StabilizedThermomechanics: public Plato::SimplexStabilizedThermomechanics<SpaceDimParam>
+{
+public:
+    using FunctionFactory = typename Plato::ThermomechanicsFactory::FunctionFactory;
+    using SimplexT        = SimplexStabilizedThermomechanics<SpaceDimParam>;
+
+    using ProjectorT = typename Plato::Projection<SpaceDimParam,
+                                                  SimplexT::m_numDofsPerNode,
+                                                  SimplexT::m_PDofOffset,
+                                                  /* numProjectionDofs=*/ 1>;
+
+
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };
 

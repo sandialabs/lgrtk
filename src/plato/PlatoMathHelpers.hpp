@@ -271,6 +271,27 @@ void MatrixTimesVectorPlusVector(const Teuchos::RCP<Plato::CrsMatrixType> & aMat
 }
 // function MatrixTimesVectorPlusVector
 
+/******************************************************************************//**
+ * @brief Extract a sub array
+ * @param [in] aFromVector
+ * @param [out] aToVector
+ *
+ * aToVector(i) = aFromVector(i*NumStride+NumOffset)
+ *
+**********************************************************************************/
+template<int NumStride, int NumOffset>
+inline void extract(const Plato::ScalarVector& aFromVector, Plato::ScalarVector& aToVector)
+{
+    auto tNumRows = aToVector.extent(0);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & ordinal)
+    {
+        aToVector(ordinal) = aFromVector(ordinal*NumStride + NumOffset);
+    }, "extract");
+}
+// function extract
+
+
 } // namespace Plato
 
 #endif /* PLATOMATHHELPERS_HPP_ */

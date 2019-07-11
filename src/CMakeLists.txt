@@ -60,8 +60,9 @@ SET(PLATO_SOURCES
   plato/EffectiveEnergy.cpp
   plato/ThermostaticResidual.cpp
   plato/ElastostaticResidual.cpp
-  plato/HeatEquationProblem.cpp
-  plato/PlatoProblem.cpp
+  plato/ParabolicProblem.cpp
+  plato/EllipticProblem.cpp
+  plato/EllipticVMSProblem.cpp
   plato/alg/ParseInput.cpp
   plato/alg/CrsMatrix.cpp
   plato/alg/Basis.cpp

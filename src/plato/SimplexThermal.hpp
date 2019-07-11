@@ -22,6 +22,8 @@ class SimplexThermal : public Plato::Simplex<SpaceDim>
 
     static constexpr Plato::OrdinalType m_numControl = 1;  // for now, only one control field allowed.
 
+    static constexpr Plato::OrdinalType m_numNSPerNode = 0;
+
 };
 // class SimplexThermal
 

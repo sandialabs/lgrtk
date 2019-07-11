@@ -41,7 +41,7 @@
 #include <plato/InternalElasticEnergy.hpp>
 #include <plato/ScalarFunction.hpp>
 #include "plato/ApplyConstraints.hpp"
-#include "plato/PlatoProblem.hpp"
+#include "plato/EllipticProblem.hpp"
 #include "plato/Mechanics.hpp"
 #include "plato/Thermal.hpp"
 

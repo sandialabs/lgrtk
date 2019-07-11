@@ -30,6 +30,16 @@ LinearThermoelasticMaterial<1>()
     } else {
       m_cellSpecificHeat = 1.0;
     }
+    if( paramList.isType<double>("Temperature Scaling") ){
+      m_temperatureScaling = paramList.get<double>("Temperature Scaling");
+    } else {
+      m_temperatureScaling = 1.0;
+    }
+    if( paramList.isType<double>("Pressure Scaling") ){
+      m_pressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      m_pressureScaling = 1.0;
+    }
 }
 /******************************************************************************/
 template<>
@@ -61,6 +71,16 @@ LinearThermoelasticMaterial<2>()
       m_cellSpecificHeat = paramList.get<double>("Specific Heat");
     } else {
       m_cellSpecificHeat = 1.0;
+    }
+    if( paramList.isType<double>("Temperature Scaling") ){
+      m_temperatureScaling = paramList.get<double>("Temperature Scaling");
+    } else {
+      m_temperatureScaling = 1.0;
+    }
+    if( paramList.isType<double>("Pressure Scaling") ){
+      m_pressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      m_pressureScaling = 1.0;
     }
 }
 /******************************************************************************/
@@ -97,6 +117,16 @@ LinearThermoelasticMaterial<3>()
       m_cellSpecificHeat = paramList.get<double>("Specific Heat");
     } else {
       m_cellSpecificHeat = 1.0;
+    }
+    if( paramList.isType<double>("Temperature Scaling") ){
+      m_temperatureScaling = paramList.get<double>("Temperature Scaling");
+    } else {
+      m_temperatureScaling = 1.0;
+    }
+    if( paramList.isType<double>("Pressure Scaling") ){
+      m_pressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      m_pressureScaling = 1.0;
     }
 }
 

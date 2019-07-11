@@ -250,7 +250,7 @@ class VectorFunctionInc : public Plato::WorksetBase<PhysicsT>
 
         // create return view
         //
-        Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianConfiguration", m_numCells, m_numDofsPerCell);
+        Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianConfiguration", m_numCells, m_numSpatialDims*m_numNodesPerCell);
 
         // evaluate function
         //
