@@ -122,15 +122,6 @@ inline char const* get_error_code_string(ErrorCode code) {
   return "UNKNOWN";
 }
 
-template<class T>
-HPC_NOINLINE inline
-hpc::symmetric_deformation<T>
-sqrt_spd(hpc::symmetric_deformation<T> const& x)
-{
-  // FIXME: This is wrong!  Just a place holder so the thing compiles
-  return hpc::symmetric_deformation<T>(x);
-}
-
 /** \brief Determine the square of the left stretch B=V.V
 
 Parameters

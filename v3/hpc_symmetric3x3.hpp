@@ -180,7 +180,13 @@ operator-=(symmetric3x3<L>& left, R const right) noexcept {
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept {
-  return left.full() * right.full();
+  return symmetric3x3<decltype(L() * R())>(
+    left(0)*right(0) + left(3)*right(0) + left(5)*right(5),
+    left(0)*right(3) + left(1)*right(1) + left(4)*right(4),
+    left(2)*right(2) + left(4)*right(4) + left(5)*right(5),
+    left(0)*right(3) + left(3)*right(1) + left(5)*right(4),
+    left(0)*right(5) + left(1)*right(4) + left(4)*right(2),
+    left(0)*right(5) + left(3)*right(4) + left(5)*right(2));
 }
 
 template <class L, class R>
@@ -319,6 +325,28 @@ determinant(symmetric3x3<T> const x) noexcept {
                                               T const zz = x(S_ZZ);
   return (xx * yy * zz) - (xx * yz * yz) - (xy * xy * zz) +
           2.0 * (xy * xz * yz) - (xz * xz * yy);
+}
+
+/// \brief Compute the matrix square root using Denman Beavers iterations
+template <class T>
+HPC_HOST_DEVICE constexpr auto
+sqrt_spd(symmetric3x3<T> const& x)
+{
+  using matrix_type = symmetric3x3<T>;
+  int const maxiter = 10;
+  T const tol = 1.e-12;
+  auto yn = matrix_type(x);
+  auto zn = matrix_type::identity();
+  for (int i=0; i<maxiter; i++)
+  {
+    matrix_type yp = 0.5 * (yn + inverse(zn));
+    matrix_type zp = 0.5 * (zn + inverse(yn));
+    yn = yp;
+    zn = zp;
+    if (norm((yn * yn - x)) < tol)
+      break;
+  }
+  return yn;
 }
 
 template <class T>
