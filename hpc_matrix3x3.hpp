@@ -220,6 +220,22 @@ operator/=(matrix3x3<L>& left, R right) noexcept {
   return left;
 }
 
+template <class L, class R>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
+inner_product(matrix3x3<L> const left, matrix3x3<R> const right) noexcept {
+  return (
+    left(0, 0)*right(0, 0) + left(0, 1)*right(0, 1) + left(0, 2)*right(0, 2) +
+    left(1, 0)*right(1, 0) + left(1, 1)*right(1, 1) + left(1, 2)*right(1, 2) +
+    left(2, 0)*right(2, 0) + left(2, 1)*right(2, 1) + left(2, 2)*right(2, 2)
+  );
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm(matrix3x3<T> const x) noexcept {
+  return std::sqrt(inner_product(x, x));
+}
+
 template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 transpose(matrix3x3<T> x) noexcept {
