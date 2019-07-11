@@ -180,13 +180,7 @@ operator-=(symmetric3x3<L>& left, R const right) noexcept {
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept {
-  return symmetric3x3<decltype(L() * R())>(
-    left(0)*right(0) + left(3)*right(0) + left(5)*right(5),
-    left(0)*right(3) + left(1)*right(1) + left(4)*right(4),
-    left(2)*right(2) + left(4)*right(4) + left(5)*right(5),
-    left(0)*right(3) + left(3)*right(1) + left(5)*right(4),
-    left(0)*right(5) + left(1)*right(4) + left(4)*right(2),
-    left(0)*right(5) + left(3)*right(4) + left(5)*right(2));
+  return left.full() * right.full();
 }
 
 template <class L, class R>
@@ -343,7 +337,7 @@ sqrt_spd(symmetric3x3<T> const& x)
     matrix_type zp = 0.5 * (zn + inverse(yn));
     yn = yp;
     zn = zp;
-    if (norm((yn * yn - x)) < tol)
+    if (norm((yn * yn - x.full())) < tol)
       break;
   }
   return yn;
