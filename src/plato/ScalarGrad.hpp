@@ -17,8 +17,8 @@ template<int SpaceDim>
 class ScalarGrad
 {
   private:
-    static constexpr auto m_numNodesPerCell = SpaceDim+1;
-    static constexpr auto m_numDofsPerCell  = m_numNodesPerCell;
+    static constexpr auto mNumNodesPerCell = SpaceDim+1;
+    static constexpr auto mNumDofsPerCell  = mNumNodesPerCell;
 
 
   public:
@@ -34,7 +34,7 @@ class ScalarGrad
       //
       for( Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
         sgrad(cellOrdinal,iDim) = 0.0;
-        for( Plato::OrdinalType iDof=0; iDof<m_numDofsPerCell; iDof++){
+        for( Plato::OrdinalType iDof=0; iDof<mNumDofsPerCell; iDof++){
           sgrad(cellOrdinal,iDim) += s(cellOrdinal,iDof)*gradient[iDof][iDim];
         }
       }
@@ -49,7 +49,7 @@ class ScalarGrad
 
       for(Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
         sgrad(cellOrdinal,iDim)=0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
           sgrad(cellOrdinal,iDim) += s(cellOrdinal,iNode)*gradient(cellOrdinal,iNode,iDim);
         }
       }

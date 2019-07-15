@@ -26,8 +26,8 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
 class ComputeFrequencyResponseMisfit : public Plato::SimplexStructuralDynamics<SpaceDim, NumControls>
 {
 private:
-    using Plato::SimplexStructuralDynamics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexStructuralDynamics<SpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexStructuralDynamics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexStructuralDynamics<SpaceDim>::mNumNodesPerCell;
 
 public:
     /*************************************************************************/
@@ -55,13 +55,13 @@ public:
         assert(aExpStates.extent(0) == aOutput.size());
 
         aOutput(aCellOrdinal) = 0.0;
-        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < m_numNodesPerCell; tNodeIndex++)
+        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
         {
             for(Plato::OrdinalType tDimIndex = 0; tDimIndex < SpaceDim; tDimIndex++)
             {
-                Plato::OrdinalType tRealDofIndex = (m_numDofsPerNode * tNodeIndex) + tDimIndex;
+                Plato::OrdinalType tRealDofIndex = (mNumDofsPerNode * tNodeIndex) + tDimIndex;
                 OutputScalarType tRealMisfit = aTrialStates(aCellOrdinal, tRealDofIndex) - aExpStates(aCellOrdinal, tRealDofIndex);
-                Plato::OrdinalType tImagDofIndex = (m_numDofsPerNode * tNodeIndex) + SpaceDim + tDimIndex;
+                Plato::OrdinalType tImagDofIndex = (mNumDofsPerNode * tNodeIndex) + SpaceDim + tDimIndex;
                 OutputScalarType tImagMisfit = aTrialStates(aCellOrdinal, tImagDofIndex) - aExpStates(aCellOrdinal, tImagDofIndex);
                 aOutput(aCellOrdinal) += (tRealMisfit * tRealMisfit) + (tImagMisfit * tImagMisfit);
             }

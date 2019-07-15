@@ -30,25 +30,25 @@ class EMStressPNorm :
   private:
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
     
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumDofsPerCell;
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
-    Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> m_materialModel;
+    Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> mMaterialModel;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting;
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> m_CubatureRule;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim,mNumVoigtTerms,IndicatorFunctionType> mApplyWeighting;
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
-    Teuchos::RCP<TensorNormBase<m_numVoigtTerms,EvaluationType>> m_norm;
+    Teuchos::RCP<TensorNormBase<mNumVoigtTerms,EvaluationType>> mNorm;
 
   public:
     /**************************************************************************/
@@ -59,18 +59,18 @@ class EMStressPNorm :
                   Teuchos::ParameterList& aPenaltyParams,
                   std::string& aFunctionName) :
               Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-              m_indicatorFunction(aPenaltyParams),
-              m_applyWeighting(m_indicatorFunction),
-              m_CubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
+              mIndicatorFunction(aPenaltyParams),
+              mApplyWeighting(mIndicatorFunction),
+              mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
       Plato::ElectroelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
-      m_materialModel = mmfactory.create();
+      mMaterialModel = mmfactory.create();
 
       auto params = aProblemParams.get<Teuchos::ParameterList>(aFunctionName);
 
-      TensorNormFactory<m_numVoigtTerms, EvaluationType> normFactory;
-      m_norm = normFactory.create(params);
+      TensorNormFactory<mNumVoigtTerms, EvaluationType> normFactory;
+      mNorm = normFactory.create(params);
     }
 
     /**************************************************************************/
@@ -88,20 +88,20 @@ class EMStressPNorm :
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
       Plato::EMKinematics<SpaceDim>                  kinematics;
-      Plato::EMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::EMKinetics<SpaceDim>                    kinetics(mMaterialModel);
 
       Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight", numCells);
 
-      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient", numCells, m_numNodesPerCell, SpaceDim);
+      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient", numCells, mNumNodesPerCell, SpaceDim);
 
-      Plato::ScalarMultiVectorT<GradScalarType> strain("strain", numCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType> strain("strain", numCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<GradScalarType> efield("efield", numCells, SpaceDim);
 
-      Plato::ScalarMultiVectorT<ResultScalarType> stress("stress", numCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> stress("stress", numCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<ResultScalarType> edisp ("edisp",  numCells, SpaceDim);
 
-      auto quadratureWeight = m_CubatureRule->getCubWeight();
-      auto applyWeighting   = m_applyWeighting;
+      auto quadratureWeight = mCubatureRule->getCubWeight();
+      auto applyWeighting   = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
         computeGradient(cellOrdinal, gradient, aConfig, cellVolume);
@@ -121,7 +121,7 @@ class EMStressPNorm :
 
       },"Compute Stress");
 
-      m_norm->evaluate(aResult, stress, aControl, cellVolume);
+      mNorm->evaluate(aResult, stress, aControl, cellVolume);
 
     }
 
@@ -132,7 +132,7 @@ class EMStressPNorm :
       Plato::Scalar       resultScalar)
     /**************************************************************************/
     {
-      m_norm->postEvaluate(resultVector, resultScalar);
+      mNorm->postEvaluate(resultVector, resultScalar);
     }
 
     /**************************************************************************/
@@ -140,7 +140,7 @@ class EMStressPNorm :
     postEvaluate( Plato::Scalar& resultValue )
     /**************************************************************************/
     {
-      m_norm->postEvaluate(resultValue);
+      mNorm->postEvaluate(resultValue);
     }
 };
 // class EMStressPNorm

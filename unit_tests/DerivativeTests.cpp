@@ -60,9 +60,9 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
 
 
   int numCells = mesh->nelems();
-  int nodesPerCell  = Plato::SimplexMechanics<spaceDim>::m_numNodesPerCell;
-  int numVoigtTerms = Plato::SimplexMechanics<spaceDim>::m_numVoigtTerms;
-  int dofsPerCell   = Plato::SimplexMechanics<spaceDim>::m_numDofsPerCell;
+  int nodesPerCell  = Plato::SimplexMechanics<spaceDim>::mNumNodesPerCell;
+  int numVoigtTerms = Plato::SimplexMechanics<spaceDim>::mNumVoigtTerms;
+  int dofsPerCell   = Plato::SimplexMechanics<spaceDim>::mNumDofsPerCell;
 
   // create mesh based displacement from host data
   //

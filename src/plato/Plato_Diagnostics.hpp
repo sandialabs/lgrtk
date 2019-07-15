@@ -36,9 +36,9 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
 
     const Plato::OrdinalType tNumCells = aMesh.nelems();
     constexpr Plato::OrdinalType tSpaceDim = EvaluationType::SpatialDim;
-    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::m_numDofsPerNode;
-    constexpr Plato::OrdinalType tDofsPerCell = SimplexPhysics::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerCell = SimplexPhysics::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<SimplexPhysics> tWorksetBase(aMesh);
@@ -143,9 +143,9 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::AbstractScalarFunct
 
     const Plato::OrdinalType tNumCells = aMesh.nelems();
     constexpr Plato::OrdinalType tSpaceDim = EvaluationType::SpatialDim;
-    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::m_numDofsPerNode;
-    constexpr Plato::OrdinalType tDofsPerCell = SimplexPhysics::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerCell = SimplexPhysics::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = SimplexPhysics::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(aMesh);
@@ -249,7 +249,7 @@ inline void test_partial_control(Omega_h::Mesh & aMesh,
     using ControlT = typename EvaluationType::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = aMesh.nelems();
-    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     // Create control workset
     const Plato::OrdinalType tNumVerts = aMesh.nverts();
@@ -326,7 +326,7 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::ScalarFunctionBase 
     using ControlT = typename EvaluationType::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = aMesh.nelems();
-    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     // Create control workset
     const Plato::OrdinalType tNumVerts = aMesh.nverts();

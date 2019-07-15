@@ -101,17 +101,17 @@ class BodyLoad
 /******************************************************************************/
 {
   protected:
-    const std::string    m_name;
-    const Plato::OrdinalType            m_dof;
-    const std::string    m_funcString;
+    const std::string    mName;
+    const Plato::OrdinalType            mDof;
+    const std::string    mFuncString;
   
   public:
   
   /**************************************************************************/
   BodyLoad<SpaceDim,NumDofsPerNode>(const std::string &n, Teuchos::ParameterList &param) :
-    m_name(n),
-    m_dof(param.get<Plato::OrdinalType>("Index")),
-    m_funcString(param.get<std::string>("Function")) {}
+    mName(n),
+    mDof(param.get<Plato::OrdinalType>("Index")),
+    mFuncString(param.get<std::string>("Function")) {}
   /**************************************************************************/
   
     ~BodyLoad(){}
@@ -163,12 +163,12 @@ class BodyLoad
   // get integrand values at quadrature points
   //
   Omega_h::Reals fxnValues;
-  getFunctionValues<SpaceDim>( quadraturePoints, m_funcString, fxnValues );
+  getFunctionValues<SpaceDim>( quadraturePoints, mFuncString, fxnValues );
 
  
   // integrate and assemble
   // 
-  auto dof = m_dof;
+  auto dof = mDof;
   Plato::JacobianDet<SpaceDim> jacobianDet(&mesh);
   Plato::VectorEntryOrdinal<SpaceDim,SpaceDim> vectorEntryOrdinal(&mesh);
   Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
@@ -237,13 +237,13 @@ class BodyLoad
   // get integrand values at quadrature points
   //
   Omega_h::Reals fxnValues;
-  getFunctionValues<SpaceDim>( quadraturePoints, m_funcString, fxnValues );
+  getFunctionValues<SpaceDim>( quadraturePoints, mFuncString, fxnValues );
 
  
   // integrate and assemble
   // 
   auto rhs = forcing;
-  auto dof = m_dof;
+  auto dof = mDof;
   Plato::JacobianDet<SpaceDim> jacobianDet(&mesh);
   Plato::VectorEntryOrdinal<SpaceDim,SpaceDim> vectorEntryOrdinal(&mesh);
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)

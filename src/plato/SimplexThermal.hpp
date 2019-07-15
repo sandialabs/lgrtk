@@ -14,13 +14,13 @@ template<Plato::OrdinalType SpaceDim>
 class SimplexThermal : public Plato::Simplex<SpaceDim>
 { 
   public:
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::Simplex<SpaceDim>::m_numSpatialDims;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumSpatialDims;
 
-    static constexpr Plato::OrdinalType m_numDofsPerNode  = 1;
-    static constexpr Plato::OrdinalType m_numDofsPerCell  = m_numDofsPerNode*m_numNodesPerCell;
+    static constexpr Plato::OrdinalType mNumDofsPerNode  = 1;
+    static constexpr Plato::OrdinalType mNumDofsPerCell  = mNumDofsPerNode*mNumNodesPerCell;
 
-    static constexpr Plato::OrdinalType m_numControl = 1;  // for now, only one control field allowed.
+    static constexpr Plato::OrdinalType mNumControl = 1;  // for now, only one control field allowed.
 
 };
 // class SimplexThermal

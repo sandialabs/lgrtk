@@ -17,26 +17,26 @@ namespace Plato {
 /******************************************************************************/
 {
   protected:
-    static constexpr auto m_numVoigtTerms = (SpatialDim == 3) ? 6 : 
+    static constexpr auto mNumVoigtTerms = (SpatialDim == 3) ? 6 : 
                                            ((SpatialDim == 2) ? 3 :
                                           (((SpatialDim == 1) ? 1 : 0)));
-    static_assert(m_numVoigtTerms, "SpatialDim must be 1, 2, or 3.");
+    static_assert(mNumVoigtTerms, "SpatialDim must be 1, 2, or 3.");
 
-    Plato::Scalar m_cellDensity;
-    Plato::Scalar m_cellSpecificHeat;
-    Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    Plato::Scalar m_cellThermalExpansionCoef;
-    Omega_h::Matrix<SpatialDim, SpatialDim> m_cellThermalConductivity;
-    Plato::Scalar m_cellReferenceTemperature;
+    Plato::Scalar mCellDensity;
+    Plato::Scalar mCellSpecificHeat;
+    Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    Plato::Scalar mCellThermalExpansionCoef;
+    Omega_h::Matrix<SpatialDim, SpatialDim> mCellThermalConductivity;
+    Plato::Scalar mCellReferenceTemperature;
 
   public:
     LinearThermoelasticMaterial();
-    decltype(m_cellDensity)               getMassDensity()          const {return m_cellDensity;}
-    decltype(m_cellSpecificHeat)          getSpecificHeat()         const {return m_cellSpecificHeat;}
-    decltype(m_cellStiffness)             getStiffnessMatrix()      const {return m_cellStiffness;}
-    decltype(m_cellThermalExpansionCoef)  getThermalExpansion()     const {return m_cellThermalExpansionCoef;}
-    decltype(m_cellThermalConductivity)   getThermalConductivity()  const {return m_cellThermalConductivity;}
-    decltype(m_cellReferenceTemperature)  getReferenceTemperature() const {return m_cellReferenceTemperature;}
+    decltype(mCellDensity)               getMassDensity()          const {return mCellDensity;}
+    decltype(mCellSpecificHeat)          getSpecificHeat()         const {return mCellSpecificHeat;}
+    decltype(mCellStiffness)             getStiffnessMatrix()      const {return mCellStiffness;}
+    decltype(mCellThermalExpansionCoef)  getThermalExpansion()     const {return mCellThermalExpansionCoef;}
+    decltype(mCellThermalConductivity)   getThermalConductivity()  const {return mCellThermalConductivity;}
+    decltype(mCellReferenceTemperature)  getReferenceTemperature() const {return mCellReferenceTemperature;}
 };
 
 /******************************************************************************/
@@ -45,17 +45,17 @@ LinearThermoelasticMaterial<SpatialDim>::
 LinearThermoelasticMaterial()
 /******************************************************************************/
 {
-  for(int i=0; i<m_numVoigtTerms; i++)
-    for(int j=0; j<m_numVoigtTerms; j++)
-      m_cellStiffness(i,j) = 0.0;
+  for(int i=0; i<mNumVoigtTerms; i++)
+    for(int j=0; j<mNumVoigtTerms; j++)
+      mCellStiffness(i,j) = 0.0;
 
-  m_cellThermalExpansionCoef = 0.0;
+  mCellThermalExpansionCoef = 0.0;
 
   for(int i=0; i<SpatialDim; i++)
     for(int j=0; j<SpatialDim; j++)
-      m_cellThermalConductivity(i,j) = 0.0;
+      mCellThermalConductivity(i,j) = 0.0;
 
-  m_cellReferenceTemperature = 0.0;
+  mCellReferenceTemperature = 0.0;
 }
 
 /******************************************************************************/
@@ -81,10 +81,10 @@ LinearThermoelasticMaterial()
 /******************************************************************************/
 {
   public:
-    ThermoelasticModelFactory(const Teuchos::ParameterList& paramList) : m_paramList(paramList) {}
+    ThermoelasticModelFactory(const Teuchos::ParameterList& paramList) : mParamList(paramList) {}
     Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpatialDim>> create();
   private:
-    const Teuchos::ParameterList& m_paramList;
+    const Teuchos::ParameterList& mParamList;
 };
 /******************************************************************************/
 template<int SpatialDim>
@@ -92,7 +92,7 @@ Teuchos::RCP<LinearThermoelasticMaterial<SpatialDim>>
 ThermoelasticModelFactory<SpatialDim>::create()
 /******************************************************************************/
 {
-  auto modelParamList = m_paramList.get<Teuchos::ParameterList>("Material Model");
+  auto modelParamList = mParamList.get<Teuchos::ParameterList>("Material Model");
 
   if( modelParamList.isSublist("Isotropic Linear Thermoelastic") ){
     return Teuchos::rcp(new Plato::IsotropicLinearThermoelasticMaterial<SpatialDim>(modelParamList.sublist("Isotropic Linear Thermoelastic")));

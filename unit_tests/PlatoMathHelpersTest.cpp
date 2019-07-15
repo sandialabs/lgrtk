@@ -22,10 +22,84 @@
 #include "plato/ApplyProjection.hpp"
 #include "plato/HyperbolicTangentProjection.hpp"
 
+#include "KokkosBatched_LU_Decl.hpp"
+#include "KokkosBatched_LU_Serial_Impl.hpp"
+#include "KokkosBatched_Trsm_Decl.hpp"
+#include "KokkosBatched_Trsm_Serial_Impl.hpp"
+
 #include <Omega_h_mesh.hpp>
 
 namespace PlatoUnitTests
 {
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_InvertLocalMatrices)
+{
+    const int N = 3; // Number of matrices to invert
+    Plato::ScalarArray3D tMatrix("Matrix A", N, 2, 2);
+    auto tHostMatrix = Kokkos::create_mirror(tMatrix);
+    for (unsigned int i = 0; i < N; ++i)
+    {
+      const Plato::Scalar tScaleFactor = 1.0 / (1.0 + i);
+      tHostMatrix(i,0,0) = -2.0 * tScaleFactor;
+      tHostMatrix(i,1,0) =  1.0 * tScaleFactor;
+      tHostMatrix(i,0,1) =  1.5 * tScaleFactor;
+      tHostMatrix(i,1,1) = -0.5 * tScaleFactor;
+    }
+    Kokkos::deep_copy(tMatrix, tHostMatrix);
+
+    Plato::ScalarArray3D tAInverse("A Inverse", N, 2, 2);
+    auto tHostAInverse = Kokkos::create_mirror(tAInverse);
+    for (unsigned int i = 0; i < N; ++i)
+    {
+      tHostAInverse(i,0,0) = 1.0;
+      tHostAInverse(i,1,0) = 0.0;
+      tHostAInverse(i,0,1) = 0.0;
+      tHostAInverse(i,1,1) = 1.0;
+    }
+    Kokkos::deep_copy(tAInverse, tHostAInverse);
+
+    using namespace KokkosBatched::Experimental;
+
+    /// [template]AlgoType: Unblocked, Blocked, CompatMKL
+    /// [in/out]A: 2d view
+    /// [in]tiny: a magnitude scalar value compatible to the value type of A
+    /// int SerialLU<Algo::LU::Unblocked>::invoke(const AViewType &A, const ScalarType tiny = 0)
+
+    /// [template]SideType: Side::Left or Side::Right
+    /// [template]UploType: Uplo::Upper or Uplo::Lower
+    /// [template]TransType: Trans::NoTranspose or Trans::Transpose
+    /// [template]DiagType: Diag::Unit or Diag::NonUnit
+    /// [template]AlgoType: Unblocked, Blocked, CompatMKL
+    /// [in]alpha: a scalar value
+    /// [in]A: 2d view
+    /// [in/out]B: 2d view
+    /// int SerialTrsm<SideType,UploType,TransType,DiagType,AlgoType>
+    ///    ::invoke(const ScalarType alpha, const AViewType &A, const BViewType &B);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,N), LAMBDA_EXPRESSION(const Plato::OrdinalType & n) {
+      auto A    = Kokkos::subview(tMatrix  , n, Kokkos::ALL(), Kokkos::ALL());
+      auto Ainv = Kokkos::subview(tAInverse, n, Kokkos::ALL(), Kokkos::ALL());
+
+      SerialLU<Algo::LU::Blocked>::invoke(A);
+      SerialTrsm<Side::Left,Uplo::Lower,Trans::NoTranspose,Diag::Unit   ,Algo::Trsm::Blocked>::invoke(1.0, A, Ainv);
+      SerialTrsm<Side::Left,Uplo::Upper,Trans::NoTranspose,Diag::NonUnit,Algo::Trsm::Blocked>::invoke(1.0, A, Ainv);
+    });
+
+    const Plato::Scalar tTolerance = 1e-6;
+    std::vector<std::vector<Plato::Scalar> > tGoldMatrixInverse = { {1.0, 3.0}, {2.0, 4.0} };
+
+    Kokkos::deep_copy(tHostAInverse, tAInverse);
+    for (unsigned int n = 0; n < N; ++n)
+      for (unsigned int i = 0; i < 2; ++i)
+        for (unsigned int j = 0; j < 2; ++j)
+          {
+            //printf("Matrix %d Inverse (%d,%d) = %f\n", n, i, j, tHostAInverse(n, i, j));
+            const Plato::Scalar tScaleFactor = (1.0 + n);
+            TEST_FLOATING_EQUALITY(tHostAInverse(n, i, j), tScaleFactor * tGoldMatrixInverse[i][j], tTolerance);
+          }
+}
+
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, HyperbolicTangentProjection)
 {

@@ -15,20 +15,20 @@ LinearThermoelasticMaterial<1>()
     Plato::Scalar k = paramList.get<double>("Thermal Conductivity Coefficient");
     Plato::Scalar t = paramList.get<double>("Reference Temperature");
     auto c = E/((1.0+v)*(1.0-2.0*v));
-    m_cellStiffness(0,0)=c*(1.0-v);
-    m_cellThermalExpansionCoef=a;
-    m_cellThermalConductivity(0,0)=k;
-    m_cellReferenceTemperature=t;
+    mCellStiffness(0,0)=c*(1.0-v);
+    mCellThermalExpansionCoef=a;
+    mCellThermalConductivity(0,0)=k;
+    mCellReferenceTemperature=t;
 
     if( paramList.isType<double>("Mass Density") ){
-      m_cellDensity = paramList.get<double>("Mass Density");
+      mCellDensity = paramList.get<double>("Mass Density");
     } else {
-      m_cellDensity = 1.0;
+      mCellDensity = 1.0;
     }
     if( paramList.isType<double>("Specific Heat") ){
-      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+      mCellSpecificHeat = paramList.get<double>("Specific Heat");
     } else {
-      m_cellSpecificHeat = 1.0;
+      mCellSpecificHeat = 1.0;
     }
 }
 /******************************************************************************/
@@ -44,23 +44,23 @@ LinearThermoelasticMaterial<2>()
     Plato::Scalar k = paramList.get<double>("Thermal Conductivity Coefficient");
     Plato::Scalar t = paramList.get<double>("Reference Temperature");
     auto c = E/((1.0+v)*(1.0-2.0*v));
-    m_cellStiffness(0,0)=c*(1.0-v); m_cellStiffness(0,1)=c*v;
-    m_cellStiffness(1,0)=c*v;       m_cellStiffness(1,1)=c*(1.0-v);
-    m_cellStiffness(2,2)=1.0/2.0*c*(1.0-2.0*v);
-    m_cellThermalExpansionCoef=a;
-    m_cellThermalConductivity(0,0)=k;
-    m_cellThermalConductivity(1,1)=k;
-    m_cellReferenceTemperature=t;
+    mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;
+    mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v);
+    mCellStiffness(2,2)=1.0/2.0*c*(1.0-2.0*v);
+    mCellThermalExpansionCoef=a;
+    mCellThermalConductivity(0,0)=k;
+    mCellThermalConductivity(1,1)=k;
+    mCellReferenceTemperature=t;
 
     if( paramList.isType<double>("Mass Density") ){
-      m_cellDensity = paramList.get<double>("Mass Density");
+      mCellDensity = paramList.get<double>("Mass Density");
     } else {
-      m_cellDensity = 1.0;
+      mCellDensity = 1.0;
     }
     if( paramList.isType<double>("Specific Heat") ){
-      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+      mCellSpecificHeat = paramList.get<double>("Specific Heat");
     } else {
-      m_cellSpecificHeat = 1.0;
+      mCellSpecificHeat = 1.0;
     }
 }
 /******************************************************************************/
@@ -76,27 +76,27 @@ LinearThermoelasticMaterial<3>()
     Plato::Scalar k = paramList.get<double>("Thermal Conductivity Coefficient");
     Plato::Scalar t = paramList.get<double>("Reference Temperature");
     auto c = E/((1.0+v)*(1.0-2.0*v));
-    m_cellStiffness(0,0)=c*(1.0-v); m_cellStiffness(0,1)=c*v;       m_cellStiffness(0,2)=c*v;
-    m_cellStiffness(1,0)=c*v;       m_cellStiffness(1,1)=c*(1.0-v); m_cellStiffness(1,2)=c*v;
-    m_cellStiffness(2,0)=c*v;       m_cellStiffness(2,1)=c*v;       m_cellStiffness(2,2)=c*(1.0-v);
-    m_cellStiffness(3,3)=1.0/2.0*c*(1.0-2.0*v);
-    m_cellStiffness(4,4)=1.0/2.0*c*(1.0-2.0*v);
-    m_cellStiffness(5,5)=1.0/2.0*c*(1.0-2.0*v);
-    m_cellThermalExpansionCoef=a;
-    m_cellThermalConductivity(0,0)=k;
-    m_cellThermalConductivity(1,1)=k;
-    m_cellThermalConductivity(2,2)=k;
-    m_cellReferenceTemperature=t;
+    mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;       mCellStiffness(0,2)=c*v;
+    mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v); mCellStiffness(1,2)=c*v;
+    mCellStiffness(2,0)=c*v;       mCellStiffness(2,1)=c*v;       mCellStiffness(2,2)=c*(1.0-v);
+    mCellStiffness(3,3)=1.0/2.0*c*(1.0-2.0*v);
+    mCellStiffness(4,4)=1.0/2.0*c*(1.0-2.0*v);
+    mCellStiffness(5,5)=1.0/2.0*c*(1.0-2.0*v);
+    mCellThermalExpansionCoef=a;
+    mCellThermalConductivity(0,0)=k;
+    mCellThermalConductivity(1,1)=k;
+    mCellThermalConductivity(2,2)=k;
+    mCellReferenceTemperature=t;
 
     if( paramList.isType<double>("Mass Density") ){
-      m_cellDensity = paramList.get<double>("Mass Density");
+      mCellDensity = paramList.get<double>("Mass Density");
     } else {
-      m_cellDensity = 1.0;
+      mCellDensity = 1.0;
     }
     if( paramList.isType<double>("Specific Heat") ){
-      m_cellSpecificHeat = paramList.get<double>("Specific Heat");
+      mCellSpecificHeat = paramList.get<double>("Specific Heat");
     } else {
-      m_cellSpecificHeat = 1.0;
+      mCellSpecificHeat = 1.0;
     }
 }
 

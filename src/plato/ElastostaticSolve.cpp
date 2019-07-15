@@ -90,7 +90,7 @@ template<int SpaceDim>
 ElastostaticSolve<SpaceDim>::ElastostaticSolve(Teuchos::ParameterList const& paramList,
                                                Teuchos::RCP<DefaultFields> meshFields,
                                                Plato::comm::Machine machine) :
-        m_machine(machine),
+        mMachine(machine),
         m_meshFields(meshFields),
         m_useBlockMatrix(paramList.get<bool>("Use Block Matrix"))
 /******************************************************************************/
@@ -99,7 +99,7 @@ ElastostaticSolve<SpaceDim>::ElastostaticSolve(Teuchos::ParameterList const& par
     m_bcValues = Plato::ScalarVector("BC values", 0);
 
     Plato::ElasticModelFactory < SpaceDim > mmfactory(paramList);
-    m_materialModel = mmfactory.create();
+    mMaterialModel = mmfactory.create();
 }
 
 /******************************************************************************/
@@ -154,7 +154,7 @@ void ElastostaticSolve<SpaceDim>::computeGlobalStiffness()
 
     // create stiffness matrix
     //
-    auto cellStiffness = m_materialModel->getStiffnessMatrix();
+    auto cellStiffness = mMaterialModel->getStiffnessMatrix();
 
     // create Assembly functor
     //

@@ -207,7 +207,8 @@ if (LGR_ENABLE_PLATO)
   target_link_libraries(PlatoMathHelpersUnitTests 
     lgrtk
     ${Trilinos_LIBRARIES} 
-    ${Trilinos_TPL_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES}
+    kokkoskernels
     )
   target_include_directories(PlatoMathHelpersUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 

@@ -5,31 +5,31 @@
 
 /******************************************************************************/
 MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
-        m_objective_value(std::numeric_limits<Plato::Scalar>::max()),
-        m_constraint_value(std::numeric_limits<Plato::Scalar>::max()),
-        m_lib_osh(&aArgc, &aArgv, aLocalComm),
-        m_machine(aLocalComm),
-        m_numSpatialDims(0),
-        mMesh(&m_lib_osh)
+        mObjectiveValue(std::numeric_limits<Plato::Scalar>::max()),
+        mConstraintValue(std::numeric_limits<Plato::Scalar>::max()),
+        mLibOsh(&aArgc, &aArgv, aLocalComm),
+        mMachine(aLocalComm),
+        mNumSpatialDims(0),
+        mMesh(&mLibOsh)
 /******************************************************************************/
 {
   // parse app file
   //
   const char* tInputChar = std::getenv("PLATO_APP_FILE");
   Plato::Parser* parser = new Plato::PugiParser();
-  m_inputData = parser->parseFile(tInputChar);
+  mInputData = parser->parseFile(tInputChar);
 
-  auto tInputParams = Plato::input_file_parsing(aArgc, aArgv, m_machine);
+  auto tInputParams = Plato::input_file_parsing(aArgc, aArgv, mMachine);
 
   auto problemName = tInputParams.sublist("Runtime").get<std::string>("Input Config");
-  m_defaultProblem = Teuchos::rcp(new ProblemDefinition(problemName));
-  m_defaultProblem->params = tInputParams;
+  mDefaultProblem = Teuchos::rcp(new ProblemDefinition(problemName));
+  mDefaultProblem->params = tInputParams;
 
-  this->createProblem(*m_defaultProblem);
+  this->createProblem(*mDefaultProblem);
 
 
   // parse/create the MLS PointArrays
-  auto tPointArrayInputs = m_inputData.getByName<Plato::InputData>("PointArray");
+  auto tPointArrayInputs = mInputData.getByName<Plato::InputData>("PointArray");
   for(auto tPointArrayInput=tPointArrayInputs.begin(); tPointArrayInput!=tPointArrayInputs.end(); ++tPointArrayInput)
   {
 #ifdef PLATO_GEOMETRY
@@ -62,11 +62,11 @@ MPMD_App::
 createProblem(ProblemDefinition& aDefinition){
 /******************************************************************************/
 
-  m_currentProblemName = aDefinition.name;
+  mCurrentProblemName = aDefinition.name;
 
   auto input_mesh = aDefinition.params.get<std::string>("Input Mesh");
 
-  mMesh = Omega_h::read_mesh_file(input_mesh, m_lib_osh.world());
+  mMesh = Omega_h::read_mesh_file(input_mesh, mLibOsh.world());
   mMesh.set_parting(Omega_h_Parting::OMEGA_H_GHOSTED);
 
   Omega_h::Assoc tAssoc;
@@ -81,37 +81,37 @@ createProblem(ProblemDefinition& aDefinition){
   }
   mMeshSets = Omega_h::invert(&mMesh, tAssoc);
 
-  m_numSpatialDims = aDefinition.params.get<int>("Spatial Dimension");
+  mNumSpatialDims = aDefinition.params.get<int>("Spatial Dimension");
 
-  if (m_numSpatialDims == 3)
+  if (mNumSpatialDims == 3)
   {
     #ifdef PLATO_3D
     Plato::ProblemFactory<3> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
-    m_adjoint = m_problem->getAdjoint();
-    m_state = m_problem->getState();
+    mProblem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
+    mAdjoint = mProblem->getAdjoint();
+    mState = mProblem->getState();
     #else
     throw Plato::ParsingException("3D physics is not compiled.");
     #endif
   } else
-  if (m_numSpatialDims == 2)
+  if (mNumSpatialDims == 2)
   {
     #ifdef PLATO_2D
     Plato::ProblemFactory<2> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
-    m_adjoint = m_problem->getAdjoint();
-    m_state = m_problem->getState();
+    mProblem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
+    mAdjoint = mProblem->getAdjoint();
+    mState = mProblem->getState();
     #else
     throw Plato::ParsingException("2D physics is not compiled.");
     #endif
   } else
-  if (m_numSpatialDims == 1)
+  if (mNumSpatialDims == 1)
   {
     #ifdef PLATO_1D
     Plato::ProblemFactory<1> tProblemFactory;
-    m_problem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
-    m_adjoint = m_problem->getAdjoint();
-    m_state = m_problem->getState();
+    mProblem = tProblemFactory.create(mMesh, mMeshSets, aDefinition.params);
+    mAdjoint = mProblem->getAdjoint();
+    mState = mProblem->getState();
     #else
     throw Plato::ParsingException("1D physics is not compiled.");
     #endif
@@ -127,84 +127,84 @@ void MPMD_App::initialize()
 
   auto tNumLocalVals = mMesh.nverts();
 
-  m_control    = Plato::ScalarVector("control", tNumLocalVals);
+  mControl    = Plato::ScalarVector("control", tNumLocalVals);
 
-  m_objective_gradient_z = Plato::ScalarVector("objective_gradient_z", tNumLocalVals);
-  m_objective_gradient_x = Plato::ScalarVector("objective_gradient_x", m_numSpatialDims*tNumLocalVals);
+  mObjectiveGradientZ = Plato::ScalarVector("objective_gradient_z", tNumLocalVals);
+  mObjectiveGradientX = Plato::ScalarVector("objective_gradient_x", mNumSpatialDims*tNumLocalVals);
 
   // parse problem definitions
   //
-  for( auto opNode : m_inputData.getByName<Plato::InputData>("Operation") ){
+  for( auto opNode : mInputData.getByName<Plato::InputData>("Operation") ){
 
-    std::string strProblem  = Plato::Get::String(opNode,"ProblemDefinition",m_defaultProblem->name);
-    auto it = m_problemDefinitions.find(strProblem);
-    if(it == m_problemDefinitions.end()){
+    std::string strProblem  = Plato::Get::String(opNode,"ProblemDefinition",mDefaultProblem->name);
+    auto it = mProblemDefinitions.find(strProblem);
+    if(it == mProblemDefinitions.end()){
       auto newProblem = Teuchos::rcp(new ProblemDefinition(strProblem));
       Teuchos::updateParametersFromXmlFileAndBroadcast(
-         strProblem, Teuchos::Ptr<Teuchos::ParameterList>(&(newProblem->params)), *(m_machine.teuchosComm));
-      m_problemDefinitions[strProblem] = newProblem;
+         strProblem, Teuchos::Ptr<Teuchos::ParameterList>(&(newProblem->params)), *(mMachine.teuchosComm));
+      mProblemDefinitions[strProblem] = newProblem;
     }
   }
   
 
   // parse Operation definition
   //
-  for( auto tOperationNode : m_inputData.getByName<Plato::InputData>("Operation") ){
+  for( auto tOperationNode : mInputData.getByName<Plato::InputData>("Operation") ){
 
     std::string tStrFunction = Plato::Get::String(tOperationNode,"Function");
     std::string tStrName     = Plato::Get::String(tOperationNode,"Name");
-    std::string tStrProblem  = Plato::Get::String(tOperationNode,"ProblemDefinition",m_defaultProblem->name);
+    std::string tStrProblem  = Plato::Get::String(tOperationNode,"ProblemDefinition",mDefaultProblem->name);
 
-    auto opDef = m_problemDefinitions[tStrProblem];
+    auto opDef = mProblemDefinitions[tStrProblem];
   
     if(tStrFunction == "ComputeSolution"){
-      m_operationMap[tStrName] = new ComputeSolution(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeSolution(this, tOperationNode, opDef);
     } else 
 
     if(tStrFunction == "Reinitialize"){
-      m_operationMap[tStrName] = new Reinitialize(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new Reinitialize(this, tOperationNode, opDef);
     } else 
 
     if(tStrFunction == "UpdateProblem"){
-      m_operationMap[tStrName] = new UpdateProblem(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new UpdateProblem(this, tOperationNode, opDef);
     } else
 
     if(tStrFunction == "ComputeObjective"){
-      m_operationMap[tStrName] = new ComputeObjective(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeObjective(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeObjectiveX"){
-      m_operationMap[tStrName] = new ComputeObjectiveX(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeObjectiveX(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeObjectiveValue"){
-      m_operationMap[tStrName] = new ComputeObjectiveValue(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeObjectiveValue(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeObjectiveGradient"){
-      m_operationMap[tStrName] = new ComputeObjectiveGradient(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeObjectiveGradient(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeObjectiveGradientX"){
-      m_operationMap[tStrName] = new ComputeObjectiveGradientX(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeObjectiveGradientX(this, tOperationNode, opDef);
     } else 
 
     if(tStrFunction == "ComputeConstraint"){
-      m_operationMap[tStrName] = new ComputeConstraint(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeConstraint(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeConstraintX"){
-      m_operationMap[tStrName] = new ComputeConstraintX(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeConstraintX(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeConstraintValue"){
-      m_operationMap[tStrName] = new ComputeConstraintValue(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeConstraintValue(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeConstraintGradient"){
-      m_operationMap[tStrName] = new ComputeConstraintGradient(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeConstraintGradient(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeConstraintGradientX"){
-      m_operationMap[tStrName] = new ComputeConstraintGradientX(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeConstraintGradientX(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "WriteOutput"){
-      m_operationMap[tStrName] = new WriteOutput(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new WriteOutput(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeFiniteDifference"){
-      m_operationMap[tStrName] = new ComputeFiniteDifference(this, tOperationNode, opDef);
+      mOperationMap[tStrName] = new ComputeFiniteDifference(this, tOperationNode, opDef);
     } else 
     if(tStrFunction == "ComputeMLSField"){
   #ifdef PLATO_GEOMETRY
@@ -212,17 +212,17 @@ void MPMD_App::initialize()
       if( mMLS.count(tMLSName) == 0 )
       { throw Plato::ParsingException("MPMD_App::ComputeMLSField: Requested a PointArray that isn't defined."); }
 
-      if( m_coords.extent(0) == 0 )
+      if( mCoords.extent(0) == 0 )
       {
-        m_coords = getCoords();
+        mCoords = getCoords();
       }
 
       auto tMLS = mMLS[tMLSName];
-      if( tMLS->dimension == 3 ) { m_operationMap[tStrName] = new ComputeMLSField<3>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 3 ) { mOperationMap[tStrName] = new ComputeMLSField<3>(this, tOperationNode, opDef); }
       else
-      if( tMLS->dimension == 2 ) { m_operationMap[tStrName] = new ComputeMLSField<2>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 2 ) { mOperationMap[tStrName] = new ComputeMLSField<2>(this, tOperationNode, opDef); }
       else
-      if( tMLS->dimension == 1 ) { m_operationMap[tStrName] = new ComputeMLSField<1>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 1 ) { mOperationMap[tStrName] = new ComputeMLSField<1>(this, tOperationNode, opDef); }
   #else
       throw Plato::ParsingException("MPMD_App was not compiled with ComputeMLSField enabled.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
   #endif // PLATO_GEOMETRY
@@ -233,17 +233,17 @@ void MPMD_App::initialize()
       if( mMLS.count(tMLSName) == 0 )
       { throw Plato::ParsingException("MPMD_App::ComputePerturbedMLSField: Requested a PointArray that isn't defined."); }
 
-      if( m_coords.extent(0) == 0 )
+      if( mCoords.extent(0) == 0 )
       {
-        m_coords = getCoords();
+        mCoords = getCoords();
       }
 
       auto tMLS = mMLS[tMLSName];
-      if( tMLS->dimension == 3 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<3>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 3 ) { mOperationMap[tStrName] = new ComputePerturbedMLSField<3>(this, tOperationNode, opDef); }
       else
-      if( tMLS->dimension == 2 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<2>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 2 ) { mOperationMap[tStrName] = new ComputePerturbedMLSField<2>(this, tOperationNode, opDef); }
       else
-      if( tMLS->dimension == 1 ) { m_operationMap[tStrName] = new ComputePerturbedMLSField<1>(this, tOperationNode, opDef); }
+      if( tMLS->dimension == 1 ) { mOperationMap[tStrName] = new ComputePerturbedMLSField<1>(this, tOperationNode, opDef); }
   #else
       throw Plato::ParsingException("MPMD_App was not compiled with ComputePerturbedMLSField enabled.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
   #endif // PLATO_GEOMETRY
@@ -256,8 +256,8 @@ MPMD_App::LocalOp*
 MPMD_App::getOperation(const std::string & aOperationName)
 /******************************************************************************/
 {
-  auto tIterator = m_operationMap.find(aOperationName);
-  if(tIterator == m_operationMap.end()){
+  auto tIterator = mOperationMap.find(aOperationName);
+  if(tIterator == mOperationMap.end()){
     std::stringstream tErrorMsg;
     tErrorMsg << "Request for operation ('" << aOperationName << "') that doesn't exist.";
     throw Plato::LogicException(tErrorMsg.str());
@@ -275,7 +275,7 @@ MPMD_App::compute(const std::string & aOperationName)
   // if a different problem definition is needed, create it
   //
   auto tProblemDefinition = tOperation->getProblemDefinition();
-  if( tProblemDefinition->name != m_currentProblemName || tProblemDefinition->modified  )
+  if( tProblemDefinition->name != mCurrentProblemName || tProblemDefinition->modified  )
   {
     this->createProblem(*tProblemDefinition);
   }
@@ -289,7 +289,7 @@ MPMD_App::compute(const std::string & aOperationName)
 MPMD_App::LocalOp::
 LocalOp(MPMD_App* aMyApp, Plato::InputData& aOperationNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
         mMyApp(aMyApp),
-        m_def(aOpDef)
+        mDef(aOpDef)
 /******************************************************************************/
 {
   // parse parameters
@@ -299,13 +299,13 @@ LocalOp(MPMD_App* aMyApp, Plato::InputData& aOperationNode, Teuchos::RCP<Problem
     auto tTarget = Plato::Get::String(pNode, "Target");
     auto tValue  = Plato::Get::Double(pNode, "InitialValue");
     
-    if( m_parameters.count(tName) )
+    if( mParameters.count(tName) )
     {
       Plato::ParsingException pe("ArgumentNames must be unique.");
       throw pe;
     }
 
-    m_parameters[tName] = Teuchos::rcp(new Parameter(tName, tTarget, tValue));
+    mParameters[tName] = Teuchos::rcp(new Parameter(tName, tTarget, tValue));
   }
 }
 
@@ -315,7 +315,7 @@ MPMD_App::LocalOp::
 updateParameters(std::string aName, Plato::Scalar aValue)
 /******************************************************************************/
 {
-  if( m_parameters.count(aName) == 0 )
+  if( mParameters.count(aName) == 0 )
   {
     std::stringstream ss;
     ss << "Attempted to update a parameter ('" << aName << "') that wasn't defined for this operation";
@@ -324,15 +324,15 @@ updateParameters(std::string aName, Plato::Scalar aValue)
   } 
   else
   {
-    auto it = m_parameters.find(aName);
+    auto it = mParameters.find(aName);
     auto pm = it->second;
-    pm->m_value = aValue;
+    pm->mValue = aValue;
 
     // if a target is given, update the problem definition
-    if ( pm->m_target.empty() == false )
+    if ( pm->mTarget.empty() == false )
     {
-        parseInline(m_def->params, pm->m_target, pm->m_value);
-        m_def->modified = true;
+        parseInline(mDef->params, pm->mTarget, pm->mValue);
+        mDef->modified = true;
     }
   }
 }
@@ -349,10 +349,10 @@ ComputeObjective(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<Probl
 void MPMD_App::ComputeObjective::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_state = mMyApp->m_problem->solution(mMyApp->m_control);
+  mMyApp->mState = mMyApp->mProblem->solution(mMyApp->mControl);
 
-  mMyApp->m_objective_value      = mMyApp->m_problem->objectiveValue(mMyApp->m_control, mMyApp->m_state);
-  mMyApp->m_objective_gradient_z = mMyApp->m_problem->objectiveGradient(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mObjectiveValue      = mMyApp->mProblem->objectiveValue(mMyApp->mControl, mMyApp->mState);
+  mMyApp->mObjectiveGradientZ = mMyApp->mProblem->objectiveGradient(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -367,10 +367,10 @@ ComputeObjectiveX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<Prob
 void MPMD_App::ComputeObjectiveX::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_state = mMyApp->m_problem->solution(mMyApp->m_control);
+  mMyApp->mState = mMyApp->mProblem->solution(mMyApp->mControl);
 
-  mMyApp->m_objective_value      = mMyApp->m_problem->objectiveValue(mMyApp->m_control, mMyApp->m_state);
-  mMyApp->m_objective_gradient_x = mMyApp->m_problem->objectiveGradientX(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mObjectiveValue      = mMyApp->mProblem->objectiveValue(mMyApp->mControl, mMyApp->mState);
+  mMyApp->mObjectiveGradientX = mMyApp->mProblem->objectiveGradientX(mMyApp->mControl, mMyApp->mState);
 }
 
 
@@ -386,8 +386,8 @@ ComputeObjectiveValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<
 void MPMD_App::ComputeObjectiveValue::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_state = mMyApp->m_problem->solution(mMyApp->m_control);
-  mMyApp->m_objective_value = mMyApp->m_problem->objectiveValue(mMyApp->m_control,mMyApp->m_state);
+  mMyApp->mState = mMyApp->mProblem->solution(mMyApp->mControl);
+  mMyApp->mObjectiveValue = mMyApp->mProblem->objectiveValue(mMyApp->mControl,mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -403,7 +403,7 @@ ComputeObjectiveGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode,  Teuchos::
 void MPMD_App::ComputeObjectiveGradient::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_objective_gradient_z = mMyApp->m_problem->objectiveGradient(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mObjectiveGradientZ = mMyApp->mProblem->objectiveGradient(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -418,7 +418,7 @@ ComputeObjectiveGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::
 void MPMD_App::ComputeObjectiveGradientX::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_objective_gradient_x = mMyApp->m_problem->objectiveGradientX(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mObjectiveGradientX = mMyApp->mProblem->objectiveGradientX(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -433,10 +433,10 @@ ComputeConstraint(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<Prob
 void MPMD_App::ComputeConstraint::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_constraint_value      = mMyApp->m_problem->constraintValue(mMyApp->m_control, mMyApp->m_state);
-  mMyApp->m_constraint_gradient_z = mMyApp->m_problem->constraintGradient(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mConstraintValue      = mMyApp->mProblem->constraintValue(mMyApp->mControl, mMyApp->mState);
+  mMyApp->mConstraintGradientZ = mMyApp->mProblem->constraintGradient(mMyApp->mControl, mMyApp->mState);
 
-  std::cout << "Plato:: Constraint value = " << mMyApp->m_constraint_value << std::endl;
+  std::cout << "Plato:: Constraint value = " << mMyApp->mConstraintValue << std::endl;
 }
 
 /******************************************************************************/
@@ -449,10 +449,10 @@ ComputeConstraintX(MPMD_App* aMyApp, Plato::InputData& aOpNode,
 void MPMD_App::ComputeConstraintX::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_constraint_value      = mMyApp->m_problem->constraintValue(mMyApp->m_control, mMyApp->m_state);
-  mMyApp->m_constraint_gradient_x = mMyApp->m_problem->constraintGradientX(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mConstraintValue      = mMyApp->mProblem->constraintValue(mMyApp->mControl, mMyApp->mState);
+  mMyApp->mConstraintGradientX = mMyApp->mProblem->constraintGradientX(mMyApp->mControl, mMyApp->mState);
 
-  std::cout << "Plato:: Constraint value = " << mMyApp->m_constraint_value << std::endl;
+  std::cout << "Plato:: Constraint value = " << mMyApp->mConstraintValue << std::endl;
 }
 
 
@@ -468,9 +468,9 @@ ComputeConstraintValue(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP
 void MPMD_App::ComputeConstraintValue::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_constraint_value = mMyApp->m_problem->constraintValue(mMyApp->m_control,mMyApp->m_state);
+  mMyApp->mConstraintValue = mMyApp->mProblem->constraintValue(mMyApp->mControl,mMyApp->mState);
 
-  std::cout << "Plato:: Constraint value = " << mMyApp->m_constraint_value << std::endl;
+  std::cout << "Plato:: Constraint value = " << mMyApp->mConstraintValue << std::endl;
 }
 
 /******************************************************************************/
@@ -485,7 +485,7 @@ ComputeConstraintGradient(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::
 void MPMD_App::ComputeConstraintGradient::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_constraint_gradient_z = mMyApp->m_problem->constraintGradient(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mConstraintGradientZ = mMyApp->mProblem->constraintGradient(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -500,7 +500,7 @@ ComputeConstraintGradientX(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos:
 void MPMD_App::ComputeConstraintGradientX::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_constraint_gradient_x = mMyApp->m_problem->constraintGradientX(mMyApp->m_control, mMyApp->m_state);
+  mMyApp->mConstraintGradientX = mMyApp->mProblem->constraintGradientX(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -515,7 +515,7 @@ ComputeSolution(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<Proble
 void MPMD_App::ComputeSolution::operator()()
 /******************************************************************************/
 {
-  mMyApp->m_state = mMyApp->m_problem->solution(mMyApp->m_control);
+  mMyApp->mState = mMyApp->mProblem->solution(mMyApp->mControl);
 }
 
 /******************************************************************************/
@@ -530,7 +530,7 @@ Reinitialize(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDe
 void MPMD_App::Reinitialize::operator()()
 /******************************************************************************/
 {
-  auto def = mMyApp->m_problemDefinitions[mMyApp->m_currentProblemName];
+  auto def = mMyApp->mProblemDefinitions[mMyApp->mCurrentProblemName];
   mMyApp->createProblem(*def);
 }
 
@@ -548,7 +548,7 @@ UpdateProblem(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemD
 void MPMD_App::UpdateProblem::operator()()
 /******************************************************************************/
 {
-    mMyApp->m_problem->updateProblem(mMyApp->m_control, mMyApp->m_state);
+    mMyApp->mProblem->updateProblem(mMyApp->mControl, mMyApp->mState);
 }
 
 /******************************************************************************/
@@ -567,18 +567,18 @@ void MPMD_App::WriteOutput::operator()() { }
 MPMD_App::ComputeFiniteDifference::
 ComputeFiniteDifference(MPMD_App* aMyApp, Plato::InputData& aOpNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
         LocalOp(aMyApp, aOpNode, aOpDef),
-        m_strInitialValue("Initial Value"),
-        m_strPerturbedValue("Perturbed Value"),
-        m_strGradient("Gradient")
+        mStrInitialValue("Initial Value"),
+        mStrPerturbedValue("Perturbed Value"),
+        mStrGradient("Gradient")
 /******************************************************************************/
 { 
-    aMyApp->mValuesMap[m_strInitialValue] = std::vector<Plato::Scalar>();
-    aMyApp->mValuesMap[m_strPerturbedValue] = std::vector<Plato::Scalar>();
+    aMyApp->mValuesMap[mStrInitialValue] = std::vector<Plato::Scalar>();
+    aMyApp->mValuesMap[mStrPerturbedValue] = std::vector<Plato::Scalar>();
 
-    int tNumTerms = std::round(m_parameters["Vector Length"]->m_value);
-    aMyApp->mValuesMap[m_strGradient] = std::vector<Plato::Scalar>(tNumTerms);
+    int tNumTerms = std::round(mParameters["Vector Length"]->mValue);
+    aMyApp->mValuesMap[mStrGradient] = std::vector<Plato::Scalar>(tNumTerms);
 
-    m_delta = Plato::Get::Double(aOpNode,"Delta");
+    mDelta = Plato::Get::Double(aOpNode,"Delta");
 }
 
 /******************************************************************************/
@@ -587,15 +587,15 @@ void MPMD_App::ComputeFiniteDifference::operator()()
 { 
     int tIndex=0;
     Plato::Scalar tDelta=0.0;
-    if( m_parameters.count("Perturbed Index") )
+    if( mParameters.count("Perturbed Index") )
     {
-        tIndex = std::round(m_parameters["Perturbed Index"]->m_value);
-        tDelta = m_delta;
+        tIndex = std::round(mParameters["Perturbed Index"]->mValue);
+        tDelta = mDelta;
     }
 
-    auto& outVector = mMyApp->mValuesMap[m_strGradient];
-    auto tPerturbedValue = mMyApp->mValuesMap[m_strPerturbedValue][0];
-    auto tInitialValue = mMyApp->mValuesMap[m_strInitialValue][0];
+    auto& outVector = mMyApp->mValuesMap[mStrGradient];
+    auto tPerturbedValue = mMyApp->mValuesMap[mStrPerturbedValue][0];
+    auto tInitialValue = mMyApp->mValuesMap[mStrInitialValue][0];
     outVector[tIndex] = (tPerturbedValue - tInitialValue) / tDelta;
 }
 

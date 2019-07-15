@@ -11,13 +11,13 @@ namespace Plato {
   struct SimplexFadTypes {
 
     using StateFad   = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numDofsPerNode*
-                                         SimplexPhysics::m_numNodesPerCell>;
+                                         SimplexPhysics::mNumDofsPerNode*
+                                         SimplexPhysics::mNumNodesPerCell>;
     using ControlFad = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numNodesPerCell>;
+                                         SimplexPhysics::mNumNodesPerCell>;
     using ConfigFad  = Sacado::Fad::SFad<Plato::Scalar,
-                                         SimplexPhysics::m_numSpatialDims*
-                                         SimplexPhysics::m_numNodesPerCell>;
+                                         SimplexPhysics::mNumSpatialDims*
+                                         SimplexPhysics::mNumNodesPerCell>;
   };
 
 
@@ -108,8 +108,8 @@ namespace Plato {
 template <typename SimplexPhysicsT>
 struct EvaluationTypes
 {
-    static constexpr int NumControls = SimplexPhysicsT::m_numControl;
-    static constexpr int SpatialDim = SimplexPhysicsT::m_numSpatialDims;
+    static constexpr int NumControls = SimplexPhysicsT::mNumControl;
+    static constexpr int SpatialDim = SimplexPhysicsT::mNumSpatialDims;
 };
 
 template <typename SimplexPhysicsT>

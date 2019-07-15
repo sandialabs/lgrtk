@@ -271,6 +271,49 @@ void MatrixTimesVectorPlusVector(const Teuchos::RCP<Plato::CrsMatrixType> & aMat
 }
 // function MatrixTimesVectorPlusVector
 
+/******************************************************************************//**
+ * @brief Compute the global maximum element in range.
+ * @param [in] aInput array of elements
+ * @param [out] aOutput maximum element
+**********************************************************************************/
+template<typename VecT, typename ScalarT>
+void max(const VecT & aInput, ScalarT & aOutput)
+{
+    assert(aInput.size() > static_cast<OrdinalType>(0));
+    const OrdinalType tSize = aInput.size();
+    //const ScalarT* tInputData = aInput.data();
+    aOutput = 0.0;
+
+    Kokkos::Max<ScalarT> tMaxReducer(aOutput);
+    Kokkos::parallel_reduce("KokkosReductionOperations::max",
+                            Kokkos::RangePolicy<>(0, tSize),
+                            KOKKOS_LAMBDA(const OrdinalType & aIndex, ScalarT & aValue){
+        tMaxReducer.join(aValue, aInput[aIndex]);
+    }, tMaxReducer);
+}
+
+/******************************************************************************//**
+ * @brief Compute the global minimum element in range.
+ * @param [in] aInput array of elements
+ * @param [out] aOutput minimum element
+**********************************************************************************/
+template<typename VecT, typename ScalarT>
+void min(const VecT & aInput, ScalarT & aOutput)
+{
+    assert(aInput.size() > static_cast<OrdinalType>(0));
+    const OrdinalType tSize = aInput.size();
+    //const ScalarT* tInputData = aInput.data();
+    aOutput = 0.0;
+
+    Kokkos::Min<ScalarT> tMinReducer(aOutput);
+    Kokkos::parallel_reduce("KokkosReductionOperations::min",
+                            Kokkos::RangePolicy<>(0, tSize),
+                            KOKKOS_LAMBDA(const OrdinalType & aIndex, ScalarT & aValue){
+        tMinReducer.join(aValue, aInput[aIndex]);
+    }, tMinReducer);
+}
+
+
 } // namespace Plato
 
 #endif /* PLATOMATHHELPERS_HPP_ */

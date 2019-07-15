@@ -18,23 +18,23 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const Plato::Scalar m_cellThermalExpansionCoef;
-    const Omega_h::Matrix<SpaceDim, SpaceDim> m_cellThermalConductivity;
-    const Plato::Scalar m_cellReferenceTemperature;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const Plato::Scalar mCellThermalExpansionCoef;
+    const Omega_h::Matrix<SpaceDim, SpaceDim> mCellThermalConductivity;
+    const Plato::Scalar mCellReferenceTemperature;
  
   public:
 
     TMKinetics( const Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> materialModel ) :
-            m_cellStiffness(materialModel->getStiffnessMatrix()),
-            m_cellThermalExpansionCoef(materialModel->getThermalExpansion()),
-            m_cellThermalConductivity(materialModel->getThermalConductivity()),
-            m_cellReferenceTemperature(materialModel->getReferenceTemperature()) {}
+            mCellStiffness(materialModel->getStiffnessMatrix()),
+            mCellThermalExpansionCoef(materialModel->getThermalExpansion()),
+            mCellThermalConductivity(materialModel->getThermalConductivity()),
+            mCellReferenceTemperature(materialModel->getReferenceTemperature()) {}
 
     template<typename KineticsScalarType, typename KinematicsScalarType, typename StateScalarType>
     DEVICE_TYPE inline void
@@ -47,17 +47,17 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
 
       // compute thermal strain
       //
-      StateScalarType tstrain[m_numVoigtTerms] = {0};
+      StateScalarType tstrain[mNumVoigtTerms] = {0};
       for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tstrain[iDim] = m_cellThermalExpansionCoef * (temperature(cellOrdinal) - m_cellReferenceTemperature);
+        tstrain[iDim] = mCellThermalExpansionCoef * (temperature(cellOrdinal) - mCellReferenceTemperature);
       }
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) += (strain(cellOrdinal,jVoigt)-tstrain[jVoigt])*m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          stress(cellOrdinal,iVoigt) += (strain(cellOrdinal,jVoigt)-tstrain[jVoigt])*mCellStiffness(iVoigt, jVoigt);
         }
       }
 
@@ -66,7 +66,7 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
       for( int iDim=0; iDim<SpaceDim; iDim++){
         flux(cellOrdinal,iDim) = 0.0;
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          flux(cellOrdinal,iDim) += tgrad(cellOrdinal,jDim)*m_cellThermalConductivity(iDim, jDim);
+          flux(cellOrdinal,iDim) += tgrad(cellOrdinal,jDim)*mCellThermalConductivity(iDim, jDim);
         }
       }
     }

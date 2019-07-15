@@ -17,7 +17,7 @@ class FluxDivergence : public Plato::Simplex<SpaceDim>
 {
   private:
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
   public:
 
@@ -36,7 +36,7 @@ class FluxDivergence : public Plato::Simplex<SpaceDim>
 
       // compute flux divergence
       //
-      for( int iNode=0; iNode<m_numNodesPerCell; iNode++){
+      for( int iNode=0; iNode<mNumNodesPerCell; iNode++){
         Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+DofOffset;
         for(int iDim=0; iDim<SpaceDim; iDim++){
           q(cellOrdinal, localOrdinal) += scale*tflux(cellOrdinal,iDim)*gradient(cellOrdinal,iNode,iDim)*cellVolume(cellOrdinal);

@@ -57,10 +57,10 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
 
 
   int numCells = mesh->nelems();
-  constexpr int numVoigtTerms = Plato::SimplexThermomechanics<spaceDim>::m_numVoigtTerms;
-  constexpr int nodesPerCell  = Plato::SimplexThermomechanics<spaceDim>::m_numNodesPerCell;
-  constexpr int dofsPerCell   = Plato::SimplexThermomechanics<spaceDim>::m_numDofsPerCell;
-  constexpr int dofsPerNode   = Plato::SimplexThermomechanics<spaceDim>::m_numDofsPerNode;
+  constexpr int numVoigtTerms = Plato::SimplexThermomechanics<spaceDim>::mNumVoigtTerms;
+  constexpr int nodesPerCell  = Plato::SimplexThermomechanics<spaceDim>::mNumNodesPerCell;
+  constexpr int dofsPerCell   = Plato::SimplexThermomechanics<spaceDim>::mNumDofsPerCell;
+  constexpr int dofsPerNode   = Plato::SimplexThermomechanics<spaceDim>::mNumDofsPerNode;
 
   // create mesh based solution from host data
   //

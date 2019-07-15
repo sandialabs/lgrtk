@@ -20,7 +20,7 @@ namespace Plato {
   {
     const std::string    name;
     const std::string ss_name;
-    Omega_h::Vector<NumDofs> m_flux;
+    Omega_h::Vector<NumDofs> mFlux;
 
   public:
   
@@ -30,7 +30,7 @@ namespace Plato {
       {
         auto flux = param.get<Teuchos::Array<double>>("Vector");
         for(int i=0; i<NumDofs; i++)
-          m_flux(i) = flux[i];
+          mFlux(i) = flux[i];
       }
   
     ~NaturalBC(){}
@@ -75,7 +75,7 @@ namespace Plato {
     decltype(ss_name) const& get_ss_name() const { return ss_name; }
 
     // ! Get the user-specified flux.
-    decltype(m_flux) get_value() const { return m_flux; }
+    decltype(mFlux) get_value() const { return mFlux; }
 
   };
   
@@ -154,7 +154,7 @@ namespace Plato {
     // create functor for accessing side node coordinates
     Plato::SideNodeCoordinate<SpatialDim> sideNodeCoordinate(aMesh);
     
-    auto flux = m_flux;
+    auto flux = mFlux;
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numFaces), LAMBDA_EXPRESSION(int iFace)
     {
 
@@ -226,7 +226,7 @@ namespace Plato {
     // create functor for accessing side node coordinates
     Plato::SideNodeCoordinate<SpatialDim> sideNodeCoordinate(aMesh);
     
-    auto flux = m_flux;
+    auto flux = mFlux;
     auto fVec = forcing;
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numFaces), LAMBDA_EXPRESSION(int iFace)
     {

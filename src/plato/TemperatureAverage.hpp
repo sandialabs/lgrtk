@@ -28,12 +28,12 @@ class TemperatureAverageInc :
   private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerNode;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mDataMap;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -41,10 +41,10 @@ class TemperatureAverageInc :
     using ConfigScalarType    = typename EvaluationType::ConfigScalarType;
     using ResultScalarType    = typename EvaluationType::ResultScalarType;
 
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> mCubatureRule;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim,mNumDofsPerNode,IndicatorFunctionType> mApplyWeighting;
 
   public:
     /**************************************************************************/
@@ -55,9 +55,9 @@ class TemperatureAverageInc :
                         Teuchos::ParameterList& aPenaltyParams,
                         std::string& aFunctionName) :
             Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction) {}
+            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction) {}
     /**************************************************************************/
 
     /**************************************************************************/
@@ -77,12 +77,12 @@ class TemperatureAverageInc :
       using TScalarType =
         typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ControlScalarType>;
 
-      Plato::ScalarMultiVectorT<StateScalarType>  tStateValues("temperature at GPs", numCells, m_numDofsPerNode);
-      Plato::ScalarMultiVectorT<TScalarType>  tWeightedStateValues("weighted temperature at GPs", numCells, m_numDofsPerNode);
+      Plato::ScalarMultiVectorT<StateScalarType>  tStateValues("temperature at GPs", numCells, mNumDofsPerNode);
+      Plato::ScalarMultiVectorT<TScalarType>  tWeightedStateValues("weighted temperature at GPs", numCells, mNumDofsPerNode);
 
-      auto basisFunctions = m_cubatureRule->getBasisFunctions();
-      auto quadratureWeight = m_cubatureRule->getCubWeight();
-      auto applyWeighting  = m_applyWeighting;
+      auto basisFunctions = mCubatureRule->getBasisFunctions();
+      auto quadratureWeight = mCubatureRule->getCubWeight();
+      auto applyWeighting  = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(const int & aCellOrdinal)
       {
         ConfigScalarType tCellVolume(0.0);

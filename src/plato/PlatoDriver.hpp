@@ -65,14 +65,14 @@ void output(Teuchos::ParameterList & aParamList,
 
           auto tNumVertices = aMesh.nverts();
           Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
-          Plato::copy<SpatialDim+1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tTemp);
+          Plato::copy<SpatialDim+1 /*input_numDof_per_node*/, 1 /*output_numDof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tTemp);
 
           auto tNumDisp = tNumVertices * SpatialDim;
           Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
           Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
 
           aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                  Omega_h::Reals(tDisp));
-          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_numDof_per_node*/, Omega_h::Reals(tTemp));
 
           Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
           tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
@@ -88,12 +88,12 @@ void output(Teuchos::ParameterList & aParamList,
         Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
         
         const Plato::OrdinalType tStride = 0;
-        Plato::copy<SpatialDim /*input_num_dof_per_node*/, SpatialDim /*output_num_dof_per_node*/>
+        Plato::copy<SpatialDim /*input_numDof_per_node*/, SpatialDim /*output_numDof_per_node*/>
             (tStride, tNumVertices, tSubView, tDisp);
 
         const Plato::Scalar tRestartTime = 0.;
         Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer(aOutputFilePath, &aMesh, SpatialDim, tRestartTime);
-        aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim /*output_num_dof_per_node*/, Omega_h::Reals(tDisp));
+        aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim /*output_numDof_per_node*/, Omega_h::Reals(tDisp));
         Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
         tWriter.write(/*time_index*/1, /*current_time=*/1.0, tTags);
     } else
@@ -118,10 +118,10 @@ void output(Teuchos::ParameterList & aParamList,
           Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
           
           const Plato::OrdinalType tStride = 0;
-          Plato::copy<1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/>
+          Plato::copy<1 /*input_numDof_per_node*/, 1 /*output_numDof_per_node*/>
               (tStride, tNumVertices, tSubView, tTemp);
           
-          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_numDof_per_node*/, Omega_h::Reals(tTemp));
           Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
           tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
         }

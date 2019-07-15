@@ -74,6 +74,7 @@ endif()
 FIND_PACKAGE(KokkosCore REQUIRED)
 # for StaticCrsGraph
 FIND_PACKAGE(KokkosContainers REQUIRED)
+FIND_PACKAGE(KokkosKernels REQUIRED)
 FIND_PACKAGE(Teuchos REQUIRED)
 
 SET(OMEGA_H_PREFIX "" CACHE PATH "Omega_h install location")

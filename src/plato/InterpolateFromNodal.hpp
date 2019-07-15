@@ -23,7 +23,7 @@ namespace Plato
 template<int SpaceDim, int NumDofsPerNode=SpaceDim, int DofOffset=0>
 class InterpolateFromNodal : public Plato::Simplex<SpaceDim>
 {
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
 public:
     /*******************************************************************************
@@ -69,7 +69,7 @@ public:
 
         aStateValues(aCellOrdinal) = 0.0;
 
-        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < m_numNodesPerCell; tNodeIndex++)
+        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
         {
             Plato::OrdinalType tCellDofIndex = (NumDofsPerNode * tNodeIndex) + DofOffset;
             aStateValues(aCellOrdinal) += aBasisFunctions(tNodeIndex) * aNodalCellStates(aCellOrdinal, tCellDofIndex);

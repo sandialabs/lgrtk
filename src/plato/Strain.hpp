@@ -20,9 +20,9 @@ class Strain : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerCell;
 
   public:
 
@@ -31,13 +31,13 @@ class Strain : public Plato::SimplexMechanics<SpaceDim>
     operator()( Plato::OrdinalType cellOrdinal,
                 Kokkos::View<ScalarType**, Kokkos::LayoutRight, Plato::MemSpace> const& strain,
                 Kokkos::View<ScalarType**, Kokkos::LayoutRight, Plato::MemSpace> const&  u,
-                Omega_h::Vector<m_numVoigtTerms> const* gradientMatrix) const {
+                Omega_h::Vector<mNumVoigtTerms> const* gradientMatrix) const {
 
       // compute strain
       //
-      for( Plato::OrdinalType iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( Plato::OrdinalType iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         strain(cellOrdinal,iVoigt) = 0.0;
-        for( Plato::OrdinalType iDof=0; iDof<m_numDofsPerCell; iDof++){
+        for( Plato::OrdinalType iDof=0; iDof<mNumDofsPerCell; iDof++){
           strain(cellOrdinal,iVoigt) += u(cellOrdinal,iDof)*gradientMatrix[iDof][iVoigt];
         }
       }
@@ -53,7 +53,7 @@ class Strain : public Plato::SimplexMechanics<SpaceDim>
       Plato::OrdinalType voigtTerm=0;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         strain(cellOrdinal,voigtTerm)=0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
           Plato::OrdinalType localOrdinal = iNode*SpaceDim+iDof;
           strain(cellOrdinal,voigtTerm) += u(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
@@ -61,7 +61,7 @@ class Strain : public Plato::SimplexMechanics<SpaceDim>
       }
       for (Plato::OrdinalType jDof=SpaceDim-1; jDof>=1; jDof--){
         for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-          for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+          for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
             Plato::OrdinalType iLocalOrdinal = iNode*SpaceDim+iDof;
             Plato::OrdinalType jLocalOrdinal = iNode*SpaceDim+jDof;
             strain(cellOrdinal,voigtTerm) +=(u(cellOrdinal,jLocalOrdinal)*gradient(cellOrdinal,iNode,iDof)

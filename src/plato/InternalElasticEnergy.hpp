@@ -33,26 +33,26 @@ class InternalElasticEnergy :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
     
-    using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
-    using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell; /*!< number of degree of freedom per cell */
+    using Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    using Plato::Simplex<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell */
+    using Plato::SimplexMechanics<mSpaceDim>::mNumDofsPerCell; /*!< number of degree of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< Plato Analyze database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< Plato Analyze database */
 
     using StateScalarType   = typename EvaluationType::StateScalarType; /*!< automatic differentiation type for states */
     using ControlScalarType = typename EvaluationType::ControlScalarType; /*!< automatic differentiation type for controls */
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType; /*!< automatic differentiation type for configuration */
     using ResultScalarType  = typename EvaluationType::ResultScalarType; /*!< automatic differentiation type for results */
 
-    Omega_h::Matrix< m_numVoigtTerms, m_numVoigtTerms> m_cellStiffness; /*!< matrix with Lame constants for a cell/element */
+    Omega_h::Matrix< mNumVoigtTerms, mNumVoigtTerms> mCellStiffness; /*!< matrix with Lame constants for a cell/element */
     
-    Plato::Scalar m_quadratureWeight; /*!< quadrature weight for simplex element */
+    Plato::Scalar mQuadratureWeight; /*!< quadrature weight for simplex element */
 
-    IndicatorFunctionType m_indicatorFunction; /*!< penalty function */
-    Plato::ApplyWeighting<mSpaceDim,m_numVoigtTerms,IndicatorFunctionType> m_applyWeighting; /*!< apply penalty function */
+    IndicatorFunctionType mIndicatorFunction; /*!< penalty function */
+    Plato::ApplyWeighting<mSpaceDim,mNumVoigtTerms,IndicatorFunctionType> mApplyWeighting; /*!< apply penalty function */
 
-    std::vector<std::string> m_plottable; /*!< database of output field names */
+    std::vector<std::string> mPlottable; /*!< database of output field names */
 
   public:
     /******************************************************************************//**
@@ -69,22 +69,22 @@ class InternalElasticEnergy :
                           Teuchos::ParameterList& aPenaltyParams,
                           std::string& aFunctionName) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction)
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction)
     {
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
         auto tMaterialModel = tMaterialModelFactory.create();
-        m_cellStiffness = tMaterialModel->getStiffnessMatrix();
+        mCellStiffness = tMaterialModel->getStiffnessMatrix();
 
-        m_quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+        mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
         for(Plato::OrdinalType tDim = 2; tDim <= mSpaceDim; tDim++)
         {
-            m_quadratureWeight /= Plato::Scalar(tDim);
+            mQuadratureWeight /= Plato::Scalar(tDim);
         }
 
         if(aProblemParams.isType < Teuchos::Array < std::string >> ("Plottable"))
         {
-            m_plottable = aProblemParams.get < Teuchos::Array < std::string >> ("Plottable").toVector();
+            mPlottable = aProblemParams.get < Teuchos::Array < std::string >> ("Plottable").toVector();
         }
     }
 
@@ -105,9 +105,9 @@ class InternalElasticEnergy :
       auto tNumCells = mMesh.nelems();
 
         Plato::Strain<mSpaceDim> tComputeVoigtStrain;
-        Plato::ScalarProduct<m_numVoigtTerms> tComputeScalarProduct;
+        Plato::ScalarProduct<mNumVoigtTerms> tComputeScalarProduct;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(m_cellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
 
       using StrainScalarType = 
         typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
@@ -116,16 +116,16 @@ class InternalElasticEnergy :
         tCellVolume("cell weight",tNumCells);
 
       Kokkos::View<StrainScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
-        tStrain("strain",tNumCells,m_numVoigtTerms);
+        tStrain("strain",tNumCells,mNumVoigtTerms);
 
       Kokkos::View<ConfigScalarType***, Kokkos::LayoutRight, Plato::MemSpace>
-        tGradient("gradient",tNumCells,m_numNodesPerCell,mSpaceDim);
+        tGradient("gradient",tNumCells,mNumNodesPerCell,mSpaceDim);
 
       Kokkos::View<ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
-        tStress("stress",tNumCells,m_numVoigtTerms);
+        tStress("stress",tNumCells,mNumVoigtTerms);
 
-      auto tQuadratureWeight = m_quadratureWeight;
-      auto tApplyWeighting  = m_applyWeighting;
+      auto tQuadratureWeight = mQuadratureWeight;
+      auto tApplyWeighting  = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(const int & aCellOrdinal)
       {
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
@@ -149,8 +149,8 @@ class InternalElasticEnergy :
 
       },"energy gradient");
 
-      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, tStrain, "strain");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, tStress, "stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, tStrain, "strain");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"stress") ) toMap(mDataMap, tStress, "stress");
 
     }
 };

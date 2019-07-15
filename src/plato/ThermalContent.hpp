@@ -15,13 +15,13 @@ namespace Plato
 class ThermalContent
 {
   private:
-    const Plato::Scalar m_cellDensity;
-    const Plato::Scalar m_cellSpecificHeat;
+    const Plato::Scalar mCellDensity;
+    const Plato::Scalar mCellSpecificHeat;
 
   public:
     ThermalContent(Plato::Scalar cellDensity, Plato::Scalar cellSpecificHeat) :
-            m_cellDensity(cellDensity),
-            m_cellSpecificHeat(cellSpecificHeat) {}
+            mCellDensity(cellDensity),
+            mCellSpecificHeat(cellSpecificHeat) {}
 
     template<typename TScalarType, typename TContentScalarType>
     DEVICE_TYPE inline void
@@ -31,7 +31,7 @@ class ThermalContent
 
       // compute thermal content
       //
-      tcontent(cellOrdinal) = temperature(cellOrdinal)*m_cellDensity*m_cellSpecificHeat;
+      tcontent(cellOrdinal) = temperature(cellOrdinal)*mCellDensity*mCellSpecificHeat;
     }
 };
 // class ThermalContent
