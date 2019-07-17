@@ -86,7 +86,11 @@ struct JouleHeating : public Model<Elem> {
     integrate_conductance();
     compute_electrode_voltages();
     contribute_joule_heating();
-    this->sim.circuit.Solve(this->sim.dt);
+    if (this->sim.circuit.usingMesh) {
+       auto dt   = this->sim.dt;
+       auto time = this->sim.time;
+       this->sim.circuit.Solve(dt,time);
+    }
   }
   void assemble_normalized_voltage_system() {
     std::cerr << "assembling normalized voltage system\n";
@@ -231,9 +235,15 @@ struct JouleHeating : public Model<Elem> {
   }
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
-    this->sim.circuit.SetMeshConductance(integrated_conductance);
-    anode_voltage = this->sim.circuit.GetMeshAnodeVoltage();
-    cathode_voltage = this->sim.circuit.GetMeshCathodeVoltage();
+    if (this->sim.circuit.usingMesh) {
+       auto& myCircuit = this->sim.circuit;
+       myCircuit.SetMeshConductance(integrated_conductance);
+       // Below: 
+       //   overwrites default/specified values in YAML 
+       //   modifiers for joule heating when using circuit
+       anode_voltage = myCircuit.GetMeshAnodeVoltage();
+       cathode_voltage = myCircuit.GetMeshCathodeVoltage();
+     }
   }
   void contribute_joule_heating() {
     OMEGA_H_TIME_FUNCTION;

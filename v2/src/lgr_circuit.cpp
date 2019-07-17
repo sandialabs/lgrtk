@@ -1,6 +1,7 @@
 #include <lgr_circuit.hpp>
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 
 namespace lgr {
 
@@ -18,7 +19,8 @@ Circuit::Circuit()
    vNum    = 0;
    eMesh   = -1; // < 0 => not yet set
 
-   dt = 0.0;
+   dt   = 0.0;
+   time = 0.0;
 
    firstCall    = true;
    usingCircuit = false;
@@ -157,7 +159,8 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
 
       // Mesh element number
       if (circuit_pl.is<int>("mesh element")) {
-         eMesh = circuit_pl.get<int>("mesh element");
+         int e = circuit_pl.get<int>("mesh element");
+         AddMeshUser(e);
       } // Mesh element number
 
       // Resistors
@@ -281,7 +284,7 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
 
 double Circuit::GetMeshAnodeVoltage()
 {
-   if (!usingMesh) return 0.0;
+   if (!usingMesh) return 1.0;
 
    int efind = -1;
    try {
@@ -356,7 +359,7 @@ double Circuit::GetNodeVoltage(int nodein)
       voltage = x_vector(ieqn);
    }
 
-  return voltage;
+   return voltage;
 }
 
 void Circuit::SetElementConductance(int e, double c)
@@ -432,33 +435,41 @@ void Circuit::Setup()
       NodeCount();
    }
    UpdateGrounds();
-   SayInfo();
-
    UpdateMatrixSize();
    ZeroMatrix();
+   SayInfo();
 
    firstCall = false;
 
    UpdateGrounds();
    UpdateMatrixSize();
+
+   if (usingMesh) {
+      InitOutputMesh();
+   }
 }
 
 
-void Circuit::Solve(double dtin)
+void Circuit::Solve(double dtin, double timein)
 {
-   try {
-      if (dtin <= 0) {
-         throw 1; // Invalid time step
-      }
-   }
-   catch (int ex) {
-      std::cout << "Circuit solve Solve() execption " << ex << std::endl;
-   }
-   dt = dtin;
 
    if (usingCircuit) {
+      try {
+         if ((dtin <= 0) & (cNum + lNum > 0)) {
+            throw 1; // Invalid time step
+         }
+      }
+      catch (int ex) {
+         std::cout << "Circuit solve Solve() execption " << ex << std::endl;
+      }
+      dt   = dtin;
+      time = timein;
+
       AssembleMatrix();
       SolveMatrix();
+      if (usingMesh) {
+         OutputMeshInfo();
+      }
    }
 }
 
@@ -1082,15 +1093,52 @@ void Circuit::AddInductance(double &data)
 
 void Circuit::SayInfo()
 {
-   std::cout << std::endl;
-   std::cout << "Circuit summary:"    << std::endl;
-   std::cout << "...nodes        : "  << GetNumNodes()      << std::endl;
-   std::cout << "   ...grounds   : "  << GetNumGrounds()    << std::endl;
-   std::cout << "...elements     : "  << GetNumElements()   << std::endl;
-   std::cout << "   ...resistors : "  << GetNumResistors()  << std::endl;
-   std::cout << "   ...capacitors: "  << GetNumCapacitors() << std::endl;
-   std::cout << "   ...inductors : "  << GetNumInductors()  << std::endl;
-   std::cout << std::endl;
+   if (usingCircuit) {
+      std::cout << std::endl;
+      std::cout << "Circuit summary:"    << std::endl;
+      std::cout << "...nodes        : "  << GetNumNodes()      << std::endl;
+      std::cout << "   ...grounds   : "  << GetNumGrounds()    << std::endl;
+      std::cout << "...elements     : "  << GetNumElements()   << std::endl;
+      std::cout << "   ...resistors : "  << GetNumResistors()  << std::endl;
+      std::cout << "   ...capacitors: "  << GetNumCapacitors() << std::endl;
+      std::cout << "   ...inductors : "  << GetNumInductors()  << std::endl;
+      std::cout << std::endl;
+   } else {
+      std::cout << "Circuit summary:"            << std::endl;
+      std::cout << "   ...not using circuit : "  << std::endl;
+   }
+}
+
+void Circuit::InitOutputMesh()
+{
+   std::remove(meshfname);
+
+   std::ofstream myfile;
+   myfile.open(meshfname, std::ios_base::app);
+
+   if (myfile.is_open()) {
+      myfile << "time\tvanode\tvcathode\tconductance\tcurrent\n";
+   }
+   myfile.close();
+}
+
+void Circuit::OutputMeshInfo()
+{
+   double vanode   = GetMeshAnodeVoltage();
+   double vcathode = GetMeshCathodeVoltage();
+   double conduct  = rVal[std::size_t(eValMap[std::size_t(eMesh)])];
+   double current  = conduct*(vanode-vcathode);
+
+   std::ofstream myfile;
+   myfile.open(meshfname, std::ios_base::app);
+   if (myfile.is_open()) {
+      myfile << time     << "\t"
+             << vanode   << "\t" 
+             << vcathode << "\t" 
+             << conduct  << "\t" 
+             << current  << "\n";
+   }
+   myfile.close();
 }
 
 void Circuit::SayVoltages()
