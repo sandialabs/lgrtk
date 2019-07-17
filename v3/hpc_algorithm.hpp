@@ -19,7 +19,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void swap(T& a, T& b) noexcept {
   T c(std::move(a));
   a = std::move(b);
   b = std::move(c);
-};
+}
 
 template <class Range, class UnaryFunction>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void for_each(local_policy, Range&& r, UnaryFunction f) noexcept {

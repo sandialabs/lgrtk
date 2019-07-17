@@ -42,7 +42,7 @@ public:
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE index& operator--() noexcept {
     --i;
-    return *static_cast<index*>(this);
+    return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE index operator--(int) const noexcept {
     auto const old = *this;
@@ -69,11 +69,11 @@ public:
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE index& operator+=(index const& other) noexcept {
     i += other.i;
-    return *static_cast<index*>(this);
+    return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE index& operator-=(index const& other) noexcept {
     i -= other.i;
-    return *static_cast<index*>(this);
+    return *this;
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr integral_type get() const noexcept {
     return i;
