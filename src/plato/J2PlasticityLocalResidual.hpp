@@ -246,7 +246,8 @@ class J2PlasticityLocalResidual :
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
 
         // compute elastic strain
-        tThermoPlasticityUtils.computeElasticStrain(aCellOrdinal, aGlobalState, aLocalState, tBasisFunctions, tGradient, tElasticStrain);
+        tThermoPlasticityUtils.computeElasticStrain(aCellOrdinal, aGlobalState, aLocalState, 
+                                                    tBasisFunctions, tGradient, tElasticStrain);
       
         // apply penalization to elastic shear modulus
         ControlT tDensity               = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControl);
@@ -362,7 +363,8 @@ class J2PlasticityLocalResidual :
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
 
         // compute elastic strain
-        tThermoPlasticityUtils.computeElasticStrain(aCellOrdinal, aGlobalState, aLocalState, tBasisFunctions, tGradient, tElasticStrain);
+        tThermoPlasticityUtils.computeElasticStrain(aCellOrdinal, aGlobalState, aLocalState, 
+                                                    tBasisFunctions, tGradient, tElasticStrain);
       
         // apply penalization to elastic shear modulus
         Plato::Scalar tDensity               = Plato::cell_density<mNumNodesPerCell>(aCellOrdinal, aControl);
