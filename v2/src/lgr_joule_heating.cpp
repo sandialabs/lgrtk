@@ -115,7 +115,7 @@ struct JouleHeating : public Model<Elem> {
               weight * G * (grads[elem_vert] * grads[elem_vert]);
           elems_to_vert_contribs[elem * verts_per_elem + elem_vert] = contrib;
         }
-        for (int elem_edge = 0; elem_edge < verts_per_elem; ++elem_edge) {
+        for (int elem_edge = 0; elem_edge < edges_per_elem; ++elem_edge) {
           auto const elem_vert0 =
               Omega_h::simplex_down_template(Elem::dim, 1, elem_edge, 0);
           auto const elem_vert1 =
