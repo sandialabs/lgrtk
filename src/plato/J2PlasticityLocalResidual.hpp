@@ -11,9 +11,6 @@
 #include "plato/AnalyzeMacros.hpp"
 
 #include "plato/J2PlasticityUtilities.hpp"
-// Defined inside J2PlasticityUtilities.hpp
-// #define SQRT_3_OVER_2 1.224744871391589
-// #define SQRT_2_OVER_3 0.816496580927726
 #include "plato/ThermoPlasticityUtilities.hpp"
 
 #include "plato/ExpInstMacros.hpp"
@@ -32,9 +29,9 @@ class J2PlasticityLocalResidual :
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
 
     using PhysicsType<mSpaceDim>::mNumNodesPerCell; /*!< number nodes per cell */
-    using PhysicsType<mSpaceDim>::mNumVoigtTerms; /*!< number of voigt terms */
+    using PhysicsType<mSpaceDim>::mNumVoigtTerms;   /*!< number of voigt terms */
 
-    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh; /*!< mesh database */
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;    /*!< mesh database */
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
 
     using GlobalStateT     = typename EvaluationType::GlobalStateScalarType;     /*!< global state variables automatic differentiation type */
@@ -61,6 +58,8 @@ class J2PlasticityLocalResidual :
     Plato::Scalar mPlasticPropertiesMinErsatzSIMP; /*!< SIMP min ersatz stiffness for plastic properties */
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule; /*!< linear tet cubature rule */
+
+    static constexpr mSqrt3Over2 = std::sqrt(3.0/2.0);
 
     /**************************************************************************//**
     * @brief Return the names of the local state degrees of freedom
@@ -278,7 +277,7 @@ class J2PlasticityLocalResidual :
                                                                   -     aLocalState(aCellOrdinal, 1);
 
           // Residual: Yield Function , DOF: Plastic Multiplier Increment
-          aResult(aCellOrdinal, 1) = SQRT_3_OVER_2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
+          aResult(aCellOrdinal, 1) = mSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
 
           // Residual: Plastic Strain Tensor, DOF: Plastic Strain Tensor
           tJ2PlasticityUtils.fillPlasticStrainTensorResidualPlasticStep(aCellOrdinal, aLocalState, aPrevLocalState,
@@ -389,7 +388,7 @@ class J2PlasticityLocalResidual :
                                      tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0);
 
         // compute the yield function at the trial state
-        Plato::Scalar tTrialStateYieldFunction = SQRT_3_OVER_2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
+        Plato::Scalar tTrialStateYieldFunction = mSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
 
         if (tTrialStateYieldFunction <= 0.0) // elastic step
         {
