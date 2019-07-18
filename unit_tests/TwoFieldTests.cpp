@@ -33,7 +33,6 @@
 #include <plato/WorksetBase.hpp>
 #include <plato/VectorFunctionInc.hpp>
 #include <plato/VectorFunctionVMS.hpp>
-#include <plato/ScalarFunctionInc.hpp>
 #include <plato/StateValues.hpp>
 #include <plato/Plato_Solve.hpp>
 #include "plato/ApplyConstraints.hpp"

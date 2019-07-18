@@ -50,19 +50,26 @@ public:
 // namespace Plato
 
 #include "Thermal.hpp"
+#include "Mechanics.hpp"
 #include "Thermomechanics.hpp"
 
 #ifdef PLATO_1D
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermal<1>>;
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermomechanics<1>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedMechanics<1>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedThermomechanics<1>>;
 #endif
 
 #ifdef PLATO_2D
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermal<2>>;
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermomechanics<2>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedMechanics<2>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedThermomechanics<2>>;
 #endif
 
 #ifdef PLATO_3D
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermal<3>>;
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermomechanics<3>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedMechanics<3>>;
+extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::StabilizedThermomechanics<3>>;
 #endif

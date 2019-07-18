@@ -9,8 +9,11 @@
 #include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
 #include "plato/Plato_AugLagStressCriterionGeneral.hpp"
 #include "plato/Plato_AugLagStressCriterion.hpp"
+#include "plato/SimplexProjection.hpp"
 #include "plato/SimplexMechanics.hpp"
+#include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/ElastostaticResidual.hpp"
+#include "plato/StabilizedElastostaticResidual.hpp"
 #include "plato/InternalElasticEnergy.hpp"
 #include "plato/EffectiveEnergy.hpp"
 #include "plato/Volume.hpp"
@@ -46,17 +49,20 @@ elastostatics_residual(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::MSIMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::RAMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+        tOutput = std::make_shared<Plato::ElastostaticResidual<EvaluationType, Plato::Heaviside>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
     }
     return (tOutput);
 }
@@ -78,7 +84,8 @@ stress_constraint_linear(Omega_h::Mesh& aMesh,
                          std::string & aFuncName)
 {
     std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
-    tOutput = std::make_shared< Plato::AugLagStressCriterion<EvaluationType> >(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+    tOutput = std::make_shared< Plato::AugLagStressCriterion<EvaluationType> >
+                (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
     return (tOutput);
 }
 
@@ -98,7 +105,8 @@ stress_constraint_general(Omega_h::Mesh& aMesh,
                           std::string & aFuncName)
 {
     std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
-    tOutput = std::make_shared <Plato::AugLagStressCriterionGeneral<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+    tOutput = std::make_shared <Plato::AugLagStressCriterionGeneral<EvaluationType> >
+                (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
     return (tOutput);
 }
 
@@ -119,7 +127,8 @@ stress_constraint_quadratic(Omega_h::Mesh& aMesh,
                             std::string & aFuncName)
 {
     std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
-    tOutput = std::make_shared <Plato::AugLagStressCriterionQuadratic<EvaluationType> > (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+    tOutput = std::make_shared <Plato::AugLagStressCriterionQuadratic<EvaluationType> >
+                (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
     return (tOutput);
 }
 
@@ -145,17 +154,20 @@ internal_elastic_energy(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::MSIMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::RAMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::InternalElasticEnergy<EvaluationType, Plato::Heaviside>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     return (tOutput);
 }
@@ -182,17 +194,20 @@ stress_p_norm(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::MSIMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::RAMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::StressPNorm<EvaluationType, Plato::Heaviside>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     return (tOutput);
 }
@@ -219,17 +234,20 @@ effective_energy(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::MSIMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::RAMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::EffectiveEnergy<EvaluationType, Plato::Heaviside>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     return (tOutput);
 }
@@ -256,17 +274,20 @@ volume(Omega_h::Mesh& aMesh,
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
-        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::MSIMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::MSIMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "RAMP")
     {
-        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::RAMP>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     else
     if(tPenaltyType == "Heaviside")
     {
-        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>(aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
+        tOutput = std::make_shared<Plato::Volume<EvaluationType, Plato::Heaviside>>
+                    (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams, aFuncName);
     }
     return (tOutput);
 }
@@ -303,6 +324,68 @@ struct FunctionFactory
             throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
     }
+    /******************************************************************************//**
+     * @brief Create a PLATO vector function (i.e. residual equation) for VMS
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Analyze physics-based database
+     * @param [in] aInputParams input parameters
+     * @param [in] aFuncName vector function name
+    **********************************************************************************/
+    template<typename EvaluationType>
+    std::shared_ptr<Plato::AbstractVectorFunctionVMS<EvaluationType>>
+    createVectorFunctionVMS(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList& aInputParams,
+                            std::string aFuncName)
+    {
+
+        if(aFuncName == "Stabilized Elliptic")
+        {
+            auto tPenaltyParams = aInputParams.sublist(aFuncName).sublist("Penalty Function");
+            std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
+            if(tPenaltyType == "SIMP")
+            {
+                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::MSIMP>>
+                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+            }
+            else
+            if(tPenaltyType == "RAMP")
+            {
+                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::RAMP>>
+                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+            }
+            else
+            if(tPenaltyType == "Heaviside")
+            {
+                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::Heaviside>>
+                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
+            }
+            else
+            {
+                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+            }
+        }
+        else
+        {
+            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+        }
+    }
+
+    /******************************************************************************/
+    template <typename EvaluationType>
+    std::shared_ptr<AbstractScalarFunctionInc<EvaluationType>>
+    createScalarFunctionInc(Omega_h::Mesh& aMesh,
+                            Omega_h::MeshSets& aMeshSets,
+                            Plato::DataMap& aDataMap,
+                            Teuchos::ParameterList& aParamList,
+                            std::string strScalarFunctionType,
+                            std::string aStrScalarFunctionName )
+    /******************************************************************************/
+    {
+        throw std::runtime_error("Not yet implemented");
+    }
 
     /******************************************************************************//**
      * @brief Create a PLATO scalar function (i.e. optimization criterion)
@@ -321,7 +404,7 @@ struct FunctionFactory
                          std::string aFuncType,
                          std::string aFuncName)
     {
-
+#ifdef NOPE
         if(aFuncType == "Internal Elastic Energy")
         {
             return (Plato::MechanicsFactory::internal_elastic_energy<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
@@ -358,6 +441,9 @@ struct FunctionFactory
         {
             throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
         }
+#else
+    throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
+#endif
     }
 };
 // struct FunctionFactory
@@ -365,7 +451,8 @@ struct FunctionFactory
 } // namespace MechanicsFactory
 
 /******************************************************************************//**
- * @brief Factory interface for linear mechanics problem
+ * @brief Concrete class for use as the SimplexPhysics template argument in
+ *        EllipticProblem
 **********************************************************************************/
 template<Plato::OrdinalType SpaceDimParam>
 class Mechanics: public Plato::SimplexMechanics<SpaceDimParam>
@@ -375,7 +462,26 @@ public:
     using SimplexT = SimplexMechanics<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };
-// class Mechanics
+
+/****************************************************************************//**
+ * @brief Concrete class for use as the SimplexPhysics template argument in
+ *        EllipticVMSProblem
+ *******************************************************************************/
+template<Plato::OrdinalType SpaceDimParam>
+class StabilizedMechanics: public Plato::SimplexStabilizedMechanics<SpaceDimParam>
+{
+public:
+    using FunctionFactory = typename Plato::MechanicsFactory::FunctionFactory;
+    using SimplexT        = SimplexStabilizedMechanics<SpaceDimParam>;
+
+    using ProjectorT = typename Plato::Projection<SpaceDimParam,
+                                                  SimplexT::m_numDofsPerNode,
+                                                  SimplexT::m_PDofOffset,
+                                                  /* numProjectionDofs=*/ 1>;
+
+    static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
+};
+
 
 } // namespace Plato
 

@@ -43,7 +43,11 @@ public:
 
         if(tProblemPhysics == "Mechanical")
         {
-            return std::make_shared<EllipticProblem<::Plato::Mechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            if(tProblemPDE == "Stabilized Elliptic") {
+              return std::make_shared<EllipticVMSProblem<::Plato::StabilizedMechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<EllipticProblem<::Plato::Mechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         else if(tProblemPhysics == "Thermal")
         {

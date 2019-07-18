@@ -111,22 +111,49 @@ void output(Teuchos::ParameterList & aParamList,
     } else
     if(tPhysics == "Mechanical")
     {
-        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-        auto tSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-
-        auto tNumVertices = aMesh.nverts();
-        auto tNumDisp = tNumVertices * SpatialDim;
-        Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
-        
-        const Plato::OrdinalType tStride = 0;
-        Plato::copy<SpatialDim /*input_num_dof_per_node*/, SpatialDim /*output_num_dof_per_node*/>
-            (tStride, tNumVertices, tSubView, tDisp);
-
         const Plato::Scalar tRestartTime = 0.;
         Omega_h::vtk::Writer tWriter = Omega_h::vtk::Writer(aOutputFilePath, &aMesh, SpatialDim, tRestartTime);
-        aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim /*output_num_dof_per_node*/, Omega_h::Reals(tDisp));
-        Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
-        tWriter.write(/*time_index*/1, /*current_time=*/1.0, tTags);
+
+        if( tPDE == "Elliptic" || tPDE == "Parabolic" )
+        {
+            const Plato::OrdinalType tTIME_STEP_INDEX = 0;
+            auto tSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
+
+            auto tNumVertices = aMesh.nverts();
+            auto tNumDisp = tNumVertices * SpatialDim;
+            Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
+        
+            const Plato::OrdinalType tStride = 0;
+            Plato::copy<SpatialDim /*input_num_dof_per_node*/, SpatialDim /*output_num_dof_per_node*/>
+                (tStride, tNumVertices, tSubView, tDisp);
+
+            aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim /*output_num_dof_per_node*/, Omega_h::Reals(tDisp));
+            Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+            tWriter.write(/*time_index*/1, /*current_time=*/1.0, tTags);
+        } else
+        if( tPDE == "Stabilized Elliptic" )
+        {
+            auto nSteps = aState.extent(0);
+            for(decltype(nSteps) iStep=0; iStep<nSteps; iStep++){
+              auto tSubView = Kokkos::subview(aState, iStep, Kokkos::ALL());
+
+              auto tNumVertices = aMesh.nverts();
+              Omega_h::Write<Omega_h::Real> tPress(tNumVertices, "Pressure");
+              Plato::copy<SpatialDim+1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tPress);
+
+              auto tNumDisp = tNumVertices * SpatialDim;
+              Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
+              Plato::copy<SpatialDim+1, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
+
+              aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                    Omega_h::Reals(tDisp));
+              aMesh.add_tag(Omega_h::VERT, "Pressure",      1 /*output_num_dof_per_node*/, Omega_h::Reals(tPress));
+
+              Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
+              tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
+           }
+        } else {
+            throw std::runtime_error("Unknown PDE");
+        }
     } else
     if(tPhysics == "StructuralDynamics")
     {

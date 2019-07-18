@@ -13,13 +13,16 @@
 #include "ApplyConstraints.hpp"
 
 #include "plato/VectorFunctionVMS.hpp"
-#include "plato/ScalarFunction.hpp"
-#include "plato/ScalarFunctionInc.hpp"
+#include "plato/ScalarFunctionBase.hpp"
+#include "plato/ScalarFunctionIncBase.hpp"
 #include "plato/PlatoMathHelpers.hpp"
 #include "plato/PlatoStaticsTypes.hpp"
 #include "plato/PlatoAbstractProblem.hpp"
 #include "plato/ParseTools.hpp"
 #include "plato/Plato_Solve.hpp"
+
+#include "plato/ScalarFunctionBaseFactory.hpp"
+#include "plato/ScalarFunctionIncBaseFactory.hpp"
 
 namespace Plato
 {
@@ -39,8 +42,8 @@ private:
     Plato::VectorFunctionVMS<typename SimplexPhysics::ProjectorT> mStateProjection; /*!< projection interface */
 
     // optional
-    std::shared_ptr<const Plato::ScalarFunction<SimplexPhysics>> mConstraint; /*!< constraint constraint interface */
-    std::shared_ptr<const Plato::ScalarFunctionInc<SimplexPhysics>> mObjective; /*!< objective constraint interface */
+    std::shared_ptr<const Plato::ScalarFunctionBase>    mConstraint; /*!< constraint constraint interface */
+    std::shared_ptr<const Plato::ScalarFunctionIncBase> mObjective;  /*!< objective constraint interface */
 
     Plato::OrdinalType mNumSteps, mNumNewtonSteps;
     Plato::Scalar mTimeStep;
@@ -608,17 +611,18 @@ private:
             mNumNewtonSteps = 2;
         }
 
-        if(aInputParams.isType<std::string>("Linear Constraint"))
+        Plato::ScalarFunctionBaseFactory<SimplexPhysics> tFunctionBaseFactory;
+        Plato::ScalarFunctionIncBaseFactory<SimplexPhysics> tFunctionIncBaseFactory;
+        if(aInputParams.isType<std::string>("Constraint"))
         {
-            std::string tName = aInputParams.get<std::string>("Linear Constraint");
-            mConstraint =
-                    std::make_shared<Plato::ScalarFunction<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            std::string tName = aInputParams.get<std::string>("Constraint");
+            mConstraint = tFunctionBaseFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tName);
         }
 
         if(aInputParams.isType<std::string>("Objective"))
         {
             std::string tName = aInputParams.get<std::string>("Objective");
-            mObjective = std::make_shared<Plato::ScalarFunctionInc<SimplexPhysics>>(aMesh, aMeshSets, mDataMap, aInputParams, tName);
+            mObjective = tFunctionIncBaseFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tName);
 
             auto tLength = mEqualityConstraint.size();
             mLambda = Plato::ScalarMultiVector("Lambda", mNumSteps, tLength);
@@ -643,17 +647,17 @@ private:
 #include "Thermomechanics.hpp"
 
 #ifdef PLATO_1D
-//extern template class Plato::EllipticVMSProblem<::Plato::Mechanics<1>>;
+extern template class Plato::EllipticVMSProblem<::Plato::StabilizedMechanics<1>>;
 //extern template class Plato::EllipticVMSProblem<::Plato::Electromechanics<1>>;
 extern template class Plato::EllipticVMSProblem<::Plato::StabilizedThermomechanics<1>>;
 #endif
 #ifdef PLATO_2D
-//extern template class Plato::EllipticVMSProblem<::Plato::Mechanics<2>>;
+extern template class Plato::EllipticVMSProblem<::Plato::StabilizedMechanics<2>>;
 //extern template class Plato::EllipticVMSProblem<::Plato::Electromechanics<2>>;
 extern template class Plato::EllipticVMSProblem<::Plato::StabilizedThermomechanics<2>>;
 #endif
 #ifdef PLATO_3D
-//extern template class Plato::EllipticVMSProblem<::Plato::Mechanics<3>>;
+extern template class Plato::EllipticVMSProblem<::Plato::StabilizedMechanics<3>>;
 //extern template class Plato::EllipticVMSProblem<::Plato::Electromechanics<3>>;
 extern template class Plato::EllipticVMSProblem<::Plato::StabilizedThermomechanics<3>>;
 #endif

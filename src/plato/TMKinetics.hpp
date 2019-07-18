@@ -187,17 +187,13 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
         tThermalVolStrain += tstrain[iDim];
         tVolStrain += aStrain(cellOrdinal,iDim);
       }
-      KinematicsScalarType tVolStrainVoigt[m_numVoigtTerms] = {0};
-      for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tVolStrainVoigt[iDim] = tVolStrain;
-      }
 
       // compute deviatoric stress
       //
       for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
         aDevStress(cellOrdinal,iVoigt) = 0.0;
         for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          aDevStress(cellOrdinal,iVoigt) += ( (aStrain(cellOrdinal,jVoigt)-tVolStrainVoigt[jVoigt]) ) *m_cellStiffness(iVoigt, jVoigt);
+          aDevStress(cellOrdinal,iVoigt) += ( (aStrain(cellOrdinal,jVoigt)-tstrain[jVoigt]) ) *m_cellStiffness(iVoigt, jVoigt);
         }
       }
       KineticsScalarType trace(0.0);
@@ -226,7 +222,8 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
       //
       KinematicsScalarType tTau = pow(aCellVolume(cellOrdinal),2.0/3.0)/(2.0*m_ShearModulus);
       for( int iDim=0; iDim<SpaceDim; iDim++){
-          aCellStabilization(cellOrdinal,iDim) = tTau*(aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
+          aCellStabilization(cellOrdinal,iDim) = m_pressureScaling * tTau *
+            (m_pressureScaling*aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
       }
     }
 };
