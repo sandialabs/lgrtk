@@ -19,7 +19,7 @@ LinearElasticMaterial<1>()
     if( paramList.isType<double>("Pressure Scaling") ){
       m_pressureScaling = paramList.get<double>("Pressure Scaling");
     } else {
-      m_pressureScaling = 1.0;
+      m_pressureScaling = k / (3.0*(1.0-2.0*v));
     }
 }
 /******************************************************************************/
@@ -41,7 +41,7 @@ LinearElasticMaterial<2>()
     if( paramList.isType<double>("Pressure Scaling") ){
       m_pressureScaling = paramList.get<double>("Pressure Scaling");
     } else {
-      m_pressureScaling = 1.0;
+      m_pressureScaling = k / (3.0*(1.0-2.0*v));
     }
 }
 /******************************************************************************/
@@ -66,7 +66,7 @@ LinearElasticMaterial<3>()
     if( paramList.isType<double>("Pressure Scaling") ){
       m_pressureScaling = paramList.get<double>("Pressure Scaling");
     } else {
-      m_pressureScaling = 1.0;
+      m_pressureScaling = k / (3.0*(1.0-2.0*v));
     }
 }
 
