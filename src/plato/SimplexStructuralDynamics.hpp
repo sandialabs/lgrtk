@@ -26,6 +26,9 @@ public:
     static constexpr Plato::OrdinalType mNumDofsPerCell = mNumDofsPerNode * mNumNodesPerCell;
 
     static constexpr Plato::OrdinalType mNumControl = NumControls;
+
+    static constexpr Plato::OrdinalType mNumNSPerNode = 0;
+
 };
 // class SimplexStructuralDynamics
 

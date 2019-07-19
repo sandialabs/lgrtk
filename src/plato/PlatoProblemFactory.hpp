@@ -14,8 +14,9 @@
 
 #include <Teuchos_ParameterList.hpp>
 
-#include "PlatoProblem.hpp"
-#include "plato/HeatEquationProblem.hpp"
+#include "plato/EllipticProblem.hpp"
+#include "plato/EllipticVMSProblem.hpp"
+#include "plato/ParabolicProblem.hpp"
 
 #include "plato/Mechanics.hpp"
 #include "plato/Electromechanics.hpp"
@@ -42,15 +43,18 @@ public:
 
         if(tProblemPhysics == "Mechanical")
         {
-            return std::make_shared<Problem<::Plato::Mechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            if(tProblemPDE == "Stabilized Elliptic") {
+              return std::make_shared<EllipticVMSProblem<::Plato::StabilizedMechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<EllipticProblem<::Plato::Mechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            }
         }
         else if(tProblemPhysics == "Thermal")
         {
             if(tProblemPDE == "Heat Equation") {
-              return std::make_shared<HeatEquationProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            }
-            else {
-              return std::make_shared<Problem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+              return std::make_shared<ParabolicProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<EllipticProblem<::Plato::Thermal<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
             }
         }
         else if(tProblemPhysics == "StructuralDynamics")
@@ -59,15 +63,17 @@ public:
         }
         else if(tProblemPhysics == "Electromechanical")
         {
-            return std::make_shared<Problem<::Plato::Electromechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            return std::make_shared<EllipticProblem<::Plato::Electromechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
         }
         else if(tProblemPhysics == "Thermomechanical")
         {
-            if(tProblemPDE == "First Order") {
-              return std::make_shared<HeatEquationProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
-            } 
-            else {
-              return std::make_shared<Problem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            if(tProblemPDE == "Parabolic") {
+              return std::make_shared<ParabolicProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else
+            if(tProblemPDE == "Stabilized Elliptic") {
+              return std::make_shared<EllipticVMSProblem<::Plato::StabilizedThermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
+            } else {
+              return std::make_shared<EllipticProblem<::Plato::Thermomechanics<SpatialDim>>>(aMesh, aMeshSets, tProblemSpecs);
             }
         }
         return nullptr;

@@ -15,6 +15,12 @@ LinearElasticMaterial<1>()
     auto k = mYoungsModulus;
     auto c = k/((1.0+v)*(1.0-2.0*v));
     mCellStiffness(0,0)=c*(1.0-v);
+
+    if( paramList.isType<double>("Pressure Scaling") ){
+      mPressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      mPressureScaling = k / (3.0*(1.0-2.0*v));
+    }
 }
 /******************************************************************************/
 template<>
@@ -28,9 +34,16 @@ LinearElasticMaterial<2>()
     auto v = mPoissonsRatio;
     auto k = mYoungsModulus;
     auto c = k/((1.0+v)*(1.0-2.0*v));
+
     mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;
     mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v);
     mCellStiffness(2,2)=1.0/2.0*c*(1.0-2.0*v);
+
+    if( paramList.isType<double>("Pressure Scaling") ){
+      mPressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      mPressureScaling = k / (3.0*(1.0-2.0*v));
+    }
 }
 /******************************************************************************/
 template<>
@@ -44,12 +57,20 @@ LinearElasticMaterial<3>()
     auto v = mPoissonsRatio;
     auto k = mYoungsModulus;
     auto c = k/((1.0+v)*(1.0-2.0*v));
+
     mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;       mCellStiffness(0,2)=c*v;
     mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v); mCellStiffness(1,2)=c*v;
     mCellStiffness(2,0)=c*v;       mCellStiffness(2,1)=c*v;       mCellStiffness(2,2)=c*(1.0-v);
     mCellStiffness(3,3)=1.0/2.0*c*(1.0-2.0*v);
     mCellStiffness(4,4)=1.0/2.0*c*(1.0-2.0*v);
     mCellStiffness(5,5)=1.0/2.0*c*(1.0-2.0*v);
+
+    if( paramList.isType<double>("Pressure Scaling") ){
+      mPressureScaling = paramList.get<double>("Pressure Scaling");
+    } else {
+      mPressureScaling = k / (3.0*(1.0-2.0*v));
+    }
+
 }
 
 /******************************************************************************/

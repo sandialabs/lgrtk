@@ -24,9 +24,12 @@ class SimplexMechanics : public Plato::Simplex<SpaceDim>
     static constexpr Plato::OrdinalType mNumDofsPerNode  = SpaceDim;
     static constexpr Plato::OrdinalType mNumDofsPerCell  = mNumDofsPerNode*mNumNodesPerCell;
 
-    static constexpr Plato::OrdinalType mNumControl = NumControls;
-};
 
+    static constexpr Plato::OrdinalType mNumControl = NumControls;
+
+    static constexpr Plato::OrdinalType mNumNSPerNode = 0;
+
+};
 } // namespace Plato
 
 #endif

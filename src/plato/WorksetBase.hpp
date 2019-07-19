@@ -176,7 +176,7 @@ inline void workset_state_scalar_scalar(int aNumCells, StateEntryOrdinal aStateE
 // function workset_state_scalar_scalar
 
 /******************************************************************************/
-template<int numDofsPerNode, int numNodesPerCell, int numDofsPerCell, class StateFad, class StateEntryOrdinal, class State, class FadStateWS>
+template<int numDofsPerNode, int numNodesPerCell, class StateFad, class StateEntryOrdinal, class State, class FadStateWS>
 inline void workset_state_scalar_fad(int aNumCells,
                                      StateEntryOrdinal aStateEntryOrdinal,
                                      State aState,
@@ -191,7 +191,7 @@ inline void workset_state_scalar_fad(int aNumCells,
             {
                 int tEntryOrdinal = aStateEntryOrdinal(aCellOrdinal, tNodeIndex, tDofIndex);
                 int tLocalDof = tNodeIndex * numDofsPerNode + tDofIndex;
-                aFadStateWS(aCellOrdinal,tLocalDof) = StateFad(numDofsPerCell, tLocalDof, aState(tEntryOrdinal));
+                aFadStateWS(aCellOrdinal,tLocalDof) = StateFad(numDofsPerNode*numNodesPerCell, tLocalDof, aState(tEntryOrdinal));
             }
         }
     }, "workset_state_scalar_fad");
@@ -315,15 +315,18 @@ class WorksetBase : public SimplexPhysics
     using SimplexPhysics::mNumControl;
     using SimplexPhysics::mNumNodesPerCell;
     using SimplexPhysics::mNumDofsPerCell;
+    using SimplexPhysics::mNumNSPerNode;
 
-    using StateFad   = typename Plato::SimplexFadTypes<SimplexPhysics>::StateFad;
-    using ControlFad = typename Plato::SimplexFadTypes<SimplexPhysics>::ControlFad;
-    using ConfigFad  = typename Plato::SimplexFadTypes<SimplexPhysics>::ConfigFad;
+    using StateFad     = typename Plato::SimplexFadTypes<SimplexPhysics>::StateFad;
+    using NodeStateFad = typename Plato::SimplexFadTypes<SimplexPhysics>::NodeStateFad;
+    using ControlFad   = typename Plato::SimplexFadTypes<SimplexPhysics>::ControlFad;
+    using ConfigFad    = typename Plato::SimplexFadTypes<SimplexPhysics>::ConfigFad;
 
     static constexpr int SpaceDim = SimplexPhysics::mNumSpatialDims;
     static constexpr int mNumConfigDofsPerCell = SpaceDim*mNumNodesPerCell;
 
     Plato::VectorEntryOrdinal<SpaceDim,mNumDofsPerNode> mStateEntryOrdinal;
+    Plato::VectorEntryOrdinal<SpaceDim,mNumNSPerNode>   mNodeStateEntryOrdinal;
     Plato::VectorEntryOrdinal<SpaceDim,mNumControl>     mControlEntryOrdinal;
     Plato::VectorEntryOrdinal<SpaceDim,SpaceDim>         mConfigEntryOrdinal;
 
@@ -335,6 +338,7 @@ class WorksetBase : public SimplexPhysics
             mNumCells(aMesh.nelems()),
             mNumNodes(aMesh.nverts()),
             mStateEntryOrdinal(Plato::VectorEntryOrdinal<SpaceDim, mNumDofsPerNode>(&aMesh)),
+            mNodeStateEntryOrdinal(Plato::VectorEntryOrdinal<SpaceDim, mNumNSPerNode>(&aMesh)),
             mControlEntryOrdinal(Plato::VectorEntryOrdinal<SpaceDim, mNumControl>(&aMesh)),
             mConfigEntryOrdinal(Plato::VectorEntryOrdinal<SpaceDim, SpaceDim>(&aMesh)),
             mNodeCoordinate(Plato::NodeCoordinate<SpaceDim>(&aMesh))
@@ -374,8 +378,26 @@ class WorksetBase : public SimplexPhysics
                        Kokkos::View<StateFad**, Kokkos::LayoutRight, Plato::MemSpace> & aFadStateWS ) const
     /**************************************************************************/
     {
-      Plato::workset_state_scalar_fad<mNumDofsPerNode, mNumNodesPerCell, mNumDofsPerCell, StateFad>(
+      Plato::workset_state_scalar_fad<mNumDofsPerNode, mNumNodesPerCell, StateFad>(
               mNumCells, mStateEntryOrdinal, aState, aFadStateWS);
+    }
+
+    /**************************************************************************/
+    void worksetNodeState( const Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace> & aState,
+                           Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace> & aNodeStateWS ) const
+    /**************************************************************************/
+    {
+      Plato::workset_state_scalar_scalar<mNumNSPerNode, mNumNodesPerCell>(
+              mNumCells, mNodeStateEntryOrdinal, aState, aNodeStateWS);
+    }
+
+    /**************************************************************************/
+    void worksetNodeState( const Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace> & aState,
+                           Kokkos::View<NodeStateFad**, Kokkos::LayoutRight, Plato::MemSpace> & aFadStateWS ) const
+    /**************************************************************************/
+    {
+      Plato::workset_state_scalar_fad<mNumNSPerNode, mNumNodesPerCell, NodeStateFad>(
+              mNumCells, mNodeStateEntryOrdinal, aState, aFadStateWS);
     }
     
     /**************************************************************************/

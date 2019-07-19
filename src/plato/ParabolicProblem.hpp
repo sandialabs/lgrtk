@@ -31,7 +31,7 @@
 
 /**********************************************************************************/
 template<typename SimplexPhysics>
-class HeatEquationProblem: public Plato::AbstractProblem
+class ParabolicProblem: public Plato::AbstractProblem
 {
 /**********************************************************************************/
 private:
@@ -68,7 +68,7 @@ private:
 
 public:
     /******************************************************************************/
-    HeatEquationProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
+    ParabolicProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aParamList, aParamList.get < std::string > ("PDE Constraint")),
             mNumSteps(aParamList.sublist("Time Integration").get<int>("Number Time Steps")),
             mTimeStep(aParamList.sublist("Time Integration").get<double>("Time Step")),
@@ -571,13 +571,13 @@ private:
 };
 
 #ifdef PLATO_1D
-extern template class HeatEquationProblem<::Plato::Thermal<1>>;
+extern template class ParabolicProblem<::Plato::Thermal<1>>;
 #endif
 #ifdef PLATO_2D
-extern template class HeatEquationProblem<::Plato::Thermal<2>>;
+extern template class ParabolicProblem<::Plato::Thermal<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class HeatEquationProblem<::Plato::Thermal<3>>;
+extern template class ParabolicProblem<::Plato::Thermal<3>>;
 #endif
 
 #endif // PLATO_PROBLEM_HPP

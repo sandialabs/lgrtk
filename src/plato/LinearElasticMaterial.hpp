@@ -22,11 +22,16 @@ namespace Plato {
                                           (((SpatialDim == 1) ? 1 : 0)));
     static_assert(mNumVoigtTerms, "SpatialDim must be 1, 2, or 3.");
 
+
     Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+
+    Plato::Scalar mPressureScaling;
   
   public:
     LinearElasticMaterial();
-    Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> getStiffnessMatrix() const {return mCellStiffness;}
+    decltype(mCellStiffness)   getStiffnessMatrix()  const {return mCellStiffness;}
+    decltype(mPressureScaling) getPressureScaling()  const {return mPressureScaling;}
+
 };
 
 /******************************************************************************/
@@ -38,6 +43,8 @@ LinearElasticMaterial()
   for(int i=0; i<mNumVoigtTerms; i++)
     for(int j=0; j<mNumVoigtTerms; j++)
       mCellStiffness(i,j) = 0.0;
+
+  mPressureScaling = 1.0;
 }
 
 /******************************************************************************/
