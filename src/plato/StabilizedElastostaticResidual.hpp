@@ -109,7 +109,7 @@ public:
                                 (aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
         }
   
-        auto tResidualParams = aProblemParams.sublist("Stabilized Elliptic");
+        auto tResidualParams = aProblemParams.sublist("Elliptic");
         if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
           m_plottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
 
@@ -209,6 +209,9 @@ public:
       {
           m_boundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS );
       }
+
+      if( std::count(m_plottable.begin(),m_plottable.end(), "pressure"          ) ) toMap(m_dataMap, tPressure, "pressure");
+      if( std::count(m_plottable.begin(),m_plottable.end(), "deviatoric stress" ) ) toMap(m_dataMap, tDevStress, "deviatoric stress");
 
     }
 };

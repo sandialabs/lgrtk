@@ -291,10 +291,10 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ElastostaticResidual3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>           \n"
     "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='Elastostatics'>                                        \n"
+    "  <ParameterList name='Elliptic'>                                             \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
@@ -498,7 +498,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>           \n"
     "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
     "  <ParameterList name='Material Model'>                                       \n"
@@ -685,7 +685,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>           \n"
     "  <Parameter name='Objective' type='string' value='My Stress P-Norm'/>        \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                  \n"
     "  <ParameterList name='My Stress P-Norm'>                                     \n"
@@ -1754,7 +1754,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>           \n"
     "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Linear Constraint' type='string' value='My Volume'/>          \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"

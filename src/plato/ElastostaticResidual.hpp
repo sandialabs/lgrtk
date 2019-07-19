@@ -118,7 +118,7 @@ public:
             m_cellForcing = std::make_shared<Plato::CellForcing<m_numVoigtTerms>>(m_cellStiffness, tColumnIndex);
         }
 
-        auto tResidualParams = aProblemParams.sublist("Elastostatics");
+        auto tResidualParams = aProblemParams.sublist("Elliptic");
         if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
           m_plottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
 

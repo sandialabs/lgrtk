@@ -242,10 +242,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixTimesVectorPlusVecto
   Teuchos::RCP<Teuchos::ParameterList> tParams =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                          \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Elastostatics'/>      \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>           \n"
     "  <Parameter name='Objective' type='string' value='My Internal Elastic Energy'/> \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                   \n"
-    "  <ParameterList name='My Internal Elastic Energy'>                              \n"
+    "  <ParameterList name='My Internal Elastic Energy'>                           \n"
     "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
     "    <Parameter name='Scalar Function Type' type='string' value='Internal Elastic Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
@@ -253,7 +253,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixTimesVectorPlusVecto
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
     "    </ParameterList>                                                          \n"
     "  </ParameterList>                                                            \n"
-    "  <ParameterList name='Elastostatics'>                                        \n"
+    "  <ParameterList name='Elliptic'>                                             \n"
     "    <ParameterList name='Penalty Function'>                                   \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                  \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                     \n"
