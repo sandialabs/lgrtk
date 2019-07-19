@@ -68,8 +68,8 @@ public:
     * \brief Evaluate the local residual equations
     ********************************************************************************/
     virtual void
-    evaluate(const Plato::ScalarMultiVectorT< typename EvaluationType::GlobalStateScalarType     > & aGlobalState,
-             const Plato::ScalarMultiVectorT< typename EvaluationType::PrevGlobalStateScalarType > & aGlobalStatePrev,
+    evaluate(const Plato::ScalarMultiVectorT< typename EvaluationType::StateScalarType           > & aGlobalState,
+             const Plato::ScalarMultiVectorT< typename EvaluationType::PrevStateScalarType       > & aGlobalStatePrev,
              const Plato::ScalarMultiVectorT< typename EvaluationType::LocalStateScalarType      > & aLocalState,
              const Plato::ScalarMultiVectorT< typename EvaluationType::PrevLocalStateScalarType  > & aLocalStatePrev,
              const Plato::ScalarMultiVectorT< typename EvaluationType::ControlScalarType         > & aControl,

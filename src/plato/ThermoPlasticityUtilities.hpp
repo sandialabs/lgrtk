@@ -17,8 +17,8 @@ template<Plato::OrdinalType SpaceDim, typename SimplexPhysicsT>
 class ThermoPlasticityUtilities
 {
   private:
-    using SimplexPhysicsT<SpaceDim>::mNumNodesPerCell;
-    using SimplexPhysicsT<SpaceDim>::mNumDofsPerNode;
+    static constexpr Plato::OrdinalType mNumNodesPerCell = SimplexPhysicsT::mNumNodesPerCell;
+    static constexpr Plato::OrdinalType mNumDofsPerNode  = SimplexPhysicsT::mNumDofsPerNode;
 
     Plato::Scalar mThermalExpansionCoefficient;
     Plato::Scalar mReferenceTemperature;
@@ -37,9 +37,7 @@ class ThermoPlasticityUtilities
     /**************************************************************************//**
     * @brief Destructor
     ******************************************************************************/
-    ~ThermoPlasticityUtilities() :
-    {
-    }
+    ~ThermoPlasticityUtilities(){}
 
     /******************************************************************************//**
      * @brief Compute the elastic strain by subtracting the plastic strain (and thermal strain) from the total strain
@@ -74,7 +72,7 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<2, Plato::SimplexPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<2, Plato::SimplexPlasticity<2>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
@@ -118,7 +116,7 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<3, Plato::SimplexPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<3, Plato::SimplexPlasticity<3>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
@@ -167,7 +165,7 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<2, Plato::SimplexThermoPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<2, Plato::SimplexThermoPlasticity<2>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
@@ -224,7 +222,7 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<3, Plato::SimplexThermoPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<3, Plato::SimplexThermoPlasticity<3>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,

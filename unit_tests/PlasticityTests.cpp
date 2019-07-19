@@ -7,13 +7,8 @@
 
 #include "plato/Plato_Diagnostics.hpp"
 
-// #include "plato/LocalVectorFunctionInc.hpp"
-// #include "plato/AbstractLocalVectorFunctionInc.hpp"
+#include "plato/LocalVectorFunctionInc.hpp"
 // #include "plato/J2PlasticityLocalResidual.hpp"
-// #include "plato/J2PlasticityUtilities.hpp"
-// #include "plato/ThermoPlasticityUtilities.hpp"
-// #include "plato/SimplexPlasticity.hpp"
-// #include "plato/SimplexThermoPlasticity.hpp"
 
 
 namespace PlasticityTests

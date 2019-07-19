@@ -13,6 +13,8 @@ namespace Plato {
     using StateFad     = Sacado::Fad::SFad<Plato::Scalar,
                                            SimplexPhysics::mNumDofsPerNode*
                                            SimplexPhysics::mNumNodesPerCell>;
+    using LocalStateFad = Sacado::Fad::SFad<Plato::Scalar,
+                                           SimplexPhysics::mNumLocalDofsPerCell>;
     using ControlFad   = Sacado::Fad::SFad<Plato::Scalar,
                                            SimplexPhysics::mNumNodesPerCell>;
     using ConfigFad    = Sacado::Fad::SFad<Plato::Scalar,
@@ -31,7 +33,8 @@ namespace Plato {
     static constexpr bool value = std::is_same< T, typename TypesT::StateFad     >::value ||
                                   std::is_same< T, typename TypesT::ControlFad   >::value ||
                                   std::is_same< T, typename TypesT::ConfigFad    >::value ||
-                                  std::is_same< T, typename TypesT::NodeStateFad >::value;
+                                  std::is_same< T, typename TypesT::NodeStateFad >::value ||
+                                  std::is_same< T, typename TypesT::LocalStateFad >::value;
   };
   
 
@@ -122,12 +125,14 @@ struct EvaluationTypes
 template <typename SimplexPhysicsT>
 struct ResidualTypes : EvaluationTypes<SimplexPhysicsT>
 {
-  using StateScalarType     = Plato::Scalar;
-  using PrevStateScalarType = Plato::Scalar;
-  using NodeStateScalarType = Plato::Scalar;
-  using ControlScalarType   = Plato::Scalar;
-  using ConfigScalarType    = Plato::Scalar;
-  using ResultScalarType    = Plato::Scalar;
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = Plato::Scalar;
 };
 
 template <typename SimplexPhysicsT>
@@ -135,12 +140,14 @@ struct JacobianTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::StateFad;
 
-  using StateScalarType     = SFadType;
-  using PrevStateScalarType = Plato::Scalar;
-  using NodeStateScalarType = Plato::Scalar;
-  using ControlScalarType   = Plato::Scalar;
-  using ConfigScalarType    = Plato::Scalar;
-  using ResultScalarType    = SFadType;
+  using StateScalarType          = SFadType;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -148,12 +155,14 @@ struct JacobianPTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::StateFad;
 
-  using StateScalarType     = Plato::Scalar;
-  using PrevStateScalarType = SFadType;
-  using NodeStateScalarType = Plato::Scalar;
-  using ControlScalarType   = Plato::Scalar;
-  using ConfigScalarType    = Plato::Scalar;
-  using ResultScalarType    = SFadType;
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = SFadType;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -161,12 +170,44 @@ struct JacobianNTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::NodeStateFad;
 
-  using StateScalarType     = Plato::Scalar;
-  using PrevStateScalarType = Plato::Scalar;
-  using NodeStateScalarType = SFadType;
-  using ControlScalarType   = Plato::Scalar;
-  using ConfigScalarType    = Plato::Scalar;
-  using ResultScalarType    = SFadType;
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = SFadType;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
+};
+
+template <typename SimplexPhysicsT>
+struct LocalJacobianTypes : EvaluationTypes<SimplexPhysicsT>
+{
+  using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::LocalStateFad;
+
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = SFadType;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
+};
+
+template <typename SimplexPhysicsT>
+struct LocalJacobianPTypes : EvaluationTypes<SimplexPhysicsT>
+{
+  using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::LocalStateFad;
+
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = SFadType;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -174,12 +215,14 @@ struct GradientXTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::ConfigFad;
 
-  using StateScalarType     = Plato::Scalar;
-  using PrevStateScalarType = Plato::Scalar;
-  using NodeStateScalarType = Plato::Scalar;
-  using ControlScalarType   = Plato::Scalar;
-  using ConfigScalarType    = SFadType;
-  using ResultScalarType    = SFadType;
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = Plato::Scalar;
+  using ConfigScalarType         = SFadType;
+  using ResultScalarType         = SFadType;
 };
 
 template <typename SimplexPhysicsT>
@@ -187,23 +230,27 @@ struct GradientZTypes : EvaluationTypes<SimplexPhysicsT>
 {
   using SFadType = typename SimplexFadTypes<SimplexPhysicsT>::ControlFad;
 
-  using StateScalarType     = Plato::Scalar;
-  using PrevStateScalarType = Plato::Scalar;
-  using NodeStateScalarType = Plato::Scalar;
-  using ControlScalarType   = SFadType;
-  using ConfigScalarType    = Plato::Scalar;
-  using ResultScalarType    = SFadType;
+  using StateScalarType          = Plato::Scalar;
+  using PrevStateScalarType      = Plato::Scalar;
+  using LocalStateScalarType     = Plato::Scalar;
+  using PrevLocalStateScalarType = Plato::Scalar;
+  using NodeStateScalarType      = Plato::Scalar;
+  using ControlScalarType        = SFadType;
+  using ConfigScalarType         = Plato::Scalar;
+  using ResultScalarType         = SFadType;
 };
 
 
 template <typename SimplexPhysicsT>
 struct Evaluation {
-   using Residual  = ResidualTypes<SimplexPhysicsT>;
-   using Jacobian  = JacobianTypes<SimplexPhysicsT>;
-   using JacobianN = JacobianNTypes<SimplexPhysicsT>;
-   using JacobianP = JacobianPTypes<SimplexPhysicsT>;
-   using GradientZ = GradientZTypes<SimplexPhysicsT>;
-   using GradientX = GradientXTypes<SimplexPhysicsT>;
+   using Residual       = ResidualTypes<SimplexPhysicsT>;
+   using Jacobian       = JacobianTypes<SimplexPhysicsT>;
+   using JacobianN      = JacobianNTypes<SimplexPhysicsT>;
+   using JacobianP      = JacobianPTypes<SimplexPhysicsT>;
+   using LocalJacobian  = LocalJacobianTypes <SimplexPhysicsT>;
+   using LocalJacobianP = LocalJacobianPTypes<SimplexPhysicsT>;
+   using GradientZ      = GradientZTypes<SimplexPhysicsT>;
+   using GradientX      = GradientXTypes<SimplexPhysicsT>;
 };
   
 } // namespace Plato

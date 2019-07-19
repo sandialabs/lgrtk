@@ -16,8 +16,8 @@ template<Plato::OrdinalType SpaceDim>
 class J2PlasticityUtilities
 {
   private:
-    static constexpr mSqrt3Over2 = std::sqrt(3.0/2.0);
-    static constexpr mSqrt2Over3 = std::sqrt(2.0/3.0);
+    const Plato::Scalar mSqrt3Over2 = std::sqrt(3.0/2.0);
+    const Plato::Scalar mSqrt2Over3 = std::sqrt(2.0/3.0);
 
   public:
     /**************************************************************************//**
@@ -30,9 +30,7 @@ class J2PlasticityUtilities
     /**************************************************************************//**
     * @brief Destructor
     ******************************************************************************/
-    ~J2PlasticityUtilities() :
-    {
-    }
+    ~J2PlasticityUtilities(){}
 
     /******************************************************************************//**
      * @brief Update the plastic strain and backstress for a plastic step

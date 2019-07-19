@@ -3,6 +3,7 @@
 #include "plato/ScalarGrad.hpp"
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/PlatoMathHelpers.hpp"
+#include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
 #include "plato/Simp.hpp"
 
@@ -28,14 +29,14 @@ class J2PlasticityLocalResidual :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
 
-    using PhysicsType<mSpaceDim>::mNumNodesPerCell; /*!< number nodes per cell */
-    using PhysicsType<mSpaceDim>::mNumVoigtTerms;   /*!< number of voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = PhysicsType::mNumNodesPerCell; /*!< number nodes per cell */
+    static constexpr Plato::OrdinalType mNumVoigtTerms   = PhysicsType::mNumVoigtTerms;   /*!< number of voigt terms */
 
-    using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;    /*!< mesh database */
-    using Plato::AbstractVectorFunctionInc<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractLocalVectorFunctionInc<EvaluationType>::mMesh;    /*!< mesh database */
+    using Plato::AbstractLocalVectorFunctionInc<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
 
-    using GlobalStateT     = typename EvaluationType::GlobalStateScalarType;     /*!< global state variables automatic differentiation type */
-    using PrevGlobalStateT = typename EvaluationType::PrevGlobalStateScalarType; /*!< global state variables automatic differentiation type */
+    using GlobalStateT     = typename EvaluationType::StateScalarType;           /*!< global state variables automatic differentiation type */
+    using PrevGlobalStateT = typename EvaluationType::PrevStateScalarType;       /*!< global state variables automatic differentiation type */
     using LocalStateT      = typename EvaluationType::LocalStateScalarType;      /*!< local state variables automatic differentiation type */
     using PrevLocalStateT  = typename EvaluationType::PrevLocalStateScalarType;  /*!< local state variables automatic differentiation type */
     using ControlT         = typename EvaluationType::ControlScalarType;         /*!< control variables automatic differentiation type */
@@ -59,7 +60,7 @@ class J2PlasticityLocalResidual :
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule; /*!< linear tet cubature rule */
 
-    static constexpr mSqrt3Over2 = std::sqrt(3.0/2.0);
+    const Plato::Scalar mSqrt3Over2 = std::sqrt(3.0/2.0);
 
     /**************************************************************************//**
     * @brief Return the names of the local state degrees of freedom
@@ -201,13 +202,13 @@ class J2PlasticityLocalResidual :
       auto tNumCells = mMesh.nelems();
 
       using TotalStrainT =
-          typename Plato::fad_type_t<PhysicsType<EvaluationType::SpatialDim>, GlobalStateT, ConfigT>;
+          typename Plato::fad_type_t<PhysicsType, GlobalStateT, ConfigT>;
 
       using ElasticStrainT =
-          typename Plato::fad_type_t<PhysicsType<EvaluationType::SpatialDim>, GlobalStateT, LocalStateT>;
+          typename Plato::fad_type_t<PhysicsType, GlobalStateT, LocalStateT>;
 
       using StressT =
-          typename Plato::fad_type_t<PhysicsType<EvaluationType::SpatialDim>, ElasticStrainT, ConfigT>;
+          typename Plato::fad_type_t<PhysicsType, ElasticStrainT, ConfigT>;
 
       // Functors
       Plato::ComputeGradientWorkset<EvaluationType::SpatialDim> tComputeGradient;
@@ -420,11 +421,10 @@ class J2PlasticityLocalResidual :
 } // namespace Plato
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC_INC(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 2)
-PLATO_EXPL_DEC_INC(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 2)
+PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 2)
+//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 2)
 #endif
-
 #ifdef PLATO_3D
-PLATO_EXPL_DEC_INC(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 3)
-PLATO_EXPL_DEC_INC(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 3)
+//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 3)
+//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 3)
 #endif
