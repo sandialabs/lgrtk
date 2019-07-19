@@ -51,7 +51,9 @@ public:
 
 #include "Thermal.hpp"
 #include "Mechanics.hpp"
+#include "StabilizedMechanics.hpp"
 #include "Thermomechanics.hpp"
+#include "StabilizedThermomechanics.hpp"
 
 #ifdef PLATO_1D
 extern template class Plato::ScalarFunctionIncBaseFactory<::Plato::Thermal<1>>;

@@ -9,11 +9,9 @@
 #include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
 #include "plato/Plato_AugLagStressCriterionGeneral.hpp"
 #include "plato/Plato_AugLagStressCriterion.hpp"
-#include "plato/SimplexProjection.hpp"
 #include "plato/SimplexMechanics.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/ElastostaticResidual.hpp"
-#include "plato/StabilizedElastostaticResidual.hpp"
 #include "plato/InternalElasticEnergy.hpp"
 #include "plato/EffectiveEnergy.hpp"
 #include "plato/Volume.hpp"
@@ -324,54 +322,6 @@ struct FunctionFactory
             throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
     }
-    /******************************************************************************//**
-     * @brief Create a PLATO vector function (i.e. residual equation) for VMS
-     * @param [in] aMesh mesh database
-     * @param [in] aMeshSets side sets database
-     * @param [in] aDataMap PLATO Analyze physics-based database
-     * @param [in] aInputParams input parameters
-     * @param [in] aFuncName vector function name
-    **********************************************************************************/
-    template<typename EvaluationType>
-    std::shared_ptr<Plato::AbstractVectorFunctionVMS<EvaluationType>>
-    createVectorFunctionVMS(Omega_h::Mesh& aMesh,
-                            Omega_h::MeshSets& aMeshSets,
-                            Plato::DataMap& aDataMap,
-                            Teuchos::ParameterList& aInputParams,
-                            std::string aFuncName)
-    {
-
-        if(aFuncName == "Stabilized Elliptic")
-        {
-            auto tPenaltyParams = aInputParams.sublist(aFuncName).sublist("Penalty Function");
-            std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
-            if(tPenaltyType == "SIMP")
-            {
-                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::MSIMP>>
-                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
-            }
-            else
-            if(tPenaltyType == "RAMP")
-            {
-                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::RAMP>>
-                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
-            }
-            else
-            if(tPenaltyType == "Heaviside")
-            {
-                return std::make_shared<Plato::StabilizedElastostaticResidual<EvaluationType, Plato::Heaviside>>
-                         (aMesh, aMeshSets, aDataMap, aInputParams, tPenaltyParams);
-            }
-            else
-            {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
-            }
-        }
-        else
-        {
-            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
-        }
-    }
 
     /******************************************************************************/
     template <typename EvaluationType>
@@ -404,7 +354,6 @@ struct FunctionFactory
                          std::string aFuncType,
                          std::string aFuncName)
     {
-#ifdef NOPE
         if(aFuncType == "Internal Elastic Energy")
         {
             return (Plato::MechanicsFactory::internal_elastic_energy<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
@@ -441,9 +390,6 @@ struct FunctionFactory
         {
             throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
         }
-#else
-    throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
-#endif
     }
 };
 // struct FunctionFactory
@@ -462,27 +408,6 @@ public:
     using SimplexT = SimplexMechanics<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };
-
-/****************************************************************************//**
- * @brief Concrete class for use as the SimplexPhysics template argument in
- *        EllipticVMSProblem
- *******************************************************************************/
-template<Plato::OrdinalType SpaceDimParam>
-class StabilizedMechanics: public Plato::SimplexStabilizedMechanics<SpaceDimParam>
-{
-public:
-    using FunctionFactory = typename Plato::MechanicsFactory::FunctionFactory;
-    using SimplexT        = SimplexStabilizedMechanics<SpaceDimParam>;
-
-    using ProjectorT = typename Plato::Projection<SpaceDimParam,
-                                                  SimplexT::m_numDofsPerNode,
-                                                  SimplexT::m_PDofOffset,
-                                                  /* numProjectionDofs=*/ 1>;
-
-    static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
-};
-
-
 } // namespace Plato
 
 #endif

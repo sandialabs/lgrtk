@@ -397,9 +397,9 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                    \n"
-    "  <Parameter name='PDE Constraint' type='string' value='First Order'/>                  \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Parabolic'/>                    \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                            \n"
-    "  <ParameterList name='First Order'>                                                    \n"
+    "  <ParameterList name='Parabolic'>                                                      \n"
     "    <ParameterList name='Penalty Function'>                                             \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                            \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                               \n"

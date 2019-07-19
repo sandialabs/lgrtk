@@ -37,8 +37,10 @@
 #include <plato/Plato_Solve.hpp>
 #include "plato/ApplyConstraints.hpp"
 #include "plato/PressureDivergence.hpp"
-#include "plato/Thermomechanics.hpp"
+#include "plato/StabilizedThermomechanics.hpp"
+#include "plato/ThermalContent.hpp"
 #include "plato/ComputedField.hpp"
+#include "plato/PlatoMathHelpers.hpp"
 
 #include <fenv.h>
 
@@ -662,7 +664,7 @@ TEUCHOS_UNIT_TEST( TransientStabilizedThermomechTests, TransientStabilizedThermo
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                    \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Stabilized Elliptic'/>          \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>                     \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                            \n"
     "  <ParameterList name='Stabilized Elliptic'>                                            \n"
     "    <ParameterList name='Penalty Function'>                                             \n"
