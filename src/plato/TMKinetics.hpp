@@ -18,29 +18,28 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const Plato::Scalar m_cellThermalExpansionCoef;
-    const Omega_h::Matrix<SpaceDim, SpaceDim> m_cellThermalConductivity;
-    const Plato::Scalar m_cellReferenceTemperature;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const Plato::Scalar mCellThermalExpansionCoef;
+    const Omega_h::Matrix<SpaceDim, SpaceDim> mCellThermalConductivity;
+    const Plato::Scalar mCellReferenceTemperature;
 
-    const Plato::Scalar m_scaling;
-    const Plato::Scalar m_scaling2;
+    const Plato::Scalar mScaling;
+    const Plato::Scalar mScaling2;
  
   public:
 
     TMKinetics( const Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> materialModel ) :
-            m_cellStiffness(materialModel->getStiffnessMatrix()),
-            m_cellThermalExpansionCoef(materialModel->getThermalExpansion()),
-            m_cellThermalConductivity(materialModel->getThermalConductivity()),
-            m_cellReferenceTemperature(materialModel->getReferenceTemperature()),
-            m_scaling(materialModel->getTemperatureScaling()),
-            m_scaling2(m_scaling*m_scaling) {}
-
+            mCellStiffness(materialModel->getStiffnessMatrix()),
+            mCellThermalExpansionCoef(materialModel->getThermalExpansion()),
+            mCellThermalConductivity(materialModel->getThermalConductivity()),
+            mCellReferenceTemperature(materialModel->getReferenceTemperature()),
+            mScaling(materialModel->getTemperatureScaling()),
+            mScaling2(mScaling*mScaling) {}
 
 
     /***********************************************************************************
@@ -62,17 +61,18 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
 
       // compute thermal strain
       //
-      StateScalarType tstrain[m_numVoigtTerms] = {0};
+      StateScalarType tstrain[mNumVoigtTerms] = {0};
       for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tstrain[iDim] = m_scaling * m_cellThermalExpansionCoef * (aTemperature(cellOrdinal) - m_cellReferenceTemperature);
+        tstrain[iDim] = mScaling * mCellThermalExpansionCoef * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
       }
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         aStress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          aStress(cellOrdinal,iVoigt) += (aStrain(cellOrdinal,jVoigt)-tstrain[jVoigt])*m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          aStress(cellOrdinal,iVoigt) += (aStrain(cellOrdinal,jVoigt)-tstrain[jVoigt])*mCellStiffness(iVoigt, jVoigt);
+
         }
       }
 
@@ -81,7 +81,7 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
       for( int iDim=0; iDim<SpaceDim; iDim++){
         aFlux(cellOrdinal,iDim) = 0.0;
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          aFlux(cellOrdinal,iDim) += m_scaling2 * aTGrad(cellOrdinal,jDim)*m_cellThermalConductivity(iDim, jDim);
+          aFlux(cellOrdinal,iDim) += mScaling2 * aTGrad(cellOrdinal,jDim)*mCellThermalConductivity(iDim, jDim);
         }
       }
     }
@@ -103,48 +103,48 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
 {
   private:
 
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const Plato::Scalar m_cellThermalExpansionCoef;
-    const Omega_h::Matrix<SpaceDim, SpaceDim> m_cellThermalConductivity;
-    const Plato::Scalar m_cellReferenceTemperature;
-    Plato::Scalar m_BulkModulus, m_ShearModulus;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const Plato::Scalar mCellThermalExpansionCoef;
+    const Omega_h::Matrix<SpaceDim, SpaceDim> mCellThermalConductivity;
+    const Plato::Scalar mCellReferenceTemperature;
+    Plato::Scalar mBulkModulus, mShearModulus;
 
-    const Plato::Scalar m_temperatureScaling;
-    const Plato::Scalar m_temperatureScaling2;
+    const Plato::Scalar mTemperatureScaling;
+    const Plato::Scalar mTemperatureScaling2;
 
-    const Plato::Scalar m_pressureScaling;
-    const Plato::Scalar m_pressureScaling2;
+    const Plato::Scalar mPressureScaling;
+    const Plato::Scalar mPressureScaling2;
 
   public:
 
     StabilizedTMKinetics( const Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> materialModel ) :
-            m_cellStiffness(materialModel->getStiffnessMatrix()),
-            m_cellThermalExpansionCoef(materialModel->getThermalExpansion()),
-            m_cellThermalConductivity(materialModel->getThermalConductivity()),
-            m_cellReferenceTemperature(materialModel->getReferenceTemperature()),
-            m_BulkModulus(0.0), m_ShearModulus(0.0),
-            m_temperatureScaling(materialModel->getTemperatureScaling()),
-            m_temperatureScaling2(m_temperatureScaling*m_temperatureScaling),
-            m_pressureScaling(materialModel->getPressureScaling()),
-            m_pressureScaling2(m_pressureScaling*m_pressureScaling)
+            mCellStiffness(materialModel->getStiffnessMatrix()),
+            mCellThermalExpansionCoef(materialModel->getThermalExpansion()),
+            mCellThermalConductivity(materialModel->getThermalConductivity()),
+            mCellReferenceTemperature(materialModel->getReferenceTemperature()),
+            mBulkModulus(0.0), mShearModulus(0.0),
+            mTemperatureScaling(materialModel->getTemperatureScaling()),
+            mTemperatureScaling2(mTemperatureScaling*mTemperatureScaling),
+            mPressureScaling(materialModel->getPressureScaling()),
+            mPressureScaling2(mPressureScaling*mPressureScaling)
     {
         for( int iDim=0; iDim<SpaceDim; iDim++ )
         {
-            m_BulkModulus  += m_cellStiffness(0, iDim);
+            mBulkModulus  += mCellStiffness(0, iDim);
         }
-        m_BulkModulus /= SpaceDim;
+        mBulkModulus /= SpaceDim;
 
-        int tNumShear = m_numVoigtTerms - SpaceDim;
+        int tNumShear = mNumVoigtTerms - SpaceDim;
         for( int iShear=0; iShear<tNumShear; iShear++ )
         {
-            m_ShearModulus += m_cellStiffness(iShear+SpaceDim, iShear+SpaceDim);
+            mShearModulus += mCellStiffness(iShear+SpaceDim, iShear+SpaceDim);
         }
-        m_ShearModulus /= tNumShear;
+        mShearModulus /= tNumShear;
     }
 
 
@@ -179,21 +179,21 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
 
       // compute thermal strain and volume strain
       //
-      StateScalarType tstrain[m_numVoigtTerms] = {0};
+      StateScalarType tstrain[mNumVoigtTerms] = {0};
       StateScalarType tThermalVolStrain = 0.0;
       KinematicsScalarType tVolStrain = 0.0;
       for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tstrain[iDim] = m_temperatureScaling * m_cellThermalExpansionCoef * (aTemperature(cellOrdinal) - m_cellReferenceTemperature);
+        tstrain[iDim] = mTemperatureScaling * mCellThermalExpansionCoef * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
         tThermalVolStrain += tstrain[iDim];
         tVolStrain += aStrain(cellOrdinal,iDim);
       }
 
       // compute deviatoric stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         aDevStress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          aDevStress(cellOrdinal,iVoigt) += ( (aStrain(cellOrdinal,jVoigt)-tstrain[jVoigt]) ) *m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          aDevStress(cellOrdinal,iVoigt) += ( (aStrain(cellOrdinal,jVoigt)-tstrain[jVoigt]) ) *mCellStiffness(iVoigt, jVoigt);
         }
       }
       KineticsScalarType trace(0.0);
@@ -209,21 +209,21 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
       for( int iDim=0; iDim<SpaceDim; iDim++){
         aTFlux(cellOrdinal,iDim) = 0.0;
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          aTFlux(cellOrdinal,iDim) += m_temperatureScaling2 * aTGrad(cellOrdinal,jDim)*m_cellThermalConductivity(iDim, jDim);
+          aTFlux(cellOrdinal,iDim) += mTemperatureScaling2 * aTGrad(cellOrdinal,jDim)*mCellThermalConductivity(iDim, jDim);
         }
       }
 
       // compute volume difference
       //
-      aPressure(cellOrdinal) *= m_pressureScaling;
-      aVolumeFlux(cellOrdinal) = m_pressureScaling * (tVolStrain - tThermalVolStrain - aPressure(cellOrdinal)/m_BulkModulus);
+      aPressure(cellOrdinal) *= mPressureScaling;
+      aVolumeFlux(cellOrdinal) = mPressureScaling * (tVolStrain - tThermalVolStrain - aPressure(cellOrdinal)/mBulkModulus);
 
       // compute cell stabilization
       //
-      KinematicsScalarType tTau = pow(aCellVolume(cellOrdinal),2.0/3.0)/(2.0*m_ShearModulus);
+      KinematicsScalarType tTau = pow(aCellVolume(cellOrdinal),2.0/3.0)/(2.0*mShearModulus);
       for( int iDim=0; iDim<SpaceDim; iDim++){
-          aCellStabilization(cellOrdinal,iDim) = m_pressureScaling * tTau *
-            (m_pressureScaling*aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
+          aCellStabilization(cellOrdinal,iDim) = mPressureScaling * tTau *
+            (mPressureScaling*aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
       }
     }
 };

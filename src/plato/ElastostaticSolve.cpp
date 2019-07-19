@@ -40,18 +40,18 @@ void ElastostaticSolve<SpaceDim>::setBC(const Omega_h::LOs localDofOrdinals,
     int bcOffset = 0;
     if(!addToExisting)
     {
-        m_bcDofs = Plato::LocalOrdinalVector("BC dofs", numBCs);
-        m_bcValues = Plato::ScalarVector("BC values", numBCs);
+        mBcDofs = Plato::LocalOrdinalVector("BC dofs", numBCs);
+        mBcValues = Plato::ScalarVector("BC values", numBCs);
     }
     else
     {
-        bcOffset = m_bcDofs.size();
-        Kokkos::resize(m_bcDofs, bcOffset + numBCs);
-        Kokkos::resize(m_bcValues, bcOffset + numBCs);
+        bcOffset = mBcDofs.size();
+        Kokkos::resize(mBcDofs, bcOffset + numBCs);
+        Kokkos::resize(mBcValues, bcOffset + numBCs);
     }
     // local copies of the View objects (avoids refs to this in lambda)
-    auto bcDofs = m_bcDofs;
-    auto bcValues = m_bcValues;
+    auto bcDofs = mBcDofs;
+    auto bcValues = mBcValues;
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, numBCs), LAMBDA_EXPRESSION(int dofOrdinal)
     {
         bcDofs(dofOrdinal+bcOffset) = localDofOrdinals[dofOrdinal];
@@ -66,22 +66,22 @@ void ElastostaticSolve<SpaceDim>::initialize()
 /******************************************************************************/
 {
 
-    auto mesh = m_meshFields->femesh.omega_h_mesh;
+    auto mesh = mMeshFields->femesh.omega_h_mesh;
 
     Plato::RowMapEntryType numRows;
-    if(m_useBlockMatrix)
+    if(mUseBlockMatrix)
     {
-        m_matrix = Plato::CreateBlockMatrix<CrsMatrixType, SpaceDim>(mesh);
-        numRows = SpaceDim * (m_matrix->rowMap().size() - 1);
+        mMatrix = Plato::CreateBlockMatrix<CrsMatrixType, SpaceDim>(mesh);
+        numRows = SpaceDim * (mMatrix->rowMap().size() - 1);
     }
     else
     {
-        m_matrix = Plato::CreateMatrix<CrsMatrixType, SpaceDim>(mesh);
-        numRows = m_matrix->rowMap().size() - 1;
+        mMatrix = Plato::CreateMatrix<CrsMatrixType, SpaceDim>(mesh);
+        numRows = mMatrix->rowMap().size() - 1;
     }
 
-    m_lhs = Plato::ScalarVector("solution", numRows);
-    m_rhs = Plato::ScalarVector("load", numRows);
+    mLhs = Plato::ScalarVector("solution", numRows);
+    mRhs = Plato::ScalarVector("load", numRows);
 
 }
 
@@ -90,16 +90,16 @@ template<int SpaceDim>
 ElastostaticSolve<SpaceDim>::ElastostaticSolve(Teuchos::ParameterList const& paramList,
                                                Teuchos::RCP<DefaultFields> meshFields,
                                                Plato::comm::Machine machine) :
-        m_machine(machine),
-        m_meshFields(meshFields),
-        m_useBlockMatrix(paramList.get<bool>("Use Block Matrix"))
+        mMachine(machine),
+        mMeshFields(meshFields),
+        mUseBlockMatrix(paramList.get<bool>("Use Block Matrix"))
 /******************************************************************************/
 {
-    m_bcDofs = Plato::LocalOrdinalVector("BC dofs", 0);
-    m_bcValues = Plato::ScalarVector("BC values", 0);
+    mBcDofs = Plato::LocalOrdinalVector("BC dofs", 0);
+    mBcValues = Plato::ScalarVector("BC values", 0);
 
     Plato::ElasticModelFactory < SpaceDim > mmfactory(paramList);
-    m_materialModel = mmfactory.create();
+    mMaterialModel = mmfactory.create();
 }
 
 /******************************************************************************/
@@ -107,15 +107,15 @@ template<int SpaceDim>
 void ElastostaticSolve<SpaceDim>::assemble()
 /******************************************************************************/
 {
-    if(m_useBlockMatrix)
+    if(mUseBlockMatrix)
     {
         computeGlobalStiffness<BlockMatrixEntryOrdinal>();
-        Plato::applyBlockConstraints<SpaceDim>(m_matrix, m_rhs, m_bcDofs, m_bcValues);
+        Plato::applyBlockConstraints<SpaceDim>(mMatrix, mRhs, mBcDofs, mBcValues);
     }
     else
     {
         computeGlobalStiffness<MatrixEntryOrdinal>();
-        Plato::applyConstraints<SpaceDim>(m_matrix, m_rhs, m_bcDofs, m_bcValues);
+        Plato::applyConstraints<SpaceDim>(mMatrix, mRhs, mBcDofs, mBcValues);
     }
 
 }
@@ -130,9 +130,9 @@ void ElastostaticSolve<SpaceDim>::computeGlobalStiffness()
     constexpr int dofsPerCell = nodesPerCell * numDofsPerNode;
     constexpr auto numVoigtTerms = (SpaceDim == 3) ? 6: ((SpaceDim == 2) ? 3: 1);
 
-    auto mesh = m_meshFields->femesh.omega_h_mesh;
+    auto mesh = mMeshFields->femesh.omega_h_mesh;
 
-    LookupType<SpaceDim, SpaceDim> entryOrdinalLookup(m_matrix, mesh);
+    LookupType<SpaceDim, SpaceDim> entryOrdinalLookup(mMatrix, mesh);
 
     Scalar quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
     for(int d = 2; d <= SpaceDim; d++)
@@ -154,13 +154,13 @@ void ElastostaticSolve<SpaceDim>::computeGlobalStiffness()
 
     // create stiffness matrix
     //
-    auto cellStiffness = m_materialModel->getStiffnessMatrix();
+    auto cellStiffness = mMaterialModel->getStiffnessMatrix();
 
     // create Assembly functor
     //
-    Plato::Assemble<SpaceDim, LookupType<SpaceDim, SpaceDim>> asmbl(cellStiffness, m_matrix, entryOrdinalLookup);
+    Plato::Assemble<SpaceDim, LookupType<SpaceDim, SpaceDim>> asmbl(cellStiffness, mMatrix, entryOrdinalLookup);
 
-    int numCells = m_meshFields->femesh.nelems;
+    int numCells = mMeshFields->femesh.nelems;
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0, numCells), LAMBDA_EXPRESSION(int cellOrdinal)
     {
 
@@ -218,15 +218,15 @@ ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
             configString = AmgXLinearProblem::configurationString(AmgXLinearProblem::PCG_NOPREC,tol,maxIters);
         }
 
-        if( m_useBlockMatrix )
+        if( mUseBlockMatrix )
         {
             typedef Plato::AmgXSparseLinearProblem<Plato::OrdinalType, spaceDim> AmgXLinearProblem;
-            solver = Teuchos::rcp(new AmgXLinearProblem(*m_matrix,m_lhs,m_rhs, configString));
+            solver = Teuchos::rcp(new AmgXLinearProblem(*mMatrix,mLhs,mRhs, configString));
         }
         else
         {
             typedef Plato::AmgXSparseLinearProblem<Plato::OrdinalType> AmgXLinearProblem;
-            solver = Teuchos::rcp(new AmgXLinearProblem(*m_matrix,m_lhs,m_rhs, configString));
+            solver = Teuchos::rcp(new AmgXLinearProblem(*mMatrix,mLhs,mRhs, configString));
         }
     }
 #endif
@@ -236,7 +236,7 @@ ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
     {
         typedef TpetraSparseLinearProblem<Scalar, Ordinal, DefaultLayout, Space> TpetraSolver;
 
-        auto tpetraSolver = new TpetraSolver(*m_matrix,m_lhs,m_rhs);
+        auto tpetraSolver = new TpetraSolver(*mMatrix,mLhs,mRhs);
         // TODO set tol, maxIters
         solver = Teuchos::rcp(tpetraSolver);
     }
@@ -246,7 +246,7 @@ ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
     if (solver == Teuchos::null)
     {
         typedef ViennaSparseLinearProblem<Scalar, OrdinalType, DefaultLayout, DefaultSpace> ViennaSolver;
-        auto viennaSolver = new ViennaSolver(*m_matrix,m_lhs,m_rhs);
+        auto viennaSolver = new ViennaSolver(*mMatrix,mLhs,mRhs);
         viennaSolver->setTolerance(tol);
         viennaSolver->setMaxIters(maxIters);
         solver = Teuchos::rcp(viennaSolver);

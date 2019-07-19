@@ -19,10 +19,10 @@ class StabilizedKinematics : public Plato::SimplexStabilizedMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_PDofOffset;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mPDofOffset;
 
   public:
 
@@ -39,17 +39,17 @@ class StabilizedKinematics : public Plato::SimplexStabilizedMechanics<SpaceDim>
       Plato::OrdinalType voigtTerm=0;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         strain(cellOrdinal,voigtTerm)=0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+iDof;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+iDof;
           strain(cellOrdinal,voigtTerm) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
         voigtTerm++;
       }
       for (Plato::OrdinalType jDof=SpaceDim-1; jDof>=1; jDof--){
         for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-          for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-            Plato::OrdinalType iLocalOrdinal = iNode*m_numDofsPerNode+iDof;
-            Plato::OrdinalType jLocalOrdinal = iNode*m_numDofsPerNode+jDof;
+          for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+            Plato::OrdinalType iLocalOrdinal = iNode*mNumDofsPerNode+iDof;
+            Plato::OrdinalType jLocalOrdinal = iNode*mNumDofsPerNode+jDof;
             strain(cellOrdinal,voigtTerm) +=(state(cellOrdinal,jLocalOrdinal)*gradient(cellOrdinal,iNode,iDof)
                                             +state(cellOrdinal,iLocalOrdinal)*gradient(cellOrdinal,iNode,jDof));
           }
@@ -61,8 +61,8 @@ class StabilizedKinematics : public Plato::SimplexStabilizedMechanics<SpaceDim>
       //
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         pgrad(cellOrdinal,iDof) = 0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+m_PDofOffset;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+mPDofOffset;
           pgrad(cellOrdinal,iDof) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
       }

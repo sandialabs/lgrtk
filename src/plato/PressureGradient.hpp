@@ -25,7 +25,7 @@ class PressureGradient : public Plato::Simplex<SpaceDim>
 {
   private:
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
   public:
 
@@ -40,7 +40,7 @@ class PressureGradient : public Plato::Simplex<SpaceDim>
       //
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         pgrad(cellOrdinal,iDof) = 0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
           pgrad(cellOrdinal,iDof) += state(cellOrdinal,iNode)*gradient(cellOrdinal,iNode,iDof);
         }
       }

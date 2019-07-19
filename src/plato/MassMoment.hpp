@@ -29,11 +29,11 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
 {
   private:
     static constexpr int mSpaceDim = EvaluationType::SpatialDim; /*!< space dimension */
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell/element */
     
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh object */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< data map object */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< data map object */
 
     using StateScalarType   = typename EvaluationType::StateScalarType;  /*!< state variables automatic differentiation type */
     using ControlScalarType = typename EvaluationType::ControlScalarType; /*!< control variables automatic differentiation type */
@@ -137,8 +137,7 @@ class MassMoment : public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
         computeSecondMoment(aControl, aConfig, aResult, 0, 2, aTimeStep);
       else if (mCalculationType == "SecondYZ")
         computeSecondMoment(aControl, aConfig, aResult, 1, 2, aTimeStep);
-      else
-      {
+      else {
         THROWERR("Specified mass moment calculation type not implemented.")
       }
     }

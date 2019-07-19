@@ -23,11 +23,11 @@ class IntermediateDensityPenalty : public Plato::SimplexMechanics<EvaluationType
 {
   private:
     static constexpr int mSpaceDim = EvaluationType::SpatialDim;
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell/element */
     
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;

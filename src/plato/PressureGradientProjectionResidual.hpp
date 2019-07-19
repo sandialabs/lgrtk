@@ -26,10 +26,10 @@ class PressureGradientProjectionResidual :
 private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
     using Plato::AbstractVectorFunctionVMS<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunctionVMS<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionVMS<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunctionVMS<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
@@ -38,8 +38,8 @@ private:
     using ConfigScalarType    = typename EvaluationType::ConfigScalarType;
     using ResultScalarType    = typename EvaluationType::ResultScalarType;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim, SpaceDim, IndicatorFunctionType> m_applyVectorWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim, SpaceDim, IndicatorFunctionType> mApplyVectorWeighting;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
@@ -51,8 +51,8 @@ public:
                                Teuchos::ParameterList& aProblemParams,
                                Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractVectorFunctionVMS<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyVectorWeighting(m_indicatorFunction),
+            mIndicatorFunction(aPenaltyParams),
+            mApplyVectorWeighting(mIndicatorFunction),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
@@ -77,12 +77,12 @@ public:
       Plato::ScalarVectorT      <ConfigScalarType>  tCellVolume     ("cell weight",        tNumCells);
       Plato::ScalarMultiVectorT <ResultScalarType>  tProjectedPGrad ("projected p grad",   tNumCells, SpaceDim);
       Plato::ScalarMultiVectorT <ResultScalarType>  tComputedPGrad  ("compute p grad",     tNumCells, SpaceDim);
-      Plato::ScalarArray3DT     <ConfigScalarType>  tGradient       ("gradient",           tNumCells, m_numNodesPerCell, SpaceDim);
+      Plato::ScalarArray3DT     <ConfigScalarType>  tGradient       ("gradient",           tNumCells, mNumNodesPerCell, SpaceDim);
 
       auto tQuadratureWeight = mCubatureRule->getCubWeight();
       auto tBasisFunctions   = mCubatureRule->getBasisFunctions();
 
-      auto& applyVectorWeighting = m_applyVectorWeighting;
+      auto& applyVectorWeighting = mApplyVectorWeighting;
 
       Plato::ProjectToNode<SpaceDim> projectPGradToNodal;
 

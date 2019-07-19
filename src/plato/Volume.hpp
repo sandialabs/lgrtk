@@ -24,7 +24,7 @@ class Volume : public Plato::AbstractScalarFunction<EvaluationType>
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
     
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;

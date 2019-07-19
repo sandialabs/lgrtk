@@ -147,8 +147,8 @@ public:
     using SimplexT        = SimplexStabilizedMechanics<SpaceDimParam>;
 
     using ProjectorT = typename Plato::Projection<SpaceDimParam,
-                                                  SimplexT::m_numDofsPerNode,
-                                                  SimplexT::m_PDofOffset,
+                                                  SimplexT::mNumDofsPerNode,
+                                                  SimplexT::mPDofOffset,
                                                   /* numProjectionDofs=*/ 1>;
 
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;

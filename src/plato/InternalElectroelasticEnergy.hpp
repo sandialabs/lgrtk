@@ -35,27 +35,27 @@ class InternalElectroelasticEnergy :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
     
-    using Plato::SimplexElectromechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
-    using Plato::SimplexElectromechanics<mSpaceDim>::m_numDofsPerCell; /*!< number of degree of freedom per cell */
+    using Plato::SimplexElectromechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    using Plato::Simplex<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell */
+    using Plato::SimplexElectromechanics<mSpaceDim>::mNumDofsPerCell; /*!< number of degree of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< Plato Analyze database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< Plato Analyze database */
 
     using StateScalarType   = typename EvaluationType::StateScalarType; /*!< automatic differentiation type for states */
     using ControlScalarType = typename EvaluationType::ControlScalarType; /*!< automatic differentiation type for controls */
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType; /*!< automatic differentiation type for configuration */
     using ResultScalarType  = typename EvaluationType::ResultScalarType; /*!< automatic differentiation type for results */
 
-    Teuchos::RCP<Plato::LinearElectroelasticMaterial<mSpaceDim>> m_materialModel; /*!< electrostatics material model */
+    Teuchos::RCP<Plato::LinearElectroelasticMaterial<mSpaceDim>> mMaterialModel; /*!< electrostatics material model */
     
-    IndicatorFunctionType m_indicatorFunction; /*!< penalty function */
-    ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting; /*!< apply penalty function */
-    ApplyWeighting<mSpaceDim, mSpaceDim, IndicatorFunctionType> m_applyEDispWeighting; /*!< apply penalty function */
+    IndicatorFunctionType mIndicatorFunction; /*!< penalty function */
+    ApplyWeighting<mSpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyStressWeighting; /*!< apply penalty function */
+    ApplyWeighting<mSpaceDim, mSpaceDim, IndicatorFunctionType> mApplyEDispWeighting; /*!< apply penalty function */
 
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> m_CubatureRule; /*!< integration rule */
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule; /*!< integration rule */
 
-    std::vector<std::string> m_plottable; /*!< database of output field names */
+    std::vector<std::string> mPlottable; /*!< database of output field names */
 
   public:
     /******************************************************************************//**
@@ -72,16 +72,16 @@ class InternalElectroelasticEnergy :
                           Teuchos::ParameterList& aPenaltyParams,
                           std::string& aFunctionName ) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyStressWeighting(m_indicatorFunction),
-            m_applyEDispWeighting(m_indicatorFunction),
-            m_CubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
+            mIndicatorFunction(aPenaltyParams),
+            mApplyStressWeighting(mIndicatorFunction),
+            mApplyEDispWeighting(mIndicatorFunction),
+            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     {
       Plato::ElectroelasticModelFactory<mSpaceDim> mmfactory(aProblemParams);
-      m_materialModel = mmfactory.create();
+      mMaterialModel = mmfactory.create();
 
       if( aProblemParams.isType<Teuchos::Array<std::string>>("Plottable") )
-        m_plottable = aProblemParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
+        mPlottable = aProblemParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
     }
 
     /******************************************************************************//**
@@ -105,25 +105,25 @@ class InternalElectroelasticEnergy :
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
       Plato::EMKinematics<mSpaceDim>                  tKinematics;
-      Plato::EMKinetics<mSpaceDim>                    tKinetics(m_materialModel);
+      Plato::EMKinetics<mSpaceDim>                    tKinetics(mMaterialModel);
 
-      Plato::ScalarProduct<m_numVoigtTerms>          tMechanicalScalarProduct;
+      Plato::ScalarProduct<mNumVoigtTerms>          tMechanicalScalarProduct;
       Plato::ScalarProduct<mSpaceDim>                tElectricalScalarProduct;
 
       Plato::ScalarVectorT<ConfigScalarType> tCellVolume("cell weight",tNumCells);
 
-      Plato::ScalarMultiVectorT<GradScalarType>   tStrain("strain", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType>   tStrain("strain", tNumCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<GradScalarType>   tEfield("efield", tNumCells, mSpaceDim);
 
-      Plato::ScalarMultiVectorT<ResultScalarType> tStress("stress", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> tStress("stress", tNumCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<ResultScalarType> tEdisp ("edisp" , tNumCells, mSpaceDim);
 
-      Plato::ScalarArray3DT<ConfigScalarType>   tGradient("gradient",tNumCells,m_numNodesPerCell,mSpaceDim);
+      Plato::ScalarArray3DT<ConfigScalarType>   tGradient("gradient",tNumCells,mNumNodesPerCell,mSpaceDim);
 
-      auto tQuadratureWeight = m_CubatureRule->getCubWeight();
+      auto tQuadratureWeight = mCubatureRule->getCubWeight();
 
-      auto& tApplyStressWeighting = m_applyStressWeighting;
-      auto& tApplyEDispWeighting  = m_applyEDispWeighting;
+      auto& tApplyStressWeighting = mApplyStressWeighting;
+      auto& tApplyEDispWeighting  = mApplyEDispWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(const int & aCellOrdinal)
       {
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
@@ -149,9 +149,9 @@ class InternalElectroelasticEnergy :
 
       },"energy gradient");
 
-      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, tStrain, "strain");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, tStress, "stress");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"edisp" ) ) toMap(m_dataMap, tStress, "edisp" );
+      if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, tStrain, "strain");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"stress") ) toMap(mDataMap, tStress, "stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"edisp" ) ) toMap(mDataMap, tStress, "edisp" );
 
     }
 };

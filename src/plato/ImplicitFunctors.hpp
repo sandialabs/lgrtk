@@ -30,17 +30,17 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode=1>
 class VectorEntryOrdinal
 {
   public:
-    const Omega_h::LOs m_cells2nodes;
+    const Omega_h::LOs mCells2nodes;
 
   public:
     VectorEntryOrdinal(
       Omega_h::Mesh* mesh ) : 
-      m_cells2nodes(mesh->ask_elem_verts()) {}
+      mCells2nodes(mesh->ask_elem_verts()) {}
 
     DEVICE_TYPE inline Plato::OrdinalType
     operator()(Plato::OrdinalType cellOrdinal, Plato::OrdinalType nodeOrdinal, Plato::OrdinalType dofOrdinal=0) const
     {
-        Plato::OrdinalType vertexNumber = m_cells2nodes[cellOrdinal*(SpaceDim+1) + nodeOrdinal];
+        Plato::OrdinalType vertexNumber = mCells2nodes[cellOrdinal*(SpaceDim+1) + nodeOrdinal];
         return vertexNumber * DofsPerNode + dofOrdinal;
     }
 };
@@ -52,22 +52,22 @@ template<Plato::OrdinalType SpaceDim>
 class NodeCoordinate
 {
   private:
-    const Omega_h::LOs m_cells2nodes;
-    const Omega_h::Reals m_coords;
+    const Omega_h::LOs mCells2nodes;
+    const Omega_h::Reals mCoords;
 
   public:
     NodeCoordinate(
       Omega_h::Mesh* mesh ) : 
-      m_cells2nodes(mesh->ask_elem_verts()),
-      m_coords(mesh->coords()) { }
+      mCells2nodes(mesh->ask_elem_verts()),
+      mCoords(mesh->coords()) { }
 
     DEVICE_TYPE
     inline
     Plato::Scalar
     operator()(Plato::OrdinalType cellOrdinal, Plato::OrdinalType nodeOrdinal, Plato::OrdinalType dofOrdinal) const
     {
-        Plato::OrdinalType vertexNumber = m_cells2nodes[cellOrdinal*(SpaceDim+1) + nodeOrdinal];
-        Plato::Scalar coord = m_coords[vertexNumber * SpaceDim + dofOrdinal];
+        Plato::OrdinalType vertexNumber = mCells2nodes[cellOrdinal*(SpaceDim+1) + nodeOrdinal];
+        Plato::Scalar coord = mCoords[vertexNumber * SpaceDim + dofOrdinal];
         return coord;
     }
 };
@@ -78,11 +78,11 @@ template<Plato::OrdinalType SpaceDim>
 class JacobianDet
 {
   private:
-    const NodeCoordinate<SpaceDim> m_nodeCoordinate;
+    const NodeCoordinate<SpaceDim> mNodeCoordinate;
 
   public:
     JacobianDet( Omega_h::Mesh* mesh ) : 
-      m_nodeCoordinate(mesh) {}
+      mNodeCoordinate(mesh) {}
 
     DEVICE_TYPE
     inline
@@ -92,7 +92,7 @@ class JacobianDet
 
       for (Plato::OrdinalType d1=0; d1<SpaceDim; d1++) {
         for (Plato::OrdinalType d2=0; d2<SpaceDim; d2++) {
-          jacobian[d1][d2] = m_nodeCoordinate(cellOrdinal,d2,d1) - m_nodeCoordinate(cellOrdinal,SpaceDim,d1);
+          jacobian[d1][d2] = mNodeCoordinate(cellOrdinal,d2,d1) - mNodeCoordinate(cellOrdinal,SpaceDim,d1);
         }
       }
       return Omega_h::determinant(jacobian);
@@ -106,22 +106,22 @@ template<Plato::OrdinalType SpaceDim>
 class SideNodeCoordinate
 {
   private:
-    const Omega_h::LOs m_sides2nodes;
-    const Omega_h::Reals m_coords;
+    const Omega_h::LOs mSides2nodes;
+    const Omega_h::Reals mCoords;
 
   public:
     SideNodeCoordinate(
       Omega_h::Mesh* mesh ) : 
-      m_sides2nodes(mesh->ask_verts_of(SpaceDim-1)),
-      m_coords(mesh->coords()) { }
+      mSides2nodes(mesh->ask_verts_of(SpaceDim-1)),
+      mCoords(mesh->coords()) { }
 
     DEVICE_TYPE
     inline
     Plato::Scalar
     operator()(Plato::OrdinalType sideOrdinal, Plato::OrdinalType nodeOrdinal, Plato::OrdinalType dofOrdinal) const
     {
-        Plato::OrdinalType vertexNumber = m_sides2nodes[sideOrdinal*SpaceDim + nodeOrdinal];
-        Plato::Scalar coord = m_coords[vertexNumber*SpaceDim + dofOrdinal];
+        Plato::OrdinalType vertexNumber = mSides2nodes[sideOrdinal*SpaceDim + nodeOrdinal];
+        Plato::Scalar coord = mCoords[vertexNumber*SpaceDim + dofOrdinal];
         return coord;
     }
 };
@@ -363,12 +363,12 @@ template<Plato::OrdinalType SpaceDim>
 class ComputeGradient
 {
   private:
-    const NodeCoordinate<SpaceDim> m_nodeCoordinate;
+    const NodeCoordinate<SpaceDim> mNodeCoordinate;
 
   public:
     ComputeGradient( 
       NodeCoordinate<SpaceDim> nodeCoordinate) :
-      m_nodeCoordinate(nodeCoordinate) {}
+      mNodeCoordinate(nodeCoordinate) {}
 
     DEVICE_TYPE
     inline
@@ -384,7 +384,7 @@ class ComputeGradient
       {
         for (Plato::OrdinalType d2=0; d2<SpaceDim; d2++)
         {
-          jacobian[d1][d2] = m_nodeCoordinate(cellOrdinal,d2,d1) - m_nodeCoordinate(cellOrdinal,SpaceDim,d1);
+          jacobian[d1][d2] = mNodeCoordinate(cellOrdinal,d2,d1) - mNodeCoordinate(cellOrdinal,SpaceDim,d1);
         } 
       } 
       Plato::Scalar jacobianDet = Omega_h::determinant(jacobian);
@@ -426,12 +426,12 @@ template<Plato::OrdinalType SpaceDim>
 class ComputeVolume
 {
   private:
-    const NodeCoordinate<SpaceDim> m_nodeCoordinate;
+    const NodeCoordinate<SpaceDim> mNodeCoordinate;
 
   public:
     ComputeVolume(
       NodeCoordinate<SpaceDim> nodeCoordinate) :
-      m_nodeCoordinate(nodeCoordinate) {}
+      mNodeCoordinate(nodeCoordinate) {}
 
     DEVICE_TYPE
     inline
@@ -445,7 +445,7 @@ class ComputeVolume
       {
         for (Plato::OrdinalType d2=0; d2<SpaceDim; d2++)
         {
-          jacobian[d1][d2] = m_nodeCoordinate(cellOrdinal,d2,d1) - m_nodeCoordinate(cellOrdinal,SpaceDim,d1);
+          jacobian[d1][d2] = mNodeCoordinate(cellOrdinal,d2,d1) - mNodeCoordinate(cellOrdinal,SpaceDim,d1);
         }
       }
       Plato::Scalar jacobianDet = Omega_h::determinant(jacobian);
@@ -462,36 +462,36 @@ class ComputeGradientMatrix : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
-    static constexpr auto m_numSpaceDim = SpaceDim;
+    using Plato::SimplexMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerCell;
+    static constexpr auto mNumSpaceDim = SpaceDim;
 
   public:
 
     DEVICE_TYPE
     void
-    operator()( const Omega_h::Vector<m_numSpaceDim>* gradients,
-                      Omega_h::Vector<m_numVoigtTerms>* gradientMatrix) const
+    operator()( const Omega_h::Vector<mNumSpaceDim>* gradients,
+                      Omega_h::Vector<mNumVoigtTerms>* gradientMatrix) const
     {
-      for (Plato::OrdinalType iDof=0; iDof<m_numDofsPerCell; iDof++){
-        for (Plato::OrdinalType iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for (Plato::OrdinalType iDof=0; iDof<mNumDofsPerCell; iDof++){
+        for (Plato::OrdinalType iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
           gradientMatrix[iDof][iVoigt] = 0.0;
         }
       }
 
-      for (Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++)
+      for (Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++)
       {
         Plato::OrdinalType voigtTerm=0;
-        for (Plato::OrdinalType iDof=0; iDof<m_numSpaceDim; iDof++){
-          gradientMatrix[m_numSpaceDim*iNode+iDof][voigtTerm] = gradients[iNode][iDof];
+        for (Plato::OrdinalType iDof=0; iDof<mNumSpaceDim; iDof++){
+          gradientMatrix[mNumSpaceDim*iNode+iDof][voigtTerm] = gradients[iNode][iDof];
           voigtTerm++;
         }
     
-        for (Plato::OrdinalType jDof=m_numSpaceDim-1; jDof>=1; jDof--){
+        for (Plato::OrdinalType jDof=mNumSpaceDim-1; jDof>=1; jDof--){
           for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-            gradientMatrix[m_numSpaceDim*iNode+iDof][voigtTerm] = gradients[iNode][jDof];
-            gradientMatrix[m_numSpaceDim*iNode+jDof][voigtTerm] = gradients[iNode][iDof];
+            gradientMatrix[mNumSpaceDim*iNode+iDof][voigtTerm] = gradients[iNode][jDof];
+            gradientMatrix[mNumSpaceDim*iNode+jDof][voigtTerm] = gradients[iNode][iDof];
             voigtTerm++;
           }
         }
@@ -506,43 +506,43 @@ template<Plato::OrdinalType SpaceDim, typename OrdinalLookupType>
 class Assemble
 {
   private:
-    static constexpr auto m_numVoigtTerms   = (SpaceDim == 3) ? 6 : 
+    static constexpr auto mNumVoigtTerms   = (SpaceDim == 3) ? 6 : 
                                              ((SpaceDim == 2) ? 3 :
                                             (((SpaceDim == 1) ? 1 : 0)));
-    static constexpr auto m_numNodesPerCell = SpaceDim+1;
-    static constexpr auto m_numDofsPerCell  = SpaceDim*m_numNodesPerCell;
+    static constexpr auto mNumNodesPerCell = SpaceDim+1;
+    static constexpr auto mNumDofsPerCell  = SpaceDim*mNumNodesPerCell;
     
-    const typename CrsMatrixType::ScalarVector m_matrixEntries;
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const OrdinalLookupType m_entryOrdinalLookup;
-    const Plato::OrdinalType m_entriesLength;
+    const typename CrsMatrixType::ScalarVector mMatrixEntries;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const OrdinalLookupType mEntryOrdinalLookup;
+    const Plato::OrdinalType mEntriesLength;
 
   public:
-    Assemble(const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> aCellStiffness,
+    Assemble(const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> aCellStiffness,
              Teuchos::RCP<Plato::CrsMatrixType> aMatrix,
              OrdinalLookupType aEntryOrdinalLookup ) :
-        m_matrixEntries(aMatrix->entries()),
-        m_cellStiffness(aCellStiffness),
-        m_entryOrdinalLookup(aEntryOrdinalLookup),
-        m_entriesLength(m_matrixEntries.size()) {}
+        mMatrixEntries(aMatrix->entries()),
+        mCellStiffness(aCellStiffness),
+        mEntryOrdinalLookup(aEntryOrdinalLookup),
+        mEntriesLength(mMatrixEntries.size()) {}
 
     DEVICE_TYPE
     inline
     void
     operator()(Plato::OrdinalType cellOrdinal,
-               const Omega_h::Vector<m_numVoigtTerms>* gradientMatrix,
+               const Omega_h::Vector<mNumVoigtTerms>* gradientMatrix,
                const Plato::Scalar& cellVolume) const
     {
-      for (Plato::OrdinalType iDof=0; iDof<m_numDofsPerCell; iDof++)
+      for (Plato::OrdinalType iDof=0; iDof<mNumDofsPerCell; iDof++)
       {
-        for (Plato::OrdinalType jDof=0; jDof<m_numDofsPerCell; jDof++)
+        for (Plato::OrdinalType jDof=0; jDof<mNumDofsPerCell; jDof++)
         {
-            Plato::Scalar integral = (gradientMatrix[iDof] * (m_cellStiffness * gradientMatrix[jDof])) * cellVolume;
+            Plato::Scalar integral = (gradientMatrix[iDof] * (mCellStiffness * gradientMatrix[jDof])) * cellVolume;
           
-            auto entryOrdinal = m_entryOrdinalLookup(cellOrdinal,iDof,jDof);
-            if (entryOrdinal < m_entriesLength)
+            auto entryOrdinal = mEntryOrdinalLookup(cellOrdinal,iDof,jDof);
+            if (entryOrdinal < mEntriesLength)
             {
-                Kokkos::atomic_add(&m_matrixEntries(entryOrdinal), integral);
+                Kokkos::atomic_add(&mMatrixEntries(entryOrdinal), integral);
             }
         }
       }
@@ -556,15 +556,15 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode>
 class BlockMatrixTransposeEntryOrdinal
 {
   private:
-    const typename CrsMatrixType::RowMapVector m_rowMap;
-    const typename CrsMatrixType::OrdinalVector m_columnIndices;
-    const Omega_h::LOs m_cells2nodes;
+    const typename CrsMatrixType::RowMapVector mRowMap;
+    const typename CrsMatrixType::OrdinalVector mColumnIndices;
+    const Omega_h::LOs mCells2nodes;
 
   public:
     BlockMatrixTransposeEntryOrdinal(Teuchos::RCP<Plato::CrsMatrixType> matrix, Omega_h::Mesh* mesh ) :
-      m_rowMap(matrix->rowMap()),
-      m_columnIndices(matrix->columnIndices()),
-      m_cells2nodes(mesh->ask_elem_verts()) { }
+      mRowMap(matrix->rowMap()),
+      mColumnIndices(matrix->columnIndices()),
+      mCells2nodes(mesh->ask_elem_verts()) { }
 
     DEVICE_TYPE
     inline
@@ -575,13 +575,13 @@ class BlockMatrixTransposeEntryOrdinal
         auto iDof  = icellDof % DofsPerNode;
         auto jNode = jcellDof / DofsPerNode;
         auto jDof  = jcellDof % DofsPerNode;
-        Plato::OrdinalType iLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
-        Plato::OrdinalType jLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-        Plato::RowMapEntryType rowStart = m_rowMap(jLocalOrdinal);
-        Plato::RowMapEntryType rowEnd   = m_rowMap(jLocalOrdinal+1);
+        Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
+        Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
+        Plato::RowMapEntryType rowStart = mRowMap(jLocalOrdinal);
+        Plato::RowMapEntryType rowEnd   = mRowMap(jLocalOrdinal+1);
         for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
         {
-          if (m_columnIndices(entryOrdinal) == iLocalOrdinal)
+          if (mColumnIndices(entryOrdinal) == iLocalOrdinal)
           {
             return entryOrdinal*DofsPerNode*DofsPerNode+jDof*DofsPerNode+iDof;
           }
@@ -595,15 +595,15 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode_I, Plato::O
 class BlockMatrixEntryOrdinal
 {
   private:
-    const typename CrsMatrixType::RowMapVector m_rowMap;
-    const typename CrsMatrixType::OrdinalVector m_columnIndices;
-    const Omega_h::LOs m_cells2nodes;
+    const typename CrsMatrixType::RowMapVector mRowMap;
+    const typename CrsMatrixType::OrdinalVector mColumnIndices;
+    const Omega_h::LOs mCells2nodes;
     
   public:
     BlockMatrixEntryOrdinal(Teuchos::RCP<Plato::CrsMatrixType> matrix, Omega_h::Mesh* mesh ) :
-      m_rowMap(matrix->rowMap()), 
-      m_columnIndices(matrix->columnIndices()), 
-      m_cells2nodes(mesh->ask_elem_verts()) { }
+      mRowMap(matrix->rowMap()), 
+      mColumnIndices(matrix->columnIndices()), 
+      mCells2nodes(mesh->ask_elem_verts()) { }
 
     DEVICE_TYPE
     inline
@@ -614,13 +614,13 @@ class BlockMatrixEntryOrdinal
         auto iDof  = icellDof % DofsPerNode_I;
         auto jNode = jcellDof / DofsPerNode_J;
         auto jDof  = jcellDof % DofsPerNode_J;
-        Plato::OrdinalType iLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
-        Plato::OrdinalType jLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-        Plato::RowMapEntryType rowStart = m_rowMap(iLocalOrdinal);
-        Plato::RowMapEntryType rowEnd   = m_rowMap(iLocalOrdinal+1);
+        Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
+        Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
+        Plato::RowMapEntryType rowStart = mRowMap(iLocalOrdinal);
+        Plato::RowMapEntryType rowEnd   = mRowMap(iLocalOrdinal+1);
         for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
         {
-          if (m_columnIndices(entryOrdinal) == jLocalOrdinal)
+          if (mColumnIndices(entryOrdinal) == jLocalOrdinal)
           {
             return entryOrdinal*DofsPerNode_I*DofsPerNode_J+iDof*DofsPerNode_J+jDof;
           }
@@ -635,16 +635,16 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType DofsPerNode, Plato::Ord
 class MatrixEntryOrdinal
 {
   private:
-    const typename CrsMatrixType::RowMapVector m_rowMap;
-    const typename CrsMatrixType::OrdinalVector m_columnIndices;
-    const Omega_h::LOs m_cells2nodes;
+    const typename CrsMatrixType::RowMapVector mRowMap;
+    const typename CrsMatrixType::OrdinalVector mColumnIndices;
+    const Omega_h::LOs mCells2nodes;
     
   public:
     MatrixEntryOrdinal(Teuchos::RCP<Plato::CrsMatrixType> aMatrix,
                        Omega_h::Mesh* aMesh ) :
-      m_rowMap(aMatrix->rowMap()),
-      m_columnIndices(aMatrix->columnIndices()),
-      m_cells2nodes(aMesh->ask_elem_verts()) { }
+      mRowMap(aMatrix->rowMap()),
+      mColumnIndices(aMatrix->columnIndices()),
+      mCells2nodes(aMesh->ask_elem_verts()) { }
 
     DEVICE_TYPE
     inline
@@ -655,13 +655,13 @@ class MatrixEntryOrdinal
       auto iDof  = icellDof % DofsPerNode;
       auto jNode = jcellDof / DofsPerNode;
       auto jDof  = jcellDof % DofsPerNode;
-      Plato::OrdinalType iLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
-      Plato::OrdinalType jLocalOrdinal = m_cells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-      Plato::RowMapEntryType rowStart = m_rowMap(DofsPerNode*iLocalOrdinal+iDof  );
-      Plato::RowMapEntryType rowEnd   = m_rowMap(DofsPerNode*iLocalOrdinal+iDof+1);
+      Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
+      Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
+      Plato::RowMapEntryType rowStart = mRowMap(DofsPerNode*iLocalOrdinal+iDof  );
+      Plato::RowMapEntryType rowEnd   = mRowMap(DofsPerNode*iLocalOrdinal+iDof+1);
       for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
       {
-        if (m_columnIndices(entryOrdinal) == DofsPerNode*jLocalOrdinal+jDof)
+        if (mColumnIndices(entryOrdinal) == DofsPerNode*jLocalOrdinal+jDof)
         {
           return entryOrdinal;
         }

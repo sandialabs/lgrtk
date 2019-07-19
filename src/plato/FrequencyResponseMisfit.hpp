@@ -38,9 +38,9 @@ class FrequencyResponseMisfit :
 {
 private:
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerCell;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerNode;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numNodesPerCell;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerCell;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerNode;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumNodesPerCell;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -50,7 +50,7 @@ private:
     Plato::ScalarMultiVector mExpStates;
     std::vector<Plato::Scalar> mTimeSteps;
 
-    Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, m_numDofsPerNode> mStateEntryOrdinal;
+    Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, mNumDofsPerNode> mStateEntryOrdinal;
 
 public:
     /*************************************************************************/
@@ -61,7 +61,7 @@ public:
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
             mExpStates(),
             mTimeSteps(),
-            mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, m_numDofsPerNode>(&aMesh))
+            mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, mNumDofsPerNode>(&aMesh))
     /*************************************************************************/
     {
         this->readTimeSteps(aParamList);
@@ -77,7 +77,7 @@ public:
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Frequency Response Misfit"),
             mExpStates(aExpStates),
             mTimeSteps(aTimeSteps),
-            mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, m_numDofsPerNode>(&aMesh))
+            mStateEntryOrdinal(Plato::VectorEntryOrdinal<EvaluationType::SpatialDim, mNumDofsPerNode>(&aMesh))
     /*************************************************************************/
     {
     }
@@ -107,8 +107,8 @@ public:
         // Get experimental measurements for this frequency and construct its workset
         auto tNumCells = aStates.extent(0);
         auto tMyExpStates = Kokkos::subview(mExpStates, tIndex, Kokkos::ALL());
-        Plato::ScalarMultiVector tExpStatesWorkSet("ExpStatesWorkSet", tNumCells, m_numDofsPerCell);
-        Plato::workset_state_scalar_scalar<m_numDofsPerNode, m_numNodesPerCell>
+        Plato::ScalarMultiVector tExpStatesWorkSet("ExpStatesWorkSet", tNumCells, mNumDofsPerCell);
+        Plato::workset_state_scalar_scalar<mNumDofsPerNode, mNumNodesPerCell>
             (tNumCells, mStateEntryOrdinal, tMyExpStates, tExpStatesWorkSet);
         assert(tExpStatesWorkSet.size() == aStates.size());
 
@@ -193,13 +193,13 @@ public:
         }
         const Plato::OrdinalType tNumVertices = aMesh.nverts();
         const Plato::OrdinalType tNumTimeSteps = mTimeSteps.size();
-        const Plato::OrdinalType tNumStates = tNumVertices * m_numDofsPerNode;
+        const Plato::OrdinalType tNumStates = tNumVertices * mNumDofsPerNode;
         mExpStates = Plato::ScalarMultiVector("ExpStates", tNumTimeSteps, tNumStates);
 
         for(Plato::OrdinalType tFieldIndex = 0; tFieldIndex < tNumInputExpFields; tFieldIndex++)
         {
             auto tExpStates = mExpStates;
-            auto tNumDofsPerNode = m_numDofsPerNode;
+            auto tNumDofsPerNode = mNumDofsPerNode;
             auto tMyName = aNames[tFieldIndex];
             auto tMyDof = aIndices[tFieldIndex];
             // TODO: FINISH IMPLEMENTATION, I NEED TO MAKE SURE THAT I AM READING EACH TIME STEPS

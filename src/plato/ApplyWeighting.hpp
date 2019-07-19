@@ -18,14 +18,14 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumTerms, typename Pena
 class ApplyWeighting : public Plato::Simplex<SpaceDim>
 {
   private:
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
-    PenaltyFunction m_penaltyFunction;
+    PenaltyFunction mPenaltyFunction;
 
   public:
 
     ApplyWeighting(PenaltyFunction penaltyFunction) :
-      m_penaltyFunction(penaltyFunction) {}
+      mPenaltyFunction(penaltyFunction) {}
 
     template<typename InputScalarType, typename WeightScalarType>
     DEVICE_TYPE inline void
@@ -36,12 +36,12 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
       // apply weighting
       //
       WeightScalarType cellDensity = 0.0;
-      for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+      for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
         cellDensity += rho(cellOrdinal, iNode);
       }
-      cellDensity = (cellDensity/m_numNodesPerCell);
+      cellDensity = (cellDensity/mNumNodesPerCell);
       for( Plato::OrdinalType iTerm=0; iTerm<NumTerms; iTerm++){
-        inputOutput(cellOrdinal,iTerm) *= m_penaltyFunction(cellDensity);
+        inputOutput(cellOrdinal,iTerm) *= mPenaltyFunction(cellDensity);
       }
     }
     template<typename InputScalarType,
@@ -56,12 +56,12 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
       // apply weighting
       //
       WeightScalarType cellDensity = 0.0;
-      for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+      for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
         cellDensity += rho(cellOrdinal, iNode);
       }
-      cellDensity = (cellDensity/m_numNodesPerCell);
+      cellDensity = (cellDensity/mNumNodesPerCell);
       for( Plato::OrdinalType iTerm=0; iTerm<NumTerms; iTerm++){
-        output(cellOrdinal,iTerm) = m_penaltyFunction(cellDensity)*input(cellOrdinal, iTerm);
+        output(cellOrdinal,iTerm) = mPenaltyFunction(cellDensity)*input(cellOrdinal, iTerm);
       }
     }
     template<typename ResultScalarType, typename WeightScalarType>
@@ -73,11 +73,11 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
       // apply weighting
       //
       WeightScalarType cellDensity = 0.0;
-      for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+      for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
         cellDensity += rho(cellOrdinal, iNode);
       }
-      cellDensity = (cellDensity/m_numNodesPerCell);
-      result(cellOrdinal) *= m_penaltyFunction(cellDensity);
+      cellDensity = (cellDensity/mNumNodesPerCell);
+      result(cellOrdinal) *= mPenaltyFunction(cellDensity);
     }
     template<typename InputScalarType, 
              typename OutputScalarType, 
@@ -91,11 +91,11 @@ class ApplyWeighting : public Plato::Simplex<SpaceDim>
       // apply weighting
       //
       WeightScalarType cellDensity = 0.0;
-      for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+      for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
         cellDensity += rho(cellOrdinal, iNode);
       }
-      cellDensity = (cellDensity/m_numNodesPerCell);
-      output(cellOrdinal) = m_penaltyFunction(cellDensity)*input(cellOrdinal);
+      cellDensity = (cellDensity/mNumNodesPerCell);
+      output(cellOrdinal) = mPenaltyFunction(cellDensity)*input(cellOrdinal);
     }
 };
 // class ApplyWeighting

@@ -39,11 +39,11 @@ class DynamicCompliance:
         public Plato::AbstractScalarFunction<EvaluationType>
 {
 private:
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numVoigtTerms;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumVoigtTerms;
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerNode;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerCell;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numNodesPerCell;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerNode;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerCell;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumNodesPerCell;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -58,7 +58,7 @@ private:
     Plato::ApplyPenalty<PenaltyFuncType> mApplyPenalty;
     Plato::ApplyProjection<ProjectionFuncType> mApplyProjection;
 
-    Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> mCellStiffness;
+    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffness;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
 public:
@@ -125,10 +125,10 @@ public:
         typename Plato::fad_type_t<Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
         // Elastic forces functors
-        Plato::ComplexElasticEnergy<m_numVoigtTerms> tComputeElasticEnergy;
+        Plato::ComplexElasticEnergy<mNumVoigtTerms> tComputeElasticEnergy;
         Plato::ComputeGradientWorkset<EvaluationType::SpatialDim> tComputeGradientWorkset;
-        Plato::ComplexStrain<EvaluationType::SpatialDim, m_numDofsPerNode> tComputeVoigtStrain;
-        Plato::ComplexLinearStress<EvaluationType::SpatialDim, m_numVoigtTerms> tComputeVoigtStress(mCellStiffness);
+        Plato::ComplexStrain<EvaluationType::SpatialDim, mNumDofsPerNode> tComputeVoigtStrain;
+        Plato::ComplexLinearStress<EvaluationType::SpatialDim, mNumVoigtTerms> tComputeVoigtStress(mCellStiffness);
 
         // Inertial forces functors
         Plato::StateValues tComputeStateValues;
@@ -137,14 +137,14 @@ public:
         // Elastic forces containers
         auto tNumCells = aControl.extent(0);
         Plato::ScalarVectorT<ConfigScalarType> tCellVolume("CellWeight", tNumCells);
-        Plato::ScalarArray3DT<StrainScalarType> tCellStrain("CellStrain", tNumCells, mComplexSpaceDim, m_numVoigtTerms);
-        Plato::ScalarArray3DT<ResultScalarType> tCellStress("CellStress", tNumCells, mComplexSpaceDim, m_numVoigtTerms);
-        Plato::ScalarArray3DT<ConfigScalarType> tCellGradient("Gradient", tNumCells, m_numNodesPerCell, EvaluationType::SpatialDim);
+        Plato::ScalarArray3DT<StrainScalarType> tCellStrain("CellStrain", tNumCells, mComplexSpaceDim, mNumVoigtTerms);
+        Plato::ScalarArray3DT<ResultScalarType> tCellStress("CellStress", tNumCells, mComplexSpaceDim, mNumVoigtTerms);
+        Plato::ScalarArray3DT<ConfigScalarType> tCellGradient("Gradient", tNumCells, mNumNodesPerCell, EvaluationType::SpatialDim);
 
         // Inertial forces containers
         Plato::ScalarVectorT<ResultScalarType> tElasticEnergy("ElasticEnergy", tNumCells);
         Plato::ScalarVectorT<ResultScalarType> tInertialEnergy("InertialEnergy", tNumCells);
-        Plato::ScalarMultiVectorT<StateScalarType> tStateValues("StateValues", tNumCells, m_numDofsPerNode);
+        Plato::ScalarMultiVectorT<StateScalarType> tStateValues("StateValues", tNumCells, mNumDofsPerNode);
 
         auto & tApplyPenalty = mApplyPenalty;
         auto & tApplyProjection = mApplyProjection;

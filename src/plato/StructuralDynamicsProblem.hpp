@@ -38,8 +38,8 @@ template<typename SimplexPhysics>
 class StructuralDynamicsProblem: public AbstractProblem
 {
 private:
-    static constexpr Plato::OrdinalType mSpatialDim = SimplexPhysics::m_numSpatialDims;
-    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    static constexpr Plato::OrdinalType mSpatialDim = SimplexPhysics::mNumSpatialDims;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     Plato::OrdinalType mNumStates;
     Plato::OrdinalType mNumConfig;

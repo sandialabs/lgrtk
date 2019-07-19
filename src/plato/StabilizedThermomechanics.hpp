@@ -133,8 +133,8 @@ public:
     using SimplexT        = SimplexStabilizedThermomechanics<SpaceDimParam>;
 
     using ProjectorT = typename Plato::Projection<SpaceDimParam,
-                                                  SimplexT::m_numDofsPerNode,
-                                                  SimplexT::m_PDofOffset,
+                                                  SimplexT::mNumDofsPerNode,
+                                                  SimplexT::mPDofOffset,
                                                   /* numProjectionDofs=*/ 1>;
 
 

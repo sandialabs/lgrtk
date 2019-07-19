@@ -19,9 +19,9 @@ class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerNode;
 
   public:
 
@@ -38,17 +38,17 @@ class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
       Plato::OrdinalType voigtTerm=0;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         strain(cellOrdinal,voigtTerm)=0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+iDof;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+iDof;
           strain(cellOrdinal,voigtTerm) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
         voigtTerm++;
       }
       for (Plato::OrdinalType jDof=SpaceDim-1; jDof>=1; jDof--){
         for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-          for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-            Plato::OrdinalType iLocalOrdinal = iNode*m_numDofsPerNode+iDof;
-            Plato::OrdinalType jLocalOrdinal = iNode*m_numDofsPerNode+jDof;
+          for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+            Plato::OrdinalType iLocalOrdinal = iNode*mNumDofsPerNode+iDof;
+            Plato::OrdinalType jLocalOrdinal = iNode*mNumDofsPerNode+jDof;
             strain(cellOrdinal,voigtTerm) +=(state(cellOrdinal,jLocalOrdinal)*gradient(cellOrdinal,iNode,iDof)
                                             +state(cellOrdinal,iLocalOrdinal)*gradient(cellOrdinal,iNode,jDof));
           }
@@ -61,8 +61,8 @@ class TMKinematics : public Plato::SimplexThermomechanics<SpaceDim>
       Plato::OrdinalType dofOffset = SpaceDim;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         tgrad(cellOrdinal,iDof) = 0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+dofOffset;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+dofOffset;
           tgrad(cellOrdinal,iDof) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
       }
@@ -82,11 +82,11 @@ class StabilizedTMKinematics : public Plato::SimplexStabilizedThermomechanics<Sp
 {
   private:
 
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_PDofOffset;
-    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::m_TDofOffset;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mPDofOffset;
+    using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mTDofOffset;
 
   public:
 
@@ -104,17 +104,17 @@ class StabilizedTMKinematics : public Plato::SimplexStabilizedThermomechanics<Sp
       Plato::OrdinalType voigtTerm=0;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         strain(cellOrdinal,voigtTerm)=0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+iDof;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+iDof;
           strain(cellOrdinal,voigtTerm) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
         voigtTerm++;
       }
       for (Plato::OrdinalType jDof=SpaceDim-1; jDof>=1; jDof--){
         for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-          for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-            Plato::OrdinalType iLocalOrdinal = iNode*m_numDofsPerNode+iDof;
-            Plato::OrdinalType jLocalOrdinal = iNode*m_numDofsPerNode+jDof;
+          for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+            Plato::OrdinalType iLocalOrdinal = iNode*mNumDofsPerNode+iDof;
+            Plato::OrdinalType jLocalOrdinal = iNode*mNumDofsPerNode+jDof;
             strain(cellOrdinal,voigtTerm) +=(state(cellOrdinal,jLocalOrdinal)*gradient(cellOrdinal,iNode,iDof)
                                             +state(cellOrdinal,iLocalOrdinal)*gradient(cellOrdinal,iNode,jDof));
           }
@@ -126,8 +126,8 @@ class StabilizedTMKinematics : public Plato::SimplexStabilizedThermomechanics<Sp
       //
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         pgrad(cellOrdinal,iDof) = 0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+m_PDofOffset;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+mPDofOffset;
           pgrad(cellOrdinal,iDof) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
       }
@@ -136,8 +136,8 @@ class StabilizedTMKinematics : public Plato::SimplexStabilizedThermomechanics<Sp
       //
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
         tgrad(cellOrdinal,iDof) = 0.0;
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
-          Plato::OrdinalType localOrdinal = iNode*m_numDofsPerNode+m_TDofOffset;
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
+          Plato::OrdinalType localOrdinal = iNode*mNumDofsPerNode+mTDofOffset;
           tgrad(cellOrdinal,iDof) += state(cellOrdinal,localOrdinal)*gradient(cellOrdinal,iNode,iDof);
         }
       }

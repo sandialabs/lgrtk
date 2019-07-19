@@ -17,7 +17,7 @@ class ProjectToNode : public Plato::Simplex<SpaceDim>
 {
   private:
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
 
   public:
     /******************************************************************************/
@@ -31,7 +31,7 @@ class ProjectToNode : public Plato::Simplex<SpaceDim>
     /******************************************************************************/
     {  
         const Plato::OrdinalType tNumDofs = aStateValues.extent(1);
-        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < m_numNodesPerCell; tNodeIndex++)
+        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
         {
             for(Plato::OrdinalType tDofIndex = 0; tDofIndex < tNumDofs; tDofIndex++)
             {
@@ -53,7 +53,7 @@ class ProjectToNode : public Plato::Simplex<SpaceDim>
     /******************************************************************************/
     {  
         const Plato::OrdinalType tNumDofs = aStateValues.extent(1);
-        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < m_numNodesPerCell; tNodeIndex++)
+        for(Plato::OrdinalType tNodeIndex = 0; tNodeIndex < mNumNodesPerCell; tNodeIndex++)
         {
             Plato::OrdinalType tMyDofIndex = (NumDofsPerNode * tNodeIndex) + DofOffset;
             aResult(aCellOrdinal, tMyDofIndex) += scale * tBasisFunctions(tNodeIndex)

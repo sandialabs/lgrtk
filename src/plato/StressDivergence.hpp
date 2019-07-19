@@ -17,9 +17,9 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
 
-    Plato::OrdinalType m_voigt[SpaceDim][SpaceDim];
+    Plato::OrdinalType mVoigt[SpaceDim][SpaceDim];
 
   public:
 
@@ -27,12 +27,12 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
     {
       Plato::OrdinalType voigtTerm=0;
       for(Plato::OrdinalType iDof=0; iDof<SpaceDim; iDof++){
-        m_voigt[iDof][iDof] = voigtTerm++;
+        mVoigt[iDof][iDof] = voigtTerm++;
       }
       for (Plato::OrdinalType jDof=SpaceDim-1; jDof>=1; jDof--){
         for (Plato::OrdinalType iDof=jDof-1; iDof>=0; iDof--){
-          m_voigt[iDof][jDof] = voigtTerm;
-          m_voigt[jDof][iDof] = voigtTerm++;
+          mVoigt[iDof][jDof] = voigtTerm;
+          mVoigt[jDof][iDof] = voigtTerm++;
         }
       }
     }
@@ -51,11 +51,11 @@ class StressDivergence : public Plato::SimplexMechanics<SpaceDim>
                 Plato::Scalar scale = 1.0 ) const {
 
       for(Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
           Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+iDim+DofOffset;
           for(Plato::OrdinalType jDim=0; jDim<SpaceDim; jDim++){
             forcing(cellOrdinal,localOrdinal) += 
-              scale*cellVolume(cellOrdinal)*stress(cellOrdinal,m_voigt[iDim][jDim])*gradient(cellOrdinal,iNode,jDim);
+              scale*cellVolume(cellOrdinal)*stress(cellOrdinal,mVoigt[iDim][jDim])*gradient(cellOrdinal,iNode,jDim);
           }
         }
       }

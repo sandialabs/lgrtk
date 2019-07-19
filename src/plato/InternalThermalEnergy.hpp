@@ -34,23 +34,23 @@ class InternalThermalEnergy :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
 
-    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell */
-    using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell; /*!< number of degrees of freedom per cell */
+    using Plato::Simplex<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell */
+    using Plato::SimplexThermal<mSpaceDim>::mNumDofsPerCell; /*!< number of degrees of freedom per cell */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Analyze database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< PLATO Analyze database */
 
     using StateScalarType   = typename EvaluationType::StateScalarType; /*!< automatic differentiation type for states */
     using ControlScalarType = typename EvaluationType::ControlScalarType; /*!< automatic differentiation type for controls */
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType; /*!< automatic differentiation type for configuration */
     using ResultScalarType  = typename EvaluationType::ResultScalarType; /*!< automatic differentiation type for results */
 
-    Omega_h::Matrix< mSpaceDim, mSpaceDim> m_cellConductivity; /*!< conductivity coefficients */
+    Omega_h::Matrix< mSpaceDim, mSpaceDim> mCellConductivity; /*!< conductivity coefficients */
     
-    Plato::Scalar m_quadratureWeight; /*!< integration rule weight */
+    Plato::Scalar mQuadratureWeight; /*!< integration rule weight */
 
-    IndicatorFunctionType m_indicatorFunction; /*!< penalty function */
-    Plato::ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> m_applyWeighting; /*!< applies penalty function */
+    IndicatorFunctionType mIndicatorFunction; /*!< penalty function */
+    Plato::ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> mApplyWeighting; /*!< applies penalty function */
 
   public:
     /******************************************************************************//**
@@ -67,17 +67,17 @@ class InternalThermalEnergy :
                           Teuchos::ParameterList& aPenaltyParams,
                           std::string& aFunctionName) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction)
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction)
     {
       Plato::ThermalModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
       auto tMaterialModel = tMaterialModelFactory.create();
-      m_cellConductivity = tMaterialModel->getConductivityMatrix();
+      mCellConductivity = tMaterialModel->getConductivityMatrix();
 
-      m_quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
       for (Plato::OrdinalType tDim=2; tDim<=mSpaceDim; tDim++)
       { 
-        m_quadratureWeight /= Plato::Scalar(tDim);
+        mQuadratureWeight /= Plato::Scalar(tDim);
       }
     
     }
@@ -101,7 +101,7 @@ class InternalThermalEnergy :
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
       Plato::ScalarGrad<mSpaceDim>                    tComputeScalarGrad;
       Plato::ScalarProduct<mSpaceDim>                 tComputeScalarProduct;
-      Plato::ThermalFlux<mSpaceDim>                   tComputeThermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<mSpaceDim>                   tComputeThermalFlux(mCellConductivity);
 
       using GradScalarType =
         typename Plato::fad_type_t<Plato::SimplexThermal<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
@@ -113,13 +113,13 @@ class InternalThermalEnergy :
         tThermalGrad("temperature gradient",tNumCells,mSpaceDim);
 
       Kokkos::View<ConfigScalarType***, Kokkos::LayoutRight, Plato::MemSpace>
-        tGradient("gradient",tNumCells,m_numNodesPerCell,mSpaceDim);
+        tGradient("gradient",tNumCells,mNumNodesPerCell,mSpaceDim);
 
       Kokkos::View<ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
         tThermalFlux("thermal flux",tNumCells,mSpaceDim);
 
-      auto tQuadratureWeight = m_quadratureWeight;
-      auto tApplyWeighting  = m_applyWeighting;
+      auto tQuadratureWeight = mQuadratureWeight;
+      auto tApplyWeighting  = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
       {
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
@@ -161,11 +161,11 @@ class InternalThermalEnergyInc :
   private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<mSpaceDim>::m_numDofsPerCell;
+    using Plato::Simplex<mSpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<mSpaceDim>::mNumDofsPerCell;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mDataMap;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
     using PrevStateScalarType = typename EvaluationType::PrevStateScalarType;
@@ -173,12 +173,12 @@ class InternalThermalEnergyInc :
     using ConfigScalarType    = typename EvaluationType::ConfigScalarType;
     using ResultScalarType    = typename EvaluationType::ResultScalarType;
 
-    Omega_h::Matrix< mSpaceDim, mSpaceDim> m_cellConductivity;
+    Omega_h::Matrix< mSpaceDim, mSpaceDim> mCellConductivity;
     
-    Plato::Scalar m_quadratureWeight;
+    Plato::Scalar mQuadratureWeight;
 
-    IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> m_applyWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    ApplyWeighting<mSpaceDim,mSpaceDim,IndicatorFunctionType> mApplyWeighting;
 
   public:
     /**************************************************************************/
@@ -189,18 +189,18 @@ class InternalThermalEnergyInc :
                              Teuchos::ParameterList& aPenaltyParams,
                              std::string& aFunctionName) :
             Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction)
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction)
     /**************************************************************************/
     {
       Plato::ThermalModelFactory<mSpaceDim> mmfactory(aProblemParams);
       auto materialModel = mmfactory.create();
-      m_cellConductivity = materialModel->getConductivityMatrix();
+      mCellConductivity = materialModel->getConductivityMatrix();
 
-      m_quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
       for (int d=2; d<=mSpaceDim; d++)
       { 
-        m_quadratureWeight /= Plato::Scalar(d);
+        mQuadratureWeight /= Plato::Scalar(d);
       }
     
     }
@@ -218,7 +218,7 @@ class InternalThermalEnergyInc :
 
       Plato::ComputeGradientWorkset<mSpaceDim> computeGradient;
       Plato::ScalarGrad<mSpaceDim>                    scalarGrad;
-      Plato::ThermalFlux<mSpaceDim>                   thermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<mSpaceDim>                   thermalFlux(mCellConductivity);
       Plato::ScalarProduct<mSpaceDim>                 scalarProduct;
 
       using GradScalarType =
@@ -231,13 +231,13 @@ class InternalThermalEnergyInc :
         tgrad("temperature gradient",numCells,mSpaceDim);
 
       Kokkos::View<ConfigScalarType***, Kokkos::LayoutRight, Plato::MemSpace>
-        gradient("gradient",numCells,m_numNodesPerCell,mSpaceDim);
+        gradient("gradient",numCells,mNumNodesPerCell,mSpaceDim);
 
       Kokkos::View<ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
         tflux("thermal flux",numCells,mSpaceDim);
 
-      auto quadratureWeight = m_quadratureWeight;
-      auto applyWeighting  = m_applyWeighting;
+      auto quadratureWeight = mQuadratureWeight;
+      auto applyWeighting  = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(const int & aCellOrdinal)
       {
         computeGradient(aCellOrdinal, gradient, aConfig, cellVolume);

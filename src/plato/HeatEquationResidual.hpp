@@ -38,12 +38,12 @@ class HeatEquationResidual :
   private:
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerNode;
 
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
@@ -54,16 +54,16 @@ class HeatEquationResidual :
 
 
 
-    Omega_h::Matrix< SpaceDim, SpaceDim> m_cellConductivity;
-    Plato::Scalar m_cellDensity;
-    Plato::Scalar m_cellSpecificHeat;
+    Omega_h::Matrix< SpaceDim, SpaceDim> mCellConductivity;
+    Plato::Scalar mCellDensity;
+    Plato::Scalar mCellSpecificHeat;
     
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyFluxWeighting;
-    Plato::ApplyWeighting<SpaceDim,m_numDofsPerNode,IndicatorFunctionType> m_applyMassWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> mApplyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim,mNumDofsPerNode,IndicatorFunctionType> mApplyMassWeighting;
 
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> mCubatureRule;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>> mBoundaryLoads;
 
   public:
     /**************************************************************************/
@@ -74,25 +74,25 @@ class HeatEquationResidual :
       Teuchos::ParameterList& problemParams,
       Teuchos::ParameterList& penaltyParams) :
      AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, {"Temperature"}),
-     m_indicatorFunction(penaltyParams),
-     m_applyFluxWeighting(m_indicatorFunction),
-     m_applyMassWeighting(m_indicatorFunction),
-     m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
-     m_boundaryLoads(nullptr)
+     mIndicatorFunction(penaltyParams),
+     mApplyFluxWeighting(mIndicatorFunction),
+     mApplyMassWeighting(mIndicatorFunction),
+     mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
+     mBoundaryLoads(nullptr)
     /**************************************************************************/
     {
       Plato::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
       auto materialModel = mmfactory.create();
-      m_cellConductivity = materialModel->getConductivityMatrix();
-      m_cellDensity      = materialModel->getMassDensity();
-      m_cellSpecificHeat = materialModel->getSpecificHeat();
+      mCellConductivity = materialModel->getConductivityMatrix();
+      mCellDensity      = materialModel->getMassDensity();
+      mCellSpecificHeat = materialModel->getSpecificHeat();
 
 
       // parse boundary Conditions
       // 
       if(problemParams.isSublist("Natural Boundary Conditions"))
       {
-          m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
+          mBoundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
       }
     
     }
@@ -122,7 +122,7 @@ class HeatEquationResidual :
       Plato::ScalarMultiVectorT<GradScalarType> tGrad("temperature gradient at step k",numCells,SpaceDim);
       Plato::ScalarMultiVectorT<PrevGradScalarType> tPrevGrad("temperature gradient at step k-1",numCells,SpaceDim);
 
-      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient",numCells,m_numNodesPerCell,SpaceDim);
+      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient",numCells,mNumNodesPerCell,SpaceDim);
 
       Plato::ScalarMultiVectorT<ResultScalarType> tFlux("thermal flux at step k",numCells,SpaceDim);
       Plato::ScalarMultiVectorT<ResultScalarType> tPrevFlux("thermal flux at step k-1",numCells,SpaceDim);
@@ -137,18 +137,18 @@ class HeatEquationResidual :
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
 
       Plato::ScalarGrad<SpaceDim>            scalarGrad;
-      Plato::ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<SpaceDim>           thermalFlux(mCellConductivity);
       Plato::FluxDivergence<SpaceDim>        fluxDivergence;
 
-      Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode> interpolateFromNodal;
-      Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
-      Plato::ProjectToNode<SpaceDim, m_numDofsPerNode> projectThermalContent;
+      Plato::InterpolateFromNodal<SpaceDim, mNumDofsPerNode> interpolateFromNodal;
+      Plato::ThermalContent thermalContent(mCellDensity, mCellSpecificHeat);
+      Plato::ProjectToNode<SpaceDim, mNumDofsPerNode> projectThermalContent;
       
-      auto basisFunctions = m_cubatureRule->getBasisFunctions();
+      auto basisFunctions = mCubatureRule->getBasisFunctions();
     
-      auto& applyFluxWeighting  = m_applyFluxWeighting;
-      auto& applyMassWeighting  = m_applyMassWeighting;
-      auto quadratureWeight = m_cubatureRule->getCubWeight();
+      auto& applyFluxWeighting  = mApplyFluxWeighting;
+      auto& applyMassWeighting  = mApplyMassWeighting;
+      auto quadratureWeight = mCubatureRule->getCubWeight();
       Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
     
@@ -200,10 +200,10 @@ class HeatEquationResidual :
 
       },"flux divergence");
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult, -aTimeStep/2.0 );
-          m_boundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
       }
     }
 };

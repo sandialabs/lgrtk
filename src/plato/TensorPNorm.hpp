@@ -57,23 +57,23 @@ template<Plato::OrdinalType VoigtLength>
 class WeightedNormFunctor
 {
 
-    Plato::Scalar m_scalarProductWeight;
-    Plato::Scalar m_referenceWeight;
+    Plato::Scalar mScalarProductWeight;
+    Plato::Scalar mReferenceWeight;
 
 public:
 
     WeightedNormFunctor(Teuchos::ParameterList& params) :
-            m_scalarProductWeight(1.0),
-            m_referenceWeight(1.0)
+            mScalarProductWeight(1.0),
+            mReferenceWeight(1.0)
     {
         auto p = params.sublist("Normalize").sublist("Scalar");
         if(p.isType<double>("Reference Weight"))
         {
-            m_referenceWeight = p.get<double>("Reference Weight");
+            mReferenceWeight = p.get<double>("Reference Weight");
         }
         if(p.isType<double>("Scalar Product Weight"))
         {
-            m_scalarProductWeight = p.get<double>("Scalar Product Weight");
+            mScalarProductWeight = p.get<double>("Scalar Product Weight");
         }
     }
 
@@ -92,8 +92,8 @@ public:
         {
             pnorm(cellOrdinal) += voigtTensor(cellOrdinal, iVoigt) * voigtTensor(cellOrdinal, iVoigt);
         }
-        pnorm(cellOrdinal) = sqrt(m_scalarProductWeight * pnorm(cellOrdinal));
-        pnorm(cellOrdinal) /= m_referenceWeight;
+        pnorm(cellOrdinal) = sqrt(mScalarProductWeight * pnorm(cellOrdinal));
+        pnorm(cellOrdinal) /= mReferenceWeight;
 
         pnorm(cellOrdinal) = pow(pnorm(cellOrdinal), p);
         pnorm(cellOrdinal) *= cellVolume(cellOrdinal);
@@ -111,28 +111,28 @@ public:
 template<Plato::OrdinalType VoigtLength>
 class BarlatNormFunctor
 {
-    Plato::OrdinalType m_barlatExponent;
-    Plato::Scalar m_referenceWeight;
+    Plato::OrdinalType mBarlatExponent;
+    Plato::Scalar mReferenceWeight;
 
     static constexpr Plato::OrdinalType barlatLength = 6;
-    Plato::Scalar m_cp[barlatLength][barlatLength];
-    Plato::Scalar m_cpp[barlatLength][barlatLength];
+    Plato::Scalar mCp[barlatLength][barlatLength];
+    Plato::Scalar mCpp[barlatLength][barlatLength];
 
 public:
 
     BarlatNormFunctor(Teuchos::ParameterList& params) :
-            m_barlatExponent(6),
-            m_referenceWeight(1.0)
+            mBarlatExponent(6),
+            mReferenceWeight(1.0)
     {
 
         auto p = params.sublist("Normalize").sublist("Barlat");
         if(p.isType < Plato::OrdinalType > ("Barlat Exponent"))
         {
-            m_barlatExponent = p.get<double>("Barlat Exponent");
+            mBarlatExponent = p.get<double>("Barlat Exponent");
         }
         if(p.isType<double>("Reference Weight"))
         {
-            m_referenceWeight = p.get<double>("Reference Weight");
+            mReferenceWeight = p.get<double>("Reference Weight");
         }
 
         Plato::Scalar cp[barlatLength][barlatLength];
@@ -166,12 +166,12 @@ public:
         {
             for(Plato::OrdinalType j = 0; j < barlatLength; j++)
             {
-                m_cp[i][j] = 0.0;
-                m_cpp[i][j] = 0.0;
+                mCp[i][j] = 0.0;
+                mCpp[i][j] = 0.0;
                 for(Plato::OrdinalType k = 0; k < barlatLength; k++)
                 {
-                    m_cp[i][j] += cp[i][k] * mapToDevStress[k][j];
-                    m_cpp[i][j] += cpp[i][k] * mapToDevStress[k][j];
+                    mCp[i][j] += cp[i][k] * mapToDevStress[k][j];
+                    mCpp[i][j] += cpp[i][k] * mapToDevStress[k][j];
                 }
             }
         }
@@ -209,8 +209,8 @@ public:
             spp[i] = 0.0;
             for(Plato::OrdinalType j = 0; j < barlatLength; j++)
             {
-                sp[i] += m_cp[i][j] * s[j];
-                spp[i] += m_cpp[i][j] * s[j];
+                sp[i] += mCp[i][j] * s[j];
+                spp[i] += mCpp[i][j] * s[j];
             }
         }
 
@@ -253,16 +253,16 @@ public:
         TensorScalarType Spp3 = (Hpp1 + 2.0 * sqrt(Hpp1 * Hpp1 + Hpp2) * cos((Thetapp + 2.0 * acos(-1.0)) / 3.0));
 
         //Apply the Barlat yield function to get effective response.
-        pnorm(cellOrdinal) = pow((pow(Sp1 - Spp1, m_barlatExponent) + pow(Sp1 - Spp2, m_barlatExponent)
-                                  + pow(Sp1 - Spp3, m_barlatExponent) + pow(Sp2 - Spp1, m_barlatExponent)
-                                  + pow(Sp2 - Spp2, m_barlatExponent) + pow(Sp2 - Spp3, m_barlatExponent)
-                                  + pow(Sp3 - Spp1, m_barlatExponent) + pow(Sp3 - Spp2, m_barlatExponent)
-                                  + pow(Sp3 - Spp3, m_barlatExponent))
+        pnorm(cellOrdinal) = pow((pow(Sp1 - Spp1, mBarlatExponent) + pow(Sp1 - Spp2, mBarlatExponent)
+                                  + pow(Sp1 - Spp3, mBarlatExponent) + pow(Sp2 - Spp1, mBarlatExponent)
+                                  + pow(Sp2 - Spp2, mBarlatExponent) + pow(Sp2 - Spp3, mBarlatExponent)
+                                  + pow(Sp3 - Spp1, mBarlatExponent) + pow(Sp3 - Spp2, mBarlatExponent)
+                                  + pow(Sp3 - Spp3, mBarlatExponent))
                                  / 4.0,
-                                 1.0 / m_barlatExponent);
+                                 1.0 / mBarlatExponent);
 
         // normalize
-        pnorm(cellOrdinal) /= m_referenceWeight;
+        pnorm(cellOrdinal) /= mReferenceWeight;
 
         // pnorm
         pnorm(cellOrdinal) = pow(pnorm(cellOrdinal), p);
@@ -280,12 +280,12 @@ class TensorNormBase
 {
 
 protected:
-    Plato::Scalar m_exponent;
+    Plato::Scalar mExponent;
 
 public:
     TensorNormBase(Teuchos::ParameterList& params)
     {
-        m_exponent = params.get<double>("Exponent");
+        mExponent = params.get<double>("Exponent");
     }
 
     virtual ~TensorNormBase()
@@ -300,7 +300,7 @@ public:
 
     virtual void postEvaluate(Plato::ScalarVector resultVector, Plato::Scalar resultScalar)
     {
-        auto scale = pow(resultScalar, (1.0 - m_exponent) / m_exponent) / m_exponent;
+        auto scale = pow(resultScalar, (1.0 - mExponent) / mExponent) / mExponent;
         auto numEntries = resultVector.size();
         Kokkos::parallel_for(Kokkos::RangePolicy < Plato::OrdinalType > (0, numEntries),
                              LAMBDA_EXPRESSION(Plato::OrdinalType entryOrdinal)
@@ -312,7 +312,7 @@ public:
 
     virtual void postEvaluate(Plato::Scalar& resultValue)
     {
-        resultValue = pow(resultValue, 1.0 / m_exponent);
+        resultValue = pow(resultValue, 1.0 / mExponent);
     }
 
 };
@@ -322,13 +322,13 @@ template<Plato::OrdinalType VoigtLength, typename EvalT>
 class TensorPNorm : public TensorNormBase<VoigtLength, EvalT>
 {
 
-    TensorPNormFunctor<VoigtLength> m_tensorPNorm;
+    TensorPNormFunctor<VoigtLength> mTensorPNorm;
 
 public:
 
     TensorPNorm(Teuchos::ParameterList& params) :
             TensorNormBase<VoigtLength, EvalT>(params),
-            m_tensorPNorm(params)
+            mTensorPNorm(params)
     {
     }
 
@@ -338,13 +338,13 @@ public:
                   Plato::ScalarVectorT<typename EvalT::ConfigScalarType> cellVolume) const
     {
         Plato::OrdinalType numCells = result.extent(0);
-        auto exponent = TensorNormBase<VoigtLength, EvalT>::m_exponent;
+        auto exponent = TensorNormBase<VoigtLength, EvalT>::mExponent;
         Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0, numCells),
                              LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
                              {
                                  // compute tensor p-norm of tensor
                                  //
-                                 m_tensorPNorm(cellOrdinal, result, tensor, exponent, cellVolume);
+                                 mTensorPNorm(cellOrdinal, result, tensor, exponent, cellVolume);
 
                              },
                              "Compute PNorm");
@@ -356,13 +356,13 @@ template<Plato::OrdinalType VoigtLength, typename EvalT>
 class BarlatNorm : public TensorNormBase<VoigtLength, EvalT>
 {
 
-    BarlatNormFunctor<VoigtLength> m_barlatNorm;
+    BarlatNormFunctor<VoigtLength> mBarlatNorm;
 
 public:
 
     BarlatNorm(Teuchos::ParameterList& params) :
             TensorNormBase<VoigtLength, EvalT>(params),
-            m_barlatNorm(params)
+            mBarlatNorm(params)
     {
     }
 
@@ -372,8 +372,8 @@ public:
                   Plato::ScalarVectorT<typename EvalT::ConfigScalarType> cellVolume) const
     {
         Plato::OrdinalType numCells = result.extent(0);
-        auto exponent = TensorNormBase<VoigtLength, EvalT>::m_exponent;
-        auto barlatNorm = m_barlatNorm;
+        auto exponent = TensorNormBase<VoigtLength, EvalT>::mExponent;
+        auto barlatNorm = mBarlatNorm;
         Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0, numCells),
                              LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
                              {
@@ -391,13 +391,13 @@ template<Plato::OrdinalType VoigtLength, typename EvalT>
 class WeightedNorm : public TensorNormBase<VoigtLength, EvalT>
 {
 
-    WeightedNormFunctor<VoigtLength> m_weightedNorm;
+    WeightedNormFunctor<VoigtLength> mWeightedNorm;
 
 public:
 
     WeightedNorm(Teuchos::ParameterList& params) :
             TensorNormBase<VoigtLength, EvalT>(params),
-            m_weightedNorm(params)
+            mWeightedNorm(params)
     {
     }
 
@@ -407,8 +407,8 @@ public:
                   Plato::ScalarVectorT<typename EvalT::ConfigScalarType> cellVolume) const
     {
         Plato::OrdinalType numCells = result.extent(0);
-        auto exponent = TensorNormBase<VoigtLength, EvalT>::m_exponent;
-        auto weightedNorm = m_weightedNorm;
+        auto exponent = TensorNormBase<VoigtLength, EvalT>::mExponent;
+        auto weightedNorm = mWeightedNorm;
         Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0, numCells),
                              LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
                              {

@@ -20,35 +20,35 @@ class StabilizedKinetics : public Plato::SimplexStabilizedMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexStabilizedMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexStabilizedMechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    Plato::Scalar m_BulkModulus, m_ShearModulus;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    Plato::Scalar mBulkModulus, mShearModulus;
 
-    const Plato::Scalar m_pressureScaling;
+    const Plato::Scalar mPressureScaling;
 
   public:
 
     StabilizedKinetics( const Teuchos::RCP<Plato::LinearElasticMaterial<SpaceDim>> materialModel ) :
-            m_cellStiffness(materialModel->getStiffnessMatrix()),
-            m_BulkModulus(0.0), m_ShearModulus(0.0),
-            m_pressureScaling(materialModel->getPressureScaling())
+            mCellStiffness(materialModel->getStiffnessMatrix()),
+            mBulkModulus(0.0), mShearModulus(0.0),
+            mPressureScaling(materialModel->getPressureScaling())
     {
         for( int iDim=0; iDim<SpaceDim; iDim++ )
         {
-            m_BulkModulus  += m_cellStiffness(0, iDim);
+            mBulkModulus  += mCellStiffness(0, iDim);
         }
-        m_BulkModulus /= SpaceDim;
+        mBulkModulus /= SpaceDim;
 
-        int tNumShear = m_numVoigtTerms - SpaceDim;
+        int tNumShear = mNumVoigtTerms - SpaceDim;
         for( int iShear=0; iShear<tNumShear; iShear++ )
         {
-            m_ShearModulus += m_cellStiffness(iShear+SpaceDim, iShear+SpaceDim);
+            mShearModulus += mCellStiffness(iShear+SpaceDim, iShear+SpaceDim);
         }
-        m_ShearModulus /= tNumShear;
+        mShearModulus /= tNumShear;
     }
 
 
@@ -83,10 +83,10 @@ class StabilizedKinetics : public Plato::SimplexStabilizedMechanics<SpaceDim>
 
       // compute deviatoric stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         aDevStress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          aDevStress(cellOrdinal,iVoigt) += aStrain(cellOrdinal,jVoigt) * m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          aDevStress(cellOrdinal,iVoigt) += aStrain(cellOrdinal,jVoigt) * mCellStiffness(iVoigt, jVoigt);
         }
       }
       KineticsScalarType trace(0.0);
@@ -99,14 +99,14 @@ class StabilizedKinetics : public Plato::SimplexStabilizedMechanics<SpaceDim>
 
       // compute volume difference
       //
-      aPressure(cellOrdinal) *= m_pressureScaling;
-      aVolumeFlux(cellOrdinal) = m_pressureScaling * (tVolStrain - aPressure(cellOrdinal)/m_BulkModulus);
+      aPressure(cellOrdinal) *= mPressureScaling;
+      aVolumeFlux(cellOrdinal) = mPressureScaling * (tVolStrain - aPressure(cellOrdinal)/mBulkModulus);
 
       // compute cell stabilization
       //
-      KinematicsScalarType tTau = pow(aCellVolume(cellOrdinal),2.0/3.0)/(2.0*m_ShearModulus);
+      KinematicsScalarType tTau = pow(aCellVolume(cellOrdinal),2.0/3.0)/(2.0*mShearModulus);
       for( int iDim=0; iDim<SpaceDim; iDim++){
-          aCellStabilization(cellOrdinal,iDim) = m_pressureScaling * tTau*(m_pressureScaling*aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
+          aCellStabilization(cellOrdinal,iDim) = mPressureScaling * tTau*(mPressureScaling*aPressureGrad(cellOrdinal,iDim) - aProjectedPGrad(cellOrdinal,iDim));
       }
     }
 };

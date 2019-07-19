@@ -19,17 +19,17 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
 
   public:
 
-    LinearStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> cellStiffness) :
-            m_cellStiffness(cellStiffness) {}
+    LinearStress( const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> cellStiffness) :
+            mCellStiffness(cellStiffness) {}
 
     template<typename StressScalarType, typename StrainScalarType>
     DEVICE_TYPE inline void
@@ -39,10 +39,10 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*mCellStiffness(iVoigt, jVoigt);
         }
       }
     }

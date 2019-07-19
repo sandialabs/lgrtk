@@ -23,22 +23,22 @@ template<typename PhysicsT>
 class WeightedSumFunction : public Plato::ScalarFunctionBase, public Plato::WorksetBase<PhysicsT>
 {
 private:
-    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degree of freedom per node */
-    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
-    using Plato::WorksetBase<PhysicsT>::m_numControl; /*!< number of control variables */
-    using Plato::WorksetBase<PhysicsT>::m_numNodes; /*!< total number of nodes in the mesh */
-    using Plato::WorksetBase<PhysicsT>::m_numCells; /*!< total number of cells/elements in the mesh */
+    using Plato::WorksetBase<PhysicsT>::mNumDofsPerCell; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mNumNodesPerCell; /*!< number of nodes per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mNumDofsPerNode; /*!< number of degree of freedom per node */
+    using Plato::WorksetBase<PhysicsT>::mNumSpatialDims; /*!< number of spatial dimensions */
+    using Plato::WorksetBase<PhysicsT>::mNumControl; /*!< number of control variables */
+    using Plato::WorksetBase<PhysicsT>::mNumNodes; /*!< total number of nodes in the mesh */
+    using Plato::WorksetBase<PhysicsT>::mNumCells; /*!< total number of cells/elements in the mesh */
 
-    using Plato::WorksetBase<PhysicsT>::m_stateEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_controlEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_configEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mStateEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mControlEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mConfigEntryOrdinal; /*!< number of degree of freedom per cell/element */
 
     std::vector<Plato::Scalar> mFunctionWeights; /*!< Vector of function weights */
     std::vector<std::shared_ptr<Plato::ScalarFunctionBase>> mScalarFunctionBaseContainer; /*!< Vector of ScalarFunctionBase objects */
 
-    Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
+    Plato::DataMap& mDataMap; /*!< PLATO Engine and Analyze data map */
 
     std::string mFunctionName; /*!< User defined function name */
 
@@ -74,7 +74,7 @@ private:
         {
             mScalarFunctionBaseContainer.push_back(
                 tFactory.create(
-                    aMesh, aMeshSets, m_dataMap, aInputParams, tFunctionNames[tFunctionIndex]));
+                    aMesh, aMeshSets, mDataMap, aInputParams, tFunctionNames[tFunctionIndex]));
             mFunctionWeights.push_back(tFunctionWeights[tFunctionIndex]);
         }
 
@@ -95,7 +95,7 @@ public:
                 Teuchos::ParameterList& aInputParams,
                 std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mFunctionName(aName)
     {
         initialize(aMesh, aMeshSets, aInputParams);
@@ -108,7 +108,7 @@ public:
     **********************************************************************************/
     WeightedSumFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
             Plato::WorksetBase<PhysicsT>(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mFunctionName("Weighted Sum")
     {
     }
@@ -178,7 +178,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numSpatialDims * m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumSpatialDims * mNumNodes;
         Plato::ScalarVector tGradientX ("gradient configuration", tNumDofs);
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {
@@ -203,7 +203,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numDofsPerNode * m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumDofsPerNode * mNumNodes;
         Plato::ScalarVector tGradientU ("gradient state", tNumDofs);
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {
@@ -228,7 +228,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumNodes;
         Plato::ScalarVector tGradientZ ("gradient control", tNumDofs);
         for (Plato::OrdinalType tFunctionIndex = 0; tFunctionIndex < mScalarFunctionBaseContainer.size(); ++tFunctionIndex)
         {

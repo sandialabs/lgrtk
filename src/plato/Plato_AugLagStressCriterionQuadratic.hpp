@@ -30,11 +30,11 @@ class AugLagStressCriterionQuadratic :
 {
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell/element */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
@@ -247,7 +247,7 @@ public:
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVectorT<ResultT> tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasureEvaluationType)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
+        (*mLocalMeasureEvaluationType)(aStateWS, aConfigWS, mDataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVectorT<ResultT> tConstraintValue("constraint", tNumCells);
@@ -287,7 +287,7 @@ public:
                     tTrueConstraintValue(aCellOrdinal) * tTrueConstraintValue(aCellOrdinal) ) );
         },"Compute Quadratic Augmented Lagrangian Function Without Objective");
 
-        Plato::toMap(m_dataMap, tOutputPenalizedLocalMeasure, mLocalMeasureEvaluationType->getName());
+        Plato::toMap(mDataMap, tOutputPenalizedLocalMeasure, mLocalMeasureEvaluationType->getName());
     }
 
     /******************************************************************************//**
@@ -305,7 +305,7 @@ public:
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVector tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasurePODType)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
+        (*mLocalMeasurePODType)(aStateWS, aConfigWS, mDataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVector tConstraintValue("constraint residual", tNumCells);

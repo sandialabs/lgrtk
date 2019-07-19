@@ -30,7 +30,7 @@ class PressureDivergence : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
 
   public:
     template<
@@ -47,7 +47,7 @@ class PressureDivergence : public Plato::SimplexMechanics<SpaceDim>
                 Plato::Scalar scale = 1.0 ) const {
 
       for(Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
-        for( Plato::OrdinalType iNode=0; iNode<m_numNodesPerCell; iNode++){
+        for( Plato::OrdinalType iNode=0; iNode<mNumNodesPerCell; iNode++){
           Plato::OrdinalType localOrdinal = iNode*NumDofsPerNode+iDim+DofOffset;
           forcing(cellOrdinal,localOrdinal) += 
             scale*cellVolume(cellOrdinal)*pressure(cellOrdinal)*gradient(cellOrdinal,iNode,iDim);

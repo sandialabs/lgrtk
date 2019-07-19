@@ -35,7 +35,7 @@ class EllipticVMSProblem: public Plato::AbstractProblem
 {
 private:
 
-    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims; /*!< spatial dimensions */
+    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::mNumSpatialDims; /*!< spatial dimensions */
 
     // required
     Plato::VectorFunctionVMS<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
@@ -128,11 +128,11 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<SimplexPhysics::mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<SimplexPhysics::mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
@@ -173,18 +173,18 @@ public:
                 mProjResidual = mStateProjection.value      (mProjPGrad, mProjectState, aControl);
                 mProjJacobian = mStateProjection.gradient_u (mProjPGrad, mProjectState, aControl);
 
-                Plato::Solve::RowSummed<SimplexPhysics::m_numSpatialDims>(mProjJacobian, mProjPGrad, mProjResidual);
+                Plato::Solve::RowSummed<SimplexPhysics::mNumSpatialDims>(mProjJacobian, mProjPGrad, mProjResidual);
 
                 // compute the state solution
                 mResidual = mEqualityConstraint.value      (tState, mProjPGrad, aControl);
                 mJacobian = mEqualityConstraint.gradient_u (tState, mProjPGrad, aControl);
                 this->applyConstraints(mJacobian, mResidual);
 
-                Plato::Solve::Consistent<SimplexPhysics::m_numDofsPerNode>(mJacobian, tState, mResidual);
+                Plato::Solve::Consistent<SimplexPhysics::mNumDofsPerNode>(mJacobian, tState, mResidual);
 
                 // copy projection state
-                Plato::extract<SimplexPhysics::m_numDofsPerNode,
-                               SimplexPhysics::ProjectorT::SimplexT::m_projectionDof>(tState, mProjectState);
+                Plato::extract<SimplexPhysics::mNumDofsPerNode,
+                               SimplexPhysics::ProjectorT::SimplexT::mProjectionDof>(tState, mProjectState);
             }
 
             mResidual = mEqualityConstraint.value(tState, mProjPGrad, aControl);

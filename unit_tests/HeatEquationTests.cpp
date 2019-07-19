@@ -55,9 +55,9 @@ TEUCHOS_UNIT_TEST( HeatEquationTests, 3D )
 
 
   int numCells = mesh->nelems();
-  constexpr int nodesPerCell  = Plato::SimplexThermal<spaceDim>::m_numNodesPerCell;
-  constexpr int dofsPerCell   = Plato::SimplexThermal<spaceDim>::m_numDofsPerCell;
-  constexpr int dofsPerNode   = Plato::SimplexThermal<spaceDim>::m_numDofsPerNode;
+  constexpr int nodesPerCell  = Plato::SimplexThermal<spaceDim>::mNumNodesPerCell;
+  constexpr int dofsPerCell   = Plato::SimplexThermal<spaceDim>::mNumDofsPerCell;
+  constexpr int dofsPerNode   = Plato::SimplexThermal<spaceDim>::mNumDofsPerNode;
 
   // create mesh based temperature from host data
   //

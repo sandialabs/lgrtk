@@ -36,9 +36,9 @@ class ParabolicProblem: public Plato::AbstractProblem
 /**********************************************************************************/
 private:
 
-    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims;
+    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::mNumSpatialDims;
 
-    static constexpr Plato::OrdinalType m_numDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     // required
     Plato::VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
@@ -115,11 +115,11 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
@@ -157,7 +157,7 @@ public:
           this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-          using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+          using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode>;
           auto tConfigString = AmgXLinearProblem::getConfigString();
           Plato::ScalarVector deltaT("increment", tState.extent(0));
           Plato::fill(static_cast<Plato::Scalar>(0.0), deltaT);
@@ -303,7 +303,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -371,7 +371,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -564,7 +564,7 @@ private:
 
         // parse loads
         //
-        Plato::NaturalBCs<SimplexPhysics::SpaceDim, SimplexPhysics::m_numDofsPerNode>
+        Plato::NaturalBCs<SimplexPhysics::SpaceDim, SimplexPhysics::mNumDofsPerNode>
             tNaturalBoundaryConditions(aParamList.sublist("Natural Boundary Conditions", false));
         tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }

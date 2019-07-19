@@ -19,10 +19,10 @@ class AbstractScalarFunctionInc
 {
 protected:
     Omega_h::Mesh& mMesh; /*!< volume mesh database */
-    Plato::DataMap& m_dataMap; /*!< PLATO Analyze database */
+    Plato::DataMap& mDataMap; /*!< PLATO Analyze database */
     Omega_h::MeshSets& mMeshSets; /*!< surface mesh database */
 
-    const std::string m_functionName; /*!< name of scalar function */
+    const std::string mFunctionName; /*!< name of scalar function */
 
 public:
     /******************************************************************************//**
@@ -37,9 +37,9 @@ public:
                               Plato::DataMap& aDataMap,
                               std::string aName) :
             mMesh(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mMeshSets(aMeshSets),
-            m_functionName(aName)
+            mFunctionName(aName)
     {
     }
 
@@ -88,9 +88,9 @@ public:
      * @brief Return name of time-dependent scalar function
      * @return function name
     **********************************************************************************/
-    const decltype(m_functionName)& getName()
+    const decltype(mFunctionName)& getName()
     {
-        return m_functionName;
+        return mFunctionName;
     }
 };
 // class AbstractScalarFunctionInc

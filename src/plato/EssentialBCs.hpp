@@ -124,7 +124,7 @@ void EssentialBC<SimplexPhysicsType>::get(const Omega_h::MeshSets& aMeshSets,
     auto nodeLids = (nsIter->second);
     auto numberConstrainedNodes = nodeLids.size();
 
-    constexpr int dofsPerNode = SimplexPhysicsType::m_numDofsPerNode;
+    constexpr int dofsPerNode = SimplexPhysicsType::mNumDofsPerNode;
 
     auto val = this->value;
     auto ldofs = bcDofs;

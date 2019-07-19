@@ -58,10 +58,10 @@ TEUCHOS_UNIT_TEST( StabilizedThermomechTests, 3D )
 
 
   int tNumCells = mesh->nelems();
-  constexpr int numVoigtTerms = Plato::SimplexStabilizedThermomechanics<spaceDim>::m_numVoigtTerms;
-  constexpr int nodesPerCell  = Plato::SimplexStabilizedThermomechanics<spaceDim>::m_numNodesPerCell;
-  constexpr int dofsPerCell   = Plato::SimplexStabilizedThermomechanics<spaceDim>::m_numDofsPerCell;
-  constexpr int dofsPerNode   = Plato::SimplexStabilizedThermomechanics<spaceDim>::m_numDofsPerNode;
+  constexpr int numVoigtTerms = Plato::SimplexStabilizedThermomechanics<spaceDim>::mNumVoigtTerms;
+  constexpr int nodesPerCell  = Plato::SimplexStabilizedThermomechanics<spaceDim>::mNumNodesPerCell;
+  constexpr int dofsPerCell   = Plato::SimplexStabilizedThermomechanics<spaceDim>::mNumDofsPerCell;
+  constexpr int dofsPerNode   = Plato::SimplexStabilizedThermomechanics<spaceDim>::mNumDofsPerNode;
 
   static constexpr int PDofOffset = spaceDim;
   static constexpr int TDofOffset = spaceDim+1;
@@ -709,8 +709,8 @@ TEUCHOS_UNIT_TEST( TransientStabilizedThermomechTests, TransientStabilizedThermo
   );
 
   // copy projection state
-  Plato::extract<Plato::StabilizedThermomechanics<spaceDim>::m_numDofsPerNode,
-                 Plato::StabilizedThermomechanics<spaceDim>::ProjectorT::SimplexT::m_projectionDof>(tState, tProjectState);
+  Plato::extract<Plato::StabilizedThermomechanics<spaceDim>::mNumDofsPerNode,
+                 Plato::StabilizedThermomechanics<spaceDim>::ProjectorT::SimplexT::mProjectionDof>(tState, tProjectState);
 
 
   // create constraint evaluator

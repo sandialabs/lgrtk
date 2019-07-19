@@ -188,6 +188,33 @@ if (LGR_ENABLE_PLATO)
   add_test(NAME runMassPropertiesUnitTests COMMAND ${ES_MPI_TEST})
 #end: MassPropertiesTest unit test
 
+#begin: PlasticityTests unit test
+  set(PlasticityTest_SOURCES
+    PlasticityTests.cpp
+    PlatoTestHelpers.cpp
+    PlatoUnitTestMain.cpp
+  )
+
+  set(PlasticityTest_HEADERS
+    PlatoTestHelpers.hpp
+  )
+
+  add_executable(PlasticityUnitTests
+    ${PlasticityTest_SOURCES}
+    ${PlasticityTest_HEADERS}
+  )
+
+  target_link_libraries(PlasticityUnitTests 
+    lgrtk
+    ${Trilinos_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES} 
+    )
+  target_include_directories(PlasticityUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+  build_mpi_test_string(ES_MPI_TEST 1 ${CMAKE_CURRENT_BINARY_DIR}/PlasticityUnitTests)
+  add_test(NAME runPlasticityUnitTests COMMAND ${ES_MPI_TEST})
+#end: Plasticity unit test
+
 #begin: PlatoMathHelpers unit test
   set(PlatoMathHelpers_SOURCES
     PlatoMathHelpersTest.cpp
@@ -207,7 +234,8 @@ if (LGR_ENABLE_PLATO)
   target_link_libraries(PlatoMathHelpersUnitTests 
     lgrtk
     ${Trilinos_LIBRARIES} 
-    ${Trilinos_TPL_LIBRARIES} 
+    ${Trilinos_TPL_LIBRARIES}
+    kokkoskernels
     )
   target_include_directories(PlatoMathHelpersUnitTests PRIVATE ${CMAKE_SOURCE_DIR}/src)
 

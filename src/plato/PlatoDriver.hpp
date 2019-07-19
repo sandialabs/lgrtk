@@ -108,12 +108,14 @@ void output(Teuchos::ParameterList & aParamList,
               Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
               Plato::copy<SpatialDim+2 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim+1, tNumVertices, tSubView, tTemp);
 
+
               Omega_h::Write<Omega_h::Real> tPress(tNumVertices, "Pressure");
               Plato::copy<SpatialDim+2 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/> (/*tStride=*/ SpatialDim, tNumVertices, tSubView, tPress);
 
               auto tNumDisp = tNumVertices * SpatialDim;
               Omega_h::Write<Omega_h::Real> tDisp(tNumDisp, "Displacement");
               Plato::copy<SpatialDim+2, SpatialDim>(/*tStride=*/0, tNumVertices, tSubView, tDisp);
+
 
               aMesh.add_tag(Omega_h::VERT, "Displacements", SpatialDim,                    Omega_h::Reals(tDisp));
               aMesh.add_tag(Omega_h::VERT, "Pressure",      1 /*output_num_dof_per_node*/, Omega_h::Reals(tPress));
@@ -189,6 +191,7 @@ void output(Teuchos::ParameterList & aParamList,
           Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
           tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
         }
+
     } else
     if(tPhysics == "StructuralDynamics")
     {
@@ -211,10 +214,10 @@ void output(Teuchos::ParameterList & aParamList,
           Omega_h::Write<Omega_h::Real> tTemp(tNumVertices, "Temperature");
           
           const Plato::OrdinalType tStride = 0;
-          Plato::copy<1 /*input_num_dof_per_node*/, 1 /*output_num_dof_per_node*/>
+          Plato::copy<1 /*input_numDof_per_node*/, 1 /*output_numDof_per_node*/>
               (tStride, tNumVertices, tSubView, tTemp);
           
-          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_num_dof_per_node*/, Omega_h::Reals(tTemp));
+          aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_numDof_per_node*/, Omega_h::Reals(tTemp));
           Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
           tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
         }

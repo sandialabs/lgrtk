@@ -20,21 +20,21 @@ template<
 class SimplexProjection : public Plato::Simplex<SpaceDim>
 {
   public:
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::Simplex<SpaceDim>::m_numSpatialDims;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumSpatialDims;
 
-    static constexpr Plato::OrdinalType m_PDofOffset     = SpaceDim;
-    static constexpr Plato::OrdinalType m_totalDofs      = TotalDofs;
-    static constexpr Plato::OrdinalType m_projectionDof  = ProjectionDofOffset;
-    static constexpr Plato::OrdinalType m_numDofsPerNode = SpaceDim;
-    static constexpr Plato::OrdinalType m_numDofsPerCell = m_numDofsPerNode*m_numNodesPerCell;
-    static constexpr Plato::OrdinalType m_numControl     = NumControls;
+    static constexpr Plato::OrdinalType mPDofOffset     = SpaceDim;
+    static constexpr Plato::OrdinalType mTotalDofs      = TotalDofs;
+    static constexpr Plato::OrdinalType mProjectionDof  = ProjectionDofOffset;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SpaceDim;
+    static constexpr Plato::OrdinalType mNumDofsPerCell = mNumDofsPerNode*mNumNodesPerCell;
+    static constexpr Plato::OrdinalType mNumControl     = NumControls;
 
     // this physics can be used with VMS functionality in PA.  The
     // following defines the nodal state attributes required by VMS
     //
-    static constexpr Plato::OrdinalType m_numNSPerNode    = NumProjectionDof;
-    static constexpr Plato::OrdinalType m_numNSPerCell    = m_numNSPerNode*m_numNodesPerCell;
+    static constexpr Plato::OrdinalType mNumNSPerNode    = NumProjectionDof;
+    static constexpr Plato::OrdinalType mNumNSPerCell    = mNumNSPerNode*mNumNodesPerCell;
 };
 
 } // namespace Plato
