@@ -210,8 +210,8 @@ public:
           mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS );
       }
 
-      if( std::count(m_plottable.begin(),m_plottable.end(), "pressure"          ) ) toMap(m_dataMap, tPressure, "pressure");
-      if( std::count(m_plottable.begin(),m_plottable.end(), "deviatoric stress" ) ) toMap(m_dataMap, tDevStress, "deviatoric stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(), "pressure"          ) ) toMap(mDataMap, tPressure, "pressure");
+      if( std::count(mPlottable.begin(),mPlottable.end(), "deviatoric stress" ) ) toMap(mDataMap, tDevStress, "deviatoric stress");
 
     }
 };
