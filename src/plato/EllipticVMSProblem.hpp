@@ -158,6 +158,8 @@ public:
     Plato::ScalarMultiVector solution(const Plato::ScalarVector & aControl)
     {
 
+        Plato::ScalarVector tStateIncrement("State increment", mStates.extent(1));
+
         // outer loop for load/time steps
         for(Plato::OrdinalType tStepIndex = 1; tStepIndex < mNumSteps; tStepIndex++)
         {
@@ -180,7 +182,10 @@ public:
                 mJacobian = mEqualityConstraint.gradient_u (tState, mProjPGrad, aControl);
                 this->applyConstraints(mJacobian, mResidual);
 
-                Plato::Solve::Consistent<SimplexPhysics::mNumDofsPerNode>(mJacobian, tState, mResidual);
+                Plato::Solve::Consistent<SimplexPhysics::mNumDofsPerNode>(mJacobian, tStateIncrement, mResidual);
+
+                // update the state with the new increment
+                Plato::update(-1.0, tStateIncrement, 1.0, tState);
 
                 // copy projection state
                 Plato::extract<SimplexPhysics::mNumDofsPerNode,
