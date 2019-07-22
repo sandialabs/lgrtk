@@ -56,7 +56,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain);
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const;
 
 };
 // class ThermoPlasticityUtilities
@@ -78,7 +78,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
 
     // Compute total strain
@@ -122,7 +122,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
     // Compute total strain
     Plato::OrdinalType tVoigtTerm = 0;
@@ -171,7 +171,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
 
     // Compute total strain
@@ -228,7 +228,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
     // Compute total strain
     Plato::OrdinalType tVoigtTerm = 0;

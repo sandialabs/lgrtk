@@ -189,7 +189,7 @@ class J2PlasticityLocalResidual :
     * @param [in] aConfig configuration parameters
     * @param [out] aResult evaluated local residuals
     ******************************************************************************/
-    void
+    virtual void
     evaluate( const Plato::ScalarMultiVectorT< GlobalStateT >     & aGlobalState,
               const Plato::ScalarMultiVectorT< PrevGlobalStateT > & aPrevGlobalState,
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
@@ -201,14 +201,9 @@ class J2PlasticityLocalResidual :
     {
       auto tNumCells = mMesh.nelems();
 
-      using TotalStrainT =
-          typename Plato::fad_type_t<PhysicsType, GlobalStateT, ConfigT>;
+      using ElasticStrainT = typename Plato::fad_type_t<PhysicsType, LocalStateT, GlobalStateT, ConfigT, ControlT>;
 
-      using ElasticStrainT =
-          typename Plato::fad_type_t<PhysicsType, GlobalStateT, LocalStateT>;
-
-      using StressT =
-          typename Plato::fad_type_t<PhysicsType, ElasticStrainT, ConfigT>;
+      using StressT = ElasticStrainT;
 
       // Functors
       Plato::ComputeGradientWorkset<EvaluationType::SpatialDim> tComputeGradient;
@@ -317,13 +312,14 @@ class J2PlasticityLocalResidual :
     * @param [in]  aControl control parameters
     * @param [in]  aConfig configuration parameters
     ******************************************************************************/
-    void
+    virtual void
     updateLocalState( const Plato::ScalarMultiVector & aGlobalState,
                       const Plato::ScalarMultiVector & aPrevGlobalState,
                       const Plato::ScalarMultiVector & aLocalState,
                       const Plato::ScalarMultiVector & aPrevLocalState,
                       const Plato::ScalarMultiVector & aControl,
-                      const Plato::ScalarArray3D     & aConfig) const
+                      const Plato::ScalarArray3D     & aConfig,
+                            Plato::Scalar              aTimeStep = 0.0) const
     {
       auto tNumCells = mMesh.nelems();
 
@@ -422,9 +418,9 @@ class J2PlasticityLocalResidual :
 
 #ifdef PLATO_2D
 PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 2)
-//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 2)
+PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 2)
 #endif
 #ifdef PLATO_3D
-//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 3)
-//PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 3)
+PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 3)
+PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 3)
 #endif

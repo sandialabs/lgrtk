@@ -23,7 +23,7 @@ class J2PlasticityUtilities
     /**************************************************************************//**
     * @brief Constructor
     ******************************************************************************/
-    J2PlasticityUtilities() :
+    J2PlasticityUtilities()
     {
     }
 
@@ -46,7 +46,7 @@ class J2PlasticityUtilities
                 const Plato::ScalarMultiVector & aPrevLocalState,
                 const Plato::ScalarMultiVector & aYieldSurfaceNormal,
                 const Plato::Scalar            & aHardeningModulusKinematic,
-                      Plato::ScalarMultiVector & aLocalState);
+                const Plato::ScalarMultiVector & aLocalState) const;
 
     /******************************************************************************//**
      * @brief Update the plastic strain and backstress for an elastic step
@@ -58,7 +58,7 @@ class J2PlasticityUtilities
     updatePlasticStrainAndBackstressElasticStep( 
                 const Plato::OrdinalType       & aCellOrdinal,
                 const Plato::ScalarMultiVector & aPrevLocalState,
-                      Plato::ScalarMultiVector & aLocalState);
+                const Plato::ScalarMultiVector & aLocalState) const;
 
     /******************************************************************************//**
      * @brief Compute the yield surface normal and the norm of the deviatoric stress minus the backstress
@@ -74,8 +74,8 @@ class J2PlasticityUtilities
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
-                      Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
-                      Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm);
+                const Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
+                const Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm) const;
 
     /******************************************************************************//**
      * @brief Compute the deviatoric stress
@@ -90,7 +90,7 @@ class J2PlasticityUtilities
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain,
                 const ControlT                                     & aPenalizedShearModulus,
-                      Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress);
+                const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress) const;
 
     /******************************************************************************//**
      * @brief Fill the local residual vector with the plastic strain residual equation for plastic step
@@ -107,7 +107,7 @@ class J2PlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
                 const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
                 const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                      Plato::ScalarMultiVectorT< ResultT >          & aResult );
+                const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const;
 
     /******************************************************************************//**
      * @brief Fill the local residual vector with the backstress residual equation for plastic step
@@ -127,7 +127,7 @@ class J2PlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
                 const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
                 const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                      Plato::ScalarMultiVectorT< ResultT >          & aResult );
+                const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const;
 
     /******************************************************************************//**
      * @brief Fill the local residual vector with the plastic strain residual equation for elastic step
@@ -142,7 +142,7 @@ class J2PlasticityUtilities
                 const Plato::OrdinalType                            & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
                 const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
-                      Plato::ScalarMultiVectorT< ResultT >          & aResult );
+                const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const;
 
     /******************************************************************************//**
      * @brief Fill the local residual vector with the backstress residual equation for plastic step
@@ -157,7 +157,7 @@ class J2PlasticityUtilities
                 const Plato::OrdinalType                            & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
                 const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
-                      Plato::ScalarMultiVectorT< ResultT >          & aResult );
+                const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const;
 };
 // class J2PlasticityUtilities
 
@@ -175,7 +175,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVector & aPrevLocalState,
               const Plato::ScalarMultiVector & aYieldSurfaceNormal,
               const Plato::Scalar            & aHardeningModulusKinematic,
-                    Plato::ScalarMultiVector & aLocalState)
+              const Plato::ScalarMultiVector & aLocalState) const
   {
     Plato::Scalar tMultiplier1 = aLocalState(aCellOrdinal, 1) * mSqrt3Over2;
     // Plastic Strain Tensor
@@ -200,7 +200,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVector & aPrevLocalState,
               const Plato::ScalarMultiVector & aYieldSurfaceNormal,
               const Plato::Scalar            & aHardeningModulusKinematic,
-                    Plato::ScalarMultiVector & aLocalState)
+              const Plato::ScalarMultiVector & aLocalState) const
   {
     Plato::Scalar tMultiplier1 = aLocalState(aCellOrdinal, 1) * mSqrt3Over2;
     // Plastic Strain Tensor
@@ -233,7 +233,7 @@ class J2PlasticityUtilities
   J2PlasticityUtilities<2>::updatePlasticStrainAndBackstressElasticStep( 
               const Plato::OrdinalType       & aCellOrdinal,
               const Plato::ScalarMultiVector & aPrevLocalState,
-                    Plato::ScalarMultiVector & aLocalState)
+              const Plato::ScalarMultiVector & aLocalState) const
   {
     // Plastic Strain Tensor
     aLocalState(aCellOrdinal, 2) = aPrevLocalState(aCellOrdinal, 2);
@@ -254,7 +254,7 @@ class J2PlasticityUtilities
   J2PlasticityUtilities<3>::updatePlasticStrainAndBackstressElasticStep( 
               const Plato::OrdinalType       & aCellOrdinal,
               const Plato::ScalarMultiVector & aPrevLocalState,
-                    Plato::ScalarMultiVector & aLocalState)
+              const Plato::ScalarMultiVector & aLocalState) const
   {
     // Plastic Strain Tensor
     aLocalState(aCellOrdinal, 2) = aPrevLocalState(aCellOrdinal, 2);
@@ -287,8 +287,8 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                           & aCellOrdinal,
               const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress,
               const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
-                    Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
-                    Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm)
+              const Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
+              const Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm) const
   {
     // Subtract the backstress from the deviatoric stress
     aYieldSurfaceNormal(aCellOrdinal, 0) = aDeviatoricStress(aCellOrdinal, 0) - aLocalState(aCellOrdinal, 5);
@@ -316,8 +316,8 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                           & aCellOrdinal,
               const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress,
               const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
-                    Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
-                    Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm)
+              const Plato::ScalarMultiVectorT< StressT >         & aYieldSurfaceNormal,
+              const Plato::ScalarVectorT< StressT >              & aDevStressMinusBackstressNorm) const
   {
     // Subtract the backstress from the deviatoric stress
     aYieldSurfaceNormal(aCellOrdinal, 0) = aDeviatoricStress(aCellOrdinal, 0) - aLocalState(aCellOrdinal, 8);
@@ -358,7 +358,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                           & aCellOrdinal,
               const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain,
               const ControlT                                     & aPenalizedShearModulus,
-                    Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress)
+              const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress) const
   {
     ElasticStrainT tTraceOver3 = (aElasticStrain(aCellOrdinal, 0) + aElasticStrain(aCellOrdinal, 1)) / 3.0;
     aDeviatoricStress(aCellOrdinal, 0) = (2.0 * aPenalizedShearModulus) * (aElasticStrain(aCellOrdinal, 0) -
@@ -378,7 +378,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                           & aCellOrdinal,
               const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain,
               const ControlT                                     & aPenalizedShearModulus,
-                    Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress)
+              const Plato::ScalarMultiVectorT< StressT >         & aDeviatoricStress) const
   {
     ElasticStrainT tTraceOver3 = (  aElasticStrain(aCellOrdinal, 0) + aElasticStrain(aCellOrdinal, 1)
                                   + aElasticStrain(aCellOrdinal, 2) ) / 3.0;
@@ -408,7 +408,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
               const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 2) = aLocalState(aCellOrdinal, 2) - aPrevLocalState(aCellOrdinal, 2)
                              - mSqrt3Over2 * aLocalState(aCellOrdinal, 1) * aYieldSurfaceNormal(aCellOrdinal, 0);
@@ -429,7 +429,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
               const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 2) = aLocalState(aCellOrdinal, 2) - aPrevLocalState(aCellOrdinal, 2)
                              - mSqrt3Over2 * aLocalState(aCellOrdinal, 1) * aYieldSurfaceNormal(aCellOrdinal, 0);
@@ -461,7 +461,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
               const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 5) = aLocalState(aCellOrdinal, 5) - aPrevLocalState(aCellOrdinal, 5)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
@@ -487,7 +487,7 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
               const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 8) = aLocalState(aCellOrdinal, 8) - aPrevLocalState(aCellOrdinal, 8);
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
@@ -522,7 +522,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                              & aCellOrdinal,
               const Plato::ScalarMultiVectorT< LocalStateT >        & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >    & aPrevLocalState,
-                    Plato::ScalarMultiVectorT< ResultT >            & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >            & aResult ) const
   {
     aResult(aCellOrdinal, 2) = aLocalState(aCellOrdinal, 2) - aPrevLocalState(aCellOrdinal, 2);
     aResult(aCellOrdinal, 3) = aLocalState(aCellOrdinal, 3) - aPrevLocalState(aCellOrdinal, 3);
@@ -539,7 +539,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                              & aCellOrdinal,
               const Plato::ScalarMultiVectorT< LocalStateT >        & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >    & aPrevLocalState,
-                    Plato::ScalarMultiVectorT< ResultT >            & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >            & aResult ) const
   {
     aResult(aCellOrdinal, 2) = aLocalState(aCellOrdinal, 2) - aPrevLocalState(aCellOrdinal, 2);
     aResult(aCellOrdinal, 3) = aLocalState(aCellOrdinal, 3) - aPrevLocalState(aCellOrdinal, 3);
@@ -562,7 +562,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                            & aCellOrdinal,
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 5) = aLocalState(aCellOrdinal, 5) - aPrevLocalState(aCellOrdinal, 5);
     aResult(aCellOrdinal, 6) = aLocalState(aCellOrdinal, 6) - aPrevLocalState(aCellOrdinal, 6);
@@ -579,7 +579,7 @@ class J2PlasticityUtilities
               const Plato::OrdinalType                            & aCellOrdinal,
               const Plato::ScalarMultiVectorT< LocalStateT >      & aLocalState,
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult )
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
     aResult(aCellOrdinal, 8) = aLocalState(aCellOrdinal, 8) - aPrevLocalState(aCellOrdinal, 8);
     aResult(aCellOrdinal, 9) = aLocalState(aCellOrdinal, 9) - aPrevLocalState(aCellOrdinal, 9);

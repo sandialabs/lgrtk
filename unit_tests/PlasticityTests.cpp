@@ -16,9 +16,9 @@ namespace PlasticityTests
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_2D)
 {
-    constexpr Plato::OrdinalType tNumCells = 3;
-    constexpr Plato::OrdinalType tSpaceDim = 3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = 6;
+    // constexpr Plato::OrdinalType tNumCells = 3;
+    // constexpr Plato::OrdinalType tSpaceDim = 3;
+    // constexpr Plato::OrdinalType tNumVoigtTerms = 6;
     
     // Plato::ScalarMultiVector tCauchyStrain("strain", tNumCells, tNumVoigtTerms);
     // auto tHostCauchyStrain = Kokkos::create_mirror(tCauchyStrain);
@@ -37,7 +37,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_2D)
     //     tComputeEigenvalues(tCellOrdinal, tCauchyStrain, tPrincipalStrains, true);
     // }, "Test Computing Eigenvalues");
 
-    constexpr Plato::Scalar tTolerance = 1e-4;
+    // constexpr Plato::Scalar tTolerance = 1e-4;
     // std::vector<Plato::Scalar> tGold1 = {3.0, 2.0, 1.0};
     // auto tHostPrincipalStrains = Kokkos::create_mirror(tPrincipalStrains);
     // Kokkos::deep_copy(tHostPrincipalStrains, tPrincipalStrains);

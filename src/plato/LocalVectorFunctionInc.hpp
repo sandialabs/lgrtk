@@ -53,10 +53,10 @@ class LocalVectorFunctionInc
     Plato::WorksetBase<PhysicsT> mWorksetBase;
 
     std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<Residual>>        mLocalVectorFunctionResidual;
-    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GlobalJacobian>>  mLocalVectorFunctionGlobalJacobianU;
-    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GlobalJacobianP>> mLocalVectorFunctionGlobalJacobianUP;
-    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<LocalJacobian>>   mLocalVectorFunctionLocalJacobianC;
-    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<LocalJacobianP>>  mLocalVectorFunctionLocalJacobianCP;
+    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GlobalJacobian>>  mLocalVectorFunctionJacobianU;
+    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GlobalJacobianP>> mLocalVectorFunctionJacobianUP;
+    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<LocalJacobian>>   mLocalVectorFunctionJacobianC;
+    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<LocalJacobianP>>  mLocalVectorFunctionJacobianCP;
     std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GradientX>>       mLocalVectorFunctionJacobianX;
     std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<GradientZ>>       mLocalVectorFunctionJacobianZ;
 
@@ -108,25 +108,32 @@ class LocalVectorFunctionInc
       //                                                           (aMesh, aMeshSets, aDataMap, aParamList, aProblemType);
 
       //  TESTING FOR COMPILATION BEFORE MAKING FUNCTION FACTORIES
-      mLocalVectorFunctionResidual  = std::make_shared<J2PlasticityLocalResidual<Residual, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionResidual  = 
+              std::make_shared<J2PlasticityLocalResidual<Residual, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianU = std::make_shared<J2PlasticityLocalResidual<GlobalJacobian, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianU = 
+              std::make_shared<J2PlasticityLocalResidual<GlobalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianUP = std::make_shared<J2PlasticityLocalResidual<GlobalJacobianP, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianUP = 
+              std::make_shared<J2PlasticityLocalResidual<GlobalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianC = std::make_shared<J2PlasticityLocalResidual<LocalJacobian, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianC = 
+              std::make_shared<J2PlasticityLocalResidual<LocalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianCP = std::make_shared<J2PlasticityLocalResidual<LocalJacobianP, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianCP = 
+              std::make_shared<J2PlasticityLocalResidual<LocalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianZ = std::make_shared<J2PlasticityLocalResidual<GradientZ, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianZ = 
+              std::make_shared<J2PlasticityLocalResidual<GradientZ, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
 
-      mLocalVectorFunctionJacobianX = std::make_shared<J2PlasticityLocalResidual<GradientX, Plato::SimplexPlasticity>>
+      mLocalVectorFunctionJacobianX = 
+              std::make_shared<J2PlasticityLocalResidual<GradientX, Plato::SimplexPlasticity<mNumSpatialDims>>>
                                                       (aMesh, aMeshSets, aDataMap, aParamList);
     }
 
@@ -269,12 +276,12 @@ class LocalVectorFunctionInc
 
       // Workset global state
       //
-      Plato::ScalarMultiVectorT<GlobalStateScalar> tGlobalStateWS("Global State Workset", mNumCells, mNumDofsPerCell);
+      Plato::ScalarMultiVectorT<StateScalar> tGlobalStateWS("Global State Workset", mNumCells, mNumDofsPerCell);
       mWorksetBase.worksetState(aGlobalState, tGlobalStateWS);
 
       // Workset prev global state
       //
-      Plato::ScalarMultiVectorT<PrevGlobalStateScalar> tPrevGlobalStateWS("Prev Global State Workset", mNumCells, mNumDofsPerCell);
+      Plato::ScalarMultiVectorT<PrevStateScalar> tPrevGlobalStateWS("Prev Global State Workset", mNumCells, mNumDofsPerCell);
       mWorksetBase.worksetState(aPrevGlobalState, tPrevGlobalStateWS);
 
       // Workset local state
