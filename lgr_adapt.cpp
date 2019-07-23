@@ -143,7 +143,7 @@ void initialize_h_adapt(state& s)
     hpc::area<double> lsq_max = 0.0;
     hpc::area<double> lsq_min = hpc::numeric_limits<double>::max();
     for (auto const node_element : nodes_to_node_elements[node]) {
-      element_index const element = node_elements_to_elements[node_element]; 
+      element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
       for (auto const node_in_element : nodes_in_element) {
         element_node_index const element_node = element_nodes[node_in_element];

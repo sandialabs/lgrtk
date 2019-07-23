@@ -258,6 +258,7 @@ flow_stress(Properties props, double const temp, double const ep,
                         : (1.0 + cjo * std::log(rfac));
     }
   }
+  std::cout << "HERE I AM Y.0: dp=" << dp << ", Y=" << Y << "\n";
   return (1 - dp) * Y;
 }
 
@@ -427,11 +428,11 @@ radial_return(Properties const props, hpc::symmetric_stress<double> const Te,
   if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
   // check yield
   auto Y = flow_stress(props, temp, ep, epdot, dp);
-  std::cout << "HERE I AM D.0: " << temp << ", " << Y << "\n";
+  std::cout << "HERE I AM D.0: Temp=" << temp << " Y=" << Y << "\n";
   auto const S0 = deviatoric_part(Te);
   auto const norm_S0 = norm(S0);
   auto f = norm_S0 / sq2 - Y / sq3;
-  std::cout << "HERE I AM D.1: " << Te(0) << ", " << norm_S0 << ", " << Y << "\n";
+  std::cout << "HERE I AM D.1: Txx=" << Te(0) << " ||S||=" << norm_S0 << " Y=" << Y << " f=" << f << "\n";
   if (f <= tol1) {
     // Elastic loading
     T = 1. * Te;
@@ -547,7 +548,7 @@ hyper_elastic_stress(Properties const props, hpc::deformation_gradient<double> c
   // Deviatoric Cauchy stress
   auto const TRBb = trace(Bb) / 3.0;
   for (int i = 0; i < 3; ++i) Bb(i, i) -= TRBb;
-  std::cout << "HERE I AM X.0: " << Fe(0,0) << ", " << Fb(0,0)  << ", " << EG << "\n";
+  std::cout << "HERE I AM X.0: Fe, Fb, Eg=" << Fe(0,0) << ", " << Fb(0,0)  << ", " << EG << "\n";
   auto T = hpc::symmetric_stress<double>(EG * Bb);
   // Pressure response
   auto const PR = 2.0 / D1 * (jac - 1.0);
@@ -565,24 +566,24 @@ update(Properties const props, hpc::deformation_gradient<double> const F,
 
   // Determine the stress predictor.
   hpc::symmetric_stress<double> Te;
-  auto const Fe = F * inverse(Fp);
-  std::cout << "HERE I AM C.0: " << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
+  auto const Fe = F * 1.;  //  inverse(Fp);
+  std::cout << "HERE I AM C.0: F, Fp, Fe=" << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
   ErrorCode err_c = ErrorCode::NOT_SET;
   IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {
     Te = linear_elastic_stress(props, Fe);
   } else IF_MAT_PROPS_EQ(elastic, Elastic::NEO_HOOKEAN) {
     Te = hyper_elastic_stress(props, Fe, jac);
   }
-  std::cout << "HERE I AM C.1: " << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
+  std::cout << "HERE I AM C.1: F, Fp, Fe=" << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
 
   // check yield and perform radial return (if applicable)
   auto flag = StateFlag::TRIAL;
   err_c = radial_return(props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
-  std::cout << "HERE I AM C.2: " << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
+  std::cout << "HERE I AM C.2: F, Fp, Fe=" << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
   }
-  std::cout << "HERE I AM C.3: " << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
+  std::cout << "HERE I AM C.3: F, Fp, Fe=" << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
 
   bool is_localized = false;
   auto p = -trace(T) / 3.;
@@ -638,7 +639,7 @@ update(Properties const props, hpc::deformation_gradient<double> const F,
       }
     }
   }
-  std::cout << "HERE I AM C.4: " << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
+  std::cout << "HERE I AM C.4: F, Fp, Fe=" << F(0,0) << " " << Fp(0,0) << " " << Fe(0,0) << "\n";
   return ErrorCode::SUCCESS;
 }
 

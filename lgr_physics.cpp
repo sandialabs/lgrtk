@@ -225,11 +225,9 @@ HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index c
 
 HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_index const material) {
   // Constant state
-  std::cout << "HERE I AM B.0\n";
   auto const points_to_dt = s.dt;
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_temp = s.temp.cbegin();
-  std::cout << "HERE I AM B.1\n";
 
   // Variables to be updated
   auto points_to_Fp_total = s.Fp_total.begin();
@@ -246,7 +244,6 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
   // Material properties
   hyper_ep::Properties props;
   props.elastic = in.elastic[material];
-  std::cout << "HERE I AM B.1.1: " << (props.elastic == hyper_ep::Elastic::NEO_HOOKEAN) << "\n";
   props.E = in.E[material];
   props.Nu = in.Nu[material];
   props.hardening = in.hardening[material];
@@ -278,13 +275,11 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
-  std::cout << "HERE I AM C.0\n";
       auto const dt = points_to_dt;
       auto const F = points_to_F_total[point].load();
       auto const temp = points_to_temp[point];
       auto Fp = points_to_Fp_total[point].load();
       auto T = points_to_sigma[point].load();
-  std::cout << "HERE I AM C.1: " << Fp(0,0) << "\n";
 
       auto ep = points_to_ep[point];
       auto ep_dot = points_to_ep_dot[point];
@@ -308,12 +303,10 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
       auto const K = half_K0 * (J + Jinv);
       points_to_K[point] = K;
       points_to_G[point] = G0;
-  std::cout << "HERE I AM C.N: " << Fp(0,0) << "\n";
+  std::cout << "HERE I AM B.4: K, G, Fp, ep=" << K << " " << G0 << " " << Fp(0,0) << " " << ep << "\n";
     }
   };
-  std::cout << "HERE I AM B.2\n";
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
-  std::cout << "HERE I AM B.N\n";
 }
 
 HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index const material) {
@@ -858,7 +851,15 @@ void run(input const& in) {
   assert(in.initial_v);
   in.initial_v(s.nodes, s.x, &s.v);
   hpc::fill(hpc::device_policy(), s.F_total, hpc::deformation_gradient<double>::identity());
-  hpc::fill(hpc::device_policy(), s.Fp_total, hpc::deformation_gradient<double>::identity());
+  {
+    hpc::fill(hpc::device_policy(), s.Fp_total, hpc::deformation_gradient<double>::identity());
+    hpc::fill(hpc::device_policy(), s.temp, double(0.0));
+    hpc::fill(hpc::device_policy(), s.ep, double(0.0));
+    hpc::fill(hpc::device_policy(), s.ep_dot, double(0.0));
+    hpc::fill(hpc::device_policy(), s.dp, double(0.0));
+    hpc::fill(hpc::device_policy(), s.localized, int(0));
+  }
+
   common_initialization_part1(in, s);
   common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);

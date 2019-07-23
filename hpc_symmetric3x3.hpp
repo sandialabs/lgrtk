@@ -307,7 +307,7 @@ deviatoric_part(symmetric3x3<T> const x) noexcept {
   auto const a = (1.0 / 3.0) * trace(x);
   x_dev(S_XX) -= a;
   x_dev(S_YY) -= a;
-  x_dev(S_YY) -= a;
+  x_dev(S_ZZ) -= a;
   return x_dev;
 }
 
