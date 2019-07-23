@@ -332,6 +332,13 @@ double Circuit::GetMeshCathodeVoltage()
    return GetNodeVoltage(enMap[std::size_t(efind)][0]);
 }
 
+double Circuit::GetMeshConductance()
+{
+   if (!usingMesh) return 0.0;
+
+   return GetElementConductance(eMesh);
+}
+
 double Circuit::GetNodeVoltage(int nodein)
 {
 
@@ -377,7 +384,7 @@ void Circuit::SetElementConductance(int e, double c)
       } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
          throw 2; // Valid element number, but e is not resistor
       } else if (c <= 0) {
-         throw 3; // Invalid capacitance
+         throw 3; // Invalid conductance
       }
    }
    catch (int ex) {
@@ -385,6 +392,29 @@ void Circuit::SetElementConductance(int e, double c)
    }
 
    rVal[std::size_t(eValMap[std::size_t(efind)])] = c;
+}
+
+double Circuit::GetElementConductance(int e)
+{
+   int efind = -1;
+   try {
+      for (int i=0;i<eNum;i++) {
+         if (eNumMap[std::size_t(i)] == e) {
+            efind = i;
+            break;
+         }
+      }
+      if (efind < 0) {
+         throw 1; // Invalid element number
+      } else if (eType[std::size_t(efind)] != ETYPE_RESISTOR) {
+         throw 2; // Valid element number, but e is not resistor
+      }
+   }
+   catch (int ex) {
+      std::cout << "Circuit solve GetElementConductance() execption " << ex << std::endl;
+   }
+
+   return rVal[std::size_t(eValMap[std::size_t(efind)])];
 }
 
 void Circuit::SetMeshConductance(double c)
@@ -1126,7 +1156,7 @@ void Circuit::OutputMeshInfo()
 {
    double vanode   = GetMeshAnodeVoltage();
    double vcathode = GetMeshCathodeVoltage();
-   double conduct  = rVal[std::size_t(eValMap[std::size_t(eMesh)])];
+   double conduct  = GetMeshConductance();
    double current  = conduct*(vanode-vcathode);
 
    std::ofstream myfile;

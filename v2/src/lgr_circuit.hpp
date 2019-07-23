@@ -134,6 +134,8 @@ class Circuit
       double GetMeshCathodeVoltage(); 
       void SetElementConductance(int e, double c); 
       void SetMeshConductance(double c); 
+      double GetElementConductance(int e);
+      double GetMeshConductance();
 
       // Count Number of components
       int GetNumNodes();
