@@ -197,6 +197,12 @@ inner_product(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept 
   return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm(symmetric3x3<T> const x) noexcept {
+  return std::sqrt(inner_product(x, x));
+}
+
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(matrix3x3<L> const left, symmetric3x3<R> const right) noexcept {
@@ -303,12 +309,6 @@ deviatoric_part(symmetric3x3<T> const x) noexcept {
   x_dev(S_YY) -= a;
   x_dev(S_YY) -= a;
   return x_dev;
-}
-
-template <class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
-norm(symmetric3x3<T> const x) noexcept {
-  return std::sqrt(inner_product(x, x));
 }
 
 template <typename T>

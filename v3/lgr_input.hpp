@@ -6,6 +6,7 @@
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
+#include <lgr_hyper_ep.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_dimensional.hpp>
 
@@ -66,10 +67,13 @@ class input {
   hpc::host_vector<double, material_index> c_tau;
 
   // Inputs for the hyper elastic-plastic model
+  hpc::host_vector<hyper_ep::Elastic, material_index> elastic;
   hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
   hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
 
   // Plasticity
+  hpc::host_vector<hyper_ep::Hardening, material_index> hardening;
+  hpc::host_vector<hyper_ep::RateDependence, material_index> rate_dep;
   hpc::host_vector<hpc::pressure<double>, material_index> A;  // Yield strength in shear
   hpc::host_vector<hpc::pressure<double>, material_index> B;  // hardenint modules
   hpc::host_vector<double, material_index> n;  // hardening exponent
@@ -80,6 +84,7 @@ class input {
   hpc::host_vector<double, material_index> ep_dot_0;
 
   // Damage
+  hpc::host_vector<hyper_ep::Damage, material_index> damage;
   hpc::host_vector<bool, material_index> allow_no_tension;
   hpc::host_vector<bool, material_index> allow_no_shear;
   hpc::host_vector<bool, material_index> set_stress_to_zero;
@@ -125,6 +130,33 @@ class input {
     ,enable_nodal_energy(material_count_in, false)
     ,enable_p_prime(material_count_in, false)
     ,c_tau(material_count_in, 0.5)
+    ,elastic(material_count_in)
+    ,E(material_count_in)
+    ,Nu(material_count_in)
+    ,hardening(material_count_in)
+    ,rate_dep(material_count_in)
+    ,A(material_count_in)
+    ,B(material_count_in)
+    ,n(material_count_in)
+    ,C1(material_count_in)
+    ,C2(material_count_in)
+    ,C3(material_count_in)
+    ,C4(material_count_in)
+    ,ep_dot_0(material_count_in)
+    ,damage(material_count_in)
+    ,allow_no_tension(material_count_in, true)
+    ,allow_no_shear(material_count_in, false)
+    ,set_stress_to_zero(material_count_in, false)
+    ,D1(material_count_in)
+    ,D2(material_count_in)
+    ,D3(material_count_in)
+    ,D4(material_count_in)
+    ,D5(material_count_in)
+    ,D6(material_count_in)
+    ,D7(material_count_in)
+    ,D8(material_count_in)
+    ,DC(material_count_in)
+    ,eps_f_min(material_count_in)
     ,domains(material_count_in + boundary_count_in)
   {}
 };
