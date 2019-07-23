@@ -196,7 +196,7 @@ class J2PlasticityLocalResidual :
               const Plato::ScalarMultiVectorT< PrevLocalStateT >  & aPrevLocalState,
               const Plato::ScalarMultiVectorT< ControlT >         & aControl,
               const Plato::ScalarArray3DT    < ConfigT >          & aConfig,
-                    Plato::ScalarMultiVectorT< ResultT >          & aResult,
+              const Plato::ScalarMultiVectorT< ResultT >          & aResult,
                     Plato::Scalar aTimeStep = 0.0) const
     {
       auto tNumCells = mMesh.nelems();

@@ -74,7 +74,7 @@ public:
              const Plato::ScalarMultiVectorT< typename EvaluationType::PrevLocalStateScalarType  > & aLocalStatePrev,
              const Plato::ScalarMultiVectorT< typename EvaluationType::ControlScalarType         > & aControl,
              const Plato::ScalarArray3DT    < typename EvaluationType::ConfigScalarType          > & aConfig,
-                   Plato::ScalarMultiVectorT< typename EvaluationType::ResultScalarType          > & aResult,
+             const Plato::ScalarMultiVectorT< typename EvaluationType::ResultScalarType          > & aResult,
                    Plato::Scalar aTimeStep = 0.0) const = 0;
 
     /****************************************************************************//**
