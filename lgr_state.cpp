@@ -44,6 +44,12 @@ void resize_state(input const& in, state& s) {
   s.rho_h.resize(in.materials.size());
   s.K_h.resize(in.materials.size());
   s.dp_de_h.resize(in.materials.size());
+  s.temp.resize(in.materials.size());
+  s.Fp_total.resize(in.materials.size());
+  s.ep.resize(in.materials.size());
+  s.ep_dot.resize(in.materials.size());
+  s.dp.resize(in.materials.size());
+  s.localized.resize(in.materials.size());
   for (auto const material : in.materials) {
     if (in.enable_nodal_pressure[material]) {
       s.p_h[material].resize(s.nodes.size());
