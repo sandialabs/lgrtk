@@ -205,7 +205,7 @@ class ThermoPlasticityUtilities
     GlobalStateT tTemperature = 0.0;
     for( Plato::OrdinalType tNode = 0; tNode < mNumNodesPerCell; ++tNode)
     {
-      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 2;
+      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 3;
       tTemperature += aGlobalState(aCellOrdinal, tTemperatureIndex) * aBasisFunctions(tNode);
     }
 
@@ -264,7 +264,7 @@ class ThermoPlasticityUtilities
     GlobalStateT tTemperature = 0.0;
     for( Plato::OrdinalType tNode = 0; tNode < mNumNodesPerCell; ++tNode)
     {
-      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 2;
+      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 4;
       tTemperature += aGlobalState(aCellOrdinal, tTemperatureIndex) * aBasisFunctions(tNode);
     }
 

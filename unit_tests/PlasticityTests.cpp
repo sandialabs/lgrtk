@@ -806,67 +806,326 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_BackstressResidualElastic
 }
 
 
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityLocalResidual_2D)
+inline void setDofInScalarVectorOnBoundary2D(Omega_h::Mesh & aMesh,
+                                             const std::string & aBoundaryID,
+                                             const Plato::ScalarVector & aVector,
+                                             const Plato::OrdinalType  & aDofStride,
+                                             const Plato::OrdinalType  & aDofToSet,
+                                             const Plato::Scalar       & aSetValue)
+{
+    Omega_h::LOs tBoundaryNodes;
+    if (aBoundaryID == "x0")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_x0(aMesh);
+    else if (aBoundaryID == "x1")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_x1(aMesh);
+    else if (aBoundaryID == "y0")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_y0(aMesh);
+    else if (aBoundaryID == "y1")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_y1(aMesh);
+    else
+        THROWERR("Specifed boundary ID not implemented.")
+
+    auto tNumBoundaryNodes = tBoundaryNodes.size();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * tBoundaryNodes[aIndex] + aDofToSet;
+            aVector(tIndex) += aSetValue; 
+        }
+        , "fill vector boundary dofs");
+}
+
+inline void setDofInScalarVectorOnBoundary3D(Omega_h::Mesh & aMesh,
+                                             const std::string & aBoundaryID,
+                                             const Plato::ScalarVector & aVector,
+                                             const Plato::OrdinalType  & aDofStride,
+                                             const Plato::OrdinalType  & aDofToSet,
+                                             const Plato::Scalar       & aSetValue)
+{
+    const Omega_h::Int tVertexDim = 0;
+    const Omega_h::Int tFaceDim   = 2;
+    Omega_h::Read<Omega_h::I8> Marks;
+    if (aBoundaryID == "x0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 12);
+    else if (aBoundaryID == "x1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 14);
+    else if (aBoundaryID == "y0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 10);
+    else if (aBoundaryID == "y1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 16);
+    else if (aBoundaryID == "z0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim,  4);
+    else if (aBoundaryID == "z1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 22);
+    else
+        THROWERR("Specifed boundary ID not implemented.")
+
+    Omega_h::LOs tLocalOrdinals = Omega_h::collect_marked(Marks);
+    auto tNumBoundaryNodes = tLocalOrdinals.size();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * tLocalOrdinals[aIndex] + aDofToSet;
+            aVector(tIndex) += aSetValue;
+        }
+        , "fill vector boundary dofs");
+}
+
+
+inline void setDofInScalarVector(const Plato::ScalarVector & aVector,
+                                 const Plato::OrdinalType  & aDofStride,
+                                 const Plato::OrdinalType  & aDofToSet,
+                                 const Plato::Scalar       & aSetValue)
+{
+    auto tVectorSize = aVector.extent(0);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tVectorSize), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aNodeIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * aNodeIndex + aDofToSet;
+            aVector(tIndex) += aSetValue; 
+        }
+        , "fill specific vector entry globally");
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrain2D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 2;
     constexpr Plato::OrdinalType tMeshWidth = 1;
     auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
-    // using Residual = typename Plato::Evaluation<Plato::SimplexPlasticity<tSpaceDim>>::Residual;
-    // using GlobalStateT = typename Residual::GlobalStateScalarType;
-    // using LocalStateT = typename Residual::LocalStateScalarType;
-    // using ConfigT = typename Residual::ConfigScalarType;
-    // using ResultT = typename Residual::ResultScalarType;
-    // using ControlT = typename Residual::ControlScalarType;
+    using PhysicsT = Plato::SimplexThermoPlasticity<tSpaceDim>;
 
-    // const     Plato::OrdinalType tNumCells     = tMesh->nelems();
-    // constexpr Plato::OrdinalType tDofsPerCell  = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
-    // constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
+    using Residual = typename Plato::Evaluation<PhysicsT>::Residual;
 
-    // // Create configuration workset
-    // Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
-    // Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
-    // tWorksetBase.worksetConfig(tConfigWS);
+    using GlobalStateT = typename Residual::StateScalarType;
+    using LocalStateT  = typename Residual::LocalStateScalarType;
+    using ConfigT      = typename Residual::ConfigScalarType;
+    using ResultT      = typename Residual::ResultScalarType;
+    using ControlT     = typename Residual::ControlScalarType;
 
-    // // Create control workset
-    // const Plato::OrdinalType tNumVerts = tMesh->nverts();
-    // Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
-    // Plato::ScalarVector tControl("Controls", tNumVerts);
-    // Plato::fill(1.0, tControl);
-    // tWorksetBase.worksetControl(tControl, tControlWS);
+    using ElasticStrainT = typename Plato::fad_type_t<PhysicsT, LocalStateT, 
+                                                      GlobalStateT, ConfigT, ControlT>;
 
-    // // Create state workset
-    // const Plato::OrdinalType tNumDofs = tNumVerts * tSpaceDim;
-    // Plato::ScalarVector tState("States", tNumDofs);
-    // Plato::fill(0.1, tState);
-    // //Plato::fill(0.0, tState);
-    // Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & aOrdinal)
-    //         { tState(aOrdinal) *= static_cast<Plato::Scalar>(aOrdinal) * 2; }, "fill state");
-    // Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
-    // tWorksetBase.worksetState(tState, tStateWS);
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerCell         = PhysicsT::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNodesPerCell        = PhysicsT::mNumNodesPerCell;
+    constexpr Plato::OrdinalType tNumVoigtTerms       = PhysicsT::mNumVoigtTerms;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
 
-    // // Create result/output workset
-    // Plato::ScalarVectorT<ResultT> tResultWS("result", tNumCells);
+    // Create configuration workset
+    Plato::WorksetBase<PhysicsT> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
 
-    // // ALLOCATE PLATO CRITERION
-    // Plato::DataMap tDataMap;
-    // Omega_h::MeshSets tMeshSets;
+    // Create control workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // Create global state workset
+    const Plato::OrdinalType tNumNodalDofs = tDofsPerCell * tNumCells;
+    Plato::ScalarVector tGlobalState("global state", tNumNodalDofs);
+    Plato::fill(0.0, tGlobalState);
+
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+
+    Plato::OrdinalType tTemperature = 3;
+    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+
+    Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
+
+    // Create local state workset
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainXY = 4;
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
+    tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
+
+    // Create result/output workset
+    Plato::ScalarMultiVectorT< ElasticStrainT > 
+          tElasticStrain("elastic strain output", tNumCells, tNumVoigtTerms);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
     
+    constexpr Plato::Scalar tThermalExpansionCoefficient = 1.0e-2;
+    constexpr Plato::Scalar tReferenceTemperature        = 300.0;
 
-    // tCriterion.evaluate(tStateWS, tControlWS, tConfigWS, tResultWS);
+    Plato::ThermoPlasticityUtilities<tSpaceDim, PhysicsT> 
+          tThermoPlasticityUtils(tThermalExpansionCoefficient, tReferenceTemperature);
+
+    Plato::LinearTetCubRuleDegreeOne<tSpaceDim> tCubatureRule;
+    auto tBasisFunctions = tCubatureRule.getBasisFunctions();
+
+    Plato::ComputeGradientWorkset<tSpaceDim> tComputeGradient;
+    Plato::ScalarVectorT<ConfigT>  tCellVolume("cell volume unused", tNumCells);
+    Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, tNodesPerCell, tSpaceDim);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+    {
+        tComputeGradient(tCellOrdinal, tGradient, tConfigWS, tCellVolume);
+
+        tThermoPlasticityUtils.computeElasticStrain(tCellOrdinal, tGlobalStateWS, tLocalStateWS, 
+                                                    tBasisFunctions,   tGradient, tElasticStrain);
+    }, "Unit Test");
 
 
-    // constexpr Plato::Scalar tTolerance = 1e-4;
-    // std::vector<Plato::Scalar> tGold = {158.526064959, 4.77842781597};
-    // auto tHostResultWS = Kokkos::create_mirror(tResultWS);
-    // Kokkos::deep_copy(tHostResultWS, tResultWS);
-    // for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
-    // {
-    //     TEST_FLOATING_EQUALITY(tGold[tIndex], tHostResultWS(tIndex), tTolerance);
-    // }
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<std::vector<Plato::Scalar>> tGold = {{-1.0,-2.0,-3.0},
+                                                     {-1.0,-2.0,-3.0}};
+    auto tHostElasticStrain = Kokkos::create_mirror(tElasticStrain);
+    Kokkos::deep_copy(tHostElasticStrain, tElasticStrain);
+    for(Plato::OrdinalType tCellIndex = 0; tCellIndex < tNumCells; tCellIndex++)
+        for(Plato::OrdinalType tVoigtIndex = 0; tVoigtIndex < tNumVoigtTerms; tVoigtIndex++)
+            TEST_FLOATING_EQUALITY(tHostElasticStrain(tCellIndex, tVoigtIndex), 
+                                                tGold[tCellIndex][tVoigtIndex], tTolerance);
+}
 
-    // auto tObjFuncVal = Plato::local_result_sum<Plato::Scalar>(tNumCells, tResultWS);
-    // TEST_FLOATING_EQUALITY(163.304492775, tObjFuncVal, tTolerance);
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrain3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    using PhysicsT = Plato::SimplexThermoPlasticity<tSpaceDim>;
+
+    using Residual = typename Plato::Evaluation<PhysicsT>::Residual;
+
+    using GlobalStateT = typename Residual::StateScalarType;
+    using LocalStateT  = typename Residual::LocalStateScalarType;
+    using ConfigT      = typename Residual::ConfigScalarType;
+    using ResultT      = typename Residual::ResultScalarType;
+    using ControlT     = typename Residual::ControlScalarType;
+
+    using ElasticStrainT = typename Plato::fad_type_t<PhysicsT, LocalStateT, 
+                                                      GlobalStateT, ConfigT, ControlT>;
+
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerCell         = PhysicsT::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNodesPerCell        = PhysicsT::mNumNodesPerCell;
+    constexpr Plato::OrdinalType tNumVoigtTerms       = PhysicsT::mNumVoigtTerms;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
+
+    // Create configuration workset
+    Plato::WorksetBase<PhysicsT> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create control workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarMultiVectorT<ControlT> tControlWS("control workset", tNumCells, tNodesPerCell);
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+    tWorksetBase.worksetControl(tControl, tControlWS);
+
+    // Create global state workset
+    const Plato::OrdinalType tNumNodalDofs = tDofsPerCell * tNumCells;
+    Plato::ScalarVector tGlobalState("global state", tNumNodalDofs);
+    Plato::fill(0.0, tGlobalState);
+
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    Plato::OrdinalType tDispZ = 2;
+    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+
+    Plato::OrdinalType tTemperature = 4;
+    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+
+    Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
+
+    // Create local state workset
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainZZ = 4;
+    Plato::OrdinalType tPlasticStrainYZ = 5;
+    Plato::OrdinalType tPlasticStrainXZ = 6;
+    Plato::OrdinalType tPlasticStrainXY = 7;
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.0);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
+    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
+    Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
+    tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
+
+    // Create result/output workset
+    Plato::ScalarMultiVectorT< ElasticStrainT > 
+          tElasticStrain("elastic strain output", tNumCells, tNumVoigtTerms);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+    
+    constexpr Plato::Scalar tThermalExpansionCoefficient = 1.0e-2;
+    constexpr Plato::Scalar tReferenceTemperature        = 300.0;
+
+    Plato::ThermoPlasticityUtilities<tSpaceDim, PhysicsT> 
+          tThermoPlasticityUtils(tThermalExpansionCoefficient, tReferenceTemperature);
+
+    Plato::LinearTetCubRuleDegreeOne<tSpaceDim> tCubatureRule;
+    auto tBasisFunctions = tCubatureRule.getBasisFunctions();
+
+    Plato::ComputeGradientWorkset<tSpaceDim> tComputeGradient;
+    Plato::ScalarVectorT<ConfigT>  tCellVolume("cell volume unused", tNumCells);
+    Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, tNodesPerCell, tSpaceDim);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+    {
+        tComputeGradient(tCellOrdinal, tGradient, tConfigWS, tCellVolume);
+
+        tThermoPlasticityUtils.computeElasticStrain(tCellOrdinal, tGlobalStateWS, tLocalStateWS, 
+                                                    tBasisFunctions,   tGradient, tElasticStrain);
+    }, "Unit Test");
+
+
+    constexpr Plato::Scalar tTolerance = 1e-4;
+    std::vector<std::vector<Plato::Scalar>> tGold = {{-1.0,-2.0,-3.0,-3.0,-3.0,-3.0},
+                                                     {-1.0,-2.0,-3.0,-3.0,-3.0,-3.0},
+                                                     {-1.0,-2.0,-3.0,-3.0,-3.0,-3.0},
+                                                     {-1.0,-2.0,-3.0,-3.0,-3.0,-3.0},
+                                                     {-1.0,-2.0,-3.0,-3.0,-3.0,-3.0},
+                                                     {-1.0,-2.0,-3.0,-3.0,-3.0,-3.0}};
+    auto tHostElasticStrain = Kokkos::create_mirror(tElasticStrain);
+    Kokkos::deep_copy(tHostElasticStrain, tElasticStrain);
+    for(Plato::OrdinalType tCellIndex = 0; tCellIndex < tNumCells; tCellIndex++)
+        for(Plato::OrdinalType tVoigtIndex = 0; tVoigtIndex < tNumVoigtTerms; tVoigtIndex++)
+            TEST_FLOATING_EQUALITY(tHostElasticStrain(tCellIndex, tVoigtIndex), 
+                                                tGold[tCellIndex][tVoigtIndex], tTolerance);
 }
 
 

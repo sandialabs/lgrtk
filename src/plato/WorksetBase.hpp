@@ -199,6 +199,40 @@ inline void workset_state_scalar_fad(int aNumCells,
 // function workset_state_scalar_fad
 
 /******************************************************************************/
+template<Plato::OrdinalType NumLocalDofsPerCell, class State, class StateWS>
+inline void workset_local_state_scalar_scalar(Plato::OrdinalType aNumCells, State aState, StateWS aStateWS)
+/******************************************************************************/
+{
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+    {
+        for(Plato::OrdinalType tDofIndex = 0; tDofIndex < NumLocalDofsPerCell; tDofIndex++)
+        {
+          Plato::OrdinalType tGlobalDof = (aCellOrdinal * NumLocalDofsPerCell) + tDofIndex;
+          aStateWS(aCellOrdinal, tDofIndex) = aState(tGlobalDof);
+        }
+    }, "workset_local_state_scalar_scalar");
+}
+// function workset_local_state_scalar_scalar
+
+/******************************************************************************/
+template<Plato::OrdinalType NumLocalDofsPerCell, class StateFad, class State, class FadStateWS>
+inline void workset_local_state_scalar_fad(Plato::OrdinalType aNumCells,
+                                           State aState,
+                                           FadStateWS aFadStateWS)
+/******************************************************************************/
+{
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+    {
+        for(Plato::OrdinalType tDofIndex = 0; tDofIndex < NumLocalDofsPerCell; tDofIndex++)
+        {
+          Plato::OrdinalType tGlobalDof = (aCellOrdinal * NumLocalDofsPerCell) + tDofIndex;
+          aFadStateWS(aCellOrdinal,tDofIndex) = StateFad(NumLocalDofsPerCell, tDofIndex, aState(tGlobalDof));
+        }
+    }, "workset_local_state_scalar_fad");
+}
+// function workset_local_state_scalar_fad
+
+/******************************************************************************/
 template<int spaceDim, int numNodesPerCell, class ConfigWS, class NodeCoordinates>
 inline void workset_config_scalar(int aNumCells, NodeCoordinates aNodeCoordinate, ConfigWS aConfigWS)
 /******************************************************************************/
@@ -315,6 +349,7 @@ class WorksetBase : public SimplexPhysics
     using SimplexPhysics::mNumControl;
     using SimplexPhysics::mNumNodesPerCell;
     using SimplexPhysics::mNumDofsPerCell;
+    using SimplexPhysics::mNumLocalDofsPerCell;
     using SimplexPhysics::mNumNSPerNode;
 
     using StateFad      = typename Plato::SimplexFadTypes<SimplexPhysics>::StateFad;
@@ -384,21 +419,21 @@ class WorksetBase : public SimplexPhysics
     }
 
     /**************************************************************************/
-    void worksetLocalState( const Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace> & aLocalState,
-                            Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace> & aLocalStateWS ) const
+    void worksetLocalState( const Plato::ScalarVector & aLocalState,
+                                  Plato::ScalarMultiVector & aLocalStateWS ) const
     /**************************************************************************/
     {
-      Plato::workset_state_scalar_scalar<mNumDofsPerNode, mNumNodesPerCell>(
-              mNumCells, mStateEntryOrdinal, aLocalState, aLocalStateWS);
+      Plato::workset_local_state_scalar_scalar<mNumLocalDofsPerCell>(
+              mNumCells, aLocalState, aLocalStateWS);
     }
 
     /**************************************************************************/
-    void worksetLocalState( const Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace> & aLocalState,
-                            Kokkos::View<LocalStateFad**, Kokkos::LayoutRight, Plato::MemSpace> & aFadLocalStateWS ) const
+    void worksetLocalState( const Plato::ScalarVector& aLocalState,
+                            Plato::ScalarMultiVectorT<LocalStateFad> & aFadLocalStateWS ) const
     /**************************************************************************/
     {
-      Plato::workset_state_scalar_fad<mNumDofsPerNode, mNumNodesPerCell, LocalStateFad>(
-              mNumCells, mStateEntryOrdinal, aLocalState, aFadLocalStateWS);
+      Plato::workset_local_state_scalar_fad<mNumLocalDofsPerCell, LocalStateFad>(
+              mNumCells, aLocalState, aFadLocalStateWS);
     }
 
     /**************************************************************************/
