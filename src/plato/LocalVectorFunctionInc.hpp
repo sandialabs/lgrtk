@@ -256,7 +256,15 @@ class LocalVectorFunctionInc
       return mLocalVectorFunctionResidual->getDofNames();
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Update the local state variables
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [out] aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    ******************************************************************************/
     void
     updateLocalState(const Plato::ScalarVector & aGlobalState,
                      const Plato::ScalarVector & aPrevGlobalState,
@@ -264,7 +272,6 @@ class LocalVectorFunctionInc
                      const Plato::ScalarVector & aPrevLocalState,
                      const Plato::ScalarVector & aControl,
                      Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename Residual::ConfigScalarType;
       using StateScalar          = typename Residual::StateScalarType;
@@ -312,7 +319,90 @@ class LocalVectorFunctionInc
                                                       aTimeStep );
     }
 
-    /**************************************************************************/
+
+    /**************************************************************************//**
+    * @brief Compute the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return local residual vector
+    ******************************************************************************/
+    Plato::ScalarMultiVectorT<typename Residual::ResultScalarType>
+    value(const Plato::ScalarVector & aGlobalState,
+          const Plato::ScalarVector & aPrevGlobalState,
+          const Plato::ScalarVector & aLocalState,
+          const Plato::ScalarVector & aPrevLocalState,
+          const Plato::ScalarVector & aControl,
+          Plato::Scalar aTimeStep = 0.0) const
+    {
+        using ConfigScalar         = typename Residual::ConfigScalarType;
+        using StateScalar          = typename Residual::StateScalarType;
+        using PrevStateScalar      = typename Residual::PrevStateScalarType;
+        using LocalStateScalar     = typename Residual::LocalStateScalarType;
+        using PrevLocalStateScalar = typename Residual::PrevLocalStateScalarType;
+        using ControlScalar        = typename Residual::ControlScalarType;
+        using ResultScalar         = typename Residual::ResultScalarType;
+
+        // Workset config
+        //
+        Plato::ScalarArray3DT<ConfigScalar>
+            tConfigWS("Config Workset", mNumCells, mNumNodesPerCell, mNumSpatialDims);
+        mWorksetBase.worksetConfig(tConfigWS);
+
+        // Workset global state
+        //
+        Plato::ScalarMultiVectorT<StateScalar> tGlobalStateWS("State Workset", mNumCells, mNumDofsPerCell);
+        mWorksetBase.worksetState(aGlobalState, tGlobalStateWS);
+
+        // Workset prev global state
+        //
+        Plato::ScalarMultiVectorT<PrevStateScalar> tPrevGlobalStateWS("Prev State Workset", mNumCells, mNumDofsPerCell);
+        mWorksetBase.worksetState(aPrevGlobalState, tPrevGlobalStateWS);
+
+        // Workset local state
+        //
+        Plato::ScalarMultiVectorT<LocalStateScalar> 
+                                 tLocalStateWS("Local State Workset", mNumCells, mNumLocalDofsPerCell);
+        mWorksetBase.worksetLocalState(aLocalState, tLocalStateWS);
+
+        // Workset prev local state
+        //
+        Plato::ScalarMultiVectorT<PrevLocalStateScalar> 
+                                 tPrevLocalStateWS("Prev Local State Workset", mNumCells, mNumLocalDofsPerCell);
+        mWorksetBase.worksetLocalState(aPrevLocalState, tPrevLocalStateWS);
+
+        // Workset control
+        //
+        Plato::ScalarMultiVectorT<ControlScalar> tControlWS("Control Workset", mNumCells, mNumNodesPerCell);
+        mWorksetBase.worksetControl(aControl, tControlWS);
+
+        // create return view
+        //
+        Plato::ScalarMultiVectorT<ResultScalar> tResidual("Residual", mNumCells, mNumLocalDofsPerCell);
+
+        // evaluate function
+        //
+        mLocalVectorFunctionResidual->evaluate(tGlobalStateWS, tPrevGlobalStateWS, 
+                                               tLocalStateWS,  tPrevLocalStateWS, 
+                                               tControlWS, tConfigWS, tResidual, aTimeStep);
+
+        return tResidual;
+    }
+
+
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt configuration of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt configuration of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename GradientX::ResultScalarType>
     gradient_x(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -320,7 +410,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
         using ConfigScalar         = typename GradientX::ConfigScalarType;
         using StateScalar          = typename GradientX::StateScalarType;
@@ -376,7 +465,16 @@ class LocalVectorFunctionInc
         return tJacobian;
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt global state of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt global state of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename GlobalJacobian::ResultScalarType>
     gradient_u(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -384,7 +482,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename GlobalJacobian::ConfigScalarType;
       using StateScalar          = typename GlobalJacobian::StateScalarType;
@@ -440,7 +537,16 @@ class LocalVectorFunctionInc
       return tJacobian;
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt previous global state of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt previous global state of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename GlobalJacobianP::ResultScalarType>
     gradient_up(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -448,7 +554,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename GlobalJacobianP::ConfigScalarType;
       using StateScalar          = typename GlobalJacobianP::StateScalarType;
@@ -504,7 +609,16 @@ class LocalVectorFunctionInc
       return tJacobian;
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt local state of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt local state of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename LocalJacobian::ResultScalarType>
     gradient_c(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -512,7 +626,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename LocalJacobian::ConfigScalarType;
       using StateScalar          = typename LocalJacobian::StateScalarType;
@@ -568,7 +681,16 @@ class LocalVectorFunctionInc
       return tJacobian;
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt previous local state of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt previous local state of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename LocalJacobianP::ResultScalarType>
     gradient_cp(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -576,7 +698,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename LocalJacobianP::ConfigScalarType;
       using StateScalar          = typename LocalJacobianP::StateScalarType;
@@ -632,7 +753,16 @@ class LocalVectorFunctionInc
       return tJacobian;
     }
 
-    /**************************************************************************/
+    /**************************************************************************//**
+    * @brief Compute the gradient wrt control of the local residual vector
+    * @param [in]  aGlobalState global state at current time step
+    * @param [in]  aPrevGlobalState global state at previous time step
+    * @param [in]  aLocalState local state at current time step
+    * @param [in]  aPrevLocalState local state at previous time step
+    * @param [in]  aControl control parameters
+    * @param [in]  aTimeStep time step
+    * @return gradient wrt control of the local residual vector
+    ******************************************************************************/
     Plato::ScalarMultiVectorT<typename GradientZ::ResultScalarType>
     gradient_z(const Plato::ScalarVector & aGlobalState,
                const Plato::ScalarVector & aPrevGlobalState,
@@ -640,7 +770,6 @@ class LocalVectorFunctionInc
                const Plato::ScalarVector & aPrevLocalState,
                const Plato::ScalarVector & aControl,
                Plato::Scalar aTimeStep = 0.0) const
-    /**************************************************************************/
     {
       using ConfigScalar         = typename GradientZ::ConfigScalarType;
       using StateScalar          = typename GradientZ::StateScalarType;
