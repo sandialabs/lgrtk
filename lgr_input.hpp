@@ -6,7 +6,7 @@
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
-#include <lgr_hyper_ep.hpp>
+#include <lgr_hyper_ep/model.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_dimensional.hpp>
 

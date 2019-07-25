@@ -13,7 +13,7 @@
 #include <lgr_input.hpp>
 #include <lgr_stabilized.hpp>
 #include <lgr_adapt.hpp>
-#include <lgr_hyper_ep.hpp>
+#include <lgr_hyper_ep/model.hpp>
 
 namespace lgr {
 
@@ -303,7 +303,6 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
       auto const K = half_K0 * (J + Jinv);
       points_to_K[point] = K;
       points_to_G[point] = G0;
-  std::cout << "HERE I AM B.4: K, G, Fp, ep=" << K << " " << G0 << " " << Fp(0,0) << " " << ep << "\n";
     }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
