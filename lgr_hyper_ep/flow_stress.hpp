@@ -1,9 +1,6 @@
 #ifndef LGR_HYPER_EP_FLOW_STRESS_HPP
 #define LGR_HYPER_EP_FLOW_STRESS_HPP
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-parameter"
-
 #include "common.hpp"
 
 namespace lgr {
@@ -13,7 +10,8 @@ namespace impl {
 template <Hardening hardening, RateDependence rate_dependence>
 HPC_NOINLINE inline double
 flow_stress(
-  Properties props, double const temp, double const ep, double const epdot)
+  Properties /* props */, double const /* temp */,
+  double const /* ep */, double const /* epdot */)
 {
   std::cout << "Must provide partial specialization\n";
   assert (false);
@@ -26,7 +24,8 @@ flow_stress(
 template <>
 HPC_NOINLINE inline double
 flow_stress<Hardening::NONE, RateDependence::NONE>(
-  Properties props, double const temp, double const ep, double const epdot)
+  Properties props, double const /* temp */,
+  double const /* ep */, double const /* epdot */)
 {
   return props.A;
 }
@@ -38,7 +37,8 @@ flow_stress<Hardening::NONE, RateDependence::NONE>(
 template <>
 HPC_NOINLINE inline double
 flow_stress<Hardening::LINEAR_ISOTROPIC, RateDependence::NONE>(
-  Properties props, double const temp, double const ep, double const epdot)
+  Properties props, double const /* temp */,
+  double const ep, double const /* epdot */)
 {
   return props.A + props.B * ep;
 }
@@ -50,7 +50,8 @@ flow_stress<Hardening::LINEAR_ISOTROPIC, RateDependence::NONE>(
 template <>
 HPC_NOINLINE inline double
 flow_stress<Hardening::POWER_LAW, RateDependence::NONE>(
-  Properties props, double const temp, double const ep, double const epdot)
+  Properties props, double const /* temp */,
+  double const ep, double const /* epdot */)
 {
   auto Y = props.A;
   if (props.B > 0.0)
@@ -130,8 +131,8 @@ flow_stress<Hardening::JOHNSON_COOK, RateDependence::JOHNSON_COOK>(
 template <Hardening hardening, RateDependence rate_dependence>
 HPC_NOINLINE inline double
 dflow_stress(
-  Properties const props, double const temp, double const ep,
-  double const epdot, double const dtime)
+  Properties const /* props */, double const /* temp */, double const /* ep */,
+  double const /* epdot */, double const /* dtime */)
 {
   std::cout << "Must provide partial specialization\n";
   assert (false);
@@ -144,8 +145,8 @@ dflow_stress(
 template <>
 HPC_NOINLINE inline double
 dflow_stress<Hardening::NONE, RateDependence::NONE>(
-  Properties const props, double const temp, double const ep,
-  double const epdot, double const dtime)
+  Properties const /* props */, double const /* temp */, double const /* ep */,
+  double const /* epdot */, double const /* dtime */)
 {
   return 0.0;
 }
@@ -158,8 +159,8 @@ dflow_stress<Hardening::NONE, RateDependence::NONE>(
 template <>
 HPC_NOINLINE inline double
 dflow_stress<Hardening::LINEAR_ISOTROPIC, RateDependence::NONE>(
-  Properties const props, double const temp, double const ep,
-  double const epdot, double const dtime)
+  Properties const props, double const /* temp */, double const /* ep */,
+  double const /* epdot */, double const /* dtime */)
 {
   return props.B;
 }
@@ -172,8 +173,8 @@ dflow_stress<Hardening::LINEAR_ISOTROPIC, RateDependence::NONE>(
 template <>
 HPC_NOINLINE inline double
 dflow_stress<Hardening::POWER_LAW, RateDependence::NONE>(
-  Properties const props, double const temp, double const ep,
-  double const epdot, double const dtime)
+  Properties const props, double const /* temp */, double const ep,
+  double const /* epdot */, double const /* dtime */)
 {
   return (ep > 0.0) ? props.B * props.n * std::pow(ep, props.n - 1) : 0.0;
 }
@@ -297,7 +298,5 @@ dflow_stress(
 
 } // namespace hyper_ep
 } // namespace lgr
-
-#pragma clang diagnostic pop
 
 #endif // LGR_HYPER_EP_FLOW_STRESS_HPP
