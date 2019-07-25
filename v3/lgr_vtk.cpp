@@ -149,6 +149,12 @@ void file_writer::capture(input const& in, state const& s) {
         hpc::copy(s.rho_h[material], captured.rho_h[material]);
       }
     }
+#if 0
+    if (in.enable_hyper_ep[material]) {
+      captured.ep_h[material].resize(s.ep_h[material].size());
+      hpc::copy(s.ep_h[material], captured.ep_h[material]);
+    }
+#endif
   }
   if (in.enable_adapt) {
     captured.h_adapt.resize(s.h_adapt.size());
@@ -227,6 +233,15 @@ void file_writer::write(
         write_vtk_scalars(stream, name, captured.rho_h[material]);
       }
     }
+#if 0
+    if (in.enable_hyper_ep[material]) {
+      std::stringstream name_stream;
+      name_stream << "nodal_ep_" << material;
+      auto name = name_stream.str();
+      assert(captured.ep_h[material].size() == captured.nodes.size());
+      write_vtk_scalars(stream, name, captured.ep_h[material]);
+    }
+#endif
   }
   if (in.enable_adapt) {
     assert(captured.h_adapt.size() == captured.nodes.size());
