@@ -65,6 +65,8 @@ private:
     std::shared_ptr<Plato::CellForcing<m_numVoigtTerms>> m_cellForcing;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
+    Teuchos::RCP<Plato::LinearElasticMaterial<mSpaceDim>> m_materialModel;
+
     std::vector<std::string> m_plottable;
 
 public:
@@ -92,9 +94,7 @@ public:
         // create material model and get stiffness
         //
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
-        auto tMaterialModel = tMaterialModelFactory.create();
-        m_cellStiffness = tMaterialModel->getStiffnessMatrix();
-  
+        m_materialModel = tMaterialModelFactory.create();
 
         // parse body loads
         // 
@@ -146,8 +146,8 @@ public:
           typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-      Plato::Strain<mSpaceDim>                        tComputeVoigtStrain;
-      Plato::LinearStress<mSpaceDim>                  tComputeVoigtStress(m_cellStiffness);
+      Plato::Strain<mSpaceDim>                 tComputeVoigtStrain;
+      Plato::LinearStress<mSpaceDim>           tComputeVoigtStress(m_materialModel);
       Plato::StressDivergence<mSpaceDim>       tComputeStressDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType>

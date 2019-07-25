@@ -2,6 +2,7 @@
 #define LGR_PLATO_LINEAR_STRESS_HPP
 
 #include "plato/SimplexMechanics.hpp"
+#include "plato/LinearElasticMaterial.hpp"
 
 #include <Omega_h_matrix.hpp>
 
@@ -28,8 +29,11 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
 
   public:
 
-    LinearStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> cellStiffness) :
-            m_cellStiffness(cellStiffness) {}
+    LinearStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> aCellStiffness) :
+            m_cellStiffness(aCellStiffness) {}
+
+    LinearStress(const Teuchos::RCP<Plato::LinearElasticMaterial<SpaceDim>> aMaterialModel ) :
+            m_cellStiffness(aMaterialModel->getStiffnessMatrix()) {}
 
     template<typename StressScalarType, typename StrainScalarType>
     DEVICE_TYPE inline void
