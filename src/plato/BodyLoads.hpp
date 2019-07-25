@@ -9,8 +9,9 @@
 #include "plato/alg/Basis.hpp"
 #include "plato/alg/Cubature.hpp"
 #include "ImplicitFunctors.hpp"
+#include "plato/Plato_TopOptFunctors.hpp"
 
-#include "plato/PlatoStaticsTypes.hpp"
+//#include "plato/PlatoStaticsTypes.hpp"
 
 namespace Plato
 {
@@ -96,10 +97,15 @@ mapPoints(
 /*!
   \brief Class for essential boundary conditions.
 */
-template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumDofsPerNode=SpaceDim>
+template<typename EvaluationType>
 class BodyLoad
 /******************************************************************************/
 {
+  private:
+    static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
+    static constexpr Plato::OrdinalType mNumDofsPerNode = Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerNode; /*!< number of degrees of freedom per node */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+
   protected:
     const std::string    m_name;
     const Plato::OrdinalType            m_dof;
@@ -108,7 +114,7 @@ class BodyLoad
   public:
   
   /**************************************************************************/
-  BodyLoad<SpaceDim,NumDofsPerNode>(const std::string &n, Teuchos::ParameterList &param) :
+  BodyLoad<EvaluationType>(const std::string &n, Teuchos::ParameterList &param) :
     m_name(n),
     m_dof(param.get<Plato::OrdinalType>("Index")),
     m_funcString(param.get<std::string>("Function")) {}
@@ -121,9 +127,9 @@ class BodyLoad
            typename ControlScalarType,
            typename ResultScalarType>
   void get( Omega_h::Mesh& mesh, 
-       Kokkos::View<   StateScalarType**, Kokkos::LayoutRight, Plato::MemSpace >,
-       Kokkos::View< ControlScalarType**, Kokkos::LayoutRight, Plato::MemSpace >,
-       Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > result) const
+       const Kokkos::View<   StateScalarType**, Kokkos::LayoutRight, Plato::MemSpace >,
+       const Kokkos::View< ControlScalarType**, Kokkos::LayoutRight, Plato::MemSpace > & aControl,
+       const Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > & result) const
   /**************************************************************************/
   {
 
@@ -131,19 +137,19 @@ class BodyLoad
   //
   Plato::OrdinalType quadratureDegree = 1;
 
-  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(SpaceDim, quadratureDegree);
+  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(mSpaceDim, quadratureDegree);
 
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
-    refCellQuadraturePoints("ref quadrature points", numPoints, SpaceDim);
+    refCellQuadraturePoints("ref quadrature points", numPoints, mSpaceDim);
   Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>
     quadratureWeights("quadrature weights", numPoints);
   
-  Plato::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
+  Plato::Cubature::getCubature(mSpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
 
 
   // get basis values
   //
-  Plato::Basis basis(SpaceDim);
+  Plato::Basis basis(mSpaceDim);
   Plato::OrdinalType numFields = basis.basisCardinality();
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
     refCellBasisValues("ref basis values", numFields, numPoints);
@@ -155,25 +161,26 @@ class BodyLoad
   //
   Plato::OrdinalType numCells  = mesh.nelems();
   Kokkos::View<Plato::Scalar***, Kokkos::LayoutRight, Plato::MemSpace>
-    quadraturePoints("quadrature points", numCells, numPoints, SpaceDim);
+    quadraturePoints("quadrature points", numCells, numPoints, mSpaceDim);
 
-  mapPoints<SpaceDim>(mesh, refCellQuadraturePoints, quadraturePoints);
+  mapPoints<mSpaceDim>(mesh, refCellQuadraturePoints, quadraturePoints);
 
   
   // get integrand values at quadrature points
   //
   Omega_h::Reals fxnValues;
-  getFunctionValues<SpaceDim>( quadraturePoints, m_funcString, fxnValues );
+  getFunctionValues<mSpaceDim>( quadraturePoints, m_funcString, fxnValues );
 
- 
   // integrate and assemble
   // 
   auto dof = m_dof;
-  Plato::JacobianDet<SpaceDim> jacobianDet(&mesh);
-  Plato::VectorEntryOrdinal<SpaceDim,SpaceDim> vectorEntryOrdinal(&mesh);
-  Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
+  Plato::JacobianDet<mSpaceDim> jacobianDet(&mesh);
+  Plato::VectorEntryOrdinal<mSpaceDim,mSpaceDim> vectorEntryOrdinal(&mesh);
+  Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,numCells), LAMBDA_EXPRESSION(const Plato::OrdinalType &cellOrdinal)
   {
     Scalar jdet = fabs(jacobianDet(cellOrdinal));
+
+    ControlScalarType tDensity = Plato::cell_density<mNumNodesPerCell>(cellOrdinal, aControl);
 
     Plato::OrdinalType entryOffset = cellOrdinal * numPoints;
     
@@ -184,7 +191,7 @@ class BodyLoad
       Scalar weight = quadratureWeights(ptOrdinal) * jdet;
       for (Plato::OrdinalType fieldOrdinal=0; fieldOrdinal<numFields; fieldOrdinal++)
       {
-        result(cellOrdinal,fieldOrdinal*NumDofsPerNode+dof) -= weight * fxnValue * refCellBasisValues(fieldOrdinal,ptOrdinal);
+        result(cellOrdinal,fieldOrdinal*mNumDofsPerNode+dof) -= weight * fxnValue * refCellBasisValues(fieldOrdinal,ptOrdinal) * tDensity;
       }
     }
   },"assemble RHS");
@@ -205,19 +212,19 @@ class BodyLoad
   //
   Plato::OrdinalType quadratureDegree = 1;
 
-  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(SpaceDim,quadratureDegree);
+  Plato::OrdinalType numPoints = Plato::Cubature::getNumCubaturePoints(mSpaceDim,quadratureDegree);
 
   Kokkos::View<Plato::Scalar**, Kokkos::LayoutRight, Plato::MemSpace>
-    refCellQuadraturePoints("ref quadrature points", numPoints, SpaceDim);
+    refCellQuadraturePoints("ref quadrature points", numPoints, mSpaceDim);
   Kokkos::View<Plato::Scalar*, Kokkos::LayoutRight, Plato::MemSpace>
     quadratureWeights("quadrature weights", numPoints);
   
-  Plato::Cubature::getCubature(SpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
+  Plato::Cubature::getCubature(mSpaceDim, quadratureDegree, refCellQuadraturePoints, quadratureWeights);
 
 
   // get basis values
   //
-  Plato::Basis basis(SpaceDim);
+  Plato::Basis basis(mSpaceDim);
   Plato::OrdinalType numFields = basis.basisCardinality();
   Kokkos::View<Scalar**, Kokkos::LayoutRight, MemSpace>    
     refCellBasisValues("ref basis values", numFields, numPoints);
@@ -229,23 +236,23 @@ class BodyLoad
   //
   Plato::OrdinalType numCells  = mesh.nelems();
   Kokkos::View<Scalar***, Kokkos::LayoutRight, MemSpace>   
-    quadraturePoints("quadrature points", numCells, numPoints, SpaceDim);
+    quadraturePoints("quadrature points", numCells, numPoints, mSpaceDim);
 
-  mapPoints<SpaceDim>(mesh, refCellQuadraturePoints, quadraturePoints);
+  mapPoints<mSpaceDim>(mesh, refCellQuadraturePoints, quadraturePoints);
 
   
   // get integrand values at quadrature points
   //
   Omega_h::Reals fxnValues;
-  getFunctionValues<SpaceDim>( quadraturePoints, m_funcString, fxnValues );
+  getFunctionValues<mSpaceDim>( quadraturePoints, m_funcString, fxnValues );
 
  
   // integrate and assemble
   // 
   auto rhs = forcing;
   auto dof = m_dof;
-  Plato::JacobianDet<SpaceDim> jacobianDet(&mesh);
-  Plato::VectorEntryOrdinal<SpaceDim,SpaceDim> vectorEntryOrdinal(&mesh);
+  Plato::JacobianDet<mSpaceDim> jacobianDet(&mesh);
+  Plato::VectorEntryOrdinal<mSpaceDim,mSpaceDim> vectorEntryOrdinal(&mesh);
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
   {
       Plato::Scalar jdet = fabs(jacobianDet(cellOrdinal));
@@ -274,12 +281,13 @@ class BodyLoad
 /*!
   \brief Owner class that contains a vector of BodyLoad objects.
 */
-template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumDofsPerNode=SpaceDim>
+template<typename EvaluationType>
 class BodyLoads
 /******************************************************************************/
 {
   private:
-    std::vector<std::shared_ptr<BodyLoad<SpaceDim,NumDofsPerNode>>> BLs;
+    std::vector<std::shared_ptr<BodyLoad<EvaluationType>>> BLs;
+
   public :
 
   /****************************************************************************/
@@ -300,8 +308,8 @@ class BodyLoads
            "Parameter in Body Loads block not valid.  Expect lists only.");
   
         Teuchos::ParameterList& sublist = params.sublist(name);
-        std::shared_ptr<Plato::BodyLoad<SpaceDim,NumDofsPerNode>> bl;
-        auto newBL = new Plato::BodyLoad<SpaceDim,NumDofsPerNode>(name, sublist);
+        std::shared_ptr<Plato::BodyLoad<EvaluationType>> bl;
+        auto newBL = new Plato::BodyLoad<EvaluationType>(name, sublist);
         bl.reset(newBL);
         BLs.push_back(bl);
     }
@@ -316,7 +324,7 @@ class BodyLoads
   void get( Omega_h::Mesh& aMesh, Plato::ScalarVector& aForcing)
   /****************************************************************************/
   {
-      for (std::shared_ptr<Plato::BodyLoad<SpaceDim,NumDofsPerNode>> & tbl : BLs) {
+      for (std::shared_ptr<Plato::BodyLoad<EvaluationType>> & tbl : BLs) {
            tbl->get(aMesh, aForcing);
       }
   }
@@ -334,7 +342,7 @@ class BodyLoads
             Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > aResult) const
   /**************************************************************************/
   {
-    for (const std::shared_ptr<Plato::BodyLoad<SpaceDim,NumDofsPerNode>> &bl : BLs){
+    for (const std::shared_ptr<Plato::BodyLoad<EvaluationType>> &bl : BLs){
         bl->get(aMesh, aState, aControl, aResult);
     }
   }

@@ -55,7 +55,7 @@ private:
     ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> m_applyEDispWeighting;
     ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>> m_bodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> m_bodyLoads;
 
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>> m_boundaryLoads;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NElecDims, m_numDofsPerNode, EDofOffset>> m_boundaryCharges;
@@ -93,7 +93,7 @@ public:
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            m_bodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            m_bodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse mechanical boundary Conditions

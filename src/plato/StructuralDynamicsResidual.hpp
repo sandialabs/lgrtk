@@ -66,7 +66,7 @@ private:
 
     Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> mCellStiffness;
 
-    std::shared_ptr<Plato::BodyLoads<m_numSpatialDims, m_numDofsPerNode>> mBodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<m_numSpatialDims>> mCubatureRule;
     std::shared_ptr<Plato::NaturalBCs<m_numSpatialDims, m_numDofsPerNode>> mBoundaryLoads;
 
@@ -425,7 +425,7 @@ private:
         // Parse body loads
         if(aParamList.isSublist("Body Loads"))
         {
-            mBodyLoads = std::make_shared<Plato::BodyLoads<m_numSpatialDims, m_numDofsPerNode>>(aParamList.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aParamList.sublist("Body Loads"));
         }
 
         // Parse Neumann loads

@@ -60,7 +60,7 @@ private:
     IndicatorFunctionType m_indicatorFunction;
     Plato::ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>> m_bodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> m_bodyLoads;
     std::shared_ptr<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>> m_boundaryLoads;
     std::shared_ptr<Plato::CellForcing<m_numVoigtTerms>> m_cellForcing;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
@@ -100,7 +100,7 @@ public:
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            m_bodyLoads = std::make_shared<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            m_bodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse boundary Conditions
