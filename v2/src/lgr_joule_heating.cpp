@@ -63,6 +63,7 @@ struct JouleHeating : public Model<Elem> {
     absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
+    cathode_voltage = pl.get<double>("cathode voltage", "0.0");
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
