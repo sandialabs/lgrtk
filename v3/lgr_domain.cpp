@@ -19,7 +19,7 @@ void union_domain::mark(
   }
 }
 
-#ifdef HPC_STRONG_INDICES
+#ifndef HPC_DISABLE_STRONG_INDICES
 void union_domain::mark(
     hpc::device_array_vector<hpc::position<double>, element_index> const& points,
     material_index const marker,
