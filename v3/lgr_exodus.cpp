@@ -102,9 +102,9 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
       host_coords[1].data(),
       host_coords[2].data());
   assert(exodus_error_code == 0);
-  hpc::pinned_array_vector<hpc::vector3<double>, node_index> pinned_coords(s.nodes.size());
+  hpc::pinned_array_vector<hpc::position<double>, node_index> pinned_coords(s.nodes.size());
   for (auto const node : s.nodes) {
-    pinned_coords[node] = hpc::vector3<double>(
+    pinned_coords[node] = hpc::position<double>(
         host_coords[0][node],
         host_coords[1][node],
         host_coords[2][node]);

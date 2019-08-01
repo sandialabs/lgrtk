@@ -45,8 +45,10 @@ circuit:
    double dt = 0.01;
    double tfinal = 1.0;
    int nstep = int(tfinal/dt); 
+   double time = 0.0;
    for (int i=0;i<nstep;i++){
-      circuit.Solve(dt);
+      time+=dt;
+      circuit.Solve(dt,time);
    }
 
    double vna = circuit.GetMeshAnodeVoltage();
@@ -97,7 +99,7 @@ circuit:
 
    // Do not advance, but really doesn't matter since no C/L components
    double dt = 0.0;
-   circuit.Solve(dt);
+   circuit.Solve(dt,0.0);
 
    double vna = circuit.GetMeshAnodeVoltage();
    double vnc = circuit.GetMeshCathodeVoltage();
@@ -158,8 +160,10 @@ circuit:
    double dt = 0.01;
    double tfinal = 1.0;
    int nstep = int(tfinal/dt);
+   double time = 0.0;
    for (int i=0;i<nstep;i++){
-      circuit.Solve(dt);
+      time+=dt;
+      circuit.Solve(dt,time);
    }
 
    double vna = circuit.GetMeshAnodeVoltage();
@@ -214,8 +218,10 @@ circuit:
    double dt = 0.01;
    double tfinal = 1.0;
    int nstep = int(tfinal/dt);
+   double time = 0.0;
    for (int i=0;i<nstep;i++){
-      circuit.Solve(dt);
+      time+=dt;
+      circuit.Solve(dt,time);
    }
 
    double vna = circuit.GetMeshAnodeVoltage();
@@ -284,8 +290,10 @@ circuit:
    double dt = 0.01;
    double tfinal = 2.0;
    int nstep = int(tfinal/dt);
+   double time = 0.0;
    for (int i=0;i<nstep;i++){
-      circuit.Solve(dt);
+      time+=dt;
+      circuit.Solve(dt,time);
    }
 
    double vna = circuit.GetMeshAnodeVoltage();
@@ -358,8 +366,10 @@ circuit:
    double dt = 0.01;
    double tfinal = 1.0;
    int nstep = int(tfinal/dt);
+   double time = 0.0;
    for (int i=0;i<nstep;i++){
-      circuit.Solve(dt);
+      time+=dt;
+      circuit.Solve(dt,time);
    }
 
    double vna = circuit.GetMeshAnodeVoltage();
@@ -420,7 +430,7 @@ circuit:
 
    // Do not advance, but really doesn't matter since no C/L components
    double dt = 0.0;
-   circuit.Solve(dt);
+   circuit.Solve(dt,0.0);
 
    double vn2 = circuit.GetMeshCathodeVoltage();
    double vexp_n2 = 24.0; // Hard coded for this circuit 
@@ -434,7 +444,7 @@ circuit:
 
    // Do not advance, but really doesn't matter since no C/L components
    dt = 0.0;
-   circuit.Solve(dt);
+   circuit.Solve(dt,0.0);
 
    vn2 = circuit.GetMeshCathodeVoltage();
    vexp_n2 = 12.0; // Hard coded for this new circuit 
