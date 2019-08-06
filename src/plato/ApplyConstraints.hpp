@@ -31,11 +31,11 @@ template<int NumDofPerNode>
         Scalar tValue = aDirichletValues[aBcOrdinal];
         auto tRowNodeOrdinal = tRowDofOrdinal / NumDofPerNode;
         auto tLocalRowDofOrdinal  = tRowDofOrdinal % NumDofPerNode;
-        RowMapEntryType tRowStart = tRowMap(tRowNodeOrdinal  );
-        RowMapEntryType tRowEnd   = tRowMap(tRowNodeOrdinal+1);
-        for (RowMapEntryType tColumnNodeOffset=tRowStart; tColumnNodeOffset<tRowEnd; tColumnNodeOffset++)
+        OrdinalType tRowStart = tRowMap(tRowNodeOrdinal  );
+        OrdinalType tRowEnd   = tRowMap(tRowNodeOrdinal+1);
+        for (OrdinalType tColumnNodeOffset=tRowStart; tColumnNodeOffset<tRowEnd; tColumnNodeOffset++)
         {
-            for (RowMapEntryType tLocalColumnDofOrdinal=0; tLocalColumnDofOrdinal<NumDofPerNode; tLocalColumnDofOrdinal++)
+            for (OrdinalType tLocalColumnDofOrdinal=0; tLocalColumnDofOrdinal<NumDofPerNode; tLocalColumnDofOrdinal++)
             {
                 OrdinalType tColumnNodeOrdinal = tColumnIndices(tColumnNodeOffset);
                 auto tEntryOrdinal = NumDofPerNode*NumDofPerNode*tColumnNodeOffset
@@ -51,9 +51,9 @@ template<int NumDofPerNode>
                     // to maintain symmetry
                     Kokkos::atomic_add(&aRhs(tColumnDofOrdinal), -tMatrixEntries(tEntryOrdinal)*tValue);
                     tMatrixEntries(tEntryOrdinal) = 0.0;
-                    RowMapEntryType tColRowStart = tRowMap(tColumnNodeOrdinal  );
-                    RowMapEntryType tColRowEnd   = tRowMap(tColumnNodeOrdinal+1);
-                    for (RowMapEntryType tColRowNodeOffset=tColRowStart; tColRowNodeOffset<tColRowEnd; tColRowNodeOffset++)
+                    OrdinalType tColRowStart = tRowMap(tColumnNodeOrdinal  );
+                    OrdinalType tColRowEnd   = tRowMap(tColumnNodeOrdinal+1);
+                    for (OrdinalType tColRowNodeOffset=tColRowStart; tColRowNodeOffset<tColRowEnd; tColRowNodeOffset++)
                     {
                         OrdinalType tColRowNodeOrdinal = tColumnIndices(tColRowNodeOffset);
                         auto tColRowEntryOrdinal = NumDofPerNode*NumDofPerNode*tColRowNodeOffset
@@ -102,9 +102,9 @@ applyConstraints(
   {
     OrdinalType nodeNumber = bcDofs[bcOrdinal];
     Scalar value = bcValues[bcOrdinal];
-    RowMapEntryType rowStart = rowMap(nodeNumber  );
-    RowMapEntryType rowEnd   = rowMap(nodeNumber+1);
-    for (RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
+    OrdinalType rowStart = rowMap(nodeNumber  );
+    OrdinalType rowEnd   = rowMap(nodeNumber+1);
+    for (OrdinalType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
     {
       OrdinalType column = columnIndices(entryOrdinal);
       if (column == nodeNumber) // diagonal
@@ -117,9 +117,9 @@ applyConstraints(
         // to maintain symmetry
         Kokkos::atomic_add(&rhs(column), -matrixEntries(entryOrdinal)*value);
         matrixEntries(entryOrdinal) = 0.0;
-        RowMapEntryType colRowStart = rowMap(column  );
-        RowMapEntryType colRowEnd   = rowMap(column+1);
-        for (RowMapEntryType colRowEntryOrdinal=colRowStart; colRowEntryOrdinal<colRowEnd; colRowEntryOrdinal++)
+        OrdinalType colRowStart = rowMap(column  );
+        OrdinalType colRowEnd   = rowMap(column+1);
+        for (OrdinalType colRowEntryOrdinal=colRowStart; colRowEntryOrdinal<colRowEnd; colRowEntryOrdinal++)
         {
           OrdinalType colRowColumn = columnIndices(colRowEntryOrdinal);
           if (colRowColumn == nodeNumber)

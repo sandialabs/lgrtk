@@ -46,7 +46,7 @@ namespace Solve {
         Plato::ScalarVector a_b)
         {
 
-            Plato::RowSum<NumDofsPerNode> rowSum(a_A);
+            Plato::RowSum rowSum(a_A);
 
             Plato::InverseWeight<NumDofsPerNode> inverseWeight;
 

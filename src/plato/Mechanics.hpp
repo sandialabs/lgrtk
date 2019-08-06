@@ -405,7 +405,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class Mechanics: public Plato::SimplexMechanics<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::MechanicsFactory::FunctionFactory;
+    typedef Plato::MechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT = SimplexMechanics<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };

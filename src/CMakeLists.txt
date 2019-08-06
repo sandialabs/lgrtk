@@ -65,7 +65,6 @@ SET(PLATO_SOURCES
   plato/EllipticProblem.cpp
   plato/EllipticVMSProblem.cpp
   plato/alg/ParseInput.cpp
-  plato/alg/CrsMatrix.cpp
   plato/alg/Basis.cpp
   plato/alg/Cubature.cpp
   plato/alg/ParallelComm.cpp

@@ -19,7 +19,7 @@ class CrsLinearProblem {
  private:
   typedef Kokkos::View<Scalar *, MemSpace>          Vector;
   typedef Kokkos::View<Scalar **, Kokkos::LayoutRight, MemSpace>         MultiVector;
-  typedef CrsMatrix<Ordinal, int> Matrix;
+  typedef CrsMatrix<Ordinal> Matrix;
 
   Matrix _A;
   Vector _x, _b;  //left-hand side (solution), right-hand side

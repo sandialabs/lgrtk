@@ -13,7 +13,7 @@
 #include "Teuchos_UnitTestHarness.hpp"
 #include <Teuchos_XMLParameterListHelpers.hpp>
 
-#include "plato/alg/StaticsTypes.hpp"
+#include "plato/PlatoStaticsTypes.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include "plato/LinearElasticMaterial.hpp"
 

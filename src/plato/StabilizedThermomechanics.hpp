@@ -129,7 +129,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class StabilizedThermomechanics: public Plato::SimplexStabilizedThermomechanics<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::StabilizedThermomechanicsFactory::FunctionFactory;
+    typedef Plato::StabilizedThermomechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT        = SimplexStabilizedThermomechanics<SpaceDimParam>;
 
     using ProjectorT = typename Plato::Projection<SpaceDimParam,

@@ -202,12 +202,12 @@ public:
 
       if( mBodyLoads != nullptr )
       {
-          mBodyLoads->get( mMesh, aStateWS, aControlWS, aResultWS );
+          mBodyLoads->get( mMesh, aStateWS, aControlWS, aResultWS, -1.0 );
       }
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS, -1.0 );
       }
 
       if( std::count(mPlottable.begin(),mPlottable.end(), "pressure"          ) ) toMap(mDataMap, tPressure, "pressure");

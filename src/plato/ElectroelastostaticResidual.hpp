@@ -179,17 +179,17 @@ public:
 
       if( mBodyLoads != nullptr )
       {
-          mBodyLoads->get( mMesh, state, control, result );
+          mBodyLoads->get( mMesh, state, control, result, -1.0 );
       }
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
       if( mBoundaryCharges != nullptr )
       {
-          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
       if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, strain, "strain");

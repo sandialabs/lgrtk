@@ -57,9 +57,6 @@ namespace Plato {
                 \right|\right| d\xi d\psi
       \f}
     */
-    void get( Omega_h::Mesh* aMesh, 
-              const Omega_h::MeshSets& aMeshSets,
-              Plato::ScalarVector& aResult );
 
     template<typename StateScalarType,
              typename ControlScalarType,
@@ -105,10 +102,6 @@ namespace Plato {
       @param aMeshSets Omega_h mesh sets that contains sideset information.
       @param aResult Assembled vector to which the boundary terms will be added.
     */
-    void get( Omega_h::Mesh* aMesh,             
-              const Omega_h::MeshSets& aMeshSets, 
-              Plato::ScalarVector& aResult);
-
     template<typename StateScalarType,
              typename ControlScalarType,
              typename ResultScalarType>
@@ -173,16 +166,16 @@ namespace Plato {
 
       Scalar weight(0.0);
       if(SpatialDim==1){
-        weight=1.0;
+        weight=scale;
       } else
       if(SpatialDim==2){
-        weight = 1.0/2.0*sqrt(jacobian[0][0]*jacobian[0][0]+jacobian[0][1]*jacobian[0][1]);
+        weight = scale/2.0*sqrt(jacobian[0][0]*jacobian[0][0]+jacobian[0][1]*jacobian[0][1]);
       } else
       if(SpatialDim==3){
         auto a1 = jacobian[0][1]*jacobian[1][2]-jacobian[0][2]*jacobian[1][1];
         auto a2 = jacobian[0][2]*jacobian[1][0]-jacobian[0][0]*jacobian[1][2];
         auto a3 = jacobian[0][0]*jacobian[1][1]-jacobian[0][1]*jacobian[1][0];
-        weight = 1.0/6.0*sqrt(a1*a1+a2*a2+a3*a3);
+        weight = scale/6.0*sqrt(a1*a1+a2*a2+a3*a3);
       }
 
       int localNodeOrd[SpatialDim];
@@ -203,69 +196,6 @@ namespace Plato {
       }
     });
   }
-
-  /****************************************************************************/
-  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
-  void NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,      
-                                               const Omega_h::MeshSets& aMeshSets,
-                                               Plato::ScalarVector& forcing )
-  /****************************************************************************/
-  {
-    // get sideset faces
-    auto& sidesets = aMeshSets[Omega_h::SIDE_SET];
-    auto ssIter = sidesets.find(this->ss_name);
-    auto faceLids = (ssIter->second);
-    auto numFaces = faceLids.size();
-
-
-    // get mesh vertices
-    auto face2verts = aMesh->ask_verts_of(SpatialDim-1);
-
-    auto numNodesPerFace = SpatialDim;
-
-    // create functor for accessing side node coordinates
-    Plato::SideNodeCoordinate<SpatialDim> sideNodeCoordinate(aMesh);
-    
-    auto flux = mFlux;
-    auto fVec = forcing;
-    Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numFaces), LAMBDA_EXPRESSION(int iFace)
-    {
-
-      auto faceOrdinal = faceLids[iFace];
-
-      // integrate
-      //
-      Omega_h::Matrix<SpatialDim, SpatialDim-1> jacobian;
-      for (int d1=0; d1<SpatialDim-1; d1++)
-      {
-        for (int d2=0; d2<SpatialDim; d2++)
-        { 
-          jacobian[d1][d2] = sideNodeCoordinate(faceOrdinal,d1,d2) - sideNodeCoordinate(faceOrdinal,SpatialDim-1,d2);
-        }
-      }
-
-      Scalar weight(0.0);
-      if(SpatialDim==1){
-        weight=1.0;
-      } else
-      if(SpatialDim==2){
-        weight = 1.0/2.0*sqrt(jacobian[0][0]*jacobian[0][0]+jacobian[0][1]*jacobian[0][1]);
-      } else
-      if(SpatialDim==3){
-        auto a1 = jacobian[0][1]*jacobian[1][2]-jacobian[0][2]*jacobian[1][1];
-        auto a2 = jacobian[0][2]*jacobian[1][0]-jacobian[0][0]*jacobian[1][2];
-        auto a3 = jacobian[0][0]*jacobian[1][1]-jacobian[0][1]*jacobian[1][0];
-        weight = 1.0/6.0*sqrt(a1*a1+a2*a2+a3*a3);
-      }
-
-      for( int iNode=0; iNode<numNodesPerFace; iNode++){
-        auto nodeOrdinal = face2verts[faceOrdinal*numNodesPerFace+iNode];
-        for( int iDof=0; iDof<NumDofs; iDof++)
-          Kokkos::atomic_add(&fVec(nodeOrdinal*DofsPerNode+iDof+DofOffset),weight*flux[iDof]);
-      } 
-    });
-  }
-
 
   /****************************************************************************/
   template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
@@ -324,19 +254,6 @@ namespace Plato {
            " Natural Boundary Condition type invalid");
       }
       BCs.push_back(bc);
-    }
-  }
-
-  /****************************************************************************/
-  template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
-  void NaturalBCs<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,      
-                                                const Omega_h::MeshSets& aMeshSets, 
-                                                Plato::ScalarVector& aForcing)
-  /****************************************************************************/
-  {
- 
-    for (auto &bc : BCs){
-      bc->get(aMesh, aMeshSets, aForcing);
     }
   }
 

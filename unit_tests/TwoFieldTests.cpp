@@ -981,7 +981,7 @@ TEUCHOS_UNIT_TEST( PlatoMathFunctors, RowSumSolve )
 
   { // test row sum functor
     //
-    Plato::RowSum<spaceDim> rowSum(tJacobian);
+    Plato::RowSum rowSum(tJacobian);
 
     Plato::ScalarVector tRowSum("row sum", tResidual.extent(0));
 

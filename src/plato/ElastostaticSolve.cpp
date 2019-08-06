@@ -68,7 +68,7 @@ void ElastostaticSolve<SpaceDim>::initialize()
 
     auto mesh = mMeshFields->femesh.omega_h_mesh;
 
-    Plato::RowMapEntryType numRows;
+    Plato::OrdinalType numRows;
     if(mUseBlockMatrix)
     {
         mMatrix = Plato::CreateBlockMatrix<CrsMatrixType, SpaceDim>(mesh);

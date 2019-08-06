@@ -4,7 +4,7 @@
 #include <Omega_h_matrix.hpp>
 #include <Teuchos_ParameterList.hpp>
 
-#include "plato/alg/StaticsTypes.hpp"
+#include "plato/PlatoStaticsTypes.hpp"
 
 namespace Plato {
 

@@ -10,90 +10,105 @@
 #define PLATO_CRS_MATRIX_HPP
 
 #include "plato/alg/PlatoLambda.hpp"
-#include "plato/alg/Plato_Types.hpp"
+#include "plato/PlatoTypes.hpp"
 
 #include <Kokkos_Core.hpp>
 
 namespace Plato {
-template <
-    class Ordinal,
-    class RowMapEntryType>
-class CrsMatrix;
 
-template <
-    class Ordinal,
-    class RowMapEntryType>
-void ApplyCrsMatrix(
-    const CrsMatrix<Ordinal, RowMapEntryType> A,
-    const typename CrsMatrix<
-        Ordinal,
-        RowMapEntryType>::ScalarVector x,
-    const typename CrsMatrix<
-        Ordinal,
-        RowMapEntryType>::ScalarVector b);
-
-template <
-    class Ordinal,
-    class RowMapEntryType>
+template < class Ordinal = Plato::OrdinalType >
 class CrsMatrix {
  public:
-  typedef Kokkos::View<Ordinal*, MemSpace>         OrdinalVector;
-  typedef Kokkos::View<Scalar*, MemSpace>          ScalarVector;
-  typedef Kokkos::View<RowMapEntryType*, MemSpace> RowMapVector;
+  typedef Kokkos::View<Ordinal*, MemSpace> OrdinalVector;
+  typedef Kokkos::View<Scalar*,  MemSpace> ScalarVector;
+  typedef Kokkos::View<Ordinal*, MemSpace> RowMapVector;
 
  private:
-  RowMapVector  _rowMap;
-  OrdinalVector _columnIndices;
-  ScalarVector  _entries;
 
-  int _blockSizeRow, _blockSizeCol;
-  bool _isBlockMatrix;
+  RowMapVector  mRowMap;
+  OrdinalVector mColumnIndices;
+  ScalarVector  mEntries;
+
+  int  mNumRows;
+  int  mNumCols;
+  int  mBlockSizeRow;
+  int  mBlockSizeCol;
+  bool mIsBlockMatrix;
 
  public:
-  decltype(_isBlockMatrix) isBlockMatrix(){return _isBlockMatrix;}
-  decltype(_blockSizeRow)  blockSizeRow(){return _blockSizeRow;}
-  decltype(_blockSizeCol)  blockSizeCol(){return _blockSizeCol;}
+  decltype(mIsBlockMatrix) isBlockMatrix() const { return mIsBlockMatrix; }
+  decltype(mBlockSizeRow)  blockSizeRow()  const { return mBlockSizeRow; }
+  decltype(mBlockSizeCol)  blockSizeCol()  const { return mBlockSizeCol; }
 
-  CrsMatrix() {}
+  decltype(mNumRows) numRows() const
+  { return (mNumRows != -1) ? mNumRows : throw std::logic_error("requested unset value"); }
 
-  CrsMatrix(
-      RowMapVector rowmap, OrdinalVector colIndices, ScalarVector entres,
-      int blkSizeCol=1, int blkSizeRow=1)
-      : _rowMap(rowmap), _columnIndices(colIndices), _entries(entres),
-        _blockSizeRow(blkSizeRow), _blockSizeCol(blkSizeCol),
-        _isBlockMatrix(_blockSizeRow*_blockSizeCol > 1) {}
+  decltype(mNumCols) numCols() const
+  { return (mNumCols != -1) ? mNumCols : throw std::logic_error("requested unset value"); }
 
-  KOKKOS_INLINE_FUNCTION RowMapVector rowMap() { return _rowMap; }
-  KOKKOS_INLINE_FUNCTION OrdinalVector columnIndices() {
-    return _columnIndices;
-  }
-  KOKKOS_INLINE_FUNCTION ScalarVector entries() { return _entries; }
+  CrsMatrix() :
+            mNumRows       (-1),
+            mNumCols       (-1),
+            mBlockSizeRow  ( 1),
+            mBlockSizeCol  ( 1),
+            mIsBlockMatrix (false) {}
 
-  // const versions:
-  KOKKOS_INLINE_FUNCTION const RowMapVector rowMap() const { return _rowMap; }
-  KOKKOS_INLINE_FUNCTION const OrdinalVector columnIndices() const {
-    return _columnIndices;
-  }
-  KOKKOS_INLINE_FUNCTION const ScalarVector entries() const { return _entries; }
+  CrsMatrix( int           aNumRows,
+             int           aNumCols,
+             int           aBlkSizeRow,
+             int           aBlkSizeCol
+           ) :
+            mNumRows       (aNumRows),
+            mNumCols       (aNumCols),
+            mBlockSizeRow  (aBlkSizeRow),
+            mBlockSizeCol  (aBlkSizeCol),
+            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
 
-  void Apply(const ScalarVector x, const ScalarVector b) {
-    ApplyCrsMatrix<Ordinal, RowMapEntryType>(
-        *this, x, b);
-  }
+  CrsMatrix( RowMapVector  aRowmap,
+             OrdinalVector aColIndices,
+             ScalarVector  aEntries,
+             int           aBlkSizeRow=1,
+             int           aBlkSizeCol=1
+           ) :
+            mRowMap        (aRowmap),
+            mColumnIndices (aColIndices),
+            mEntries       (aEntries),
+            mNumRows       (-1),
+            mNumCols       (-1),
+            mBlockSizeRow  (aBlkSizeRow),
+            mBlockSizeCol  (aBlkSizeCol),
+            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
+
+  CrsMatrix( RowMapVector  aRowmap,
+             OrdinalVector aColIndices,
+             ScalarVector  aEntries,
+             int           aNumRows,
+             int           aNumCols,
+             int           aBlkSizeRow,
+             int           aBlkSizeCol
+          ) :
+            mRowMap        (aRowmap),
+            mColumnIndices (aColIndices),
+            mEntries       (aEntries),
+            mNumRows       (aNumRows),
+            mNumCols       (aNumCols),
+            mBlockSizeRow  (aBlkSizeRow),
+            mBlockSizeCol  (aBlkSizeCol),
+            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
+
+  KOKKOS_INLINE_FUNCTION decltype(mRowMap)        rowMap()        { return mRowMap; }
+  KOKKOS_INLINE_FUNCTION decltype(mColumnIndices) columnIndices() { return mColumnIndices; }
+  KOKKOS_INLINE_FUNCTION decltype(mEntries)       entries()       { return mEntries; }
+
+  KOKKOS_INLINE_FUNCTION const decltype(mRowMap)        rowMap()        const { return mRowMap; }
+  KOKKOS_INLINE_FUNCTION const decltype(mColumnIndices) columnIndices() const { return mColumnIndices; }
+  KOKKOS_INLINE_FUNCTION const decltype(mEntries)       entries()       const { return mEntries; }
+
+  KOKKOS_INLINE_FUNCTION void setRowMap       (decltype(mRowMap)        aRowMap)        { mRowMap = aRowMap; }
+  KOKKOS_INLINE_FUNCTION void setColumnIndices(decltype(mColumnIndices) aColumnIndices) { mColumnIndices = aColumnIndices; }
+  KOKKOS_INLINE_FUNCTION void setEntries      (decltype(mEntries)       aEntries)       { mEntries = aEntries; }
+
 };
-
-#define PLATO_EXPL_INST_DECL(Ordinal, RowMapEntryType) \
-extern template \
-void ApplyCrsMatrix( \
-    const CrsMatrix<Ordinal, RowMapEntryType> A, \
-    const typename CrsMatrix< \
-        Ordinal, \
-        RowMapEntryType>::ScalarVector x, \
-    const typename CrsMatrix< \
-        Ordinal, \
-        RowMapEntryType>::ScalarVector b);
-PLATO_EXPL_INST_DECL(int, int)
-#undef PLATO_EXPL_INST_DECL
 
 }  // namespace Plato
 
