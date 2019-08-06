@@ -201,9 +201,9 @@ class J2PlasticityLocalResidual :
     {
       auto tNumCells = mMesh.nelems();
 
-      using ElasticStrainT = typename Plato::fad_type_t<PhysicsType, LocalStateT, GlobalStateT, ConfigT, ControlT>;
+      using ElasticStrainT = typename Plato::fad_type_t<PhysicsType, LocalStateT, ConfigT, GlobalStateT>;
 
-      using StressT = ElasticStrainT;
+      using StressT = typename Plato::fad_type_t<PhysicsType, ControlT, LocalStateT, ConfigT, GlobalStateT>;
 
       // Functors
       Plato::ComputeGradientWorkset<EvaluationType::SpatialDim> tComputeGradient;
@@ -232,6 +232,8 @@ class J2PlasticityLocalResidual :
       auto tInitialYieldStress        = mInitialYieldStress;
 
       auto tBasisFunctions = mCubatureRule->getBasisFunctions();
+
+      auto tSqrt3Over2 = mSqrt3Over2;
 
       Plato::MSIMP tElasticPropertiesSIMP(mElasticPropertiesPenaltySIMP, mElasticPropertiesMinErsatzSIMP);
       Plato::MSIMP tPlasticPropertiesSIMP(mPlasticPropertiesPenaltySIMP, mPlasticPropertiesMinErsatzSIMP);
@@ -273,7 +275,7 @@ class J2PlasticityLocalResidual :
                                                                   -     aLocalState(aCellOrdinal, 1);
 
           // Residual: Yield Function , DOF: Plastic Multiplier Increment
-          aResult(aCellOrdinal, 1) = mSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
+          aResult(aCellOrdinal, 1) = tSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
 
           // Residual: Plastic Strain Tensor, DOF: Plastic Strain Tensor
           tJ2PlasticityUtils.fillPlasticStrainTensorResidualPlasticStep(aCellOrdinal, aLocalState, aPrevLocalState,
@@ -287,7 +289,7 @@ class J2PlasticityLocalResidual :
         }
         else // -> elastic step
         {
-          // Residual: Accumulated Plastic Strain, DOF: Accumulated Plastic Strain
+           // Residual: Accumulated Plastic Strain, DOF: Accumulated Plastic Strain
           aResult(aCellOrdinal, 0) = aLocalState(aCellOrdinal, 0) - aPrevLocalState(aCellOrdinal, 0);
 
           // Residual: Plastic Multiplier Increment = 0 , DOF: Plastic Multiplier Increment
@@ -351,6 +353,8 @@ class J2PlasticityLocalResidual :
 
       auto tBasisFunctions = mCubatureRule->getBasisFunctions();
 
+      auto tSqrt3Over2 = mSqrt3Over2;
+
       Plato::MSIMP tElasticPropertiesSIMP(mElasticPropertiesPenaltySIMP, mElasticPropertiesMinErsatzSIMP);
       Plato::MSIMP tPlasticPropertiesSIMP(mPlasticPropertiesPenaltySIMP, mPlasticPropertiesMinErsatzSIMP);
 
@@ -385,7 +389,7 @@ class J2PlasticityLocalResidual :
                                      tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0);
 
         // compute the yield function at the trial state
-        Plato::Scalar tTrialStateYieldFunction = mSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
+        Plato::Scalar tTrialStateYieldFunction = tSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
 
         if (tTrialStateYieldFunction <= 0.0) // elastic step
         {

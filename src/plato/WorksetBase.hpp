@@ -205,7 +205,6 @@ inline void workset_local_state_scalar_scalar(Plato::OrdinalType aNumCells, Stat
 {
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
     {
-      printf("%d %d %d %d %d\n", aNumCells, aCellOrdinal, aState.size(), aStateWS.size(), aStateWS.extent(1));
         for(Plato::OrdinalType tDofIndex = 0; tDofIndex < NumLocalDofsPerCell; tDofIndex++)
         {
           Plato::OrdinalType tGlobalDof = (aCellOrdinal * NumLocalDofsPerCell) + tDofIndex;
@@ -224,7 +223,6 @@ inline void workset_local_state_scalar_fad(Plato::OrdinalType aNumCells,
 {
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0, aNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
     {
-      printf("%d %d %d %d %d\n", aNumCells, aCellOrdinal, aState.size(), aFadStateWS.extent(0), aFadStateWS.extent(1));
         for(Plato::OrdinalType tDofIndex = 0; tDofIndex < NumLocalDofsPerCell; tDofIndex++)
         {
           Plato::OrdinalType tGlobalDof = (aCellOrdinal * NumLocalDofsPerCell) + tDofIndex;
@@ -425,7 +423,6 @@ class WorksetBase : public SimplexPhysics
                                   Plato::ScalarMultiVectorT<Plato::Scalar> & aLocalStateWS ) const
     /**************************************************************************/
     {
-      printf("%d %d %d %d\n", aLocalState.size(), aLocalStateWS.extent(0), aLocalStateWS.extent(1), mNumLocalDofsPerCell);
       Plato::workset_local_state_scalar_scalar<mNumLocalDofsPerCell>(
               mNumCells, aLocalState, aLocalStateWS);
     }
@@ -435,7 +432,6 @@ class WorksetBase : public SimplexPhysics
                             Plato::ScalarMultiVectorT<LocalStateFad>  & aFadLocalStateWS ) const
     /**************************************************************************/
     {
-      printf("%d %d %d %d\n", aLocalState.size(), aFadLocalStateWS.extent(0), aFadLocalStateWS.extent(1), mNumLocalDofsPerCell);
       Plato::workset_local_state_scalar_fad<mNumLocalDofsPerCell, LocalStateFad>(
               mNumCells, aLocalState, aFadLocalStateWS);
     }

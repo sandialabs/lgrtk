@@ -153,6 +153,8 @@ class ThermoPlasticityUtilities
     aElasticStrain(aCellOrdinal, 3) -= aLocalState(aCellOrdinal, 5);
     aElasticStrain(aCellOrdinal, 4) -= aLocalState(aCellOrdinal, 6);
     aElasticStrain(aCellOrdinal, 5) -= aLocalState(aCellOrdinal, 7);
+
+    //printf("J2Plasticity Elastic Strain Computation\n");
   }
 
   /*******************************************************************************************/
@@ -273,6 +275,8 @@ class ThermoPlasticityUtilities
     aElasticStrain(aCellOrdinal, 0) -= tThermalStrain;
     aElasticStrain(aCellOrdinal, 1) -= tThermalStrain;
     aElasticStrain(aCellOrdinal, 2) -= tThermalStrain;
+
+    //printf("J2ThermoPlasticity Elastic Strain Computation\n");
   }
 
 } // namespace Plato

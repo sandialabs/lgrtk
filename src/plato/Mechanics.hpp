@@ -350,6 +350,13 @@ struct FunctionFactory
             <J2PlasticityLocalResidual<EvaluationType, Plato::SimplexPlasticity<tSpaceDim>>>
             (aMesh, aMeshSets, aDataMap, aInputParams);
         }
+        else if(aFuncName == "J2ThermoPlasticity")
+        {
+          constexpr Plato::OrdinalType tSpaceDim = EvaluationType::SpatialDim;
+          return std::make_shared
+            <J2PlasticityLocalResidual<EvaluationType, Plato::SimplexThermoPlasticity<tSpaceDim>>>
+            (aMesh, aMeshSets, aDataMap, aInputParams);
+        }
         else
         {
           const std::string tError = std::string("Unknown LocalVectorFunctionInc '") + aFuncName

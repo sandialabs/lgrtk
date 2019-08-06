@@ -86,6 +86,7 @@ class LocalVectorFunctionInc
                            mNumNodes(aMesh.nverts()),
                            mDataMap(aDataMap)
     {
+      PRINTERR("Warning: Plato::Mechanics should be changed to PhysicsT or something similar eventually.")
       typename Plato::Mechanics<mNumSpatialDims>::FunctionFactory tFunctionFactory;
 
       mLocalVectorFunctionResidual  = tFunctionFactory.template createLocalVectorFunctionInc<Residual>
@@ -374,7 +375,7 @@ class LocalVectorFunctionInc
         //
         Plato::ScalarMultiVectorT<PrevLocalStateScalar> 
                                  tPrevLocalStateWS("Prev Local State Workset", mNumCells, mNumLocalDofsPerCell);
-        //mWorksetBase.worksetLocalState(aPrevLocalState, tPrevLocalStateWS);
+        mWorksetBase.worksetLocalState(aPrevLocalState, tPrevLocalStateWS);
 
         // Workset control
         //
@@ -404,7 +405,7 @@ class LocalVectorFunctionInc
               tResidualVector(tDofOrdinal + tColumn) = tResidual(aCellOrdinal, tColumn);
             }
         }, "flatten residual vector");
-printf("END OF LOCALVECTORFUNCTIONINC value!\n\n\n");
+
         return tResidualVector;
     }
 
@@ -671,13 +672,13 @@ printf("END OF LOCALVECTORFUNCTIONINC value!\n\n\n");
       //
       Plato::ScalarMultiVectorT<LocalStateScalar> 
                                tLocalStateWS("Local State Workset", mNumCells, mNumLocalDofsPerCell);
-      //mWorksetBase.worksetLocalState(aLocalState, tLocalStateWS);
+      mWorksetBase.worksetLocalState(aLocalState, tLocalStateWS);
 
       // Workset prev local state
       //
       Plato::ScalarMultiVectorT<PrevLocalStateScalar> 
                                tPrevLocalStateWS("Prev Local State Workset", mNumCells, mNumLocalDofsPerCell);
-      //mWorksetBase.worksetLocalState(aPrevLocalState, tPrevLocalStateWS);
+      mWorksetBase.worksetLocalState(aPrevLocalState, tPrevLocalStateWS);
 
       // Workset control
       //
@@ -846,10 +847,10 @@ printf("END OF LOCALVECTORFUNCTIONINC value!\n\n\n");
 } // namespace Plato
 
 #ifdef PLATO_2D
-//extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<2>>;
-//extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<2>>;
 #endif
 #ifdef PLATO_3D
 extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<3>>;
-//extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<3>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<3>>;
 #endif
