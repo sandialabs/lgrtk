@@ -17,8 +17,8 @@ template<Plato::OrdinalType SpaceDim, typename SimplexPhysicsT>
 class ThermoPlasticityUtilities
 {
   private:
-    using SimplexPhysicsT<SpaceDim>::mNumNodesPerCell;
-    using SimplexPhysicsT<SpaceDim>::mNumDofsPerNode;
+    static constexpr Plato::OrdinalType mNumNodesPerCell = SimplexPhysicsT::mNumNodesPerCell;
+    static constexpr Plato::OrdinalType mNumDofsPerNode  = SimplexPhysicsT::mNumDofsPerNode;
 
     Plato::Scalar mThermalExpansionCoefficient;
     Plato::Scalar mReferenceTemperature;
@@ -37,9 +37,7 @@ class ThermoPlasticityUtilities
     /**************************************************************************//**
     * @brief Destructor
     ******************************************************************************/
-    ~ThermoPlasticityUtilities() :
-    {
-    }
+    ~ThermoPlasticityUtilities(){}
 
     /******************************************************************************//**
      * @brief Compute the elastic strain by subtracting the plastic strain (and thermal strain) from the total strain
@@ -58,7 +56,7 @@ class ThermoPlasticityUtilities
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain);
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const;
 
 };
 // class ThermoPlasticityUtilities
@@ -74,13 +72,13 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<2, Plato::SimplexPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<2, Plato::SimplexPlasticity<2>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
 
     // Compute total strain
@@ -118,13 +116,13 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<3, Plato::SimplexPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<3, Plato::SimplexPlasticity<3>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
     // Compute total strain
     Plato::OrdinalType tVoigtTerm = 0;
@@ -155,6 +153,8 @@ class ThermoPlasticityUtilities
     aElasticStrain(aCellOrdinal, 3) -= aLocalState(aCellOrdinal, 5);
     aElasticStrain(aCellOrdinal, 4) -= aLocalState(aCellOrdinal, 6);
     aElasticStrain(aCellOrdinal, 5) -= aLocalState(aCellOrdinal, 7);
+
+    //printf("J2Plasticity Elastic Strain Computation\n");
   }
 
   /*******************************************************************************************/
@@ -167,13 +167,13 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<2, Plato::SimplexThermoPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<2, Plato::SimplexThermoPlasticity<2>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
 
     // Compute total strain
@@ -207,7 +207,7 @@ class ThermoPlasticityUtilities
     GlobalStateT tTemperature = 0.0;
     for( Plato::OrdinalType tNode = 0; tNode < mNumNodesPerCell; ++tNode)
     {
-      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 2;
+      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 3;
       tTemperature += aGlobalState(aCellOrdinal, tTemperatureIndex) * aBasisFunctions(tNode);
     }
 
@@ -224,13 +224,13 @@ class ThermoPlasticityUtilities
   template<>
   template<typename GlobalStateT, typename LocalStateT, typename ConfigT, typename ElasticStrainT>
   DEVICE_TYPE inline void
-  ThermoPlasticityUtilities<3, Plato::SimplexThermoPlasticity>::computeElasticStrain( 
+  ThermoPlasticityUtilities<3, Plato::SimplexThermoPlasticity<3>>::computeElasticStrain( 
                 const Plato::OrdinalType                           & aCellOrdinal,
                 const Plato::ScalarMultiVectorT< GlobalStateT >    & aGlobalState,
                 const Plato::ScalarMultiVectorT< LocalStateT >     & aLocalState,
                 const Plato::ScalarVector                          & aBasisFunctions,
                 const Plato::ScalarArray3DT< ConfigT >             & aGradient,
-                      Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain)
+                const Plato::ScalarMultiVectorT< ElasticStrainT >  & aElasticStrain) const
   {
     // Compute total strain
     Plato::OrdinalType tVoigtTerm = 0;
@@ -266,7 +266,7 @@ class ThermoPlasticityUtilities
     GlobalStateT tTemperature = 0.0;
     for( Plato::OrdinalType tNode = 0; tNode < mNumNodesPerCell; ++tNode)
     {
-      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 2;
+      Plato::OrdinalType tTemperatureIndex = tNode * mNumDofsPerNode + 4;
       tTemperature += aGlobalState(aCellOrdinal, tTemperatureIndex) * aBasisFunctions(tNode);
     }
 
@@ -275,6 +275,8 @@ class ThermoPlasticityUtilities
     aElasticStrain(aCellOrdinal, 0) -= tThermalStrain;
     aElasticStrain(aCellOrdinal, 1) -= tThermalStrain;
     aElasticStrain(aCellOrdinal, 2) -= tThermalStrain;
+
+    //printf("J2ThermoPlasticity Elastic Strain Computation\n");
   }
 
 } // namespace Plato

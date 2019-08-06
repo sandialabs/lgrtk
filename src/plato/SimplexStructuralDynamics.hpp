@@ -29,6 +29,8 @@ public:
 
     static constexpr Plato::OrdinalType mNumNSPerNode = 0;
 
+    static constexpr Plato::OrdinalType mNumLocalDofsPerCell = 0;
+
 };
 // class SimplexStructuralDynamics
 

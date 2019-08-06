@@ -17,6 +17,9 @@
 #include "plato/Volume.hpp"
 #include "plato/StressPNorm.hpp"
 #include "plato/IntermediateDensityPenalty.hpp"
+#include "plato/AnalyzeMacros.hpp"
+
+#include "plato/J2PlasticityLocalResidual.hpp"
 
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
@@ -320,7 +323,46 @@ struct FunctionFactory
         }
         else
         {
-            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList")
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Create a PLATO local vector function  inc (i.e. local residual equations)
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Analyze physics-based database
+     * @param [in] aInputParams input parameters
+     * @param [in] aFuncName vector function name
+    **********************************************************************************/
+    template<typename EvaluationType>
+    std::shared_ptr<Plato::AbstractLocalVectorFunctionInc<EvaluationType>>
+    createLocalVectorFunctionInc(Omega_h::Mesh& aMesh, 
+                                 Omega_h::MeshSets& aMeshSets,
+                                 Plato::DataMap& aDataMap, 
+                                 Teuchos::ParameterList& aInputParams,
+                                 std::string aFuncName)
+    {
+
+        if(aFuncName == "J2Plasticity")
+        {
+          constexpr Plato::OrdinalType tSpaceDim = EvaluationType::SpatialDim;
+          return std::make_shared
+            <J2PlasticityLocalResidual<EvaluationType, Plato::SimplexPlasticity<tSpaceDim>>>
+            (aMesh, aMeshSets, aDataMap, aInputParams);
+        }
+        else if(aFuncName == "J2ThermoPlasticity")
+        {
+          constexpr Plato::OrdinalType tSpaceDim = EvaluationType::SpatialDim;
+          return std::make_shared
+            <J2PlasticityLocalResidual<EvaluationType, Plato::SimplexThermoPlasticity<tSpaceDim>>>
+            (aMesh, aMeshSets, aDataMap, aInputParams);
+        }
+        else
+        {
+          const std::string tError = std::string("Unknown LocalVectorFunctionInc '") + aFuncName
+                                   + "' specified.";
+          THROWERR(tError)
         }
     }
 
@@ -335,7 +377,7 @@ struct FunctionFactory
                             std::string aStrScalarFunctionName )
     /******************************************************************************/
     {
-        throw std::runtime_error("Not yet implemented");
+        THROWERR("Not yet implemented")
     }
 
     /******************************************************************************//**
@@ -389,7 +431,7 @@ struct FunctionFactory
         }
         else
         {
-            throw std::runtime_error("Unknown 'Objective' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'Objective' specified in 'Plato Problem' ParameterList")
         }
     }
 };

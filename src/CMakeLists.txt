@@ -83,6 +83,8 @@ SET(PLATO_SOURCES
   plato/IntermediateDensityPenalty.cpp
   plato/ScalarFunctionIncBaseFactory.cpp
   plato/PhysicsScalarFunctionInc.cpp
+  plato/J2PlasticityLocalResidual.cpp
+  plato/LocalVectorFunctionInc.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/src)

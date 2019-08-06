@@ -20,6 +20,9 @@ public:
     static constexpr Plato::OrdinalType mNumLocalDofsPerCell = (SpaceDim == 3) ? 14 : ((SpaceDim == 2) ? 8: (((SpaceDim == 1) ? 4: 0)));
 
     static constexpr Plato::OrdinalType mNumControl = NumControls;
+
+    static constexpr Plato::OrdinalType mNumNSPerNode = SpaceDim;
+    static constexpr Plato::OrdinalType mNumNSPerCell = mNumNSPerNode*mNumNodesPerCell;
 };
 // class SimplexPlasticity
 

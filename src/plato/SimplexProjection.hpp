@@ -35,6 +35,8 @@ class SimplexProjection : public Plato::Simplex<SpaceDim>
     //
     static constexpr Plato::OrdinalType mNumNSPerNode    = NumProjectionDof;
     static constexpr Plato::OrdinalType mNumNSPerCell    = mNumNSPerNode*mNumNodesPerCell;
+
+    static constexpr Plato::OrdinalType mNumLocalDofsPerCell = 0;
 };
 
 } // namespace Plato
