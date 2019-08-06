@@ -26,14 +26,20 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
     using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
 
     const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
+    Omega_h::Vector<m_numVoigtTerms> m_referenceStrain;
 
   public:
 
+
     LinearStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> aCellStiffness) :
-            m_cellStiffness(aCellStiffness) {}
+            m_cellStiffness(aCellStiffness) {
+              for(int i=0; i<m_numVoigtTerms; i++)
+                m_referenceStrain(i) = 0.0;
+            }
 
     LinearStress(const Teuchos::RCP<Plato::LinearElasticMaterial<SpaceDim>> aMaterialModel ) :
-            m_cellStiffness(aMaterialModel->getStiffnessMatrix()) {}
+            m_cellStiffness(aMaterialModel->getStiffnessMatrix()),
+            m_referenceStrain(aMaterialModel->getReferenceStrain()) {}
 
     template<typename StressScalarType, typename StrainScalarType>
     DEVICE_TYPE inline void
@@ -46,7 +52,7 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
       for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = 0.0;
         for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*m_cellStiffness(iVoigt, jVoigt);
+          stress(cellOrdinal,iVoigt) += (strain(cellOrdinal,jVoigt)-m_referenceStrain(jVoigt))*m_cellStiffness(iVoigt, jVoigt);
         }
       }
     }

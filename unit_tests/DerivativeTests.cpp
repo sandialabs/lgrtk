@@ -1875,3 +1875,89 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   }
 }
 
+// Reference Strain Test
+TEUCHOS_UNIT_TEST( DerivativeTests, referenceStrain3D )
+{ 
+  // create test mesh
+  //
+  constexpr int meshWidth=2;
+  constexpr int spaceDim=3;
+  auto mesh = PlatoUtestHelpers::getBoxMesh(spaceDim, meshWidth);
+
+  int numCells = mesh->nelems();
+  int numVoigtTerms = Plato::SimplexMechanics<spaceDim>::m_numVoigtTerms;
+  
+  Plato::ScalarMultiVectorT<Plato::Scalar>
+    stress("stress",numCells,numVoigtTerms);
+
+  // create input
+  //
+  Teuchos::RCP<Teuchos::ParameterList> params =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                          \n"
+    "  <ParameterList name='Material Model'>                                       \n"
+    "    <ParameterList name='Isotropic Linear Elastic'>                           \n"
+    "      <Parameter name='Poissons Ratio' type='double' value='0.3'/>            \n"
+    "      <Parameter name='Youngs Modulus' type='double' value='1.0e6'/>          \n" 
+    "      <Parameter  name='e11' type='double' value='-0.01'/>                    \n"
+    "      <Parameter  name='e22' type='double' value='-0.01'/>                    \n"
+    "      <Parameter  name='e33' type='double' value=' 0.02'/>                    \n"      
+    "    </ParameterList>                                                          \n"
+    "  </ParameterList>                                                            \n"
+    "</ParameterList>                                                              \n"
+  );
+
+  Plato::ScalarMultiVector elasticStrain("strain", numCells, numVoigtTerms);
+  auto tHostStrain = Kokkos::create_mirror(elasticStrain);
+  tHostStrain(0,0) = 0.0006; tHostStrain(1,0) = 0.006 ; tHostStrain(2,0) = 0.006 ; 
+  tHostStrain(0,1) = 0.0048; tHostStrain(1,1) = 0.0048; tHostStrain(2,1) = 0.0012; 
+  tHostStrain(0,2) = 0.0024; tHostStrain(1,2) =-0.0030; tHostStrain(2,2) = 0.0006; 
+  tHostStrain(0,3) = 0.0072; tHostStrain(1,3) = 0.0018; tHostStrain(2,3) = 0.0018; 
+  tHostStrain(0,4) = 0.003 ; tHostStrain(1,4) = 0.0030; tHostStrain(2,4) = 0.0066; 
+  tHostStrain(0,5) = 0.0054; tHostStrain(1,5) = 0.0108; tHostStrain(2,5) = 0.0072; 
+  
+  tHostStrain(3,0) = 0.012 ; tHostStrain(4,0) = 0.006 ; tHostStrain(5,0) = 0.006 ;
+  tHostStrain(3,1) =-0.0048; tHostStrain(4,1) = 0.0012; tHostStrain(5,1) = 0.0012;
+  tHostStrain(3,2) = 0.0006; tHostStrain(4,2) = 0.0006; tHostStrain(5,2) = 0.0006;
+  tHostStrain(3,3) =-0.0042; tHostStrain(4,3) = 0.0018; tHostStrain(5,3) = 0.0018;
+  tHostStrain(3,4) = 0.0126; tHostStrain(4,4) = 0.0066; tHostStrain(5,4) = 0.0066;
+  tHostStrain(3,5) = 0.0072; tHostStrain(4,5) = 0.0072; tHostStrain(5,5) = 0.0072;
+  Kokkos::deep_copy(elasticStrain , tHostStrain );
+
+  Plato::ElasticModelFactory<spaceDim> mmfactory(*params);
+  auto materialModel = mmfactory.create();
+
+  Plato::LinearStress<spaceDim>      voigtStress(materialModel);
+
+  Plato::ScalarVectorT<Plato::Scalar> cellVolume("cell volume",numCells);
+  Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(int cellOrdinal)
+  {
+    voigtStress(cellOrdinal, stress, elasticStrain);
+  }, "referenceStrain");
+
+  // test Inherent Strain stress
+  //
+  auto stress_Host = Kokkos::create_mirror_view( stress );
+  Kokkos::deep_copy( stress_Host, stress );
+
+  std::vector<std::vector<double>> stress_gold = { 
+   { 12653.8461538462, 15884.6153846154,-9038.46153846154, 2769.23076923077, 1153.84615384615, 2076.92307692308},
+   { 16807.6923076923, 15884.6153846154,-13192.3076923077, 692.307692307692, 1153.84615384615, 4153.84615384615},
+   { 16807.6923076923, 13115.3846153846,-10423.0769230769, 692.307692307692, 2538.46153846154, 2769.23076923077},
+   { 21423.0769230769, 8500.00000000000,-10423.0769230769,-1615.38461538462, 4846.15384615385, 2769.23076923077},
+   { 16807.6923076923, 13115.3846153846,-10423.0769230769, 692.307692307692, 2538.46153846154, 2769.23076923077},
+   { 16807.6923076923, 13115.3846153846,-10423.0769230769, 692.307692307692, 2538.46153846154, 2769.23076923077}
+  };
+
+
+  for(int iCell=0; iCell<int(stress_gold.size()); iCell++){
+    for(int iVoigt=0; iVoigt<numVoigtTerms; iVoigt++){
+      if(stress_gold[iCell][iVoigt] == 0.0){
+        TEST_ASSERT(fabs(stress_Host(iCell,iVoigt)) < 1e-12);
+      } else {
+        TEST_FLOATING_EQUALITY(stress_Host(iCell,iVoigt), stress_gold[iCell][iVoigt], 1e-13);
+      }
+    }
+  }
+
+}

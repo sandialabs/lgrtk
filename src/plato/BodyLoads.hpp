@@ -207,7 +207,6 @@ class BodyLoad
             Plato::ScalarVector&      forcing)
   /****************************************************************************/
   {
-
   // get refCellQuadraturePoints, quadratureWeights
   //
   Plato::OrdinalType quadratureDegree = 1;

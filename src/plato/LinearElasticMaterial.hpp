@@ -23,11 +23,32 @@ namespace Plato {
     static_assert(m_numVoigtTerms, "SpatialDim must be 1, 2, or 3.");
 
     Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
+    Omega_h::Vector<m_numVoigtTerms> m_referenceStrain;
   
   public:
     LinearElasticMaterial();
-    Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> getStiffnessMatrix() const {return m_cellStiffness;}
+    LinearElasticMaterial(const Teuchos::ParameterList& paramList);
+    decltype(m_cellStiffness) getStiffnessMatrix() const {return m_cellStiffness;}
+    decltype(m_referenceStrain) getReferenceStrain() const {return m_referenceStrain;}
+
+  private:
+    void initialize ();
 };
+
+/******************************************************************************/
+template<int SpatialDim>
+void LinearElasticMaterial<SpatialDim>::
+initialize()
+/******************************************************************************/
+{
+  for(int i=0; i<m_numVoigtTerms; i++)
+    for(int j=0; j<m_numVoigtTerms; j++)
+      m_cellStiffness(i,j) = 0.0;
+
+  for(int i=0; i<m_numVoigtTerms; i++)
+    m_referenceStrain(i) = 0.0;
+}
+
 
 /******************************************************************************/
 template<int SpatialDim>
@@ -35,9 +56,24 @@ LinearElasticMaterial<SpatialDim>::
 LinearElasticMaterial()
 /******************************************************************************/
 {
-  for(int i=0; i<m_numVoigtTerms; i++)
-    for(int j=0; j<m_numVoigtTerms; j++)
-      m_cellStiffness(i,j) = 0.0;
+  initialize();
+}
+
+/******************************************************************************/
+template<int SpatialDim>
+LinearElasticMaterial<SpatialDim>::
+LinearElasticMaterial(const Teuchos::ParameterList& paramList)
+/******************************************************************************/
+
+{
+  initialize();
+
+  if( paramList.isType<double>("e11") )  m_referenceStrain(0) = paramList.get<double>("e11");
+  if( paramList.isType<double>("e22") )  m_referenceStrain(1) = paramList.get<double>("e22");
+  if( paramList.isType<double>("e33") )  m_referenceStrain(2) = paramList.get<double>("e33");
+  if( paramList.isType<double>("e23") )  m_referenceStrain(3) = paramList.get<double>("e23");
+  if( paramList.isType<double>("e13") )  m_referenceStrain(4) = paramList.get<double>("e13");
+  if( paramList.isType<double>("e12") )  m_referenceStrain(5) = paramList.get<double>("e12");
 }
 
 /******************************************************************************/
