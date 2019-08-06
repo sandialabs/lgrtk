@@ -54,6 +54,9 @@ class InternalElasticEnergy :
 
     std::vector<std::string> mPlottable; /*!< database of output field names */
 
+    Teuchos::RCP<Plato::LinearElasticMaterial<mSpaceDim>> mMaterialModel;
+
+
   public:
     /******************************************************************************//**
      * @brief Constructor
@@ -73,8 +76,7 @@ class InternalElasticEnergy :
             mApplyWeighting(mIndicatorFunction)
     {
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
-        auto tMaterialModel = tMaterialModelFactory.create();
-        mCellStiffness = tMaterialModel->getStiffnessMatrix();
+        mMaterialModel = tMaterialModelFactory.create();
 
         mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
         for(Plato::OrdinalType tDim = 2; tDim <= mSpaceDim; tDim++)
@@ -107,7 +109,7 @@ class InternalElasticEnergy :
         Plato::Strain<mSpaceDim> tComputeVoigtStrain;
         Plato::ScalarProduct<mNumVoigtTerms> tComputeScalarProduct;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mCellStiffness);
+        Plato::LinearStress<mSpaceDim> tComputeVoigtStress(mMaterialModel);
 
       using StrainScalarType = 
         typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;

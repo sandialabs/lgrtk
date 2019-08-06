@@ -60,10 +60,12 @@ private:
     IndicatorFunctionType mIndicatorFunction;
     Plato::ApplyWeighting<mSpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<mSpaceDim,mNumDofsPerNode>> mBodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
     std::shared_ptr<Plato::NaturalBCs<mSpaceDim,mNumDofsPerNode>> mBoundaryLoads;
     std::shared_ptr<Plato::CellForcing<mNumVoigtTerms>> mCellForcing;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
+
+    Teuchos::RCP<Plato::LinearElasticMaterial<mSpaceDim>> mMaterialModel;
 
     std::vector<std::string> mPlottable;
 
@@ -92,15 +94,13 @@ public:
         // create material model and get stiffness
         //
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
-        auto tMaterialModel = tMaterialModelFactory.create();
-        mCellStiffness = tMaterialModel->getStiffnessMatrix();
-  
+        mMaterialModel = tMaterialModelFactory.create();
 
         // parse body loads
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            mBodyLoads = std::make_shared<Plato::BodyLoads<mSpaceDim,mNumDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse boundary Conditions
@@ -147,7 +147,7 @@ public:
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
       Plato::Strain<mSpaceDim>                 tComputeVoigtStrain;
-      Plato::LinearStress<mSpaceDim>           tComputeVoigtStress(mCellStiffness);
+      Plato::LinearStress<mSpaceDim>           tComputeVoigtStress(mMaterialModel);
       Plato::StressDivergence<mSpaceDim>       tComputeStressDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType>

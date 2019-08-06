@@ -118,6 +118,7 @@ namespace Plato {
 template <typename SimplexPhysicsT>
 struct EvaluationTypes
 {
+    static constexpr int NumNodesPerCell = SimplexPhysicsT::mNumNodesPerCell;
     static constexpr int NumControls = SimplexPhysicsT::mNumControl;
     static constexpr int SpatialDim = SimplexPhysicsT::mNumSpatialDims;
 };
