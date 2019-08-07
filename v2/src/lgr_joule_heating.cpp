@@ -96,7 +96,7 @@ struct JouleHeating : public Model<Elem> {
     }
   }
   void assemble_normalized_voltage_system() {
-    std::cerr << "assembling normalized voltage system\n";
+//  std::cerr << "assembling normalized voltage system\n";
     OMEGA_H_TIME_FUNCTION;
     constexpr int edges_per_elem = Omega_h::simplex_degree(Elem::dim, 1);
     constexpr int verts_per_elem = Omega_h::simplex_degree(Elem::dim, 0);

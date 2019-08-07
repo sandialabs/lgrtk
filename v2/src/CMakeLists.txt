@@ -31,7 +31,6 @@ add_library(lgr_library
     lgr_comparison.cpp
     lgr_l2_error.cpp
     lgr_artificial_viscosity.cpp
-    lgr_void.cpp
     lgr_adapt.cpp
     lgr_remap.cpp
     lgr_flood.cpp
