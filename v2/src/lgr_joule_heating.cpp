@@ -30,6 +30,7 @@ struct JouleHeating : public Model<Elem> {
   double anode_voltage;
   double cathode_voltage;
   double integrated_conductance;
+  int cg_iterations;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->conductivity =
@@ -64,6 +65,7 @@ struct JouleHeating : public Model<Elem> {
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
+    cg_iterations = pl.get<int>("cg iterations", "0");
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
@@ -203,8 +205,9 @@ struct JouleHeating : public Model<Elem> {
   void solve_normalized_voltage_system() {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_phi = sim.getset(this->normalized_voltage);
+    auto const cg_it = (sim.step == 0) ? nodes_to_phi.size() : cg_iterations;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance);
+        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance, cg_it);
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
     std::cout << "phi solve took " << niter << " iterations\n";
   }

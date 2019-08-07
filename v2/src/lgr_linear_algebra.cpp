@@ -64,8 +64,9 @@ static bool did_converge(GlobalVector z, GlobalVector x,
 }
 
 int diagonal_preconditioned_conjugate_gradient(GlobalMatrix A, GlobalVector b,
-    GlobalVector x, double relative_tolerance, double absolute_tolerance) {
+    GlobalVector x, double relative_tolerance, double absolute_tolerance, int it_in) {
   OMEGA_H_TIME_FUNCTION;
+  auto const it_max = (it_in == 0) ? b.size() : it_in;
   auto const n = x.size();
   GlobalVector r(n, "CG/r");
   matvec(A, x, r);                       // r = A * x
@@ -80,7 +81,8 @@ int diagonal_preconditioned_conjugate_gradient(GlobalMatrix A, GlobalVector b,
   Omega_h::copy_into(read(z), p);  // p = z
   auto r_dot_z_old = dot(r, z);
   GlobalVector Ap(n, "CG/Ap");
-  for (int k = 0; k < b.size(); ++k) {
+  int k = 0;
+  while (k < it_max) {
     matvec(A, p, Ap);
     auto const alpha = r_dot_z_old / dot(p, Ap);
     axpy(alpha, p, x, x);    // x = x + alpha * p
@@ -93,8 +95,9 @@ int diagonal_preconditioned_conjugate_gradient(GlobalMatrix A, GlobalVector b,
     auto const beta = r_dot_z_new / r_dot_z_old;
     axpy(beta, p, z, p);  // p = z + (r_dot_z_new / r_dot_z_old) * p
     r_dot_z_old = r_dot_z_new;
+    ++k;
   }
-  return b.size() + 1;
+  return k + 1;
 }
 
 void set_boundary_conditions(GlobalMatrix A, GlobalVector x, GlobalVector b,
