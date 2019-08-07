@@ -687,7 +687,7 @@ class LocalVectorFunctionInc
 
       // create return view
       //
-      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianState",mNumCells,mNumLocalDofsPerCell);
+      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianLocalState",mNumCells,mNumLocalDofsPerCell);
 
       // evaluate function
       //
@@ -759,7 +759,7 @@ class LocalVectorFunctionInc
 
       // create return view
       //
-      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianState",mNumCells,mNumLocalDofsPerCell);
+      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianLocalState",mNumCells,mNumLocalDofsPerCell);
 
       // evaluate function
       //
