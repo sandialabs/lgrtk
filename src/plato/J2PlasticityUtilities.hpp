@@ -466,10 +466,10 @@ class J2PlasticityUtilities
     aResult(aCellOrdinal, 5) = aLocalState(aCellOrdinal, 5) - aPrevLocalState(aCellOrdinal, 5)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 0);
-    aResult(aCellOrdinal, 6) = aLocalState(aCellOrdinal, 6) - aPrevLocalState(aCellOrdinal, 6);
+    aResult(aCellOrdinal, 6) = aLocalState(aCellOrdinal, 6) - aPrevLocalState(aCellOrdinal, 6)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 1);
-    aResult(aCellOrdinal, 7) = aLocalState(aCellOrdinal, 7) - aPrevLocalState(aCellOrdinal, 7);
+    aResult(aCellOrdinal, 7) = aLocalState(aCellOrdinal, 7) - aPrevLocalState(aCellOrdinal, 7)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 2);
   }
@@ -489,22 +489,22 @@ class J2PlasticityUtilities
               const Plato::ScalarMultiVectorT< YieldSurfNormalT > & aYieldSurfaceNormal,
               const Plato::ScalarMultiVectorT< ResultT >          & aResult ) const
   {
-    aResult(aCellOrdinal, 8) = aLocalState(aCellOrdinal, 8) - aPrevLocalState(aCellOrdinal, 8);
+    aResult(aCellOrdinal, 8) = aLocalState(aCellOrdinal, 8) - aPrevLocalState(aCellOrdinal, 8)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 0);
-    aResult(aCellOrdinal, 9) = aLocalState(aCellOrdinal, 9) - aPrevLocalState(aCellOrdinal, 9);
+    aResult(aCellOrdinal, 9) = aLocalState(aCellOrdinal, 9) - aPrevLocalState(aCellOrdinal, 9)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 1);
-    aResult(aCellOrdinal,10) = aLocalState(aCellOrdinal,10) - aPrevLocalState(aCellOrdinal,10);
+    aResult(aCellOrdinal,10) = aLocalState(aCellOrdinal,10) - aPrevLocalState(aCellOrdinal,10)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 2);
-    aResult(aCellOrdinal,11) = aLocalState(aCellOrdinal,11) - aPrevLocalState(aCellOrdinal,11);
+    aResult(aCellOrdinal,11) = aLocalState(aCellOrdinal,11) - aPrevLocalState(aCellOrdinal,11)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 3);
-    aResult(aCellOrdinal,12) = aLocalState(aCellOrdinal,12) - aPrevLocalState(aCellOrdinal,12);
+    aResult(aCellOrdinal,12) = aLocalState(aCellOrdinal,12) - aPrevLocalState(aCellOrdinal,12)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 4);
-    aResult(aCellOrdinal,13) = aLocalState(aCellOrdinal,13) - aPrevLocalState(aCellOrdinal,13);
+    aResult(aCellOrdinal,13) = aLocalState(aCellOrdinal,13) - aPrevLocalState(aCellOrdinal,13)
                                - mSqrt2Over3 * aLocalState(aCellOrdinal, 1) 
                                * aHardeningModulusKinematic * aYieldSurfaceNormal(aCellOrdinal, 5);
   }

@@ -320,6 +320,17 @@ class LocalVectorFunctionInc
                                                       tLocalStateWS , tPrevLocalStateWS,
                                                       tControlWS    , tConfigWS, 
                                                       aTimeStep );
+
+      auto tNumCells = mNumCells;
+      auto tNumLocalDofsPerCell = mNumLocalDofsPerCell;
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells),LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+        {
+            Plato::OrdinalType tDofOrdinal = aCellOrdinal * tNumLocalDofsPerCell;
+            for (Plato::OrdinalType tColumn = 0; tColumn < tNumLocalDofsPerCell; ++tColumn)
+            {
+              aLocalState(tDofOrdinal + tColumn) = tLocalStateWS(aCellOrdinal, tColumn);
+            }
+        }, "fill local state with updated version");
     }
 
 
