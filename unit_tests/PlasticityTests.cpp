@@ -11,7 +11,7 @@
 #include "plato/Plato_Diagnostics.hpp"
 
 #include "plato/LocalVectorFunctionInc.hpp"
-// #include "plato/J2PlasticityLocalResidual.hpp"
+#include "plato/J2PlasticityLocalResidual.hpp"
 
 
 namespace PlasticityTests
@@ -809,7 +809,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_BackstressResidualElastic
 }
 
 
-inline void setDofInScalarVectorOnBoundary2D(Omega_h::Mesh & aMesh,
+inline void set_dof_in_scalar_vector_on_boundary_2D(Omega_h::Mesh & aMesh,
                                              const std::string & aBoundaryID,
                                              const Plato::ScalarVector & aVector,
                                              const Plato::OrdinalType  & aDofStride,
@@ -839,7 +839,7 @@ inline void setDofInScalarVectorOnBoundary2D(Omega_h::Mesh & aMesh,
         , "fill vector boundary dofs");
 }
 
-inline void setDofInScalarVectorOnBoundary3D(Omega_h::Mesh & aMesh,
+inline void set_dof_in_scalar_vector_on_boundary_3D(Omega_h::Mesh & aMesh,
                                              const std::string & aBoundaryID,
                                              const Plato::ScalarVector & aVector,
                                              const Plato::OrdinalType  & aDofStride,
@@ -877,7 +877,7 @@ inline void setDofInScalarVectorOnBoundary3D(Omega_h::Mesh & aMesh,
 }
 
 
-inline void setDofInScalarVector(const Plato::ScalarVector & aVector,
+inline void set_dof_in_scalar_vector(const Plato::ScalarVector & aVector,
                                  const Plato::OrdinalType  & aDofStride,
                                  const Plato::OrdinalType  & aDofToSet,
                                  const Plato::Scalar       & aSetValue)
@@ -939,13 +939,13 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
 
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
 
     Plato::OrdinalType tTemperature = 3;
-    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+    set_dof_in_scalar_vector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
 
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
@@ -957,9 +957,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tPlasticStrainXX = 2;
     Plato::OrdinalType tPlasticStrainYY = 3;
     Plato::OrdinalType tPlasticStrainXY = 4;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1050,10 +1050,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
 
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
 
@@ -1064,9 +1064,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     Plato::OrdinalType tPlasticStrainXX = 2;
     Plato::OrdinalType tPlasticStrainYY = 3;
     Plato::OrdinalType tPlasticStrainXY = 4;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1158,18 +1158,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
 
     Plato::OrdinalType tTemperature = 4;
-    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+    set_dof_in_scalar_vector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
 
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
@@ -1184,12 +1184,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tPlasticStrainYZ = 5;
     Plato::OrdinalType tPlasticStrainXZ = 6;
     Plato::OrdinalType tPlasticStrainXY = 7;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1285,15 +1285,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
 
@@ -1307,12 +1307,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     Plato::OrdinalType tPlasticStrainYZ = 5;
     Plato::OrdinalType tPlasticStrainXZ = 6;
     Plato::OrdinalType tPlasticStrainXY = 7;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1506,15 +1506,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate3D)
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    // setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    // setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    // setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
 
     // Create previous global state
     Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
@@ -1538,39 +1538,39 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate3D)
     Plato::OrdinalType tBackstressYZ = 11;
     Plato::OrdinalType tBackstressXZ = 12;
     Plato::OrdinalType tBackstressXY = 13;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressZZ, -8.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressYZ, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressXZ, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressZZ, -8.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYZ, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXZ, 1.0);
 
     // Create previous local state
     
     Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
     Plato::fill(0.0, tPrevLocalState);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
 
     std::string tProblemType = "J2Plasticity";
     Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
@@ -1645,8 +1645,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate2D)
     Plato::fill(0.0, tGlobalState);
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
 
     // Create previous global state
     Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
@@ -1664,27 +1664,27 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate2D)
     Plato::OrdinalType tBackstressXX = 5;
     Plato::OrdinalType tBackstressYY = 6;
     Plato::OrdinalType tBackstressXY = 7;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
 
     // Create previous local state
     
     Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
     Plato::fill(0.0, tPrevLocalState);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
 
     std::string tProblemType = "J2Plasticity";
     Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
@@ -1760,12 +1760,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState3D)
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.2);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.2);
 
     // Create previous global state
     Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
@@ -1794,20 +1794,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState3D)
     
     Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
     Plato::fill(0.0, tPrevLocalState);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
 
     std::string tProblemType = "J2Plasticity";
     Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
@@ -1882,8 +1882,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState2D)
     Plato::fill(0.0, tGlobalState);
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
 
     // Create previous global state
     Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
@@ -1906,14 +1906,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState2D)
     
     Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
     Plato::fill(0.0, tPrevLocalState);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
-    setDofInScalarVector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
 
     std::string tProblemType = "J2Plasticity";
     Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,

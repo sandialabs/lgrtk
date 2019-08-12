@@ -392,7 +392,7 @@ inline void test_partial_state(Omega_h::Mesh & aMesh, Plato::ScalarFunctionBase 
 // function test_partial_state
 
 template<typename MatrixScalarType>
-inline Plato::ScalarVector workset_matrix_vector_multiply(
+inline Plato::ScalarVector local_workset_matrix_vector_multiply(
                                         const Plato::ScalarMultiVectorT<MatrixScalarType> & aMatrix,
                                         const Plato::ScalarVector & aVector)
 {
@@ -421,7 +421,7 @@ inline Plato::ScalarVector workset_matrix_vector_multiply(
 }
 
 template<typename MatrixScalarType, Plato::OrdinalType D1, Plato::OrdinalType D2>
-inline Plato::ScalarVector workset_matrix_vector_multiply2(
+inline Plato::ScalarVector control_workset_matrix_vector_multiply(
                                         const Plato::ScalarMultiVectorT<MatrixScalarType> & aMatrix,
                                         const Plato::ScalarVector & aVector,
                                         const Plato::VectorEntryOrdinal<D1,D2> & aEntryOrdinal,
@@ -514,7 +514,7 @@ inline void test_partial_local_state(Omega_h::Mesh & aMesh,
     auto tHostStep = Kokkos::create_mirror(tStep);
     Plato::random(0.5, 1.0, tHostStep);
     Kokkos::deep_copy(tStep, tHostStep);
-    Plato::ScalarVector tGradientDotStep = workset_matrix_vector_multiply(tPartialC, tStep);
+    Plato::ScalarVector tGradientDotStep = local_workset_matrix_vector_multiply(tPartialC, tStep);
 
     std::cout << std::right << std::setw(14) << "\nStep Size" 
               << std::setw(20) << "abs(Error)" << std::endl;
@@ -647,7 +647,7 @@ inline void test_partial_local_vect_func_inc_wrt_control(Omega_h::Mesh & aMesh,
     Plato::random(0.05, 0.1, tHostStep);
     Kokkos::deep_copy(tStep, tHostStep);
     const Plato::OrdinalType tNumADvarsPerCell = SimplexPhysics::mNumNodesPerCell;
-    Plato::ScalarVector tGradientDotStep = workset_matrix_vector_multiply2(tPartialZ, 
+    Plato::ScalarVector tGradientDotStep = control_workset_matrix_vector_multiply(tPartialZ, 
         tStep, tEntryOrdinal, tNumADvarsPerCell, tTotalNumLocalDofs);
 
     std::cout << std::right << std::setw(14) << "\nStep Size" 

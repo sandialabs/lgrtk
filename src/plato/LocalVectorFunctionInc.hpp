@@ -9,7 +9,6 @@
 #include "plato/AbstractLocalVectorFunctionInc.hpp"
 #include "plato/SimplexFadTypes.hpp"
 
-#include "plato/J2PlasticityLocalResidual.hpp"
 #include "plato/SimplexPlasticity.hpp"
 #include "plato/Mechanics.hpp"
 
@@ -109,35 +108,6 @@ class LocalVectorFunctionInc
 
       mLocalVectorFunctionJacobianX = tFunctionFactory.template createLocalVectorFunctionInc<GradientX>
                                                                 (aMesh, aMeshSets, aDataMap, aParamList, aProblemType);
-
-      //  TESTING FOR COMPILATION BEFORE MAKING FUNCTION FACTORIES
-      // mLocalVectorFunctionResidual  = 
-      //         std::make_shared<J2PlasticityLocalResidual<Residual, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianU = 
-      //         std::make_shared<J2PlasticityLocalResidual<GlobalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianUP = 
-      //         std::make_shared<J2PlasticityLocalResidual<GlobalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianC = 
-      //         std::make_shared<J2PlasticityLocalResidual<LocalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianCP = 
-      //         std::make_shared<J2PlasticityLocalResidual<LocalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianZ = 
-      //         std::make_shared<J2PlasticityLocalResidual<GradientZ, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianX = 
-      //         std::make_shared<J2PlasticityLocalResidual<GradientX, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
     }
 
     /**************************************************************************//**
@@ -330,7 +300,7 @@ class LocalVectorFunctionInc
             {
               aLocalState(tDofOrdinal + tColumn) = tLocalStateWS(aCellOrdinal, tColumn);
             }
-        }, "fill local state with updated version");
+        }, "fill local state with updated local state");
     }
 
 

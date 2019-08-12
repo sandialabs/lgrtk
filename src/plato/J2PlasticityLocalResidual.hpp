@@ -266,7 +266,7 @@ class J2PlasticityLocalResidual :
 
         // compute yield stress
         ResultT tYieldStress = tPenalizedInitialYieldStress + 
-                               tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0);
+                               tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0); // SHOULD THIS BE PREV? I think no.
 
         if (aLocalState(aCellOrdinal, 1) /*Current Plastic Multiplier Increment*/ > 0.0) // -> yielding (assumes local state already updated)
         {
