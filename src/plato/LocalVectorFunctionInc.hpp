@@ -5,12 +5,11 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
+#include <Teuchos_ParameterList.hpp>
+
 #include "plato/WorksetBase.hpp"
 #include "plato/AbstractLocalVectorFunctionInc.hpp"
 #include "plato/SimplexFadTypes.hpp"
-
-#include "plato/SimplexPlasticity.hpp"
-#include "plato/Mechanics.hpp"
 
 namespace Plato
 {
@@ -85,8 +84,7 @@ class LocalVectorFunctionInc
                            mNumNodes(aMesh.nverts()),
                            mDataMap(aDataMap)
     {
-      PRINTERR("Warning: Plato::Mechanics should be changed to PhysicsT or something similar eventually.")
-      typename Plato::Mechanics<mNumSpatialDims>::FunctionFactory tFunctionFactory;
+      typename PhysicsT::FunctionFactory tFunctionFactory;
 
       mLocalVectorFunctionResidual  = tFunctionFactory.template createLocalVectorFunctionInc<Residual>
                                                                 (aMesh, aMeshSets, aDataMap, aParamList, aProblemType);
@@ -827,11 +825,14 @@ class LocalVectorFunctionInc
 
 } // namespace Plato
 
+#include "plato/Plasticity.hpp"
+#include "plato/ThermoPlasticity.hpp"
+
 #ifdef PLATO_2D
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<2>>;
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::Plasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::ThermoPlasticity<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<3>>;
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<3>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::Plasticity<3>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::ThermoPlasticity<3>>;
 #endif

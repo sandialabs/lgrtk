@@ -418,6 +418,9 @@ class J2PlasticityLocalResidual :
 
 } // namespace Plato
 
+#include "plato/SimplexPlasticity.hpp"
+#include "plato/SimplexThermoPlasticity.hpp"
+
 #ifdef PLATO_2D
 PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 2)
 PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexThermoPlasticity, 2)

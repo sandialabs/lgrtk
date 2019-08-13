@@ -19,6 +19,8 @@
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
+#include "plato/AnalyzeMacros.hpp"
+#include "plato/J2PlasticityLocalResidual.hpp"
 
 namespace Plato
 {

@@ -14,6 +14,7 @@
 #include "plato/Projection.hpp"
 #include "plato/StabilizedThermoelastostaticResidual.hpp"
 #include "plato/PressureGradientProjectionResidual.hpp"
+#include "plato/ThermoPlasticity.hpp"
 #include "plato/AnalyzeMacros.hpp"
 
 #include "plato/Simp.hpp"
@@ -131,6 +132,8 @@ class StabilizedThermomechanics: public Plato::SimplexStabilizedThermomechanics<
 public:
     using FunctionFactory = typename Plato::StabilizedThermomechanicsFactory::FunctionFactory;
     using SimplexT        = SimplexStabilizedThermomechanics<SpaceDimParam>;
+
+    using LocalStateT   = typename Plato::ThermoPlasticity<SpaceDimParam>;
 
     using ProjectorT = typename Plato::Projection<SpaceDimParam,
                                                   SimplexT::mNumDofsPerNode,

@@ -1371,7 +1371,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradGlobalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::Jacobian;
 
@@ -1416,7 +1416,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradPrevGlobalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::JacobianP;
 
@@ -1461,7 +1461,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradLocalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::LocalJacobian;
 
@@ -1506,7 +1506,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradPrevLocalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::LocalJacobianP;
 
@@ -1551,7 +1551,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradControl3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::GradientZ;
 
@@ -1596,7 +1596,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
 
@@ -1736,7 +1736,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate2D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
 
@@ -1850,7 +1850,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
 
@@ -1973,7 +1973,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState2D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
 
