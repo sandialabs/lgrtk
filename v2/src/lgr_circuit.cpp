@@ -1147,7 +1147,7 @@ void Circuit::InitOutputMesh()
    myfile.open(meshfname, std::ios_base::app);
 
    if (myfile.is_open()) {
-      myfile << "time\tvanode\tvcathode\tconductance\tcurrent\n";
+      myfile << "Time (s),Anode Voltage (V),Cathode Voltage (V),Conductance (S), Current (A)\n";
    }
    myfile.close();
 }
@@ -1162,10 +1162,10 @@ void Circuit::OutputMeshInfo()
    std::ofstream myfile;
    myfile.open(meshfname, std::ios_base::app);
    if (myfile.is_open()) {
-      myfile << time     << "\t"
-             << vanode   << "\t" 
-             << vcathode << "\t" 
-             << conduct  << "\t" 
+      myfile << time     << ","
+             << vanode   << "," 
+             << vcathode << "," 
+             << conduct  << "," 
              << current  << "\n";
    }
    myfile.close();
