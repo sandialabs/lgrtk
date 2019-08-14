@@ -9,7 +9,7 @@
 #ifndef PLATO_CUBATURE_HPP
 #define PLATO_CUBATURE_HPP
 
-#include "Plato_Types.hpp"
+#include "plato/PlatoTypes.hpp"
 #include <Kokkos_Core.hpp>
 
 /*

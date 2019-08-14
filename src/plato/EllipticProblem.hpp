@@ -153,6 +153,7 @@ public:
 #ifdef HAVE_AMGX
         using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode>;
         auto tConfigString = AmgXLinearProblem::getConfigString();
+        Plato::scale(-1.0, mResidual);
         auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tStatesSubView, mResidual, tConfigString));
         tSolver->solve();
         tSolver = Teuchos::null;

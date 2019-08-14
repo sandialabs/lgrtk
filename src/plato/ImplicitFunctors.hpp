@@ -577,16 +577,16 @@ class BlockMatrixTransposeEntryOrdinal
         auto jDof  = jcellDof % DofsPerNode;
         Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
         Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-        Plato::RowMapEntryType rowStart = mRowMap(jLocalOrdinal);
-        Plato::RowMapEntryType rowEnd   = mRowMap(jLocalOrdinal+1);
-        for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
+        Plato::OrdinalType rowStart = mRowMap(jLocalOrdinal);
+        Plato::OrdinalType rowEnd   = mRowMap(jLocalOrdinal+1);
+        for (Plato::OrdinalType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
         {
           if (mColumnIndices(entryOrdinal) == iLocalOrdinal)
           {
             return entryOrdinal*DofsPerNode*DofsPerNode+jDof*DofsPerNode+iDof;
           }
         }
-        return Plato::RowMapEntryType(-1);
+        return Plato::OrdinalType(-1);
     }
 };
 
@@ -616,16 +616,16 @@ class BlockMatrixEntryOrdinal
         auto jDof  = jcellDof % DofsPerNode_J;
         Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
         Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-        Plato::RowMapEntryType rowStart = mRowMap(iLocalOrdinal);
-        Plato::RowMapEntryType rowEnd   = mRowMap(iLocalOrdinal+1);
-        for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
+        Plato::OrdinalType rowStart = mRowMap(iLocalOrdinal);
+        Plato::OrdinalType rowEnd   = mRowMap(iLocalOrdinal+1);
+        for (Plato::OrdinalType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
         {
           if (mColumnIndices(entryOrdinal) == jLocalOrdinal)
           {
             return entryOrdinal*DofsPerNode_I*DofsPerNode_J+iDof*DofsPerNode_J+jDof;
           }
         }
-        return Plato::RowMapEntryType(-1);
+        return Plato::OrdinalType(-1);
     }
 };
 /******************************************************************************/
@@ -657,16 +657,16 @@ class MatrixEntryOrdinal
       auto jDof  = jcellDof % DofsPerNode;
       Plato::OrdinalType iLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + iNode];
       Plato::OrdinalType jLocalOrdinal = mCells2nodes[cellOrdinal * (SpaceDim+1) + jNode];
-      Plato::RowMapEntryType rowStart = mRowMap(DofsPerNode*iLocalOrdinal+iDof  );
-      Plato::RowMapEntryType rowEnd   = mRowMap(DofsPerNode*iLocalOrdinal+iDof+1);
-      for (Plato::RowMapEntryType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
+      Plato::OrdinalType rowStart = mRowMap(DofsPerNode*iLocalOrdinal+iDof  );
+      Plato::OrdinalType rowEnd   = mRowMap(DofsPerNode*iLocalOrdinal+iDof+1);
+      for (Plato::OrdinalType entryOrdinal=rowStart; entryOrdinal<rowEnd; entryOrdinal++)
       {
         if (mColumnIndices(entryOrdinal) == DofsPerNode*jLocalOrdinal+jDof)
         {
           return entryOrdinal;
         }
       }
-      return Plato::RowMapEntryType(-1);
+      return Plato::OrdinalType(-1);
     }
 };
 /******************************************************************************/
@@ -749,7 +749,9 @@ CreateBlockMatrix( Omega_h::Mesh* mesh )
     });
 
     auto retMatrix = Teuchos::rcp(
-     new MatrixType( rowMap, columnIndices, entries, DofsPerNode_I, DofsPerNode_J )
+     new MatrixType( rowMap, columnIndices, entries, 
+                     numRows*DofsPerNode_I, numRows*DofsPerNode_J,
+                     DofsPerNode_I, DofsPerNode_J )
     );
     return retMatrix;
 }

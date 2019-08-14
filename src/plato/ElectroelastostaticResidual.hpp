@@ -55,7 +55,7 @@ private:
     ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> mApplyEDispWeighting;
     ApplyWeighting<SpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyStressWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<SpaceDim,mNumDofsPerNode>> mBodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
 
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>> mBoundaryLoads;
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NElecDims, mNumDofsPerNode, EDofOffset>> mBoundaryCharges;
@@ -93,7 +93,7 @@ public:
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            mBodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,mNumDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse mechanical boundary Conditions
@@ -179,17 +179,17 @@ public:
 
       if( mBodyLoads != nullptr )
       {
-          mBodyLoads->get( mMesh, state, control, result );
+          mBodyLoads->get( mMesh, state, control, result, -1.0 );
       }
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
       if( mBoundaryCharges != nullptr )
       {
-          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
       if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, strain, "strain");

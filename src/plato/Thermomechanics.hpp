@@ -313,7 +313,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class Thermomechanics: public Plato::SimplexThermomechanics<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::ThermomechanicsFactory::FunctionFactory;
+    typedef Plato::ThermomechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT = SimplexThermomechanics<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };

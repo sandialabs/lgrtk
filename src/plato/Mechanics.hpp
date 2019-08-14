@@ -72,10 +72,11 @@ inline std::shared_ptr<Plato::AbstractVectorFunction<EvaluationType>>
 elastostatics_residual(Omega_h::Mesh& aMesh,
                        Omega_h::MeshSets& aMeshSets,
                        Plato::DataMap& aDataMap,
-                       Teuchos::ParameterList& aInputParams)
+                       Teuchos::ParameterList& aInputParams,
+                       std::string aFuncName)
 {
     std::shared_ptr<AbstractVectorFunction<EvaluationType>> tOutput;
-    auto tPenaltyParams = aInputParams.sublist("Elastostatics").sublist("Penalty Function");
+    auto tPenaltyParams = aInputParams.sublist(aFuncName).sublist("Penalty Function");
     std::string tPenaltyType = tPenaltyParams.get<std::string>("Type", "SIMP");
     if(tPenaltyType == "SIMP")
     {
@@ -352,9 +353,9 @@ struct FunctionFactory
                          std::string aFuncName)
     {
 
-        if(aFuncName == "Elastostatics")
+        if(aFuncName == "Elliptic")
         {
-            return (Plato::MechanicsFactory::elastostatics_residual<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams));
+            return (Plato::MechanicsFactory::elastostatics_residual<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }
         else
         {
@@ -471,7 +472,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class Mechanics: public Plato::SimplexMechanics<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::MechanicsFactory::FunctionFactory;
+    typedef Plato::MechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT = SimplexMechanics<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };

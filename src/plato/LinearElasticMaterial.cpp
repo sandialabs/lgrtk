@@ -6,7 +6,7 @@ namespace Plato {
 template<>
 ::Plato::IsotropicLinearElasticMaterial<1>::
 IsotropicLinearElasticMaterial(const Teuchos::ParameterList& paramList) :
-LinearElasticMaterial<1>()
+LinearElasticMaterial<1>(paramList)
 /******************************************************************************/
 {
     mPoissonsRatio = paramList.get<double>("Poissons Ratio");
@@ -26,7 +26,7 @@ LinearElasticMaterial<1>()
 template<>
 ::Plato::IsotropicLinearElasticMaterial<2>::
 IsotropicLinearElasticMaterial(const Teuchos::ParameterList& paramList) :
-LinearElasticMaterial<2>()
+LinearElasticMaterial<2>(paramList)
 /******************************************************************************/
 {
     mPoissonsRatio = paramList.get<double>("Poissons Ratio");
@@ -49,7 +49,7 @@ LinearElasticMaterial<2>()
 template<>
 ::Plato::IsotropicLinearElasticMaterial<3>::
 IsotropicLinearElasticMaterial(const Teuchos::ParameterList& paramList) :
-LinearElasticMaterial<3>()
+LinearElasticMaterial<3>(paramList)
 /******************************************************************************/
 {
     mPoissonsRatio = paramList.get<double>("Poissons Ratio");

@@ -12,7 +12,7 @@
 #include <Kokkos_Core.hpp>
 
 #include "plato/alg/PlatoLambda.hpp"
-#include "plato/alg/Plato_Types.hpp"
+#include "plato/PlatoTypes.hpp"
 
 namespace Plato {
 

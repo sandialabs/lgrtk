@@ -144,7 +144,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class StabilizedMechanics: public Plato::SimplexStabilizedMechanics<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::StabilizedMechanicsFactory::FunctionFactory;
+    typedef Plato::StabilizedMechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT        = SimplexStabilizedMechanics<SpaceDimParam>;
 
     using LocalStateT   = typename Plato::Plasticity<SpaceDimParam>;

@@ -135,7 +135,7 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
     {
         for( int iDim=0; iDim<SpaceDim; iDim++ )
         {
-            mBulkModulus  += mCellStiffness(iDim, iDim);
+            mBulkModulus  += mCellStiffness(0, iDim);
         }
         mBulkModulus /= SpaceDim;
 

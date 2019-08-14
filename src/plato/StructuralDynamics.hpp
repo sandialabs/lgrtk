@@ -174,7 +174,7 @@ template<Plato::OrdinalType SpaceDimParam, Plato::OrdinalType NumControls = 1>
 class StructuralDynamics: public SimplexStructuralDynamics<SpaceDimParam, NumControls>
 {
 public:
-    using FunctionFactory = typename Plato::StructuralDynamicsFactory::FunctionFactory;
+    typedef Plato::StructuralDynamicsFactory::FunctionFactory FunctionFactory;
     using SimplexT = SimplexStructuralDynamics<SpaceDimParam, NumControls>;
     static constexpr int SpaceDim = SpaceDimParam;
 }; // class StructuralDynamics

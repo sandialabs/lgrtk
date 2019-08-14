@@ -33,7 +33,7 @@ struct JouleHeating : public Model<Elem> {
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->conductivity =
-        this->point_define("sigma", "conductivity", 1, RemapType::NONE, pl, "");
+        this->point_define("sigma", "conductivity", 1, RemapType::PER_UNIT_MASS, pl, "");
     this->normalized_voltage = sim.fields.define("phi", "normalized voltage", 1,
         NODES, false, sim.disc.covering_class_names());
     sim.fields[this->normalized_voltage].remap_type = RemapType::NODAL;
@@ -86,7 +86,11 @@ struct JouleHeating : public Model<Elem> {
     integrate_conductance();
     compute_electrode_voltages();
     contribute_joule_heating();
-    this->sim.circuit.Solve(this->sim.dt);
+    if (this->sim.circuit.usingMesh) {
+       auto dt   = this->sim.dt;
+       auto time = this->sim.time;
+       this->sim.circuit.Solve(dt,time);
+    }
   }
   void assemble_normalized_voltage_system() {
     std::cerr << "assembling normalized voltage system\n";
@@ -111,7 +115,7 @@ struct JouleHeating : public Model<Elem> {
               weight * G * (grads[elem_vert] * grads[elem_vert]);
           elems_to_vert_contribs[elem * verts_per_elem + elem_vert] = contrib;
         }
-        for (int elem_edge = 0; elem_edge < verts_per_elem; ++elem_edge) {
+        for (int elem_edge = 0; elem_edge < edges_per_elem; ++elem_edge) {
           auto const elem_vert0 =
               Omega_h::simplex_down_template(Elem::dim, 1, elem_edge, 0);
           auto const elem_vert1 =
@@ -209,6 +213,10 @@ struct JouleHeating : public Model<Elem> {
     auto const points_to_grad = this->points_get(this->sim.gradient);
     auto const points_to_conductivity = this->points_get(this->conductivity);
     auto const points_to_weight = sim.set(sim.weight);
+    if (!sim.fields.is_allocated(this->conductance)) {
+       this->conductance =
+           this->point_define("G", "conductance", 1, RemapType::NONE, "");
+    }
     auto const points_to_G = this->points_set(this->conductance);
     auto const elems_to_nodes = this->get_elems_to_nodes();
     auto functor = OMEGA_H_LAMBDA(int const point) {
@@ -231,9 +239,15 @@ struct JouleHeating : public Model<Elem> {
   }
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
-    this->sim.circuit.SetMeshConductance(integrated_conductance);
-    anode_voltage = this->sim.circuit.GetMeshAnodeVoltage();
-    cathode_voltage = this->sim.circuit.GetMeshCathodeVoltage();
+    if (this->sim.circuit.usingMesh) {
+       auto& myCircuit = this->sim.circuit;
+       myCircuit.SetMeshConductance(integrated_conductance);
+       // Below: 
+       //   overwrites default/specified values in YAML 
+       //   modifiers for joule heating when using circuit
+       anode_voltage = myCircuit.GetMeshAnodeVoltage();
+       cathode_voltage = myCircuit.GetMeshCathodeVoltage();
+     }
   }
   void contribute_joule_heating() {
     OMEGA_H_TIME_FUNCTION;
@@ -242,6 +256,13 @@ struct JouleHeating : public Model<Elem> {
     auto const points_to_G = this->points_get(this->conductance);
     auto const points_to_rho = this->points_get(sim.density);
     auto const points_to_volume = this->points_get(sim.weight);
+    if (!sim.fields.is_allocated(this->specific_internal_energy_rate)) {
+       this->specific_internal_energy_rate = this->point_define(
+           "e_dot", "specific internal energy rate", 1, RemapType::NONE, "0.0");
+       auto const points_to_e_dot =
+           this->sim.set(this->specific_internal_energy_rate);
+       Omega_h::fill(points_to_e_dot, 0.0);
+    }
     auto const points_to_e_dot =
         this->points_getset(this->specific_internal_energy_rate);
     auto functor = OMEGA_H_LAMBDA(int const point) {

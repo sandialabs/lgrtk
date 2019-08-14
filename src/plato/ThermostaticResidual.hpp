@@ -152,7 +152,7 @@ class ThermostaticResidual :
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
     }
 };

@@ -33,7 +33,7 @@ namespace Plato {
     typedef Kokkos::View<Scalar*, MemSpace>                        Vector;
   private:
     typedef int RowMapEntryType;
-    typedef CrsMatrix<Ordinal, RowMapEntryType>  Matrix;
+    typedef CrsMatrix<Ordinal>  Matrix;
     
     typedef Ordinal LocalOrdinal;
     typedef Ordinal GlobalOrdinal;

@@ -61,7 +61,7 @@ private:
     Plato::ApplyWeighting<SpaceDim, SpaceDim,       IndicatorFunctionType> mApplyVectorWeighting;
     Plato::ApplyWeighting<SpaceDim, 1,              IndicatorFunctionType> mApplyScalarWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<SpaceDim,mNumDofsPerNode>> mBodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
 
     std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>> mBoundaryLoads;
 
@@ -98,7 +98,7 @@ public:
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            mBodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,mNumDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse mechanical boundary Conditions
@@ -109,7 +109,7 @@ public:
                                 (aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
         }
   
-        auto tResidualParams = aProblemParams.sublist("Stabilized Elliptic");
+        auto tResidualParams = aProblemParams.sublist("Elliptic");
         if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
           mPlottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
 
@@ -202,13 +202,16 @@ public:
 
       if( mBodyLoads != nullptr )
       {
-          mBodyLoads->get( mMesh, aStateWS, aControlWS, aResultWS );
+          mBodyLoads->get( mMesh, aStateWS, aControlWS, aResultWS, -1.0 );
       }
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS, -1.0 );
       }
+
+      if( std::count(mPlottable.begin(),mPlottable.end(), "pressure"          ) ) toMap(mDataMap, tPressure, "pressure");
+      if( std::count(mPlottable.begin(),mPlottable.end(), "deviatoric stress" ) ) toMap(mDataMap, tDevStress, "deviatoric stress");
 
     }
 };
