@@ -10,6 +10,7 @@
 #include "plato/SimplexThermomechanics.hpp"
 #include "plato/AbstractVectorFunction.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
+#include "plato/AbstractLocalMeasure.hpp"
 #include "plato/ThermoelastostaticResidual.hpp"
 #include "plato/TransientThermomechResidual.hpp"
 #include "plato/InternalThermoelasticEnergy.hpp"
@@ -21,12 +22,63 @@
 #include "plato/Heaviside.hpp"
 #include "plato/AnalyzeMacros.hpp"
 #include "plato/J2PlasticityLocalResidual.hpp"
+#include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
+#include "plato/ThermalVonMisesLocalMeasure.hpp"
 
 namespace Plato
 {
 
 namespace ThermomechanicsFactory
 {
+    /******************************************************************************//**
+    * @brief Create a local measure for use in augmented lagrangian quadratic
+    * @param [in] aInputParams input parameters
+    * @param [in] aFuncName scalar function name
+    **********************************************************************************/
+    template <typename EvaluationType>
+    inline std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType,Plato::SimplexThermomechanics<EvaluationType::SpatialDim>>> 
+    create_local_measure(Teuchos::ParameterList& aInputParams, const std::string & aFuncName)
+    {
+        auto tFunctionSpecs = aInputParams.sublist(aFuncName);
+        auto tLocalMeasure = tFunctionSpecs.get<std::string>("Local Measure", "VonMises");
+
+        if(tLocalMeasure == "VonMises")
+        {
+          return std::make_shared<ThermalVonMisesLocalMeasure<EvaluationType, Plato::SimplexThermomechanics<EvaluationType::SpatialDim>>>(aInputParams, "VonMises");
+        }
+        else
+        {
+          THROWERR("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList")
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Create augmented Lagrangian local constraint criterion with quadratic constraint formulation
+     * @param [in] aMesh mesh database
+     * @param [in] aMeshSets side sets database
+     * @param [in] aDataMap PLATO Analyze physics-based database
+     * @param [in] aInputParams input parameters
+    **********************************************************************************/
+    template<typename EvaluationType>
+    inline std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>>
+    stress_constraint_quadratic(Omega_h::Mesh& aMesh,
+                                Omega_h::MeshSets& aMeshSets,
+                                Plato::DataMap& aDataMap,
+                                Teuchos::ParameterList & aInputParams,
+                                std::string & aFuncName)
+    {
+        auto EvalMeasure = Plato::ThermomechanicsFactory::create_local_measure<EvaluationType>(aInputParams, aFuncName);
+        using Residual = typename Plato::ResidualTypes<Plato::SimplexThermomechanics<EvaluationType::SpatialDim>>;
+        auto PODMeasure = Plato::ThermomechanicsFactory::create_local_measure<Residual>(aInputParams, aFuncName);
+
+        using SimplexT = Plato::SimplexThermomechanics<EvaluationType::SpatialDim>;
+        std::shared_ptr<Plato::AugLagStressCriterionQuadratic<EvaluationType,SimplexT>> tOutput;
+        tOutput = std::make_shared< Plato::AugLagStressCriterionQuadratic<EvaluationType,SimplexT> >
+                    (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+        //THROWERR("Not finished implementing this for thermomechanics... need local measure that is compatible.")
+        tOutput->setLocalMeasure(EvalMeasure, PODMeasure);
+        return (tOutput);
+    }
 
 /******************************************************************************/
 struct FunctionFactory
@@ -65,12 +117,12 @@ struct FunctionFactory
             }
             else
             {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
         else
         {
-            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
     }
 
@@ -103,12 +155,12 @@ struct FunctionFactory
                 return std::make_shared<TransientThermomechResidual<EvaluationType, Plato::Heaviside>>
                          (aMesh,aMeshSets,aDataMap,aParamList,penaltyParams);
             } else {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
         else
         {
-            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
     }
     /******************************************************************************/
@@ -146,8 +198,13 @@ struct FunctionFactory
             }
             else
             {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
+        }
+        else if(aStrScalarFunctionType == "Stress Constraint Quadratic")
+        {
+            return (Plato::ThermomechanicsFactory::stress_constraint_quadratic<EvaluationType>
+                   (aMesh, aMeshSets, aDataMap, aParamList, aStrScalarFunctionName));
         }
 #ifdef NOPE
         else 
@@ -174,7 +231,7 @@ struct FunctionFactory
             }
             else
             {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
         else 
@@ -202,7 +259,7 @@ struct FunctionFactory
             }
             else
             {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         }
         else
@@ -236,12 +293,13 @@ struct FunctionFactory
                 return std::make_shared<InternalThermoelasticEnergyInc<EvaluationType, Plato::Heaviside>>
                          (aMesh,aMeshSets,aDataMap,aParamList,penaltyParams, aStrScalarFunctionName);
             } else {
-                throw std::runtime_error("Unknown 'Type' specified in 'Penalty Function' ParameterList");
+                THROWERR("Unknown 'Type' specified in 'Penalty Function' ParameterList");
             }
         } else {
-            throw std::runtime_error("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
+            THROWERR("Unknown 'PDE Constraint' specified in 'Plato Problem' ParameterList");
         }
     }
+
 }; // struct FunctionFactory
 
 } // namespace ThermomechanicsFactory

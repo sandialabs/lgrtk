@@ -213,7 +213,7 @@ public:
         // sum across elements
         //
         auto tReturnVal = Plato::local_result_sum<Plato::Scalar>(mNumCells, tResult);
-
+printf("%s value = %f\n", (mScalarFunctionValue->getName()).c_str(), tReturnVal);
         mScalarFunctionValue->postEvaluate(tReturnVal);
 
         return tReturnVal;

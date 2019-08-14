@@ -73,10 +73,10 @@ SET(PLATO_SOURCES
   plato/ScalarFunctionBaseFactory.cpp
   plato/WeightedSumFunction.cpp
   plato/PhysicsScalarFunction.cpp
-  plato/LocalMeasureFactory.cpp
   plato/TensileEnergyDensity.cpp
   plato/TensileEnergyDensityLocalMeasure.cpp
   plato/VonMisesLocalMeasure.cpp
+  plato/ThermalVonMisesLocalMeasure.cpp
   plato/LeastSquaresFunction.cpp
   plato/DivisionFunction.cpp
   plato/MassMoment.cpp

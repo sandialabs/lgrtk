@@ -82,4 +82,16 @@ template class C<Plato::LocalJacobianPTypes<T<D>>, T<D>>; \
 template class C<Plato::GradientXTypes<T<D>>, T<D>>; \
 template class C<Plato::GradientZTypes<T<D>>, T<D>>; 
 
+#define PLATO_EXPL_DEC2(C, T, D) \
+extern template class C<Plato::ResidualTypes<T<D>>, T<D> >; \
+extern template class C<Plato::JacobianTypes<T<D>>, T<D> >; \
+extern template class C<Plato::GradientXTypes<T<D>>, T<D> >; \
+extern template class C<Plato::GradientZTypes<T<D>>, T<D> >;
+
+#define PLATO_EXPL_DEF2(C, T, D) \
+template class C<Plato::ResidualTypes<T<D>>, T<D> >; \
+template class C<Plato::JacobianTypes<T<D>>, T<D> >; \
+template class C<Plato::GradientXTypes<T<D>>, T<D> >; \
+template class C<Plato::GradientZTypes<T<D>>, T<D> >;
+
 #endif

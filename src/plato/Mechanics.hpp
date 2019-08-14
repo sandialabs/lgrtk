@@ -19,6 +19,10 @@
 #include "plato/IntermediateDensityPenalty.hpp"
 #include "plato/AnalyzeMacros.hpp"
 
+#include "plato/AbstractLocalMeasure.hpp"
+#include "plato/VonMisesLocalMeasure.hpp"
+#include "plato/TensileEnergyDensityLocalMeasure.hpp"
+
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
@@ -28,6 +32,33 @@ namespace Plato
 
 namespace MechanicsFactory
 {
+
+  /******************************************************************************//**
+   * @brief Create a local measure for use in augmented lagrangian quadratic
+   * @param [in] aInputParams input parameters
+   * @param [in] aFuncName scalar function name
+  **********************************************************************************/
+  template <typename EvaluationType>
+  inline std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType,Plato::SimplexMechanics<EvaluationType::SpatialDim>>> 
+  create_local_measure(Teuchos::ParameterList& aInputParams, const std::string & aFuncName)
+  {
+      auto tFunctionSpecs = aInputParams.sublist(aFuncName);
+      auto tLocalMeasure = tFunctionSpecs.get<std::string>("Local Measure", "VonMises");
+
+      if(tLocalMeasure == "VonMises")
+      {
+          return std::make_shared<VonMisesLocalMeasure<EvaluationType, Plato::SimplexMechanics<EvaluationType::SpatialDim>>>(aInputParams, "VonMises");
+      }
+      else if(tLocalMeasure == "TensileEnergyDensity")
+      {
+          return std::make_shared<TensileEnergyDensityLocalMeasure<EvaluationType, Plato::SimplexMechanics<EvaluationType::SpatialDim>>>
+                                                           (aInputParams, "TensileEnergyDensity");
+      }
+      else
+      {
+          THROWERR("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList")
+      }
+  }
 
 /******************************************************************************//**
  * @brief Create elastostatics residual equation
@@ -125,9 +156,16 @@ stress_constraint_quadratic(Omega_h::Mesh& aMesh,
                             Teuchos::ParameterList & aInputParams,
                             std::string & aFuncName)
 {
-    std::shared_ptr<Plato::AbstractScalarFunction<EvaluationType>> tOutput;
-    tOutput = std::make_shared <Plato::AugLagStressCriterionQuadratic<EvaluationType> >
+    auto EvalMeasure = Plato::MechanicsFactory::create_local_measure<EvaluationType>(aInputParams, aFuncName);
+    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<EvaluationType::SpatialDim>>;
+    auto PODMeasure = Plato::MechanicsFactory::create_local_measure<Residual>(aInputParams, aFuncName);
+
+    using SimplexT = Plato::SimplexMechanics<EvaluationType::SpatialDim>;
+    std::shared_ptr<Plato::AugLagStressCriterionQuadratic<EvaluationType,SimplexT>> tOutput;
+    tOutput = std::make_shared< Plato::AugLagStressCriterionQuadratic<EvaluationType,SimplexT> >
                 (aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+
+    tOutput->setLocalMeasure(EvalMeasure, PODMeasure);
     return (tOutput);
 }
 
@@ -378,7 +416,7 @@ struct FunctionFactory
         }
         else if(aFuncType == "Stress Constraint Quadratic")
         {
-            return std::make_shared<Plato::AugLagStressCriterionQuadratic<EvaluationType>>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName);
+            return (Plato::MechanicsFactory::stress_constraint_quadratic<EvaluationType>(aMesh, aMeshSets, aDataMap, aInputParams, aFuncName));
         }
         else if(aFuncType == "Volume")
         {
@@ -391,6 +429,33 @@ struct FunctionFactory
         else
         {
             THROWERR("Unknown 'Objective' specified in 'Plato Problem' ParameterList")
+        }
+    }
+
+    /******************************************************************************//**
+     * @brief Create a local measure for use in augmented lagrangian quadratic
+     * @param [in] aInputParams input parameters
+     * @param [in] aFuncName scalar function name
+    **********************************************************************************/
+    template <typename EvaluationType>
+    std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType,Plato::SimplexMechanics<EvaluationType::SpatialDim>>> 
+    createLocalMeasure(Teuchos::ParameterList& aInputParams, const std::string & aFuncName)
+    {
+        auto tFunctionSpecs = aInputParams.sublist(aFuncName);
+        auto tLocalMeasure = tFunctionSpecs.get<std::string>("Local Measure", "VonMises");
+
+        if(tLocalMeasure == "VonMises")
+        {
+            return std::make_shared<VonMisesLocalMeasure<EvaluationType, Plato::SimplexMechanics<EvaluationType::SpatialDim>>>(aInputParams, "VonMises");
+        }
+        else if(tLocalMeasure == "TensileEnergyDensity")
+        {
+            return std::make_shared<TensileEnergyDensityLocalMeasure<EvaluationType, Plato::SimplexMechanics<EvaluationType::SpatialDim>>>
+                                                             (aInputParams, "TensileEnergyDensity");
+        }
+        else
+        {
+            THROWERR("Unknown 'Local Measure' specified in 'Plato Problem' ParameterList")
         }
     }
 };
