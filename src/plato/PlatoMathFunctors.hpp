@@ -21,8 +21,8 @@ namespace Plato {
             RowSum(Teuchos::RCP<Plato::CrsMatrixType> aMatrix) : 
                 mRowMap(aMatrix->rowMap()),
                 mEntries(aMatrix->entries()),
-                mNumDofsPerNode_I(aMatrix->blockSizeRow()),
-                mNumDofsPerNode_J(aMatrix->blockSizeCol()) {}
+                mNumDofsPerNode_I(aMatrix->numRowsPerBlock()),
+                mNumDofsPerNode_J(aMatrix->numColsPerBlock()) {}
 
             /**********************************************************************//**
             * @brief Functor
@@ -112,8 +112,8 @@ namespace Plato {
             DiagonalInverseMultiply(Teuchos::RCP<Plato::CrsMatrixType> aMatrix) : 
                 mRowMap(aMatrix->rowMap()),
                 mEntries(aMatrix->entries()),
-                mNumDofsPerNode_I(aMatrix->blockSizeRow()),
-                mNumDofsPerNode_J(aMatrix->blockSizeCol()) {}
+                mNumDofsPerNode_I(aMatrix->numRowsPerBlock()),
+                mNumDofsPerNode_J(aMatrix->numColsPerBlock()) {}
 
             /**********************************************************************//**
             * @brief Functor
