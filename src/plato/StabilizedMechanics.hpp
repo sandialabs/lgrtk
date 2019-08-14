@@ -10,6 +10,7 @@
 #include "plato/SimplexStabilizedMechanics.hpp"
 #include "plato/AbstractScalarFunctionInc.hpp"
 #include "plato/StabilizedElastostaticResidual.hpp"
+#include "plato/Plasticity.hpp"
 #include "plato/AnalyzeMacros.hpp"
 
 #include "plato/Simp.hpp"
@@ -145,6 +146,8 @@ class StabilizedMechanics: public Plato::SimplexStabilizedMechanics<SpaceDimPara
 public:
     typedef Plato::StabilizedMechanicsFactory::FunctionFactory FunctionFactory;
     using SimplexT        = SimplexStabilizedMechanics<SpaceDimParam>;
+
+    using LocalStateT   = typename Plato::Plasticity<SpaceDimParam>;
 
     using ProjectorT = typename Plato::Projection<SpaceDimParam,
                                                   SimplexT::mNumDofsPerNode,

@@ -13,14 +13,14 @@ namespace Plato
 {
 
 /**********************************************************************************/
-template<typename EvaluationType>
+template<typename EvaluationType, typename SimplexPhysics>
 class LocalMeasureFactory
 {
 /**********************************************************************************/
 public:
     LocalMeasureFactory (){}
     ~LocalMeasureFactory (){}
-    std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType>> 
+    std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType, SimplexPhysics>> 
     create(Teuchos::ParameterList& aInputParams, const std::string & aFuncName)
     {
         auto tFunctionSpecs = aInputParams.sublist(aFuncName);
@@ -28,11 +28,11 @@ public:
 
         if(tLocalMeasure == "VonMises")
         {
-            return std::make_shared<VonMisesLocalMeasure<EvaluationType>>(aInputParams, "VonMises");
+            return std::make_shared<VonMisesLocalMeasure<EvaluationType, SimplexPhysics>>(aInputParams, "VonMises");
         }
         else if(tLocalMeasure == "TensileEnergyDensity")
         {
-            return std::make_shared<TensileEnergyDensityLocalMeasure<EvaluationType>>
+            return std::make_shared<TensileEnergyDensityLocalMeasure<EvaluationType, SimplexPhysics>>
                                                              (aInputParams, "TensileEnergyDensity");
         }
         else
@@ -49,22 +49,13 @@ public:
 #include "plato/SimplexMechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Plato::LocalMeasureFactory<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::LocalMeasureFactory<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
+PLATO_EXPL_DEC2(Plato::LocalMeasureFactory, Plato::SimplexMechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-extern template class Plato::LocalMeasureFactory<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::LocalMeasureFactory<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
+PLATO_EXPL_DEC2(Plato::LocalMeasureFactory, Plato::SimplexMechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-extern template class Plato::LocalMeasureFactory<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::LocalMeasureFactory<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::LocalMeasureFactory<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
+PLATO_EXPL_DEC2(Plato::LocalMeasureFactory, Plato::SimplexMechanics, 3)
 #endif

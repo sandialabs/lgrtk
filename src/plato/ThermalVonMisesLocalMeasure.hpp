@@ -1,15 +1,16 @@
 #pragma once
 
 #include "plato/AbstractLocalMeasure.hpp"
-#include <Omega_h_matrix.hpp>
-#include "plato/LinearStress.hpp"
 #include "plato/Plato_VonMisesYield.hpp"
-#include "plato/Strain.hpp"
 #include "plato/ImplicitFunctors.hpp"
 #include <Teuchos_ParameterList.hpp>
 #include "plato/SimplexFadTypes.hpp"
-#include "plato/LinearElasticMaterial.hpp"
 #include "plato/ExpInstMacros.hpp"
+#include "plato/TMKinematics.hpp"
+#include "plato/TMKinetics.hpp"
+#include "plato/InterpolateFromNodal.hpp"
+#include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "plato/LinearThermoelasticMaterial.hpp"
 
 namespace Plato
 {
@@ -20,18 +21,25 @@ namespace Plato
  *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
 **********************************************************************************/
 template<typename EvaluationType, typename SimplexPhysics>
-class VonMisesLocalMeasure :
+class ThermalVonMisesLocalMeasure :
         public AbstractLocalMeasure<EvaluationType, SimplexPhysics>
 {
 private:
     using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mSpaceDim; /*!< space dimension */
     using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mNumVoigtTerms; /*!< number of voigt tensor terms */
     using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mNumNodesPerCell; /*!< number of nodes per cell */
-    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
     using ResultT = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
+
+    Teuchos::RCP<Plato::LinearThermoelasticMaterial<mSpaceDim>> mMaterialModel;
+
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
+
+    static constexpr Plato::OrdinalType TDofOffset = mSpaceDim;
+
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
 public:
     /******************************************************************************//**
@@ -39,31 +47,32 @@ public:
      * @param [in] aInputParams input parameters database
      * @param [in] aName local measure name
      **********************************************************************************/
-    VonMisesLocalMeasure(Teuchos::ParameterList & aInputParams,
+    ThermalVonMisesLocalMeasure(Teuchos::ParameterList & aInputParams,
                          const std::string & aName) : 
-                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aInputParams, aName)
+                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aInputParams, aName),
+                         mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     {
-        Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aInputParams);
-        auto tMaterialModel = tMaterialModelFactory.create();
-        mCellStiffMatrix = tMaterialModel->getStiffnessMatrix();
+        Plato::ThermoelasticModelFactory<mSpaceDim> tFactory(aInputParams);
+        mMaterialModel = tFactory.create();
     }
 
     /******************************************************************************//**
      * @brief Constructor tailored for unit testing
-     * @param [in] aCellStiffMatrix stiffness matrix
+     * @param [in] aMaterialModel thermoelastic material model
      * @param [in] aName local measure name
      **********************************************************************************/
-    VonMisesLocalMeasure(const Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> & aCellStiffMatrix,
+    ThermalVonMisesLocalMeasure(Teuchos::RCP<Plato::LinearThermoelasticMaterial<mSpaceDim>> &aMaterialModel,
                          const std::string aName) :
-                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aName)
+                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aName),
+                         mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     {
-        mCellStiffMatrix = aCellStiffMatrix;
+        aMaterialModel = mMaterialModel;
     }
 
     /******************************************************************************//**
      * @brief Destructor
      **********************************************************************************/
-    virtual ~VonMisesLocalMeasure()
+    virtual ~ThermalVonMisesLocalMeasure()
     {
     }
 
@@ -82,41 +91,53 @@ public:
         const Plato::OrdinalType tNumCells = aResultWS.size();
         using StrainT = typename Plato::fad_type_t<SimplexPhysics, StateT, ConfigT>;
 
-        Plato::Strain<mSpaceDim> tComputeCauchyStrain;
-        Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
+        Plato::VonMisesYield<mSpaceDim>          tComputeVonMises;
         Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-        Plato::LinearStress<mSpaceDim> tComputeCauchyStress(mCellStiffMatrix);
+        Plato::TMKinematics<mSpaceDim>           tKinematics;
+        Plato::TMKinetics<mSpaceDim>             tKinetics(mMaterialModel);
 
-        // ****** ALLOCATE TEMPORARY MULTI-DIM ARRAYS ON DEVICE ******
-        Plato::ScalarVectorT<ConfigT> tVolume("cell volume", tNumCells);
-        Plato::ScalarMultiVectorT<StrainT> tCauchyStrain("strain", tNumCells, mNumVoigtTerms);
-        Plato::ScalarMultiVectorT<ResultT> tCauchyStress("stress", tNumCells, mNumVoigtTerms);
+        Plato::InterpolateFromNodal<mSpaceDim, mNumDofsPerNode, TDofOffset> tInterpolateFromNodal;
+
+        Plato::ScalarVectorT<ConfigT> tCellVolume("cell weight",tNumCells);
+
         Plato::ScalarArray3DT<ConfigT> tGradient("gradient", tNumCells, mNumNodesPerCell, mSpaceDim);
 
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & tCellOrdinal)
+        Plato::ScalarMultiVectorT<StrainT> tStrain("strain", tNumCells, mNumVoigtTerms);
+        Plato::ScalarMultiVectorT<StrainT> tGrad("tgrad", tNumCells, mSpaceDim);
+
+        Plato::ScalarMultiVectorT<ResultT> tStress("stress", tNumCells, mNumVoigtTerms);
+        Plato::ScalarMultiVectorT<ResultT> tFlux ("flux" , tNumCells, mSpaceDim);
+
+        Plato::ScalarVectorT<StateT> tTemperature("Gauss point temperature", tNumCells);
+
+        auto tBasisFunctions = mCubatureRule->getBasisFunctions();
+
+        Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,tNumCells), 
+            LAMBDA_EXPRESSION(const Plato::OrdinalType &tCellOrdinal)
         {
-            tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tVolume);
-            tComputeCauchyStrain(tCellOrdinal, tCauchyStrain, aStateWS, tGradient);
-            tComputeCauchyStress(tCellOrdinal, tCauchyStress, tCauchyStrain);
-            tComputeVonMises(tCellOrdinal, tCauchyStress, aResultWS);
-        }, "Compute VonMises Stress");
+            tComputeGradient(tCellOrdinal, tGradient, aConfigWS, tCellVolume);
+            tKinematics(tCellOrdinal, tStrain, tGrad, aStateWS, tGradient);
+            tInterpolateFromNodal(tCellOrdinal, tBasisFunctions, aStateWS, tTemperature);
+            tKinetics(tCellOrdinal, tStress, tFlux, tStrain, tGrad, tTemperature);
+            tComputeVonMises(tCellOrdinal, tStress, aResultWS);
+        }, "Compute vonmises stress");
     }
 };
-// class VonMisesLocalMeasure
+// class ThermalVonMisesLocalMeasure
 
 }
 //namespace Plato
 
-#include "plato/SimplexMechanics.hpp"
+#include "plato/SimplexThermomechanics.hpp"
 
 #ifdef PLATO_1D
-PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 1)
+PLATO_EXPL_DEC2(Plato::ThermalVonMisesLocalMeasure, Plato::SimplexThermomechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 2)
+PLATO_EXPL_DEC2(Plato::ThermalVonMisesLocalMeasure, Plato::SimplexThermomechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 3)
+PLATO_EXPL_DEC2(Plato::ThermalVonMisesLocalMeasure, Plato::SimplexThermomechanics, 3)
 #endif

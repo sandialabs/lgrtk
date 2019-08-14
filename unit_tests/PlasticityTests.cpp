@@ -11,7 +11,7 @@
 #include "plato/Plato_Diagnostics.hpp"
 
 #include "plato/LocalVectorFunctionInc.hpp"
-// #include "plato/J2PlasticityLocalResidual.hpp"
+#include "plato/J2PlasticityLocalResidual.hpp"
 
 
 namespace PlasticityTests
@@ -547,7 +547,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_BackstressResidualPlastic
     }, "Unit Test");
 
     constexpr Plato::Scalar tTolerance = 1e-5;
-    std::vector<Plato::Scalar> tGold = {-0.0451156,1.16667,1.33333};
+    std::vector<Plato::Scalar> tGold = {-0.0451156,-0.401007,-0.756898};
     auto tHostResult = Kokkos::create_mirror(tResult);
     Kokkos::deep_copy(tHostResult, tResult);
 
@@ -607,7 +607,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_BackstressResidualPlastic
     }, "Unit Test");
 
     constexpr Plato::Scalar tTolerance = 1e-5;
-    std::vector<Plato::Scalar> tGold = {3.0,3.33333,3.66666,4.0,4.33333,4.66666};
+    std::vector<Plato::Scalar> tGold = {2.00465,1.84031,1.67597,1.51163,1.34729,1.18295};
     auto tHostResult = Kokkos::create_mirror(tResult);
     Kokkos::deep_copy(tHostResult, tResult);
 
@@ -809,7 +809,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2PlasticityUtils_BackstressResidualElastic
 }
 
 
-inline void setDofInScalarVectorOnBoundary2D(Omega_h::Mesh & aMesh,
+inline void set_dof_in_scalar_vector_on_boundary_2D(Omega_h::Mesh & aMesh,
                                              const std::string & aBoundaryID,
                                              const Plato::ScalarVector & aVector,
                                              const Plato::OrdinalType  & aDofStride,
@@ -839,7 +839,7 @@ inline void setDofInScalarVectorOnBoundary2D(Omega_h::Mesh & aMesh,
         , "fill vector boundary dofs");
 }
 
-inline void setDofInScalarVectorOnBoundary3D(Omega_h::Mesh & aMesh,
+inline void set_dof_in_scalar_vector_on_boundary_3D(Omega_h::Mesh & aMesh,
                                              const std::string & aBoundaryID,
                                              const Plato::ScalarVector & aVector,
                                              const Plato::OrdinalType  & aDofStride,
@@ -877,14 +877,14 @@ inline void setDofInScalarVectorOnBoundary3D(Omega_h::Mesh & aMesh,
 }
 
 
-inline void setDofInScalarVector(const Plato::ScalarVector & aVector,
+inline void set_dof_in_scalar_vector(const Plato::ScalarVector & aVector,
                                  const Plato::OrdinalType  & aDofStride,
                                  const Plato::OrdinalType  & aDofToSet,
                                  const Plato::Scalar       & aSetValue)
 {
     auto tVectorSize = aVector.extent(0);
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tVectorSize), 
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tVectorSize / aDofStride), 
                          LAMBDA_EXPRESSION(const Plato::OrdinalType & aNodeIndex)
         {
             Plato::OrdinalType tIndex = aDofStride * aNodeIndex + aDofToSet;
@@ -939,13 +939,13 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
 
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
 
     Plato::OrdinalType tTemperature = 3;
-    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+    set_dof_in_scalar_vector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
 
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
@@ -957,9 +957,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tPlasticStrainXX = 2;
     Plato::OrdinalType tPlasticStrainYY = 3;
     Plato::OrdinalType tPlasticStrainXY = 4;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1050,10 +1050,10 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
 
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
 
@@ -1064,9 +1064,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     Plato::OrdinalType tPlasticStrainXX = 2;
     Plato::OrdinalType tPlasticStrainYY = 3;
     Plato::OrdinalType tPlasticStrainXY = 4;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1158,18 +1158,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
 
     Plato::OrdinalType tTemperature = 4;
-    setDofInScalarVector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
+    set_dof_in_scalar_vector(tGlobalState, tDofsPerNode, tTemperature, 310.0);
 
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
@@ -1184,12 +1184,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithTher
     Plato::OrdinalType tPlasticStrainYZ = 5;
     Plato::OrdinalType tPlasticStrainXZ = 6;
     Plato::OrdinalType tPlasticStrainXY = 7;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.0);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1278,22 +1278,22 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     tWorksetBase.worksetControl(tControl, tControlWS);
 
     // Create global state workset
-    const Plato::OrdinalType tNumNodalDofs = tDofsPerCell * tNumCells;
+    const Plato::OrdinalType tNumNodalDofs = tNumVerts * tDofsPerNode;
     Plato::ScalarVector tGlobalState("global state", tNumNodalDofs);
     Plato::fill(0.0, tGlobalState);
 
     Plato::OrdinalType tDispX = 0;
     Plato::OrdinalType tDispY = 1;
     Plato::OrdinalType tDispZ = 2;
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
-    setDofInScalarVectorOnBoundary3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
     Plato::ScalarMultiVectorT<GlobalStateT> tGlobalStateWS("global state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tGlobalState, tGlobalStateWS);
 
@@ -1307,12 +1307,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
     Plato::OrdinalType tPlasticStrainYZ = 5;
     Plato::OrdinalType tPlasticStrainXZ = 6;
     Plato::OrdinalType tPlasticStrainXY = 7;
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.1);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
-    setDofInScalarVector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 1.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 2.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 3.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 3.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 3.2);
     Plato::ScalarMultiVectorT<LocalStateT> tLocalStateWS("local state workset", tNumCells, tNumLocalDofsPerCell);
     tWorksetBase.worksetLocalState(tLocalState, tLocalStateWS);
 
@@ -1362,6 +1362,95 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ThermoPlasticityUtils_ElasticStrainWithoutT
 }
 
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradGlobalState3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::Jacobian;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='1.0e6'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='0.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='1.0e3'/>             \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-6'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::test_partial_global_state<EvalType, PhysicsT>(*tMesh, tLocalVectorFuncInc);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradPrevGlobalState3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::JacobianP;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='1.0e6'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='0.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='1.0e3'/>             \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-6'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::test_partial_prev_global_state<EvalType, PhysicsT>(*tMesh, tLocalVectorFuncInc);
+}
+
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradLocalState3D)
 {
@@ -1372,7 +1461,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradLocalState3D)
     Omega_h::MeshSets tMeshSets;
 
     // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
-    using PhysicsT = Plato::SimplexPlasticity<tSpaceDim>;
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
 
     using EvalType = typename Plato::Evaluation<PhysicsT>::LocalJacobian;
 
@@ -1405,6 +1494,579 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradLocalState3D)
                                                                 *tParamList, tProblemType);
 
     Plato::test_partial_local_state<EvalType, PhysicsT>(*tMesh, tLocalVectorFuncInc);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradPrevLocalState3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::LocalJacobianP;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='1.0e6'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='0.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='1.0e3'/>             \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-6'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::test_partial_prev_local_state<EvalType, PhysicsT>(*tMesh, tLocalVectorFuncInc);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_GradControl3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::GradientZ;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='1.0e6'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='0.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='1.0e3'/>      \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='1.0e3'/>             \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='2'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-6'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='1.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::test_partial_local_vect_func_inc_wrt_control<EvalType, PhysicsT>(*tMesh, tLocalVectorFuncInc);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='520.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='100.0'/>            \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='20.0'/>       \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='15.0'/>       \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='3.0'/>               \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
+
+    // Create control
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+
+    // Create global state
+    const Plato::OrdinalType tTotalNumDofs = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tGlobalState("Global State", tTotalNumDofs);
+    Plato::fill(0.0, tGlobalState);
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    Plato::OrdinalType tDispZ = 2;
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    // set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispZ, 0.1);
+
+    // Create previous global state
+    Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
+    Plato::fill(0.0, tPrevGlobalState);
+
+    // Create local state
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tAccumulatedPlasticStrain   = 0;
+    Plato::OrdinalType tPlasticMultiplierIncrement = 1;
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainZZ = 4;
+    Plato::OrdinalType tPlasticStrainYZ = 5;
+    Plato::OrdinalType tPlasticStrainXZ = 6;
+    Plato::OrdinalType tPlasticStrainXY = 7;
+    Plato::OrdinalType tBackstressXX =  8;
+    Plato::OrdinalType tBackstressYY =  9;
+    Plato::OrdinalType tBackstressZZ = 10;
+    Plato::OrdinalType tBackstressYZ = 11;
+    Plato::OrdinalType tBackstressXZ = 12;
+    Plato::OrdinalType tBackstressXY = 13;
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressZZ, -8.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYZ, 1.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXZ, 1.0);
+
+    // Create previous local state
+    
+    Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
+    Plato::fill(0.0, tPrevLocalState);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::ScalarVector tLocalResidual = tLocalVectorFuncInc.value(tGlobalState, tPrevGlobalState,
+                                                                   tLocalState, tPrevLocalState,
+                                                                   tControl, 0.0); 
+
+    constexpr Plato::Scalar tTolerance = 1.0e-5;
+    auto tHostLocalResidual = Kokkos::create_mirror(tLocalResidual);
+    Kokkos::deep_copy(tHostLocalResidual, tLocalResidual);
+
+    std::vector<Plato::Scalar> tGold = {-0.400000,26.941399,-0.480125,0.111393,
+        0.368732,0.022152,0.022152,0.022152,7.078994,-44.680887,37.601894,
+        -0.829778,-0.829778,-0.829778};
+    for (Plato::OrdinalType tIndex = 0; tIndex < tNumLocalDofs; ++tIndex)
+        TEST_FLOATING_EQUALITY(tHostLocalResidual(tIndex), 
+                                tGold[tIndex % tNumLocalDofsPerCell], tTolerance);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_Evaluate2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='520.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='100.0'/>            \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='20.0'/>       \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='15.0'/>       \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='3.0'/>               \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
+
+    // Create control
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+
+    // Create global state
+    const Plato::OrdinalType tTotalNumDofs = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tGlobalState("Global State", tTotalNumDofs);
+    Plato::fill(0.0, tGlobalState);
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.1);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.1);
+
+    // Create previous global state
+    Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
+    Plato::fill(0.0, tPrevGlobalState);
+
+    // Create local state
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tAccumulatedPlasticStrain   = 0;
+    Plato::OrdinalType tPlasticMultiplierIncrement = 1;
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainXY = 4;
+    Plato::OrdinalType tBackstressXX = 5;
+    Plato::OrdinalType tBackstressYY = 6;
+    Plato::OrdinalType tBackstressXY = 7;
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.3);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.5);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, -0.1);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, 0.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXX, 12.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressYY, -4.0);
+    set_dof_in_scalar_vector(tLocalState, tNumLocalDofsPerCell, tBackstressXY, 1.0);
+
+    // Create previous local state
+    
+    Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
+    Plato::fill(0.0, tPrevLocalState);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    Plato::ScalarVector tLocalResidual = tLocalVectorFuncInc.value(tGlobalState, tPrevGlobalState,
+                                                                   tLocalState, tPrevLocalState,
+                                                                   tControl, 0.0); 
+
+    constexpr Plato::Scalar tTolerance = 1.0e-5;
+    auto tHostLocalResidual = Kokkos::create_mirror(tLocalResidual);
+    Kokkos::deep_copy(tHostLocalResidual, tLocalResidual);
+
+    std::vector<Plato::Scalar> tGold = {-0.400000,4.70769,
+        -0.58005795,0.56907681,0.06452392,
+        6.31107403,-41.16389025,-0.50417662};
+    for (Plato::OrdinalType tIndex = 0; tIndex < tNumLocalDofs; ++tIndex)
+        TEST_FLOATING_EQUALITY(tHostLocalResidual(tIndex), 
+                                tGold[tIndex % tNumLocalDofsPerCell], tTolerance);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='520.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='100.0'/>            \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='20.0'/>       \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='15.0'/>       \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='3.0'/>               \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
+
+    // Create control
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+
+    // Create global state
+    const Plato::OrdinalType tTotalNumDofs = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tGlobalState("Global State", tTotalNumDofs);
+    Plato::fill(0.0, tGlobalState);
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    Plato::OrdinalType tDispZ = 2;
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispZ, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+
+    // Create previous global state
+    Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
+    Plato::fill(0.0, tPrevGlobalState);
+
+    // Create local state
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tAccumulatedPlasticStrain   = 0;
+    Plato::OrdinalType tPlasticMultiplierIncrement = 1;
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainZZ = 4;
+    Plato::OrdinalType tPlasticStrainYZ = 5;
+    Plato::OrdinalType tPlasticStrainXZ = 6;
+    Plato::OrdinalType tPlasticStrainXY = 7;
+    Plato::OrdinalType tBackstressXX =  8;
+    Plato::OrdinalType tBackstressYY =  9;
+    Plato::OrdinalType tBackstressZZ = 10;
+    Plato::OrdinalType tBackstressYZ = 11;
+    Plato::OrdinalType tBackstressXZ = 12;
+    Plato::OrdinalType tBackstressXY = 13;
+
+    // Create previous local state
+    
+    Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
+    Plato::fill(0.0, tPrevLocalState);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainZZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXZ, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressZZ, -42.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYZ, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXZ, 2.0);
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    tLocalVectorFuncInc.updateLocalState(tGlobalState, tPrevGlobalState,
+                                         tLocalState, tPrevLocalState,
+                                         tControl, 0.0); 
+
+    constexpr Plato::Scalar tTolerance = 1.0e-5;
+    auto tHostLocalState = Kokkos::create_mirror(tLocalState);
+    Kokkos::deep_copy(tHostLocalState, tLocalState);
+
+    std::vector<Plato::Scalar> tGold = {0.3755345,0.1755345,
+        -0.00606135,-0.144478,0.15053935,2.0*0.18231319,2.0*0.18231319,2.0*0.18231319,
+        1.95342253,40.42664966,-42.38007219,2.63252209,2.63252209,2.63252209};
+    for (Plato::OrdinalType tIndex = 0; tIndex < tNumLocalDofs; ++tIndex)
+        TEST_FLOATING_EQUALITY(tHostLocalState(tIndex), 
+                                tGold[tIndex % tNumLocalDofsPerCell], tTolerance);
+}
+
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, J2Plasticity_UpdateLocalState2D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 2;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+    Plato::DataMap    tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    // ### NOTICE THAT THIS IS ONLY PLASTICITY (NO TEMPERATURE) ###
+    using PhysicsT = Plato::Plasticity<tSpaceDim>;
+
+    using EvalType = typename Plato::Evaluation<PhysicsT>::Residual;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.3'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='520.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e2'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='100.0'/>            \n"
+    "    </ParameterList>                                                                    \n"
+    "    <ParameterList name='J2 Plasticity'>                                                \n"
+    "      <Parameter  name='Hardening Modulus Isotropic' type='double' value='20.0'/>       \n"
+    "      <Parameter  name='Hardening Modulus Kinematic' type='double' value='15.0'/>       \n"
+    "      <Parameter  name='Initial Yield Stress' type='double' value='3.0'/>               \n"
+    "      <Parameter  name='Elastic Properties Penalty Exponent' type='double' value='3'/>  \n"
+    "      <Parameter  name='Elastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "      <Parameter  name='Plastic Properties Penalty Exponent' type='double' value='2.5'/>\n"
+    "      <Parameter  name='Plastic Properties Minimum Ersatz' type='double' value='1e-9'/> \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    const     Plato::OrdinalType tNumCells            = tMesh->nelems();
+    constexpr Plato::OrdinalType tDofsPerNode         = PhysicsT::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tNumLocalDofsPerCell = PhysicsT::mNumLocalDofsPerCell;
+
+    // Create control
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    Plato::ScalarVector tControl("Controls", tNumVerts);
+    Plato::fill(0.9, tControl);
+
+    // Create global state
+    const Plato::OrdinalType tTotalNumDofs = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tGlobalState("Global State", tTotalNumDofs);
+    Plato::fill(0.0, tGlobalState);
+    Plato::OrdinalType tDispX = 0;
+    Plato::OrdinalType tDispY = 1;
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "x1", tGlobalState, tDofsPerNode, tDispY, 0.2);
+    set_dof_in_scalar_vector_on_boundary_2D(*tMesh, "y1", tGlobalState, tDofsPerNode, tDispX, 0.2);
+
+    // Create previous global state
+    Plato::ScalarVector tPrevGlobalState("Previous Global State", tTotalNumDofs);
+    Plato::fill(0.0, tPrevGlobalState);
+
+    // Create local state
+    const Plato::OrdinalType tNumLocalDofs = tNumLocalDofsPerCell * tNumCells;
+    Plato::ScalarVector tLocalState("local state", tNumLocalDofs);
+    Plato::fill(0.0, tLocalState);
+    Plato::OrdinalType tAccumulatedPlasticStrain   = 0;
+    Plato::OrdinalType tPlasticMultiplierIncrement = 1;
+    Plato::OrdinalType tPlasticStrainXX = 2;
+    Plato::OrdinalType tPlasticStrainYY = 3;
+    Plato::OrdinalType tPlasticStrainXY = 4;
+    Plato::OrdinalType tBackstressXX =  5;
+    Plato::OrdinalType tBackstressYY =  6;
+    Plato::OrdinalType tBackstressXY =  7;
+
+    // Create previous local state
+    
+    Plato::ScalarVector tPrevLocalState("Previous Local State", tNumLocalDofs);
+    Plato::fill(0.0, tPrevLocalState);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tAccumulatedPlasticStrain, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticMultiplierIncrement, 0.75);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXX, 0.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainYY, -0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tPlasticStrainXY, 0.2);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXX, 2.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressYY, 40.0);
+    set_dof_in_scalar_vector(tPrevLocalState, tNumLocalDofsPerCell, tBackstressXY, 2.0);
+
+    std::string tProblemType = "J2Plasticity";
+    Plato::LocalVectorFunctionInc<PhysicsT> tLocalVectorFuncInc(*tMesh, tMeshSets, tDataMap,
+                                                                *tParamList, tProblemType);
+
+    tLocalVectorFuncInc.updateLocalState(tGlobalState, tPrevGlobalState,
+                                         tLocalState, tPrevLocalState,
+                                         tControl, 0.0); 
+
+    constexpr Plato::Scalar tTolerance = 1.0e-5;
+    auto tHostLocalState = Kokkos::create_mirror(tLocalState);
+    Kokkos::deep_copy(tHostLocalState, tLocalState);
+
+    std::vector<Plato::Scalar> tGold = {0.3044881,0.1044881,
+        -0.06235277,-0.20325723,2.0*0.17898793,
+        1.52086046,39.97497032,2.60696968};
+    for (Plato::OrdinalType tIndex = 0; tIndex < tNumLocalDofsPerCell; ++tIndex)
+        TEST_FLOATING_EQUALITY(tHostLocalState(tIndex), 
+                                tGold[tIndex % tNumLocalDofsPerCell], tTolerance);
 }
 
 

@@ -5,13 +5,11 @@
 #include <Omega_h_mesh.hpp>
 #include <Omega_h_assoc.hpp>
 
+#include <Teuchos_ParameterList.hpp>
+
 #include "plato/WorksetBase.hpp"
 #include "plato/AbstractLocalVectorFunctionInc.hpp"
 #include "plato/SimplexFadTypes.hpp"
-
-#include "plato/J2PlasticityLocalResidual.hpp"
-#include "plato/SimplexPlasticity.hpp"
-#include "plato/Mechanics.hpp"
 
 namespace Plato
 {
@@ -86,8 +84,7 @@ class LocalVectorFunctionInc
                            mNumNodes(aMesh.nverts()),
                            mDataMap(aDataMap)
     {
-      PRINTERR("Warning: Plato::Mechanics should be changed to PhysicsT or something similar eventually.")
-      typename Plato::Mechanics<mNumSpatialDims>::FunctionFactory tFunctionFactory;
+      typename PhysicsT::FunctionFactory tFunctionFactory;
 
       mLocalVectorFunctionResidual  = tFunctionFactory.template createLocalVectorFunctionInc<Residual>
                                                                 (aMesh, aMeshSets, aDataMap, aParamList, aProblemType);
@@ -109,35 +106,6 @@ class LocalVectorFunctionInc
 
       mLocalVectorFunctionJacobianX = tFunctionFactory.template createLocalVectorFunctionInc<GradientX>
                                                                 (aMesh, aMeshSets, aDataMap, aParamList, aProblemType);
-
-      //  TESTING FOR COMPILATION BEFORE MAKING FUNCTION FACTORIES
-      // mLocalVectorFunctionResidual  = 
-      //         std::make_shared<J2PlasticityLocalResidual<Residual, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianU = 
-      //         std::make_shared<J2PlasticityLocalResidual<GlobalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianUP = 
-      //         std::make_shared<J2PlasticityLocalResidual<GlobalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianC = 
-      //         std::make_shared<J2PlasticityLocalResidual<LocalJacobian, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianCP = 
-      //         std::make_shared<J2PlasticityLocalResidual<LocalJacobianP, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianZ = 
-      //         std::make_shared<J2PlasticityLocalResidual<GradientZ, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
-
-      // mLocalVectorFunctionJacobianX = 
-      //         std::make_shared<J2PlasticityLocalResidual<GradientX, Plato::SimplexPlasticity<mNumSpatialDims>>>
-      //                                                 (aMesh, aMeshSets, aDataMap, aParamList);
     }
 
     /**************************************************************************//**
@@ -320,6 +288,17 @@ class LocalVectorFunctionInc
                                                       tLocalStateWS , tPrevLocalStateWS,
                                                       tControlWS    , tConfigWS, 
                                                       aTimeStep );
+
+      auto tNumCells = mNumCells;
+      auto tNumLocalDofsPerCell = mNumLocalDofsPerCell;
+      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells),LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
+        {
+            Plato::OrdinalType tDofOrdinal = aCellOrdinal * tNumLocalDofsPerCell;
+            for (Plato::OrdinalType tColumn = 0; tColumn < tNumLocalDofsPerCell; ++tColumn)
+            {
+              aLocalState(tDofOrdinal + tColumn) = tLocalStateWS(aCellOrdinal, tColumn);
+            }
+        }, "fill local state with updated local state");
     }
 
 
@@ -687,7 +666,7 @@ class LocalVectorFunctionInc
 
       // create return view
       //
-      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianState",mNumCells,mNumLocalDofsPerCell);
+      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianLocalState",mNumCells,mNumLocalDofsPerCell);
 
       // evaluate function
       //
@@ -759,7 +738,7 @@ class LocalVectorFunctionInc
 
       // create return view
       //
-      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianState",mNumCells,mNumLocalDofsPerCell);
+      Plato::ScalarMultiVectorT<ResultScalar> tJacobian("JacobianLocalState",mNumCells,mNumLocalDofsPerCell);
 
       // evaluate function
       //
@@ -846,11 +825,14 @@ class LocalVectorFunctionInc
 
 } // namespace Plato
 
+#include "plato/Plasticity.hpp"
+#include "plato/ThermoPlasticity.hpp"
+
 #ifdef PLATO_2D
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<2>>;
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::Plasticity<2>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::ThermoPlasticity<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexPlasticity<3>>;
-extern template class Plato::LocalVectorFunctionInc<Plato::SimplexThermoPlasticity<3>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::Plasticity<3>>;
+extern template class Plato::LocalVectorFunctionInc<Plato::ThermoPlasticity<3>>;
 #endif

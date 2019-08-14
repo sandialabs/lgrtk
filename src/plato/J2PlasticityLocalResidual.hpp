@@ -257,7 +257,7 @@ class J2PlasticityLocalResidual :
         // compute eta = (deviatoric_stress - backstress) ... and its norm ... the normalized version is the yield surface normal
         tJ2PlasticityUtils.computeDeviatoricStressMinusBackstressNormalized(aCellOrdinal, tDeviatoricStress, aLocalState,
                                                                             tYieldSurfaceNormal, tDevStressMinusBackstressNorm);
-
+        
         // apply penalization to plasticity material parameters
         ControlT tPlasticParamsPenalty               = tPlasticPropertiesSIMP(tDensity);
         ControlT tPenalizedHardeningModulusIsotropic = tPlasticParamsPenalty * tHardeningModulusIsotropic;
@@ -266,7 +266,7 @@ class J2PlasticityLocalResidual :
 
         // compute yield stress
         ResultT tYieldStress = tPenalizedInitialYieldStress + 
-                               tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0);
+                               tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0); // SHOULD THIS BE PREV? I think no.
 
         if (aLocalState(aCellOrdinal, 1) /*Current Plastic Multiplier Increment*/ > 0.0) // -> yielding (assumes local state already updated)
         {
@@ -362,6 +362,14 @@ class J2PlasticityLocalResidual :
       {
         tComputeGradient(aCellOrdinal, tGradient, aConfig, tCellVolume);
 
+        // Accumulated Plastic Strain
+        aLocalState(aCellOrdinal, 0) = aPrevLocalState(aCellOrdinal, 0);
+
+        // Plastic Multiplier Increment
+        aLocalState(aCellOrdinal, 1) = 0.0;
+
+        tJ2PlasticityUtils.updatePlasticStrainAndBackstressElasticStep(aCellOrdinal, aPrevLocalState, aLocalState);
+
         // compute elastic strain
         tThermoPlasticityUtils.computeElasticStrain(aCellOrdinal, aGlobalState, aLocalState, 
                                                     tBasisFunctions, tGradient, tElasticStrain);
@@ -391,17 +399,7 @@ class J2PlasticityLocalResidual :
         // compute the yield function at the trial state
         Plato::Scalar tTrialStateYieldFunction = tSqrt3Over2 * tDevStressMinusBackstressNorm(aCellOrdinal) - tYieldStress;
 
-        if (tTrialStateYieldFunction <= 0.0) // elastic step
-        {
-          // Accumulated Plastic Strain
-          aLocalState(aCellOrdinal, 0) = aPrevLocalState(aCellOrdinal, 0);
-
-          // Plastic Multiplier Increment
-          aLocalState(aCellOrdinal, 1) = 0.0;
-          
-          tJ2PlasticityUtils.updatePlasticStrainAndBackstressElasticStep(aCellOrdinal, aPrevLocalState, aLocalState);
-        }
-        else // plastic step
+        if (tTrialStateYieldFunction > 0.0) // plastic step
         {
           // Plastic Multiplier Increment (for J2 w/ linear isotropic/kinematic hardening -> analytical return mapping)
           aLocalState(aCellOrdinal, 1) = tTrialStateYieldFunction / (3.0 * tPenalizedShearModulus +
@@ -419,6 +417,9 @@ class J2PlasticityLocalResidual :
 // class J2PlasticityLocalResidual
 
 } // namespace Plato
+
+#include "plato/SimplexPlasticity.hpp"
+#include "plato/SimplexThermoPlasticity.hpp"
 
 #ifdef PLATO_2D
 PLATO_EXPL_DEC_INC_LOCAL(Plato::J2PlasticityLocalResidual, Plato::SimplexPlasticity, 2)
