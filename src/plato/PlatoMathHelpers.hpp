@@ -215,8 +215,8 @@ void MatrixTimesVectorPlusVector(const Teuchos::RCP<Plato::CrsMatrixType> & aMat
     {
         auto tNodeRowMap = aMatrix->rowMap();
         auto tNodeColIndices = aMatrix->columnIndices();
-        auto tBlockRowSize = aMatrix->blockSizeRow();
-        auto tBlockColSize = aMatrix->blockSizeCol();
+        auto tBlockRowSize = aMatrix->numRowsPerBlock();
+        auto tBlockColSize = aMatrix->numColsPerBlock();
         auto tEntries = aMatrix->entries();
         auto tNumNodeRows = tNodeRowMap.size() - 1;
 

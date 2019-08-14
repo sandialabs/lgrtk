@@ -37,8 +37,8 @@ class CrsMatrix {
 
  public:
   decltype(mIsBlockMatrix) isBlockMatrix() const { return mIsBlockMatrix; }
-  decltype(mBlockSizeRow)  blockSizeRow()  const { return mBlockSizeRow; }
-  decltype(mBlockSizeCol)  blockSizeCol()  const { return mBlockSizeCol; }
+  decltype(mBlockSizeRow)  numRowsPerBlock()  const { return mBlockSizeRow; }
+  decltype(mBlockSizeCol)  numColsPerBlock()  const { return mBlockSizeCol; }
 
   decltype(mNumRows) numRows() const
   { return (mNumRows != -1) ? mNumRows : throw std::logic_error("requested unset value"); }

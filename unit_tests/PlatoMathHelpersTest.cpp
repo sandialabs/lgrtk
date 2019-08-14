@@ -54,33 +54,83 @@ using namespace KokkosKernels::Experimental;
 
 namespace PlatoDevel {
 
+template <typename ViewType>
+typename ViewType::HostMirror
+get(ViewType aView)
+{
+    using RetType = typename ViewType::HostMirror;
+    RetType tView = Kokkos::create_mirror(aView);
+    Kokkos::deep_copy(tView, aView);
+    return tView;
+}
+
+
+/******************************************************************************/
+/*! 
+  @brief Extract block matrix graph and values into a non-block matrix format
+  @param [in] aMatrix Block matrix from which graph and values will be extracted
+  @param [out] aMatrixRowMap Non-block row map: (rowIndex) => {offsetIndex}
+  @param [out] aMatrixColMap Non-block column map: (offsetIndex) => {columnIndex}
+  @param [out] aMatrixValues Non-block matrix entries: (offsetIndex) => {matrix value}
+  @param [in] aRowStride If greater than one, the input matrix is considered a sub-block matrix.
+  @param [in] aRowOffset Offset of the submatrix.  Ignored if aRowStride equals one.
+
+  The column map for the block matrix provides the node column index.  The matrix 
+  values are indexed by offsetIndex*blockColSize*blockRowSize + blockRowIndex*blockColSize + blockColIndex.
+  The output matrix values are indexed by offsetIndex.
+
+  If aRowStride is greater than one, the input matrix is assumed to be a sub-block matrix, i.e., 
+  the block data provided for each node is only one row of the full block matrix.  The value of
+  aRowStride is the number of rows in the full block matrix, and aRowOffset is the index of the
+  sub-matrix row within the full block matrix.  The resulting non-block maps are for the full
+  block matrix.
+*/
+/******************************************************************************/
 void getDataAsNonBlock(
       const Teuchos::RCP<Plato::CrsMatrixType>       & aMatrix,
             Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixRowMap,
             Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixColMap,
-            Plato::ScalarVectorT<Plato::Scalar>      & aMatrixValues)
+            Plato::ScalarVectorT<Plato::Scalar>      & aMatrixValues,
+            int aRowStride=1, int aRowOffset=0)
 {
     const auto& tRowMap = aMatrix->rowMap();
     const auto& tColMap = aMatrix->columnIndices();
     const auto& tValues = aMatrix->entries();
 
     auto tNumMatrixRows = aMatrix->numRows();
-    auto tNumBlockRows = aMatrix->blockSizeRow();
-    auto tNumBlockCols = aMatrix->blockSizeCol();
+    tNumMatrixRows *= aRowStride;
+
+    auto tNumBlockRows = aMatrix->numRowsPerBlock();
+    auto tNumBlockCols = aMatrix->numColsPerBlock();
     auto tBlockSize = tNumBlockRows*tNumBlockCols;
 
     // generate non block row map
     //
     aMatrixRowMap = Plato::ScalarVectorT<Plato::OrdinalType>("non block row map", tNumMatrixRows+1);
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows+1), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
-        auto tBlockRowIndex = tMatrixRowIndex / tNumBlockRows;
-        auto tLocalRowIndex = tMatrixRowIndex % tNumBlockRows;
-        auto tFrom = tRowMap(tBlockRowIndex);
-        auto tTo   = tRowMap(tBlockRowIndex+1);
-        auto tBlockRowSize = tTo - tFrom;
-        aMatrixRowMap(tMatrixRowIndex) = tFrom * tBlockSize + tLocalRowIndex * tBlockRowSize * tNumBlockRows;
-    });
+    if (aRowStride == 1)
+    {
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows+1), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
+            auto tBlockRowIndex = tMatrixRowIndex / tNumBlockRows;
+            auto tLocalRowIndex = tMatrixRowIndex % tNumBlockRows;
+            auto tFrom = tRowMap(tBlockRowIndex);
+            auto tTo   = tRowMap(tBlockRowIndex+1);
+            auto tBlockRowSize = tTo - tFrom;
+            aMatrixRowMap(tMatrixRowIndex) = tFrom * tBlockSize + tLocalRowIndex * tBlockRowSize * tNumBlockCols;
+        });
+    }
+    else 
+    {
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows+1), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
+            auto tBlockRowIndex = tMatrixRowIndex / aRowStride;
+            auto tLocalRowIndex = tMatrixRowIndex % aRowStride;
+            auto tFrom = tRowMap(tBlockRowIndex);
+            auto tTo   = tRowMap(tBlockRowIndex+1);
+            auto tBlockRowSize = tTo - tFrom;
+            auto tRowLength = (tLocalRowIndex > aRowOffset) ? tLocalRowIndex * tBlockRowSize : 0;
+            aMatrixRowMap(tMatrixRowIndex) = tFrom * tNumBlockCols + tRowLength;
+        });
+    }
 
     // generate non block col map and non block values
     //
@@ -88,21 +138,107 @@ void getDataAsNonBlock(
     aMatrixColMap = Plato::ScalarVectorT<Plato::OrdinalType>("non block col map", tNumMatrixColEntries);
     aMatrixValues = Plato::ScalarVectorT<Plato::Scalar>     ("non block values",  tNumMatrixColEntries);
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
-        auto tBlockRowIndex = tMatrixRowIndex / tNumBlockRows;
-        auto tLocalRowIndex = tMatrixRowIndex % tNumBlockRows;
-        auto tFrom = tRowMap(tBlockRowIndex);
-        auto tTo   = tRowMap(tBlockRowIndex+1);
-        Plato::OrdinalType tMatrixRowFrom = aMatrixRowMap(tMatrixRowIndex);
-        for( auto tColMapIndex=tFrom; tColMapIndex<tTo; ++tColMapIndex )
-        {
-            for( Plato::OrdinalType tBlockColOffset=0; tBlockColOffset<tNumBlockCols; ++tBlockColOffset )
+    if (aRowStride == 1)
+    {
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
+            auto tBlockRowIndex = tMatrixRowIndex / tNumBlockRows;
+            auto tLocalRowIndex = tMatrixRowIndex % tNumBlockRows;
+            auto tFrom = tRowMap(tBlockRowIndex);
+            auto tTo   = tRowMap(tBlockRowIndex+1);
+            Plato::OrdinalType tMatrixRowFrom = aMatrixRowMap(tMatrixRowIndex);
+            for( auto tColMapIndex=tFrom; tColMapIndex<tTo; ++tColMapIndex )
             {
-                auto tMapIndex = tColMap(tColMapIndex)*tNumBlockCols+tBlockColOffset;
-                auto tValIndex = tColMapIndex*tBlockSize+tLocalRowIndex*tNumBlockCols+tBlockColOffset;
-                aMatrixColMap(tMatrixRowFrom) = tMapIndex;
-                aMatrixValues(tMatrixRowFrom) = tValues(tValIndex);
-                tMatrixRowFrom++;
+                for( Plato::OrdinalType tBlockColOffset=0; tBlockColOffset<tNumBlockCols; ++tBlockColOffset )
+                {
+                    auto tMapIndex = tColMap(tColMapIndex)*tNumBlockCols+tBlockColOffset;
+                    auto tValIndex = tColMapIndex*tBlockSize+tLocalRowIndex*tNumBlockCols+tBlockColOffset;
+                    aMatrixColMap(tMatrixRowFrom) = tMapIndex;
+                    aMatrixValues(tMatrixRowFrom) = tValues(tValIndex);
+                    tMatrixRowFrom++;
+                }
+            }
+        });
+    }
+    else
+    {
+        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
+            auto tBlockRowIndex = tMatrixRowIndex / aRowStride;
+            auto tFrom = tRowMap(tBlockRowIndex);
+            auto tTo   = tRowMap(tBlockRowIndex+1);
+            Plato::OrdinalType tMatrixRowFrom = aMatrixRowMap(tMatrixRowIndex);
+            for( auto tColMapIndex=tFrom; tColMapIndex<tTo; ++tColMapIndex )
+            {
+                for( Plato::OrdinalType tBlockColOffset=0; tBlockColOffset<tNumBlockCols; ++tBlockColOffset )
+                {
+                    auto tMapIndex = tColMap(tColMapIndex)*tNumBlockCols+tBlockColOffset;
+                    auto tValIndex = tColMapIndex*tNumBlockCols+tBlockColOffset;
+                    aMatrixColMap(tMatrixRowFrom) = tMapIndex;
+                    aMatrixValues(tMatrixRowFrom) = tValues(tValIndex);
+                    tMatrixRowFrom++;
+                }
+            }
+        });
+    }
+}
+
+/******************************************************************************/
+/*! 
+  \brief Set Kokkos::View data from std::vector
+*/
+/******************************************************************************/
+template <typename DataType>
+void setViewFromVector( Plato::ScalarVectorT<DataType> aView, std::vector<DataType> aVector)
+{
+  Kokkos::View<DataType*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> tHostView(aVector.data(),aVector.size());
+  Kokkos::deep_copy(aView, tHostView);
+}
+
+/******************************************************************************/
+/*! 
+  \brief Set matrix data from provided views
+*/
+/******************************************************************************/
+void setMatrixData(
+  Teuchos::RCP<Plato::CrsMatrixType> aMatrix,
+  std::vector<Plato::OrdinalType>    aRowMap,
+  std::vector<Plato::OrdinalType>    aColMap,
+  std::vector<Plato::Scalar>         aValues )
+{
+  Plato::ScalarVectorT<Plato::OrdinalType> tRowMap("row map", aRowMap.size());
+  setViewFromVector(tRowMap, aRowMap);
+  aMatrix->setRowMap(tRowMap);
+
+  Plato::ScalarVectorT<Plato::OrdinalType> tColMap("col map", aColMap.size());
+  setViewFromVector(tColMap, aColMap);
+  aMatrix->setColumnIndices(tColMap);
+
+  Plato::ScalarVectorT<Plato::Scalar> tValues("values", aValues.size());
+  setViewFromVector(tValues, aValues);
+  aMatrix->setEntries(tValues);
+}
+
+void sortColumnEntries(
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixRowMap,
+            Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixColMap,
+            Plato::ScalarVectorT<Plato::Scalar>      & aMatrixValues)
+{
+    auto tNumMatrixRows = aMatrixRowMap.extent(0) - 1;
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumMatrixRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tMatrixRowIndex) {
+        auto tFrom = aMatrixRowMap(tMatrixRowIndex);
+        auto tTo   = aMatrixRowMap(tMatrixRowIndex+1);
+        for( auto tColMapEntryIndex_I=tFrom; tColMapEntryIndex_I<tTo; ++tColMapEntryIndex_I )
+        {
+            for( auto tColMapEntryIndex_J=tFrom; tColMapEntryIndex_J<tTo; ++tColMapEntryIndex_J )
+            {
+                if( aMatrixColMap[tColMapEntryIndex_I] < aMatrixColMap[tColMapEntryIndex_J] )
+                {
+                    auto tColIndex = aMatrixColMap[tColMapEntryIndex_J];
+                    aMatrixColMap[tColMapEntryIndex_J] = aMatrixColMap[tColMapEntryIndex_I];
+                    aMatrixColMap[tColMapEntryIndex_I] = tColIndex;
+                    auto tValue = aMatrixValues[tColMapEntryIndex_J];
+                    aMatrixValues[tColMapEntryIndex_J] = aMatrixValues[tColMapEntryIndex_I];
+                    aMatrixValues[tColMapEntryIndex_I] = tValue;
+                }
             }
         }
     });
@@ -111,12 +247,15 @@ void getDataAsNonBlock(
 void setDataFromNonBlock(
             Teuchos::RCP<Plato::CrsMatrixType>       & aMatrix,
       const Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixRowMap,
-      const Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixColMap,
-      const Plato::ScalarVectorT<Plato::Scalar>      & aMatrixValues)
+            Plato::ScalarVectorT<Plato::OrdinalType> & aMatrixColMap,
+            Plato::ScalarVectorT<Plato::Scalar>      & aMatrixValues)
 {
+
+    sortColumnEntries(aMatrixRowMap, aMatrixColMap, aMatrixValues);
+
     auto tNumMatrixRows = aMatrix->numRows();
-    auto tNumBlockRows = aMatrix->blockSizeRow();
-    auto tNumBlockCols = aMatrix->blockSizeCol();
+    auto tNumBlockRows = aMatrix->numRowsPerBlock();
+    auto tNumBlockCols = aMatrix->numColsPerBlock();
     auto tBlockSize = tNumBlockRows*tNumBlockCols;
 
     // generate block row map
@@ -144,7 +283,6 @@ void setDataFromNonBlock(
         auto tLocalRowIndex = tMatrixRowIndex % tNumBlockRows;
         auto tFrom = tRowMap(tBlockRowIndex);
         auto tTo   = tRowMap(tBlockRowIndex+1);
-        Plato::OrdinalType tBlockRowFrom = tRowMap(tBlockRowIndex);
         Plato::OrdinalType tMatrixRowFrom = aMatrixRowMap(tMatrixRowIndex);
         for( auto tColMapIndex=tFrom; tColMapIndex<tTo; ++tColMapIndex )
         {
@@ -159,8 +297,122 @@ void setDataFromNonBlock(
             }
         }
     });
+
+    auto tColMap_host = Kokkos::create_mirror(tColMap);
+    Kokkos::deep_copy(tColMap_host, tColMap);
+
     aMatrix->setColumnIndices(tColMap);
     aMatrix->setEntries(tValues);
+}
+
+void
+fromFull( Teuchos::RCP<Plato::CrsMatrixType>            aOutMatrix,
+          const std::vector<std::vector<Plato::Scalar>> aInMatrix )
+{
+    using Plato::OrdinalType;
+    using Plato::Scalar;
+
+    if( aOutMatrix->numRows() != aInMatrix.size()    ) { THROWERR("matrices have incompatible shapes"); }
+    if( aOutMatrix->numCols() != aInMatrix[0].size() ) { THROWERR("matrices have incompatible shapes"); }
+
+    auto tNumRowsPerBlock = aOutMatrix->numRowsPerBlock();
+    auto tNumColsPerBlock = aOutMatrix->numColsPerBlock();
+    auto tNumBlockRows = aOutMatrix->numRows() / tNumRowsPerBlock;
+    auto tNumBlockCols = aOutMatrix->numCols() / tNumColsPerBlock;
+
+    std::vector<OrdinalType> tBlockRowMap(tNumBlockRows+1);;
+
+    tBlockRowMap[0] = 0;
+    std::vector<OrdinalType> tColumnIndices;
+    std::vector<Scalar> tBlockEntries;
+    for( OrdinalType iBlockRowIndex=0; iBlockRowIndex<tNumBlockRows; iBlockRowIndex++)
+    {
+        for( OrdinalType iBlockColIndex=0; iBlockColIndex<tNumBlockCols; iBlockColIndex++)
+        {
+             bool blockIsNonZero = false;
+             std::vector<Scalar> tLocalEntries;
+             for( OrdinalType iLocalBlockRowIndex=0; iLocalBlockRowIndex<tNumRowsPerBlock; iLocalBlockRowIndex++)
+             {
+                 for( OrdinalType iLocalBlockColIndex=0; iLocalBlockColIndex<tNumColsPerBlock; iLocalBlockColIndex++)
+                 {
+                      auto tMatrixRow = iBlockRowIndex * tNumRowsPerBlock + iLocalBlockRowIndex;
+                      auto tMatrixCol = iBlockColIndex * tNumColsPerBlock + iLocalBlockColIndex;
+                      tLocalEntries.push_back( aInMatrix[tMatrixRow][tMatrixCol] );
+                      if( aInMatrix[tMatrixRow][tMatrixCol] != 0.0 ) blockIsNonZero = true;
+                 }
+             }
+             if( blockIsNonZero )
+             {
+                 tColumnIndices.push_back( iBlockColIndex );
+                 tBlockEntries.insert(tBlockEntries.end(), tLocalEntries.begin(), tLocalEntries.end());
+             }
+        }
+        tBlockRowMap[iBlockRowIndex+1] = tColumnIndices.size();
+    }
+
+    setMatrixData(aOutMatrix, tBlockRowMap, tColumnIndices, tBlockEntries);
+}
+std::vector<std::vector<Plato::Scalar>>
+toFull( Teuchos::RCP<Plato::CrsMatrixType> aInMatrix )
+{
+    using Plato::OrdinalType;
+    using Plato::Scalar;
+
+    std::vector<std::vector<Scalar>> 
+        retMatrix(aInMatrix->numRows(),std::vector<Scalar>(aInMatrix->numCols(),0.0));
+
+    auto tNumRowsPerBlock = aInMatrix->numRowsPerBlock();
+    auto tNumColsPerBlock = aInMatrix->numColsPerBlock();
+    auto tBlockSize = tNumRowsPerBlock*tNumColsPerBlock;
+
+    auto tRowMap = get(aInMatrix->rowMap());
+    auto tColMap = get(aInMatrix->columnIndices());
+    auto tValues = get(aInMatrix->entries());
+
+    auto tNumRows = tRowMap.extent(0)-1;
+    for(OrdinalType iRowIndex=0; iRowIndex<tNumRows; iRowIndex++)
+    {
+        auto tFrom = tRowMap(iRowIndex);
+        auto tTo   = tRowMap(iRowIndex+1);
+        for(auto iColMapEntryIndex=tFrom; iColMapEntryIndex<tTo; iColMapEntryIndex++)
+        {
+            auto tBlockColIndex = tColMap(iColMapEntryIndex);
+            for(OrdinalType iLocalRowIndex=0; iLocalRowIndex<tNumRowsPerBlock; iLocalRowIndex++)
+            {
+                auto tRowIndex = iRowIndex * tNumRowsPerBlock + iLocalRowIndex;
+                for(OrdinalType iLocalColIndex=0; iLocalColIndex<tNumColsPerBlock; iLocalColIndex++)
+                {
+                    auto tColIndex = tBlockColIndex * tNumColsPerBlock + iLocalColIndex;
+                    auto tSparseIndex = iColMapEntryIndex * tBlockSize + iLocalRowIndex * tNumColsPerBlock + iLocalColIndex;
+                    retMatrix[tRowIndex][tColIndex] = tValues[tSparseIndex];
+                }
+            }
+        }
+    }
+    return retMatrix;
+}
+
+void RowSum(
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrix,
+            Plato::ScalarVector & aOutRowSum)
+{
+    auto tNumBlockRows = aInMatrix->rowMap().size()-1;
+    auto tNumRows = aInMatrix->numRows();
+    Plato::RowSum tRowSumFunctor(aInMatrix);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumBlockRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tBlockRowOrdinal) {
+      tRowSumFunctor(tBlockRowOrdinal, aOutRowSum);
+    });
+}
+
+void InverseMultiply(
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrix,
+            Plato::ScalarVector & aInDiagonal)
+{
+    auto tNumBlockRows = aInMatrix->rowMap().size()-1;
+    Plato::DiagonalInverseMultiply tDiagInverseMultiplyFunctor(aInMatrix);
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumBlockRows), LAMBDA_EXPRESSION(const Plato::OrdinalType & tBlockRowOrdinal) {
+      tDiagInverseMultiplyFunctor(tBlockRowOrdinal, aInDiagonal);
+    });
 }
 
 void RowSummedInverseMultiply(
@@ -177,6 +429,37 @@ void RowSummedInverseMultiply(
       tDiagInverseMultiplyFunctor(tBlockRowOrdinal, tRowSum);
     });
 }
+
+void SlowDumbRowSummedInverseMultiply(
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixOne,
+            Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixTwo)
+{
+    auto F1 = toFull(aInMatrixOne);
+    auto F2 = toFull(aInMatrixTwo);
+
+    auto tNumM1Rows = aInMatrixOne->numRows();
+    auto tNumM1Cols = aInMatrixOne->numCols();
+    if (tNumM1Rows != tNumM1Cols) { THROWERR("matrix one must be square"); }
+
+    auto tNumM2Rows = aInMatrixTwo->numRows();
+    auto tNumM2Cols = aInMatrixTwo->numCols();
+    if (tNumM1Cols != tNumM2Rows) { THROWERR("matrices have incompatible shapes"); }
+
+    for (auto iRow=0; iRow<tNumM1Rows; iRow++)
+    {
+        Plato::Scalar tRowSum = 0.0;
+        for (auto iCol=0; iCol<tNumM1Cols; iCol++)
+        {
+            tRowSum += F1[iRow][iCol];
+        }
+        for (auto iCol=0; iCol<tNumM2Cols; iCol++)
+        {
+            F2[iRow][iCol] /= tRowSum;
+        }
+    }
+    fromFull(aInMatrixTwo, F2);
+}
+
 
 void MatrixMinusEqualsMatrix(
             Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixOne,
@@ -197,10 +480,10 @@ void MatrixMinusEqualsMatrix(
     auto tRowMap = aInMatrixOne->rowMap();
     auto tNumBlockRows = tRowMap.size()-1;
 
-    auto tFromBlockSizeRow = aInMatrixOne->blockSizeRow();
-    auto tFromBlockSizeCol = aInMatrixOne->blockSizeCol();
-    auto tToBlockSizeRow   = aInMatrixTwo->blockSizeRow();
-    auto tToBlockSizeCol   = aInMatrixTwo->blockSizeCol();
+    auto tFromBlockSizeRow = aInMatrixOne->numRowsPerBlock();
+    auto tFromBlockSizeCol = aInMatrixOne->numColsPerBlock();
+    auto tToBlockSizeRow   = aInMatrixTwo->numRowsPerBlock();
+    auto tToBlockSizeCol   = aInMatrixTwo->numColsPerBlock();
 
     assert(tToBlockSizeCol == tFromBlockSizeCol);
 
@@ -253,9 +536,11 @@ void MatrixMinusMatrix(
     const OrdinalType tNumRowsOut = tOutMat.numRows();
     const OrdinalType tNumColsOut = tOutMat.numCols();
 
-    if (tNumRowsTwo != tNumColsOne) { THROWERR("input matrices have incompatible shapes"); }
-    if (tNumRowsOut != tNumRowsOne) { THROWERR("output matrix has incorrect shape"); }
-    if (tNumColsOut != tNumColsTwo) { THROWERR("output matrix has incorrect shape"); }
+    auto tNumBlockRows = tMatOne.numRowsPerBlock();
+
+    if (tNumColsOne != tNumColsTwo) { THROWERR("matrices have incompatible shape"); }
+    if (tNumColsOne != tNumColsOut) { THROWERR("output matrix has incorrect shape"); }
+    if (tNumRowsOne != tNumRowsOut) { THROWERR("output matrix has incorrect shape"); }
 
     ScalarView tMatOneValues;
     OrdinalView tMatOneRowMap, tMatOneColMap;
@@ -263,7 +548,7 @@ void MatrixMinusMatrix(
 
     ScalarView tMatTwoValues;
     OrdinalView tMatTwoRowMap, tMatTwoColMap;
-    PlatoDevel::getDataAsNonBlock(aInMatrixTwo, tMatTwoRowMap, tMatTwoColMap, tMatTwoValues);
+    PlatoDevel::getDataAsNonBlock(aInMatrixTwo, tMatTwoRowMap, tMatTwoColMap, tMatTwoValues, tNumBlockRows, aOffset);
 
     OrdinalView tOutRowMap ("output row map", tNumRowsOne + 1);
 
@@ -283,8 +568,8 @@ void MatrixMinusMatrix(
     auto tAddHandle = tKernel.get_spadd_handle();
 
     size_t tNumOutValues = tAddHandle->get_max_result_nnz();
-    OrdinalView tOutColMap(Kokkos::ViewAllocateWithoutInitializing("out column map"), tNumOutValues);
-    ScalarView  tOutValues(Kokkos::ViewAllocateWithoutInitializing("out values"),  tNumOutValues);
+    OrdinalView tOutColMap("out column map", tNumOutValues);
+    ScalarView  tOutValues("out values",  tNumOutValues);
     KokkosSparse::Experimental::spadd_numeric< KernelHandle,
       OrdinalView, OrdinalView, Scalar, ScalarView,
       OrdinalView, OrdinalView, Scalar, ScalarView,
@@ -299,6 +584,101 @@ void MatrixMinusMatrix(
     PlatoDevel::setDataFromNonBlock(aOutMatrix, tOutRowMap, tOutColMap, tOutValues);
     tKernel.destroy_spadd_handle();
 }
+
+
+void SlowDumbMatrixMinusMatrix( 
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixOne,
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixTwo,
+            Teuchos::RCP<Plato::CrsMatrixType> & aOutMatrix,
+            int aOffset=-1)
+{
+    auto tNumM1Rows = aInMatrixOne->numRows();
+    auto tNumM1Cols = aInMatrixOne->numCols();
+    auto tNumM2Rows = aInMatrixTwo->numRows();
+    auto tNumM2Cols = aInMatrixTwo->numCols();
+    auto tNumM1RowsPerBlock = aInMatrixOne->numRowsPerBlock();
+    auto tNumM2RowsPerBlock = aInMatrixTwo->numRowsPerBlock();
+   
+    if( aOffset == -1 )
+    {
+        if( tNumM1Rows != tNumM2Rows || tNumM1Cols != tNumM2Cols ) { THROWERR("input matrices have incompatible shapes"); }
+    }
+    else
+    {
+        if(  tNumM2RowsPerBlock != 1 || tNumM1Cols != tNumM2Cols ) { THROWERR("input matrices have incompatible shapes"); }
+    }
+
+    using Plato::Scalar;
+    std::vector<std::vector<Scalar>> tFullMatrix(tNumM1Rows,std::vector<Scalar>(tNumM1Cols, 0.0));
+
+    auto F1 = toFull(aInMatrixOne);
+    auto F2 = toFull(aInMatrixTwo);
+
+    if( aOffset == -1 )
+    {
+        for (auto iRow=0; iRow<tNumM1Rows; iRow++)
+        {
+            for (auto iCol=0; iCol<tNumM1Cols; iCol++)
+            {
+                tFullMatrix[iRow][iCol] = F1[iRow][iCol] - F2[iRow][iCol];
+            }
+        }
+    }
+    else
+    {
+        for (auto iRow=0; iRow<tNumM1Rows; iRow++)
+        {
+            for (auto iCol=0; iCol<tNumM1Cols; iCol++)
+            {
+                tFullMatrix[iRow][iCol] = F1[iRow][iCol];
+            }
+        }
+        for (auto iRow=0; iRow<tNumM2Rows; iRow++)
+        {
+            for (auto iCol=0; iCol<tNumM2Cols; iCol++)
+            {
+                tFullMatrix[tNumM1RowsPerBlock*iRow+aOffset][iCol] -= F2[iRow][iCol];
+            }
+        }
+    }
+ 
+    fromFull(aOutMatrix, tFullMatrix);
+}
+
+
+void SlowDumbMatrixMatrixMultiply( 
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixOne,
+      const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixTwo,
+            Teuchos::RCP<Plato::CrsMatrixType> & aOutMatrix)
+{
+    auto tNumOutMatrixRows = aInMatrixOne->numRows();
+    auto tNumOutMatrixCols = aInMatrixTwo->numCols();
+
+    if( aInMatrixOne->numCols() != aInMatrixTwo->numRows() ) { THROWERR("input matrices have incompatible shapes"); }
+
+    auto tNumInner = aInMatrixOne->numCols();
+
+    using Plato::Scalar;
+    std::vector<std::vector<Scalar>> tFullMatrix(tNumOutMatrixRows,std::vector<Scalar>(tNumOutMatrixCols, 0.0));
+
+    auto F1 = toFull(aInMatrixOne);
+    auto F2 = toFull(aInMatrixTwo);
+
+    for (auto iRow=0; iRow<tNumOutMatrixRows; iRow++)
+    {
+        for (auto iCol=0; iCol<tNumOutMatrixCols; iCol++)
+        {
+            tFullMatrix[iRow][iCol] = 0.0;
+            for (auto iK=0; iK<tNumInner; iK++)
+            {
+                tFullMatrix[iRow][iCol] += F1[iRow][iK]*F2[iK][iCol];
+            }
+        }
+    }
+ 
+    fromFull(aOutMatrix, tFullMatrix);
+}
+
 void MatrixMatrixMultiply( 
       const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixOne,
       const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrixTwo,
@@ -428,6 +808,81 @@ bool is_same(
     return true;
  }
 
+bool is_sequential(
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aRowMap,
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aColMap)
+ {
+    auto tRowMap = PlatoDevel::get(aRowMap);
+    auto tColMap = PlatoDevel::get(aColMap);
+
+    auto tNumRows = tRowMap.extent(0)-1;
+
+    for (unsigned int i = 0; i < tNumRows; ++i)
+    {
+        auto tFrom = tRowMap(i);
+        auto tTo = tRowMap(i+1);
+        for (auto iColMapEntry=tFrom; iColMapEntry<tTo-1; iColMapEntry++)
+        {
+            if ( tColMap(iColMapEntry) >= tColMap(iColMapEntry+1) )
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+ }
+bool is_equivalent(
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aRowMap,
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aColMapA,
+      const Plato::ScalarVectorT<Plato::Scalar>      & aValuesA,
+      const Plato::ScalarVectorT<Plato::OrdinalType> & aColMapB,
+      const Plato::ScalarVectorT<Plato::Scalar>      & aValuesB,
+      Plato::Scalar tolerance = 1.0e-14)
+ {
+    if( aColMapA.extent(0) != aColMapB.extent(0) ) return false;
+    if( aValuesA.extent(0) != aValuesB.extent(0) ) return false;
+
+    auto tRowMap  = PlatoDevel::get(aRowMap);
+    auto tColMapA = PlatoDevel::get(aColMapA);
+    auto tValuesA = PlatoDevel::get(aValuesA);
+    auto tColMapB = PlatoDevel::get(aColMapB);
+    auto tValuesB = PlatoDevel::get(aValuesB);
+
+    Plato::OrdinalType tANumEntriesPerBlock = aValuesA.extent(0) / aColMapA.extent(0);
+    Plato::OrdinalType tBNumEntriesPerBlock = aValuesB.extent(0) / aColMapB.extent(0);
+    if( tANumEntriesPerBlock != tBNumEntriesPerBlock ) return false;
+
+    auto tNumRows = tRowMap.extent(0)-1;
+    for (unsigned int i = 0; i < tNumRows; ++i)
+    {
+        auto tFrom = tRowMap(i);
+        auto tTo = tRowMap(i+1);
+        for (auto iColMapEntryA=tFrom; iColMapEntryA<tTo; iColMapEntryA++)
+        {
+            auto tColumnIndexA = tColMapA(iColMapEntryA);
+            for (auto iColMapEntryB=tFrom; iColMapEntryB<tTo; iColMapEntryB++)
+            {
+                if (tColumnIndexA == tColMapB(iColMapEntryB) )
+                {
+                    for (auto iBlockEntry=0; iBlockEntry<tANumEntriesPerBlock; iBlockEntry++)
+                    {
+                        auto tBlockEntryIndexA = iColMapEntryA*tANumEntriesPerBlock+iBlockEntry;
+                        auto tBlockEntryIndexB = iColMapEntryB*tBNumEntriesPerBlock+iBlockEntry;
+                        Plato::Scalar tSum = fabs(tValuesA(tBlockEntryIndexA)) + fabs(tValuesB(tBlockEntryIndexB));
+                        Plato::Scalar tDif = fabs(tValuesA(tBlockEntryIndexA) - tValuesB(tBlockEntryIndexB));
+                        Plato::Scalar tRelVal = (tSum != 0.0) ? 2.0*tDif/tSum : 0.0;
+                        if (tRelVal > tolerance)
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return true;
+ }
+
 bool is_zero(
       const Teuchos::RCP<Plato::CrsMatrixType> & aInMatrix)
  {
@@ -520,46 +975,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_FromToBlockMatrix)
 
   auto tNumRows = tMatrixA->numRows();
   auto tNumCols = tMatrixA->numCols();
-  auto tNumBlockSizeRows = tMatrixA->blockSizeRow();
-  auto tNumBlockSizeCols = tMatrixA->blockSizeCol();
+  auto tNumBlockSizeRows = tMatrixA->numRowsPerBlock();
+  auto tNumBlockSizeCols = tMatrixA->numColsPerBlock();
   auto tMatrixB = Teuchos::rcp( new Plato::CrsMatrixType( tNumRows, tNumCols, tNumBlockSizeRows, tNumBlockSizeCols) );
 
   Plato::ScalarVectorT<Plato::Scalar> tMatrixEntries;
   Plato::ScalarVectorT<Plato::OrdinalType> tMatrixRowMap, tMatrixColMap;
   PlatoDevel::getDataAsNonBlock  (tMatrixA, tMatrixRowMap, tMatrixColMap, tMatrixEntries);
-
-  std::vector<Plato::OrdinalType> tGoldMatrixRowMap = {
-    0, 24, 48, 72, 99, 126, 153, 168, 183, 198, 231, 264, 297, 318, 339, 360,
-    375, 390, 405, 426, 447, 468, 483, 498, 513, 540, 567, 594, 627, 660, 693,
-    714, 735, 756, 771, 786, 801, 822, 843, 864, 909, 954, 999, 1032, 1065,
-    1098, 1125, 1152, 1179, 1212, 1245, 1278, 1305, 1332, 1359, 1383, 1407,
-    1431, 1458, 1485, 1512, 1545, 1578, 1611, 1644, 1677, 1710, 1731, 1752,
-    1773, 1788, 1803, 1818, 1839, 1860, 1881, 1908, 1935, 1962, 1977, 1992, 2007
-  };
-  TEST_ASSERT(is_same(tMatrixRowMap, tGoldMatrixRowMap));
- 
-  std::vector<Plato::OrdinalType> tGoldMatrixColMap = {
-    0, 1, 2, 24, 25, 26, 3, 4, 5, 9, 10, 11, 27, 28, 29, 39, 40, 41, 63, 64, 65,
-    75, 76, 77, 0, 1, 2, 24, 25, 26, 3, 4, 5, 9, 10, 11, 27, 28, 29, 39, 40, 41,
-    63, 64, 65, 75, 76, 77, 0, 1, 2, 24, 25, 26, 3, 4, 5, 9, 10, 11, 27, 28, 29,
-    39, 40, 41, 63, 64, 65, 75, 76, 77, 0, 1, 2, 3, 4, 5, 9, 10, 11, 6, 7, 8,
-    12, 13, 14, 39, 40, 41, 42, 43, 44, 63, 64, 65, 66, 67, 68, 0, 1, 2
-  };
-  TEST_ASSERT(is_same(tMatrixColMap, tGoldMatrixColMap));
-
-  std::vector<Plato::Scalar> tGoldMatrixEntries = {
-    352564.1025641025, 0, 0, -64102.564102564102, 32051.282051282051, 0,
-    -64102.564102564102, 0, 32051.282051282051, 0, 32051.282051282051, 32051.282051282051,
-    0, -80128.205128205125, 48076.923076923071, 0, -80128.205128205125, -80128.205128205125,
-    0, 48076.923076923071, -80128.205128205125, -224358.97435897432, 48076.923076923071, 48076.923076923071,
-    0, 352564.10256410256, 0, 48076.923076923071, -224358.97435897432, 48076.923076923071,
-    0, -64102.564102564102, 32051.282051282051, 48076.923076923071, 0, -80128.205128205125
-  };
-  TEST_ASSERT(is_same(tMatrixEntries, tGoldMatrixEntries));
-
   PlatoDevel::setDataFromNonBlock(tMatrixB, tMatrixRowMap, tMatrixColMap, tMatrixEntries);
 
-  TEST_ASSERT(is_same(tMatrixA, tMatrixB));
+  TEST_ASSERT(is_same(tMatrixA->rowMap(), tMatrixB->rowMap()));
+
+  TEST_ASSERT(is_equivalent(tMatrixA->rowMap(),
+                            tMatrixA->columnIndices(), tMatrixA->entries(),
+                            tMatrixB->columnIndices(), tMatrixB->entries()));
 }
 
 /******************************************************************************/
@@ -567,39 +996,107 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_FromToBlockMatrix)
   \brief Create a square matrix, A, then compute A.A and compare against gold.
 */
 /******************************************************************************/
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMatrixMultiply)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMatrixMultiply_1)
 {
-  auto tMatrixA = createSquareMatrix();
+  auto tMatrixA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMapA = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapA = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesA = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrixA, tRowMapA, tColMapA, tValuesA);
 
-  auto tNumOutRows = tMatrixA->numRows();
-  auto tNumOutCols = tMatrixA->numCols();
-  auto tNumOutBlockSizeRows = tMatrixA->blockSizeRow();
-  auto tNumOutBlockSizeCols = tMatrixA->blockSizeCol();
-  auto tMatrixAA = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+  auto tMatrixAA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
 
   PlatoDevel::MatrixMatrixMultiply( tMatrixA, tMatrixA, tMatrixAA);
 
-  std::vector<Plato::OrdinalType> tGoldMatrixRowMap = {
-    0, 27, 49, 63, 85, 101, 115, 131, 145, 167, 189, 205, 219, 235, 262, 284, 306, 328, 350, 377, 399, 421, 443, 459, 473, 489, 511, 525
-  };
-  TEST_ASSERT(is_same(tMatrixAA->rowMap(), tGoldMatrixRowMap));
-
-  std::vector<Plato::OrdinalType> tGoldMatrixColMap = {
-    0, 8, 1, 3, 9, 13, 21, 25, 7, 6, 12, 16, 2, 4, 14, 22, 5, 15, 10, 11, 17, 20, 18, 19, 23, 24, 26, 0, 8, 1, 3,
-    9, 13, 21, 25, 2, 4, 14, 22, 6, 5, 15, 16, 17, 18, 19, 20, 23, 24, 0, 1, 3, 2, 4, 13, 14, 21, 22, 5, 15, 18,
-    19, 23, 0, 8, 1, 3, 9, 13, 21, 25, 2, 4, 14, 22, 6, 5, 15, 16, 7, 12, 17, 18, 19, 20, 0, 1, 3, 2, 4, 13, 14
-  };
-  TEST_ASSERT(is_same(tMatrixAA->columnIndices(), tGoldMatrixColMap));
-
   std::vector<Plato::Scalar> tGoldMatrixEntries = {
-    221893491124.26025, -15922912557.527939, -15922912557.527939, -15922912557.527939,  221893491124.26028, -15922912557.527941,
-   -15922912557.527939, -15922912557.527941,  221893491124.26025, -55473372781.065079,  35441321499.013802, -19261587771.203156,
-    96564760026.298477, -260930309007.23196,  96564760026.298462, -19261587771.203156,  35441321499.013802, -55473372781.065071,
-   -55473372781.065079, -19261587771.203152,  35441321499.013802, -19261587771.203156, -55473372781.065071,  35441321499.013802,
-    96564760026.298477,  96564760026.298462, -260930309007.23199, -26709401709.401711,  59325690335.30571,   59325690335.30571,
-    124815088757.39642,  46741452991.452988, -157431377383.30042
+    90.0, 100.0, 110.0, 120.0, 202.0, 228.0, 254.0, 280.0, 314.0, 356.0, 398.0, 440.0, 426.0, 484.0,  542.0,  600.0,
+   180.0, 200.0, 220.0, 240.0, 404.0, 456.0, 508.0, 560.0, 628.0, 712.0, 796.0, 880.0, 852.0, 968.0, 1084.0, 1200.0,
+    90.0, 100.0, 110.0, 120.0, 202.0, 228.0, 254.0, 280.0, 314.0, 356.0, 398.0, 440.0, 426.0, 484.0,  542.0,  600.0,
+    90.0, 100.0, 110.0, 120.0, 202.0, 228.0, 254.0, 280.0, 314.0, 356.0, 398.0, 440.0, 426.0, 484.0,  542.0,  600.0,
+    90.0, 100.0, 110.0, 120.0, 202.0, 228.0, 254.0, 280.0, 314.0, 356.0, 398.0, 440.0, 426.0, 484.0,  542.0,  600.0
   };
   TEST_ASSERT(is_same(tMatrixAA->entries(), tGoldMatrixEntries));
+
+  std::vector<Plato::OrdinalType> tGoldMatrixRowMap = { 0, 2, 4, 5 };
+  TEST_ASSERT(is_same(tMatrixAA->rowMap(), tGoldMatrixRowMap));
+
+  std::vector<Plato::OrdinalType> tGoldMatrixColMap = { 0, 2, 0, 2, 2 };
+  TEST_ASSERT(is_same(tMatrixAA->columnIndices(), tGoldMatrixColMap));
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create a square matrix, A, then sort the column entries
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_SortColumnEntries)
+{
+  auto tMatrix = createSquareMatrix();
+
+  Plato::ScalarVectorT<Plato::Scalar> tMatrixEntries;
+  Plato::ScalarVectorT<Plato::OrdinalType> tMatrixRowMap, tMatrixColMap;
+  PlatoDevel::getDataAsNonBlock (tMatrix, tMatrixRowMap, tMatrixColMap, tMatrixEntries);
+
+  Plato::ScalarVectorT<Plato::Scalar> tMatrixEntriesSorted("values", tMatrixEntries.extent(0));
+  Kokkos::deep_copy(tMatrixEntriesSorted, tMatrixEntries);
+
+  Plato::ScalarVectorT<Plato::OrdinalType> tMatrixColMapSorted("col map", tMatrixColMap.extent(0));
+  Kokkos::deep_copy(tMatrixColMapSorted, tMatrixColMap);
+
+  PlatoDevel::sortColumnEntries(tMatrixRowMap, tMatrixColMapSorted, tMatrixEntriesSorted);
+
+  TEST_ASSERT(is_sequential(tMatrixRowMap, tMatrixColMapSorted) );
+  TEST_ASSERT(is_equivalent(tMatrixRowMap,
+                            tMatrixColMap, tMatrixEntries,
+                            tMatrixColMapSorted, tMatrixEntriesSorted) );
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create a square matrix, A, then compute A.A and compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_ToFromFull)
+{
+  auto tMatrix = createSquareMatrix();
+  auto tFullMatrix = PlatoDevel::toFull(tMatrix);
+  auto tSparseMatrix = Teuchos::rcp( new Plato::CrsMatrixType( tMatrix->numRows(), tMatrix->numCols(), 
+                                     tMatrix->numRowsPerBlock(), tMatrix->numRowsPerBlock()));
+  PlatoDevel::fromFull(tSparseMatrix, tFullMatrix);
+  
+  TEST_ASSERT(is_equivalent(tMatrix->rowMap(),
+                            tMatrix->columnIndices(), tMatrix->entries(),
+                            tSparseMatrix->columnIndices(), tSparseMatrix->entries()));
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create a square matrix, A, then compute A.A and compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMatrixMultiply_2)
+{
+  auto tMatrixA = createSquareMatrix();
+  auto tMatrixB = createSquareMatrix();
+
+  auto tNumOutRows = tMatrixA->numRows();
+  auto tNumOutCols = tMatrixB->numCols();
+  auto tNumOutBlockSizeRows = tMatrixA->numRowsPerBlock();
+  auto tNumOutBlockSizeCols = tMatrixB->numColsPerBlock();
+  auto tMatrixAB = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+  auto tSlowDumbMatrixAB = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+
+  PlatoDevel::MatrixMatrixMultiply( tMatrixA, tMatrixB, tMatrixAB);
+  PlatoDevel::SlowDumbMatrixMatrixMultiply( tMatrixA, tMatrixB, tSlowDumbMatrixAB);
+
+  TEST_ASSERT(is_same(tMatrixAB->rowMap(), tSlowDumbMatrixAB->rowMap()));
+  TEST_ASSERT(is_equivalent(tMatrixAB->rowMap(),
+                            tMatrixAB->columnIndices(), tMatrixAB->entries(),
+                            tSlowDumbMatrixAB->columnIndices(), tSlowDumbMatrixAB->entries()));
 }
 
 /******************************************************************************/
@@ -614,33 +1111,331 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMinusEqualsMatrix)
   TEST_ASSERT(is_zero(tMatrixA));
 }
 
+
 /******************************************************************************/
 /*! 
+  \brief Create a sub-block matrix, B, and convert to full non-block.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_GetDataAsNonBlock)
+{
+  Plato::OrdinalType tTargetBlockColSize = 4;
+  Plato::OrdinalType tTargetBlockColOffset = 3;
+  auto tMatrix = Teuchos::rcp( new Plato::CrsMatrixType(  3, 12, 1, 4) );
+  std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValues = 
+    { 13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrix, tRowMap, tColMap, tValues);
+
+  Plato::ScalarVectorT<Plato::Scalar> tMatrixEntries;
+  Plato::ScalarVectorT<Plato::OrdinalType> tMatrixRowMap, tMatrixColMap;
+  PlatoDevel::getDataAsNonBlock (tMatrix, tMatrixRowMap, tMatrixColMap, tMatrixEntries,
+                                 tTargetBlockColSize, tTargetBlockColOffset);
+
+  std::vector<Plato::OrdinalType> tMatrixRowMap_Gold = {
+    0, 0, 0, 0, 8, 8, 8, 8, 12, 12, 12, 12, 16
+  };
+  TEST_ASSERT(is_same(tMatrixRowMap, tMatrixRowMap_Gold));
+
+  std::vector<Plato::OrdinalType> tMatrixColMap_Gold = {
+    0, 1, 2, 3, 8, 9, 10, 11, 0, 1, 2, 3, 8, 9, 10, 11
+  };
+  TEST_ASSERT(is_same(tMatrixColMap, tMatrixColMap_Gold));
+
+  std::vector<Plato::Scalar> tMatrixEntries_Gold = {
+    13.0, 14.0, 15.0, 16.0, 13.0, 14.0, 15.0, 16.0,
+    13.0, 14.0, 15.0, 16.0, 13.0, 14.0, 15.0, 16.0
+  };
+  TEST_ASSERT(is_same(tMatrixEntries, tMatrixEntries_Gold));
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create a block matrix, compute the row sum, and compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_RowSum)
+{
+  auto tMatrix = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValues = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrix, tRowMap, tColMap, tValues);
+
+  Plato::ScalarVector tRowSum("row sum", 12);
+
+  PlatoDevel::RowSum( tMatrix, tRowSum );
+  std::vector<Plato::Scalar> tRowSum_Gold = {
+    20.0, 52.0, 84.0, 116.0, 10.0, 26.0, 42.0, 58.0, 10.0, 26.0, 42.0, 58.0
+  };
+  TEST_ASSERT(is_same(tRowSum, tRowSum_Gold));
+}
+
+
+/******************************************************************************/
+/*! 
+  \brief Create a block matrix, A, and a vector of diagonal weights, d={1.0}, and 
+         compute the inverse weighted A: A[I][J]/d[I], and compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_InverseMultiply_1)
+{
+  auto tMatrix = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValues = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrix, tRowMap, tColMap, tValues);
+
+  Plato::ScalarVector tDiagonals("diagonals", 12);
+  Plato::fill( 1.0, tDiagonals ); 
+  
+  PlatoDevel::InverseMultiply( tMatrix, tDiagonals );
+  std::vector<Plato::Scalar> tGoldMatrixEntries =
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  auto tMatrixEntries = tMatrix->entries();
+  TEST_ASSERT(is_same(tMatrixEntries, tGoldMatrixEntries));
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create a block matrix, A, and a vector of diagonal weights, d={2.0}, and 
+         compute the inverse weighted A: A[I][J]/d[I], and compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_InverseMultiply_2)
+{
+  auto tMatrix = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValues = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrix, tRowMap, tColMap, tValues);
+
+  Plato::ScalarVector tDiagonals("diagonals", 12);
+  Plato::fill( 2.0, tDiagonals ); 
+  
+  PlatoDevel::InverseMultiply( tMatrix, tDiagonals );
+  std::vector<Plato::Scalar> tGoldMatrixEntries =
+    { 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8,
+      0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8,
+      0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8,
+      0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8 };
+  auto tMatrixEntries = tMatrix->entries();
+  TEST_ASSERT(is_same(tMatrixEntries, tGoldMatrixEntries));
+}
+
+/******************************************************************************/
+/*! 
+  \brief Create block matrices, A and B, and apply the row summed inverse of A 
+         to B: B[I][J]/d[I], where d[I] = Sum(A[I][J] in J). Compare against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_SlowDumbRowSummedInverseMultiply)
+{
+  auto tMatrixA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    PlatoDevel::setMatrixData(tMatrixA, tRowMap, tColMap, tValues);
+  }
+
+  auto tMatrixB = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    PlatoDevel::setMatrixData(tMatrixB, tRowMap, tColMap, tValues);
+  }
+
+  PlatoDevel::SlowDumbRowSummedInverseMultiply( tMatrixA, tMatrixB );
+  std::vector<Plato::Scalar> tGoldMatrixEntries = {
+   1.0/20.0,  2.0/20.0,  3.0/20.0,  4.0/20.0,  5.0/ 52.0,  6.0/ 52.0,  7.0/ 52.0,  8.0/ 52.0,
+   9.0/84.0, 10.0/84.0, 11.0/84.0, 12.0/84.0, 13.0/116.0, 14.0/116.0, 15.0/116.0, 16.0/116.0,
+   1.0/20.0,  2.0/20.0,  3.0/20.0,  4.0/20.0,  5.0/ 52.0,  6.0/ 52.0,  7.0/ 52.0,  8.0/ 52.0,
+   9.0/84.0, 10.0/84.0, 11.0/84.0, 12.0/84.0, 13.0/116.0, 14.0/116.0, 15.0/116.0, 16.0/116.0,
+   1.0/10.0,  2.0/10.0,  3.0/10.0,  4.0/10.0,  5.0/ 26.0,  6.0/ 26.0,  7.0/ 26.0,  8.0/ 26.0,
+   9.0/42.0, 10.0/42.0, 11.0/42.0, 12.0/42.0, 13.0/ 58.0, 14.0/ 58.0, 15.0/ 58.0, 16.0/ 58.0,
+   1.0/10.0,  2.0/10.0,  3.0/10.0,  4.0/10.0,  5.0/ 26.0,  6.0/ 26.0,  7.0/ 26.0,  8.0/ 26.0,
+   9.0/42.0, 10.0/42.0, 11.0/42.0, 12.0/42.0, 13.0/ 58.0, 14.0/ 58.0, 15.0/ 58.0, 16.0/ 58.0
+  };
+  auto tMatrixEntries = tMatrixB->entries();
+  TEST_ASSERT(is_same(tMatrixEntries, tGoldMatrixEntries));
+}
+/******************************************************************************/
+/*! 
+  \brief Create block matrices, A and B, and apply the row summed inverse of A 
+         to B: B[I][J]/d[I], where d[I] = Sum(A[I][J] in J). Compare against gold.
 */
 /******************************************************************************/
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_RowSummedInverseMultiply)
 {
-  auto tMatrix = createSquareMatrix();
-  auto tNumOutRows = tMatrix->numRows();
-  auto tNumOutCols = tMatrix->numCols();
-  auto tNumOutBlockSizeRows = tMatrix->blockSizeRow();
-  auto tNumOutBlockSizeCols = tMatrix->blockSizeCol();
-  auto tMatrixSquared = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+  auto tMatrixA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    PlatoDevel::setMatrixData(tMatrixA, tRowMap, tColMap, tValues);
+  }
 
-  PlatoDevel::MatrixMatrixMultiply( tMatrix, tMatrix, tMatrixSquared);
-  PlatoDevel::RowSummedInverseMultiply( tMatrixSquared, tMatrixSquared );
+  auto tMatrixB = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    PlatoDevel::setMatrixData(tMatrixB, tRowMap, tColMap, tValues);
+  }
+
+  PlatoDevel::RowSummedInverseMultiply( tMatrixA, tMatrixB );
   std::vector<Plato::Scalar> tGoldMatrixEntries = {
-    352564.1025641025, 0, 0, -64102.564102564102, 32051.282051282051, 0,
-    -64102.564102564102, 0, 32051.282051282051, 0, 32051.282051282051, 32051.282051282051,
-    0, -80128.205128205125, 48076.923076923071, 0, -80128.205128205125, -80128.205128205125,
-    0, 48076.923076923071, -80128.205128205125, -224358.97435897432, 48076.923076923071, 48076.923076923071,
-    0, 352564.10256410256, 0, 48076.923076923071, -224358.97435897432, 48076.923076923071,
-    0, -64102.564102564102, 32051.282051282051, 48076.923076923071, 0, -80128.205128205125
+   1.0/20.0,  2.0/20.0,  3.0/20.0,  4.0/20.0,  5.0/ 52.0,  6.0/ 52.0,  7.0/ 52.0,  8.0/ 52.0,
+   9.0/84.0, 10.0/84.0, 11.0/84.0, 12.0/84.0, 13.0/116.0, 14.0/116.0, 15.0/116.0, 16.0/116.0,
+   1.0/20.0,  2.0/20.0,  3.0/20.0,  4.0/20.0,  5.0/ 52.0,  6.0/ 52.0,  7.0/ 52.0,  8.0/ 52.0,
+   9.0/84.0, 10.0/84.0, 11.0/84.0, 12.0/84.0, 13.0/116.0, 14.0/116.0, 15.0/116.0, 16.0/116.0,
+   1.0/10.0,  2.0/10.0,  3.0/10.0,  4.0/10.0,  5.0/ 26.0,  6.0/ 26.0,  7.0/ 26.0,  8.0/ 26.0,
+   9.0/42.0, 10.0/42.0, 11.0/42.0, 12.0/42.0, 13.0/ 58.0, 14.0/ 58.0, 15.0/ 58.0, 16.0/ 58.0,
+   1.0/10.0,  2.0/10.0,  3.0/10.0,  4.0/10.0,  5.0/ 26.0,  6.0/ 26.0,  7.0/ 26.0,  8.0/ 26.0,
+   9.0/42.0, 10.0/42.0, 11.0/42.0, 12.0/42.0, 13.0/ 58.0, 14.0/ 58.0, 15.0/ 58.0, 16.0/ 58.0
   };
-  auto tMatrixEntries = tMatrixSquared->entries();
+  auto tMatrixEntries = tMatrixB->entries();
   TEST_ASSERT(is_same(tMatrixEntries, tGoldMatrixEntries));
 }
 
+/******************************************************************************/
+/*! 
+  \brief Create a condensed matrix: R = A - B RowSum(C)^-1 D
+
+  Dimensions:
+    A: Nf x Nf
+    B: Nn x Nm
+    C: Nm x Nm
+    D: Nm x Nf
+    R: Nf x Nf <= (Nf x Nf) - O(Nf,3)((Nn x Nm) . (Nm x Nm) . (Nm x Nf))
+
+    where O(n,p)(M) expand a sub-block matrix, M, with row index, p, into
+    a full-block matrix with number block rows, n.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_CondenseMatrix_1)
+{
+
+  const int Nf = 4;
+  const int Nn = 1;
+  const int Nm = 3;
+
+  const int tNumNodes = 3;
+
+  auto tA = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nf, tNumNodes*Nf, Nf, Nf) );
+  auto tA_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nf, tNumNodes*Nf, Nf, Nf) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+    PlatoDevel::setMatrixData(tA, tRowMap, tColMap, tValues);
+    PlatoDevel::setMatrixData(tA_SlowDumb, tRowMap, tColMap, tValues);
+  }
+
+  auto tB = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nn, tNumNodes*Nm, Nn, Nm) );
+  auto tB_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nn, tNumNodes*Nm, Nn, Nm) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3 };
+    PlatoDevel::setMatrixData(tB, tRowMap, tColMap, tValues);
+    PlatoDevel::setMatrixData(tB_SlowDumb, tRowMap, tColMap, tValues);
+  }
+
+  auto tC = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nm, tNumNodes*Nm, Nm, Nm) );
+  auto tC_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nm, tNumNodes*Nm, Nm, Nm) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9,
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        1, 2, 3, 4, 5, 6, 7, 8, 9,
+        1, 2, 3, 4, 5, 6, 7, 8, 9 };
+    PlatoDevel::setMatrixData(tC, tRowMap, tColMap, tValues);
+    PlatoDevel::setMatrixData(tC_SlowDumb, tRowMap, tColMap, tValues);
+  }
+
+  auto tD = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nm, tNumNodes*Nf, Nm, Nf) );
+  auto tD_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType(tNumNodes*Nm, tNumNodes*Nf, Nm, Nf) );
+  {
+    std::vector<Plato::OrdinalType> tRowMap = { 0, 2, 3, 4 };
+    std::vector<Plato::OrdinalType> tColMap = { 0, 2, 0, 2 };
+    std::vector<Plato::Scalar>      tValues = 
+      { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+    PlatoDevel::setMatrixData(tD, tRowMap, tColMap, tValues);
+    PlatoDevel::setMatrixData(tD_SlowDumb, tRowMap, tColMap, tValues);
+  }
+
+  // Nn x Nf
+  auto tMatrixProduct = Teuchos::rcp( new Plato::CrsMatrixType( tNumNodes*Nn, tNumNodes*Nf, Nn, Nf ) );
+  auto tMatrixProduct_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType( tNumNodes*Nn, tNumNodes*Nf, Nn, Nf ) );
+
+  // Nf x Nf
+  auto tCondensedMatrix = Teuchos::rcp( new Plato::CrsMatrixType( tNumNodes*Nf, tNumNodes*Nf, Nf, Nf ) );
+  auto tCondensedMatrix_SlowDumb = Teuchos::rcp( new Plato::CrsMatrixType( tNumNodes*Nf, tNumNodes*Nf, Nf, Nf ) );
+
+  // Nm x Nm . Nm x Nf => Nm x Nf
+  PlatoDevel::RowSummedInverseMultiply( tC, tD );
+  PlatoDevel::SlowDumbRowSummedInverseMultiply( tC_SlowDumb, tD_SlowDumb );
+
+  // Nn x Nm . Nm x Nf => Nn x Nf
+  PlatoDevel::MatrixMatrixMultiply( tB, tD, tMatrixProduct );
+  PlatoDevel::SlowDumbMatrixMatrixMultiply( tB_SlowDumb, tD_SlowDumb, tMatrixProduct_SlowDumb );
+
+  const int tOffset = 3;
+  // Nf x Nf - O(Nf,3)(Nn x Nf)
+  PlatoDevel::MatrixMinusMatrix( tA, tMatrixProduct, tCondensedMatrix, tOffset );
+  PlatoDevel::SlowDumbMatrixMinusMatrix( tA_SlowDumb, tMatrixProduct_SlowDumb, tCondensedMatrix_SlowDumb, tOffset );
+
+  TEST_ASSERT(is_same(tA, tA_SlowDumb));
+
+}
 /******************************************************************************/
 /*! 
   \brief Create a stabilized residual, g, and a projector, P, then compute
@@ -650,7 +1445,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_RowSummedInverseMultiply)
 
 */
 /******************************************************************************/
-TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_CondenseMatrix)
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_CondenseMatrix_2)
 {
   constexpr int cSpaceDim  = 3;
   constexpr int cMeshWidth = 2;
@@ -671,24 +1466,132 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_CondenseMatrix)
   auto t_dg_dn_T = tResidual->gradient_n_T (U, N, z);
   auto t_dP_dn_T = tProjector->gradient_n_T(N, p, z);
   auto t_dP_du   = tProjector->gradient_u  (N, p, z);
+
+  auto t_dg_du_T_sd = tResidual->gradient_u_T (U, N, z);
+  auto t_dg_dn_T_sd = tResidual->gradient_n_T (U, N, z);
+  auto t_dP_dn_T_sd = tProjector->gradient_n_T(N, p, z);
+  auto t_dP_du_sd   = tProjector->gradient_u  (N, p, z);
   
   auto tNumOutRows = t_dP_dn_T->numRows();
   auto tNumOutCols = t_dg_dn_T->numCols();
-  auto tNumOutBlockSizeRows = t_dP_dn_T->blockSizeRow();
-  auto tNumOutBlockSizeCols = t_dg_dn_T->blockSizeCol();
-  auto tMatrixProduct = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
-  auto tCondensedMatrix = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+  auto tNumOutBlockSizeRows = t_dP_dn_T->numRowsPerBlock();
+  auto tNumOutBlockSizeCols = t_dg_dn_T->numColsPerBlock();
 
-  PlatoDevel::RowSummedInverseMultiply( t_dP_du, t_dg_dn_T );
+  // Nn x Nf
+  auto tMatrixProduct    = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
+  auto tMatrixProduct_sd = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutRows, tNumOutCols, tNumOutBlockSizeRows, tNumOutBlockSizeCols) );
 
-  PlatoDevel::MatrixMatrixMultiply( t_dP_dn_T, t_dg_dn_T, tMatrixProduct );
+  // Nf x Nf
+  auto tCondensedMatrix    = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutCols, tNumOutCols, tNumOutBlockSizeCols, tNumOutBlockSizeCols) );
+  auto tCondensedMatrix_sd = Teuchos::rcp( new Plato::CrsMatrixType( tNumOutCols, tNumOutCols, tNumOutBlockSizeCols, tNumOutBlockSizeCols) );
+
+  // Nm x Nm . Nm x Nf => Nm x Nf
+  PlatoDevel::RowSummedInverseMultiply        ( t_dP_du,    t_dg_dn_T    );
+  PlatoDevel::SlowDumbRowSummedInverseMultiply( t_dP_du_sd, t_dg_dn_T_sd );
+
+  // Nn x Nm . Nm x Nf => Nn x Nf
+  PlatoDevel::MatrixMatrixMultiply        ( t_dP_dn_T,    t_dg_dn_T,    tMatrixProduct    );
+  PlatoDevel::SlowDumbMatrixMatrixMultiply( t_dP_dn_T_sd, t_dg_dn_T_sd, tMatrixProduct_sd );
 
   auto tOffset = PhysicsT::ProjectorT::SimplexT::mProjectionDof;
-  PlatoDevel::MatrixMinusMatrix( t_dg_du_T, tMatrixProduct, tCondensedMatrix, tOffset );
+  // Nf x Nf - O( Nn x Nf ) => Nf x Nf
+  PlatoDevel::MatrixMinusMatrix        ( t_dg_du_T,    tMatrixProduct,    tCondensedMatrix,    tOffset );
+  PlatoDevel::SlowDumbMatrixMinusMatrix( t_dg_du_T_sd, tMatrixProduct_sd, tCondensedMatrix_sd, tOffset );
 
-  std::cout << "wait here shitass" << std::endl;
+  TEST_ASSERT(is_same(t_dg_du_T, t_dg_du_T_sd));
+}
 
-  //TODO compare with gold
+/******************************************************************************/
+/*! 
+  \brief Create a full block matrix, A, and a sub-block matrix, B, and
+         compute C=A-B, then verify C against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_SlowDumbMatrixMinusMatrix_1)
+{
+  Plato::OrdinalType tOffset = 3;
+
+  auto tMatrixA = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMapA = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapA = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesA = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrixA, tRowMapA, tColMapA, tValuesA);
+
+  auto tMatrixB = Teuchos::rcp( new Plato::CrsMatrixType(  3, 12, 1, 4) );
+  std::vector<Plato::OrdinalType> tRowMapB = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapB = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesB = 
+    { 13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrixB, tRowMapB, tColMapB, tValuesB);
+
+  auto tMatrixC = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+
+  PlatoDevel::SlowDumbMatrixMinusMatrix( tMatrixA, tMatrixB, tMatrixC, tOffset );
+
+  auto tMatrixC_Gold = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMapC = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapC = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesC = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0 };
+  PlatoDevel::setMatrixData(tMatrixC_Gold, tRowMapC, tColMapC, tValuesC);
+
+  TEST_ASSERT(is_same(tMatrixC, tMatrixC_Gold));
+}
+/******************************************************************************/
+/*! 
+  \brief Create a full block matrix, A, and a sub-block matrix, B, and
+         compute C=A-B, then verify C against gold.
+*/
+/******************************************************************************/
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMinusMatrix_1)
+{
+  Plato::OrdinalType tOffset = 3;
+
+  auto tMatrixA = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMapA = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapA = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesA = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrixA, tRowMapA, tColMapA, tValuesA);
+
+  auto tMatrixB = Teuchos::rcp( new Plato::CrsMatrixType(  3, 12, 1, 4) );
+  std::vector<Plato::OrdinalType> tRowMapB = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapB = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesB = 
+    { 13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16,
+      13, 14, 15, 16 };
+  PlatoDevel::setMatrixData(tMatrixB, tRowMapB, tColMapB, tValuesB);
+
+  auto tMatrixC = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+
+  PlatoDevel::MatrixMinusMatrix( tMatrixA, tMatrixB, tMatrixC, tOffset );
+
+  auto tMatrixC_Gold = Teuchos::rcp( new Plato::CrsMatrixType( 12, 12, 4, 4) );
+  std::vector<Plato::OrdinalType> tRowMapC = { 0, 2, 3, 4 };
+  std::vector<Plato::OrdinalType> tColMapC = { 0, 2, 0, 2 };
+  std::vector<Plato::Scalar>      tValuesC = 
+    { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0,
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,  0,  0,  0,  0 };
+  PlatoDevel::setMatrixData(tMatrixC_Gold, tRowMapC, tColMapC, tValuesC);
+
+  TEST_ASSERT(is_same(tMatrixC, tMatrixC_Gold));
 }
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_InvertLocalMatrices)
