@@ -215,8 +215,8 @@ void MatrixTimesVectorPlusVector(const Teuchos::RCP<Plato::CrsMatrixType> & aMat
     {
         auto tNodeRowMap = aMatrix->rowMap();
         auto tNodeColIndices = aMatrix->columnIndices();
-        auto tBlockRowSize = aMatrix->numRowsPerBlock();
-        auto tBlockColSize = aMatrix->numColsPerBlock();
+        auto tNumRowsPerBlock = aMatrix->numRowsPerBlock();
+        auto tNumColsPerBlock = aMatrix->numColsPerBlock();
         auto tEntries = aMatrix->entries();
         auto tNumNodeRows = tNodeRowMap.size() - 1;
 
@@ -228,13 +228,13 @@ void MatrixTimesVectorPlusVector(const Teuchos::RCP<Plato::CrsMatrixType> & aMat
             {
                 auto tNodeColumnIndex = tNodeColIndices(tCrsIndex);
 
-                auto tFromDofColIndex = tBlockRowSize*tNodeColumnIndex;
-                auto tToDofColIndex = tFromDofColIndex + tBlockRowSize;
+                auto tFromDofColIndex = tNumColsPerBlock*tNodeColumnIndex;
+                auto tToDofColIndex = tFromDofColIndex + tNumColsPerBlock;
 
-                auto tFromDofRowIndex = tBlockColSize*aNodeRowOrdinal;
-                auto tToDofRowIndex = tFromDofRowIndex + tBlockColSize;
+                auto tFromDofRowIndex = tNumRowsPerBlock*aNodeRowOrdinal;
+                auto tToDofRowIndex = tFromDofRowIndex + tNumRowsPerBlock;
 
-                auto tMatrixEntryIndex = tBlockColSize*tBlockRowSize*tCrsIndex;
+                auto tMatrixEntryIndex = tNumRowsPerBlock*tNumColsPerBlock*tCrsIndex;
                 for ( auto tDofRowIndex = tFromDofRowIndex; tDofRowIndex < tToDofRowIndex; tDofRowIndex++ )
                 {
                     ScalarT tSum = 0.0;

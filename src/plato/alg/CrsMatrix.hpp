@@ -31,14 +31,14 @@ class CrsMatrix {
 
   int  mNumRows;
   int  mNumCols;
-  int  mBlockSizeRow;
-  int  mBlockSizeCol;
+  int  mNumRowsPerBlock;
+  int  mNumColsPerBlock;
   bool mIsBlockMatrix;
 
  public:
-  decltype(mIsBlockMatrix) isBlockMatrix() const { return mIsBlockMatrix; }
-  decltype(mBlockSizeRow)  numRowsPerBlock()  const { return mBlockSizeRow; }
-  decltype(mBlockSizeCol)  numColsPerBlock()  const { return mBlockSizeCol; }
+  decltype(mIsBlockMatrix)  isBlockMatrix()     const { return mIsBlockMatrix; }
+  decltype(mNumRowsPerBlock) numRowsPerBlock()  const { return mNumRowsPerBlock; }
+  decltype(mNumColsPerBlock) numColsPerBlock()  const { return mNumColsPerBlock; }
 
   decltype(mNumRows) numRows() const
   { return (mNumRows != -1) ? mNumRows : throw std::logic_error("requested unset value"); }
@@ -47,54 +47,54 @@ class CrsMatrix {
   { return (mNumCols != -1) ? mNumCols : throw std::logic_error("requested unset value"); }
 
   CrsMatrix() :
-            mNumRows       (-1),
-            mNumCols       (-1),
-            mBlockSizeRow  ( 1),
-            mBlockSizeCol  ( 1),
+            mNumRows         (-1),
+            mNumCols         (-1),
+            mNumRowsPerBlock ( 1),
+            mNumColsPerBlock ( 1),
             mIsBlockMatrix (false) {}
 
   CrsMatrix( int           aNumRows,
              int           aNumCols,
-             int           aBlkSizeRow,
-             int           aBlkSizeCol
+             int           aNumRowsPerBlock,
+             int           aNumColsPerBlock
            ) :
-            mNumRows       (aNumRows),
-            mNumCols       (aNumCols),
-            mBlockSizeRow  (aBlkSizeRow),
-            mBlockSizeCol  (aBlkSizeCol),
-            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
+            mNumRows         (aNumRows),
+            mNumCols         (aNumCols),
+            mNumRowsPerBlock (aNumRowsPerBlock),
+            mNumColsPerBlock (aNumColsPerBlock),
+            mIsBlockMatrix   (mNumColsPerBlock*mNumRowsPerBlock > 1) {}
 
   CrsMatrix( RowMapVector  aRowmap,
              OrdinalVector aColIndices,
              ScalarVector  aEntries,
-             int           aBlkSizeRow=1,
-             int           aBlkSizeCol=1
+             int           aNumRowsPerBlock=1,
+             int           aNumColsPerBlock=1
            ) :
-            mRowMap        (aRowmap),
-            mColumnIndices (aColIndices),
-            mEntries       (aEntries),
-            mNumRows       (-1),
-            mNumCols       (-1),
-            mBlockSizeRow  (aBlkSizeRow),
-            mBlockSizeCol  (aBlkSizeCol),
-            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
+            mRowMap          (aRowmap),
+            mColumnIndices   (aColIndices),
+            mEntries         (aEntries),
+            mNumRows         (-1),
+            mNumCols         (-1),
+            mNumRowsPerBlock (aNumRowsPerBlock),
+            mNumColsPerBlock (aNumColsPerBlock),
+            mIsBlockMatrix   (mNumColsPerBlock*mNumRowsPerBlock > 1) {}
 
   CrsMatrix( RowMapVector  aRowmap,
              OrdinalVector aColIndices,
              ScalarVector  aEntries,
              int           aNumRows,
              int           aNumCols,
-             int           aBlkSizeRow,
-             int           aBlkSizeCol
+             int           aNumRowsPerBlock,
+             int           aNumColsPerBlock
           ) :
-            mRowMap        (aRowmap),
-            mColumnIndices (aColIndices),
-            mEntries       (aEntries),
-            mNumRows       (aNumRows),
-            mNumCols       (aNumCols),
-            mBlockSizeRow  (aBlkSizeRow),
-            mBlockSizeCol  (aBlkSizeCol),
-            mIsBlockMatrix (mBlockSizeRow*mBlockSizeCol > 1) {}
+            mRowMap          (aRowmap),
+            mColumnIndices   (aColIndices),
+            mEntries         (aEntries),
+            mNumRows         (aNumRows),
+            mNumCols         (aNumCols),
+            mNumRowsPerBlock (aNumRowsPerBlock),
+            mNumColsPerBlock (aNumColsPerBlock),
+            mIsBlockMatrix   (mNumColsPerBlock*mNumRowsPerBlock > 1) {}
 
   KOKKOS_INLINE_FUNCTION decltype(mRowMap)        rowMap()        { return mRowMap; }
   KOKKOS_INLINE_FUNCTION decltype(mColumnIndices) columnIndices() { return mColumnIndices; }
