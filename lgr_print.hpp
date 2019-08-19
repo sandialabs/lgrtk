@@ -9,7 +9,7 @@
 
 namespace lgr {
 
-#ifdef HPC_STRONG_INDICES
+#ifndef HPC_DISABLE_STRONG_INDICES
 template <class Tag, class Integral>
 std::ostream& operator<<(std::ostream& stream, hpc::index<Tag, Integral> v) {
   stream << weaken(v);
@@ -17,7 +17,7 @@ std::ostream& operator<<(std::ostream& stream, hpc::index<Tag, Integral> v) {
 }
 #endif
 
-#ifdef HPC_DIMENSIONAL_ANALYSIS
+#ifndef HPC_DISABLE_DIMENSIONAL_ANALYSIS
 template <class T, class Dimension>
 std::ostream& operator<<(std::ostream& stream, hpc::quantity<T, Dimension> v) {
   stream << weaken(v);
