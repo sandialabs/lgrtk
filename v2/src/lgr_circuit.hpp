@@ -27,11 +27,13 @@ class Circuit
 
       // Time step to advance circuit by (L/C only)
       double dt;
+      double time;
 
       // Logic switches
       bool firstCall;
-      bool usingMesh;
-      bool usingCircuit;
+
+      // Mesh filename
+      char meshfname[20] = "circuit_mesh.txt";
 
       // Element types
       const int ETYPE_RESISTOR  = 1;
@@ -116,18 +118,24 @@ class Circuit
 
 
    public:
+      // Logic switches
+      bool usingCircuit;
+      bool usingMesh;
+
       // Constructors
       Circuit();
       ~Circuit();
 
       // Typical user interaction with circuit routines
       void Setup(Omega_h::InputMap& pl);
-      void Solve(double dtin); 
+      void Solve(double dtin, double timein); 
       double GetNodeVoltage(int nodein); 
       double GetMeshAnodeVoltage(); 
       double GetMeshCathodeVoltage(); 
       void SetElementConductance(int e, double c); 
       void SetMeshConductance(double c); 
+      double GetElementConductance(int e);
+      double GetMeshConductance();
 
       // Count Number of components
       int GetNumNodes();
@@ -151,6 +159,8 @@ class Circuit
       void SayInfo();
       void SayMatrix();
       void SayVoltages();
+      void InitOutputMesh();
+      void OutputMeshInfo();
 };
 
 }  // namespace lgr
