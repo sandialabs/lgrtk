@@ -51,6 +51,9 @@ public:
   {
   }
   HPC_ALWAYS_INLINE symmetric3x3() = default;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr symmetric3x3 identity() noexcept {
+    return symmetric3x3(1.0, 1.0, 1.0, 0.0, 0.0, 0.0);
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<Scalar> full() const noexcept {
     return matrix3x3<Scalar>(
         operator()(S_XX), operator()(S_XY), operator()(S_XZ),
@@ -194,6 +197,12 @@ inner_product(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept 
   return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm(symmetric3x3<T> const x) noexcept {
+  return std::sqrt(inner_product(x, x));
+}
+
 template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(matrix3x3<L> const left, symmetric3x3<R> const right) noexcept {
@@ -280,8 +289,75 @@ trace(symmetric3x3<T> const x) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
-deviator(symmetric3x3<T> const x) noexcept {
-  return x - ((1.0 / 3.0) * trace(x));
+symmetric_part(matrix3x3<T> const x) noexcept {
+  // The constructor that takes a full matrix implicity takes its symmetric part
+  return symmetric3x3<T>(x);
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+isotropic_part(symmetric3x3<T> const x) noexcept {
+  return ((1.0 / 3.0) * trace(x)) * symmetric3x3<T>::identity();
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+deviatoric_part(symmetric3x3<T> const x) noexcept {
+  auto x_dev = symmetric3x3<T>(x);
+  auto const a = (1.0 / 3.0) * trace(x);
+  x_dev(S_XX) -= a;
+  x_dev(S_YY) -= a;
+  x_dev(S_ZZ) -= a;
+  return x_dev;
+}
+
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+determinant(symmetric3x3<T> const x) noexcept {
+  T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
+                        T const yy = x(S_YY); T const yz = x(S_YZ);
+                                              T const zz = x(S_ZZ);
+  return (xx * yy * zz) - (xx * yz * yz) - (xy * xy * zz) +
+          2.0 * (xy * xz * yz) - (xz * xz * yy);
+}
+
+/// \brief Compute the matrix square root using Denman Beavers iterations
+template <class T>
+HPC_HOST_DEVICE constexpr auto
+sqrt_spd(symmetric3x3<T> const& x)
+{
+  using matrix_type = symmetric3x3<T>;
+  int const maxiter = 10;
+  T const tol = 1.e-12;
+  auto yn = matrix_type(x);
+  auto zn = matrix_type::identity();
+  for (int i=0; i<maxiter; i++)
+  {
+    matrix_type yp = 0.5 * (yn + inverse(zn));
+    matrix_type zp = 0.5 * (zn + inverse(yn));
+    yn = yp;
+    zn = zp;
+    if (norm((yn * yn - x.full())) < tol)
+      break;
+  }
+  return yn;
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<T>
+inverse(symmetric3x3<T> const x) noexcept {
+  T const xx = x(S_XX); T const xy = x(S_XY); T const xz = x(S_XZ);
+                        T const yy = x(S_YY); T const yz = x(S_YZ);
+                                              T const zz = x(S_ZZ);
+  auto const A =  (yy * zz - yz * yz);
+  auto const B =  (xx * zz - xz * xz);
+  auto const C =  (xx * yy - xy * xy);
+  auto const D = -(xy * zz - xz * yz);
+  auto const E = -(xx * yz - xz * xy);
+  auto const F =  (xy * yz - xz * yy);
+  using top_t = symmetric3x3<std::remove_const_t<decltype(A)>>;
+  auto const top = top_t(A, B, C, D, E, F);
+  return top / determinant(x);
 }
 
 template <class T>
@@ -312,4 +388,3 @@ class array_traits<symmetric3x3<T>> {
 };
 
 }
-

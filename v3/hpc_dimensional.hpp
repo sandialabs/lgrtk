@@ -461,6 +461,8 @@ using pressure = quantity<T, pressure_dimension>;
 template <class T>
 using symmetric_stress = symmetric3x3<pressure<T>>;
 template <class T>
+using symmetric_deformation = symmetric3x3<quantity<T, no_dimension>>;
+template <class T>
 using force = vector3<quantity<T, force_dimension>>;
 template <class T>
 using energy = quantity<T, energy_dimension>;

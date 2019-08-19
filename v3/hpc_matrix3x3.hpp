@@ -220,6 +220,22 @@ operator/=(matrix3x3<L>& left, R right) noexcept {
   return left;
 }
 
+template <class L, class R>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
+inner_product(matrix3x3<L> const left, matrix3x3<R> const right) noexcept {
+  return (
+    left(0, 0)*right(0, 0) + left(0, 1)*right(0, 1) + left(0, 2)*right(0, 2) +
+    left(1, 0)*right(1, 0) + left(1, 1)*right(1, 1) + left(1, 2)*right(1, 2) +
+    left(2, 0)*right(2, 0) + left(2, 1)*right(2, 1) + left(2, 2)*right(2, 2)
+  );
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm(matrix3x3<T> const x) noexcept {
+  return std::sqrt(inner_product(x, x));
+}
+
 template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 transpose(matrix3x3<T> x) noexcept {
@@ -289,6 +305,7 @@ inverse(matrix3x3<T> const x) {
   auto const I = (a * e - b * d);
   using denom_t = matrix3x3<std::remove_const_t<decltype(A)>>;
   auto const denom = denom_t(A, D, G, B, E, H, C, F, I);
+  // (tjf: jul 2019) why is the variable called `denom` when it is the numerator?
   return denom / determinant(x);
 }
 
@@ -299,9 +316,20 @@ trace(matrix3x3<T> x) noexcept {
 }
 
 template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+isotropic_part(matrix3x3<T> const x) noexcept {
+  return ((1.0 / 3.0) * trace(x)) * matrix3x3<T>::identity();
+}
+
+template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
-deviator(matrix3x3<T> x) noexcept {
-  return x - ((1.0 / 3.0) * trace(x));
+deviatoric_part(matrix3x3<T> x) noexcept {
+  auto x_dev = matrix3x3<T>(x);
+  auto const a = (1.0 / 3.0) * trace(x);
+  x_dev(0,0) -= a;
+  x_dev(1,1) -= a;
+  x_dev(2,2) -= a;
+  return x_dev;
 }
 
 template <class T>

@@ -1,4 +1,6 @@
 #include <memory>
+#include <iostream>
+#include <chrono>
 
 #include <lgr_physics.hpp>
 #include <lgr_domain.hpp>
@@ -346,6 +348,114 @@ void elastic_wave_3d() {
   run(in);
 }
 
+HPC_NOINLINE void twisting_column_ep(
+  double const end_time,
+  bool const plastic,
+  bool const output_to_command_line=false,
+  int const num_file_outputs=-1);
+void twisting_column_ep(
+  double const end_time,
+  bool const plastic,
+  bool const output_to_command_line,
+  int const num_file_outputs)
+{
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  constexpr material_index y_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
+  in.name = "twisting_column";
+  if (plastic) in.name += "_ep";
+  in.element = TETRAHEDRON;
+  in.end_time = end_time;
+  if (num_file_outputs == -1)
+      in.num_file_outputs = static_cast<int>(end_time / .001);
+  else
+      in.num_file_outputs = num_file_outputs;
+  in.output_to_command_line = output_to_command_line;
+  in.elements_along_x = 9;
+  in.x_domain_size = 1.0;
+  in.elements_along_y = 54;
+  in.y_domain_size = 6.0;
+  in.elements_along_z = 9;
+  in.z_domain_size = 1.0;
+  double const rho = 1.1e3;
+  in.rho0[body] = rho;
+  in.enable_hyper_ep[body] = true;
+  double const nu = 0.499;  //499;
+  double const E = 1.70e+07; // 2.10e+11;
+  double const K = E / (3.0 * (1.0 - 2.0 * nu));
+  double const G = E / (2.0 * (1.0 + nu));
+  in.K0[body] = K;
+  in.G0[body] = G;
+
+  in.elastic[body] = hyper_ep::Elastic::NEO_HOOKEAN;
+  in.E[body] = E;
+  in.Nu[body] = nu;
+
+  in.hardening[body] = hyper_ep::Hardening::JOHNSON_COOK;
+  in.A[body] = 1000.0e+02;
+  in.B[body] = 100.0e+02;
+  in.n[body] = 0.32;
+  in.C1[body] = 293.0;
+  in.C2[body] = 1.0e+40;
+  in.C3[body] = 0.0;
+  in.C4[body] = 0.0;
+  in.ep_dot_0[body] = 0.0;
+
+  if (!plastic)
+  {
+    in.A[body] *= 1.0e+60;
+    in.hardening[body] = hyper_ep::Hardening::NONE;
+  }
+
+  in.damage[body] = hyper_ep::Damage::NONE;
+  in.allow_no_tension[body] = false;
+  in.allow_no_shear[body] = false;
+  in.set_stress_to_zero[body] = false;
+  in.D1[body] = 0.0;
+  in.D2[body] = 0.0;
+  in.D3[body] = 0.0;
+  in.D4[body] = 0.0;
+  in.D5[body] = 0.0;
+  in.D6[body] = 0.0;
+  in.D7[body] = 0.0;
+  in.D8[body] = 0.0;
+  in.DC[body] = 0.0;
+  in.eps_f_min[body] = 0.0;
+
+  const double amplitude =  100.0;
+  auto twisting_column_v = [=] (
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto const pos = nodes_to_x[node].load();
+      auto const x = double(pos(0));
+      auto const y = double(pos(1));
+      auto const z = double(pos(2));
+      auto const v = amplitude * std::sin((hpc::pi<double>() / 12.0) * y) * hpc::velocity<double>((z - 0.5), 0.0, -(x - 0.5));
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+  in.initial_v = twisting_column_v;
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({y_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_min, z_axis});
+  in.enable_nodal_pressure[body] = true;
+  in.c_tau[body] = 0.5;
+  in.CFL = 0.9;
+  run(in);
+}
+
 HPC_NOINLINE void swinging_cube(bool stabilize);
 void swinging_cube(bool stabilize) {
   constexpr material_index body(0);
@@ -543,7 +653,7 @@ HPC_NOINLINE inline void Noh_2D(bool nodal_energy, bool p_prime ) {
     }
   } else {
       in.name = "Noh_2D";
-  }      
+  }
   in.element = TRIANGLE;
   in.end_time = 0.6;
   in.num_file_outputs = 60;
@@ -886,6 +996,32 @@ void triple_point() {
 
 }
 
+HPC_NOINLINE void run_for_average();
+void run_for_average()
+{
+  for (auto plastic : {true, false})
+  {
+    std::cout << "Starting simulations with plastic = "
+              << ((plastic) ? "true" : "false") << "\n";
+    auto const start = std::chrono::high_resolution_clock::now();
+    int n = 1;
+    for (; n<=5; n++)
+    {
+      std::cout << "  Running n = " << n << "\n";
+      lgr::twisting_column_ep(0.005, plastic, false, 0);
+    }
+    auto const stop = std::chrono::high_resolution_clock::now();
+    auto total_duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+    auto avg_duration = total_duration / n;
+    std::cout << "  Running n = " << n << "\n";
+    lgr::twisting_column_ep(0.005, plastic, true, 30);
+    std::cout << "Finished simulations with plastic = "
+              << ((plastic) ? "true" : "false")
+              << " with an average simulation time of "
+              << avg_duration.count() << " seconds.\n";
+  }
+}
+
 int main() {
   if ((0)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
@@ -898,6 +1034,8 @@ int main() {
   if ((0)) lgr::swinging_cube(true);
   if ((0)) lgr::swinging_cube(false);
   if ((0)) lgr::twisting_column();
+  if ((0)) lgr::twisting_column_ep(0.05, false);
+  if ((0)) lgr::twisting_column_ep(0.05, true);
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D(false,false);
   if ((0)) lgr::Noh_2D(true,false);
@@ -905,8 +1043,9 @@ int main() {
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
-  if ((1)) lgr::twisting_composite_column();
+  if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
+  run_for_average();
 }
 

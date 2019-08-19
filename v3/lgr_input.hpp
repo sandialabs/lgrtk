@@ -6,6 +6,7 @@
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
+#include <lgr_hyper_ep/model.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_dimensional.hpp>
 
@@ -55,6 +56,7 @@ class input {
   hpc::host_vector<hpc::density<double>, material_index> rho0;
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
   hpc::host_vector<bool, material_index> enable_neo_Hookean;
+  hpc::host_vector<bool, material_index> enable_hyper_ep;
   hpc::host_vector<hpc::pressure<double>, material_index> K0;
   hpc::host_vector<hpc::pressure<double>, material_index> G0;
   hpc::host_vector<bool, material_index> enable_ideal_gas;
@@ -63,6 +65,40 @@ class input {
   hpc::host_vector<bool, material_index> enable_nodal_energy;
   hpc::host_vector<bool, material_index> enable_p_prime;
   hpc::host_vector<double, material_index> c_tau;
+
+  // Inputs for the hyper elastic-plastic model
+  hpc::host_vector<hyper_ep::Elastic, material_index> elastic;
+  hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
+  hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
+
+  // Plasticity
+  hpc::host_vector<hyper_ep::Hardening, material_index> hardening;
+  hpc::host_vector<hyper_ep::RateDependence, material_index> rate_dep;
+  hpc::host_vector<hpc::pressure<double>, material_index> A;  // Yield strength in shear
+  hpc::host_vector<hpc::pressure<double>, material_index> B;  // hardenint modules
+  hpc::host_vector<double, material_index> n;  // hardening exponent
+  hpc::host_vector<double, material_index> C1;
+  hpc::host_vector<double, material_index> C2;
+  hpc::host_vector<double, material_index> C3;
+  hpc::host_vector<double, material_index> C4;
+  hpc::host_vector<double, material_index> ep_dot_0;
+
+  // Damage
+  hpc::host_vector<hyper_ep::Damage, material_index> damage;
+  hpc::host_vector<bool, material_index> allow_no_tension;
+  hpc::host_vector<bool, material_index> allow_no_shear;
+  hpc::host_vector<bool, material_index> set_stress_to_zero;
+  hpc::host_vector<double, material_index> D1;
+  hpc::host_vector<double, material_index> D2;
+  hpc::host_vector<double, material_index> D3;
+  hpc::host_vector<double, material_index> D4;
+  hpc::host_vector<double, material_index> D5;
+  hpc::host_vector<double, material_index> D6;
+  hpc::host_vector<double, material_index> D7;
+  hpc::host_vector<double, material_index> D8;
+  hpc::host_vector<double, material_index> DC;
+  hpc::host_vector<double, material_index> eps_f_min;
+
   bool enable_viscosity = false;
   double linear_artificial_viscosity = 0.0;
   double quadratic_artificial_viscosity = 0.0;
@@ -85,6 +121,7 @@ class input {
     ,rho0(material_count_in)
     ,e0(material_count_in, double(0.0))
     ,enable_neo_Hookean(material_count_in, false)
+    ,enable_hyper_ep(material_count_in, false)
     ,K0(material_count_in)
     ,G0(material_count_in, double(0.0))
     ,enable_ideal_gas(material_count_in, false)
@@ -93,6 +130,33 @@ class input {
     ,enable_nodal_energy(material_count_in, false)
     ,enable_p_prime(material_count_in, false)
     ,c_tau(material_count_in, 0.5)
+    ,elastic(material_count_in)
+    ,E(material_count_in)
+    ,Nu(material_count_in)
+    ,hardening(material_count_in)
+    ,rate_dep(material_count_in)
+    ,A(material_count_in)
+    ,B(material_count_in)
+    ,n(material_count_in)
+    ,C1(material_count_in)
+    ,C2(material_count_in)
+    ,C3(material_count_in)
+    ,C4(material_count_in)
+    ,ep_dot_0(material_count_in)
+    ,damage(material_count_in)
+    ,allow_no_tension(material_count_in, true)
+    ,allow_no_shear(material_count_in, false)
+    ,set_stress_to_zero(material_count_in, false)
+    ,D1(material_count_in)
+    ,D2(material_count_in)
+    ,D3(material_count_in)
+    ,D4(material_count_in)
+    ,D5(material_count_in)
+    ,D6(material_count_in)
+    ,D7(material_count_in)
+    ,D8(material_count_in)
+    ,DC(material_count_in)
+    ,eps_f_min(material_count_in)
     ,domains(material_count_in + boundary_count_in)
   {}
 };
