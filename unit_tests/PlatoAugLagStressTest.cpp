@@ -16,6 +16,7 @@
 #include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
 #include "plato/VonMisesLocalMeasure.hpp"
 #include "plato/TensileEnergyDensityLocalMeasure.hpp"
+#include "plato/ThermalVonMisesLocalMeasure.hpp"
 #include "plato/WeightedSumFunction.hpp"
 #include "plato/PhysicsScalarFunction.hpp"
 #include "plato/MassPropertiesFunction.hpp"
@@ -351,6 +352,124 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
     // ****** TEST OUTPUT/RESULT VALUE FOR EACH CELL ******
     constexpr Plato::Scalar tTolerance = 1e-4;
     TEST_FLOATING_EQUALITY(163.304492775, tObjFuncVal, tTolerance);
+}
+
+inline void set_dof_in_scalar_vector_on_boundary_3D(Omega_h::Mesh & aMesh,
+                                             const std::string & aBoundaryID,
+                                             const Plato::ScalarVector & aVector,
+                                             const Plato::OrdinalType  & aDofStride,
+                                             const Plato::OrdinalType  & aDofToSet,
+                                             const Plato::Scalar       & aSetValue)
+{
+    const Omega_h::Int tVertexDim = 0;
+    const Omega_h::Int tFaceDim   = 2;
+    Omega_h::Read<Omega_h::I8> Marks;
+    if (aBoundaryID == "x0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 12);
+    else if (aBoundaryID == "x1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 14);
+    else if (aBoundaryID == "y0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 10);
+    else if (aBoundaryID == "y1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 16);
+    else if (aBoundaryID == "z0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim,  4);
+    else if (aBoundaryID == "z1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 22);
+    else
+        THROWERR("Specifed boundary ID not implemented.")
+
+    Omega_h::LOs tLocalOrdinals = Omega_h::collect_marked(Marks);
+    auto tNumBoundaryNodes = tLocalOrdinals.size();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * tLocalOrdinals[aIndex] + aDofToSet;
+            aVector(tIndex) += aSetValue;
+        }
+        , "fill vector boundary dofs");
+}
+
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_CheckThermalVonMises3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    using Residual = typename Plato::Evaluation<Plato::SimplexThermomechanics<tSpaceDim>>::Residual;
+
+    using StateT = typename Residual::StateScalarType;
+    using ConfigT = typename Residual::ConfigScalarType;
+
+    constexpr Plato::OrdinalType tDofsPerNode = Plato::SimplexThermomechanics<tSpaceDim>::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexThermomechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexThermomechanics<tSpaceDim>::mNumNodesPerCell;
+
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+
+    Plato::WorksetBase<Plato::SimplexThermomechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create state workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    const Plato::OrdinalType tNumDofs  = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tState("States", tNumDofs);
+    Plato::fill(0.0, tState);
+    Plato::OrdinalType tDofStride = tDofsPerNode;
+    Plato::OrdinalType tDofToSet = Plato::SimplexThermomechanics<tSpaceDim>::mTDofOffset;
+    Plato::Scalar tTemperature = 11.0;
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs / tDofStride), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aNodeIndex)
+    {
+        Plato::OrdinalType tIndex = tDofStride * aNodeIndex + tDofToSet;
+        tState(tIndex) = tTemperature;
+    }
+    , "fill specific vector entry globally");
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tState, tDofStride, 0, 0.1 - 0.05);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tState, tDofStride, 1, 0.1 - 0.10);
+    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tState, tDofStride, 2, 0.1 + 0.05);
+    Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tState, tStateWS);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.0'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='100.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e-1'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='1.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    Plato::ThermoelasticModelFactory<tSpaceDim> tFactory(*tParamList);
+    auto tMaterialModel = tFactory.create();
+
+    const std::string tName = "ThermalVonMises";
+    Plato::ThermalVonMisesLocalMeasure<Residual,Plato::SimplexThermomechanics<tSpaceDim>> 
+                         tLocalMeasure(tMaterialModel, tName);
+
+    Plato::ScalarVector tResult("ThermalVonMises", tNumCells);
+    tLocalMeasure(tStateWS, tConfigWS, tDataMap, tResult);
+
+    auto tHostResult = Kokkos::create_mirror(tResult);
+    Kokkos::deep_copy(tHostResult, tResult);
+    constexpr Plato::Scalar tTolerance = 1e-6;
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
+    {
+        //printf("Cell %d , TVM %f\n", tIndex, tHostResult(tIndex));
+        TEST_FLOATING_EQUALITY(13.2287565, tHostResult(tIndex), tTolerance);
+    }
 }
 
 

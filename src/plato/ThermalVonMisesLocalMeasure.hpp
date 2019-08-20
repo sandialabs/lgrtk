@@ -66,7 +66,7 @@ public:
                          AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aName),
                          mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     {
-        aMaterialModel = mMaterialModel;
+        mMaterialModel = aMaterialModel;
     }
 
     /******************************************************************************//**
