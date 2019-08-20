@@ -91,6 +91,15 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
+    }
+
+    /******************************************************************************//**
      * @brief Set state variables
      * @param [in] aState 2D view of state variables
     **********************************************************************************/
@@ -180,6 +189,7 @@ public:
                 // compute the state solution
                 mResidual = mEqualityConstraint.value      (tState, mProjPGrad, aControl);
                 mJacobian = mEqualityConstraint.gradient_u (tState, mProjPGrad, aControl);
+
                 this->applyConstraints(mJacobian, mResidual);
 
                 Plato::Solve::Consistent<SimplexPhysics::mNumDofsPerNode>(mJacobian, tStateIncrement, mResidual);
@@ -337,13 +347,14 @@ public:
             mJacobian = mEqualityConstraint.gradient_u_T(tStateAtStepK, mProjPGrad, aControl);
 
             // compute dPdu^T: Transpose of partial of projection residual wrt state
-            auto t_dP_du_T = mStateProjection.gradient_u_T(mProjPGrad, mProjectState, aControl);
+            auto t_dP_dn_T = mStateProjection.gradient_n_T(mProjPGrad, mProjectState, aControl);
 
             // compute dgdPI^T: Transpose of partial of PDE wrt projected pressure gradient
-// todo            auto t_dg_dPI_T = mEqualityConstraint.gradient_n_T(tStateAtStepK, mProjPGrad, aControl);
+            auto t_dg_dPI_T = mEqualityConstraint.gradient_n_T(tStateAtStepK, mProjPGrad, aControl);
 
-            // compute dgdu^T - dP_du_T X (mProjJacobian)^-1 X t_dg_dPI_T
-// todo            Plato::CondenseMatrix(mJacobian, t_dP_du_T, mProjJacobian,  t_dg_dPI_T);
+            // compute dgdu^T - dP_dn_T X (mProjJacobian)^-1 X t_dg_dPI_T
+            auto tRow = SimplexPhysics::ProjectorT::SimplexT::mProjectionDof;
+            Plato::Condense(mJacobian, t_dP_dn_T, mProjJacobian,  t_dg_dPI_T, tRow);
 
             this->applyConstraints(mJacobian, t_df_du);
 
@@ -352,7 +363,7 @@ public:
 
             // compute adjoint variable for projection equation
             Plato::fill(static_cast<Plato::Scalar>(0.0), mProjResidual);
-// todo            Plato::MatrixTimesVectorPlusVector(t_dg_dPI_T, tLambda, mProjResidual);
+            Plato::MatrixTimesVectorPlusVector(t_dg_dPI_T, tLambda, mProjResidual);
             Plato::scale(static_cast<Plato::Scalar>(-1), mProjResidual);
             Plato::Solve::RowSummed<SimplexPhysics::mNumSpatialDims>(mProjJacobian, mEta, mProjResidual);
 

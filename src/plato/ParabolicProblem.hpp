@@ -84,6 +84,15 @@ public:
         this->initialize(aMesh, aMeshSets, aParamList);
     }
 
+    /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
+    }
+
     /******************************************************************************/
     void setState(const Plato::ScalarMultiVector & aStates)
     /******************************************************************************/

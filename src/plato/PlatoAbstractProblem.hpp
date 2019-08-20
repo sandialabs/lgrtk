@@ -195,6 +195,13 @@ public:
     {
         return mDataMap;
     }
+
+    /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    virtual Plato::OrdinalType getNumSolutionDofs()=0;
+
 };
 // end class AbstractProblem
 

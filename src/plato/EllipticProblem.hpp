@@ -75,6 +75,15 @@ public:
     }
 
     /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
+    }
+
+    /******************************************************************************//**
      * @brief Set state variables
      * @param [in] aState 2D view of state variables
     **********************************************************************************/

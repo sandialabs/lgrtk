@@ -54,6 +54,7 @@ SET(PLATO_SOURCES
   plato/InternalThermoelasticEnergy.cpp
   plato/InternalElectroelasticEnergy.cpp
   plato/InternalElasticEnergy.cpp
+  plato/StabilizedElastostaticEnergy.cpp
   plato/TemperatureAverage.cpp
   plato/FluxPNorm.cpp
   plato/StressPNorm.cpp
@@ -109,6 +110,7 @@ target_include_directories(lgrtk PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 set(LINK_LIBS
     kokkoscore
+    kokkoskernels
     kokkoscontainers
     teuchoscore
     teuchoscomm

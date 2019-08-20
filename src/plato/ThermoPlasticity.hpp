@@ -62,7 +62,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class ThermoPlasticity: public Plato::SimplexThermoPlasticity<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::ThermoPlasticityFactory::FunctionFactory;
+    typedef Plato::ThermoPlasticityFactory::FunctionFactory FunctionFactory;
     using SimplexT        = Plato::SimplexThermoPlasticity<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };

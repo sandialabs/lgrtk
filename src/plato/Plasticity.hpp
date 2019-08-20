@@ -62,7 +62,7 @@ template<Plato::OrdinalType SpaceDimParam>
 class Plasticity: public Plato::SimplexPlasticity<SpaceDimParam>
 {
 public:
-    using FunctionFactory = typename Plato::PlasticityFactory::FunctionFactory;
+    typedef Plato::PlasticityFactory::FunctionFactory FunctionFactory;
     using SimplexT        = Plato::SimplexPlasticity<SpaceDimParam>;
     static constexpr Plato::OrdinalType SpaceDim = SpaceDimParam;
 };

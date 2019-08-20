@@ -341,21 +341,21 @@ public:
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Adjoint Y")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/1, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/1, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Adjoint Z")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/2, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/2, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution")
@@ -369,21 +369,21 @@ public:
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/0, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/0, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution Y")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/1, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/1, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution Z")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
             auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/2, /*stride=*/mNumSpatialDims);
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/2, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Objective GradientX X")
@@ -512,6 +512,7 @@ private:
     Plato::ScalarVector mConstraintGradientX;
 
     Plato::OrdinalType mNumSpatialDims;
+    Plato::OrdinalType mNumSolutionDofs;
 
 #ifdef PLATO_GEOMETRY
     struct MLSstruct

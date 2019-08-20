@@ -101,6 +101,17 @@ public:
 
     /******************************************************************************//**
      *
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+     *
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
+    }
+
+    /******************************************************************************//**
+     *
      * @brief Constructor
      * @param aMesh mesh data base
      * @param aEquality equality constraint vector function
