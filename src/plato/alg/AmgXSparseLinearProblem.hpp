@@ -17,6 +17,7 @@
 
 #include "plato/alg/CrsLinearProblem.hpp"
 #include "plato/alg/AmgXConfigs.hpp"
+#include <plato/PlatoTypes.hpp>
 
 #include <amgx_c.h>
 #include <sstream>
@@ -134,7 +135,7 @@ namespace Plato {
         AMGX_matrix_upload_all(_matrix, aNumEquations/BlockSize, tNumNonZeros, BlockSize, BlockSize, tRowPtrs, tColIndices, tData, tDiagData);
     }
     
-    void setTolerance(double tol)
+    void setTolerance(Plato::Scalar tol)
     {
       // NOTE: this does not work; we're getting the format wrong, somehow
       std::ostringstream cfgStr;
@@ -180,7 +181,7 @@ namespace Plato {
     {
       std::string configString;
       
-      double tol = 1e-12;
+      Plato::Scalar tol = 1e-12;
       int maxIters = aMaxIters;
       
       std::ifstream infile;

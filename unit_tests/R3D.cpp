@@ -68,7 +68,7 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_tets)
   constexpr int dim  = 3;
   constexpr int vert = dim+1;
   constexpr int moment  =  2;  
-  constexpr double tol=1e-10;
+  constexpr Plato::Scalar tol=1e-10;
   typedef r3d::Few<r3d::Vector<dim>,vert> Tet;
   typedef r3d::Polytope<dim>              Polytope;
   typedef r3d::Polynomial<dim,moment>     Polynomial;
@@ -87,10 +87,10 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_tets)
     }   
     TEST_ASSERT(r3d_intersection_correct);
   }
-  double moments[Polynomial::nterms] = {}; 
+  Plato::Scalar moments[Polynomial::nterms] = {}; 
   r3d::reduce<moment>(intersection, moments);
 
-  double check[Polynomial::nterms] = // From Mathematica
+  Plato::Scalar check[Polynomial::nterms] = // From Mathematica
    {0.0416666666667,
     0.0208333333333,
     0.0052083333333,
@@ -115,11 +115,11 @@ extract_tet(const Omega_h::Reals &coords, const Omega_h::LOs &elem_verts, const 
       tet[v][d] = coords.get(dim*elem_verts.get(vert*e+v)+d);
   return tet;
 }
-double dot (const double *moments,const double *quad_poly) {
+Plato::Scalar dot (const Plato::Scalar *moments,const Plato::Scalar *quad_poly) {
   constexpr int dim     = 3;
   constexpr int moment  =  2;  
   typedef r3d::Polynomial<dim,moment> Polynomial;
-  double d = 0;
+  Plato::Scalar d = 0;
   for (int i=0; i<Polynomial::nterms; ++i) 
     d += moments[i]*quad_poly[i];
   return d;
@@ -130,14 +130,14 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
   constexpr int dim     = 3;
   constexpr int vert    = dim+1;
   constexpr int moment  =  2;  
-  constexpr double tol=1e-10;
+  constexpr Plato::Scalar tol=1e-10;
   typedef r3d::Few<r3d::Vector<dim>,vert> Tet;
   typedef r3d::Polytope<dim>              Polytope;
   typedef r3d::Polynomial<dim,moment>     Polynomial;
   
   // 1+2x+3y+4z+5xx+6xy+7xz+8yy+9yz+10zz
-  const double quad_poly[Polynomial::nterms] = {1,2,3,4,5,6,7,8,9,10}; 
-  const double check[3] = {69.3333333333333, 63.8333333333333, 18.6666666666667};
+  const Plato::Scalar quad_poly[Polynomial::nterms] = {1,2,3,4,5,6,7,8,9,10}; 
+  const Plato::Scalar check[3] = {69.3333333333333, 63.8333333333333, 18.6666666666667};
 
   const Teuchos::RCP<Omega_h::Library> libOmegaH = lgr::getLibraryOmegaH();
   Omega_h::Mesh omega_h_mesh_1 = build_box(libOmegaH->world(),OMEGA_H_SIMPLEX,1,1,2,2,2,2);
@@ -152,12 +152,12 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
   const int nelem_1 = omega_h_mesh_1.nelems();
   const int nelem_2 = omega_h_mesh_2.nelems();
 
-  double volume = 0;
+  Plato::Scalar volume = 0;
   for (int e1=0; e1<nelem_1; ++e1) {
     const Tet tet1 = extract_tet(coords_1, elem_verts_1, e1);
     Polytope intersection;
     r3d::intersect_simplices(intersection, tet1, tet1);
-    double moments[Polynomial::nterms] = {}; 
+    Plato::Scalar moments[Polynomial::nterms] = {}; 
     r3d::reduce<moment>(intersection, moments);
     volume += dot (moments,quad_poly);
   }
@@ -168,7 +168,7 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
     const Tet tet2 = extract_tet(coords_2, elem_verts_2, e2);
     Polytope intersection;
     r3d::intersect_simplices(intersection, tet2, tet2);
-    double moments[Polynomial::nterms] = {}; 
+    Plato::Scalar moments[Polynomial::nterms] = {}; 
     r3d::reduce<moment>(intersection, moments);
     volume += dot (moments,quad_poly);
   }
@@ -181,7 +181,7 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
       const Tet tet2 = extract_tet(coords_2, elem_verts_2, e2);
       Polytope intersection;
       r3d::intersect_simplices(intersection, tet1, tet2);
-      double moments[Polynomial::nterms] = {}; 
+      Plato::Scalar moments[Polynomial::nterms] = {}; 
       r3d::reduce<moment>(intersection, moments);
       volume += dot (moments,quad_poly);
     }

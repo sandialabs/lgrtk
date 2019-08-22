@@ -5373,8 +5373,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, InitialAccelerationsCalculation)
     Plato::DataMap tDataMap;
     Teuchos::ParameterList tProblemParams;
     Teuchos::ParameterList tPenaltyParams;
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
 
     Plato::OrdinalType tNumCells = 1;
     Plato::OrdinalType tNumNodesPerCell = tSpaceDim + 1;
@@ -5500,8 +5500,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_Residual)
     Plato::DataMap tDataMap;
     Teuchos::ParameterList tProblemParams;
     Teuchos::ParameterList tPenaltyParams;
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     
     Omega_h::MeshSets tMeshSets;
     const Plato::OrdinalType tMeshWidth = 1;
@@ -5602,8 +5602,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_VectorFunc_Residual)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -5709,8 +5709,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_VectorFuncJac)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -5821,8 +5821,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_VectorFuncJacZ)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -5933,8 +5933,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ElastodynamicsResidual_VectorFuncJacX)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6045,8 +6045,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, EquationMotion_VectorFuncValue)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6150,8 +6150,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, EquationMotion_VectorFuncJac)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6256,8 +6256,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, EquationMotion_VectorFuncJacZ)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6363,8 +6363,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, EquationMotion_VectorFuncJacX)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6475,8 +6475,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointElastodynamics_VectorFunc_Residual)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6580,8 +6580,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointElastodynamics_VectorFuncJac)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6697,8 +6697,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AdjointElastodynamics_VectorFuncGradZ)
     std::string tName("Penalty Function");
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set(tName, tPenaltyParams);
 
@@ -6797,16 +6797,16 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, LinearElasticForce_Evaluate)
 
     // SET MATERIAL PROPERTIES
     Teuchos::ParameterList tIsotropicMaterialSubList;
-    tIsotropicMaterialSubList.set<double>("Poissons Ratio", 0.3);
-    tIsotropicMaterialSubList.set<double>("Youngs Modulus", 1.0);
+    tIsotropicMaterialSubList.set<Plato::Scalar>("Poissons Ratio", 0.3);
+    tIsotropicMaterialSubList.set<Plato::Scalar>("Youngs Modulus", 1.0);
     Teuchos::ParameterList tMaterialModelParamList;
     tMaterialModelParamList.set("Isotropic Linear Elastic", tIsotropicMaterialSubList);
 
     // SET PENALTY MODEL PROPERTIES
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set("Penalty Function", tPenaltyParams);
 
@@ -6870,19 +6870,19 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, RayleighViscousForce_Evaluate)
 
     // SET MATERIAL PROPERTIES
     Teuchos::ParameterList tMaterialModelParamList;
-    tMaterialModelParamList.set<double>("Density", 1);
-    tMaterialModelParamList.set<double>("Mass Proportional Damping", 0.025);
-    tMaterialModelParamList.set<double>("Stiffness Proportional Damping", 0.023);
+    tMaterialModelParamList.set<Plato::Scalar>("Density", 1);
+    tMaterialModelParamList.set<Plato::Scalar>("Mass Proportional Damping", 0.025);
+    tMaterialModelParamList.set<Plato::Scalar>("Stiffness Proportional Damping", 0.023);
     Teuchos::ParameterList tIsotropicMaterialSubList;
-    tIsotropicMaterialSubList.set<double>("Poissons Ratio", 0.3);
-    tIsotropicMaterialSubList.set<double>("Youngs Modulus", 2.0);
+    tIsotropicMaterialSubList.set<Plato::Scalar>("Poissons Ratio", 0.3);
+    tIsotropicMaterialSubList.set<Plato::Scalar>("Youngs Modulus", 2.0);
     tMaterialModelParamList.set("Isotropic Linear Elastic", tIsotropicMaterialSubList);
 
     // SET PENALTY MODEL PROPERTIES
     Teuchos::ParameterList tPenaltyParams;
     tPenaltyParams.set<std::string>("Type", "SIMP");
-    tPenaltyParams.set<double>("Exponent", 3.0);
-    tPenaltyParams.set<double>("Minimum Value", 0.0);
+    tPenaltyParams.set<Plato::Scalar>("Exponent", 3.0);
+    tPenaltyParams.set<Plato::Scalar>("Minimum Value", 0.0);
     Teuchos::ParameterList tElastodynamicsSubList;
     tElastodynamicsSubList.set("Penalty Function", tPenaltyParams);
 

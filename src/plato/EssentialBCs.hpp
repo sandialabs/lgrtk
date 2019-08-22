@@ -22,7 +22,7 @@ public:
             name(aName),
             ns_name(aParam.get < std::string > ("Sides")),
             dof(aParam.get<int>("Index", 0)),
-            value(aParam.get<double>("Value"))
+            value(aParam.get<Plato::Scalar>("Value"))
     {
     }
 
@@ -156,7 +156,7 @@ EssentialBCs<SimplexPhysicsType>::EssentialBCs(Teuchos::ParameterList & aParams)
         if("Zero Value" == tType)
         {
             const std::string tValueDocument = "solution component set to zero.";
-            tSublist.set("Value", 0.0, tValueDocument);
+            tSublist.set("Value", static_cast<Plato::Scalar>(0.0), tValueDocument);
             tMyBC.reset(new EssentialBC<SimplexPhysicsType>(tMyName, tSublist));
         }
         else if("Fixed Value" == tType)

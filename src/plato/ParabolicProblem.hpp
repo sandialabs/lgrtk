@@ -70,7 +70,7 @@ public:
     ParabolicProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aParamList, aParamList.get < std::string > ("PDE Constraint")),
             mNumSteps(aParamList.sublist("Time Integration").get<int>("Number Time Steps")),
-            mTimeStep(aParamList.sublist("Time Integration").get<double>("Time Step")),
+            mTimeStep(aParamList.sublist("Time Integration").get<Plato::Scalar>("Time Step")),
             mConstraint(nullptr),
             mObjective(nullptr),
             mResidual("MyResidual", mEqualityConstraint.size()),

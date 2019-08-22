@@ -67,13 +67,13 @@ public:
             mReferenceWeight(1.0)
     {
         auto p = params.sublist("Normalize").sublist("Scalar");
-        if(p.isType<double>("Reference Weight"))
+        if(p.isType<Plato::Scalar>("Reference Weight"))
         {
-            mReferenceWeight = p.get<double>("Reference Weight");
+            mReferenceWeight = p.get<Plato::Scalar>("Reference Weight");
         }
-        if(p.isType<double>("Scalar Product Weight"))
+        if(p.isType<Plato::Scalar>("Scalar Product Weight"))
         {
-            mScalarProductWeight = p.get<double>("Scalar Product Weight");
+            mScalarProductWeight = p.get<Plato::Scalar>("Scalar Product Weight");
         }
     }
 
@@ -128,11 +128,11 @@ public:
         auto p = params.sublist("Normalize").sublist("Barlat");
         if(p.isType < Plato::OrdinalType > ("Barlat Exponent"))
         {
-            mBarlatExponent = p.get<double>("Barlat Exponent");
+            mBarlatExponent = p.get<Plato::Scalar>("Barlat Exponent");
         }
-        if(p.isType<double>("Reference Weight"))
+        if(p.isType<Plato::Scalar>("Reference Weight"))
         {
-            mReferenceWeight = p.get<double>("Reference Weight");
+            mReferenceWeight = p.get<Plato::Scalar>("Reference Weight");
         }
 
         Plato::Scalar cp[barlatLength][barlatLength];
@@ -142,7 +142,7 @@ public:
         {
             std::stringstream ss;
             ss << "T1" << i;
-            auto vals = p.get<Teuchos::Array<double>>(ss.str());
+            auto vals = p.get<Teuchos::Array<Plato::Scalar>>(ss.str());
             for(Plato::OrdinalType j = 0; j < barlatLength; j++)
                 cp[i][j] = vals[j];
         }
@@ -151,7 +151,7 @@ public:
         {
             std::stringstream ss;
             ss << "T2" << i;
-            auto vals = p.get<Teuchos::Array<double>>(ss.str());
+            auto vals = p.get<Teuchos::Array<Plato::Scalar>>(ss.str());
             for(Plato::OrdinalType j = 0; j < barlatLength; j++)
                 cpp[i][j] = vals[j];
         }
@@ -285,7 +285,7 @@ protected:
 public:
     TensorNormBase(Teuchos::ParameterList& params)
     {
-        mExponent = params.get<double>("Exponent");
+        mExponent = params.get<Plato::Scalar>("Exponent");
     }
 
     virtual ~TensorNormBase()

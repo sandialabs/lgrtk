@@ -143,7 +143,7 @@ void RocketApp::outputData(const std::string & aArgumentName, Plato::SharedData 
     try
     {
         auto tIterator = mSharedDataMap.find(aArgumentName);
-        std::vector<Plato::Scalar> & tOutputData = tIterator->second;
+        std::vector<double> & tOutputData = tIterator->second;
         aExportData.setData(tOutputData);
     }
     catch(const std::invalid_argument & tErrorMsg)
@@ -157,7 +157,7 @@ void RocketApp::inputData(const std::string & aArgumentName, const Plato::Shared
     try
     {
         auto tIterator = mSharedDataMap.find(aArgumentName);
-        std::vector<Plato::Scalar> & tImportData = tIterator->second;
+        std::vector<double> & tImportData = tIterator->second;
         aImportData.getData(tImportData);
     }
     catch(const std::invalid_argument & tErrorMsg)
@@ -240,7 +240,7 @@ void RocketApp::setMaxTargetThrust(const std::vector<Plato::Scalar> & aThrustPro
 
 void RocketApp::setNormTargetThrustProfile(const std::vector<Plato::Scalar> & aThrustProfile)
 {
-    std::vector<Plato::Scalar> tNormThrustProfile =
+    std::vector<double> tNormThrustProfile =
             {std::inner_product(aThrustProfile.begin(), aThrustProfile.end(), aThrustProfile.begin(), 0.0)};
     std::string tArgumentName = "NormThrustProfile";
     mSharedDataMap[tArgumentName] = tNormThrustProfile;

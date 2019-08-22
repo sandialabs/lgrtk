@@ -28,7 +28,7 @@ namespace Plato {
       name(n),
       ss_name(param.get<std::string>("Sides"))
       {
-        auto flux = param.get<Teuchos::Array<double>>("Vector");
+        auto flux = param.get<Teuchos::Array<Plato::Scalar>>("Vector");
         for(int i=0; i<NumDofs; i++)
           mFlux(i) = flux[i];
       }
@@ -214,20 +214,20 @@ namespace Plato {
       const std::string type = sublist.get<std::string>("Type");
       std::shared_ptr<NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>> bc;
       if ("Uniform" == type) {
-        bool b_Values = sublist.isType<Teuchos::Array<double>>("Values");
-        bool b_Value  = sublist.isType<double>("Value");
+        bool b_Values = sublist.isType<Teuchos::Array<Plato::Scalar>>("Values");
+        bool b_Value  = sublist.isType<Plato::Scalar>("Value");
         if ( b_Values && b_Value ) {
           TEUCHOS_TEST_FOR_EXCEPTION(true, 
              std::logic_error,
              " Natural Boundary Condition: provide EITHER 'Values' OR 'Value' Parameter.");
         } else 
         if ( b_Values ) {
-          auto values = sublist.get<Teuchos::Array<double>>("Values");
+          auto values = sublist.get<Teuchos::Array<Plato::Scalar>>("Values");
           sublist.set("Vector", values);
         } else 
         if ( b_Value ) {
-          Teuchos::Array<double> fluxVector(NumDofs, 0.0);
-          auto value = sublist.get<double>("Value");
+          Teuchos::Array<Plato::Scalar> fluxVector(NumDofs, 0.0);
+          auto value = sublist.get<Plato::Scalar>("Value");
           fluxVector[0] = value;
           sublist.set("Vector", fluxVector);
         } else {
@@ -238,9 +238,9 @@ namespace Plato {
         bc.reset(new NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>(name, sublist));
       }
       else if ("Uniform Component" == type){
-        Teuchos::Array<double> fluxVector(NumDofs, 0.0);
+        Teuchos::Array<Plato::Scalar> fluxVector(NumDofs, 0.0);
         auto fluxComponent = sublist.get<std::string>("Component");
-        auto value = sublist.get<double>("Value");
+        auto value = sublist.get<Plato::Scalar>("Value");
         if( (fluxComponent == "x" || fluxComponent == "X") ) fluxVector[0] = value;
         else
         if( (fluxComponent == "y" || fluxComponent == "Y") && DofsPerNode > 1 ) fluxVector[1] = value;

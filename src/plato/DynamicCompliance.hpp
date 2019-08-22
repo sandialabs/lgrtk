@@ -69,7 +69,7 @@ public:
                       Teuchos::ParameterList& aProblemParams,
                       Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, "Dynamic Energy"),
-            mDensity(aProblemParams.get<double>("Material Density", 1.0)),
+            mDensity(aProblemParams.get<Plato::Scalar>("Material Density", 1.0)),
             mProjectionFunction(),
             mPenaltyFunction(aPenaltyParams),
             mApplyPenalty(mPenaltyFunction),

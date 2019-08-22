@@ -9,14 +9,14 @@ IsotropicLinearElectroelasticMaterial(const Teuchos::ParameterList& paramList) :
 LinearElectroelasticMaterial<1>()
 /******************************************************************************/
 {
-    if (paramList.isType<double>("Alpha")){
-      mAlpha = paramList.isType<double>("Alpha");
+    if (paramList.isType<Plato::Scalar>("Alpha")){
+      mAlpha = paramList.isType<Plato::Scalar>("Alpha");
     }
 
-    Plato::Scalar v = paramList.get<double>("Poissons Ratio");
-    Plato::Scalar E = paramList.get<double>("Youngs Modulus");
-    Plato::Scalar e33 = paramList.get<double>("e33");
-    Plato::Scalar p33 = paramList.get<double>("p33");
+    Plato::Scalar v = paramList.get<Plato::Scalar>("Poissons Ratio");
+    Plato::Scalar E = paramList.get<Plato::Scalar>("Youngs Modulus");
+    Plato::Scalar e33 = paramList.get<Plato::Scalar>("e33");
+    Plato::Scalar p33 = paramList.get<Plato::Scalar>("p33");
     auto c = E/((1.0+v)*(1.0-2.0*v));
     mCellStiffness(0,0)=c*(1.0-v);
     mCellPiezoelectricCoupling(0,0)=e33;
@@ -29,17 +29,17 @@ IsotropicLinearElectroelasticMaterial(const Teuchos::ParameterList& paramList) :
 LinearElectroelasticMaterial<2>()
 /******************************************************************************/
 {
-    if (paramList.isType<double>("Alpha")){
-      mAlpha = paramList.isType<double>("Alpha");
+    if (paramList.isType<Plato::Scalar>("Alpha")){
+      mAlpha = paramList.isType<Plato::Scalar>("Alpha");
     }
 
-    Plato::Scalar v = paramList.get<double>("Poissons Ratio");
-    Plato::Scalar E = paramList.get<double>("Youngs Modulus");
-    Plato::Scalar e15 = paramList.get<double>("e15");
-    Plato::Scalar e31 = paramList.get<double>("e31");
-    Plato::Scalar e33 = paramList.get<double>("e33");
-    Plato::Scalar p11 = paramList.get<double>("p11");
-    Plato::Scalar p33 = paramList.get<double>("p33");
+    Plato::Scalar v = paramList.get<Plato::Scalar>("Poissons Ratio");
+    Plato::Scalar E = paramList.get<Plato::Scalar>("Youngs Modulus");
+    Plato::Scalar e15 = paramList.get<Plato::Scalar>("e15");
+    Plato::Scalar e31 = paramList.get<Plato::Scalar>("e31");
+    Plato::Scalar e33 = paramList.get<Plato::Scalar>("e33");
+    Plato::Scalar p11 = paramList.get<Plato::Scalar>("p11");
+    Plato::Scalar p33 = paramList.get<Plato::Scalar>("p33");
     auto c = E/((1.0+v)*(1.0-2.0*v));
     mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;
     mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v);
@@ -59,17 +59,17 @@ IsotropicLinearElectroelasticMaterial(const Teuchos::ParameterList& paramList) :
 LinearElectroelasticMaterial<3>()
 /******************************************************************************/
 {
-    if (paramList.isType<double>("Alpha")){
-      mAlpha = paramList.get<double>("Alpha");
+    if (paramList.isType<Plato::Scalar>("Alpha")){
+      mAlpha = paramList.get<Plato::Scalar>("Alpha");
     }
 
-    Plato::Scalar v = paramList.get<double>("Poissons Ratio");
-    Plato::Scalar E = paramList.get<double>("Youngs Modulus");
-    Plato::Scalar e15 = paramList.get<double>("e15");
-    Plato::Scalar e31 = paramList.get<double>("e31");
-    Plato::Scalar e33 = paramList.get<double>("e33");
-    Plato::Scalar p11 = paramList.get<double>("p11");
-    Plato::Scalar p33 = paramList.get<double>("p33");
+    Plato::Scalar v = paramList.get<Plato::Scalar>("Poissons Ratio");
+    Plato::Scalar E = paramList.get<Plato::Scalar>("Youngs Modulus");
+    Plato::Scalar e15 = paramList.get<Plato::Scalar>("e15");
+    Plato::Scalar e31 = paramList.get<Plato::Scalar>("e31");
+    Plato::Scalar e33 = paramList.get<Plato::Scalar>("e33");
+    Plato::Scalar p11 = paramList.get<Plato::Scalar>("p11");
+    Plato::Scalar p33 = paramList.get<Plato::Scalar>("p33");
     auto c = E/((1.0+v)*(1.0-2.0*v));
     mCellStiffness(0,0)=c*(1.0-v); mCellStiffness(0,1)=c*v;       mCellStiffness(0,2)=c*v;
     mCellStiffness(1,0)=c*v;       mCellStiffness(1,1)=c*(1.0-v); mCellStiffness(1,2)=c*v;

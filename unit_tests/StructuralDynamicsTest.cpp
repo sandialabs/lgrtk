@@ -194,8 +194,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ApplyPenaltyHeaviside)
 {
     // ALLOCATE PROJECTION AND PENALTY MODELS   
     Teuchos::ParameterList tParamList;
-    tParamList.set<double>("Exponent", 3.0);
-    tParamList.set<double>("Minimum Value", 0.0);
+    tParamList.set<Plato::Scalar>("Exponent", 3.0);
+    tParamList.set<Plato::Scalar>("Minimum Value", 0.0);
     Plato::MSIMP tPenaltyModel(tParamList);
     Plato::HeavisideProjection tProjection;
     
@@ -254,8 +254,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, ApplyPenaltyHyperbolicTangent_Array2D)
 {
     // ALLOCATE PROJECTION AND PENALTY MODELS   
     Teuchos::ParameterList tParamList;
-    tParamList.set<double>("Exponent", 3.0);
-    tParamList.set<double>("Minimum Value", 0.0);
+    tParamList.set<Plato::Scalar>("Exponent", 3.0);
+    tParamList.set<Plato::Scalar>("Minimum Value", 0.0);
     Plato::MSIMP tPenaltyModel(tParamList);
     Plato::HyperbolicTangentProjection tProjection;
     

@@ -42,13 +42,13 @@ MPMD_App::MPMD_App(int aArgc, char **aArgv, MPI_Comm& aLocalComm) :
       else
       {
           if( tPointArrayDims == 1 )
-              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<1,double>(*tPointArrayInput)),1}));
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<1,Plato::Scalar>(*tPointArrayInput)),1}));
           else
           if( tPointArrayDims == 2 )
-              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<2,double>(*tPointArrayInput)),2}));
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<2,Plato::Scalar>(*tPointArrayInput)),2}));
           else 
           if( tPointArrayDims == 3 )
-              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<3,double>(*tPointArrayInput)),3}));
+              mMLS[tPointArrayName] = std::make_shared<MLSstruct>(MLSstruct({Plato::any(Plato::Geometry::MovingLeastSquares<3,Plato::Scalar>(*tPointArrayInput)),3}));
       }
 #else
       throw Plato::ParsingException("PlatoApp was not compiled with PointArray support.  Turn on 'PLATO_GEOMETRY' option and rebuild.");
@@ -745,7 +745,7 @@ setParameterValue( Teuchos::ParameterList& params,
   if( p1 != string::npos && p2 != string::npos )
   {
       std::string vecName = token.substr(0,p1);
-      auto vec = params.get<Teuchos::Array<double>>(vecName);
+      auto vec = params.get<Teuchos::Array<Plato::Scalar>>(vecName);
 
       std::string strVecEntry = token.substr(p1+1,p2-p1-1);
       int vecEntry = std::stoi(strVecEntry);
@@ -755,7 +755,7 @@ setParameterValue( Teuchos::ParameterList& params,
   }
   else
   {
-      params.set<double>(token,value);
+      params.set<Plato::Scalar>(token,value);
   }
 }
 

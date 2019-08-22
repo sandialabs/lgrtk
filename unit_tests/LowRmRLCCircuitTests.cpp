@@ -17,7 +17,7 @@ using namespace Omega_h;
 using namespace std;
 
 namespace {
-  void testFloatEqualsWithFloor(double v1, double v2, double tol, double floor, Teuchos::FancyOStream &out, bool &success)
+  void testFloatEqualsWithFloor(Plato::Scalar v1, Plato::Scalar v2, Plato::Scalar tol, Plato::Scalar floor, Teuchos::FancyOStream &out, bool &success)
   {
     if ((std::abs(v1) < floor) && (std::abs(v2) < floor)) return; // bypass relative comparison for things that floor to 0
     TEST_FLOATING_EQUALITY(v1, v2, tol);
@@ -44,16 +44,16 @@ namespace {
      */
     
     // coefficients dt, C, L, R, K11: (G = 1/R)
-    vector<double> dt_values   = {1.0,0.1,0.01,0.001};
-    vector<double> C_values    = {1.0, 2.0};
-    vector<double> L_values    = {1.0, 2.0};
-    vector<double> R_values    = {1.0, 2.0};
-    vector<double> K11_values  = {1.0, 2.0};
+    vector<Plato::Scalar> dt_values   = {1.0,0.1,0.01,0.001};
+    vector<Plato::Scalar> C_values    = {1.0, 2.0};
+    vector<Plato::Scalar> L_values    = {1.0, 2.0};
+    vector<Plato::Scalar> R_values    = {1.0, 2.0};
+    vector<Plato::Scalar> K11_values  = {1.0, 2.0};
     
-    double V0 = 3.0;
-    double v1 = V0, v2 = 0.0, v3 = 0.0, v4 = 0.0, i = 0.0;
+    Plato::Scalar V0 = 3.0;
+    Plato::Scalar v1 = V0, v2 = 0.0, v3 = 0.0, v4 = 0.0, i = 0.0;
     
-    double tol = 1e-15, floor = 1e-15;
+    Plato::Scalar tol = 1e-15, floor = 1e-15;
     
     int numTimeSteps = 3;
     for (auto dt : dt_values)
@@ -72,7 +72,7 @@ namespace {
               out << "; K11 = " << K11 << "; dt = " << dt << " ***********" << endl;
               
               circuit.setK11(K11);
-              double v1_prev, i_prev; //, v2_prev, v3_prev, v4_prev, i_prev;
+              Plato::Scalar v1_prev, i_prev; //, v2_prev, v3_prev, v4_prev, i_prev;
               circuit.setValues(V0, 0.0, 0.0, 0.0, 0.0);
               out << "initial values: ";
               out << "v1 = " << circuit.v1() << "; ";
@@ -102,8 +102,8 @@ namespace {
                 out << " i = " << circuit.i()  << "\n";
                 
                 // apply A to the new values to recover the previous values
-                double v1_prev_actual = ((C / dt) * v1 + i) / (C / dt);
-                double i_prev_actual  = (-v1 + v2 + (L / dt) * i) / (L / dt);
+                Plato::Scalar v1_prev_actual = ((C / dt) * v1 + i) / (C / dt);
+                Plato::Scalar i_prev_actual  = (-v1 + v2 + (L / dt) * i) / (L / dt);
                 testFloatEqualsWithFloor(v1_prev_actual, v1_prev, tol, floor, out, success);
                 testFloatEqualsWithFloor( i_prev_actual,  i_prev, tol, floor, out, success);
               }

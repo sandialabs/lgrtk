@@ -75,7 +75,7 @@ public:
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aInputParams, aInputParams.get<std::string>("PDE Constraint")),
             mStateProjection(aMesh, aMeshSets, mDataMap, aInputParams, std::string("State Gradient Projection")),
             mNumSteps      (Plato::ParseTools::getSubParam<int>   (aInputParams, "Time Stepping", "Number Time Steps",    1  )),
-            mTimeStep      (Plato::ParseTools::getSubParam<double>(aInputParams, "Time Stepping", "Time Step",            1.0)),
+            mTimeStep      (Plato::ParseTools::getSubParam<Plato::Scalar>(aInputParams, "Time Stepping", "Time Step",     1.0)),
             mNumNewtonSteps(Plato::ParseTools::getSubParam<int>   (aInputParams, "Newton Iteration", "Number Iterations", 2  )),
             mConstraint(nullptr),
             mObjective(nullptr),
@@ -603,7 +603,7 @@ private:
         if(aInputParams.isSublist("Time Stepping") == true)
         {
             mNumSteps = aInputParams.sublist("Time Stepping").get<int>("Number Time Steps");
-            mTimeStep = aInputParams.sublist("Time Stepping").get<double>("Time Step");
+            mTimeStep = aInputParams.sublist("Time Stepping").get<Plato::Scalar>("Time Step");
         } 
         else
         {

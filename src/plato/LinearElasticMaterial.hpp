@@ -72,12 +72,12 @@ LinearElasticMaterial(const Teuchos::ParameterList& paramList)
 {
   initialize();
 
-  if( paramList.isType<double>("e11") )  mReferenceStrain(0) = paramList.get<double>("e11");
-  if( paramList.isType<double>("e22") )  mReferenceStrain(1) = paramList.get<double>("e22");
-  if( paramList.isType<double>("e33") )  mReferenceStrain(2) = paramList.get<double>("e33");
-  if( paramList.isType<double>("e23") )  mReferenceStrain(3) = paramList.get<double>("e23");
-  if( paramList.isType<double>("e13") )  mReferenceStrain(4) = paramList.get<double>("e13");
-  if( paramList.isType<double>("e12") )  mReferenceStrain(5) = paramList.get<double>("e12");
+  if( paramList.isType<Plato::Scalar>("e11") )  mReferenceStrain(0) = paramList.get<Plato::Scalar>("e11");
+  if( paramList.isType<Plato::Scalar>("e22") )  mReferenceStrain(1) = paramList.get<Plato::Scalar>("e22");
+  if( paramList.isType<Plato::Scalar>("e33") )  mReferenceStrain(2) = paramList.get<Plato::Scalar>("e33");
+  if( paramList.isType<Plato::Scalar>("e23") )  mReferenceStrain(3) = paramList.get<Plato::Scalar>("e23");
+  if( paramList.isType<Plato::Scalar>("e13") )  mReferenceStrain(4) = paramList.get<Plato::Scalar>("e13");
+  if( paramList.isType<Plato::Scalar>("e12") )  mReferenceStrain(5) = paramList.get<Plato::Scalar>("e12");
 }
 
 /******************************************************************************/

@@ -354,43 +354,6 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
     TEST_FLOATING_EQUALITY(163.304492775, tObjFuncVal, tTolerance);
 }
 
-inline void set_dof_in_scalar_vector_on_boundary_3D(Omega_h::Mesh & aMesh,
-                                             const std::string & aBoundaryID,
-                                             const Plato::ScalarVector & aVector,
-                                             const Plato::OrdinalType  & aDofStride,
-                                             const Plato::OrdinalType  & aDofToSet,
-                                             const Plato::Scalar       & aSetValue)
-{
-    const Omega_h::Int tVertexDim = 0;
-    const Omega_h::Int tFaceDim   = 2;
-    Omega_h::Read<Omega_h::I8> Marks;
-    if (aBoundaryID == "x0")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 12);
-    else if (aBoundaryID == "x1")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 14);
-    else if (aBoundaryID == "y0")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 10);
-    else if (aBoundaryID == "y1")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 16);
-    else if (aBoundaryID == "z0")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim,  4);
-    else if (aBoundaryID == "z1")
-        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 22);
-    else
-        THROWERR("Specifed boundary ID not implemented.")
-
-    Omega_h::LOs tLocalOrdinals = Omega_h::collect_marked(Marks);
-    auto tNumBoundaryNodes = tLocalOrdinals.size();
-
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
-                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
-        {
-            Plato::OrdinalType tIndex = aDofStride * tLocalOrdinals[aIndex] + aDofToSet;
-            aVector(tIndex) += aSetValue;
-        }
-        , "fill vector boundary dofs");
-}
-
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_CheckThermalVonMises3D)
 {
     constexpr Plato::OrdinalType tSpaceDim = 3;
@@ -427,9 +390,9 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_CheckThermalVonMises3D)
         tState(tIndex) = tTemperature;
     }
     , "fill specific vector entry globally");
-    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tState, tDofStride, 0, 0.1 - 0.05);
-    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tState, tDofStride, 1, 0.1 - 0.10);
-    set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tState, tDofStride, 2, 0.1 + 0.05);
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tState, tDofStride, 0, 0.1 - 0.05);
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tState, tDofStride, 1, 0.1 - 0.10);
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tState, tDofStride, 2, 0.1 + 0.05);
     Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
     tWorksetBase.worksetState(tState, tStateWS);
 

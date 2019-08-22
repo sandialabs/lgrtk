@@ -47,6 +47,7 @@
 #include <Teuchos_RCPDecl.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
 #include <Teuchos_Comm.hpp>
+#include <plato/PlatoTypes.hpp>
 #include <mpi.h>
 
 namespace Plato {
@@ -66,14 +67,14 @@ struct Machine {
 unsigned size(Machine const& machine);
 unsigned rank(Machine const& machine);
 
-double max(Machine const& machine, double local);
+Plato::Scalar max(Machine const& machine, Plato::Scalar local);
 
-double min(Machine const& machine, double local);
+Plato::Scalar min(Machine const& machine, Plato::Scalar local);
 
-double sum(Machine const& machine, double local);
+Plato::Scalar sum(Machine const& machine, Plato::Scalar local);
 
 void allReduce(
-    Machine const& machine, int n, const double *local, double *global);
+    Machine const& machine, int n, const Plato::Scalar *local, Plato::Scalar *global);
 
 }}  //end namespace Plato::comm
 

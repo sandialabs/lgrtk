@@ -7,22 +7,22 @@
 #include <iostream>
 #include "plato/LGR_App.hpp"
 
-std::vector<double> double_vector_from_list(PyObject* list);
-PyObject* list_from_double_vector(std::vector<double> inVector);
+std::vector<Plato::Scalar> Plato::Scalar_vector_from_list(PyObject* list);
+PyObject* list_from_Plato::Scalar_vector(std::vector<Plato::Scalar> inVector);
 
 namespace PlatoPython
 {
 
 class SharedData {
   public:
-    SharedData(Plato::data::layout_t layout, int size, double initVal=0.0 ) :
+    SharedData(Plato::data::layout_t layout, int size, Plato::Scalar initVal=0.0 ) :
       mData(size,initVal), mLayout(layout){}
 
-    void setData(const std::vector<double> & aData)
+    void setData(const std::vector<Plato::Scalar> & aData)
     {
       mData = aData;
     }
-    void getData(std::vector<double> & aData) const
+    void getData(std::vector<Plato::Scalar> & aData) const
     {
       aData = mData;
     }
@@ -39,31 +39,31 @@ class SharedData {
       return mLayout;
     }
 
-    double operator[](int index){ return mData[index]; }
+    Plato::Scalar operator[](int index){ return mData[index]; }
 
   protected:
-    std::vector<double> mData;
+    std::vector<Plato::Scalar> mData;
     Plato::data::layout_t mLayout;
     std::string mContext;
 };
 class NodeField : public SharedData
 {
   public:
-    NodeField(int size, double initVal=0.0) :
+    NodeField(int size, Plato::Scalar initVal=0.0) :
        SharedData(Plato::data::layout_t::SCALAR_FIELD, size, initVal){}
 };
 
 class ElementField : public SharedData
 {
   public:
-    ElementField(int size, double initVal=0.0) :
+    ElementField(int size, Plato::Scalar initVal=0.0) :
        SharedData(Plato::data::layout_t::ELEMENT_FIELD, size, initVal){}
 };
 
 class ScalarParameter : public SharedData
 {
   public:
-    ScalarParameter(std::string context, double initVal=0.0) :
+    ScalarParameter(std::string context, Plato::Scalar initVal=0.0) :
        SharedData(Plato::data::layout_t::SCALAR_PARAMETER, 1, initVal)
          {mContext = context;}
 };
@@ -71,7 +71,7 @@ class ScalarParameter : public SharedData
 class SharedValue : public SharedData
 {
   public:
-    SharedValue(int size, double initVal=0.0) :
+    SharedValue(int size, Plato::Scalar initVal=0.0) :
        SharedData(Plato::data::layout_t::SCALAR, size, initVal){}
 };
 
@@ -125,14 +125,14 @@ Analyze_importData(Analyze *self, PyObject *args, PyObject *kwds)
     if( inType == "SCALAR_FIELD" )
     {
         PlatoPython::NodeField inData(self->mLocalNodeIDs.size());
-        auto vecData = double_vector_from_list(inputData);
+        auto vecData = Plato::Scalar_vector_from_list(inputData);
         inData.setData(vecData);
         self->mMPMDApp->importDataT(inName, inData);
     } else
     if( inType == "ELEMENT_FIELD" )
     {
         PlatoPython::ElementField inData(self->mLocalElemIDs.size());
-        auto vecData = double_vector_from_list(inputData);
+        auto vecData = Plato::Scalar_vector_from_list(inputData);
         inData.setData(vecData);
         self->mMPMDApp->importDataT(inName, inData);
     } else
@@ -142,14 +142,14 @@ Analyze_importData(Analyze *self, PyObject *args, PyObject *kwds)
         auto context = tokens[0];
         auto parameter = tokens[1];
         PlatoPython::ScalarParameter inData(context);
-        std::vector<double> vecData(1, PyFloat_AsDouble(inputData));
+        std::vector<Plato::Scalar> vecData(1, PyFloat_AsPlato::Scalar(inputData));
         inData.setData(vecData);
         self->mMPMDApp->importDataT(parameter, inData);
     } else
     if( inType == "SCALAR" )
     {
         PlatoPython::SharedValue inData(1);
-        std::vector<double> vecData(1, PyFloat_AsDouble(inputData));
+        std::vector<Plato::Scalar> vecData(1, PyFloat_AsPlato::Scalar(inputData));
         inData.setData(vecData);
         self->mMPMDApp->importDataT(inName, inData);
     }
@@ -197,25 +197,25 @@ Analyze_exportData(Analyze *self, PyObject *args, PyObject *kwds)
     {
         PlatoPython::NodeField outData(self->mLocalNodeIDs.size());
         self->mMPMDApp->exportDataT(outName, outData);
-        std::vector<double> vecData(self->mLocalNodeIDs.size());
+        std::vector<Plato::Scalar> vecData(self->mLocalNodeIDs.size());
         outData.getData(vecData);
-        return list_from_double_vector(vecData);
+        return list_from_Plato::Scalar_vector(vecData);
     } else
     if( outType == "ELEMENT_FIELD" )
     {
         PlatoPython::ElementField outData(self->mLocalElemIDs.size());
         self->mMPMDApp->exportDataT(outName, outData);
-        std::vector<double> vecData(self->mLocalElemIDs.size());
+        std::vector<Plato::Scalar> vecData(self->mLocalElemIDs.size());
         outData.getData(vecData);
-        return list_from_double_vector(vecData);
+        return list_from_Plato::Scalar_vector(vecData);
     } else
     if( outType == "SCALAR" )
     {
         PlatoPython::SharedValue outData(1);
         self->mMPMDApp->exportDataT(outName, outData);
-        std::vector<double> vecData(1);
+        std::vector<Plato::Scalar> vecData(1);
         outData.getData(vecData);
-        return PyFloat_FromDouble(vecData[0]);
+        return PyFloat_FromPlato::Scalar(vecData[0]);
     }
     return Py_BuildValue("i", 1);
 }
@@ -403,33 +403,33 @@ initPlato(void)
 }
 
 /*****************************************************************************/
-// create a double vector from a Python list
+// create a Plato::Scalar vector from a Python list
 /*****************************************************************************/
-std::vector<double> double_vector_from_list(PyObject* inList)
+std::vector<Plato::Scalar> Plato::Scalar_vector_from_list(PyObject* inList)
 {
   int length = PyList_Size(inList);
-  std::vector<double> outVector(length);
+  std::vector<Plato::Scalar> outVector(length);
   for(int i = 0; i < length; i++) {
     PyObject *v = PyList_GetItem(inList,i);
     if(!PyFloat_Check(v)) {
       PyErr_SetString(PyExc_TypeError, "list must contain only reals");
       outVector[i] = 0.0;
     }
-    outVector[i] = PyFloat_AsDouble(v);
+    outVector[i] = PyFloat_AsPlato::Scalar(v);
   }
   return outVector;
 }
 
 /*****************************************************************************/
-// create a python list from double vector
+// create a python list from Plato::Scalar vector
 /*****************************************************************************/
-PyObject* list_from_double_vector(std::vector<double> inVector)
+PyObject* list_from_Plato::Scalar_vector(std::vector<Plato::Scalar> inVector)
 {
   int array_length = inVector.size();
   PyObject *newlist = PyList_New(array_length);
 
   for(int i=0; i<array_length; i++)
-    PyList_SetItem(newlist, i, PyFloat_FromDouble(inVector[i]));
+    PyList_SetItem(newlist, i, PyFloat_FromPlato::Scalar(inVector[i]));
 
   return newlist;
 }

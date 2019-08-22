@@ -142,7 +142,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto gradient_Host = Kokkos::create_mirror_view( gradient );
   Kokkos::deep_copy( gradient_Host, gradient );
 
-  std::vector<std::vector<std::vector<double>>> gradient_gold = { 
+  std::vector<std::vector<std::vector<Plato::Scalar>>> gradient_gold = { 
     {{0.0,-2.0, 0.0},{ 2.0, 0.0,-2.0},{-2.0, 2.0, 0.0},{ 0.0, 0.0, 2.0}},
     {{0.0,-2.0, 0.0},{ 0.0, 2.0,-2.0},{-2.0, 0.0, 2.0},{ 2.0, 0.0, 0.0}},
     {{0.0, 0.0,-2.0},{-2.0, 2.0, 0.0},{ 0.0,-2.0, 2.0},{ 2.0, 0.0, 0.0}},
@@ -169,7 +169,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto strain_Host = Kokkos::create_mirror_view( strain );
   Kokkos::deep_copy( strain_Host, strain );
 
-  std::vector<std::vector<double>> strain_gold = { 
+  std::vector<std::vector<Plato::Scalar>> strain_gold = { 
     {0.0006, 0.0048, 0.0024, 0.0072, 0.003 , 0.0054},
     {0.006 , 0.0048,-0.0030, 0.0018, 0.003 , 0.0108},
     {0.006 , 0.0012, 0.0006, 0.0018, 0.0066, 0.0072},
@@ -193,7 +193,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto stress_Host = Kokkos::create_mirror_view( stress );
   Kokkos::deep_copy( stress_Host, stress );
 
-  std::vector<std::vector<double>> stress_gold = { 
+  std::vector<std::vector<Plato::Scalar>> stress_gold = { 
    { 4961.538461538461, 8192.307692307691, 6346.153846153846, 2769.230769230769, 1153.846153846154, 2076.923076923077 },
    { 9115.384615384613, 8192.307692307690, 2192.307692307691, 692.3076923076922, 1153.846153846154, 4153.846153846153 },
    { 9115.384615384612, 5423.076923076921, 4961.538461538460, 692.3076923076922, 2538.461538461539, 2769.230769230769 },
@@ -217,7 +217,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, 3D )
   auto result_Host = Kokkos::create_mirror_view( result );
   Kokkos::deep_copy( result_Host, result );
 
-  std::vector<std::vector<double>> result_gold = { 
+  std::vector<std::vector<Plato::Scalar>> result_gold = { 
    {-86.53846153846153, -341.3461538461538, -115.3846153846154,   158.6538461538462,
     -28.84615384615385, -216.3461538461538, -120.1923076923077,   254.8076923076923,
      67.30769230769231,   48.07692307692308, 115.3846153846154,   264.4230769230770},
@@ -328,7 +328,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ElastostaticResidual3D )
   auto residual_Host = Kokkos::create_mirror_view( residual );
   Kokkos::deep_copy( residual_Host, residual );
 
-  std::vector<double> residual_gold = { 
+  std::vector<Plato::Scalar> residual_gold = { 
     -1903.846153846153,  -894.2307692307692,-1038.461538461538,
     -2062.499999999999, -1024.038461538461,  -692.3076923076922,
      -379.8076923076920, -379.8076923076922,  182.6923076923077,
@@ -530,7 +530,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   //
   auto value = eeScalarFunction.value(u,z);
 
-  double value_gold = 92.25;
+  Plato::Scalar value_gold = 92.25;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -541,7 +541,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
     -3807.692307692307, -1788.461538461538, -2076.923076923077,
     -4125.000000000000, -2048.076923076922, -1384.615384615384,
      -759.6153846153842, -759.6153846153843,  365.3846153846152,
@@ -587,7 +587,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalElasticEnergy3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
     7.111298076923077 ,  7.370192307692310 ,  1.842548076923078,
     6.053365384615385 ,  2.024278846153846 ,  0.9778846153846154,
     1.736538461538462 ,  0.5423076923076925,  2.889663461538463,
@@ -718,7 +718,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   //
   auto value = eeScalarFunction.value(u,z);
 
-  double value_gold = 14525.25169157000;
+  Plato::Scalar value_gold = 14525.25169157000;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -729,7 +729,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
    -1503430.743610086,    -87943.46429698351,  -253405.7951760115,
     -419311.2039113952,   -45900.11226120282,   -36121.19195937364,
     -127338.4661959158,   -19117.73429961895,    92407.24120276771,
@@ -757,7 +757,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, StressPNorm3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
    2972.321313190315,        831.6877699932147,    207.9219424983036,
      85.16009409571750,       30.23970839774167,     9.793975869956283,
      10.67428715222397,        0.1739233563059383,  32.70029626817538,
@@ -906,7 +906,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   //
   auto value = eeScalarFunction.value(solution,z);
 
-  double value_gold = 1346153.84615384578;
+  Plato::Scalar value_gold = 1346153.84615384578;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -917,7 +917,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
     112179.4871794871,      48076.92307692306,    48076.92307692306,
     168269.2307692307,      72115.38461538460,    0.000000000000000, 
     56089.74358974357,      24038.46153846153,   -48076.92307692306, 
@@ -963,7 +963,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_NormalCellProblem )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
     51415.0373984630496, 63626.4105765648710, 14999.0837995235233, 
     76149.3934262146504, 24360.5475584209853, 10370.2306261117192,
     20703.0116870963320, 10506.9555951488292, 53433.8245831477980,
@@ -1114,7 +1114,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   //
   auto value = eeScalarFunction.value(solution,z);
 
-  double value_gold = 384615.384615384275;
+  Plato::Scalar value_gold = 384615.384615384275;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -1125,7 +1125,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
 0, 32051.28205128205, 32051.28205128205, 0, 0, 48076.92307692307, 0, 
 -32051.28205128205, 16025.64102564102, 0, 0, 0, 0, 
 -48076.92307692307, 0, 0, -16025.64102564102, -16025.64102564102, 0, 
@@ -1158,7 +1158,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, EffectiveEnergy3D_ShearCellProblem )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
    12019.2307692307695, 16025.6410256410272, 4006.41025641025590, 
    24038.4615384615427, 8012.82051282051179, 4006.41025641025590, 
    8012.82051282051179, 4006.41025641025590, 16025.6410256410272, 
@@ -1292,7 +1292,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, ThermostaticResidual3D )
   auto residual_Host = Kokkos::create_mirror_view( residual );
   Kokkos::deep_copy( residual_Host, residual );
 
-  std::vector<double> residual_gold = { 
+  std::vector<Plato::Scalar> residual_gold = { 
     -56.66666666666666, -54.99999999999999, -16.66666666666667,
     -67.49999999999999, -21.66666666666666, -16.66666666666666,
     -17.50000000000000,  -5.000000000000000, 24.99999999999999,
@@ -1462,7 +1462,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
   //
   auto value = eeScalarFunction.value(u,z);
 
-  double value_gold = 611.666666666666;
+  Plato::Scalar value_gold = 611.666666666666;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -1473,7 +1473,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
  -113.3333333333333  , -110.0000000000000  , -33.33333333333334 , 
  -135.0000000000000  ,  -43.33333333333333 , -33.33333333333333 , 
   -35.00000000000000 ,   -9.999999999999998,  49.99999999999999 , 
@@ -1501,7 +1501,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, InternalThermalEnergy3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
    50.87500000000000 , 47.50000000000001 , 11.87500000000000 ,
    29.33333333333334 ,  8.625000000000000,  4.416666666666666,
     9.500000000000000,  3.000000000000000, 15.29166666666666 ,
@@ -1613,7 +1613,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
   //
   auto value = scalarFunction.value(u,z);
 
-  double value_gold = 444.0866631427854;
+  Plato::Scalar value_gold = 444.0866631427854;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -1624,7 +1624,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
   -121.7118130636210,       -8.402628906798824,    -2.660758498915989, 
     -0.03344798696042541,   -0.002037610215525936, -0.001781170602554662, 
     -0.003041532729695166,  -5.050930310677827e-6,  0.02320609420829947, 
@@ -1652,7 +1652,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, FluxPNorm3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
    105.2893297588999,        6.512518326309412,     1.628129581577354, 
      0.01125162852821403,    0.0007942956716896681, 0.0004666278049140509, 
      0.001684178438260436,   0.0001822327241451453, 0.009432160604870156, 
@@ -1785,7 +1785,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   //
   auto value = volScalarFunction.value(u,z);
 
-  double value_gold = 1.0;
+  Plato::Scalar value_gold = 1.0;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
 
@@ -1798,7 +1798,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
 
   // this ScalarFunction is the volume in the reference configation which is 
   // independent of the solution, u, so gradient_u is zero.
-  std::vector<double> grad_u_gold( grad_u.size(), 0.0);
+  std::vector<Plato::Scalar> grad_u_gold( grad_u.size(), 0.0);
 
   for(int iNode=0; iNode<int(grad_u_gold.size()); iNode++){
     if(grad_u_gold[iNode] == 0.0){
@@ -1816,7 +1816,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, Volume3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
     0.03125000000000000, 0.04166666666666666, 0.01041666666666667,
     0.06250000000000000, 0.02083333333333333, 0.01041666666666667, 
     0.02083333333333333, 0.01041666666666667, 0.04166666666666666, 
@@ -1940,7 +1940,7 @@ TEUCHOS_UNIT_TEST( DerivativeTests, referenceStrain3D )
   auto stress_Host = Kokkos::create_mirror_view( stress );
   Kokkos::deep_copy( stress_Host, stress );
 
-  std::vector<std::vector<double>> stress_gold = { 
+  std::vector<std::vector<Plato::Scalar>> stress_gold = { 
    { 12653.8461538462, 15884.6153846154,-9038.46153846154, 2769.23076923077, 1153.84615384615, 2076.92307692308},
    { 16807.6923076923, 15884.6153846154,-13192.3076923077, 692.307692307692, 1153.84615384615, 4153.84615384615},
    { 16807.6923076923, 13115.3846153846,-10423.0769230769, 692.307692307692, 2538.46153846154, 2769.23076923077},
