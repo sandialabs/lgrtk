@@ -66,7 +66,7 @@ struct JouleHeating : public Model<Elem> {
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
-    cg_iterations = pl.get<int>("cg iterations", "0");
+    cg_iterations = pl.get<int>("iterations", "0");
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
@@ -207,13 +207,13 @@ struct JouleHeating : public Model<Elem> {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_phi = sim.getset(this->normalized_voltage);
     auto const cg_it = (sim.step == 0) ? nodes_to_phi.size() : cg_iterations;
-    double relative_tol, absolute_tol;
+    double relative_out, absolute_out;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
         matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance, cg_it,
-        relative_tol, absolute_tol);
-    sim.circuit.jh_rel_tolerance = relative_tol;
-    sim.circuit.jh_abs_tolerance = absolute_tol;
-    sim.circuit.jh_iterations = niter;
+        relative_out, absolute_out);
+    sim.globals.set("Joule heating relative tolerance", relative_out);
+    sim.globals.set("Joule heating absolute tolerance", absolute_out);
+    sim.globals.set("Joule heating iterations", niter);
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
 //  std::cout << "phi solve took " << niter << " iterations\n";
   }

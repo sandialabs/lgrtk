@@ -145,11 +145,6 @@ class Circuit
       int GetNumInductors();
       int GetNumGrounds();
 
-      // Joule heating information
-      double jh_rel_tolerance = 0.0;
-      double jh_abs_tolerance = 0.0;
-      int jh_iterations = -1; // -1 means: not set yet
-
       // Routines below used for testing
       void Setup();
       void AddMeshUser     (int &e);
