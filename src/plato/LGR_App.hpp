@@ -259,12 +259,12 @@ public:
     {
         if(aName == "Objective Value")
         {
-            std::vector<double> tValue(1, mObjectiveValue);
+            std::vector<Plato::Scalar> tValue(1, mObjectiveValue);
             aSharedField.setData(tValue);
         }
         else if(aName == "Constraint Value")
         {
-            std::vector<double> tValue(1, mConstraintValue);
+            std::vector<Plato::Scalar> tValue(1, mConstraintValue);
             aSharedField.setData(tValue);
         }
         else
@@ -694,7 +694,7 @@ private:
     // MLS sub-class
     //
     /******************************************************************************/
-    template<int SpaceDim, typename ScalarType=double>
+    template<int SpaceDim, typename ScalarType=Plato::Scalar>
     class ComputeMLSField : public LocalOp
     {
     public:
@@ -718,7 +718,7 @@ private:
         void operator()()
         {
             // pull MLS point values into device
-            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+            std::vector<Plato::Scalar>& tLocalData = mMyApp->mValuesMap["MLS Values"];
             Kokkos::View<ScalarType*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> t_pointsHost(tLocalData.data(),tLocalData.size());
             Kokkos::View<ScalarType*, Kokkos::DefaultExecutionSpace::memory_space> t_pointValues("point values",tLocalData.size());
             Kokkos::deep_copy(t_pointValues, t_pointsHost);
@@ -736,7 +736,7 @@ private:
     // MLS sub-class
     //
     /******************************************************************************/
-    template<int SpaceDim, typename ScalarType=double>
+    template<int SpaceDim, typename ScalarType=Plato::Scalar>
     class ComputePerturbedMLSField : public LocalOp
     {
     public:
@@ -751,7 +751,7 @@ private:
             }
             m_MLS = mMyApp->mMLS[tName];
 
-            mDelta = Plato::Get::Double(aNode,"Delta");
+            mDelta = (ScalarType)(Plato::Get::Double(aNode,"Delta"));
         }
 
         ~ComputePerturbedMLSField()
@@ -760,7 +760,7 @@ private:
         void operator()()
         {
 
-            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+            std::vector<Plato::Scalar>& tLocalData = mMyApp->mValuesMap["MLS Values"];
 
             int tIndex=0;
             ScalarType tDelta=0.0;

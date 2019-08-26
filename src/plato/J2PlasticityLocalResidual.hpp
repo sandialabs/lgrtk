@@ -120,19 +120,19 @@ class J2PlasticityLocalResidual :
         mThermalExpansionCoefficient = 0.0;
         mReferenceTemperature        = 0.0;
 
-        auto tElasticModulus = tElasticSubList.get<double>("Youngs Modulus");
-        auto tPoissonsRatio  = tElasticSubList.get<double>("Poissons Ratio");
+        auto tElasticModulus = tElasticSubList.get<Plato::Scalar>("Youngs Modulus");
+        auto tPoissonsRatio  = tElasticSubList.get<Plato::Scalar>("Poissons Ratio");
         mElasticShearModulus = tElasticModulus / (2.0 * (1.0 + tPoissonsRatio));
       }
       else if( tMaterialParamList.isSublist("Isotropic Linear Thermoelastic") )
       {
         auto tThermoelasticSubList = tMaterialParamList.sublist("Isotropic Linear Thermoelastic");
 
-        mThermalExpansionCoefficient = tThermoelasticSubList.get<double>("Thermal Expansion Coefficient");
-        mReferenceTemperature        = tThermoelasticSubList.get<double>("Reference Temperature");
+        mThermalExpansionCoefficient = tThermoelasticSubList.get<Plato::Scalar>("Thermal Expansion Coefficient");
+        mReferenceTemperature        = tThermoelasticSubList.get<Plato::Scalar>("Reference Temperature");
 
-        auto tElasticModulus = tThermoelasticSubList.get<double>("Youngs Modulus");
-        auto tPoissonsRatio  = tThermoelasticSubList.get<double>("Poissons Ratio");
+        auto tElasticModulus = tThermoelasticSubList.get<Plato::Scalar>("Youngs Modulus");
+        auto tPoissonsRatio  = tThermoelasticSubList.get<Plato::Scalar>("Poissons Ratio");
         mElasticShearModulus = tElasticModulus / (2.0 * (1.0 + tPoissonsRatio));
       }
       else
@@ -144,15 +144,15 @@ class J2PlasticityLocalResidual :
       {
         auto tJ2PlasticitySubList = tMaterialParamList.sublist("J2 Plasticity");
 
-        mHardeningModulusIsotropic = tJ2PlasticitySubList.get<double>("Hardening Modulus Isotropic");
-        mHardeningModulusKinematic = tJ2PlasticitySubList.get<double>("Hardening Modulus Kinematic");
-        mInitialYieldStress        = tJ2PlasticitySubList.get<double>("Initial Yield Stress");
+        mHardeningModulusIsotropic = tJ2PlasticitySubList.get<Plato::Scalar>("Hardening Modulus Isotropic");
+        mHardeningModulusKinematic = tJ2PlasticitySubList.get<Plato::Scalar>("Hardening Modulus Kinematic");
+        mInitialYieldStress        = tJ2PlasticitySubList.get<Plato::Scalar>("Initial Yield Stress");
 
-        mElasticPropertiesPenaltySIMP   = tJ2PlasticitySubList.get<double>("Elastic Properties Penalty Exponent");
-        mElasticPropertiesMinErsatzSIMP = tJ2PlasticitySubList.get<double>("Elastic Properties Minimum Ersatz");
+        mElasticPropertiesPenaltySIMP   = tJ2PlasticitySubList.get<Plato::Scalar>("Elastic Properties Penalty Exponent");
+        mElasticPropertiesMinErsatzSIMP = tJ2PlasticitySubList.get<Plato::Scalar>("Elastic Properties Minimum Ersatz");
 
-        mPlasticPropertiesPenaltySIMP   = tJ2PlasticitySubList.get<double>("Plastic Properties Penalty Exponent");
-        mPlasticPropertiesMinErsatzSIMP = tJ2PlasticitySubList.get<double>("Plastic Properties Minimum Ersatz");
+        mPlasticPropertiesPenaltySIMP   = tJ2PlasticitySubList.get<Plato::Scalar>("Plastic Properties Penalty Exponent");
+        mPlasticPropertiesMinErsatzSIMP = tJ2PlasticitySubList.get<Plato::Scalar>("Plastic Properties Minimum Ersatz");
       }
       else
       {
@@ -268,6 +268,19 @@ class J2PlasticityLocalResidual :
         ResultT tYieldStress = tPenalizedInitialYieldStress + 
                                tPenalizedHardeningModulusIsotropic * aLocalState(aCellOrdinal, 0); // SHOULD THIS BE PREV? I think no.
 
+        // ### ELASTIC STEP ###
+        // Residual: Accumulated Plastic Strain, DOF: Accumulated Plastic Strain
+        aResult(aCellOrdinal, 0) = aLocalState(aCellOrdinal, 0) - aPrevLocalState(aCellOrdinal, 0);
+
+        // Residual: Plastic Multiplier Increment = 0 , DOF: Plastic Multiplier Increment
+        aResult(aCellOrdinal, 1) = aLocalState(aCellOrdinal, 1);
+
+        // Residual: Plastic Strain Tensor, DOF: Plastic Strain Tensor
+        tJ2PlasticityUtils.fillPlasticStrainTensorResidualElasticStep(aCellOrdinal, aLocalState, aPrevLocalState, aResult);
+
+        // Residual: Backstress, DOF: Backstress
+        tJ2PlasticityUtils.fillBackstressTensorResidualElasticStep(aCellOrdinal, aLocalState, aPrevLocalState, aResult);
+
         if (aLocalState(aCellOrdinal, 1) /*Current Plastic Multiplier Increment*/ > 0.0) // -> yielding (assumes local state already updated)
         {
           // Residual: Accumulated Plastic Strain, DOF: Accumulated Plastic Strain
@@ -286,20 +299,6 @@ class J2PlasticityLocalResidual :
                                                                      tPenalizedHardeningModulusKinematic,
                                                                      aLocalState,         aPrevLocalState,
                                                                      tYieldSurfaceNormal, aResult);
-        }
-        else // -> elastic step
-        {
-           // Residual: Accumulated Plastic Strain, DOF: Accumulated Plastic Strain
-          aResult(aCellOrdinal, 0) = aLocalState(aCellOrdinal, 0) - aPrevLocalState(aCellOrdinal, 0);
-
-          // Residual: Plastic Multiplier Increment = 0 , DOF: Plastic Multiplier Increment
-          aResult(aCellOrdinal, 1) = aLocalState(aCellOrdinal, 1);
-
-          // Residual: Plastic Strain Tensor, DOF: Plastic Strain Tensor
-          tJ2PlasticityUtils.fillPlasticStrainTensorResidualElasticStep(aCellOrdinal, aLocalState, aPrevLocalState, aResult);
-
-          // Residual: Backstress, DOF: Backstress
-          tJ2PlasticityUtils.fillBackstressTensorResidualElasticStep(aCellOrdinal, aLocalState, aPrevLocalState, aResult);
         }
 
       }, "Compute cell local residuals");

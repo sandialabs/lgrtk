@@ -66,8 +66,8 @@ private:
         auto tProblemFunctionName = aInputParams.sublist(mFunctionName);
 
         auto tFunctionNamesTeuchos = tProblemFunctionName.get<Teuchos::Array<std::string>>("Functions");
-        auto tFunctionWeightsTeuchos = tProblemFunctionName.get<Teuchos::Array<double>>("Weights");
-        auto tFunctionGoldValuesTeuchos = tProblemFunctionName.get<Teuchos::Array<double>>("Gold Values");
+        auto tFunctionWeightsTeuchos = tProblemFunctionName.get<Teuchos::Array<Plato::Scalar>>("Weights");
+        auto tFunctionGoldValuesTeuchos = tProblemFunctionName.get<Teuchos::Array<Plato::Scalar>>("Gold Values");
 
         auto tFunctionNames      = tFunctionNamesTeuchos.toVector();
         auto tFunctionWeights    = tFunctionWeightsTeuchos.toVector();

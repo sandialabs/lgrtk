@@ -15,6 +15,7 @@
 #include "Omega_h_file.hpp"
 #include "Omega_h_teuchos.hpp"
 #include "Omega_h_library.hpp"
+#include "plato/AnalyzeMacros.hpp"
 
 #include "FEMesh.hpp"
 #include "Fields.hpp"
@@ -488,6 +489,90 @@ inline void print_3d_coords(const Omega_h::Mesh& aMesh, const Omega_h::LOs& aNod
         auto tZ = tCoords[tEntryOffset + 2];
         printf("(%f,%f,%f)\n", tX, tY, tZ);
     });
+}
+
+inline void set_dof_in_scalar_vector_on_boundary_2D(Omega_h::Mesh & aMesh,
+                                             const std::string & aBoundaryID,
+                                             const Plato::ScalarVector & aVector,
+                                             const Plato::OrdinalType  & aDofStride,
+                                             const Plato::OrdinalType  & aDofToSet,
+                                             const Plato::Scalar       & aSetValue)
+{
+    Omega_h::LOs tBoundaryNodes;
+    if (aBoundaryID == "x0")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_x0(aMesh);
+    else if (aBoundaryID == "x1")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_x1(aMesh);
+    else if (aBoundaryID == "y0")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_y0(aMesh);
+    else if (aBoundaryID == "y1")
+        tBoundaryNodes = PlatoUtestHelpers::get_2D_boundary_nodes_y1(aMesh);
+    else
+        THROWERR("Specifed boundary ID not implemented.")
+
+    auto tNumBoundaryNodes = tBoundaryNodes.size();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * tBoundaryNodes[aIndex] + aDofToSet;
+            aVector(tIndex) += aSetValue; 
+        }
+        , "fill vector boundary dofs");
+}
+
+inline void set_dof_in_scalar_vector_on_boundary_3D(Omega_h::Mesh & aMesh,
+                                             const std::string & aBoundaryID,
+                                             const Plato::ScalarVector & aVector,
+                                             const Plato::OrdinalType  & aDofStride,
+                                             const Plato::OrdinalType  & aDofToSet,
+                                             const Plato::Scalar       & aSetValue)
+{
+    const Omega_h::Int tVertexDim = 0;
+    const Omega_h::Int tFaceDim   = 2;
+    Omega_h::Read<Omega_h::I8> Marks;
+    if (aBoundaryID == "x0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 12);
+    else if (aBoundaryID == "x1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 14);
+    else if (aBoundaryID == "y0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 10);
+    else if (aBoundaryID == "y1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 16);
+    else if (aBoundaryID == "z0")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim,  4);
+    else if (aBoundaryID == "z1")
+        Marks = Omega_h::mark_class_closure(&aMesh, tVertexDim, tFaceDim, 22);
+    else
+        THROWERR("Specifed boundary ID not implemented.")
+
+    Omega_h::LOs tLocalOrdinals = Omega_h::collect_marked(Marks);
+    auto tNumBoundaryNodes = tLocalOrdinals.size();
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumBoundaryNodes), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * tLocalOrdinals[aIndex] + aDofToSet;
+            aVector(tIndex) += aSetValue;
+        }
+        , "fill vector boundary dofs");
+}
+
+
+inline void set_dof_in_scalar_vector(const Plato::ScalarVector & aVector,
+                                 const Plato::OrdinalType  & aDofStride,
+                                 const Plato::OrdinalType  & aDofToSet,
+                                 const Plato::Scalar       & aSetValue)
+{
+    auto tVectorSize = aVector.extent(0);
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tVectorSize / aDofStride), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aNodeIndex)
+        {
+            Plato::OrdinalType tIndex = aDofStride * aNodeIndex + aDofToSet;
+            aVector(tIndex) += aSetValue; 
+        }
+        , "fill specific vector entry globally");
 }
 
 } // namespace PlatoUtestHelpers

@@ -27,9 +27,9 @@ getFunctionValues(Kokkos::View<Plato::Scalar***, Kokkos::LayoutRight, Plato::Mem
   Plato::OrdinalType numCells  = aQuadraturePoints.extent(0);
   Plato::OrdinalType numPoints = aQuadraturePoints.extent(1);
   
-  auto x_coords = Plato::getArray_Omega_h<Plato::Scalar>("forcing function x coords", numCells*numPoints);
-  auto y_coords = Plato::getArray_Omega_h<Plato::Scalar>("forcing function y coords", numCells*numPoints);
-  auto z_coords = Plato::getArray_Omega_h<Plato::Scalar>("forcing function z coords", numCells*numPoints);
+  auto x_coords = Plato::getArray_Omega_h<double>("forcing function x coords", numCells*numPoints);
+  auto y_coords = Plato::getArray_Omega_h<double>("forcing function y coords", numCells*numPoints);
+  auto z_coords = Plato::getArray_Omega_h<double>("forcing function z coords", numCells*numPoints);
   
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType aCellOrdinal)
   {

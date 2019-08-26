@@ -183,13 +183,13 @@ typedef Plato::CrsLinearProblem<Plato::OrdinalType> CrsLinearSolver;
 template<int spaceDim>
 Teuchos::RCP<CrsLinearSolver>
 #if defined HAVE_AMGX
-ElastostaticSolve<spaceDim>::getDefaultSolver(double tol, int maxIters)
+ElastostaticSolve<spaceDim>::getDefaultSolver(Plato::Scalar tol, int maxIters)
 #elif defined HAVE_TPETRA
-ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
+ElastostaticSolve<spaceDim>::getDefaultSolver(Plato::Scalar /*tol*/, int /*maxIters*/)
 #elif defined HAVE_VIENNA_CL
-ElastostaticSolve<spaceDim>::getDefaultSolver(double tol, int maxIters)
+ElastostaticSolve<spaceDim>::getDefaultSolver(Plato::Scalar tol, int maxIters)
 #else
-ElastostaticSolve<spaceDim>::getDefaultSolver(double /*tol*/, int /*maxIters*/)
+ElastostaticSolve<spaceDim>::getDefaultSolver(Plato::Scalar /*tol*/, int /*maxIters*/)
 #endif
 {
     Teuchos::RCP<CrsLinearSolver> solver;

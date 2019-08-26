@@ -10,7 +10,7 @@ using namespace lgr;
 using namespace std;
 
 namespace {
-  typedef double                                                                       Scalar;
+  typedef Plato::Scalar                                                                Scalar;
   typedef int                                                                          Ordinal;
   typedef Kokkos::LayoutLeft                                                           Layout;
   typedef Kokkos::DefaultExecutionSpace                                                MemSpace;
@@ -117,7 +117,7 @@ namespace {
     
     TEST_EQUALITY(0, result);
     
-    double tol = 1e-12;
+    Plato::Scalar tol = 1e-12;
     testFloatingEquality(xExpected, xActual, tol, out, success);
   }
   
@@ -192,7 +192,7 @@ namespace {
     
     TEST_EQUALITY(0, result);
     
-    double tol = 1e-12;
+    Plato::Scalar tol = 1e-12;
     testFloatingEquality(xExpected, xActual, tol, out, success);
   }
 
@@ -261,7 +261,7 @@ namespace {
 //    
 //    TEST_EQUALITY(0, result);
 //    
-//    double tol = 1e-12;
+//    Plato::Scalar tol = 1e-12;
 //    testFloatingEquality(xExpected, xActual, tol, out, success);
 //  }
 } // namespace

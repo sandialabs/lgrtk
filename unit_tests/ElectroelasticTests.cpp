@@ -129,7 +129,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto residualHost = Kokkos::create_mirror_view( residual );
   Kokkos::deep_copy(residualHost, residual);
 
-  std::vector<double> residual_gold = {
+  std::vector<Plato::Scalar> residual_gold = {
    -197679.4871794871, -36815.38461538461, -359338.4615384615,
    -177766.6666666667, -64311.53846153846, -57580.76923076921,
    -336946.1538461537, -190175.0000000000,  131050.0000000000,
@@ -157,7 +157,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto jac_entriesHost = Kokkos::create_mirror_view( jac_entries );
   Kokkos::deep_copy(jac_entriesHost, jac_entries);
 
-  std::vector<double> jacobian_gold = {
+  std::vector<Plato::Scalar> jacobian_gold = {
    3.52564102564102478e10, 0.00000000000000000,     0.00000000000000000,     0.00000000000000000,
    0.00000000000000000,    3.52564102564102478e10,  0.00000000000000000,     0.00000000000000000,
    0.00000000000000000,    0.00000000000000000,     3.52564102564102478e10,  6.73333333333333282e10,
@@ -192,7 +192,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto gradz_entriesHost = Kokkos::create_mirror_view( gradz_entries );
   Kokkos::deep_copy(gradz_entriesHost, gradz_entries);
 
-  std::vector<double> gradient_z_gold = { 
+  std::vector<Plato::Scalar> gradient_z_gold = { 
     -49419.8717948717822, -9203.84615384615245, -89834.6153846153757, -44441.6666666666715,
     -11054.1666666666642,  262.820512820512704,  26165.0641025641016,  16022.9166666666642,
      32762.4999999999927, -12070.1923076923067, -21599.3589743589655, -16131.2500000000000, 
@@ -215,7 +215,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto gradx_entriesHost = Kokkos::create_mirror_view( gradx_entries );
   Kokkos::deep_copy(gradx_entriesHost, gradx_entries);
 
-  std::vector<double> gradient_x_gold = { 
+  std::vector<Plato::Scalar> gradient_x_gold = { 
  -138461.538461538439, -151923.076923076878, -1.13543076923076902e6,
  -543483.333333333372,  47435.8974358974156, -33333.3333333333067,
   184569.230769230722,  85666.6666666666570, -641.025641025600635,
@@ -252,7 +252,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   //
   auto value = scalarFunction.value(state, z);
 
-  double value_gold = 21.1519092307692240;
+  Plato::Scalar value_gold = 21.1519092307692240;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
   // compute and test objective gradient wrt state, u
@@ -262,7 +262,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
    -395358.9743589743, -73630.76923076922, -718676.9230769230,
    -355533.3333333334, -128623.0769230768, -115161.5384615384,
    -673892.3076923075, -380350.0000000000,  262100.0000000000,
@@ -289,7 +289,7 @@ TEUCHOS_UNIT_TEST( ElectroelasticTests, InternalElectroelasticEnergy3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
    1.720800064102564,   1.618625897435897,   0.4046564743589744,
    1.004125000000000,   0.3144719230769231,  0.1548513461538462,
    0.3144121794871795,  0.1081301923076923,  0.5520684615384616,

@@ -68,29 +68,29 @@ unsigned rank(Machine const& machine) {
   return (machine.teuchosComm)->getRank();
 }
 
-double max(Machine const& machine, double local) {
-  double global = 0;
+Plato::Scalar max(Machine const& machine, Plato::Scalar local) {
+  Plato::Scalar global = 0;
   Teuchos::reduceAll(
       *(machine.teuchosComm), Teuchos::REDUCE_MAX, 1, &local, &global);
   return global;
 }
 
-double min(Machine const& machine, double local) {
-  double global = 0;
+Plato::Scalar min(Machine const& machine, Plato::Scalar local) {
+  Plato::Scalar global = 0;
   Teuchos::reduceAll(
       *(machine.teuchosComm), Teuchos::REDUCE_MIN, 1, &local, &global);
   return global;
 }
 
-double sum(Machine const& machine, double local) {
-  double global = 0;
+Plato::Scalar sum(Machine const& machine, Plato::Scalar local) {
+  Plato::Scalar global = 0;
   Teuchos::reduceAll(
       *(machine.teuchosComm), Teuchos::REDUCE_SUM, 1, &local, &global);
   return global;
 }
 
 void allReduce(
-    Machine const& machine, int n, const double *local, double *global) {
+    Machine const& machine, int n, const Plato::Scalar *local, Plato::Scalar *global) {
   std::copy(local, local + n, global);
   Teuchos::reduceAll(
       *(machine.teuchosComm), Teuchos::REDUCE_SUM, n, local, global);

@@ -83,8 +83,8 @@ private:
         auto tProblemFunctionName = aInputParams.sublist(mFunctionName);
 
         auto tPropertyNamesTeuchos      = tProblemFunctionName.get<Teuchos::Array<std::string>>("Properties");
-        auto tPropertyWeightsTeuchos    = tProblemFunctionName.get<Teuchos::Array<double>>("Weights");
-        auto tPropertyGoldValuesTeuchos = tProblemFunctionName.get<Teuchos::Array<double>>("Gold Values");
+        auto tPropertyWeightsTeuchos    = tProblemFunctionName.get<Teuchos::Array<Plato::Scalar>>("Weights");
+        auto tPropertyGoldValuesTeuchos = tProblemFunctionName.get<Teuchos::Array<Plato::Scalar>>("Gold Values");
 
         auto tPropertyNames      = tPropertyNamesTeuchos.toVector();
         auto tPropertyWeights    = tPropertyWeightsTeuchos.toVector();
@@ -190,8 +190,8 @@ private:
     createAllMassPropertiesLeastSquaresFunction(Omega_h::Mesh& aMesh, 
                                                 Omega_h::MeshSets& aMeshSets,
                                                 const std::vector<std::string>& aPropertyNames,
-                                                const std::vector<double>& aPropertyWeights,
-                                                const std::vector<double>& aPropertyGoldValues)
+                                                const std::vector<Plato::Scalar>& aPropertyWeights,
+                                                const std::vector<Plato::Scalar>& aPropertyGoldValues)
     {
         printf("Creating all mass properties function.\n");
         mLeastSquaresFunction = std::make_shared<Plato::LeastSquaresFunction<PhysicsT>>(aMesh, mDataMap);
@@ -337,8 +337,8 @@ private:
     createItemizedLeastSquaresFunction(Omega_h::Mesh& aMesh, 
                                        Omega_h::MeshSets& aMeshSets,
                                        const std::vector<std::string>& aPropertyNames,
-                                       const std::vector<double>& aPropertyWeights,
-                                       const std::vector<double>& aPropertyGoldValues)
+                                       const std::vector<Plato::Scalar>& aPropertyWeights,
+                                       const std::vector<Plato::Scalar>& aPropertyGoldValues)
     {
         printf("Creating itemized mass properties function.\n");
         mLeastSquaresFunction = std::make_shared<Plato::LeastSquaresFunction<PhysicsT>>(aMesh, mDataMap);

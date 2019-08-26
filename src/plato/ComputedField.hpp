@@ -47,9 +47,9 @@ class ComputedField
   /**************************************************************************/
   {
     auto numPoints = aMesh.nverts();
-    auto x_coords = Plato::getArray_Omega_h<Plato::Scalar>("x coords", numPoints);
-    auto y_coords = Plato::getArray_Omega_h<Plato::Scalar>("y coords", numPoints);
-    auto z_coords = Plato::getArray_Omega_h<Plato::Scalar>("z coords", numPoints);
+    auto x_coords = Plato::getArray_Omega_h<double>("x coords", numPoints);
+    auto y_coords = Plato::getArray_Omega_h<double>("y coords", numPoints);
+    auto z_coords = Plato::getArray_Omega_h<double>("z coords", numPoints);
   
     auto coords = aMesh.coords();
     auto values = mValues;

@@ -111,7 +111,7 @@ TEUCHOS_UNIT_TEST(TwoDMesh, Create)
   TEST_EQUALITY_CONST(meshDim, 2);
 
   {
-    constexpr double tol = 1e-12;
+    constexpr Plato::Scalar tol = 1e-12;
     mesh.omega_h_mesh = &omega_h_mesh;
     TEST_EQUALITY(meshDim, mesh.omega_h_mesh->dim() );
 

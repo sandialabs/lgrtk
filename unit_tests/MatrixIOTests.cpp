@@ -78,7 +78,7 @@ namespace {
     
     CrsMatrix matrixOut = MatrixIO::readSparseMatlabMatrix(iss);
     
-    double tol = 1e-15;
+    Plato::Scalar tol = 1e-15;
     testFloatingEquality<Ordinal, SizeType>(matrix,matrixOut,tol,out,success);
   }
 } // namespace

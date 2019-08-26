@@ -55,17 +55,17 @@ LinearThermalMaterial() : mCellDensity(0.0), mCellSpecificHeat(0.0)
     IsotropicLinearThermalMaterial(const Teuchos::ParameterList& paramList) :
     LinearThermalMaterial<SpatialDim>()
     {
-      auto t_conductivityCoef = paramList.get<double>("Conductivity Coefficient");
+      auto t_conductivityCoef = paramList.get<Plato::Scalar>("Conductivity Coefficient");
       for(int i=0; i<SpatialDim; i++)
         mCellConductivity(i,i)=t_conductivityCoef;
 
-      if( paramList.isType<double>("Mass Density") ){
-        mCellDensity = paramList.get<double>("Mass Density");
+      if( paramList.isType<Plato::Scalar>("Mass Density") ){
+        mCellDensity = paramList.get<Plato::Scalar>("Mass Density");
       } else {
         mCellDensity = 1.0;
       }
-      if( paramList.isType<double>("Specific Heat") ){
-        mCellSpecificHeat = paramList.get<double>("Specific Heat");
+      if( paramList.isType<Plato::Scalar>("Specific Heat") ){
+        mCellSpecificHeat = paramList.get<Plato::Scalar>("Specific Heat");
       } else {
         mCellSpecificHeat = 1.0;
       }

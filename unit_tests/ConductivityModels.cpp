@@ -58,7 +58,7 @@ TEUCHOS_UNIT_TEST(ConductivityModels, Constant)
 {
   static const int SpatialDim = 3;
   typedef lgr::Fields<SpatialDim> Fields;
-  const double tol = 1e-12;
+  const Plato::Scalar tol = 1e-12;
 
 
   Teuchos::ParameterList ConductivityModelParameterList;

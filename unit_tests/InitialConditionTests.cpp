@@ -383,25 +383,25 @@ ANONYMOUS:
       "InitialConditionTests node set ss_1 doesn't exist!\n");
     const auto faceLids   = iter->second;
     const auto nset_faces = faceLids.size();
-    Omega_h::Write<double> Fx(nset_faces);
-    Omega_h::Write<double> Fy(nset_faces);
-    Omega_h::Write<double> Fz(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fx(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fy(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fz(nset_faces);
 
     auto side_vec = LAMBDA_EXPRESSION(int set_face) {
       const auto face = faceLids[set_face];
       int nodes[N];    
       for (int i = 0; i < N; ++i) 
         nodes[i] = face_nodes(face, i); 
-      double X[D][N];
+      Plato::Scalar X[D][N];
       for (int i = 0; i < N; ++i) 
         for (int j = 0; j < D; ++j) 
            X[i][j] = coords(nodes[i], j); 
-      double A[3], B[3];
+      Plato::Scalar A[3], B[3];
       for (int j = 0; j < D; ++j) {
         A[j] = X[1][j]-X[0][j];
         B[j] = X[2][j]-X[0][j];
       }
-      const double x[3] = {A[1]*B[2] - A[2]*B[1],
+      const Plato::Scalar x[3] = {A[1]*B[2] - A[2]*B[1],
                            A[2]*B[0] - A[0]*B[2],
                            A[0]*B[1] - A[1]*B[0]};
       Fx[set_face] = x[0]/2;
@@ -433,9 +433,9 @@ ANONYMOUS:
     const auto elemLids   = iter->second;
     const auto nset_elems = elemLids.size();
     const auto nset_faces = F*nset_elems;
-    Omega_h::Write<double> Fx(nset_faces);
-    Omega_h::Write<double> Fy(nset_faces);
-    Omega_h::Write<double> Fz(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fx(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fy(nset_faces);
+    Omega_h::Write<Plato::Scalar> Fz(nset_faces);
 
     auto side_vec = LAMBDA_EXPRESSION(int set_face) {
       const int   el = elemLids[set_face/F];
@@ -444,16 +444,16 @@ ANONYMOUS:
       int nodes[N];    
       for (int i = 0; i < N; ++i) 
         nodes[i] = face_nodes(face, i); 
-      double X[D][N];
+      Plato::Scalar X[D][N];
       for (int i = 0; i < N; ++i) 
         for (int j = 0; j < D; ++j) 
            X[i][j] = coords(nodes[i], j); 
-      double A[3], B[3];
+      Plato::Scalar A[3], B[3];
       for (int j = 0; j < D; ++j) {
         A[j] = X[1][j]-X[0][j];
         B[j] = X[2][j]-X[0][j];
       }
-      const double x[3] = {A[1]*B[2] - A[2]*B[1],
+      const Plato::Scalar x[3] = {A[1]*B[2] - A[2]*B[1],
                            A[2]*B[0] - A[0]*B[2],
                            A[0]*B[1] - A[1]*B[0]};
       Fx[set_face] = x[0]/2;

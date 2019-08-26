@@ -44,8 +44,8 @@ private:
 
         if( modelParamList.isSublist("Isotropic Linear Elastic") ){
             auto paramList = modelParamList.sublist("Isotropic Linear Elastic");
-            mPoissonsRatio = paramList.get<double>("Poissons Ratio");
-            mYoungsModulus = paramList.get<double>("Youngs Modulus");
+            mPoissonsRatio = paramList.get<Plato::Scalar>("Poissons Ratio");
+            mYoungsModulus = paramList.get<Plato::Scalar>("Youngs Modulus");
         }
         else
         {

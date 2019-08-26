@@ -67,9 +67,9 @@ TEUCHOS_UNIT_TEST( MHD, MatrixAssembly )
 
   if (1) {
     std::array<Scalar,3> perterb;
-    perterb[0] = double(std::rand()%100)/1000.;
-    perterb[1] = double(std::rand()%100)/1000.;
-    perterb[2] = double(std::rand()%100)/1000.;
+    perterb[0] = Scalar(std::rand()%100)/1000.;
+    perterb[1] = Scalar(std::rand()%100)/1000.;
+    perterb[2] = Scalar(std::rand()%100)/1000.;
     bool pass = run_the_test(perterb);
     TEST_ASSERT(pass);
   }
@@ -558,7 +558,7 @@ ANONYMOUS:
 
   bool success = true;
   Scalar norm = 0; for (int i=0; i<3; ++i) norm += perturbation[i]*perturbation[i];
-  const double tol = norm ? .1 : 1.0e-12;
+  const Plato::Scalar tol = norm ? .1 : 1.0e-12;
   auto flux_trg = Kokkos::create_mirror_view(magneticFaceFlux_trg);
   auto flux_src = Kokkos::create_mirror_view(magneticFaceFlux_src);
   auto dens_trg = Kokkos::create_mirror_view(magneticFluxDensity_trg);

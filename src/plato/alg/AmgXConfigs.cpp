@@ -4,7 +4,7 @@
 
 namespace Plato {
 
-  std::string configurationString(std::string configOption, double tol, int maxIters, bool absTolType)
+  std::string configurationString(std::string configOption, Plato::Scalar tol, int maxIters, bool absTolType)
   {
       using namespace std;
       ostringstream strStream;

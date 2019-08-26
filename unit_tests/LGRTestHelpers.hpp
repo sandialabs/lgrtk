@@ -25,9 +25,9 @@ namespace lgr
   void evaluateNodalExpression(std::string &expressionInXYZ, int spaceDim, Omega_h::Reals nodalCoords, KokkosViewType values)
   {
     int nodeCount = nodalCoords.size() / spaceDim;
-    Omega_h::Write<double> x_coords(nodeCount);
-    Omega_h::Write<double> y_coords(nodeCount);
-    Omega_h::Write<double> z_coords(nodeCount);
+    Omega_h::Write<Plato::Scalar> x_coords(nodeCount);
+    Omega_h::Write<Plato::Scalar> y_coords(nodeCount);
+    Omega_h::Write<Plato::Scalar> z_coords(nodeCount);
     
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,nodeCount), LAMBDA_EXPRESSION(int nodeOrdinal)
     {
@@ -127,7 +127,7 @@ namespace lgr
   template<class Ordinal, class SizeType>
   void testFloatingEquality(CrsMatrix<Ordinal, SizeType> &first,
                             CrsMatrix<Ordinal, SizeType> &second,
-                            double floatTol,
+                            Plato::Scalar floatTol,
                             Teuchos::FancyOStream &out, bool &success)
   {
     typedef Kokkos::View<Ordinal*, MemSpace> OrdinalVector;

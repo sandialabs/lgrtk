@@ -12,7 +12,7 @@ using namespace std;
 
 namespace {
   
-  typedef double                                                                       Scalar;
+  typedef Plato::Scalar                                                                       Scalar;
   typedef int                                                                          Ordinal;
   typedef Kokkos::DefaultExecutionSpace                                                MemSpace;
   typedef int    SizeType;
@@ -119,7 +119,7 @@ namespace {
       
       A.Apply(x,b);
       
-      double tol = 1e-15;
+      Plato::Scalar tol = 1e-15;
       testFloatingEquality<Scalar, ScalarVector>(bExpected,b,tol,out,success);
     }
   }

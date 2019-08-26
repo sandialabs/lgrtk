@@ -116,7 +116,7 @@ namespace {
     
     TEST_EQUALITY(0, result);
     
-    double tol = 1e-12;
+    Plato::Scalar tol = 1e-12;
     testFloatingEquality(xExpected, xActual, tol, out, success);
   }
   
@@ -191,7 +191,7 @@ namespace {
     
     TEST_EQUALITY(0, result);
     
-    double tol = 1e-12;
+    Plato::Scalar tol = 1e-12;
     testFloatingEquality(xExpected, xActual, tol, out, success);
   }
 
@@ -260,7 +260,7 @@ namespace {
 //    
 //    TEST_EQUALITY(0, result);
 //    
-//    double tol = 1e-12;
+//    Plato::Scalar tol = 1e-12;
 //    testFloatingEquality(xExpected, xActual, tol, out, success);
 //  }
 } // namespace

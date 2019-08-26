@@ -469,7 +469,7 @@ public:
             // Update Lagrange multipliers
             const Plato::Scalar tSuggestedLagrangeMultiplier =
                     tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
-            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
+            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, static_cast<Plato::Scalar>(0.0));
         }, "Update Multipliers");
     }
 

@@ -74,7 +74,7 @@ class FluxPNorm :
 
       auto params = aProblemParams.get<Teuchos::ParameterList>(aFunctionName);
 
-      mExponent = params.get<double>("Exponent");
+      mExponent = params.get<Plato::Scalar>("Exponent");
     }
 
     /**************************************************************************/
