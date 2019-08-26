@@ -153,11 +153,7 @@ public:
      * @param [in] aControl 1D container of control variables
     **********************************************************************************/
     void updateProblem(const Plato::ScalarVector & aControl, const Plato::ScalarMultiVector & aState)
-    {
-// TODO        const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-// TODO        auto tStatesSubView = Kokkos::subview(aState, tTIME_STEP_INDEX, Kokkos::ALL());
-// TODO        mObjective->updateProblem(tStatesSubView, aControl);
-    }
+    { return; }
 
     /******************************************************************************//**
      * @brief Solve system of equations
@@ -346,7 +342,7 @@ public:
             // compute dgdu^T: Transpose of partial of PDE wrt state
             mJacobian = mEqualityConstraint.gradient_u_T(tStateAtStepK, mProjPGrad, aControl);
 
-            // compute dPdu^T: Transpose of partial of projection residual wrt state
+            // compute dPdn^T: Transpose of partial of projection residual wrt state
             auto t_dP_dn_T = mStateProjection.gradient_n_T(mProjPGrad, mProjectState, aControl);
 
             // compute dgdPI^T: Transpose of partial of PDE wrt projected pressure gradient
@@ -423,39 +419,46 @@ public:
             Plato::fill(static_cast<Plato::Scalar>(0.0), mProjPGrad);
             auto mProjResidual = mStateProjection.value      (mProjPGrad, tStateAtStepK, aControl);
             auto mProjJacobian = mStateProjection.gradient_u (mProjPGrad, tStateAtStepK, aControl);
-// TODO            Plato::LumpedSolve(mProjJacobian, mProjPGrad, mProjResidual);
+            // extract projection state
+            Plato::extract<SimplexPhysics::mNumDofsPerNode,
+                           SimplexPhysics::ProjectorT::SimplexT::mProjectionDof>(tStateAtStepK, mProjectState);
+            mProjResidual = mStateProjection.value      (mProjPGrad, mProjectState, aControl);
+            mProjJacobian = mStateProjection.gradient_u (mProjPGrad, mProjectState, aControl);
+            Plato::Solve::RowSummed<SimplexPhysics::mNumSpatialDims>(mProjJacobian, mProjPGrad, mProjResidual);
 
             // compute dgdu^T: Transpose of partial of PDE wrt state
             mJacobian = mEqualityConstraint.gradient_u_T(tStateAtStepK, mProjPGrad, aControl);
 
-            // compute dPdu^T: Transpose of partial of projection residual wrt state
-            auto t_dP_du_T = mStateProjection.gradient_u (mProjPGrad, tStateAtStepK, aControl);
+            // compute dPdn^T: Transpose of partial of projection residual wrt state
+            auto t_dP_dn_T = mStateProjection.gradient_n_T(mProjPGrad, mProjectState, aControl);
 
             // compute dgdPI: Transpose of partial of PDE wrt projected pressure gradient
-            auto t_dg_dPI = mEqualityConstraint.gradient_n(tStateAtStepK, mProjPGrad, aControl);
+            auto t_dg_dPI_T = mEqualityConstraint.gradient_n_T(tStateAtStepK, mProjPGrad, aControl);
 
-            // compute dgdu^T - dP_du_T X (mProjJacobian)^-1 X t_dg_dPI_T
-// TODO            Plato::CondenseMatrix(mJacobian, t_dP_du_T, mProjJacobian,  t_dg_dPI);
+            // compute dgdu^T - dP_dn_T X (mProjJacobian)^-1 X t_dg_dPI_T
+            auto tRow = SimplexPhysics::ProjectorT::SimplexT::mProjectionDof;
+            Plato::Condense(mJacobian, t_dP_dn_T, mProjJacobian,  t_dg_dPI_T, tRow);
 
             this->applyConstraints(mJacobian, t_df_du);
 
-            Plato::ScalarVector t_lambda = Kokkos::subview(mLambda, tStepIndex, Kokkos::ALL());
-// TODO            Plato::LinearSolve(mJacobian, t_lambda, t_df_du);
+            Plato::ScalarVector tLambda = Kokkos::subview(mLambda, tStepIndex, Kokkos::ALL());
+            Plato::Solve::Consistent<SimplexPhysics::mNumDofsPerNode>(mJacobian, tLambda, t_df_du);
 
             // compute adjoint variable for projection equation
-// TODO            auto t_dg_dPI_T = mEqualityConstraint.gradient_n_T(tStateAtStepK, mProjPGrad, aControl);
-// TODO            auto t_ProjForcing = Plato::MatrixTimesVector(t_dg_dPI_T, t_lambda);
-// TODO            Plato::LumpedSolve(mProjJacobian, mEta, t_ProjForcing);
+            Plato::fill(static_cast<Plato::Scalar>(0.0), mProjResidual);
+            Plato::MatrixTimesVectorPlusVector(t_dg_dPI_T, tLambda, mProjResidual);
+            Plato::scale(static_cast<Plato::Scalar>(-1), mProjResidual);
+            Plato::Solve::RowSummed<SimplexPhysics::mNumSpatialDims>(mProjJacobian, mEta, mProjResidual);
 
-            // compute dgdx: partial of PDE wrt state.
+            // compute dgdx: partial of PDE wrt configuration
             // dgdx is returned transposed, nxm.  n=z.size() and m=u.size().
             auto t_dg_dx = mEqualityConstraint.gradient_x(tStateAtStepK, mProjPGrad, aControl);
 
             // compute dfdx += dgdx . lambda
             // dPdx is returned transposed, nxm.  n=z.size() and m=u.size().
-            Plato::MatrixTimesVectorPlusVector(t_dg_dx, t_lambda, t_df_dx);
+            Plato::MatrixTimesVectorPlusVector(t_dg_dx, tLambda, t_df_dx);
 
-            // compute dPdx: partial of projection wrt state.
+            // compute dPdx: partial of projection wrt configuration
             // dPdx is returned transposed, nxm.  n=z.size() and m=PI.size().
             auto t_dP_dx = mStateProjection.gradient_x(mProjPGrad, tStateAtStepK, aControl);
 

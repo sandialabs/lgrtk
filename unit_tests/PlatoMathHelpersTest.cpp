@@ -759,9 +759,11 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMatrixMultiply_1)
       1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
   PlatoDevel::setMatrixData(tMatrixA, tRowMapA, tColMapA, tValuesA);
 
-  auto tMatrixAA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  auto tMatrixAA         = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
+  auto tSlowDumbMatrixAA = Teuchos::rcp( new Plato::CrsMatrixType(12, 12, 4, 4) );
 
-  Plato::MatrixMatrixMultiply( tMatrixA, tMatrixA, tMatrixAA);
+  Plato::MatrixMatrixMultiply             ( tMatrixA, tMatrixA, tMatrixAA);
+  PlatoDevel::SlowDumbMatrixMatrixMultiply( tMatrixA, tMatrixA, tSlowDumbMatrixAA);
 
   std::vector<Plato::Scalar> tGoldMatrixEntries = {
     90.0, 100.0, 110.0, 120.0, 202.0, 228.0, 254.0, 280.0, 314.0, 356.0, 398.0, 440.0, 426.0, 484.0,  542.0,  600.0,
@@ -777,6 +779,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, PlatoMathHelpers_MatrixMatrixMultiply_1)
 
   std::vector<Plato::OrdinalType> tGoldMatrixColMap = { 0, 2, 0, 2, 2 };
   TEST_ASSERT(is_same(tMatrixAA->columnIndices(), tGoldMatrixColMap));
+
+  TEST_ASSERT(is_same(tMatrixAA, tSlowDumbMatrixAA));
 }
 
 /******************************************************************************/
