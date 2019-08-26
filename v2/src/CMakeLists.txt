@@ -26,6 +26,7 @@ add_library(lgr_library
     lgr_vtk_output.cpp
     lgr_scalar.cpp
     lgr_scalars.cpp
+    lgr_csv_hist.cpp
     lgr_cmdline_hist.cpp
     lgr_node_scalar.cpp
     lgr_comparison.cpp

@@ -2,12 +2,13 @@
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_simplex.hpp>
-#include <iostream>
 #include <lgr_for.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
+#include <lgr_scalar.hpp>
+//#include <iostream>
 
 namespace lgr {
 
@@ -206,10 +207,15 @@ struct JouleHeating : public Model<Elem> {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_phi = sim.getset(this->normalized_voltage);
     auto const cg_it = (sim.step == 0) ? nodes_to_phi.size() : cg_iterations;
+    double relative_tol, absolute_tol;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance, cg_it);
+        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance, cg_it,
+        relative_tol, absolute_tol);
+    sim.circuit.jh_rel_tolerance = relative_tol;
+    sim.circuit.jh_abs_tolerance = absolute_tol;
+    sim.circuit.jh_iterations = niter;
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
-    std::cout << "phi solve took " << niter << " iterations\n";
+//  std::cout << "phi solve took " << niter << " iterations\n";
   }
   void compute_conductance() {
     OMEGA_H_TIME_FUNCTION;

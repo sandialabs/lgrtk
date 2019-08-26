@@ -473,10 +473,6 @@ void Circuit::Setup()
 
    UpdateGrounds();
    UpdateMatrixSize();
-
-   if (usingMesh) {
-      InitOutputMesh();
-   }
 }
 
 
@@ -497,9 +493,6 @@ void Circuit::Solve(double dtin, double timein)
 
       AssembleMatrix();
       SolveMatrix();
-      if (usingMesh) {
-         OutputMeshInfo();
-      }
    }
 }
 
@@ -1137,38 +1130,6 @@ void Circuit::SayInfo()
       std::cout << "Circuit summary:"            << std::endl;
       std::cout << "   ...not using circuit : "  << std::endl;
    }
-}
-
-void Circuit::InitOutputMesh()
-{
-   std::remove(meshfname);
-
-   std::ofstream myfile;
-   myfile.open(meshfname, std::ios_base::app);
-
-   if (myfile.is_open()) {
-      myfile << "Time (s),Anode Voltage (V),Cathode Voltage (V),Conductance (S), Current (A)\n";
-   }
-   myfile.close();
-}
-
-void Circuit::OutputMeshInfo()
-{
-   double vanode   = GetMeshAnodeVoltage();
-   double vcathode = GetMeshCathodeVoltage();
-   double conduct  = GetMeshConductance();
-   double current  = conduct*(vanode-vcathode);
-
-   std::ofstream myfile;
-   myfile.open(meshfname, std::ios_base::app);
-   if (myfile.is_open()) {
-      myfile << time     << ","
-             << vanode   << "," 
-             << vcathode << "," 
-             << conduct  << "," 
-             << current  << "\n";
-   }
-   myfile.close();
 }
 
 void Circuit::SayVoltages()
