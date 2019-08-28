@@ -27,6 +27,14 @@ void resize_state(input const& in, state& s) {
     s.e.resize(s.points.size());
   }
   s.rho_e_dot.resize(s.points.size());
+  {
+    // Hyper EP model
+    s.Fp_total.resize(s.points.size());
+    s.ep.resize(s.points.size());
+    s.ep_dot.resize(s.points.size());
+    s.dp.resize(s.points.size());
+    s.localized.resize(s.points.size());
+  }
   s.material_mass.resize(in.materials.size());
   for (auto& mm : s.material_mass) mm.resize(s.nodes.size());
   s.mass.resize(s.nodes.size());
@@ -44,6 +52,8 @@ void resize_state(input const& in, state& s) {
   s.rho_h.resize(in.materials.size());
   s.K_h.resize(in.materials.size());
   s.dp_de_h.resize(in.materials.size());
+  s.temp.resize(in.materials.size());
+  s.ep_h.resize(in.materials.size());
   for (auto const material : in.materials) {
     if (in.enable_nodal_pressure[material]) {
       s.p_h[material].resize(s.nodes.size());
@@ -63,6 +73,9 @@ void resize_state(input const& in, state& s) {
       if (in.enable_p_prime[material]) {
         s.p_prime.resize(s.points.size());
       }
+    }
+    if (in.enable_hyper_ep[material]) {
+      s.ep_h[material].resize(s.nodes.size());
     }
   }
   s.material.resize(s.elements.size());

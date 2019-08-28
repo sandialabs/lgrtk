@@ -61,7 +61,7 @@ void update_sigma_with_p_h(state& s, material_index const material) {
         point_p_h = point_p_h + N * p_h;
       }
       auto const old_sigma = points_to_sigma[point].load();
-      auto const new_sigma = deviator(old_sigma) - point_p_h;
+      auto const new_sigma = deviatoric_part(old_sigma) - point_p_h;
       points_to_sigma[point] = new_sigma;
     }
   };
@@ -182,7 +182,7 @@ void update_sigma_with_p_h_p_prime(input const& in, state& s, material_index con
       }
       auto const old_sigma = points_to_sigma[point].load();
       auto const p_prime = points_to_p_prime[point];
-      auto const new_sigma = deviator(old_sigma) - point_p_h - p_prime;
+      auto const new_sigma = deviatoric_part(old_sigma) - point_p_h - p_prime;
       points_to_sigma[point] = new_sigma;
     }
   };
