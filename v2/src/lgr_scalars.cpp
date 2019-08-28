@@ -6,7 +6,6 @@
 #include <algorithm>
 #include <string>
 
-
 namespace lgr {
 
 std::string const& NameOfScalarPtr::operator()(Scalar* ptr) {
@@ -30,22 +29,14 @@ double Scalars::ask_value(std::string const& name) {
      if (name == "mesh current")     return current;
      if (name == "mesh conductance") return conductance;
   }
-  const std::string global_names[] = {"Joule heating relative tolerance",
-                                      "Joule heating absolute tolerance",
-                                      "Joule heating iterations"};
-  for(const std::string &gname : global_names) {
-    if (name == gname) return sim.globals.get(name);
+  for (auto it = sim.globals.data.begin(); it != sim.globals.data.end(); ++it) {
+      if (name == (*it).name) return sim.globals.get(name);
   }
-
-//if (name == "Joule heating relative tolerance") return sim.get
-//if (name == "Joule heating absolute tolerance") return sim.circuit.jh_abs_tolerance;
-//if (name == "Joule heating iterations")         return sim.circuit.jh_iterations;
   auto it = by_name.find(name);
   if (it == by_name.end())
     Omega_h_fail("Request for undefined scalar \"%s\"\n", name.c_str());
   return (*it)->ask_value();
 }
-
 void Scalars::setup(Omega_h::InputMap& pl) {
   ::lgr::setup(sim.factories.scalar_factories, sim, pl, storage, "scalar");
   for (auto& ptr : storage) {

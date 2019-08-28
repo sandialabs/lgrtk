@@ -13,11 +13,11 @@ struct Global {
 };
 
 struct Globals {
-  std::vector<Global> globals;
+  std::vector<Global> data;
   void set(std::string name, double value) {
       // Check if name is defined
       bool notFound = true;
-      for (auto it = globals.begin(); it != globals.end(); ++it) {
+      for (auto it = data.begin(); it != data.end(); ++it) {
           if ((*it).name == name) {
              // This name has been found, so update the value
              notFound = false;
@@ -27,12 +27,12 @@ struct Globals {
       // If name was not found, add new global
       if (notFound) {
          Global g(name,value);
-         globals.push_back(g);
+         data.push_back(g);
       }
   }
   double get(std::string name) {
       // Check if name is defined
-      for (auto it = globals.begin(); it != globals.end(); ++it) {
+      for (auto it = data.begin(); it != data.end(); ++it) {
           if ((*it).name == name) {
              // This name has been found, so return value
              return (*it).value;

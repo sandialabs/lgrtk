@@ -31,6 +31,7 @@ add_library(lgr_library
     lgr_node_scalar.cpp
     lgr_comparison.cpp
     lgr_l2_error.cpp
+    lgr_ray_trace.cpp
     lgr_artificial_viscosity.cpp
     lgr_adapt.cpp
     lgr_remap.cpp

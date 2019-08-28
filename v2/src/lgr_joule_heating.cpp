@@ -7,7 +7,6 @@
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
-#include <lgr_scalar.hpp>
 //#include <iostream>
 
 namespace lgr {
