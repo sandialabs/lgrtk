@@ -204,9 +204,22 @@ double intersect(const T src, const T trg) {
   r3d::reduce<moment>(intersection, moments);
 
   const double measure = r3d::measure(intersection);
-  std::cout<<" **** measure   :"<<measure<<std::endl;
+  std::cout<<" **** measure:"<<measure<<" nverts:"<<intersection.nverts<<std::endl;
 
   return measure;
+}
+template<class T>
+void print(const T src, const T trg) {
+  std::cout<<" Intersect src:"<<"{{"
+      <<src[0][0]<<","<<src[0][1]<<"},{"
+      <<src[1][0]<<","<<src[1][1]<<"},{"
+      <<src[2][0]<<","<<src[2][1]<<"}}"
+      <<std::endl;
+  std::cout<<" Intersect trg:"<<"{{"
+      <<trg[0][0]<<","<<trg[0][1]<<"},{"
+      <<trg[1][0]<<","<<trg[1][1]<<"},{"
+      <<trg[2][0]<<","<<trg[2][1]<<"}}"
+      <<std::endl;
 }
 
 TEUCHOS_UNIT_TEST( r3d, 2D )
@@ -220,6 +233,7 @@ TEUCHOS_UNIT_TEST( r3d, 2D )
     const Tri3 src = {{0.0,1.5},{0.5,3.0},{0.0l,3.0}};
     const Tri3 trg = {{0.5,1.5},{0.0,3.0},{0.0l,1.5}};
     const double check = 0.1875;
+    print (src,trg);
       
     const double moment = intersect(src,trg);
     
@@ -229,6 +243,7 @@ TEUCHOS_UNIT_TEST( r3d, 2D )
     const Tri3 src = {{0.0,0.0},{0.0,1.0},{1.0,1.0}};
     const Tri3 trg = {{0.0,0.0},{0.0,1.0},{1.0,1.0}};
     const double check = 0.5;
+    print (src,trg);
       
     const double moment = intersect(src,trg);
 
@@ -238,6 +253,7 @@ TEUCHOS_UNIT_TEST( r3d, 2D )
     const Tri3 src = {{0.0,1.0},{0.0,2.0},{1.0,2.0}};
     const Tri3 trg = {{0.0,1.0},{0.0,2.0},{0.5,2.0}};
     const double check = 0.185;
+    print (src,trg);
       
     const double moment = intersect(src,trg);
 
@@ -247,6 +263,7 @@ TEUCHOS_UNIT_TEST( r3d, 2D )
     const Tri3 src = {{0.5,0.0},{0.5,1.0},{0.0l,0.0}};
     const Tri3 trg = {{0.5,1.0},{0.0,0.0},{1.0l,1.0}};
     const double check = 0.125;
+    print (src,trg);
       
     const double moment = intersect(src,trg);
     
