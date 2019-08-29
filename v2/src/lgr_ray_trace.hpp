@@ -28,8 +28,8 @@ namespace lgr {
  *                                         Moller1997a/
  *                                         raytri.c 
  */
-OMEGA_H_INLINE int intersect_triangle1(double orig[], double dir[],
-			double vert0[], double vert1[], double vert2[],
+OMEGA_H_INLINE int intersect_triangle1(double const orig[3], double const dir[3],
+			double vert0[3], double vert1[3], double vert2[3],
 			double& t)
 {
 

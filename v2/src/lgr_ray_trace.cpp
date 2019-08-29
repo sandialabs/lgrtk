@@ -17,27 +17,28 @@ struct RayTracePair {
    double type_distance;
    double last_type_distance;
    double distance() {
-       double rval = -1.0*std::abs(default_value)/default_value;
-       return (std::abs(type_distance) < std::abs(default_value)) ? type_distance : rval;
+       return (std::abs(type_distance) < std::abs(default_value)) ? type_distance : std::nan("1");
    }
    double speed(const double dt) {
-       if (dt == 0.0) return 0.0;
+       if (dt == 0.0) return std::nan("1");
        if ((std::abs(type_distance)      < std::abs(default_value)) &&
            (std::abs(last_type_distance) < std::abs(default_value))) {
            return (type_distance - last_type_distance)/dt;
        }
-       return 0.0;
+       return std::nan("1");
    }
    void set_type(std::string typein) {
-       type = typein;
-       if (type == "max") default_value = -1.0*default_value;
+       if (typein == "max") {
+           type = 1;
+           default_value = -1.0*default_value;
+       }
        type_distance = default_value;
        last_type_distance = default_value;
    }
    double location[3] = {0.0};
    double direction[3] = {0.0};
    std::string name = "";
-   std::string type = "min";
+   int type = 0; // 0 is min, 1 is max
    double default_value = LARGE_VALUE;
 };
 
@@ -103,7 +104,16 @@ struct RayTrace : public Model<Elem> {
       for (auto it = pairs.begin(); it != pairs.end(); ++it) {
           (*it).last_type_distance = (*it).type_distance;
 
-          Omega_h::Write<double> elem_distances(this->elems(), (*it).default_value);
+          double default_value = (*it).default_value;
+          int    type          = (*it).type;
+          double location[3] = {0.0};
+          double direction[3] = {0.0};
+          for (int i = 0; i < 3; ++i) {
+              location[i]  = (*it).location[i];
+              direction[i] = (*it).direction[i];
+          }
+
+          Omega_h::Write<double> elem_distances(this->elems(), default_value);
 
           auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
             auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
@@ -135,14 +145,14 @@ struct RayTrace : public Model<Elem> {
                        vert2[2] = std::sqrt(length);
                     }
                 }
-                double distance = (*it).default_value;
-                ::lgr::intersect_triangle1( (*it).location, 
-                                            (*it).direction,
+                double distance = default_value;
+                ::lgr::intersect_triangle1( location, 
+                                            direction,
                                             vert0,
                                             vert1,
                                             vert2,
                                             distance);
-                if ((*it).type == "max") {
+                if (type == 1) {
                    if (distance > elem_distances[elem]) elem_distances[elem] = distance;
                 } else {
                    if (distance < elem_distances[elem]) elem_distances[elem] = distance;
@@ -152,7 +162,7 @@ struct RayTrace : public Model<Elem> {
           parallel_for(this->elems(), std::move(elem_functor));
 
           double distance;
-          if ((*it).type == "max") {
+          if (type == 1) {
              distance = Omega_h::get_max<double>(elem_distances);
           } else {
              distance = Omega_h::get_min<double>(elem_distances);
