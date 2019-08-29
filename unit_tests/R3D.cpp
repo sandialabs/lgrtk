@@ -188,4 +188,86 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
   }
   TEST_FLOATING_EQUALITY(volume,check[2],tol);
 }
+
+template<class T>
+double intersect(const T src, const T trg) {
+  constexpr int spaceDim= 2;
+  constexpr int vert    = spaceDim+1;
+  constexpr int moment  = 1;
+  typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tri3;
+  typedef r3d::Polytope<spaceDim>                Polytope;
+  typedef r3d::Polynomial<spaceDim,moment>     Polynomial;
+
+  Polytope intersection;
+  r3d::intersect_simplices(intersection, src, trg);
+  double moments[Polynomial::nterms] = {0.}; 
+  r3d::reduce<moment>(intersection, moments);
+
+  const double measure = r3d::measure(intersection);
+  std::cout<<" **** measure:"<<measure<<" nverts:"<<intersection.nverts<<std::endl;
+
+  return measure;
+}
+template<class T>
+void print(const T src, const T trg) {
+  std::cout<<" Intersect src:"<<"{{"
+      <<src[0][0]<<","<<src[0][1]<<"},{"
+      <<src[1][0]<<","<<src[1][1]<<"},{"
+      <<src[2][0]<<","<<src[2][1]<<"}}"
+      <<std::endl;
+  std::cout<<" Intersect trg:"<<"{{"
+      <<trg[0][0]<<","<<trg[0][1]<<"},{"
+      <<trg[1][0]<<","<<trg[1][1]<<"},{"
+      <<trg[2][0]<<","<<trg[2][1]<<"}}"
+      <<std::endl;
+}
+
+TEUCHOS_UNIT_TEST( r3d, 2D )
+{
+  constexpr double tol=1e-10;
+  constexpr int spaceDim= 2;
+  constexpr int vert    = spaceDim+1;
+  typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tri3;
+  std::cout<<std::endl;
+  {
+    const Tri3 src = {{0.0,1.5},{0.5,3.0},{0.0l,3.0}};
+    const Tri3 trg = {{0.5,1.5},{0.0,3.0},{0.0l,1.5}};
+    const double check = 0.1875;
+    print (src,trg);
+      
+    const double moment = intersect(src,trg);
+    
+    TEST_FLOATING_EQUALITY(moment,check,tol);
+  }
+  {
+    const Tri3 src = {{0.0,0.0},{0.0,1.0},{1.0,1.0}};
+    const Tri3 trg = {{0.0,0.0},{0.0,1.0},{1.0,1.0}};
+    const double check = 0.5;
+    print (src,trg);
+      
+    const double moment = intersect(src,trg);
+
+    TEST_FLOATING_EQUALITY(moment,check,tol);
+  }
+  {
+    const Tri3 src = {{0.0,1.0},{0.0,2.0},{1.0,2.0}};
+    const Tri3 trg = {{0.0,1.0},{0.0,2.0},{0.5,2.0}};
+    const double check = 0.185;
+    print (src,trg);
+      
+    const double moment = intersect(src,trg);
+
+    TEST_FLOATING_EQUALITY(moment,0.5,tol);
+  }
+  {
+    const Tri3 src = {{0.5,0.0},{0.5,1.0},{0.0l,0.0}};
+    const Tri3 trg = {{0.5,1.0},{0.0,0.0},{1.0l,1.0}};
+    const double check = 0.125;
+    print (src,trg);
+      
+    const double moment = intersect(src,trg);
+    
+    TEST_FLOATING_EQUALITY(moment,check,tol);
+  }
+}
 }
