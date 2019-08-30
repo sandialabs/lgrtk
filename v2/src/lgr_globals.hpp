@@ -3,6 +3,7 @@
 
 #include<string>
 #include<vector>
+#include<algorithm>
 
 namespace lgr {
 
@@ -14,6 +15,15 @@ struct Global {
 
 struct Globals {
   std::vector<Global> data;
+  Globals() { setup_globals_factories(); }
+  void setup_globals_factories() {
+       // The first set() call hasn't happened yet for names in this list:
+      std::vector<std::string> factory_names = {"adapt CPU time"};
+      double default_value = 0.0;
+      std::for_each (factory_names.begin(),
+                     factory_names.end(),
+                     [=](std::string const name) { set(name,default_value); });
+  }
   void set(std::string name, double value) {
       // Check if name is defined
       bool notFound = true;

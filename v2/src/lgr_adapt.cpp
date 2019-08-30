@@ -92,6 +92,7 @@ bool Adapter::adapt() {
   remap->after_adapt();
   old_quality = sim.disc.mesh.min_quality();
   old_length = sim.disc.mesh.max_length();
+  sim.globals.set("adapt CPU time", timer.total_runtime());
   return true;
 }
 

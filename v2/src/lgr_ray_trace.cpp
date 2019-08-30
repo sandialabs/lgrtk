@@ -14,32 +14,30 @@ namespace lgr {
 
 template <class Elem>
 struct RayTracePair {
-   double type_distance;
-   double last_type_distance;
-   double distance() {
-       return (std::abs(type_distance) < std::abs(default_value)) ? type_distance : std::nan("1");
+   double default_min = LARGE_VALUE;
+   double default_max = -LARGE_VALUE;
+   double min_distance = default_min;
+   double max_distance = default_max;
+   double last_min_distance = default_min;
+   double last_max_distance = default_max;
+   double value(const double value_in) {
+       return (std::abs(value_in) < LARGE_VALUE) ? value_in : std::nan("1");
    }
-   double speed(const double dt) {
+   double min_value() { return value(min_distance); }
+   double max_value() { return value(max_distance); }
+   double speed(std::string typein, const double dt) {
        if (dt == 0.0) return std::nan("1");
-       if ((std::abs(type_distance)      < std::abs(default_value)) &&
-           (std::abs(last_type_distance) < std::abs(default_value))) {
-           return (type_distance - last_type_distance)/dt;
+       double distance = (typein == "max") ? max_distance : min_distance;
+       double last_distance = (typein == "max") ? last_max_distance : last_min_distance;
+       if ((std::abs(distance)      < LARGE_VALUE) &&
+           (std::abs(last_distance) < LARGE_VALUE)) {
+           return (distance - last_distance)/dt;
        }
        return std::nan("1");
-   }
-   void set_type(std::string typein) {
-       if (typein == "max") {
-           type = 1;
-           default_value = -1.0*default_value;
-       }
-       type_distance = default_value;
-       last_type_distance = default_value;
    }
    double location[3] = {0.0};
    double direction[3] = {0.0};
    std::string name = "";
-   int type = 0; // 0 is min, 1 is max
-   double default_value = LARGE_VALUE;
 };
 
 template <class Elem>
@@ -66,10 +64,6 @@ struct RayTrace : public Model<Elem> {
                   // Name for later use
                   if (pair_pl.is<std::string>("name")) 
                       pairs.at(k).name = pair_pl.get<std::string>("name");
-
-                  // Max or min
-                  if (pair_pl.is<std::string>("type"))
-                      pairs.at(k).set_type( pair_pl.get<std::string>("type") );
 
                   // Location
                   if (pair_pl.is_list("location")) {
@@ -102,10 +96,9 @@ struct RayTrace : public Model<Elem> {
 
       // Loop over all pairs
       for (auto it = pairs.begin(); it != pairs.end(); ++it) {
-          (*it).last_type_distance = (*it).type_distance;
+          (*it).last_max_distance = (*it).max_distance;
+          (*it).last_min_distance = (*it).min_distance;
 
-          double default_value = (*it).default_value;
-          int    type          = (*it).type;
           double location[3] = {0.0};
           double direction[3] = {0.0};
           for (int i = 0; i < 3; ++i) {
@@ -113,7 +106,8 @@ struct RayTrace : public Model<Elem> {
               direction[i] = (*it).direction[i];
           }
 
-          Omega_h::Write<double> elem_distances(this->elems(), default_value);
+          Omega_h::Write<double> elem_min_distances(this->elems(), LARGE_VALUE);
+          Omega_h::Write<double> elem_max_distances(this->elems(), -LARGE_VALUE);
 
           auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
             auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
@@ -145,32 +139,31 @@ struct RayTrace : public Model<Elem> {
                        vert2[2] = std::sqrt(length);
                     }
                 }
-                double distance = default_value;
-                ::lgr::intersect_triangle1( location, 
-                                            direction,
-                                            vert0,
-                                            vert1,
-                                            vert2,
-                                            distance);
-                if (type == 1) {
-                   if (distance > elem_distances[elem]) elem_distances[elem] = distance;
-                } else {
-                   if (distance < elem_distances[elem]) elem_distances[elem] = distance;
+                double distance;
+                int hit = ::lgr::intersect_triangle1( location, 
+                                                      direction,
+                                                      vert0,
+                                                      vert1,
+                                                      vert2,
+                                                      distance);
+                if (hit == 1) {
+                   if (distance > elem_max_distances[elem]) elem_max_distances[elem] = distance;
+                   if (distance < elem_min_distances[elem]) elem_min_distances[elem] = distance;
                 }
             }
           };
           parallel_for(this->elems(), std::move(elem_functor));
 
-          double distance;
-          if (type == 1) {
-             distance = Omega_h::get_max<double>(elem_distances);
-          } else {
-             distance = Omega_h::get_min<double>(elem_distances);
-          }
+          double min_distance, max_distance;
+          max_distance = Omega_h::get_max<double>(elem_max_distances);
+          min_distance = Omega_h::get_min<double>(elem_min_distances);
+          (*it).min_distance = min_distance;
+          (*it).max_distance = max_distance;
 
-          (*it).type_distance = distance;
-          sim.globals.set((*it).name+" distance",(*it).distance());
-          sim.globals.set((*it).name+" speed"   ,(*it).speed(sim.dt));
+          sim.globals.set((*it).name+" min distance",(*it).min_value());
+          sim.globals.set((*it).name+" max distance",(*it).max_value());
+          sim.globals.set((*it).name+" min speed"   ,(*it).speed("min",sim.dt));
+          sim.globals.set((*it).name+" max speed"   ,(*it).speed("max",sim.dt));
       }
   }
 };

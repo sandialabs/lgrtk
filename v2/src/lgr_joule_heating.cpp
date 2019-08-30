@@ -94,6 +94,7 @@ struct JouleHeating : public Model<Elem> {
        auto time = this->sim.time;
        this->sim.circuit.Solve(dt,time);
     }
+    sim.globals.set("Joule heating CPU time", timer.total_runtime());
   }
   void assemble_normalized_voltage_system() {
 //  std::cerr << "assembling normalized voltage system\n";
