@@ -24,7 +24,7 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
     using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerCell;
 
     const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
-    const Plato::Scalar mCellThermalExpansionCoef;
+    const Omega_h::Vector<SpaceDim> mCellThermalExpansionCoef;
     const Omega_h::Matrix<SpaceDim, SpaceDim> mCellThermalConductivity;
     const Plato::Scalar mCellReferenceTemperature;
 
@@ -63,7 +63,7 @@ class TMKinetics : public Plato::SimplexThermomechanics<SpaceDim>
       //
       StateScalarType tstrain[mNumVoigtTerms] = {0};
       for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tstrain[iDim] = mScaling * mCellThermalExpansionCoef * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
+        tstrain[iDim] = mScaling * mCellThermalExpansionCoef(iDim) * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
       }
 
       // compute stress
@@ -109,7 +109,7 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
     using Plato::SimplexStabilizedThermomechanics<SpaceDim>::mNumDofsPerCell;
 
     const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
-    const Plato::Scalar mCellThermalExpansionCoef;
+    const Omega_h::Vector<SpaceDim> mCellThermalExpansionCoef;
     const Omega_h::Matrix<SpaceDim, SpaceDim> mCellThermalConductivity;
     const Plato::Scalar mCellReferenceTemperature;
     Plato::Scalar mBulkModulus, mShearModulus;
@@ -183,7 +183,7 @@ class StabilizedTMKinetics : public Plato::SimplexStabilizedThermomechanics<Spac
       StateScalarType tThermalVolStrain = 0.0;
       KinematicsScalarType tVolStrain = 0.0;
       for( int iDim=0; iDim<SpaceDim; iDim++ ){
-        tstrain[iDim] = mTemperatureScaling * mCellThermalExpansionCoef * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
+        tstrain[iDim] = mTemperatureScaling * mCellThermalExpansionCoef(iDim) * (aTemperature(cellOrdinal) - mCellReferenceTemperature);
         tThermalVolStrain += tstrain[iDim];
         tVolStrain += aStrain(cellOrdinal,iDim);
       }

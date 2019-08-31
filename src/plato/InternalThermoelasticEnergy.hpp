@@ -76,11 +76,20 @@ class InternalThermoelasticEnergy :
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
-      Plato::ThermoelasticModelFactory<mSpaceDim> mmfactory(aProblemParams);
+      Teuchos::ParameterList tProblemParams(aProblemParams);
+
+      auto& tParams = aProblemParams.sublist(aFunctionName);
+      if( tParams.get<bool>("Include Thermal Strain", true) == false )
+      {
+         tProblemParams.sublist("Material Model").sublist("Cubic Linear Thermoelastic").set("a11",0.0);
+         tProblemParams.sublist("Material Model").sublist("Cubic Linear Thermoelastic").set("a22",0.0);
+         tProblemParams.sublist("Material Model").sublist("Cubic Linear Thermoelastic").set("a33",0.0);
+      }
+      Plato::ThermoelasticModelFactory<mSpaceDim> mmfactory(tProblemParams);
       mMaterialModel = mmfactory.create();
 
-      if( aProblemParams.isType<Teuchos::Array<std::string>>("Plottable") )
-        mPlottable = aProblemParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
+      if( tProblemParams.isType<Teuchos::Array<std::string>>("Plottable") )
+        mPlottable = tProblemParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
     }
 
     /**************************************************************************/
