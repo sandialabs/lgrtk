@@ -26,10 +26,12 @@ add_library(lgr_library
     lgr_vtk_output.cpp
     lgr_scalar.cpp
     lgr_scalars.cpp
+    lgr_csv_hist.cpp
     lgr_cmdline_hist.cpp
     lgr_node_scalar.cpp
     lgr_comparison.cpp
     lgr_l2_error.cpp
+    lgr_ray_trace.cpp
     lgr_artificial_viscosity.cpp
     lgr_adapt.cpp
     lgr_remap.cpp
@@ -92,6 +94,7 @@ install(FILES
     lgr_element_functions.hpp
     lgr_setup.hpp
     lgr_circuit.hpp
+    lgr_globals.hpp
     lgr_linear_algebra.hpp
     DESTINATION include)
 

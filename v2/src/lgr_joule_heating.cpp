@@ -2,12 +2,12 @@
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_simplex.hpp>
-#include <iostream>
 #include <lgr_for.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
+//#include <iostream>
 
 namespace lgr {
 
@@ -30,6 +30,7 @@ struct JouleHeating : public Model<Elem> {
   double anode_voltage;
   double cathode_voltage;
   double integrated_conductance;
+  int cg_iterations;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->conductivity =
@@ -63,6 +64,8 @@ struct JouleHeating : public Model<Elem> {
     absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
     conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
+    cathode_voltage = pl.get<double>("cathode voltage", "0.0");
+    cg_iterations = pl.get<int>("iterations", "0");
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
@@ -91,9 +94,10 @@ struct JouleHeating : public Model<Elem> {
        auto time = this->sim.time;
        this->sim.circuit.Solve(dt,time);
     }
+    sim.globals.set("Joule heating CPU time", timer.total_runtime());
   }
   void assemble_normalized_voltage_system() {
-    std::cerr << "assembling normalized voltage system\n";
+//  std::cerr << "assembling normalized voltage system\n";
     OMEGA_H_TIME_FUNCTION;
     constexpr int edges_per_elem = Omega_h::simplex_degree(Elem::dim, 1);
     constexpr int verts_per_elem = Omega_h::simplex_degree(Elem::dim, 0);
@@ -202,10 +206,16 @@ struct JouleHeating : public Model<Elem> {
   void solve_normalized_voltage_system() {
     OMEGA_H_TIME_FUNCTION;
     auto const nodes_to_phi = sim.getset(this->normalized_voltage);
+    auto const cg_it = (sim.step == 0) ? nodes_to_phi.size() : cg_iterations;
+    double relative_out, absolute_out;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance);
+        matrix, rhs, nodes_to_phi, relative_tolerance, absolute_tolerance, cg_it,
+        relative_out, absolute_out);
+    sim.globals.set("Joule heating relative tolerance", relative_out);
+    sim.globals.set("Joule heating absolute tolerance", absolute_out);
+    sim.globals.set("Joule heating iterations", niter);
     OMEGA_H_CHECK(niter <= nodes_to_phi.size());
-    std::cout << "phi solve took " << niter << " iterations\n";
+//  std::cout << "phi solve took " << niter << " iterations\n";
   }
   void compute_conductance() {
     OMEGA_H_TIME_FUNCTION;
@@ -213,10 +223,6 @@ struct JouleHeating : public Model<Elem> {
     auto const points_to_grad = this->points_get(this->sim.gradient);
     auto const points_to_conductivity = this->points_get(this->conductivity);
     auto const points_to_weight = sim.set(sim.weight);
-    if (!sim.fields.is_allocated(this->conductance)) {
-       this->conductance =
-           this->point_define("G", "conductance", 1, RemapType::NONE, "");
-    }
     auto const points_to_G = this->points_set(this->conductance);
     auto const elems_to_nodes = this->get_elems_to_nodes();
     auto functor = OMEGA_H_LAMBDA(int const point) {
@@ -241,7 +247,9 @@ struct JouleHeating : public Model<Elem> {
     OMEGA_H_TIME_FUNCTION;
     if (this->sim.circuit.usingMesh) {
        auto& myCircuit = this->sim.circuit;
-       myCircuit.SetMeshConductance(integrated_conductance);
+       auto mesh_conductance = conductance_multiplier*
+                               integrated_conductance;
+       myCircuit.SetMeshConductance(mesh_conductance);
        // Below: 
        //   overwrites default/specified values in YAML 
        //   modifiers for joule heating when using circuit
@@ -256,15 +264,7 @@ struct JouleHeating : public Model<Elem> {
     auto const points_to_G = this->points_get(this->conductance);
     auto const points_to_rho = this->points_get(sim.density);
     auto const points_to_volume = this->points_get(sim.weight);
-    if (!sim.fields.is_allocated(this->specific_internal_energy_rate)) {
-       this->specific_internal_energy_rate = this->point_define(
-           "e_dot", "specific internal energy rate", 1, RemapType::NONE, "0.0");
-       auto const points_to_e_dot =
-           this->sim.set(this->specific_internal_energy_rate);
-       Omega_h::fill(points_to_e_dot, 0.0);
-    }
-    auto const points_to_e_dot =
-        this->points_getset(this->specific_internal_energy_rate);
+    auto const points_to_e_dot = this->points_set(this->specific_internal_energy_rate);
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const G = points_to_G[point];
       auto const P = Vsq * G;

@@ -17,7 +17,8 @@ TEST(linear_algebra, wikipedia_cg) {
   Omega_h::Write<double> b({1.0, 2.0});
   Omega_h::Write<double> computed_x({2.0, 1.0});
   double const tol = 1e-10;
-  diagonal_preconditioned_conjugate_gradient(A, b, computed_x, tol, tol);
+  double rtol,atol;
+  diagonal_preconditioned_conjugate_gradient(A, b, computed_x, tol, tol, 0, rtol, atol);
   Omega_h::Read<double> known_x({1.0 / 11.0, 7.0 / 11.0});
   EXPECT_TRUE(are_close(read(computed_x), known_x, tol, tol));
 }
@@ -73,8 +74,9 @@ static void run_fd_cg() {
   set_boundary_conditions(A, known_answer, rhs, rows_to_bc_rows);
   Omega_h::Write<double> computed_answer(ndofs, 0.0);
   double const tol = 1e-8;
-  EXPECT_TRUE(0 == lgr::diagonal_preconditioned_conjugate_gradient(A, rhs, known_answer, tol, tol));
-  int const niter = lgr::diagonal_preconditioned_conjugate_gradient(A, rhs, computed_answer, tol, tol);
+  double rtol,atol;
+  EXPECT_TRUE(0 == lgr::diagonal_preconditioned_conjugate_gradient(A, rhs, known_answer, tol, tol, 0, rtol, atol));
+  int const niter = lgr::diagonal_preconditioned_conjugate_gradient(A, rhs, computed_answer, tol, tol, 0, rtol, atol);
   EXPECT_TRUE(niter <= ndofs);
   EXPECT_TRUE(Omega_h::are_close(read(known_answer), read(computed_answer), tol, tol) );
 }
