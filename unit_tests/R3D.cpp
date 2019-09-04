@@ -192,9 +192,7 @@ TEUCHOS_UNIT_TEST(r3d, intersect_two_cavities)
 template<class T>
 double intersect(const T src, const T trg) {
   constexpr int spaceDim= 2;
-  constexpr int vert    = spaceDim+1;
   constexpr int moment  = 1;
-  typedef r3d::Few<r3d::Vector<spaceDim>,vert> Tri3;
   typedef r3d::Polytope<spaceDim>                Polytope;
   typedef r3d::Polynomial<spaceDim,moment>     Polynomial;
 
@@ -252,7 +250,6 @@ TEUCHOS_UNIT_TEST( r3d, 2D )
   {
     const Tri3 src = {{0.0,1.0},{0.0,2.0},{1.0,2.0}};
     const Tri3 trg = {{0.0,1.0},{0.0,2.0},{0.5,2.0}};
-    const double check = 0.185;
     print (src,trg);
       
     const double moment = intersect(src,trg);
