@@ -86,6 +86,7 @@ SET(PLATO_SOURCES
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${Trilinos_INCLUDE_DIRS})
 
 set(SOURCES)
 if(LGR_ENABLE_PLATO)

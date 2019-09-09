@@ -156,6 +156,7 @@ AdaptRecon<SpatialDim>::AdaptRecon(
     } else {
       auto dim = size_t(m->dim());
       adapt_tags[0].insert("vel");
+      adapt_tags[dim-1].insert("magnetic_face_flux");
       adapt_tags[dim].insert("mass_density");
       adapt_tags[dim].insert("internal_energy_density");
       adapt_tags[dim].insert("deformation_gradient");

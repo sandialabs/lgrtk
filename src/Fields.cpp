@@ -122,7 +122,7 @@ void Fields<SpatialDim>::allocate_and_resize_fields() {
       femesh.nelems);
 
   Kokkos::realloc(
-      FieldDB<array_type>::Self()["magnetic face flux"],
+      FieldDB<array_type>::Self()["magnetic_face_flux"],
       femesh.nfaces);
 
   Kokkos::realloc(
@@ -283,6 +283,14 @@ void Fields<SpatialDim>::copyElemScalarToMesh(
 }
 
 template <int SpatialDim>
+void Fields<SpatialDim>::copyFaceScalarToMesh(
+    char const* name, const array_type from) const {
+  Kokkos::View<Omega_h::Real*> into("into", from.size());
+  Kokkos::deep_copy(into, from);
+  femesh.addFieldView(SpatialDim-1, name, 1, into);
+}
+
+template <int SpatialDim>
 void Fields<SpatialDim>::conformGeom(
     char const* name, geom_array_type a) {
   copyGeomToMesh(name, a);
@@ -337,6 +345,9 @@ void Fields<SpatialDim>::copyTagsToMesh(
   }
   if (tags[0].count("potential")) {
     copyToMesh("potential", ElectricPotential<Fields>());
+  }
+  if (tags[2].count("magnetic_face_flux")) {
+    copyFaceScalarToMesh("magnetic_face_flux", MagneticFaceFlux<Fields>());
   }
   if (tags[dim].count("mass_density")) {
     auto dens = getFromSA(MassDensity<Fields>(), state);
