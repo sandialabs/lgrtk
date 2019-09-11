@@ -7,7 +7,7 @@
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
-//#include <iostream>
+#include <lgr_expression.hpp>
 
 namespace lgr {
 
@@ -56,16 +56,28 @@ struct JouleHeating : public Model<Elem> {
       cathode_class_names.insert(cathode_pl.get<std::string>(i));
     }
     cathode_subset = sim.subsets.get_subset(NODES, cathode_class_names);
-    normalized_anode_voltage =
-        pl.get<double>("normalized anode voltage", "1.0");
-    normalized_cathode_voltage =
-        pl.get<double>("normalized cathode voltage", "0.0");
     relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
     absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
-    conductance_multiplier = pl.get<double>("conductance multiplier", "1.0");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
     cg_iterations = pl.get<int>("iterations", "0");
+    std::string read_name, expression;
+    SingleExpression se_nav, se_ncv, se_cm;
+    // Normalized anode voltage
+    read_name = "normalized anode voltage";
+    expression = pl.get<std::string>(read_name,"1.0");
+    se_nav = SingleExpression(sim_in,expression,read_name);
+    normalized_anode_voltage = se_nav.evaluate();
+    // Normalized cathode voltage
+    read_name = "normalized cathode voltage";
+    expression = pl.get<std::string>(read_name,"0.0");
+    se_ncv = SingleExpression(sim_in,expression,read_name);
+    normalized_cathode_voltage = se_ncv.evaluate();
+    // Conductance multiplier
+    read_name = "conductance multiplier";
+    expression = pl.get<std::string>(read_name,"1.0");
+    se_cm = SingleExpression(sim_in,expression,read_name);
+    conductance_multiplier = se_cm.evaluate();
     JouleHeating::learn_disc();
   }
   void learn_disc() override final {
