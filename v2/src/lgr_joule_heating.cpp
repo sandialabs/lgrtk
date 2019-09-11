@@ -31,6 +31,7 @@ struct JouleHeating : public Model<Elem> {
   double cathode_voltage;
   double integrated_conductance;
   int cg_iterations;
+  bool constant_voltage_field;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->conductivity =
@@ -56,6 +57,7 @@ struct JouleHeating : public Model<Elem> {
       cathode_class_names.insert(cathode_pl.get<std::string>(i));
     }
     cathode_subset = sim.subsets.get_subset(NODES, cathode_class_names);
+    constant_voltage_field = pl.get<bool>("constant voltage field","false");
     relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
     absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
     anode_voltage = pl.get<double>("anode voltage", "1.0");
@@ -79,6 +81,10 @@ struct JouleHeating : public Model<Elem> {
     se_cm = SingleExpression(sim_in,expression,read_name);
     conductance_multiplier = se_cm.evaluate();
     JouleHeating::learn_disc();
+    // Initially set global outputs for case where constant voltage field is used
+    sim.globals.set("Joule heating relative tolerance", std::nan("1"));
+    sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
+    sim.globals.set("Joule heating iterations", 0);
   }
   void learn_disc() override final {
     // linear specific!
@@ -95,8 +101,10 @@ struct JouleHeating : public Model<Elem> {
   char const* name() override final { return "electrostatic"; }
   void at_secondaries() override final {
     Omega_h::ScopedTimer timer("JouleHeating::at_secondaries");
-    assemble_normalized_voltage_system();
-    solve_normalized_voltage_system();
+    if (!this->constant_voltage_field) {
+       assemble_normalized_voltage_system();
+       solve_normalized_voltage_system();
+    }
     compute_conductance();
     integrate_conductance();
     compute_electrode_voltages();
