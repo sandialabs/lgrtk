@@ -9,11 +9,11 @@ namespace lgr {
 struct Simulation;
 
 struct SingleExpression {
+  Simulation* sim_ptr;
   std::string expr;
   std::string name_tag;
   Omega_h::ExprEnv env;
-  Simulation* sim_ptr;
-  SingleExpression() : sim_ptr(NULL), expr(""), name_tag("") {}
+  SingleExpression() : sim_ptr(nullptr), expr(""), name_tag("") {}
   SingleExpression(Simulation& sim_in, std::string const& expr_in = "", std::string const& name_in = "")
       : sim_ptr(&sim_in), 
         expr(expr_in), 
