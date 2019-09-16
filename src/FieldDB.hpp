@@ -264,7 +264,7 @@ typename Fields::array_type ElectricPotential() {
 template <class Fields>
 typename Fields::array_type MagneticFaceFlux() {
   return safeFieldLookup<typename Fields::array_type>(
-      "magnetic face flux");
+      "magnetic_face_flux");
 }
 
 extern template void FieldDB_Finalize<1>();

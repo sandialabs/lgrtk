@@ -147,6 +147,7 @@ struct Fields {
   void copyToMesh(char const* name, const array_type from) const;
   void copyFromMesh(char const* name, array_type into);
   void copyElemTensorFromMesh(char const* name, elem_tensor_type into);
+  void copyFaceScalarToMesh(char const* name, const array_type from) const;
   void copyElemScalarToMesh(char const* name, const array_type from) const;
   void copyElemTensorToMesh(
       char const* name, const elem_tensor_type from) const;
