@@ -345,7 +345,8 @@ struct HyperEP : public Model<Elem> {
       points_to_epdot[point] = epdot;
       points_to_dp[point] = dp;
       points_to_localized[point] = localized;
-      points_to_kappa_tilde[point] = rho * c * c - 4.0 / 3.0 * props.G;
+      points_to_kappa_tilde[point] =
+        3.0 * (rho * c * c) * (1.0 - props.Nu) / (1.0 + props.Nu);
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
       setfull<Elem>(points_to_fn, point, resize<Elem::dim>(F));
     };
