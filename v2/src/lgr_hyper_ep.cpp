@@ -195,6 +195,54 @@ void read_and_validate_damage_params(
   }
 }
 
+void read_and_validate_eos_params(
+    Omega_h::InputMap& params, Properties& props) {
+  // Set the defaults
+
+  props.eos = EOS::NONE;
+  if (!params.is_map("equation of state"))
+    return;
+  auto& pl = params.get_map("equation of state");
+
+  std::string type = pl.get<std::string>("type", "none");
+  if (type == "Mie-Gruneisen") {
+    props.eos = EOS::MIE_GRUNEISEN;
+
+    if (!pl.is<double>("initial density"))
+      Omega_h_fail("Mie Gruneisen EOS initial density must be defined");
+    props.rho0 = pl.get<double>("initial density");
+    if (props.rho0 <= 0.)
+      Omega_h_fail("Mie Gruneisen EOS initial density must be positive");
+
+    if (!pl.is<double>("Gruneisen parameter"))
+      Omega_h_fail("Mie Gruneisen EOS Gruneisen parameter must be defined");
+    props.gamma0 = pl.get<double>("Gruneisen parameter");
+    if (props.gamma0 <= 0.)
+      Omega_h_fail("Mie Gruneisen EOS Gruneisen parameter must be positive");
+
+    if (!pl.is<double>("unshocked sound speed"))
+      Omega_h_fail("Mie Gruneisen EOS unshocked sound speed must be defined");
+    props.cs = pl.get<double>("unshocked sound speed");
+    if (props.cs <= 0.)
+      Omega_h_fail("Mie Gruneisen EOS unshocked sound speed must be positive");
+
+    if (!pl.is<double>("Us/Up ratio"))
+      Omega_h_fail("Mie Gruneisen EOS Us/Up ratio must be defined");
+    props.s1 = pl.get<double>("Us/Up ratio");
+    if (props.s1 <= 0.)
+      Omega_h_fail("Mie Gruneisen EOS Us/Up ratio must be positive");
+
+    props.e0 = pl.get<double>("specific internal energy", "1");
+
+  } else if (type != "none") {
+    std::ostringstream os;
+    os << "Unrecognized equation of state type \"" << type << "\".  ";
+    os << "Valid equations of state are: Mie-Gruneisen.";
+    auto str = os.str();
+    Omega_h_fail("%s\n", str.c_str());
+  }
+}
+
 }  // namespace hyper_ep
 
 template <class Elem>
@@ -203,11 +251,13 @@ struct HyperEP : public Model<Elem> {
   hyper_ep::Properties properties;
 
   // State dependent variables
+  FieldIndex effective_bulk_modulus;
   FieldIndex equivalent_plastic_strain;
   FieldIndex equivalent_plastic_strain_rate;  // equivalent plastic strain rate
   FieldIndex localized_;
   FieldIndex scalar_damage;
   FieldIndex defgrad_p;  // plastic part of deformation gradient
+  FieldIndex defgrad_n;
 
   // Kinematics
   FieldIndex defgrad;
@@ -221,8 +271,11 @@ struct HyperEP : public Model<Elem> {
     hyper_ep::read_and_validate_plastic_params(params, this->properties);
     // Damage model
     hyper_ep::read_and_validate_damage_params(params, this->properties);
+    // Equation of state
+    hyper_ep::read_and_validate_eos_params(params, this->properties);
     // Problem dimension
     constexpr auto dim = Elem::dim;
+
     // Define state dependent variables
     this->equivalent_plastic_strain =
         this->point_define("ep", "equivalent plastic strain", 1, "0");
@@ -232,9 +285,13 @@ struct HyperEP : public Model<Elem> {
     this->localized_ = this->point_define("localized", "localized", 1, "0");
     this->defgrad_p = this->point_define(
         "Fp", "plastic deformation gradient", square(dim), "I");
+    this->defgrad_n = this->point_define(
+        "Fn", "old deformation gradient", square(dim), "I");
     // Define kinematic quantities
     this->defgrad =
         this->point_define("F", "deformation gradient", square(dim), "I");
+    this->effective_bulk_modulus = this->point_define(
+        "kappa_tilde", "effective bulk modulus", 1, RemapType::NONE, params, "");
   }
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
@@ -251,10 +308,12 @@ struct HyperEP : public Model<Elem> {
     auto points_to_dp = this->points_getset(this->scalar_damage);
     auto points_to_localized = this->points_getset(this->localized_);
     auto points_to_fp = this->points_getset(this->defgrad_p);
-    auto points_to_F = this->points_getset(this->defgrad);
+    auto points_to_fn = this->points_getset(this->defgrad_n);
+    auto points_to_F = this->points_get(this->defgrad);
     // Variables to update
     auto points_to_stress = this->points_set(this->sim.stress);
     auto points_to_wave_speed = this->points_set(this->sim.wave_speed);
+    auto points_to_kappa_tilde = this->points_set(this->effective_bulk_modulus);
     // Kinematics
     auto dt = this->sim.dt;
     auto nodes_to_v = this->sim.get(this->sim.velocity);
@@ -272,11 +331,12 @@ struct HyperEP : public Model<Elem> {
       auto dp = points_to_dp[point];
       auto localized = points_to_localized[point];
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
+      auto Fn = resize<3>(getfull<Elem>(points_to_fn, point));
       // Update the material response
       Tensor<3> T;  // stress tensor
       double c;
       auto err_c = hyper_ep::update(
-          props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
+          props, rho, Fn, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
       OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
       // Update in/output variables
       setstress(points_to_stress, point, T);
@@ -285,8 +345,10 @@ struct HyperEP : public Model<Elem> {
       points_to_epdot[point] = epdot;
       points_to_dp[point] = dp;
       points_to_localized[point] = localized;
-      setfull<Elem>(points_to_F, point, resize<Elem::dim>(F));
+      points_to_kappa_tilde[point] =
+        3.0 * (rho * c * c) * (1.0 - props.Nu) / (1.0 + props.Nu);
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
+      setfull<Elem>(points_to_fn, point, resize<Elem::dim>(F));
     };
     parallel_for(this->points(), std::move(functor));
   }

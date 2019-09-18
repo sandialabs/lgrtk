@@ -1,5 +1,9 @@
 #ifndef LGR_HYPER_EP_HPP
 #define LGR_HYPER_EP_HPP
+#ifdef LGR_HYPER_EP_VERBOSE_DEBUG
+#include <iostream>
+#endif
+#include <lgr_mie_gruneisen.hpp>
 
 //#define LGR_COMPILE_TIME_MATERIAL_BRANCHES
 
@@ -51,6 +55,8 @@ enum class RateDependence { NONE, ZERILLI_ARMSTRONG, JOHNSON_COOK };
 
 enum class Damage { NONE, JOHNSON_COOK };
 
+enum class EOS { NONE, MIE_GRUNEISEN };
+
 enum class StateFlag { NONE, TRIAL, ELASTIC, PLASTIC, REMAPPED };
 
 struct Properties {
@@ -87,6 +93,14 @@ struct Properties {
   double DC;
   double eps_f_min;
 
+  // Equation of state
+  EOS eos;
+  double rho0;
+  double gamma0;
+  double cs;
+  double s1;
+  double e0;
+
   Properties()
       : elastic(Elastic::LINEAR_ELASTIC),
         hardening(Hardening::NONE),
@@ -94,7 +108,8 @@ struct Properties {
         damage(Damage::NONE),
         allow_no_tension(true),
         allow_no_shear(false),
-        set_stress_to_zero(false) {}
+        set_stress_to_zero(false),
+        eos(EOS::NONE) {}
 };
 
 using tensor_type = Matrix<3, 3>;
@@ -138,46 +153,46 @@ iterations
                       Subject to:  det(X) = 1
 
 where Y = dev(tau) / mu
-*/
 
+Let
+                      X = trace(X) / 3 I + dev(tau) / mu    (2)
+
+Solve det(X) = 1 for trace(X) and then return (2)
+
+*/
 OMEGA_H_INLINE
-Tensor<3> find_bbe(Tensor<3> const tau, double const mu) {
+bool find_bbe(Tensor<3> const tau, double const mu, Tensor<3>& Be) {
   constexpr int maxit = 25;
-  constexpr double tol = 1e-12;
+  constexpr double tol = 1e-8;
   auto const txx = tau(0, 0);
   auto const tyy = tau(1, 1);
   auto const tzz = tau(2, 2);
   auto const txy = .5 * (tau(0, 1) + tau(1, 0));
   auto const txz = .5 * (tau(0, 2) + tau(2, 0));
   auto const tyz = .5 * (tau(1, 2) + tau(2, 1));
-  auto Be = Omega_h::deviator(tau) / mu;
-  double bzz_old = 1;
-  double bzz_new = 1;
+  auto tr = trace(Be);
   for (int i = 0; i < maxit; i++) {
-    // computes det(BBe), where BBe is the iscohoric deformation
-    auto const fun_val =
-        (bzz_old * mu *
-                (-txy * txy +
-                    (bzz_old * mu + txx - tzz) * (bzz_old * mu + tyy - tzz)) +
-            2 * txy * txz * tyz + txz * txz * (-bzz_old * mu - tyy + tzz) +
-            tyz * tyz * (-bzz_old * mu - txx + tzz)) /
-        (mu * mu * mu);
-    // computes d(det(BBe) - 1)/d(be_zz), where BBe is the iscohoric deformation
-    auto const dfun_val =
-        (bzz_old * mu * (2.0 * bzz_old * mu + txx + tyy - 2.0 * tzz) -
-            txy * txy - txz * txz - tyz * tyz +
-            (bzz_old * mu + txx - tzz) * (bzz_old * mu + tyy - tzz)) /
-        (mu * mu);
-    bzz_new = bzz_old - (fun_val - 1.0) / dfun_val;
-    Be(0, 0) = (1.0 / mu) * (mu * bzz_new + txx - tzz);
-    Be(1, 1) = (1.0 / mu) * (mu * bzz_new + tyy - tzz);
-    Be(2, 2) = bzz_new;
-    if (square(bzz_new - bzz_old) < tol) {
-      return Be;
+    // computes det(X) - 1, where X is the iscohoric deformation
+    auto fun = (
+        9*txy*txy*(-tr*mu + txx + tyy - 2*tzz) + 54*txy*txz*tyz
+      + 9*txz*txz*(-tr*mu + txx - 2*tyy + tzz)
+      + 9*tyz*tyz*(-tr*mu - 2*txx + tyy + tzz)
+      + (tr*mu - txx - tyy + 2*tzz)*(tr*mu - txx + 2*tyy - tzz)*(tr*mu + 2*txx - tyy - tzz)
+      ) / (27*mu*mu*mu) - 1;
+    // computes d(det(X) - 1)/d(tr(X))
+    auto dfun = (
+         tr*tr*mu*mu - txx*txx + txx*tyy + txx*tzz - tyy*tyy + tyy*tzz - tzz*tzz
+       - 3*txy*txy - 3*txz*txz - 3*tyz*tyz
+       ) / (9*mu*mu);
+    auto dtr = -fun / dfun;
+    tr += dtr;
+    if (std::abs(dtr) < tol) {
+      Be = Omega_h::deviator(tau) / mu;
+      for (int i=0; i<3; i++) Be(i,i) += tr / 3;
+      return true;
     }
-    bzz_old = bzz_new;
   }
-  OMEGA_H_NORETURN(Tensor<3>());
+  return false;
 }
 
 OMEGA_H_INLINE
@@ -387,8 +402,9 @@ double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
  */
 OMEGA_H_INLINE
 ErrorCode radial_return(Properties const props, Tensor<3> const Te,
-    Tensor<3> const F, double const temp, double const dtime, Tensor<3>& T,
-    Tensor<3>& Fp, double& ep, double& epdot, double& dp, StateFlag& flag) {
+    Tensor<3> const Fn, Tensor<3> const F, double const dtime, double const temp,
+    Tensor<3>& T, Tensor<3>& Fp, double& ep, double& epdot, double& dp,
+    StateFlag& flag) {
   constexpr double tol1 = 1e-12;
   auto const tol2 = Omega_h::min2(dtime, 1e-6);
   constexpr double twothird = 2.0 / 3.0;
@@ -469,12 +485,18 @@ ErrorCode radial_return(Properties const props, Tensor<3> const Te,
   if (flag != StateFlag::ELASTIC) {
     // determine elastic deformation
     auto const jac = determinant(F);
-    auto const Bbe = find_bbe(T, mu);
     auto const j13 = std::cbrt(jac);
     auto const j23 = j13 * j13;
-    auto const Be = Bbe * j23;
-    auto const Ve = sqrt_spd(Be);
-    Fp = invert(Ve) * F;
+    auto const Fe = Fn * invert(Fp);
+    Tensor<3> Bbe = (Fe * Fe) / j23;
+    auto found = find_bbe(T, mu, Bbe);
+    if (!found) {
+      Omega_h_fail("Failed to find elastic deformation after stress update");
+    } else {
+      auto const Be = Bbe * j23;
+      auto const Ve = sqrt_spd(Be);
+      Fp = invert(Ve) * F;
+    }
     if (flag == StateFlag::REMAPPED) {
       // Correct pressure term
       auto p = trace(T);
@@ -530,23 +552,24 @@ Tensor<3> hyper_elastic_stress(
 }
 
 OMEGA_H_INLINE_BIG
-ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
-    double const dtime, double const temp, Tensor<3>& T, double& wave_speed,
-    Tensor<3>& Fp, double& ep, double& epdot, double& dp, double& localized) {
-  auto const jac = determinant(F);
+ErrorCode update(Properties const props, double const rho, Tensor<3> const Fn,
+    Tensor<3> const F, double const dtime, double const temp, Tensor<3>& T,
+    double& wave_speed, Tensor<3>& Fp, double& ep, double& epdot, double& dp,
+    double& localized) {
+
+  auto const E = props.E;
+  auto const nu = props.Nu;
   {
     // wave speed
-    auto const E = props.E;
-    auto const nu = props.Nu;
-    auto const K = E / 3.0 / (1.0 - 2.0 * nu);
-    auto const G = E / 2.0 / (1.0 + nu);
-    auto const plane_wave_modulus = K + (4.0 / 3.0) * G;
+    auto const plane_wave_modulus = E * (1.0 - nu) / (1.0 + nu) / (1.0 - 2.0 * nu);
     wave_speed = std::sqrt(plane_wave_modulus / rho);
   }
 
   // Determine the stress predictor.
   Tensor<3> Te;
   auto const Fe = F * invert(Fp);
+  auto const dF = F - Fn;
+  auto const jac = determinant(F);
   ErrorCode err_c = ErrorCode::NOT_SET;
   IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {
     Te = linear_elastic_stress(props, Fe);
@@ -554,9 +577,22 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const F,
     Te = hyper_elastic_stress(props, Fe, jac);
   }
 
+  // Replace pressure with that computed from EOS if needed.
+  IF_MAT_PROPS_EQ(eos, EOS::MIE_GRUNEISEN) {
+    double pressure = 0.0;
+    double c = 0.0;
+    mie_gruneisen_update(props.rho0, props.gamma0,
+      props.cs, props.s1, rho, props.e0, pressure, c);
+    // replace diagonal of stress
+    for (int i = 0; i < 3; ++i) Te(i, i) = -pressure;
+    auto const K = rho * c * c;
+    auto const plane_wave_modulus = 3.0 * K * (1.0 - nu) / (1 + nu);
+    wave_speed = std::sqrt(plane_wave_modulus / rho);
+  }
+
   // check yield and perform radial return (if applicable)
   auto flag = StateFlag::TRIAL;
-  err_c = radial_return(props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
+  err_c = radial_return(props, Te, Fn, F, dtime, temp, T, Fp, ep, epdot, dp, flag);
   if (err_c != ErrorCode::SUCCESS) {
     return err_c;
   }
