@@ -188,7 +188,7 @@ bool find_bbe(Tensor<3> const tau, double const mu, Tensor<3>& Be) {
     tr += dtr;
     if (std::abs(dtr) < tol) {
       Be = Omega_h::deviator(tau) / mu;
-      for (int i=0; i<3; i++) Be(i,i) += tr / 3;
+      for (int j=0; j<3; j++) Be(j,j) += tr / 3;
       return true;
     }
   }
@@ -568,7 +568,6 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const Fn,
   // Determine the stress predictor.
   Tensor<3> Te;
   auto const Fe = F * invert(Fp);
-  auto const dF = F - Fn;
   auto const jac = determinant(F);
   ErrorCode err_c = ErrorCode::NOT_SET;
   IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {

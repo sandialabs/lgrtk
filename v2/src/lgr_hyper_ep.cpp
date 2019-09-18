@@ -195,7 +195,7 @@ void read_and_validate_damage_params(
   }
 }
 
-void read_and_validate_eos_params(
+inline void read_and_validate_eos_params(
     Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
 
