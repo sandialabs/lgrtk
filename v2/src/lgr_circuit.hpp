@@ -8,6 +8,11 @@
 
 namespace lgr {
 
+struct Branch {
+    int count = 1;
+    std::vector<int> elements;
+};
+
 class Circuit
 {
    private:
@@ -86,6 +91,9 @@ class Circuit
       // Ground node list
       std::vector<int> gNodes;
 
+      // Branch list
+      std::vector<Branch> branch;
+
       // Specifying circuit
       void AddElement(std::string eTypein, int &e);
       void AddNodes(std::vector<int> &nodes);
@@ -100,6 +108,7 @@ class Circuit
       void NodeCount();
       void UpdateGrounds();
       void UpdateMatrixSize();
+      void UpdateBranchValues();
       void ParseYAML(Omega_h::InputMap& pl);
 
       // Solve routines
@@ -130,12 +139,14 @@ class Circuit
       void Setup(Omega_h::InputMap& pl);
       void Solve(double dtin, double timein); 
       double GetNodeVoltage(int nodein); 
-      double GetMeshAnodeVoltage(); 
-      double GetMeshCathodeVoltage(); 
       void SetElementConductance(int e, double c); 
       void SetMeshConductance(double c); 
       double GetElementConductance(int e);
+      double GetMeshAnodeVoltage(); 
+      double GetMeshCathodeVoltage(); 
+      double GetMeshVoltageDrop(); 
       double GetMeshConductance();
+      double GetMeshCurrent();
 
       // Count Number of components
       int GetNumNodes();

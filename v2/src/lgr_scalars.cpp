@@ -21,10 +21,9 @@ double Scalars::ask_value(std::string const& name) {
   if (name == "step") return double(sim.step);
   if (name == "elements") return double(sim.disc.mesh.nelems());
   if (sim.circuit.usingMesh) {
-     auto const vdrop = sim.circuit.GetMeshAnodeVoltage() -
-                        sim.circuit.GetMeshCathodeVoltage();
+     auto const vdrop = sim.circuit.GetMeshVoltageDrop();
      auto const conductance = sim.circuit.GetMeshConductance();
-     auto const current = vdrop*conductance;
+     auto const current = sim.circuit.GetMeshCurrent();
      if (name == "mesh voltage")     return vdrop;
      if (name == "mesh current")     return current;
      if (name == "mesh conductance") return conductance;
