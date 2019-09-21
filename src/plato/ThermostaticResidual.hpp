@@ -34,12 +34,12 @@ class ThermostaticResidual :
   private:
     static constexpr Plato::OrdinalType SpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerNode;
 
     using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
@@ -47,14 +47,14 @@ class ThermostaticResidual :
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
-    Omega_h::Matrix< SpaceDim, SpaceDim> m_cellConductivity;
+    Omega_h::Matrix< SpaceDim, SpaceDim> mCellConductivity;
     
-    Plato::Scalar m_quadratureWeight;
+    Plato::Scalar mQuadratureWeight;
 
-    IndicatorFunctionType m_indicatorFunction;
-    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> mApplyWeighting;
 
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>> mBoundaryLoads;
 
   public:
     /**************************************************************************/
@@ -64,26 +64,26 @@ class ThermostaticResidual :
                          Teuchos::ParameterList& problemParams,
                          Teuchos::ParameterList& penaltyParams) :
             Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(penaltyParams),
-            m_applyWeighting(m_indicatorFunction),
-            m_boundaryLoads(nullptr)
+            mIndicatorFunction(penaltyParams),
+            mApplyWeighting(mIndicatorFunction),
+            mBoundaryLoads(nullptr)
     /**************************************************************************/
     {
       Plato::ThermalModelFactory<SpaceDim> mmfactory(problemParams);
       auto materialModel = mmfactory.create();
-      m_cellConductivity = materialModel->getConductivityMatrix();
+      mCellConductivity = materialModel->getConductivityMatrix();
 
-      m_quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
       for (Plato::OrdinalType d=2; d<=SpaceDim; d++)
       { 
-        m_quadratureWeight /= Plato::Scalar(d);
+        mQuadratureWeight /= Plato::Scalar(d);
       }
 
       // parse boundary Conditions
       // 
       if(problemParams.isSublist("Natural Boundary Conditions"))
       {
-          m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
+          mBoundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
       }
     
     }
@@ -112,7 +112,7 @@ class ThermostaticResidual :
         tgrad("temperature gradient",numCells,SpaceDim);
 
       Plato::ScalarArray3DT<ConfigScalarType>
-        gradient("gradient",numCells,m_numNodesPerCell,SpaceDim);
+        gradient("gradient",numCells,mNumNodesPerCell,SpaceDim);
 
       Kokkos::View<ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
         tflux("thermal flux",numCells,SpaceDim);
@@ -121,11 +121,11 @@ class ThermostaticResidual :
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
 
       Plato::ScalarGrad<SpaceDim>            scalarGrad;
-      Plato::ThermalFlux<SpaceDim>           thermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<SpaceDim>           thermalFlux(mCellConductivity);
       Plato::FluxDivergence<SpaceDim>        fluxDivergence;
     
-      auto& applyWeighting  = m_applyWeighting;
-      auto quadratureWeight = m_quadratureWeight;
+      auto& applyWeighting  = mApplyWeighting;
+      auto quadratureWeight = mQuadratureWeight;
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
     
@@ -150,9 +150,9 @@ class ThermostaticResidual :
         
       },"flux divergence");
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
     }
 };

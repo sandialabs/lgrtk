@@ -54,6 +54,7 @@ SET(PLATO_SOURCES
   plato/InternalThermoelasticEnergy.cpp
   plato/InternalElectroelasticEnergy.cpp
   plato/InternalElasticEnergy.cpp
+  plato/StabilizedElastostaticEnergy.cpp
   plato/TemperatureAverage.cpp
   plato/FluxPNorm.cpp
   plato/StressPNorm.cpp
@@ -61,10 +62,10 @@ SET(PLATO_SOURCES
   plato/EffectiveEnergy.cpp
   plato/ThermostaticResidual.cpp
   plato/ElastostaticResidual.cpp
-  plato/HeatEquationProblem.cpp
-  plato/PlatoProblem.cpp
+  plato/ParabolicProblem.cpp
+  plato/EllipticProblem.cpp
+  plato/EllipticVMSProblem.cpp
   plato/alg/ParseInput.cpp
-  plato/alg/CrsMatrix.cpp
   plato/alg/Basis.cpp
   plato/alg/Cubature.cpp
   plato/alg/ParallelComm.cpp
@@ -72,10 +73,10 @@ SET(PLATO_SOURCES
   plato/ScalarFunctionBaseFactory.cpp
   plato/WeightedSumFunction.cpp
   plato/PhysicsScalarFunction.cpp
-  plato/LocalMeasureFactory.cpp
   plato/TensileEnergyDensity.cpp
   plato/TensileEnergyDensityLocalMeasure.cpp
   plato/VonMisesLocalMeasure.cpp
+  plato/ThermalVonMisesLocalMeasure.cpp
   plato/LeastSquaresFunction.cpp
   plato/DivisionFunction.cpp
   plato/MassMoment.cpp
@@ -83,6 +84,8 @@ SET(PLATO_SOURCES
   plato/IntermediateDensityPenalty.cpp
   plato/ScalarFunctionIncBaseFactory.cpp
   plato/PhysicsScalarFunctionInc.cpp
+  plato/J2PlasticityLocalResidual.cpp
+  plato/LocalVectorFunctionInc.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
@@ -108,6 +111,7 @@ target_include_directories(lgrtk PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 set(LINK_LIBS
     kokkoscore
+    kokkoskernels
     kokkoscontainers
     teuchoscore
     teuchoscomm

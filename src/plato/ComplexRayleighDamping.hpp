@@ -45,8 +45,8 @@ private:
 public:
     /******************************************************************************/
     explicit ComplexRayleighDamping(Teuchos::ParameterList & aProblemParams) :
-            mMassConstant(aProblemParams.get<double>("Rayleigh Mass Damping", 0.0)),
-            mStiffConstant(aProblemParams.get<double>("Rayleigh Stiffness Damping", 0.0))
+            mMassConstant(aProblemParams.get<Plato::Scalar>("Rayleigh Mass Damping", 0.0)),
+            mStiffConstant(aProblemParams.get<Plato::Scalar>("Rayleigh Stiffness Damping", 0.0))
     /******************************************************************************/
     {
     }

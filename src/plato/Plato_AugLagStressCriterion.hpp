@@ -41,12 +41,12 @@ class AugLagStressCriterion :
 {
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell/element */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_functionName;
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mFunctionName;
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
@@ -97,7 +97,7 @@ private:
     **********************************************************************************/
     void readInputs(Teuchos::ParameterList & aInputParams)
     {
-        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>(m_functionName);
+        Teuchos::ParameterList & tParams = aInputParams.get<Teuchos::ParameterList>(mFunctionName);
         mPenalty = tParams.get<Plato::Scalar>("SIMP penalty", 3.0);
         mStressLimit = tParams.get<Plato::Scalar>("Stress Limit", 1.0);
         mAugLagPenalty = tParams.get<Plato::Scalar>("Initial Penalty", 0.1);
@@ -389,7 +389,7 @@ public:
             aResultWS(aCellOrdinal) = tMassContribution + ( static_cast<Plato::Scalar>(1.0 / tNumCells) * tStressContribution );
         },"Compute Augmented Lagrangian Function");
 
-        Plato::toMap(m_dataMap, tOutputCellVonMises, "Vonmises");
+        Plato::toMap(mDataMap, tOutputCellVonMises, "Vonmises");
     }
 
     /******************************************************************************//**
@@ -469,7 +469,7 @@ public:
             // Update Lagrange multipliers
             const Plato::Scalar tSuggestedLagrangeMultiplier =
                     tLagrangeMultipliers(aCellOrdinal) + tAugLagPenalty * tRelaxedStressConstraint;
-            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, 0.0);
+            tLagrangeMultipliers(aCellOrdinal) = Omega_h::max2(tSuggestedLagrangeMultiplier, static_cast<Plato::Scalar>(0.0));
         }, "Update Multipliers");
     }
 

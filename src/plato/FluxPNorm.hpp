@@ -29,25 +29,25 @@ class FluxPNorm :
   private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
     
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerCell;
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap;
 
     using StateScalarType   = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
     using ConfigScalarType  = typename EvaluationType::ConfigScalarType;
     using ResultScalarType  = typename EvaluationType::ResultScalarType;
 
-    Omega_h::Matrix< SpaceDim, SpaceDim> m_cellConductivity;
+    Omega_h::Matrix< SpaceDim, SpaceDim> mCellConductivity;
     
-    Plato::Scalar m_quadratureWeight;
+    Plato::Scalar mQuadratureWeight;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> m_applyWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim,SpaceDim,IndicatorFunctionType> mApplyWeighting;
 
-    Plato::OrdinalType m_exponent;
+    Plato::OrdinalType mExponent;
 
   public:
     /**************************************************************************/
@@ -58,23 +58,23 @@ class FluxPNorm :
               Teuchos::ParameterList& aPenaltyParams,
               std::string aFunctionName) :
             Plato::AbstractScalarFunction<EvaluationType>(aMesh, aMeshSets, aDataMap, aFunctionName),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction)
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction)
     /**************************************************************************/
     {
       Plato::ThermalModelFactory<SpaceDim> mmfactory(aProblemParams);
       auto materialModel = mmfactory.create();
-      m_cellConductivity = materialModel->getConductivityMatrix();
+      mCellConductivity = materialModel->getConductivityMatrix();
 
-      m_quadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
+      mQuadratureWeight = 1.0; // for a 1-point quadrature rule for simplices
       for (int d=2; d<=SpaceDim; d++)
       { 
-        m_quadratureWeight /= Plato::Scalar(d);
+        mQuadratureWeight /= Plato::Scalar(d);
       }
 
       auto params = aProblemParams.get<Teuchos::ParameterList>(aFunctionName);
 
-      m_exponent = params.get<double>("Exponent");
+      mExponent = params.get<Plato::Scalar>("Exponent");
     }
 
     /**************************************************************************/
@@ -89,7 +89,7 @@ class FluxPNorm :
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
       Plato::ScalarGrad<SpaceDim>                    scalarGrad;
-      Plato::ThermalFlux<SpaceDim>                   thermalFlux(m_cellConductivity);
+      Plato::ThermalFlux<SpaceDim>                   thermalFlux(mCellConductivity);
       Plato::VectorPNorm<SpaceDim>                   vectorPNorm;
 
       using GradScalarType =
@@ -102,14 +102,14 @@ class FluxPNorm :
         tgrad("temperature gradient",numCells,SpaceDim);
 
       Kokkos::View<ConfigScalarType***, Kokkos::LayoutRight, Plato::MemSpace>
-        gradient("gradient",numCells,m_numNodesPerCell,SpaceDim);
+        gradient("gradient",numCells,mNumNodesPerCell,SpaceDim);
 
       Kokkos::View<ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace>
         tflux("thermal flux",numCells,SpaceDim);
 
-      auto quadratureWeight = m_quadratureWeight;
-      auto& applyWeighting  = m_applyWeighting;
-      auto exponent         = m_exponent;
+      auto quadratureWeight = mQuadratureWeight;
+      auto& applyWeighting  = mApplyWeighting;
+      auto exponent         = mExponent;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(const int & aCellOrdinal)
       {
         computeGradient(aCellOrdinal, gradient, aConfig, cellVolume);
@@ -141,7 +141,7 @@ class FluxPNorm :
       Plato::Scalar       resultScalar)
     /**************************************************************************/
     {
-      auto scale = pow(resultScalar,(1.0-m_exponent)/m_exponent)/m_exponent;
+      auto scale = pow(resultScalar,(1.0-mExponent)/mExponent)/mExponent;
       auto numEntries = resultVector.size();
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numEntries), LAMBDA_EXPRESSION(int entryOrdinal)
       {
@@ -154,7 +154,7 @@ class FluxPNorm :
     postEvaluate( Plato::Scalar& resultValue )
     /**************************************************************************/
     {
-      resultValue = pow(resultValue, 1.0/m_exponent);
+      resultValue = pow(resultValue, 1.0/mExponent);
     }
 };
 // class FluxPNorm

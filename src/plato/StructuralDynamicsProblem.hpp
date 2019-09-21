@@ -38,8 +38,8 @@ template<typename SimplexPhysics>
 class StructuralDynamicsProblem: public AbstractProblem
 {
 private:
-    static constexpr Plato::OrdinalType mSpatialDim = SimplexPhysics::m_numSpatialDims;
-    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    static constexpr Plato::OrdinalType mSpatialDim = SimplexPhysics::mNumSpatialDims;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     Plato::OrdinalType mNumStates;
     Plato::OrdinalType mNumConfig;
@@ -97,6 +97,17 @@ public:
     {
         this->initialize(aMesh, aMeshSets, aParamList);
         this->readFrequencyArray(aParamList);
+    }
+
+    /******************************************************************************//**
+     *
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+     *
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
     }
 
     /******************************************************************************//**

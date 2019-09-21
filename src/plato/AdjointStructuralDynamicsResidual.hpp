@@ -39,13 +39,13 @@ class AdjointStructuralDynamicsResidual:
 /******************************************************************************/
 {
 private:
-    using Plato::Simplex<EvaluationType::SpatialDim>::m_numNodesPerCell;
-    using Plato::Simplex<EvaluationType::SpatialDim>::m_numSpatialDims;
+    using Plato::Simplex<EvaluationType::SpatialDim>::mNumNodesPerCell;
+    using Plato::Simplex<EvaluationType::SpatialDim>::mNumSpatialDims;
 
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numVoigtTerms;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumVoigtTerms;
     using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mComplexSpaceDim;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerCell;
-    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::m_numDofsPerNode;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerCell;
+    using Plato::SimplexStructuralDynamics<EvaluationType::SpatialDim>::mNumDofsPerNode;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
     using ControlScalarType = typename EvaluationType::ControlScalarType;
@@ -62,8 +62,8 @@ private:
     Plato::ApplyPenalty<PenaltyFunctionType> mApplyPenalty;
     Plato::ApplyProjection<ProjectionType> mApplyProjection;
 
-    Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> mCellStiffness;
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<m_numSpatialDims>> mCubatureRule;
+    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffness;
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<mNumSpatialDims>> mCubatureRule;
 
 public:
     /******************************************************************************//**
@@ -82,15 +82,15 @@ public:
                                                Teuchos::ParameterList & aProblemParams,
                                                Teuchos::ParameterList& aPenaltyParams) :
             AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            mDensity(aProblemParams.get<double>("Material Density", 1.0)),
-            mMassPropDamp(aProblemParams.get<double>("Rayleigh Mass Damping", 0.0)),
-            mStiffPropDamp(aProblemParams.get<double>("Rayleigh Stiffness Damping", 0.0)),
+            mDensity(aProblemParams.get<Plato::Scalar>("Material Density", 1.0)),
+            mMassPropDamp(aProblemParams.get<Plato::Scalar>("Rayleigh Mass Damping", 0.0)),
+            mStiffPropDamp(aProblemParams.get<Plato::Scalar>("Rayleigh Stiffness Damping", 0.0)),
             mProjectionFunction(),
             mPenaltyFunction(aPenaltyParams),
             mApplyPenalty(mPenaltyFunction),
             mApplyProjection(mProjectionFunction),
             mCellStiffness(),
-            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<m_numSpatialDims>>())
+            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<mNumSpatialDims>>())
     {
         this->initialize(aProblemParams);
     }
@@ -109,15 +109,15 @@ public:
                                                Plato::DataMap& aDataMap, 
                                                Teuchos::ParameterList & aProblemParams) :
             AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            mDensity(aProblemParams.get<double>("Material Density", 1.0)),
-            mMassPropDamp(aProblemParams.get<double>("Rayleigh Mass Damping", 0.0)),
-            mStiffPropDamp(aProblemParams.get<double>("Rayleigh Stiffness Damping", 0.0)),
+            mDensity(aProblemParams.get<Plato::Scalar>("Material Density", 1.0)),
+            mMassPropDamp(aProblemParams.get<Plato::Scalar>("Rayleigh Mass Damping", 0.0)),
+            mStiffPropDamp(aProblemParams.get<Plato::Scalar>("Rayleigh Stiffness Damping", 0.0)),
             mProjectionFunction(),
             mPenaltyFunction(3.0, 0.0),
             mApplyPenalty(mPenaltyFunction),
             mApplyProjection(mProjectionFunction),
             mCellStiffness(),
-            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<m_numSpatialDims>>())
+            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<mNumSpatialDims>>())
     {
         this->initialize(aProblemParams);
     }
@@ -140,7 +140,7 @@ public:
             mApplyPenalty(mPenaltyFunction),
             mApplyProjection(mProjectionFunction),
             mCellStiffness(),
-            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<m_numSpatialDims>>())
+            mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<mNumSpatialDims>>())
     {
         this->initialize();
     }
@@ -193,7 +193,7 @@ public:
      * @param [in] aInput material stiffness constants
      *
     **********************************************************************************/
-    void setMaterialStiffnessConstants(const Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms>& aInput)
+    void setMaterialStiffnessConstants(const Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms>& aInput)
     {
         mCellStiffness = aInput;
     }
@@ -207,7 +207,7 @@ public:
     **********************************************************************************/
     void setIsotropicLinearElasticMaterial(const Plato::Scalar& aYoungsModulus, const Plato::Scalar& aPoissonsRatio)
     {
-        Plato::IsotropicLinearElasticMaterial<m_numSpatialDims> tMaterialModel(aYoungsModulus, aPoissonsRatio);
+        Plato::IsotropicLinearElasticMaterial<mNumSpatialDims> tMaterialModel(aYoungsModulus, aPoissonsRatio);
         mCellStiffness = tMaterialModel.getStiffnessMatrix();
     }
 
@@ -240,29 +240,29 @@ public:
                   Plato::Scalar aAngularFrequency = 0.0) const
     {
         // Elastic force functors
-        Plato::ComputeGradientWorkset<m_numSpatialDims> tComputeGradientWorkset;
-        Plato::ComplexStrain<m_numSpatialDims, m_numDofsPerNode> tComputeVoigtStrain;
-        Plato::ComplexStressDivergence<m_numSpatialDims, m_numDofsPerNode> tComputeStressDivergence;
-        Plato::ComplexLinearStress<m_numSpatialDims, m_numVoigtTerms> tComputeVoigtStress(mCellStiffness);
+        Plato::ComputeGradientWorkset<mNumSpatialDims> tComputeGradientWorkset;
+        Plato::ComplexStrain<mNumSpatialDims, mNumDofsPerNode> tComputeVoigtStrain;
+        Plato::ComplexStressDivergence<mNumSpatialDims, mNumDofsPerNode> tComputeStressDivergence;
+        Plato::ComplexLinearStress<mNumSpatialDims, mNumVoigtTerms> tComputeVoigtStress(mCellStiffness);
         // Damping force functors
-        Plato::AdjointComplexRayleighDamping<m_numSpatialDims> tComputeDamping(mMassPropDamp, mStiffPropDamp);
+        Plato::AdjointComplexRayleighDamping<mNumSpatialDims> tComputeDamping(mMassPropDamp, mStiffPropDamp);
         // Inertial force functors
         Plato::StateValues tComputeStateValues;
         Plato::InertialForces tComputeInertialForces(mDensity);
 
         using StrainScalarType =
-        typename Plato::fad_type_t<Plato::SimplexStructuralDynamics<m_numSpatialDims>, StateScalarType, ConfigScalarType>;
+        typename Plato::fad_type_t<Plato::SimplexStructuralDynamics<mNumSpatialDims>, StateScalarType, ConfigScalarType>;
         // Elastic forces containers
         auto tNumCells = aState.extent(0);
-        Plato::ScalarMultiVectorT<ResultScalarType> tElasticForces("ElasticForces", tNumCells, m_numDofsPerCell);
-        Plato::ScalarArray3DT<StrainScalarType> tCellStrain("Strain", tNumCells, mComplexSpaceDim, m_numVoigtTerms);
-        Plato::ScalarArray3DT<ResultScalarType> tCellStress("Stress", tNumCells, mComplexSpaceDim, m_numVoigtTerms);
-        Plato::ScalarArray3DT<ConfigScalarType> tCellGradient("Gradient", tNumCells, m_numNodesPerCell, m_numSpatialDims);
+        Plato::ScalarMultiVectorT<ResultScalarType> tElasticForces("ElasticForces", tNumCells, mNumDofsPerCell);
+        Plato::ScalarArray3DT<StrainScalarType> tCellStrain("Strain", tNumCells, mComplexSpaceDim, mNumVoigtTerms);
+        Plato::ScalarArray3DT<ResultScalarType> tCellStress("Stress", tNumCells, mComplexSpaceDim, mNumVoigtTerms);
+        Plato::ScalarArray3DT<ConfigScalarType> tCellGradient("Gradient", tNumCells, mNumNodesPerCell, mNumSpatialDims);
         // Damping forces containers
-        Plato::ScalarMultiVectorT<ResultScalarType> tDampingForces("DampingForces", tNumCells, m_numDofsPerCell);
+        Plato::ScalarMultiVectorT<ResultScalarType> tDampingForces("DampingForces", tNumCells, mNumDofsPerCell);
         // Inertial forces containers
-        Plato::ScalarMultiVectorT<StateScalarType> tStateValues("StateValues", tNumCells, m_numDofsPerNode);
-        Plato::ScalarMultiVectorT<ResultScalarType> tInertialForces("InertialForces", tNumCells, m_numDofsPerCell);
+        Plato::ScalarMultiVectorT<StateScalarType> tStateValues("StateValues", tNumCells, mNumDofsPerNode);
+        Plato::ScalarMultiVectorT<ResultScalarType> tInertialForces("InertialForces", tNumCells, mNumDofsPerCell);
         // Cell volumes container
         Plato::ScalarVectorT<ConfigScalarType> tCellVolume("Cell Volumes", tNumCells);
 
@@ -291,7 +291,7 @@ public:
             tApplyPenalty(aCellOrdinal, tCellDensity, tElasticForces);
             tApplyPenalty(aCellOrdinal, tCellDensity, tInertialForces);
             // Compute structural dynamics residual for the adjoint problem
-            Plato::structural_dynamics_cell_residual<m_numDofsPerCell>
+            Plato::structural_dynamics_cell_residual<mNumDofsPerCell>
                 (aCellOrdinal, tOmegaTimesOmega, tElasticForces, tDampingForces, tInertialForces, aResidual);
         }, "Adjoint Elastodynamcis Residual Calculation");
     }
@@ -308,7 +308,7 @@ private:
         Teuchos::ParameterList tParamList;
         tParamList.set < Plato::Scalar > ("Poissons Ratio", 1.0);
         tParamList.set < Plato::Scalar > ("Youngs Modulus", 0.3);
-        Plato::IsotropicLinearElasticMaterial<m_numSpatialDims> tDefaultMaterialModel(tParamList);
+        Plato::IsotropicLinearElasticMaterial<mNumSpatialDims> tDefaultMaterialModel(tParamList);
         mCellStiffness = tDefaultMaterialModel.getStiffnessMatrix();
     }
 
@@ -321,7 +321,7 @@ private:
     void initialize(Teuchos::ParameterList & aProblemParams)
     {
         // Create material model and get stiffness
-        Plato::ElasticModelFactory<m_numSpatialDims> tElasticModelFactory(aProblemParams);
+        Plato::ElasticModelFactory<mNumSpatialDims> tElasticModelFactory(aProblemParams);
         auto tMaterialModel = tElasticModelFactory.create();
         mCellStiffness = tMaterialModel->getStiffnessMatrix();
     }

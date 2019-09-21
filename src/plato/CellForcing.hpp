@@ -14,13 +14,13 @@ class CellForcing
 {
   private:
 
-    const Omega_h::Matrix<NumTerms,NumTerms> m_cellStiffness;
-    const int m_columnIndex;
+    const Omega_h::Matrix<NumTerms,NumTerms> mCellStiffness;
+    const int mColumnIndex;
 
   public:
 
     CellForcing( const Omega_h::Matrix<NumTerms,NumTerms> aCellStiffness, int aColumnIndex ) :
-            m_cellStiffness(aCellStiffness), m_columnIndex(aColumnIndex) {}
+            mCellStiffness(aCellStiffness), mColumnIndex(aColumnIndex) {}
 
     template<typename TensorScalarType>
     void
@@ -28,9 +28,9 @@ class CellForcing
     {
       int numCells = tensor.extent(0);
       int numTerms = tensor.extent(1);
-      auto cellStiffness = m_cellStiffness;
+      auto cellStiffness = mCellStiffness;
       auto& tTensor = tensor;
-      auto columnIndex = m_columnIndex;
+      auto columnIndex = mColumnIndex;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numCells), LAMBDA_EXPRESSION(int cellOrdinal)
       {
 

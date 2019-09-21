@@ -149,7 +149,7 @@ void generate3DCellWorkset(lgr::FEMesh<SpatialDim> &mesh, lgr::CellTools::PhysPo
 
 TEUCHOS_UNIT_TEST(ElementHelperReplacement, Cell_Volume)
 {
-  constexpr double tol = 1e-12;
+  constexpr Plato::Scalar tol = 1e-12;
   lgr::FEMesh<SpatialDim> mesh;
 
   auto libOmegaH = lgr::getLibraryOmegaH();
@@ -246,7 +246,7 @@ TEUCHOS_UNIT_TEST(ElementHelperReplacement, Cell_Volume)
 
 TEUCHOS_UNIT_TEST(ElementHelperReplacement, Fused_Cell_Gradients)
 {
-  constexpr double tol = 1e-12;
+  constexpr Plato::Scalar tol = 1e-12;
   lgr::FEMesh<SpatialDim> mesh;
 
   auto libOmegaH = lgr::getLibraryOmegaH();
@@ -350,7 +350,7 @@ TEUCHOS_UNIT_TEST(ElementHelperReplacement, Fused_Cell_Gradients)
 
 TEUCHOS_UNIT_TEST(ElementHelperReplacement, Edge_Length)
 {
-  constexpr double tol = 1e-12;
+  constexpr Plato::Scalar tol = 1e-12;
   lgr::FEMesh<SpatialDim> mesh;
 
   auto libOmegaH = lgr::getLibraryOmegaH();

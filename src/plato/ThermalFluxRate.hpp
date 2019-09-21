@@ -23,12 +23,12 @@ class ThermalFluxRate :
   private:
     static constexpr int SpaceDim = EvaluationType::SpatialDim;
 
-    using Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerCell;
-    using Plato::SimplexThermal<SpaceDim>::m_numDofsPerNode;
+    using Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerCell;
+    using Plato::SimplexThermal<SpaceDim>::mNumDofsPerNode;
 
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMesh;
-    using Plato::AbstractScalarFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractScalarFunctionInc<EvaluationType>::mDataMap;
     using Plato::AbstractScalarFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
@@ -37,7 +37,7 @@ class ThermalFluxRate :
     using ConfigScalarType    = typename EvaluationType::ConfigScalarType;
     using ResultScalarType    = typename EvaluationType::ResultScalarType;
     
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>> m_boundaryLoads;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>> mBoundaryLoads;
 
   public:
     /**************************************************************************/
@@ -46,12 +46,12 @@ class ThermalFluxRate :
                     Plato::DataMap& aDataMap,
                     Teuchos::ParameterList& problemParams) :
             Plato::AbstractScalarFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap, "Thermal Flux Rate"),
-            m_boundaryLoads(nullptr)
+            mBoundaryLoads(nullptr)
     /**************************************************************************/
     {
       if(problemParams.isSublist("Natural Boundary Conditions"))
       {
-          m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,m_numDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
+          mBoundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
       }
     }
 
@@ -69,17 +69,17 @@ class ThermalFluxRate :
 
       auto numCells = mMesh.nelems();
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-        Plato::ScalarMultiVectorT<ResultScalarType> boundaryLoads("boundary loads", numCells, m_numDofsPerCell);
+        Plato::ScalarMultiVectorT<ResultScalarType> boundaryLoads("boundary loads", numCells, mNumDofsPerCell);
         Kokkos::deep_copy(boundaryLoads, 0.0);
 
-        m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, boundaryLoads, 1.0/aTimeStep );
-        m_boundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, boundaryLoads, 1.0/aTimeStep );
+        mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, boundaryLoads, 1.0/aTimeStep );
+        mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, boundaryLoads, 1.0/aTimeStep );
 
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
         {
-          for( int iNode=0; iNode<m_numNodesPerCell; iNode++) {
+          for( int iNode=0; iNode<mNumNodesPerCell; iNode++) {
             aResult(cellOrdinal) += (aState(cellOrdinal, iNode) - aPrevState(cellOrdinal, iNode))*boundaryLoads(cellOrdinal,iNode);
           }
         },"scalar product");

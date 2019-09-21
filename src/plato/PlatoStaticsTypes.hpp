@@ -15,9 +15,7 @@
 namespace Plato
 {
 
-using RowMapEntryType = int;
-
-using CrsMatrixType      = typename Plato::CrsMatrix<Plato::OrdinalType, Plato::RowMapEntryType>;
+using CrsMatrixType      = typename Plato::CrsMatrix<Plato::OrdinalType>;
 using LocalOrdinalVector = typename Kokkos::View<Plato::OrdinalType*, Plato::MemSpace>;
 
 template <typename ScalarType>

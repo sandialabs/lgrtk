@@ -6,7 +6,7 @@
 using namespace lgr;
 
 namespace {
-  typedef double Scalar;
+  typedef Plato::Scalar Scalar;
   typedef Kokkos::DefaultExecutionSpace MemSpace;
   
   typedef Kokkos::View<Scalar**, Layout, MemSpace>      RefPointsView;     // (P,D)
@@ -32,15 +32,15 @@ namespace {
      from 0 to maxPolyOrder.
      
      */
-    double expectedVolume = 1.0;
+    Plato::Scalar expectedVolume = 1.0;
     for (int d=0; d<spaceDim; d++)
     {
-      expectedVolume *= 1.0 / double(d+1);
+      expectedVolume *= 1.0 / Plato::Scalar(d+1);
     }
     
     using namespace std;
     
-    double tol = 1e-15; // we expect to get this pretty accurately...
+    Plato::Scalar tol = 1e-15; // we expect to get this pretty accurately...
     for (int polyOrder=0; polyOrder<=maxPolyOrder; polyOrder++)
     {
       int numPoints = Cubature::getNumCubaturePoints(spaceDim,polyOrder);
@@ -55,12 +55,12 @@ namespace {
       cout << "weights.size(): " << weights.size() << endl;*/
       
       Cubature::getCubature(spaceDim,polyOrder,points,weights);
-      double volume = 0.0;
+      Plato::Scalar volume = 0.0;
       /*for (int ptOrdinal=0; ptOrdinal<numPoints; ptOrdinal++)
       {
         volume += weights(ptOrdinal);
       }*/
-      Kokkos::parallel_reduce(numPoints, LAMBDA_EXPRESSION(const int ptOrdinal, double &localSum) {
+      Kokkos::parallel_reduce(numPoints, LAMBDA_EXPRESSION(const int ptOrdinal, Plato::Scalar &localSum) {
         localSum += weights(ptOrdinal);
       }, volume);
       TEST_FLOATING_EQUALITY(volume, expectedVolume, tol);

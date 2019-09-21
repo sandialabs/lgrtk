@@ -17,17 +17,42 @@ namespace Plato {
 /******************************************************************************/
 {
   protected:
-    static constexpr auto m_numVoigtTerms = (SpatialDim == 3) ? 6 : 
+    static constexpr auto mNumVoigtTerms = (SpatialDim == 3) ? 6 : 
                                            ((SpatialDim == 2) ? 3 :
                                           (((SpatialDim == 1) ? 1 : 0)));
-    static_assert(m_numVoigtTerms, "SpatialDim must be 1, 2, or 3.");
+    static_assert(mNumVoigtTerms, "SpatialDim must be 1, 2, or 3.");
 
-    Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
+    Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    Omega_h::Vector<mNumVoigtTerms> mReferenceStrain;
+    Plato::Scalar mPressureScaling;
   
   public:
     LinearElasticMaterial();
-    Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> getStiffnessMatrix() const {return m_cellStiffness;}
+    LinearElasticMaterial(const Teuchos::ParameterList& paramList);
+    decltype(mCellStiffness)   getStiffnessMatrix() const {return mCellStiffness;}
+    decltype(mPressureScaling) getPressureScaling() const {return mPressureScaling;}
+    decltype(mReferenceStrain) getReferenceStrain() const {return mReferenceStrain;}
+
+  private:
+    void initialize ();
 };
+
+/******************************************************************************/
+template<int SpatialDim>
+void LinearElasticMaterial<SpatialDim>::
+initialize()
+/******************************************************************************/
+{
+  for(int i=0; i<mNumVoigtTerms; i++)
+    for(int j=0; j<mNumVoigtTerms; j++)
+      mCellStiffness(i,j) = 0.0;
+
+  mPressureScaling = 1.0;
+
+  for(int i=0; i<mNumVoigtTerms; i++)
+    mReferenceStrain(i) = 0.0;
+}
+
 
 /******************************************************************************/
 template<int SpatialDim>
@@ -35,9 +60,24 @@ LinearElasticMaterial<SpatialDim>::
 LinearElasticMaterial()
 /******************************************************************************/
 {
-  for(int i=0; i<m_numVoigtTerms; i++)
-    for(int j=0; j<m_numVoigtTerms; j++)
-      m_cellStiffness(i,j) = 0.0;
+  initialize();
+}
+
+/******************************************************************************/
+template<int SpatialDim>
+LinearElasticMaterial<SpatialDim>::
+LinearElasticMaterial(const Teuchos::ParameterList& paramList)
+/******************************************************************************/
+
+{
+  initialize();
+
+  if( paramList.isType<Plato::Scalar>("e11") )  mReferenceStrain(0) = paramList.get<Plato::Scalar>("e11");
+  if( paramList.isType<Plato::Scalar>("e22") )  mReferenceStrain(1) = paramList.get<Plato::Scalar>("e22");
+  if( paramList.isType<Plato::Scalar>("e33") )  mReferenceStrain(2) = paramList.get<Plato::Scalar>("e33");
+  if( paramList.isType<Plato::Scalar>("e23") )  mReferenceStrain(3) = paramList.get<Plato::Scalar>("e23");
+  if( paramList.isType<Plato::Scalar>("e13") )  mReferenceStrain(4) = paramList.get<Plato::Scalar>("e13");
+  if( paramList.isType<Plato::Scalar>("e12") )  mReferenceStrain(5) = paramList.get<Plato::Scalar>("e12");
 }
 
 /******************************************************************************/
@@ -54,8 +94,8 @@ LinearElasticMaterial()
     virtual ~IsotropicLinearElasticMaterial(){}
 
   private:
-    Plato::Scalar m_poissonsRatio;
-    Plato::Scalar m_youngsModulus;
+    Plato::Scalar mPoissonsRatio;
+    Plato::Scalar mYoungsModulus;
 };
 // class IsotropicLinearElasticMaterial
 
@@ -68,10 +108,10 @@ LinearElasticMaterial()
 /******************************************************************************/
 {
   public:
-    ElasticModelFactory(const Teuchos::ParameterList& paramList) : m_paramList(paramList) {}
+    ElasticModelFactory(const Teuchos::ParameterList& paramList) : mParamList(paramList) {}
     Teuchos::RCP<Plato::LinearElasticMaterial<SpatialDim>> create();
   private:
-    const Teuchos::ParameterList& m_paramList;
+    const Teuchos::ParameterList& mParamList;
 };
 /******************************************************************************/
 template<int SpatialDim>
@@ -79,7 +119,7 @@ Teuchos::RCP<LinearElasticMaterial<SpatialDim>>
 ElasticModelFactory<SpatialDim>::create()
 /******************************************************************************/
 {
-  auto modelParamList = m_paramList.get<Teuchos::ParameterList>("Material Model");
+  auto modelParamList = mParamList.get<Teuchos::ParameterList>("Material Model");
 
   if( modelParamList.isSublist("Isotropic Linear Elastic") ){
     return Teuchos::rcp(new Plato::IsotropicLinearElasticMaterial<SpatialDim>(modelParamList.sublist("Isotropic Linear Elastic")));

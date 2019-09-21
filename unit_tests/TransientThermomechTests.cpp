@@ -57,10 +57,10 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
 
 
   int numCells = mesh->nelems();
-  constexpr int numVoigtTerms = Plato::SimplexThermomechanics<spaceDim>::m_numVoigtTerms;
-  constexpr int nodesPerCell  = Plato::SimplexThermomechanics<spaceDim>::m_numNodesPerCell;
-  constexpr int dofsPerCell   = Plato::SimplexThermomechanics<spaceDim>::m_numDofsPerCell;
-  constexpr int dofsPerNode   = Plato::SimplexThermomechanics<spaceDim>::m_numDofsPerNode;
+  constexpr int numVoigtTerms = Plato::SimplexThermomechanics<spaceDim>::mNumVoigtTerms;
+  constexpr int nodesPerCell  = Plato::SimplexThermomechanics<spaceDim>::mNumNodesPerCell;
+  constexpr int dofsPerCell   = Plato::SimplexThermomechanics<spaceDim>::mNumDofsPerCell;
+  constexpr int dofsPerNode   = Plato::SimplexThermomechanics<spaceDim>::mNumDofsPerNode;
 
   // create mesh based solution from host data
   //
@@ -168,7 +168,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto cellVolume_Host = Kokkos::create_mirror_view( cellVolume );
   Kokkos::deep_copy( cellVolume_Host, cellVolume );
 
-  std::vector<double> cellVolume_gold = { 
+  std::vector<Plato::Scalar> cellVolume_gold = { 
     0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 
     0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 
     0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 0.0208333333333333, 
@@ -189,7 +189,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto tTemperature_Host = Kokkos::create_mirror_view( tTemperature );
   Kokkos::deep_copy( tTemperature_Host, tTemperature );
 
-  std::vector<double> tTemperature_gold = { 
+  std::vector<Plato::Scalar> tTemperature_gold = { 
     2.9999999999999997e-06, 2.3999999999999999e-06,
     1.6999999999999998e-06, 3.4999999999999995e-06,
     3.1000000000000000e-06, 2.2000000000000001e-06,
@@ -212,7 +212,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto tThermalContent_Host = Kokkos::create_mirror_view( tThermalContent );
   Kokkos::deep_copy( tThermalContent_Host, tThermalContent );
 
-  std::vector<double> tThermalContent_gold = { 
+  std::vector<Plato::Scalar> tThermalContent_gold = { 
     0.90, 0.72, 0.51, 1.05, 0.93, 0.66, 0.63, 1.17, 1.20, 0.87, 0.81, 1.08 
   };
 
@@ -231,7 +231,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto gradient_Host = Kokkos::create_mirror_view( gradient );
   Kokkos::deep_copy( gradient_Host, gradient );
 
-  std::vector<std::vector<std::vector<double>>> gradient_gold = { 
+  std::vector<std::vector<std::vector<Plato::Scalar>>> gradient_gold = { 
     {{0.0,-2.0, 0.0},{ 2.0, 0.0,-2.0},{-2.0, 2.0, 0.0},{ 0.0, 0.0, 2.0}},
     {{0.0,-2.0, 0.0},{ 0.0, 2.0,-2.0},{-2.0, 0.0, 2.0},{ 2.0, 0.0, 0.0}},
     {{0.0, 0.0,-2.0},{-2.0, 2.0, 0.0},{ 0.0,-2.0, 2.0},{ 2.0, 0.0, 0.0}},
@@ -258,7 +258,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto tgrad_Host = Kokkos::create_mirror_view( tGrad );
   Kokkos::deep_copy( tgrad_Host, tGrad );
 
-  std::vector<std::vector<double>> tgrad_gold = { 
+  std::vector<std::vector<Plato::Scalar>> tgrad_gold = { 
     {8.0e-07,  6.4e-06,  3.2e-06}, 
     {8.0e-06,  6.4e-06, -4.0e-06},
     {8.0e-06,  1.6e-06,  8.0e-07},
@@ -280,7 +280,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto tflux_Host = Kokkos::create_mirror_view( tFlux );
   Kokkos::deep_copy( tflux_Host, tFlux );
 
-  std::vector<std::vector<double>> tflux_gold = { 
+  std::vector<std::vector<Plato::Scalar>> tflux_gold = { 
    {8.0e-04,  6.4e-03,  3.2e-03}, 
    {8.0e-03,  6.4e-03, -4.0e-03},
    {8.0e-03,  1.6e-03,  8.0e-04},
@@ -302,7 +302,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto result_Host = Kokkos::create_mirror_view( result );
   Kokkos::deep_copy( result_Host, result );
 
-  std::vector<std::vector<double>> result_gold = { 
+  std::vector<std::vector<Plato::Scalar>> result_gold = { 
    {-1602.56410256410254, -12099.2027243589710, -5128.20512820512704, -0.000133333333333333313,
      6169.71554487179492, -3525.64102564102450, -9695.35657051281487, -0.0000499999999999999685,
     -5688.94631410256352,  10496.6386217948711,  4006.41025641025590,  0.000116666666666666638,
@@ -328,7 +328,7 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, 3D )
   auto mass_result_Host = Kokkos::create_mirror_view( massResult );
   Kokkos::deep_copy( mass_result_Host, massResult );
 
-  std::vector<std::vector<double>> mass_result_gold = { 
+  std::vector<std::vector<Plato::Scalar>> mass_result_gold = { 
     {0.000000000000000000, 0.000000000000000000, 0.000000000000000000, 0.00468749999999999896,
      0.000000000000000000, 0.000000000000000000, 0.000000000000000000, 0.00468749999999999896,
      0.000000000000000000, 0.000000000000000000, 0.000000000000000000, 0.00468749999999999896,
@@ -397,9 +397,9 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                    \n"
-    "  <Parameter name='PDE Constraint' type='string' value='First Order'/>                  \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Parabolic'/>                    \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='false'/>                            \n"
-    "  <ParameterList name='First Order'>                                                    \n"
+    "  <ParameterList name='Parabolic'>                                                      \n"
     "    <ParameterList name='Penalty Function'>                                             \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                            \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                               \n"
@@ -433,13 +433,13 @@ TEUCHOS_UNIT_TEST( TransientThermomechTests, TransientThermomechResidual3D )
 
   // compute and test value
   //
-  auto timeStep = params->sublist("Time Integration").get<double>("Time Step");
+  auto timeStep = params->sublist("Time Integration").get<Plato::Scalar>("Time Step");
   auto residual = vectorFunction.value(state, statePrev, z, timeStep);
 
   auto residual_Host = Kokkos::create_mirror_view( residual );
   Kokkos::deep_copy( residual_Host, residual );
 
-  std::vector<double> residual_gold = { 
+  std::vector<Plato::Scalar> residual_gold = { 
    -18669.59575320513,   -14903.70552884615,   -19551.14663461538,    0.02413541666666667, 
    -17427.51482371794,   -15745.01001602564,   -16586.51762820513,    0.03118750000000000,
     1562.601562500000,   -6370.137620192306,   -1682.848557692307,    0.006822916666666667,

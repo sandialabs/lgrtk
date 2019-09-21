@@ -17,15 +17,15 @@ template<Plato::OrdinalType SpaceDim>
 class ThermalFlux
 {
   private:
-    static constexpr auto m_numNodesPerCell = SpaceDim+1;
-    static constexpr auto m_numDofsPerCell  = m_numNodesPerCell;
+    static constexpr auto mNumNodesPerCell = SpaceDim+1;
+    static constexpr auto mNumDofsPerCell  = mNumNodesPerCell;
 
-    const Omega_h::Matrix<SpaceDim,SpaceDim> m_cellConductivity;
+    const Omega_h::Matrix<SpaceDim,SpaceDim> mCellConductivity;
 
   public:
 
     ThermalFlux( const Omega_h::Matrix<SpaceDim,SpaceDim> cellConductivity) :
-            m_cellConductivity(cellConductivity) {}
+            mCellConductivity(cellConductivity) {}
 
     template<typename TGradScalarType, typename TFluxScalarType>
     DEVICE_TYPE inline void
@@ -38,7 +38,7 @@ class ThermalFlux
       for( Plato::OrdinalType iDim=0; iDim<SpaceDim; iDim++){
         tflux(cellOrdinal,iDim) = 0.0;
         for( Plato::OrdinalType jDim=0; jDim<SpaceDim; jDim++){
-          tflux(cellOrdinal,iDim) += tgrad(cellOrdinal,jDim)*m_cellConductivity[iDim][jDim];
+          tflux(cellOrdinal,iDim) += tgrad(cellOrdinal,jDim)*mCellConductivity[iDim][jDim];
         }
       }
     }

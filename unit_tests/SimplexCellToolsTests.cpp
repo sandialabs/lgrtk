@@ -37,7 +37,7 @@ namespace {
     out << "Calling setFusedJacobianDet.\n";
     CellTools::setFusedJacobianDet(jacobianDet, fusedJacobian);
 
-    double multiplier = 1.0;
+    Plato::Scalar multiplier = 1.0;
     for (int d=0; d<spaceDim; d++)
     {
       multiplier /= (d+1);
@@ -51,10 +51,10 @@ namespace {
     Kokkos::deep_copy( expectedVolumesHost, expectedVolumes );
 
     out << "Entering comparison loop.\n";
-    double tol = 1e-14;
+    Plato::Scalar tol = 1e-14;
     for (int cellOrdinal=0; cellOrdinal<numCells; cellOrdinal++)
     {
-      double volume = fabs(jacobianDetHost(cellOrdinal) * multiplier);
+      Plato::Scalar volume = fabs(jacobianDetHost(cellOrdinal) * multiplier);
       TEST_FLOATING_EQUALITY(volume, expectedVolumesHost(cellOrdinal), tol);
     }
     
@@ -91,7 +91,7 @@ namespace {
     CellTools::mapToPhysicalFrame(physPoints, refNodes, cellWorkset);
     
     out << "Calling testFloatingEquality<>.\n";
-    double tol=1e-15;
+    Plato::Scalar tol=1e-15;
     testFloatingEquality<Scalar,PhysicalPointsView>(physPoints,cellWorkset,tol,out,success);
     out << "Returning from testWorksetMapToPhysicalFrame.\n";
   }
@@ -147,11 +147,11 @@ namespace {
         }
       }
       // find the non-interior-cell node nearest the centroid
-      double leastDistance = 2.0;
+      Plato::Scalar leastDistance = 2.0;
       int closestNodeOrdinal = -1;
       for (int nodeOrdinal=0; nodeOrdinal<4; nodeOrdinal++)
       {
-        double dist = 0.0;
+        Plato::Scalar dist = 0.0;
         for (int d=0; d<spaceDim; d++)
         {
           dist += (centroid[d] - (1.0 - cellWorksetHost(0,nodeOrdinal,d))) * (centroid[d] - (1.0 - cellWorksetHost(0,nodeOrdinal,d)));
@@ -562,7 +562,7 @@ namespace {
     CellTools::setFusedJacobian(fusedJacobian,cellWorkset);
     CellTools::setFusedJacobianDet(fusedJacobianDet,fusedJacobian);
 
-    Kokkos::parallel_reduce(numCells, LAMBDA_EXPRESSION(const int cellOrdinal, double &localIntegral) {
+    Kokkos::parallel_reduce(numCells, LAMBDA_EXPRESSION(const int cellOrdinal, Plato::Scalar &localIntegral) {
      Scalar mySum = 0.0;
      for (int ptOrdinal=0; ptOrdinal<numPoints; ptOrdinal++)
      {
@@ -635,7 +635,7 @@ namespace {
     CellTools::setFusedJacobian(fusedJacobian,cellWorkset);
     CellTools::setFusedJacobianDet(fusedJacobianDet,fusedJacobian);
     
-    Kokkos::parallel_reduce(numCells, LAMBDA_EXPRESSION(const int cellOrdinal, double &localIntegral) {
+    Kokkos::parallel_reduce(numCells, LAMBDA_EXPRESSION(const int cellOrdinal, Plato::Scalar &localIntegral) {
      Scalar mySum = 0.0;
      for (int ptOrdinal=0; ptOrdinal<numPoints; ptOrdinal++)
      {
@@ -702,7 +702,7 @@ namespace {
         }
     });
     
-    double tol=1e-14;
+    Plato::Scalar tol=1e-14;
     testFloatingEquality(expectedJacobianScalarView, jacobianScalarView, tol, out, success);
   }
   
@@ -740,7 +740,7 @@ namespace {
       expectedCellGradients(cellOrdinal,1,0) =  Scalar(numCells); // 1/h = 1/(1/numCells) = numCells
     });
     
-    double tol=1e-14;
+    Plato::Scalar tol=1e-14;
     testFloatingEquality(expectedCellGradients, cellGradients, tol, out, success);
   }
 } // namespace

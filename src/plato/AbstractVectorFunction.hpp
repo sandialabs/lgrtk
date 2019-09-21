@@ -19,7 +19,7 @@ class AbstractVectorFunction
 {
 protected:
     Omega_h::Mesh& mMesh; /*!< volume mesh database */
-    Plato::DataMap& m_dataMap; /*!< PLATO Analyze database */
+    Plato::DataMap& mDataMap; /*!< PLATO Analyze database */
     Omega_h::MeshSets& mMeshSets;  /*!< surface mesh database */
 
 public:
@@ -31,7 +31,7 @@ public:
     **********************************************************************************/
     explicit AbstractVectorFunction(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Plato::DataMap& aDataMap) :
             mMesh(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mMeshSets(aMeshSets)
     {
     }

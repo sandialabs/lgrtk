@@ -57,6 +57,7 @@
 #include <Teuchos_ParameterEntry.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_Time.hpp>
+#include <plato/PlatoTypes.hpp>
 
 #include "plato/alg/ParseInput.hpp"
 
@@ -69,12 +70,12 @@ void add_timings(
   Teuchos::ParameterList &runtime = problem.sublist("Runtime");
   const std::string       time_doc =
       "Number of seconds of execution time on processor 0.";
-  const double sec = time_main.stop();
+  const Plato::Scalar sec = time_main.stop();
   if (comm::rank(machine) == 0) {
     std::cout << "\nTotal Plato Execution Time: " << sec << " seconds\n";
   }
   runtime.set("Execution Time in Sec", sec, time_doc);
-  runtime.get<double>("Execution Time in Sec");
+  runtime.get<Plato::Scalar>("Execution Time in Sec");
 }
 
 bool unused(

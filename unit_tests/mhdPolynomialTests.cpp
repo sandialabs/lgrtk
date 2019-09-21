@@ -207,7 +207,7 @@ ANONYMOUS:
 					     constantTerm,
 					     linearFactor );
  
-          double src_poly[3][Polynomial::nterms]={{0.}};
+          Plato::Scalar src_poly[3][Polynomial::nterms]={{0.}};
           src_poly[0][0] = constantTerm[0];
           src_poly[0][1] = linearFactor;
           src_poly[1][0] = constantTerm[1];
@@ -217,7 +217,7 @@ ANONYMOUS:
       
           Polytope intersection;
           r3d::intersect_simplices(intersection, nodalCoordinates_src, nodalCoordinates_trg);
-          double moments[Polynomial::nterms] = {0.}; 
+          Plato::Scalar moments[Polynomial::nterms] = {0.}; 
           r3d::reduce<moment>(intersection, moments);
 
           for (int j=0; j<3; ++j) {
@@ -235,7 +235,7 @@ ANONYMOUS:
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, elemLids_src.size()), L, integralMagneticFluxDensity);
 
       //exact solution for a single target element
-      double target_volume(0.);
+      Plato::Scalar target_volume(0.);
       Polytope poly_trg;
       r3d::init(poly_trg, nodalCoordinates_trg);
       r3d::reduce<0>(poly_trg, &target_volume);

@@ -20,9 +20,9 @@ class ComputedField
 /******************************************************************************/
 {
   protected:
-    const std::string   m_name;
-    const std::string   m_funcString;
-    Plato::ScalarVector m_values;
+    const std::string   mName;
+    const std::string   mFuncString;
+    Plato::ScalarVector mValues;
   
   public:
   
@@ -31,9 +31,9 @@ class ComputedField
     const Omega_h::Mesh& aMesh, 
     const std::string &aName, 
     const std::string &aFunc) :
-    m_name(aName),
-    m_funcString(aFunc),
-    m_values(aName, aMesh.nverts())
+    mName(aName),
+    mFuncString(aFunc),
+    mValues(aName, aMesh.nverts())
   /**************************************************************************/
   {
     initialize(aMesh, aName, aFunc);
@@ -47,12 +47,12 @@ class ComputedField
   /**************************************************************************/
   {
     auto numPoints = aMesh.nverts();
-    auto x_coords = Plato::getArray_Omega_h<Plato::Scalar>("x coords", numPoints);
-    auto y_coords = Plato::getArray_Omega_h<Plato::Scalar>("y coords", numPoints);
-    auto z_coords = Plato::getArray_Omega_h<Plato::Scalar>("z coords", numPoints);
+    auto x_coords = Plato::getArray_Omega_h<double>("x coords", numPoints);
+    auto y_coords = Plato::getArray_Omega_h<double>("y coords", numPoints);
+    auto z_coords = Plato::getArray_Omega_h<double>("z coords", numPoints);
   
     auto coords = aMesh.coords();
-    auto values = m_values;
+    auto values = mValues;
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numPoints), LAMBDA_EXPRESSION(Plato::OrdinalType aPointOrdinal)
     {
       if (SpaceDim > 0) x_coords[aPointOrdinal] = coords[aPointOrdinal*SpaceDim + 0];
@@ -65,7 +65,7 @@ class ComputedField
     if (SpaceDim > 1) reader.register_variable("y", Omega_h::any(Omega_h::Reals(y_coords)));
     if (SpaceDim > 2) reader.register_variable("z", Omega_h::any(Omega_h::Reals(z_coords)));
   
-    auto result = reader.read_string(m_funcString, "Value");
+    auto result = reader.read_string(mFuncString, "Value");
     reader.repeat(result);
     Omega_h::Reals fxnValues = Omega_h::any_cast<Omega_h::Reals>(result);
 
@@ -81,7 +81,7 @@ class ComputedField
   void get(Plato::ScalarVector aValues)
   /******************************************************************************/
   {
-    Kokkos::deep_copy( aValues, m_values );
+    Kokkos::deep_copy( aValues, mValues );
   }
 
   /******************************************************************************/
@@ -89,10 +89,10 @@ class ComputedField
   /******************************************************************************/
   {
     TEUCHOS_TEST_FOR_EXCEPTION(
-      m_values.extent(0)*aStride != aValues.extent(0), 
+      mValues.extent(0)*aStride != aValues.extent(0), 
       std::logic_error, 
       "Size mismatch in field initialization:  Mod(view, stride) != 0");
-    auto tFromValues = m_values;
+    auto tFromValues = mValues;
     auto tToValues = aValues;
     Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tFromValues.extent(0)), LAMBDA_EXPRESSION(Plato::OrdinalType aPointOrdinal)
     {
@@ -101,7 +101,7 @@ class ComputedField
   }
 
   /******************************************************************************/
-  const decltype(m_name)& name() { return m_name; }
+  const decltype(mName)& name() { return mName; }
   /******************************************************************************/
 
 }; // end class BodyLoad

@@ -16,6 +16,7 @@
 #include "plato/Plato_AugLagStressCriterionQuadratic.hpp"
 #include "plato/VonMisesLocalMeasure.hpp"
 #include "plato/TensileEnergyDensityLocalMeasure.hpp"
+#include "plato/ThermalVonMisesLocalMeasure.hpp"
 #include "plato/WeightedSumFunction.hpp"
 #include "plato/PhysicsScalarFunction.hpp"
 #include "plato/MassPropertiesFunction.hpp"
@@ -146,8 +147,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateVonMises)
     using ControlT = typename Residual::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = tMesh->nelems();
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -176,7 +177,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateVonMises)
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     Plato::ScalarVector tLagrangeMultipliers("Lagrange Multiplier", tNumCells);
@@ -185,12 +186,12 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateVonMises)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
 
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasure = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
     tCriterion.setLocalMeasure(tLocalMeasure, tLocalMeasure);
 
     tCriterion.evaluate(tStateWS, tControlWS, tConfigWS, tResultWS);
@@ -224,8 +225,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     using ControlT = typename Residual::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = tMesh->nelems();
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -255,7 +256,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     Plato::ScalarVector tLagrangeMultipliers("lagrange multipliers", tNumCells);
@@ -266,8 +267,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
 
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasure = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasure, tLocalMeasure);
     tCriterion.setLocalMeasureValueLimit(0.15);
@@ -321,8 +322,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
     Omega_h::MeshSets tMeshSets;
     Plato::WeightedSumFunction<Plato::Mechanics<tSpaceDim>> tWeightedSum(*tMesh, tDataMap);
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterion = 
-    std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterion = 
+    std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     Plato::ScalarVector tLagrangeMultipliers("lagrange multipliers", tNumCells);
@@ -333,8 +334,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
 
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasure = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion->setLocalMeasure(tLocalMeasure, tLocalMeasure);
     tCriterion->setLocalMeasureValueLimit(0.15);
@@ -353,6 +354,87 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvalTensileEnergyScalarFunc
     TEST_FLOATING_EQUALITY(163.304492775, tObjFuncVal, tTolerance);
 }
 
+TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_CheckThermalVonMises3D)
+{
+    constexpr Plato::OrdinalType tSpaceDim = 3;
+    constexpr Plato::OrdinalType tMeshWidth = 1;
+    auto tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
+
+    using Residual = typename Plato::Evaluation<Plato::SimplexThermomechanics<tSpaceDim>>::Residual;
+
+    using StateT = typename Residual::StateScalarType;
+    using ConfigT = typename Residual::ConfigScalarType;
+
+    constexpr Plato::OrdinalType tDofsPerNode = Plato::SimplexThermomechanics<tSpaceDim>::mNumDofsPerNode;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexThermomechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexThermomechanics<tSpaceDim>::mNumNodesPerCell;
+
+    const Plato::OrdinalType tNumCells = tMesh->nelems();
+
+    Plato::WorksetBase<Plato::SimplexThermomechanics<tSpaceDim>> tWorksetBase(*tMesh);
+    Plato::ScalarArray3DT<ConfigT> tConfigWS("config workset", tNumCells, tNodesPerCell, tSpaceDim);
+    tWorksetBase.worksetConfig(tConfigWS);
+
+    // Create state workset
+    const Plato::OrdinalType tNumVerts = tMesh->nverts();
+    const Plato::OrdinalType tNumDofs  = tNumVerts * tDofsPerNode;
+    Plato::ScalarVector tState("States", tNumDofs);
+    Plato::fill(0.0, tState);
+    Plato::OrdinalType tDofStride = tDofsPerNode;
+    Plato::OrdinalType tDofToSet = Plato::SimplexThermomechanics<tSpaceDim>::mTDofOffset;
+    Plato::Scalar tTemperature = 11.0;
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs / tDofStride), 
+                         LAMBDA_EXPRESSION(const Plato::OrdinalType & aNodeIndex)
+    {
+        Plato::OrdinalType tIndex = tDofStride * aNodeIndex + tDofToSet;
+        tState(tIndex) = tTemperature;
+    }
+    , "fill specific vector entry globally");
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "x1", tState, tDofStride, 0, 0.1 - 0.05);
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "y1", tState, tDofStride, 1, 0.1 - 0.10);
+    PlatoUtestHelpers::set_dof_in_scalar_vector_on_boundary_3D(*tMesh, "z1", tState, tDofStride, 2, 0.1 + 0.05);
+    Plato::ScalarMultiVectorT<StateT> tStateWS("state workset", tNumCells, tDofsPerCell);
+    tWorksetBase.worksetState(tState, tStateWS);
+
+    // ALLOCATE PLATO CRITERION
+    Plato::DataMap tDataMap;
+    Omega_h::MeshSets tMeshSets;
+
+    Teuchos::RCP<Teuchos::ParameterList> tParamList =
+    Teuchos::getParametersFromXmlString(
+    "<ParameterList name='Plato Problem'>                                                    \n"
+    "  <ParameterList name='Material Model'>                                                 \n"
+    "    <ParameterList name='Isotropic Linear Thermoelastic'>                               \n"
+    "      <Parameter  name='Poissons Ratio' type='double' value='0.0'/>                     \n"
+    "      <Parameter  name='Youngs Modulus' type='double' value='100.0'/>                   \n"
+    "      <Parameter  name='Thermal Expansion Coefficient' type='double' value='1.0e-1'/>   \n"
+    "      <Parameter  name='Thermal Conductivity Coefficient' type='double' value='910.0'/> \n"
+    "      <Parameter  name='Reference Temperature' type='double' value='1.0'/>              \n"
+    "    </ParameterList>                                                                    \n"
+    "  </ParameterList>                                                                      \n"
+    "</ParameterList>                                                                        \n"
+  );
+
+    Plato::ThermoelasticModelFactory<tSpaceDim> tFactory(*tParamList);
+    auto tMaterialModel = tFactory.create();
+
+    const std::string tName = "ThermalVonMises";
+    Plato::ThermalVonMisesLocalMeasure<Residual,Plato::SimplexThermomechanics<tSpaceDim>> 
+                         tLocalMeasure(tMaterialModel, tName);
+
+    Plato::ScalarVector tResult("ThermalVonMises", tNumCells);
+    tLocalMeasure(tStateWS, tConfigWS, tDataMap, tResult);
+
+    auto tHostResult = Kokkos::create_mirror(tResult);
+    Kokkos::deep_copy(tHostResult, tResult);
+    constexpr Plato::Scalar tTolerance = 1e-6;
+    for(Plato::OrdinalType tIndex = 0; tIndex < tNumCells; tIndex++)
+    {
+        //printf("Cell %d , TVM %f\n", tIndex, tHostResult(tIndex));
+        TEST_FLOATING_EQUALITY(13.2287565, tHostResult(tIndex), tTolerance);
+    }
+}
+
 
 TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyScalarFuncBaseGradZ_3D)
 {
@@ -367,17 +449,17 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergySca
 
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ>> tCriterionGradZ = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradZ = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>  tLocalMeasureGradZ = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureGradZ = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradZ->setLocalMeasure(tLocalMeasureGradZ, tLocalMeasurePODType);
@@ -408,18 +490,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergySca
 
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradU->setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
@@ -450,18 +532,18 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergySca
 
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
     
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradU->setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
@@ -492,8 +574,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     using ControlT = typename Residual::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = tMesh->nelems();
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -523,7 +605,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
-    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     Plato::ScalarVector tLagrangeMultipliers("lagrange multipliers", tNumCells);
@@ -534,8 +616,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_EvaluateTensileEnergyDensit
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
 
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasure = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasure, tLocalMeasure);
 
@@ -569,14 +651,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCri
     Omega_h::MeshSets tMeshSets;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
-    Plato::AugLagStressCriterionQuadratic<GradientZ> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
 
@@ -595,14 +677,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCri
     Omega_h::MeshSets tMeshSets;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
-    Plato::AugLagStressCriterionQuadratic<GradientZ> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
 
@@ -621,15 +703,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCri
     Omega_h::MeshSets tMeshSets;
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
-    Plato::AugLagStressCriterionQuadratic<Jacobian> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
 
@@ -648,15 +730,15 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_FiniteDiff_TensileEnergyCri
     Omega_h::MeshSets tMeshSets;
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
-    Plato::AugLagStressCriterionQuadratic<Jacobian> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
     
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>  tLocalMeasureEvaluationType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureEvaluationType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasurePODType = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tCriterion.setLocalMeasure(tLocalMeasureEvaluationType, tLocalMeasurePODType);
 
@@ -674,24 +756,24 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_UpdateMultipliers1)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     using Residual = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual;
-    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     const Plato::OrdinalType tNumCells = tMesh->nelems();
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
 
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasure = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
     tCriterion.setLocalMeasure(tLocalMeasure, tLocalMeasure);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -747,24 +829,24 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagQuadratic_UpdateMultipliers2)
     Plato::DataMap tDataMap;
     Omega_h::MeshSets tMeshSets;
     using Residual = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Residual;
-    Plato::AugLagStressCriterionQuadratic<Residual> tCriterion(*tMesh, tMeshSets, tDataMap);
+    Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>> tCriterion(*tMesh, tMeshSets, tDataMap);
 
     // SET INPUT DATA
     const Plato::OrdinalType tNumCells = tMesh->nelems();
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
 
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasure = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
     tCriterion.setLocalMeasure(tLocalMeasure, tLocalMeasure);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -948,8 +1030,8 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
     using ControlT = typename Residual::ControlScalarType;
 
     const Plato::OrdinalType tNumCells = tMesh->nelems();
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -990,7 +1072,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_CriterionEval_3D)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1031,7 +1113,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_CriterionGradZ_2D)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1058,7 +1140,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_CriterionGradU_2D)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1090,7 +1172,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_CriterionGradZ_3D)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1122,7 +1204,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_FiniteDiff_CriterionGradU_3D)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1149,14 +1231,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMultipliers1)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -1226,14 +1308,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLag_UpdateMultipliers2)
 
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     Plato::WorksetBase<Plato::SimplexMechanics<tSpaceDim>> tWorksetBase(*tMesh);
@@ -1299,7 +1381,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_FiniteDiff_CriterionGradZ_2D)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1321,7 +1403,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_FiniteDiff_CriterionGradU_2D)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1348,7 +1430,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_FiniteDiff_CriterionGradZ_3D)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1375,7 +1457,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_FiniteDiff_CriterionGradU_3D)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
@@ -1416,14 +1498,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_UpdateProbelm1)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     const Plato::OrdinalType tNumCells = tMesh->nelems();
@@ -1484,14 +1566,14 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, AugLagGeneral_UpdateProblem2)
     // SET INPUT DATA
     constexpr Plato::Scalar tYoungsModulus = 1;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
     tCriterion.setCellStiffMatrix(tCellStiffMatrix);
 
     // CREATE WORKSETS FOR TEST
-    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numDofsPerCell;
-    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::m_numNodesPerCell;
+    constexpr Plato::OrdinalType tDofsPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumDofsPerCell;
+    constexpr Plato::OrdinalType tNumNodesPerCell = Plato::SimplexMechanics<tSpaceDim>::mNumNodesPerCell;
 
     // Create configuration workset
     const Plato::OrdinalType tNumCells = tMesh->nelems();
@@ -1612,16 +1694,16 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusTensileEnergy2D)
     tMassCriterion->setMaterialDensity(tMaterialDensity);
     tMassCriterion->setCalculationType("Mass");
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tTensileEnergyCriterion = 
-    std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tTensileEnergyCriterion = 
+    std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
     Plato::ScalarVector tLagrangeMultipliers("lagrange multipliers", tNumCells);
     Plato::fill(0.1, tLagrangeMultipliers);
     tTensileEnergyCriterion->setLagrangeMultipliers(tLagrangeMultipliers);
     tTensileEnergyCriterion->setAugLagPenalty(1.5);
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
-    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual>>  tLocalMeasure = 
-         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual>>
+    const std::shared_ptr<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasure = 
+         std::make_shared<Plato::TensileEnergyDensityLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>
                                               (tYoungsModulus, tPoissonRatio, "TensileEnergyDensity");
     tTensileEnergyCriterion->setLocalMeasure(tLocalMeasure, tLocalMeasure);
     tTensileEnergyCriterion->setLocalMeasureValueLimit(0.15);
@@ -1666,7 +1748,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_2D)
     constexpr Plato::OrdinalType tMeshWidth = 1;
     Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
 
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
@@ -1676,20 +1758,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_2D)
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ>> tCriterionGradZ = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradZ = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ>>  tLocalMeasureGradZ = 
-        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ>>(tCellStiffMatrix, "VonMises");
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureGradZ = 
+        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
 
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradZ->setLocalMeasure(tLocalMeasureGradZ, tLocalMeasurePODType);
@@ -1737,7 +1819,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_3D)
     constexpr Plato::OrdinalType tMeshWidth = 1;
     Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
 
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
@@ -1747,20 +1829,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradZ_3D)
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using GradientZ = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::GradientZ;
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ>> tCriterionGradZ = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradZ = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ>>  tLocalMeasureGradZ = 
-        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ>>(tCellStiffMatrix, "VonMises");
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureGradZ = 
+        std::make_shared<Plato::VonMisesLocalMeasure<GradientZ,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
 
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradZ->setLocalMeasure(tLocalMeasureGradZ, tLocalMeasurePODType);
@@ -1808,7 +1890,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_2D)
     constexpr Plato::OrdinalType tMeshWidth = 1;
     Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
 
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
@@ -1818,20 +1900,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_2D)
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian>>  tLocalMeasureGradU = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian>>(tCellStiffMatrix, "VonMises");
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureGradU = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
 
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradU->setLocalMeasure(tLocalMeasureGradU, tLocalMeasurePODType);
@@ -1879,7 +1961,7 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_3D)
     constexpr Plato::OrdinalType tMeshWidth = 1;
     Teuchos::RCP<Omega_h::Mesh> tMesh = PlatoUtestHelpers::getBoxMesh(tSpaceDim, tMeshWidth);
 
-    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::m_numVoigtTerms;
+    constexpr Plato::OrdinalType tNumVoigtTerms = Plato::SimplexMechanics<tSpaceDim>::mNumVoigtTerms;
 
     // ALLOCATE PLATO CRITERION
     Plato::DataMap tDataMap;
@@ -1889,20 +1971,20 @@ TEUCHOS_UNIT_TEST(PlatoLGRUnitTests, MassPlusVonMises_GradU_3D)
     using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<tSpaceDim>>;
     using Jacobian = typename Plato::Evaluation<Plato::SimplexMechanics<tSpaceDim>>::Jacobian;
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual>> tCriterionResidual = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>> tCriterionResidual = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Residual,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
-    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian>> tCriterionGradU = 
-          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian>>(*tMesh, tMeshSets, tDataMap);
+    const std::shared_ptr<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>> tCriterionGradU = 
+          std::make_shared<Plato::AugLagStressCriterionQuadratic<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(*tMesh, tMeshSets, tDataMap);
 
     constexpr Plato::Scalar tYoungsModulus = 1.0;
     constexpr Plato::Scalar tPoissonRatio = 0.3;
     Plato::IsotropicLinearElasticMaterial<tSpaceDim> tMatModel(tYoungsModulus, tPoissonRatio);
     Omega_h::Matrix<tNumVoigtTerms, tNumVoigtTerms> tCellStiffMatrix = tMatModel.getStiffnessMatrix();
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian>>  tLocalMeasureGradU = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian>>(tCellStiffMatrix, "VonMises");
-    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual>>  tLocalMeasurePODType = 
-        std::make_shared<Plato::VonMisesLocalMeasure<Residual>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasureGradU = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Jacobian,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
+    const std::shared_ptr<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>  tLocalMeasurePODType = 
+        std::make_shared<Plato::VonMisesLocalMeasure<Residual,Plato::SimplexMechanics<tSpaceDim>>>(tCellStiffMatrix, "VonMises");
 
     tCriterionResidual->setLocalMeasure(tLocalMeasurePODType, tLocalMeasurePODType);
     tCriterionGradU->setLocalMeasure(tLocalMeasureGradU, tLocalMeasurePODType);

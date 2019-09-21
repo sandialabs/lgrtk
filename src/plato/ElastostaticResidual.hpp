@@ -41,13 +41,13 @@ class ElastostaticResidual :
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim;
 
-    using Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms;
-    using Plato::Simplex<mSpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexMechanics<mSpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms;
+    using Plato::Simplex<mSpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<mSpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexMechanics<mSpaceDim>::mNumDofsPerCell;
 
     using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
@@ -55,17 +55,19 @@ private:
     using ConfigScalarType = typename EvaluationType::ConfigScalarType;
     using ResultScalarType = typename EvaluationType::ResultScalarType;
 
-    Omega_h::Matrix<m_numVoigtTerms, m_numVoigtTerms> m_cellStiffness;
+    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffness;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<mSpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<mSpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>> m_bodyLoads;
-    std::shared_ptr<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>> m_boundaryLoads;
-    std::shared_ptr<Plato::CellForcing<m_numVoigtTerms>> m_cellForcing;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
+    std::shared_ptr<Plato::NaturalBCs<mSpaceDim,mNumDofsPerNode>> mBoundaryLoads;
+    std::shared_ptr<Plato::CellForcing<mNumVoigtTerms>> mCellForcing;
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
-    std::vector<std::string> m_plottable;
+    Teuchos::RCP<Plato::LinearElasticMaterial<mSpaceDim>> mMaterialModel;
+
+    std::vector<std::string> mPlottable;
 
 public:
     /******************************************************************************//**
@@ -82,32 +84,30 @@ public:
                          Teuchos::ParameterList& aProblemParams,
                          Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyWeighting(m_indicatorFunction),
-            m_bodyLoads(nullptr),
-            m_boundaryLoads(nullptr),
-            m_cellForcing(nullptr),
+            mIndicatorFunction(aPenaltyParams),
+            mApplyWeighting(mIndicatorFunction),
+            mBodyLoads(nullptr),
+            mBoundaryLoads(nullptr),
+            mCellForcing(nullptr),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     {
         // create material model and get stiffness
         //
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aProblemParams);
-        auto tMaterialModel = tMaterialModelFactory.create();
-        m_cellStiffness = tMaterialModel->getStiffnessMatrix();
-  
+        mMaterialModel = tMaterialModelFactory.create();
 
         // parse body loads
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            m_bodyLoads = std::make_shared<Plato::BodyLoads<mSpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse boundary Conditions
         // 
         if(aProblemParams.isSublist("Natural Boundary Conditions"))
         {
-            m_boundaryLoads = std::make_shared<Plato::NaturalBCs<mSpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
+            mBoundaryLoads = std::make_shared<Plato::NaturalBCs<mSpaceDim,mNumDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
         }
   
         // parse cell problem forcing
@@ -115,12 +115,12 @@ public:
         if(aProblemParams.isSublist("Cell Problem Forcing"))
         {
             Plato::OrdinalType tColumnIndex = aProblemParams.sublist("Cell Problem Forcing").get<Plato::OrdinalType>("Column Index");
-            m_cellForcing = std::make_shared<Plato::CellForcing<m_numVoigtTerms>>(m_cellStiffness, tColumnIndex);
+            mCellForcing = std::make_shared<Plato::CellForcing<mNumVoigtTerms>>(mCellStiffness, tColumnIndex);
         }
 
-        auto tResidualParams = aProblemParams.sublist("Elastostatics");
+        auto tResidualParams = aProblemParams.sublist("Elliptic");
         if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
-          m_plottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
+          mPlottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
 
     }
 
@@ -146,21 +146,21 @@ public:
           typename Plato::fad_type_t<Plato::SimplexMechanics<EvaluationType::SpatialDim>, StateScalarType, ConfigScalarType>;
 
       Plato::ComputeGradientWorkset<mSpaceDim> tComputeGradient;
-      Plato::Strain<mSpaceDim>                        tComputeVoigtStrain;
-      Plato::LinearStress<mSpaceDim>                  tComputeVoigtStress(m_cellStiffness);
+      Plato::Strain<mSpaceDim>                 tComputeVoigtStrain;
+      Plato::LinearStress<mSpaceDim>           tComputeVoigtStress(mMaterialModel);
       Plato::StressDivergence<mSpaceDim>       tComputeStressDivergence;
 
       Plato::ScalarVectorT<ConfigScalarType>
         tCellVolume("cell weight",tNumCells);
 
       Plato::ScalarMultiVectorT<StrainScalarType>
-        tStrain("strain",tNumCells,m_numVoigtTerms);
+        tStrain("strain",tNumCells,mNumVoigtTerms);
     
       Plato::ScalarArray3DT<ConfigScalarType>
-        tGradient("gradient",tNumCells,m_numNodesPerCell,mSpaceDim);
+        tGradient("gradient",tNumCells,mNumNodesPerCell,mSpaceDim);
     
       Plato::ScalarMultiVectorT<ResultScalarType>
-        tStress("stress",tNumCells,m_numVoigtTerms);
+        tStress("stress",tNumCells,mNumVoigtTerms);
     
       auto tQuadratureWeight = mCubatureRule->getCubWeight();
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
@@ -175,12 +175,12 @@ public:
         tComputeVoigtStress(aCellOrdinal, tStress, tStrain);
       }, "Cauchy stress");
 
-      if( m_cellForcing != nullptr )
+      if( mCellForcing != nullptr )
       {
-          m_cellForcing->add( tStress );
+          mCellForcing->add( tStress );
       }
 
-      auto& tApplyWeighting = m_applyWeighting;
+      auto& tApplyWeighting = mApplyWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,tNumCells), LAMBDA_EXPRESSION(const Plato::OrdinalType & aCellOrdinal)
       {
         // apply weighting
@@ -190,18 +190,18 @@ public:
         tComputeStressDivergence(aCellOrdinal, aResult, tStress, tGradient, tCellVolume);
       }, "Apply weighting and compute divergence");
 
-      if( m_bodyLoads != nullptr )
+      if( mBodyLoads != nullptr )
       {
-          m_bodyLoads->get( mMesh, aState, aControl, aResult );
+          mBodyLoads->get( mMesh, aState, aControl, aResult, -1.0 );
       }
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult, -1.0 );
       }
 
-      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, tStrain, "strain");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, tStress, "stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, tStrain, "strain");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"stress") ) toMap(mDataMap, tStress, "stress");
 
     }
 };

@@ -47,7 +47,10 @@ MESSAGE("-- BUILD_SHARED_LIBS: ${BUILD_SHARED_LIBS}")
 
 SET(CMAKE_CXX_FLAGS ${Trilinos_CXX_COMPILER_FLAGS})
 SET(CMAKE_C_FLAGS ${Trilinos_C_COMPILER_FLAGS} )
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CUSTOM_CXX_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
+## this has to be conditional, or building without cuda fails
+IF (DEFINED AMGX_PREFIX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${CUSTOM_CXX_FLAGS} -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored")
+ENDIF ()
 
 MESSAGE("-- CXX Flags being used in this build are : ${CMAKE_CXX_FLAGS}")
 
@@ -74,6 +77,7 @@ endif()
 FIND_PACKAGE(KokkosCore REQUIRED)
 # for StaticCrsGraph
 FIND_PACKAGE(KokkosContainers REQUIRED)
+FIND_PACKAGE(KokkosKernels REQUIRED)
 FIND_PACKAGE(Teuchos REQUIRED)
 
 SET(OMEGA_H_PREFIX "" CACHE PATH "Omega_h install location")

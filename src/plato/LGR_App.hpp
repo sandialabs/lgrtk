@@ -23,7 +23,7 @@
 
 #include "Mechanics.hpp"
 #include "Thermal.hpp"
-#include "PlatoProblem.hpp"
+#include "PlatoAbstractProblem.hpp"
 #include "plato/alg/ParseInput.hpp"
 
 #include "plato/PlatoStaticsTypes.hpp"
@@ -70,31 +70,31 @@ public:
     struct Parameter
     {
         Parameter(std::string name, std::string target, Plato::Scalar value) :
-                m_name(name),
-                m_target(target),
-                m_value(value)
+                mName(name),
+                mTarget(target),
+                mValue(value)
         {
         }
-        std::string m_name;
-        std::string m_target;
-        Plato::Scalar m_value;
+        std::string mName;
+        std::string mTarget;
+        Plato::Scalar mValue;
     };
 
     class LocalOp
     {
     protected:
         MPMD_App* mMyApp;
-        Teuchos::RCP<ProblemDefinition> m_def;
-        std::map<std::string, Teuchos::RCP<Parameter>> m_parameters;
+        Teuchos::RCP<ProblemDefinition> mDef;
+        std::map<std::string, Teuchos::RCP<Parameter>> mParameters;
     public:
         LocalOp(MPMD_App* p, Plato::InputData& opNode, Teuchos::RCP<ProblemDefinition> opDef);
         virtual ~LocalOp()
         {
         }
         virtual void operator()()=0;
-        const decltype(m_def)& getProblemDefinition()
+        const decltype(mDef)& getProblemDefinition()
         {
-            return m_def;
+            return mDef;
         }
         void updateParameters(std::string name, Plato::Scalar value);
     };
@@ -174,12 +174,12 @@ public:
     {
         if(aName == "Topology")
         {
-            this->copyFieldIntolgr(m_control, aSharedField);
+            this->copyFieldIntolgr(mControl, aSharedField);
         }
         else if(aName == "Solution")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            auto tStatesSubView = Kokkos::subview(m_state, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
             this->copyFieldIntolgr(tStatesSubView, aSharedField);
         }
     }
@@ -259,12 +259,12 @@ public:
     {
         if(aName == "Objective Value")
         {
-            std::vector<double> tValue(1, m_objective_value);
+            std::vector<Plato::Scalar> tValue(1, mObjectiveValue);
             aSharedField.setData(tValue);
         }
         else if(aName == "Constraint Value")
         {
-            std::vector<double> tValue(1, m_constraint_value);
+            std::vector<Plato::Scalar> tValue(1, mConstraintValue);
             aSharedField.setData(tValue);
         }
         else
@@ -292,7 +292,7 @@ public:
     {
         auto tTokens = split(aName, '@');
         auto tFieldName = tTokens[0];
-        auto tDataMap = m_problem->getDataMap();
+        auto tDataMap = mProblem->getDataMap();
         // element ScalarVector?
         if(tDataMap.scalarVectors.count(tFieldName))
         {
@@ -324,96 +324,96 @@ public:
     {
         if(aName == "Objective Gradient")
         {
-            this->copyFieldFromlgr(m_objective_gradient_z, aSharedField);
+            this->copyFieldFromlgr(mObjectiveGradientZ, aSharedField);
         }
         else if(aName == "Constraint Gradient")
         {
-            this->copyFieldFromlgr(m_constraint_gradient_z, aSharedField);
+            this->copyFieldFromlgr(mConstraintGradientZ, aSharedField);
         }
         else if(aName == "Adjoint")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
             auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/1);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Adjoint X")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/m_numSpatialDims);
+            Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/0, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Adjoint Y")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/1, /*stride=*/m_numSpatialDims);
+            Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/1, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Adjoint Z")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            Plato::ScalarVector tAdjoint = Kokkos::subview(m_adjoint, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/2, /*stride=*/m_numSpatialDims);
+            Plato::ScalarVector tAdjoint = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tAdjoint,/*component=*/2, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            auto tStatesSubView = Kokkos::subview(m_state, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
             auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/0, /*stride=*/1);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution X")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            auto tStatesSubView = Kokkos::subview(m_state, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/0, /*stride=*/m_numSpatialDims);
+            auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/0, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution Y")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            auto tStatesSubView = Kokkos::subview(m_state, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/1, /*stride=*/m_numSpatialDims);
+            auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/1, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Solution Z")
         {
             const Plato::OrdinalType tTIME_STEP_INDEX = 0;
-            auto tStatesSubView = Kokkos::subview(m_state, tTIME_STEP_INDEX, Kokkos::ALL());
-            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/2, /*stride=*/m_numSpatialDims);
+            auto tStatesSubView = Kokkos::subview(mState, tTIME_STEP_INDEX, Kokkos::ALL());
+            auto tScalarField = getVectorComponent(tStatesSubView,/*component=*/2, /*stride=*/mNumSolutionDofs);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Objective GradientX X")
         {
-            auto tScalarField = getVectorComponent(m_objective_gradient_x,/*component=*/0, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mObjectiveGradientX,/*component=*/0, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Objective GradientX Y")
         {
-            auto tScalarField = getVectorComponent(m_objective_gradient_x,/*component=*/1, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mObjectiveGradientX,/*component=*/1, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Objective GradientX Z")
         {
-            auto tScalarField = getVectorComponent(m_objective_gradient_x,/*component=*/2, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mObjectiveGradientX,/*component=*/2, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Constraint GradientX X")
         {
-            auto tScalarField = getVectorComponent(m_constraint_gradient_x,/*component=*/0, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mConstraintGradientX,/*component=*/0, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Constraint GradientX Y")
         {
-            auto tScalarField = getVectorComponent(m_constraint_gradient_x,/*component=*/1, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mConstraintGradientX,/*component=*/1, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
         else if(aName == "Constraint GradientX Z")
         {
-            auto tScalarField = getVectorComponent(m_constraint_gradient_x,/*component=*/2, /*stride=*/m_numSpatialDims);
+            auto tScalarField = getVectorComponent(mConstraintGradientX,/*component=*/2, /*stride=*/mNumSpatialDims);
             this->copyFieldFromlgr(tScalarField, aSharedField);
         }
     }
@@ -486,32 +486,33 @@ private:
 
     Omega_h::Mesh mMesh;
     Omega_h::Assoc mAssoc;
-    Omega_h::Library m_lib_osh;
+    Omega_h::Library mLibOsh;
     Omega_h::MeshSets mMeshSets;
-    Plato::comm::Machine m_machine;
+    Plato::comm::Machine mMachine;
 
-    std::string m_currentProblemName;
-    Teuchos::RCP<ProblemDefinition> m_defaultProblem;
-    std::map<std::string, Teuchos::RCP<ProblemDefinition>> m_problemDefinitions;
+    std::string mCurrentProblemName;
+    Teuchos::RCP<ProblemDefinition> mDefaultProblem;
+    std::map<std::string, Teuchos::RCP<ProblemDefinition>> mProblemDefinitions;
 
-    Plato::InputData m_inputData;
+    Plato::InputData mInputData;
 
-    std::shared_ptr<Plato::AbstractProblem> m_problem;
+    std::shared_ptr<Plato::AbstractProblem> mProblem;
 
-    Plato::ScalarVector m_control;
-    Plato::ScalarMultiVector m_adjoint;
-    Plato::ScalarMultiVector m_state;
-    Plato::ScalarMultiVector m_coords;
+    Plato::ScalarVector mControl;
+    Plato::ScalarMultiVector mAdjoint;
+    Plato::ScalarMultiVector mState;
+    Plato::ScalarMultiVector mCoords;
 
-    Plato::Scalar m_objective_value;
-    Plato::ScalarVector m_objective_gradient_z;
-    Plato::ScalarVector m_objective_gradient_x;
+    Plato::Scalar mObjectiveValue;
+    Plato::ScalarVector mObjectiveGradientZ;
+    Plato::ScalarVector mObjectiveGradientX;
 
-    Plato::Scalar m_constraint_value;
-    Plato::ScalarVector m_constraint_gradient_z;
-    Plato::ScalarVector m_constraint_gradient_x;
+    Plato::Scalar mConstraintValue;
+    Plato::ScalarVector mConstraintGradientZ;
+    Plato::ScalarVector mConstraintGradientX;
 
-    Plato::OrdinalType m_numSpatialDims;
+    Plato::OrdinalType mNumSpatialDims;
+    Plato::OrdinalType mNumSolutionDofs;
 
 #ifdef PLATO_GEOMETRY
     struct MLSstruct
@@ -683,8 +684,8 @@ private:
         ComputeFiniteDifference(MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef);
         void operator()();
     private:
-        Plato::Scalar m_delta;
-        std::string m_strInitialValue, m_strPerturbedValue, m_strGradient;
+        Plato::Scalar mDelta;
+        std::string mStrInitialValue, mStrPerturbedValue, mStrGradient;
     };
     friend class ComputeFiniteDifference;
     /******************************************************************************/
@@ -693,12 +694,12 @@ private:
     // MLS sub-class
     //
     /******************************************************************************/
-    template<int SpaceDim, typename ScalarType=double>
+    template<int SpaceDim, typename ScalarType=Plato::Scalar>
     class ComputeMLSField : public LocalOp
     {
     public:
         ComputeMLSField( MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
-        LocalOp(aMyApp, aNode, aOpDef), m_strMLSValues("MLS Values")
+        LocalOp(aMyApp, aNode, aOpDef), mStrMLSValues("MLS Values")
         {
             auto tName = Plato::Get::String(aNode,"MLSName");
             auto& tMLS = mMyApp->mMLS;
@@ -708,7 +709,7 @@ private:
             }
             m_MLS = mMyApp->mMLS[tName];
 
-            mMyApp->mValuesMap[m_strMLSValues] = std::vector<Plato::Scalar>();
+            mMyApp->mValuesMap[mStrMLSValues] = std::vector<Plato::Scalar>();
         }
 
         ~ComputeMLSField()
@@ -717,30 +718,30 @@ private:
         void operator()()
         {
             // pull MLS point values into device
-            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+            std::vector<Plato::Scalar>& tLocalData = mMyApp->mValuesMap["MLS Values"];
             Kokkos::View<ScalarType*, Kokkos::HostSpace, Kokkos::MemoryUnmanaged> t_pointsHost(tLocalData.data(),tLocalData.size());
             Kokkos::View<ScalarType*, Kokkos::DefaultExecutionSpace::memory_space> t_pointValues("point values",tLocalData.size());
             Kokkos::deep_copy(t_pointValues, t_pointsHost);
 
-            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->m_coords, mMyApp->m_control);
+            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->mCoords, mMyApp->mControl);
         }
 
     private:
         std::shared_ptr<MLSstruct> m_MLS;
         typedef typename Plato::Geometry::MovingLeastSquares<SpaceDim, ScalarType> MLS_Type;
-        std::string m_strMLSValues;
+        std::string mStrMLSValues;
     };
     template<int SpaceDim, typename ScalarType> friend class ComputeMLSField;
 
     // MLS sub-class
     //
     /******************************************************************************/
-    template<int SpaceDim, typename ScalarType=double>
+    template<int SpaceDim, typename ScalarType=Plato::Scalar>
     class ComputePerturbedMLSField : public LocalOp
     {
     public:
         ComputePerturbedMLSField( MPMD_App* aMyApp, Plato::InputData& aNode, Teuchos::RCP<ProblemDefinition> aOpDef) :
-        LocalOp(aMyApp, aNode, aOpDef), m_strMLSValues("MLS Values")
+        LocalOp(aMyApp, aNode, aOpDef), mStrMLSValues("MLS Values")
         {
             auto tName = Plato::Get::String(aNode,"MLSName");
             auto& tMLS = mMyApp->mMLS;
@@ -750,7 +751,7 @@ private:
             }
             m_MLS = mMyApp->mMLS[tName];
 
-            m_delta = Plato::Get::Double(aNode,"Delta");
+            mDelta = (ScalarType)(Plato::Get::Double(aNode,"Delta"));
         }
 
         ~ComputePerturbedMLSField()
@@ -759,14 +760,14 @@ private:
         void operator()()
         {
 
-            std::vector<double>& tLocalData = mMyApp->mValuesMap["MLS Values"];
+            std::vector<Plato::Scalar>& tLocalData = mMyApp->mValuesMap["MLS Values"];
 
             int tIndex=0;
             ScalarType tDelta=0.0;
-            if( m_parameters.count("Perturbed Index") )
+            if( mParameters.count("Perturbed Index") )
             {
-                tIndex = std::round(m_parameters["Perturbed Index"]->m_value);
-                tDelta = m_delta;
+                tIndex = std::round(mParameters["Perturbed Index"]->mValue);
+                tDelta = mDelta;
             }
             tLocalData[tIndex] += tDelta;
 
@@ -775,7 +776,7 @@ private:
             Kokkos::View<ScalarType*, Kokkos::DefaultExecutionSpace::memory_space> t_pointValues("point values",tLocalData.size());
             Kokkos::deep_copy(t_pointValues, t_pointsHost);
 
-            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->m_coords, mMyApp->m_control);
+            Plato::any_cast<MLS_Type>(m_MLS->mls).f(t_pointValues, mMyApp->mCoords, mMyApp->mControl);
 
             tLocalData[tIndex] -= tDelta;
         }
@@ -783,14 +784,14 @@ private:
     private:
         std::shared_ptr<MLSstruct> m_MLS;
         typedef typename Plato::Geometry::MovingLeastSquares<SpaceDim, ScalarType> MLS_Type;
-        std::string m_strMLSValues;
-        ScalarType m_delta;
+        std::string mStrMLSValues;
+        ScalarType mDelta;
     };
     template<int SpaceDim, typename ScalarType> friend class ComputeMLSField;
 
 #endif
 
-    std::map<std::string, LocalOp*> m_operationMap;
+    std::map<std::string, LocalOp*> mOperationMap;
 
 };
 #endif

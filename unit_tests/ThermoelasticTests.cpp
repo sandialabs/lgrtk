@@ -83,17 +83,17 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   Teuchos::RCP<Teuchos::ParameterList> params =
     Teuchos::getParametersFromXmlString(
     "<ParameterList name='Plato Problem'>                                                    \n"
-    "  <Parameter name='PDE Constraint' type='string' value='Thermoelastostatics'/>          \n"
-    "  <Parameter name='Objective' type='string' value='My Internal Thermoelastic Energy'/>     \n"
+    "  <Parameter name='PDE Constraint' type='string' value='Elliptic'/>                     \n"
+    "  <Parameter name='Objective' type='string' value='My Internal Thermoelastic Energy'/>  \n"
     "  <Parameter name='Self-Adjoint' type='bool' value='true'/>                             \n"
-    "  <ParameterList name='Thermoelastostatics'>                                            \n"
+    "  <ParameterList name='Elliptic'>                                                       \n"
     "    <ParameterList name='Penalty Function'>                                             \n"
     "      <Parameter name='Type' type='string' value='SIMP'/>                               \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                            \n"
     "    </ParameterList>                                                                    \n"
     "  </ParameterList>                                                                      \n"
-    "  <ParameterList name='My Internal Thermoelastic Energy'>                                  \n"
-    "    <Parameter name='Type' type='string' value='Scalar Function'/>            \n"
+    "  <ParameterList name='My Internal Thermoelastic Energy'>                               \n"
+    "    <Parameter name='Type' type='string' value='Scalar Function'/>                      \n"
     "    <Parameter name='Scalar Function Type' type='string' value='Internal Thermoelastic Energy'/>  \n"
     "    <ParameterList name='Penalty Function'>                                             \n"
     "      <Parameter name='Exponent' type='double' value='1.0'/>                            \n"
@@ -125,7 +125,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto residualHost = Kokkos::create_mirror_view( residual );
   Kokkos::deep_copy(residualHost, residual);
 
-  std::vector<double> residual_gold = { 
+  std::vector<Plato::Scalar> residual_gold = { 
     -74678.38301282050,    -59614.82211538460,     -78204.58653846153,
     -0.002062666666666666, -69710.05929487177,     -62980.04006410255,
     -66346.07051282052,    -0.002002000000000000,   6250.406250000000,
@@ -153,7 +153,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto jac_entriesHost = Kokkos::create_mirror_view( jac_entries );
   Kokkos::deep_copy(jac_entriesHost, jac_entries);
 
-  std::vector<double> jacobian_gold = { 
+  std::vector<Plato::Scalar> jacobian_gold = { 
    3.52564102564102478e10, 0.00000000000000000,    0.00000000000000000,    52083.3333333333285, 
    0.00000000000000000,    3.52564102564102478e10, 0.00000000000000000,    52083.3333333333285,
    0.00000000000000000,    0.00000000000000000,    3.52564102564102478e10, 52083.3333333333285,
@@ -188,7 +188,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto gradz_entriesHost = Kokkos::create_mirror_view( gradz_entries );
   Kokkos::deep_copy(gradz_entriesHost, gradz_entries);
 
-  std::vector<double> gradient_z_gold = { 
+  std::vector<Plato::Scalar> gradient_z_gold = { 
    -18669.5957532051252, -14903.7055288461488, -19551.1466346153829, -0.000515666666666666552,
    -2604.08854166666652,  8012.67988782051179,  4206.79326923076951,  0.000151666666666666649,
     1562.59114583333439, -6370.14803685897277, -1682.82772435897550, -0.000151666666666666649,
@@ -211,7 +211,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto gradx_entriesHost = Kokkos::create_mirror_view( gradx_entries );
   Kokkos::deep_copy(gradx_entriesHost, gradx_entries);
 
-  std::vector<double> gradient_x_gold = { 
+  std::vector<Plato::Scalar> gradient_x_gold = { 
    -138461.538461538410,    -151923.076923076878,     -319230.769230769132,
    -0.00552066666666666504,  47435.8974358974156,     -33333.3333333333358,
     55769.2307692307368,     0.000849333333333333342, -641.025641025629739,
@@ -247,7 +247,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   //
   auto value = scalarFunction.value(state, z);
 
-  double value_gold = 3.99325969691123239;
+  Plato::Scalar value_gold = 3.99325969691123239;
   TEST_FLOATING_EQUALITY(value, value_gold, 1e-13);
 
   // compute and test objective gradient wrt state, u
@@ -257,7 +257,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto grad_u_Host = Kokkos::create_mirror_view( grad_u );
   Kokkos::deep_copy( grad_u_Host, grad_u );
 
-  std::vector<double> grad_u_gold = { 
+  std::vector<Plato::Scalar> grad_u_gold = { 
    -149357.8701923077,   -119230.2067307692,   -156409.7147435897,
    -0.1760003333333333,  -139421.5977564102,   -125960.8092948718,
    -132692.2243589743,   -0.2540039999999999,   12500.40624999999,
@@ -287,7 +287,7 @@ TEUCHOS_UNIT_TEST( ThermoelasticTests, InternalThermoelasticEnergy3D )
   auto grad_z_Host = Kokkos::create_mirror_view( grad_z );
   Kokkos::deep_copy( grad_z_Host, grad_z );
 
-  std::vector<double> grad_z_gold = {
+  std::vector<Plato::Scalar> grad_z_gold = {
     0.3006646220307975,  0.2828518382060641,  0.07071297869214102,
     0.2014571253646834,  0.06703482120772307, 0.03167447648441282,
     0.05844522383912947, 0.02116164326532563, 0.1211208163690948,

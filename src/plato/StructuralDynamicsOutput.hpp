@@ -26,8 +26,8 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
 class StructuralDynamicsOutput: public Plato::SimplexStructuralDynamics<SpaceDim, NumControls>
 {
 private:
-    static constexpr Plato::OrdinalType mSpatialDim = Plato::SimplexStructuralDynamics<SpaceDim>::m_numSpatialDims;
-    static constexpr Plato::OrdinalType mNumDofsPerNode = Plato::SimplexStructuralDynamics<SpaceDim>::m_numDofsPerNode;
+    static constexpr Plato::OrdinalType mSpatialDim = Plato::SimplexStructuralDynamics<SpaceDim>::mNumSpatialDims;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = Plato::SimplexStructuralDynamics<SpaceDim>::mNumDofsPerNode;
 
     std::shared_ptr<Omega_h::vtk::Writer> mWriter;
 
@@ -39,7 +39,7 @@ private:
     {
         if(aMesh.has_tag(aEntity, aName) == false)
         {
-            aMesh.add_tag(aEntity, aName, mSpatialDim /*num_dof_per_node*/, Omega_h::Reals(aData));
+            aMesh.add_tag(aEntity, aName, mSpatialDim /*numDof_per_node*/, Omega_h::Reals(aData));
         }
         else
         {
@@ -80,11 +80,11 @@ public:
         for(Plato::OrdinalType tIndex = 0; tIndex < tNumFrequencies; tIndex++)
         {
             auto tMyState = Kokkos::subview(aState, tIndex, Kokkos::ALL());
-            Plato::copy<mNumDofsPerNode /*input_num_dof_per_node*/, mSpatialDim /*output_num_dof_per_node*/>
+            Plato::copy<mNumDofsPerNode /*input_numDof_per_node*/, mSpatialDim /*output_numDof_per_node*/>
                 (0 /*stride*/, tNumVertices, tMyState, tRealDisp);
             this->insert(Omega_h::VERT, "RealDisp", tRealDisp, aMesh);
 
-            Plato::copy<mNumDofsPerNode /*input_num_dof_per_node*/, mSpatialDim /*output_num_dof_per_node*/>
+            Plato::copy<mNumDofsPerNode /*input_numDof_per_node*/, mSpatialDim /*output_numDof_per_node*/>
                 (mSpatialDim /*stride*/, tNumVertices, tMyState, tImagDisp);
             this->insert(Omega_h::VERT, "ImagDisp", tImagDisp, aMesh);
 

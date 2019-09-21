@@ -9,6 +9,7 @@
 #include <Teuchos_ParameterList.hpp>
 #include "plato/SimplexFadTypes.hpp"
 #include "plato/LinearElasticMaterial.hpp"
+#include "plato/ExpInstMacros.hpp"
 
 namespace Plato
 {
@@ -18,14 +19,14 @@ namespace Plato
  * @tparam EvaluationType evaluation type use to determine automatic differentiation
  *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
 **********************************************************************************/
-template<typename EvaluationType>
+template<typename EvaluationType, typename SimplexPhysics>
 class VonMisesLocalMeasure :
-        public AbstractLocalMeasure<EvaluationType>
+        public AbstractLocalMeasure<EvaluationType, SimplexPhysics>
 {
 private:
-    using AbstractLocalMeasure<EvaluationType>::mSpaceDim; /*!< space dimension */
-    using AbstractLocalMeasure<EvaluationType>::mNumVoigtTerms; /*!< number of voigt tensor terms */
-    using AbstractLocalMeasure<EvaluationType>::mNumNodesPerCell; /*!< number of nodes per cell */
+    using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mSpaceDim; /*!< space dimension */
+    using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mNumVoigtTerms; /*!< number of voigt tensor terms */
+    using AbstractLocalMeasure<EvaluationType,SimplexPhysics>::mNumNodesPerCell; /*!< number of nodes per cell */
     Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffMatrix; /*!< cell/element Lame constants matrix */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
@@ -40,7 +41,7 @@ public:
      **********************************************************************************/
     VonMisesLocalMeasure(Teuchos::ParameterList & aInputParams,
                          const std::string & aName) : 
-                         AbstractLocalMeasure<EvaluationType>(aInputParams, aName)
+                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aInputParams, aName)
     {
         Plato::ElasticModelFactory<mSpaceDim> tMaterialModelFactory(aInputParams);
         auto tMaterialModel = tMaterialModelFactory.create();
@@ -54,7 +55,7 @@ public:
      **********************************************************************************/
     VonMisesLocalMeasure(const Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> & aCellStiffMatrix,
                          const std::string aName) :
-                         AbstractLocalMeasure<EvaluationType>(aName)
+                         AbstractLocalMeasure<EvaluationType,SimplexPhysics>(aName)
     {
         mCellStiffMatrix = aCellStiffMatrix;
     }
@@ -79,7 +80,7 @@ public:
                             Plato::ScalarVectorT<ResultT> & aResultWS)
     {
         const Plato::OrdinalType tNumCells = aResultWS.size();
-        using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
+        using StrainT = typename Plato::fad_type_t<SimplexPhysics, StateT, ConfigT>;
 
         Plato::Strain<mSpaceDim> tComputeCauchyStrain;
         Plato::VonMisesYield<mSpaceDim> tComputeVonMises;
@@ -109,22 +110,13 @@ public:
 #include "plato/SimplexMechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Plato::VonMisesLocalMeasure<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
+PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-extern template class Plato::VonMisesLocalMeasure<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
+PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-extern template class Plato::VonMisesLocalMeasure<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::VonMisesLocalMeasure<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
+PLATO_EXPL_DEC2(Plato::VonMisesLocalMeasure, Plato::SimplexMechanics, 3)
 #endif

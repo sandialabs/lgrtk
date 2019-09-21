@@ -18,19 +18,19 @@ class HomogenizedStress : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const int m_columnIndex;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const int mColumnIndex;
 
   public:
 
-    HomogenizedStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> aCellStiffness, int aColumnIndex) :
-            m_cellStiffness(aCellStiffness), 
-            m_columnIndex(aColumnIndex) {}
+    HomogenizedStress( const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> aCellStiffness, int aColumnIndex) :
+            mCellStiffness(aCellStiffness), 
+            mColumnIndex(aColumnIndex) {}
 
     template<typename StressScalarType, typename StrainScalarType>
     DEVICE_TYPE inline void
@@ -40,10 +40,10 @@ class HomogenizedStress : public Plato::SimplexMechanics<SpaceDim>
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
-        stress(cellOrdinal,iVoigt) = m_cellStiffness(m_columnIndex, iVoigt);
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) -= strain(cellOrdinal,jVoigt)*m_cellStiffness(m_columnIndex, jVoigt);
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
+        stress(cellOrdinal,iVoigt) = mCellStiffness(mColumnIndex, iVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          stress(cellOrdinal,iVoigt) -= strain(cellOrdinal,jVoigt)*mCellStiffness(mColumnIndex, jVoigt);
         }
       }
     }

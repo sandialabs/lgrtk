@@ -2,6 +2,7 @@
 #define LGR_PLATO_LINEAR_STRESS_HPP
 
 #include "plato/SimplexMechanics.hpp"
+#include "plato/LinearElasticMaterial.hpp"
 
 #include <Omega_h_matrix.hpp>
 
@@ -19,17 +20,26 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexMechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexMechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexMechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexMechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexMechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    Omega_h::Vector<mNumVoigtTerms> mReferenceStrain;
 
   public:
 
-    LinearStress( const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> cellStiffness) :
-            m_cellStiffness(cellStiffness) {}
+
+    LinearStress( const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> aCellStiffness) :
+            mCellStiffness(aCellStiffness) {
+              for(int i=0; i<mNumVoigtTerms; i++)
+                mReferenceStrain(i) = 0.0;
+            }
+
+    LinearStress(const Teuchos::RCP<Plato::LinearElasticMaterial<SpaceDim>> aMaterialModel ) :
+            mCellStiffness(aMaterialModel->getStiffnessMatrix()),
+            mReferenceStrain(aMaterialModel->getReferenceStrain()) {}
 
     template<typename StressScalarType, typename StrainScalarType>
     DEVICE_TYPE inline void
@@ -39,10 +49,10 @@ class LinearStress : public Plato::SimplexMechanics<SpaceDim>
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          stress(cellOrdinal,iVoigt) += (strain(cellOrdinal,jVoigt)-mReferenceStrain(jVoigt))*mCellStiffness(iVoigt, jVoigt);
         }
       }
     }

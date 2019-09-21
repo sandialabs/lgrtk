@@ -36,7 +36,7 @@ namespace {
     std::string exactSolution;
     std::string forcingFunction;
     int forcingQuadratureDegree;
-    double lumpedCircuitValue; // assuming a unit box domain and unit diagonal conductivity, what is the value of K_{11}?
+    Plato::Scalar lumpedCircuitValue; // assuming a unit box domain and unit diagonal conductivity, what is the value of K_{11}?
     // worth noting that this lumped circuit value is the exact solution, which is not exactly recoverable.  Nodal values are
     // exactly recovered for Poisson even on a lowest-order mesh, but in general integral values will have some error...
   };
@@ -147,7 +147,7 @@ namespace {
     return omega_h_mesh;
   }
   
-  double getExpectedK11(int meshWidth, std::string solnExpr)
+  Plato::Scalar getExpectedK11(int meshWidth, std::string solnExpr)
   {
     /*
      Here, we compute the expected *discrete* K11 value for a 1D mesh with nodally exact solution.
@@ -155,13 +155,13 @@ namespace {
      It turns out that this works in 2D and 3D, too, at least for the meshes returned by build_box,
      if the exact solution varies only in x.
      */
-    double expected_K11 = 0.0;
+    Plato::Scalar expected_K11 = 0.0;
     {
       Omega_h::Write<Scalar> x_coords(meshWidth+1, 0.0);
       ScalarVector x_values("x values",meshWidth+1);
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,meshWidth + 1), LAMBDA_EXPRESSION(int xNodeOrdinal)
       {
-        x_coords[xNodeOrdinal] = (double)xNodeOrdinal / (double)meshWidth;
+        x_coords[xNodeOrdinal] = (Plato::Scalar)xNodeOrdinal / (Plato::Scalar)meshWidth;
       }, "fill x coords");
       
       evaluateNodalExpression(solnExpr, 1, x_coords, x_values);
@@ -237,7 +237,7 @@ namespace {
   template<int spaceDim>
   void testAssembledSystemMatchesSolution(LowRmPotentialSolve<spaceDim> &solve,
                                           typename LowRmPotentialSolve<spaceDim>::ScalarMultiVector &expectedSolution,
-                                          Teuchos::FancyOStream &out, bool &success, double tol=1e-12)
+                                          Teuchos::FancyOStream &out, bool &success, Plato::Scalar tol=1e-12)
   {
     auto matrix = solve.getMatrix();
     auto rhs    = solve.getRHS();
@@ -310,7 +310,7 @@ namespace {
         evaluateNodalExpression(solnExpr, spaceDim, coords, expectedSoln_1D_subview);
         
         // determine expected_K11 value
-        double expected_K11 = getExpectedK11(meshWidth, solnExpr);
+        Plato::Scalar expected_K11 = getExpectedK11(meshWidth, solnExpr);
         
         // copy the expected solution into LHS vector, skipping the actual assembly and solve steps...
         Kokkos::deep_copy(solver.getLHS(), expectedSolution);
@@ -324,7 +324,7 @@ namespace {
         }
         
         Scalar actual_K11 = solver.getK11();
-        double tol = 1e-14;
+        Plato::Scalar tol = 1e-14;
         TEST_FLOATING_EQUALITY(expected_K11, actual_K11, tol);
       }
     }
@@ -333,7 +333,7 @@ namespace {
   void testMatrixHasNoZeroRows(CrsMatrix matrix, Teuchos::FancyOStream &out, bool &success)
   {
     auto rowMap = matrix.rowMap();
-    double floor = 1e-15;
+    Plato::Scalar floor = 1e-15;
     int numZeroRows = 0;
 
     int rowCount = rowMap.size() - 1;
@@ -386,7 +386,7 @@ namespace {
   }
   
   template<int spaceDim>
-  void testPolynomialExactSolution(int meshWidth, MatrixSolver matrixSolver, Teuchos::FancyOStream &out, bool &success, double tol=1e-12)
+  void testPolynomialExactSolution(int meshWidth, MatrixSolver matrixSolver, Teuchos::FancyOStream &out, bool &success, Plato::Scalar tol=1e-12)
   {
     auto mesh = getBoxMesh(spaceDim, meshWidth);
     LowRmPotentialSolve<spaceDim> solver = getLowRmPotentialSolveExample<spaceDim>(mesh);
@@ -448,7 +448,7 @@ namespace {
 #ifdef HAVE_AMGX
           // clear x
           Kokkos::deep_copy(x, 0);
-          double cgTol = 1e-15;
+          Plato::Scalar cgTol = 1e-15;
           int maxIters = 10000;
           AmgXLinearProblem problem(A, x, b, AmgXLinearProblem::configurationString(AmgXLinearProblem::EAF,cgTol,maxIters));
           result = problem.solve();
@@ -486,7 +486,7 @@ namespace {
     //
     //    std::cout << "expected LHS:\n";
     //    MatrixIO::writeDenseMatlabMatrix(std::cout, expectedSolution);
-    //    double tol = 1e-15;
+    //    Plato::Scalar tol = 1e-15;
     //    testFloatingEquality<Scalar, Ordinal, RowMapEntryType, Layout, MemSpace>(matrix,matrixOut,tol,out,success);
   }
 
@@ -694,7 +694,7 @@ namespace {
     for (int mSeries : mSeriesValues)
     {
       int meshWidth = 2;
-      double x_scaling = 1.0 / double(mSeries);
+      Plato::Scalar x_scaling = 1.0 / Plato::Scalar(mSeries);
       auto mesh = getBoxMesh(spaceDim, meshWidth, x_scaling, 1.0, 1.0); // scale in x, but keep y,z range as [0,1]
 
       LowRmPotentialSolve<spaceDim> solver = getLowRmPotentialSolveExample<spaceDim>(mesh);
@@ -708,12 +708,12 @@ namespace {
       Omega_h::LOs x1_ordinals = getBoundaryNodes_x1(mesh);
       
       Omega_h::Write<LO> bcOrdinals(x0_ordinals.size() + x1_ordinals.size());
-      Omega_h::Write<double> bcValues(bcOrdinals.size());
+      Omega_h::Write<Plato::Scalar> bcValues(bcOrdinals.size());
       
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,x0_ordinals.size()), LAMBDA_EXPRESSION(int x0_ordinal)
       {
         bcOrdinals[x0_ordinal] = x0_ordinals[x0_ordinal];
-        bcValues  [x0_ordinal] = 1.0 - 1.0/double(mSeries);
+        bcValues  [x0_ordinal] = 1.0 - 1.0/Plato::Scalar(mSeries);
       }, "Dirichlet BCs -- phi=xMin");
       
       auto offset = x0_ordinals.size();
@@ -725,7 +725,7 @@ namespace {
       
       solver.setBC(bcOrdinals, bcValues);
       
-      double expectedK11 = getExpectedK11(meshWidth*mSeries*mParallel, "x"); // x is the exact solution, given our BCs, on [0,1]
+      Plato::Scalar expectedK11 = getExpectedK11(meshWidth*mSeries*mParallel, "x"); // x is the exact solution, given our BCs, on [0,1]
       
       int numNodes = mesh->nverts();
       int numRHSes = 1;
@@ -738,7 +738,7 @@ namespace {
       {
         // given our [0,1/m] domain, and the BCs we are imposing on it, the exact solution here is
         // x + 1-1/m
-        double offset2 = 1.0 - 1.0 / double(mSeries);
+        Plato::Scalar offset2 = 1.0 - 1.0 / Plato::Scalar(mSeries);
         std::ostringstream solnStream;
         solnStream << "x + " << offset2;
         solnExpr = solnStream.str();
@@ -758,7 +758,7 @@ namespace {
       
       Scalar actualK11 = solver.getK11();
       
-      double tol = 1e-13;
+      Plato::Scalar tol = 1e-13;
       TEST_FLOATING_EQUALITY(expectedK11, actualK11, tol);
     }
   }
@@ -876,7 +876,7 @@ namespace {
     const int spaceDim = 3;
     int meshWidth = 8;
     MatrixSolver matrixSolver = VIENNACL;
-    double tol=1e-11;
+    Plato::Scalar tol=1e-11;
     testPolynomialExactSolution<spaceDim>(meshWidth, matrixSolver, out, success, tol);
   }
 #endif
@@ -912,7 +912,7 @@ namespace {
 //    const int spaceDim = 3;
 //    int meshWidth = 8;
 //    MatrixSolver matrixSolver = AMGX;
-//    double tol = 1e-11;
+//    Plato::Scalar tol = 1e-11;
 //    testPolynomialExactSolution<spaceDim>(meshWidth, matrixSolver, out, success, tol);
 //  }
 #endif
@@ -931,7 +931,7 @@ namespace {
      */
     const int spaceDim = 2;
     int meshWidth = 1;
-    double scaling = 0.5;
+    Plato::Scalar scaling = 0.5;
     auto mesh = getBoxMesh(spaceDim, meshWidth, 0.5);
     LowRmPotentialSolve<spaceDim> solver = getLowRmPotentialSolveExample<spaceDim>(mesh);
     
@@ -958,7 +958,7 @@ namespace {
 //    std::cout << "rhs:\n";
 //    MatrixIO::writeDenseMatlabMatrix(std::cout, rhs);
     
-    double tol = 1e-15;
+    Plato::Scalar tol = 1e-15;
     testFloatingEquality(expectedRHS,rhs,tol,out,success);
   }
 } // namespace

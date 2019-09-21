@@ -38,11 +38,11 @@ class AugLagStressCriterionGeneral :
 {
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::mNumNodesPerCell; /*!< number of nodes per cell/element */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
@@ -339,7 +339,7 @@ public:
             aResultWS(aCellOrdinal) = tObjective(aCellOrdinal) + tConstraint(aCellOrdinal);
         },"Compute Augmented Lagrangian Function");
 
-        Plato::toMap(m_dataMap, tOutputVonMises, "Vonmises");
+        Plato::toMap(mDataMap, tOutputVonMises, "Vonmises");
     }
 
     /******************************************************************************//**

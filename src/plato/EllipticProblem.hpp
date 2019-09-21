@@ -30,11 +30,11 @@ namespace Plato
  * @brief Manage scalar and vector function evaluations
 **********************************************************************************/
 template<typename SimplexPhysics>
-class Problem: public Plato::AbstractProblem
+class EllipticProblem: public Plato::AbstractProblem
 {
 private:
 
-    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims; /*!< spatial dimensions */
+    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::mNumSpatialDims; /*!< spatial dimensions */
 
     // required
     Plato::VectorFunction<SimplexPhysics> mEqualityConstraint; /*!< equality constraint interface */
@@ -62,7 +62,7 @@ public:
      * @param [in] aMeshSets side sets database
      * @param [in] aInputParams input parameters database
     **********************************************************************************/
-    Problem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams) :
+    EllipticProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aInputParams) :
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aInputParams, aInputParams.get<std::string>("PDE Constraint")),
             mConstraint(nullptr),
             mObjective(nullptr),
@@ -72,6 +72,15 @@ public:
             mIsSelfAdjoint(aInputParams.get<bool>("Self-Adjoint", false))
     {
         this->initialize(aMesh, aMeshSets, aInputParams);
+    }
+
+    /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
     }
 
     /******************************************************************************//**
@@ -112,11 +121,11 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<SimplexPhysics::mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<SimplexPhysics::m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<SimplexPhysics::mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
@@ -151,8 +160,9 @@ public:
         this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-        using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+        using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode>;
         auto tConfigString = AmgXLinearProblem::getConfigString();
+        Plato::scale(-1.0, mResidual);
         auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tStatesSubView, mResidual, tConfigString));
         tSolver->solve();
         tSolver = Teuchos::null;
@@ -286,7 +296,7 @@ public:
 
             Plato::ScalarVector tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -345,7 +355,7 @@ public:
             Plato::ScalarVector
               tAdjointSubView = Kokkos::subview(mAdjoint, tTIME_STEP_INDEX, Kokkos::ALL());
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjointSubView, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -510,7 +520,7 @@ private:
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
     }
 };
-// class Problem
+// class EllipticProblem
 
 } // namespace Plato
 
@@ -520,22 +530,22 @@ private:
 #include "Thermomechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Plato::Problem<::Plato::Thermal<1>>;
-extern template class Plato::Problem<::Plato::Mechanics<1>>;
-extern template class Plato::Problem<::Plato::Electromechanics<1>>;
-extern template class Plato::Problem<::Plato::Thermomechanics<1>>;
+extern template class Plato::EllipticProblem<::Plato::Thermal<1>>;
+extern template class Plato::EllipticProblem<::Plato::Mechanics<1>>;
+extern template class Plato::EllipticProblem<::Plato::Electromechanics<1>>;
+extern template class Plato::EllipticProblem<::Plato::Thermomechanics<1>>;
 #endif
 #ifdef PLATO_2D
-extern template class Plato::Problem<::Plato::Thermal<2>>;
-extern template class Plato::Problem<::Plato::Mechanics<2>>;
-extern template class Plato::Problem<::Plato::Electromechanics<2>>;
-extern template class Plato::Problem<::Plato::Thermomechanics<2>>;
+extern template class Plato::EllipticProblem<::Plato::Thermal<2>>;
+extern template class Plato::EllipticProblem<::Plato::Mechanics<2>>;
+extern template class Plato::EllipticProblem<::Plato::Electromechanics<2>>;
+extern template class Plato::EllipticProblem<::Plato::Thermomechanics<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class Plato::Problem<::Plato::Thermal<3>>;
-extern template class Plato::Problem<::Plato::Mechanics<3>>;
-extern template class Plato::Problem<::Plato::Electromechanics<3>>;
-extern template class Plato::Problem<::Plato::Thermomechanics<3>>;
+extern template class Plato::EllipticProblem<::Plato::Thermal<3>>;
+extern template class Plato::EllipticProblem<::Plato::Mechanics<3>>;
+extern template class Plato::EllipticProblem<::Plato::Electromechanics<3>>;
+extern template class Plato::EllipticProblem<::Plato::Thermomechanics<3>>;
 #endif
 
 #endif // PLATO_PROBLEM_HPP

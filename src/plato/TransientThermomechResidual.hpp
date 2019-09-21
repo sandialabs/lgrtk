@@ -42,13 +42,13 @@ class TransientThermomechResidual :
     static constexpr int TDofOffset = SpaceDim;
     static constexpr int MDofOffset = 0;
 
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerNode;
 
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunctionInc<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunctionInc<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunctionInc<EvaluationType>::mMeshSets;
 
     using StateScalarType     = typename EvaluationType::StateScalarType;
@@ -57,19 +57,19 @@ class TransientThermomechResidual :
     using ConfigScalarType    = typename EvaluationType::ConfigScalarType;
     using ResultScalarType    = typename EvaluationType::ResultScalarType;
 
-    Plato::Scalar m_cellDensity;
-    Plato::Scalar m_cellSpecificHeat;
+    Plato::Scalar mCellDensity;
+    Plato::Scalar mCellSpecificHeat;
     
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim, m_numVoigtTerms,  IndicatorFunctionType> m_applyStressWeighting;
-    Plato::ApplyWeighting<SpaceDim, SpaceDim,         IndicatorFunctionType> m_applyFluxWeighting;
-    Plato::ApplyWeighting<SpaceDim, NThrmDims,        IndicatorFunctionType> m_applyMassWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim, mNumVoigtTerms,  IndicatorFunctionType> mApplyStressWeighting;
+    Plato::ApplyWeighting<SpaceDim, SpaceDim,         IndicatorFunctionType> mApplyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim, NThrmDims,        IndicatorFunctionType> mApplyMassWeighting;
 
-    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> m_cubatureRule;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>> m_boundaryLoads;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NThrmDims, m_numDofsPerNode, TDofOffset>> m_boundaryFluxes;
+    std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<SpaceDim>> mCubatureRule;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>> mBoundaryLoads;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NThrmDims, mNumDofsPerNode, TDofOffset>> mBoundaryFluxes;
 
-    Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> m_materialModel;
+    Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> mMaterialModel;
 
   public:
     /**************************************************************************/
@@ -81,32 +81,32 @@ class TransientThermomechResidual :
       Teuchos::ParameterList& aPenaltyParams) :
      Plato::AbstractVectorFunctionInc<EvaluationType>(aMesh, aMeshSets, aDataMap,
         {"Displacement X", "Displacement Y", "Displacement Z", "Temperature"}),
-     m_indicatorFunction(aPenaltyParams),
-     m_applyStressWeighting(m_indicatorFunction),
-     m_applyFluxWeighting(m_indicatorFunction),
-     m_applyMassWeighting(m_indicatorFunction),
-     m_cubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
-     m_boundaryLoads(nullptr),
-     m_boundaryFluxes(nullptr)
+     mIndicatorFunction(aPenaltyParams),
+     mApplyStressWeighting(mIndicatorFunction),
+     mApplyFluxWeighting(mIndicatorFunction),
+     mApplyMassWeighting(mIndicatorFunction),
+     mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<SpaceDim>>()),
+     mBoundaryLoads(nullptr),
+     mBoundaryFluxes(nullptr)
     /**************************************************************************/
     {
       Plato::ThermoelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
-      m_materialModel = mmfactory.create();
-      m_cellDensity      = m_materialModel->getMassDensity();
-      m_cellSpecificHeat = m_materialModel->getSpecificHeat();
+      mMaterialModel = mmfactory.create();
+      mCellDensity      = mMaterialModel->getMassDensity();
+      mCellSpecificHeat = mMaterialModel->getSpecificHeat();
 
 
       // parse boundary Conditions
       // 
       if(aProblemParams.isSublist("Mechanical Natural Boundary Conditions"))
       {
-          m_boundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
+          mBoundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
       }
       // parse thermal boundary Conditions
       // 
       if(aProblemParams.isSublist("Thermal Natural Boundary Conditions"))
       {
-          m_boundaryFluxes = std::make_shared<Plato::NaturalBCs<SpaceDim, NThrmDims, m_numDofsPerNode, TDofOffset>>(aProblemParams.sublist("Thermal Natural Boundary Conditions"));
+          mBoundaryFluxes = std::make_shared<Plato::NaturalBCs<SpaceDim, NThrmDims, mNumDofsPerNode, TDofOffset>>(aProblemParams.sublist("Thermal Natural Boundary Conditions"));
       }
     }
 
@@ -132,16 +132,16 @@ class TransientThermomechResidual :
       Plato::ScalarVectorT<ConfigScalarType>
         cellVolume("cell weight",tNumCells);
 
-      Plato::ScalarMultiVectorT<GradScalarType>     tStrain     ("strain at step k",   tNumCells, m_numVoigtTerms);
-      Plato::ScalarMultiVectorT<PrevGradScalarType> tPrevStrain ("strain at step k-1", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType>     tStrain     ("strain at step k",   tNumCells, mNumVoigtTerms);
+      Plato::ScalarMultiVectorT<PrevGradScalarType> tPrevStrain ("strain at step k-1", tNumCells, mNumVoigtTerms);
 
       Plato::ScalarMultiVectorT<GradScalarType>     tGrad     ("temperature gradient at step k",   tNumCells, SpaceDim);
       Plato::ScalarMultiVectorT<PrevGradScalarType> tPrevGrad ("temperature gradient at step k-1", tNumCells, SpaceDim);
 
-      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient",tNumCells,m_numNodesPerCell,SpaceDim);
+      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient",tNumCells,mNumNodesPerCell,SpaceDim);
 
-      Plato::ScalarMultiVectorT<ResultScalarType> tStress    ("stress at step k",   tNumCells, m_numVoigtTerms);
-      Plato::ScalarMultiVectorT<ResultScalarType> tPrevStress("stress at step k-1", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> tStress    ("stress at step k",   tNumCells, mNumVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> tPrevStress("stress at step k-1", tNumCells, mNumVoigtTerms);
 
       Plato::ScalarMultiVectorT<ResultScalarType> tFlux    ("thermal flux at step k",   tNumCells, SpaceDim);
       Plato::ScalarMultiVectorT<ResultScalarType> tPrevFlux("thermal flux at step k-1", tNumCells, SpaceDim);
@@ -155,22 +155,22 @@ class TransientThermomechResidual :
       // create a bunch of functors:
       Plato::ComputeGradientWorkset<SpaceDim>  computeGradient;
       Plato::TMKinematics<SpaceDim>                   kinematics;
-      Plato::TMKinetics<SpaceDim>                     kinetics(m_materialModel);
+      Plato::TMKinetics<SpaceDim>                     kinetics(mMaterialModel);
 
-      Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
+      Plato::InterpolateFromNodal<SpaceDim, mNumDofsPerNode, TDofOffset> interpolateFromNodal;
 
-      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
-      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, mNumDofsPerNode, TDofOffset> fluxDivergence;
+      Plato::StressDivergence<SpaceDim, mNumDofsPerNode, MDofOffset> stressDivergence;
 
-      Plato::ThermalContent thermalContent(m_cellDensity, m_cellSpecificHeat);
-      Plato::ProjectToNode<SpaceDim, m_numDofsPerNode, TDofOffset> projectThermalContent;
+      Plato::ThermalContent thermalContent(mCellDensity, mCellSpecificHeat);
+      Plato::ProjectToNode<SpaceDim, mNumDofsPerNode, TDofOffset> projectThermalContent;
       
-      auto basisFunctions = m_cubatureRule->getBasisFunctions();
+      auto basisFunctions = mCubatureRule->getBasisFunctions();
     
-      auto& applyStressWeighting = m_applyStressWeighting;
-      auto& applyFluxWeighting   = m_applyFluxWeighting;
-      auto& applyMassWeighting   = m_applyMassWeighting;
-      auto quadratureWeight = m_cubatureRule->getCubWeight();
+      auto& applyStressWeighting = mApplyStressWeighting;
+      auto& applyFluxWeighting   = mApplyFluxWeighting;
+      auto& applyMassWeighting   = mApplyMassWeighting;
+      auto quadratureWeight = mCubatureRule->getCubWeight();
       Kokkos::parallel_for(Kokkos::RangePolicy<Plato::OrdinalType>(0,tNumCells), LAMBDA_EXPRESSION(Plato::OrdinalType cellOrdinal)
       {
     
@@ -224,15 +224,15 @@ class TransientThermomechResidual :
 
       },"stress and flux divergence");
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
-          m_boundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
       }
-      if( m_boundaryFluxes != nullptr )
+      if( mBoundaryFluxes != nullptr )
       {
-          m_boundaryFluxes->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
-          m_boundaryFluxes->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
       }
     }
 };

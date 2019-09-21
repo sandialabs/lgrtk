@@ -1,5 +1,5 @@
-#ifndef LGR_PLATO_KINETICS_HPP
-#define LGR_PLATO_KINETICS_HPP
+#ifndef LGR_PLATO_EMKINETICS_HPP
+#define LGR_PLATO_EMKINETICS_HPP
 
 #include "plato/SimplexElectromechanics.hpp"
 #include "plato/LinearElectroelasticMaterial.hpp"
@@ -44,26 +44,26 @@ class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
 {
   private:
 
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexElectromechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexElectromechanics<SpaceDim>::mNumDofsPerCell;
 
-    const Omega_h::Matrix<m_numVoigtTerms,m_numVoigtTerms> m_cellStiffness;
-    const Omega_h::Matrix<SpaceDim, m_numVoigtTerms> m_cellPiezoelectricCoupling;
-    const Omega_h::Matrix<SpaceDim, SpaceDim> m_cellPermittivity;
+    const Omega_h::Matrix<mNumVoigtTerms,mNumVoigtTerms> mCellStiffness;
+    const Omega_h::Matrix<SpaceDim, mNumVoigtTerms> mCellPiezoelectricCoupling;
+    const Omega_h::Matrix<SpaceDim, SpaceDim> mCellPermittivity;
  
-    const Plato::Scalar m_alpha;
-    const Plato::Scalar m_alpha2;
+    const Plato::Scalar mAlpha;
+    const Plato::Scalar mAlpha2;
 
   public:
 
     EMKinetics( const Teuchos::RCP<Plato::LinearElectroelasticMaterial<SpaceDim>> materialModel ) :
-            m_cellStiffness(materialModel->getStiffnessMatrix()),
-            m_cellPiezoelectricCoupling(materialModel->getPiezoMatrix()),
-            m_cellPermittivity(materialModel->getPermittivityMatrix()),
-            m_alpha(materialModel->getAlpha()),
-            m_alpha2(m_alpha*m_alpha) { }
+            mCellStiffness(materialModel->getStiffnessMatrix()),
+            mCellPiezoelectricCoupling(materialModel->getPiezoMatrix()),
+            mCellPermittivity(materialModel->getPermittivityMatrix()),
+            mAlpha(materialModel->getAlpha()),
+            mAlpha2(mAlpha*mAlpha) { }
 
     template<typename KineticsScalarType, typename KinematicsScalarType>
     DEVICE_TYPE inline void
@@ -75,13 +75,13 @@ class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
 
       // compute stress
       //
-      for( int iVoigt=0; iVoigt<m_numVoigtTerms; iVoigt++){
+      for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = 0.0;
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*m_cellStiffness(iVoigt, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          stress(cellOrdinal,iVoigt) += strain(cellOrdinal,jVoigt)*mCellStiffness(iVoigt, jVoigt);
         }
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          stress(cellOrdinal,iVoigt) -= m_alpha*efield(cellOrdinal,jDim)*m_cellPiezoelectricCoupling(jDim, iVoigt);
+          stress(cellOrdinal,iVoigt) -= mAlpha*efield(cellOrdinal,jDim)*mCellPiezoelectricCoupling(jDim, iVoigt);
         }
       }
 
@@ -90,10 +90,10 @@ class EMKinetics : public Plato::SimplexElectromechanics<SpaceDim>
       for( int iDim=0; iDim<SpaceDim; iDim++){
         edisp(cellOrdinal,iDim) = 0.0;
         for( int jDim=0; jDim<SpaceDim; jDim++){
-          edisp(cellOrdinal,iDim) += m_alpha2*efield(cellOrdinal,jDim)*m_cellPermittivity(iDim, jDim);
+          edisp(cellOrdinal,iDim) += mAlpha2*efield(cellOrdinal,jDim)*mCellPermittivity(iDim, jDim);
         }
-        for( int jVoigt=0; jVoigt<m_numVoigtTerms; jVoigt++){
-          edisp(cellOrdinal,iDim) += m_alpha*strain(cellOrdinal,jVoigt)*m_cellPiezoelectricCoupling(iDim, jVoigt);
+        for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
+          edisp(cellOrdinal,iDim) += mAlpha*strain(cellOrdinal,jVoigt)*mCellPiezoelectricCoupling(iDim, jVoigt);
         }
       }
     }

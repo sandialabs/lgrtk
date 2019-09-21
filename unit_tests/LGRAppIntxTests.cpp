@@ -3,7 +3,7 @@
 
 #include "plato/LGR_App.hpp"
 
-void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, double& val1, double& val2, double tol);
+void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, Plato::Scalar& val1, Plato::Scalar& val2, Plato::Scalar tol);
 
 TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
 { 
@@ -32,7 +32,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
   // create input data
   //
   FauxSharedField fauxStateIn(localIDs.size());
-  std::vector<double> stdStateIn(localIDs.size(),0.5);
+  std::vector<Plato::Scalar> stdStateIn(localIDs.size(),0.5);
 
   // import data
   //
@@ -42,8 +42,8 @@ TEUCHOS_UNIT_TEST( LGRAppTests, MultipleProblemDefinitions )
   // create output data
   //
   FauxSharedField fauxStateOut(localIDs.size(),0.0);
-  std::vector<double> stdStateOne(localIDs.size());
-  std::vector<double> stdStateTwo(localIDs.size());
+  std::vector<Plato::Scalar> stdStateOne(localIDs.size());
+  std::vector<Plato::Scalar> stdStateTwo(localIDs.size());
 
   // solve 1
   //
@@ -96,7 +96,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, OperationParameter )
   // create input data
   //
   FauxSharedField fauxStateIn(localIDs.size());
-  std::vector<double> stdStateIn(localIDs.size(),0.5);
+  std::vector<Plato::Scalar> stdStateIn(localIDs.size(),0.5);
 
   // import data
   //
@@ -111,8 +111,8 @@ TEUCHOS_UNIT_TEST( LGRAppTests, OperationParameter )
   // create output data
   //
   FauxSharedField fauxStateOut(localIDs.size(),0.0);
-  std::vector<double> stdStateOne(localIDs.size());
-  std::vector<double> stdStateTwo(localIDs.size());
+  std::vector<Plato::Scalar> stdStateOne(localIDs.size());
+  std::vector<Plato::Scalar> stdStateTwo(localIDs.size());
 
   // solve 1
   //
@@ -125,7 +125,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, OperationParameter )
 
   // set parameter
   //
-  std::vector<double> param(1,-1.0);
+  std::vector<Plato::Scalar> param(1,-1.0);
   fauxParamIn.setData(param);
   app.importDataT("Traction X", fauxParamIn);
 
@@ -171,7 +171,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, CellForcing )
   // create input data
   //
   FauxSharedField fauxStateIn(localIDs.size());
-  std::vector<double> stdStateIn(localIDs.size(),1.0);
+  std::vector<Plato::Scalar> stdStateIn(localIDs.size(),1.0);
 
   // import data
   //
@@ -181,7 +181,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, CellForcing )
   // create output data
   //
   FauxSharedField fauxStateOut(localIDs.size(),0.0);
-  std::vector<double> stdStateOne(localIDs.size());
+  std::vector<Plato::Scalar> stdStateOne(localIDs.size());
 
   // solve
   //
@@ -225,7 +225,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, EffectiveEnergy )
   // create input data
   //
   FauxSharedField fauxStateIn(localIDs.size());
-  std::vector<double> stdStateIn(localIDs.size(),1.0);
+  std::vector<Plato::Scalar> stdStateIn(localIDs.size(),1.0);
 
   // import data
   //
@@ -235,7 +235,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, EffectiveEnergy )
   // create output data
   //
   FauxSharedValue fauxStateOut(1,0.0);
-  std::vector<double> stdStateOne(1);
+  std::vector<Plato::Scalar> stdStateOne(1);
 
   // solve
   //
@@ -272,7 +272,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyGradX )
   // create input data
   //
   FauxSharedField fauxStateIn(localIDs.size());
-  std::vector<double> stdStateIn(localIDs.size(),1.0);
+  std::vector<Plato::Scalar> stdStateIn(localIDs.size(),1.0);
 
   // import data
   //
@@ -282,7 +282,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyGradX )
   // create output data
   //
   FauxSharedField fauxStateOut(localIDs.size(),0.0);
-  std::vector<double> stdStateOut(localIDs.size());
+  std::vector<Plato::Scalar> stdStateOut(localIDs.size());
 
   // solve
   //
@@ -310,7 +310,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalEnergyHeatEq )
 { 
   std::string inputFile = "InternalEnergyHeatEq_input.xml";
   std::string appFile = "InternalEnergyHeatEq_appfile.xml";
-  double val1(0.0), val2(0.0), tol(1e-5);
+  Plato::Scalar val1(0.0), val2(0.0), tol(1e-5);
   objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
   TEST_FLOATING_EQUALITY(val1, val2, tol);
 }
@@ -319,7 +319,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, InternalElectroelasticEnergy )
 { 
   std::string inputFile = "InternalElectroelasticEnergy_input.xml";
   std::string appFile = "InternalElectroelasticEnergy_appfile.xml";
-  double val1(0.0), val2(0.0), tol(1e-5);
+  Plato::Scalar val1(0.0), val2(0.0), tol(1e-5);
   objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
   TEST_FLOATING_EQUALITY(val1, val2, tol);
 }
@@ -328,7 +328,7 @@ TEUCHOS_UNIT_TEST( LGRAppTests, EMStressPNorm )
 { 
   std::string inputFile = "EMStressPNorm_input.xml";
   std::string appFile = "EMStressPNorm_appfile.xml";
-  double val1(0.0), val2(0.0), tol(1e-5);
+  Plato::Scalar val1(0.0), val2(0.0), tol(1e-5);
   objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
   TEST_FLOATING_EQUALITY(val1, val2, tol);
 }
@@ -337,12 +337,12 @@ TEUCHOS_UNIT_TEST( LGRAppTests, ThermoelasticEnergy )
 { 
   std::string inputFile = "InternalThermoelasticEnergy_input.xml";
   std::string appFile = "InternalThermoelasticEnergy_appfile.xml";
-  double val1(0.0), val2(0.0), tol(1e-5);
+  Plato::Scalar val1(0.0), val2(0.0), tol(1e-5);
   objectiveFiniteDifferenceTest(inputFile, appFile, val1, val2, tol);
   TEST_FLOATING_EQUALITY(val1, val2, tol);
 }
 
-void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, double& val1, double& val2, double tol)
+void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, Plato::Scalar& val1, Plato::Scalar& val2, Plato::Scalar tol)
 {
   int argc = 2;
   char exeName[] = "exeName";
@@ -366,7 +366,7 @@ void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, d
   // create input data
   //
   FauxSharedField fauxControlIn(localIDs.size());
-  std::vector<double> stdControlIn(localIDs.size(),1.0);
+  std::vector<Plato::Scalar> stdControlIn(localIDs.size(),1.0);
 
   // import data
   //
@@ -385,25 +385,25 @@ void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, d
   FauxSharedField fauxObjGradOut(localIDs.size(),0.0);
   app.exportDataT("Objective Gradient", fauxObjGradOut);
 
-  std::vector<double> stdObjGradOut(localIDs.size());
+  std::vector<Plato::Scalar> stdObjGradOut(localIDs.size());
   fauxObjGradOut.getData(stdObjGradOut);
 
   FauxSharedValue fauxObjValOut(1,0.0);
   app.exportDataT("Objective Value", fauxObjValOut);
 
-  std::vector<double> stdObjValOne(1);
+  std::vector<Plato::Scalar> stdObjValOne(1);
   fauxObjValOut.getData(stdObjValOne);
 
-  double mag = 0.0;
+  Plato::Scalar mag = 0.0;
   for(int iVal=0; iVal<localIDs.size(); iVal++){
     mag += stdObjGradOut[iVal]*stdObjGradOut[iVal];
   }
   mag = sqrt(mag);
   
-  double alpha = tol/mag;
-  double dval = 0.0;
+  Plato::Scalar alpha = tol/mag;
+  Plato::Scalar dval = 0.0;
   for(int iVal=0; iVal<localIDs.size(); iVal++){
-    double dz = alpha * stdObjGradOut[iVal];
+    Plato::Scalar dz = alpha * stdObjGradOut[iVal];
     stdControlIn[iVal] -= dz;
     dval -= stdObjGradOut[iVal]*dz;
   }
@@ -413,7 +413,7 @@ void objectiveFiniteDifferenceTest(std::string inputFile, std::string appFile, d
   app.compute("Compute Objective");
 
   app.exportDataT("Objective Value", fauxObjValOut);
-  std::vector<double> stdObjValTwo(1);
+  std::vector<Plato::Scalar> stdObjValTwo(1);
   fauxObjValOut.getData(stdObjValTwo);
   
   val1 = stdObjValOne[0];

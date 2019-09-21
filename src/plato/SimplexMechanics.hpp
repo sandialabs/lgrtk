@@ -15,18 +15,23 @@ template<Plato::OrdinalType SpaceDim, Plato::OrdinalType NumControls = 1>
 class SimplexMechanics : public Plato::Simplex<SpaceDim>
 {
   public:
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::Simplex<SpaceDim>::m_numSpatialDims;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::Simplex<SpaceDim>::mNumSpatialDims;
 
-    static constexpr Plato::OrdinalType m_numVoigtTerms   = (SpaceDim == 3) ? 6 :
+    static constexpr Plato::OrdinalType mNumVoigtTerms   = (SpaceDim == 3) ? 6 :
                                              ((SpaceDim == 2) ? 3 :
                                             (((SpaceDim == 1) ? 1 : 0)));
-    static constexpr Plato::OrdinalType m_numDofsPerNode  = SpaceDim;
-    static constexpr Plato::OrdinalType m_numDofsPerCell  = m_numDofsPerNode*m_numNodesPerCell;
+    static constexpr Plato::OrdinalType mNumDofsPerNode  = SpaceDim;
+    static constexpr Plato::OrdinalType mNumDofsPerCell  = mNumDofsPerNode*mNumNodesPerCell;
 
-    static constexpr Plato::OrdinalType m_numControl = NumControls;
+
+    static constexpr Plato::OrdinalType mNumControl = NumControls;
+
+    static constexpr Plato::OrdinalType mNumNSPerNode = 0;
+
+    static constexpr Plato::OrdinalType mNumLocalDofsPerCell = 0;
+
 };
-
 } // namespace Plato
 
 #endif

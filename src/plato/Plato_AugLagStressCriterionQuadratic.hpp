@@ -11,9 +11,10 @@
 #include "plato/Plato_TopOptFunctors.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/LinearTetCubRuleDegreeOne.hpp"
+#include "plato/ExpInstMacros.hpp"
 //#include "plato/VonMisesLocalMeasure.hpp"
-//#include "plato/AbstractLocalMeasure.hpp"
-#include "plato/LocalMeasureFactory.hpp"
+#include "plato/AbstractLocalMeasure.hpp"
+//#include "plato/LocalMeasureFactory.hpp"
 
 namespace Plato
 {
@@ -23,25 +24,24 @@ namespace Plato
  * @tparam EvaluationType evaluation type use to determine automatic differentiation
  *   type for scalar function (e.g. Residual, Jacobian, GradientZ, etc.)
 **********************************************************************************/
-template<typename EvaluationType>
+template<typename EvaluationType, typename SimplexPhysicsT>
 class AugLagStressCriterionQuadratic :
-        public Plato::SimplexMechanics<EvaluationType::SpatialDim>,
         public Plato::AbstractScalarFunction<EvaluationType>
 {
 private:
     static constexpr Plato::OrdinalType mSpaceDim = EvaluationType::SpatialDim; /*!< spatial dimensions */
-    static constexpr Plato::OrdinalType mNumVoigtTerms = Plato::SimplexMechanics<mSpaceDim>::m_numVoigtTerms; /*!< number of Voigt terms */
-    static constexpr Plato::OrdinalType mNumNodesPerCell = Plato::SimplexMechanics<mSpaceDim>::m_numNodesPerCell; /*!< number of nodes per cell/element */
+    static constexpr Plato::OrdinalType mNumVoigtTerms = SimplexPhysicsT::mNumVoigtTerms; /*!< number of Voigt terms */
+    static constexpr Plato::OrdinalType mNumNodesPerCell = SimplexPhysicsT::mNumNodesPerCell; /*!< number of nodes per cell/element */
 
     using Plato::AbstractScalarFunction<EvaluationType>::mMesh; /*!< mesh database */
-    using Plato::AbstractScalarFunction<EvaluationType>::m_dataMap; /*!< PLATO Engine output database */
+    using Plato::AbstractScalarFunction<EvaluationType>::mDataMap; /*!< PLATO Engine output database */
 
     using StateT = typename EvaluationType::StateScalarType; /*!< state variables automatic differentiation type */
     using ConfigT = typename EvaluationType::ConfigScalarType; /*!< configuration variables automatic differentiation type */
     using ResultT = typename EvaluationType::ResultScalarType; /*!< result variables automatic differentiation type */
     using ControlT = typename EvaluationType::ControlScalarType; /*!< control variables automatic differentiation type */
 
-    using Residual = typename Plato::ResidualTypes<Plato::SimplexMechanics<mSpaceDim>>;
+    using Residual = typename Plato::ResidualTypes<SimplexPhysicsT>;
 
     Plato::Scalar mPenalty; /*!< penalty parameter in SIMP model */
     Plato::Scalar mLocalMeasureLimit; /*!< local measure limit/upper bound */
@@ -53,8 +53,8 @@ private:
 
     Plato::ScalarVector mLagrangeMultipliers; /*!< Lagrange multipliers */
 
-    std::shared_ptr<AbstractLocalMeasure<EvaluationType>> mLocalMeasureEvaluationType; /*!< Local measure with evaluation type */
-    std::shared_ptr<AbstractLocalMeasure<Residual>>       mLocalMeasurePODType; /*!< Local measure with POD type */
+    std::shared_ptr<Plato::AbstractLocalMeasure<EvaluationType,SimplexPhysicsT>> mLocalMeasureEvaluationType; /*!< Local measure with evaluation type */
+    std::shared_ptr<Plato::AbstractLocalMeasure<Residual,SimplexPhysicsT>>       mLocalMeasurePODType; /*!< Local measure with POD type */
 
 private:
     /******************************************************************************//**
@@ -118,12 +118,6 @@ public:
             mLagrangeMultipliers("Lagrange Multipliers", aMesh.nelems())
     {
         this->initialize(aInputParams);
-
-        Plato::LocalMeasureFactory<EvaluationType> tLocalMeasureValueFactory1;
-        mLocalMeasureEvaluationType = tLocalMeasureValueFactory1.create(aInputParams, aFuncName);
-
-        Plato::LocalMeasureFactory<Residual> tLocalMeasureValueFactory2;
-        mLocalMeasurePODType = tLocalMeasureValueFactory2.create(aInputParams, aFuncName);
     }
 
     /******************************************************************************//**
@@ -175,10 +169,11 @@ public:
 
     /******************************************************************************//**
      * @brief Set local measure function
-     * @param [in] aInput local constraint limit
+     * @param [in] aInputEvaluationType evaluation type local measure
+     * @param [in] aInputPODType pod type local measure
     **********************************************************************************/
-    void setLocalMeasure(const std::shared_ptr<AbstractLocalMeasure<EvaluationType>> & aInputEvaluationType,
-                         const std::shared_ptr<AbstractLocalMeasure<Residual>> & aInputPODType)
+    void setLocalMeasure(const std::shared_ptr<AbstractLocalMeasure<EvaluationType,SimplexPhysicsT>> & aInputEvaluationType,
+                         const std::shared_ptr<AbstractLocalMeasure<Residual,SimplexPhysicsT>> & aInputPODType)
     {
         mLocalMeasureEvaluationType = aInputEvaluationType;
         mLocalMeasurePODType        = aInputPODType;
@@ -240,14 +235,14 @@ public:
                   Plato::ScalarVectorT<ResultT> & aResultWS,
                   Plato::Scalar aTimeStep = 0.0) const
     {
-        using StrainT = typename Plato::fad_type_t<Plato::SimplexMechanics<mSpaceDim>, StateT, ConfigT>;
+        using StrainT = typename Plato::fad_type_t<SimplexPhysicsT, StateT, ConfigT>;
 
         Plato::MSIMP tSIMP(mPenalty, mMinErsatzValue);
 
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVectorT<ResultT> tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasureEvaluationType)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
+        (*mLocalMeasureEvaluationType)(aStateWS, aConfigWS, mDataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVectorT<ResultT> tConstraintValue("constraint", tNumCells);
@@ -287,7 +282,7 @@ public:
                     tTrueConstraintValue(aCellOrdinal) * tTrueConstraintValue(aCellOrdinal) ) );
         },"Compute Quadratic Augmented Lagrangian Function Without Objective");
 
-        Plato::toMap(m_dataMap, tOutputPenalizedLocalMeasure, mLocalMeasureEvaluationType->getName());
+        Plato::toMap(mDataMap, tOutputPenalizedLocalMeasure, mLocalMeasureEvaluationType->getName());
     }
 
     /******************************************************************************//**
@@ -305,7 +300,7 @@ public:
         // ****** COMPUTE LOCAL MEASURE VALUES AND STORE ON DEVICE ******
         const Plato::OrdinalType tNumCells = mMesh.nelems();
         Plato::ScalarVector tLocalMeasureValue("local measure value", tNumCells);
-        (*mLocalMeasurePODType)(aStateWS, aConfigWS, m_dataMap, tLocalMeasureValue);
+        (*mLocalMeasurePODType)(aStateWS, aConfigWS, mDataMap, tLocalMeasureValue);
         
         // ****** ALLOCATE TEMPORARY ARRAYS ON DEVICE ******
         Plato::ScalarVector tConstraintValue("constraint residual", tNumCells);
@@ -352,26 +347,20 @@ public:
 
 }
 //namespace Plato
-
-#include "plato/Mechanics.hpp"
+#include "plato/SimplexMechanics.hpp"
+#include "plato/SimplexThermomechanics.hpp"
 
 #ifdef PLATO_1D
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::ResidualTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::JacobianTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientXTypes<Plato::SimplexMechanics<1>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientZTypes<Plato::SimplexMechanics<1>>>;
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexMechanics, 1)
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexThermomechanics, 1)
 #endif
 
 #ifdef PLATO_2D
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::ResidualTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::JacobianTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientXTypes<Plato::SimplexMechanics<2>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientZTypes<Plato::SimplexMechanics<2>>>;
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexMechanics, 2)
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexThermomechanics, 2)
 #endif
 
 #ifdef PLATO_3D
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::ResidualTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::JacobianTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientXTypes<Plato::SimplexMechanics<3>>>;
-extern template class Plato::AugLagStressCriterionQuadratic<Plato::GradientZTypes<Plato::SimplexMechanics<3>>>;
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexMechanics, 3)
+PLATO_EXPL_DEC2(Plato::AugLagStressCriterionQuadratic, Plato::SimplexThermomechanics, 3)
 #endif

@@ -31,14 +31,14 @@
 
 /**********************************************************************************/
 template<typename SimplexPhysics>
-class HeatEquationProblem: public Plato::AbstractProblem
+class ParabolicProblem: public Plato::AbstractProblem
 {
 /**********************************************************************************/
 private:
 
-    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::m_numSpatialDims;
+    static constexpr Plato::OrdinalType SpatialDim = SimplexPhysics::mNumSpatialDims;
 
-    static constexpr Plato::OrdinalType m_numDofsPerNode = SimplexPhysics::m_numDofsPerNode;
+    static constexpr Plato::OrdinalType mNumDofsPerNode = SimplexPhysics::mNumDofsPerNode;
 
     // required
     Plato::VectorFunctionInc<SimplexPhysics> mEqualityConstraint;
@@ -52,7 +52,6 @@ private:
 
     Plato::ScalarMultiVector mAdjoints;
     Plato::ScalarVector mResidual;
-    Plato::ScalarVector mBoundaryLoads;
 
     Plato::ScalarMultiVector mStates;
 
@@ -68,14 +67,13 @@ private:
 
 public:
     /******************************************************************************/
-    HeatEquationProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
+    ParabolicProblem(Omega_h::Mesh& aMesh, Omega_h::MeshSets& aMeshSets, Teuchos::ParameterList& aParamList) :
             mEqualityConstraint(aMesh, aMeshSets, mDataMap, aParamList, aParamList.get < std::string > ("PDE Constraint")),
             mNumSteps(aParamList.sublist("Time Integration").get<int>("Number Time Steps")),
-            mTimeStep(aParamList.sublist("Time Integration").get<double>("Time Step")),
+            mTimeStep(aParamList.sublist("Time Integration").get<Plato::Scalar>("Time Step")),
             mConstraint(nullptr),
             mObjective(nullptr),
             mResidual("MyResidual", mEqualityConstraint.size()),
-            mBoundaryLoads("BoundaryLoads", mEqualityConstraint.size()),
             mStates("States", mNumSteps, mEqualityConstraint.size()),
             mJacobian(Teuchos::null),
             mJacobianP(Teuchos::null),
@@ -84,6 +82,15 @@ public:
     /******************************************************************************/
     {
         this->initialize(aMesh, aMeshSets, aParamList);
+    }
+
+    /******************************************************************************//**
+     * @brief Return number of degrees of freedom in solution.
+     * @return Number of degrees of freedom
+    **********************************************************************************/
+    Plato::OrdinalType getNumSolutionDofs()
+    {
+        return SimplexPhysics::mNumDofsPerNode;
     }
 
     /******************************************************************************/
@@ -115,24 +122,15 @@ public:
     {
         if(mJacobian->isBlockMatrix())
         {
-            Plato::applyBlockConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyBlockConstraints<mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
         else
         {
-            Plato::applyConstraints<m_numDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
+            Plato::applyConstraints<mNumDofsPerNode>(aMatrix, aVector, mBcDofs, mBcValues);
         }
     }
 
-    /******************************************************************************/
-    void applyBoundaryLoads(const Plato::ScalarVector & aForce)
-    /******************************************************************************/
-    {
-        auto tBoundaryLoads = mBoundaryLoads;
-        auto tNumDofs = aForce.size();
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0, tNumDofs), LAMBDA_EXPRESSION(const Plato::OrdinalType & aDofOrdinal){
-            aForce(aDofOrdinal) += tBoundaryLoads(aDofOrdinal);
-        }, "add boundary loads");
-    }
+    void applyBoundaryLoads(const Plato::ScalarVector & aForce){}
 
     /******************************************************************************//**
      * @brief Update physics-based parameters within optimization iterations
@@ -157,7 +155,7 @@ public:
           this->applyConstraints(mJacobian, mResidual);
 
 #ifdef HAVE_AMGX
-          using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode>;
+          using AmgXLinearProblem = Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode>;
           auto tConfigString = AmgXLinearProblem::getConfigString();
           Plato::ScalarVector deltaT("increment", tState.extent(0));
           Plato::fill(static_cast<Plato::Scalar>(0.0), deltaT);
@@ -303,7 +301,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -371,7 +369,7 @@ public:
             // system is symmetric.
 
 #ifdef HAVE_AMGX
-            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::m_numDofsPerNode> AmgXLinearProblem;
+            typedef Plato::AmgXSparseLinearProblem< Plato::OrdinalType, SimplexPhysics::mNumDofsPerNode> AmgXLinearProblem;
             auto tConfigString = AmgXLinearProblem::getConfigString();
             auto tSolver = Teuchos::rcp(new AmgXLinearProblem(*mJacobian, tAdjoint, tPartialObjectiveWRT_State, tConfigString));
             tSolver->solve();
@@ -561,23 +559,17 @@ private:
         Plato::EssentialBCs<SimplexPhysics>
             tEssentialBoundaryConditions(aParamList.sublist("Essential Boundary Conditions",false));
         tEssentialBoundaryConditions.get(aMeshSets, mBcDofs, mBcValues);
-
-        // parse loads
-        //
-        Plato::NaturalBCs<SimplexPhysics::SpaceDim, SimplexPhysics::m_numDofsPerNode>
-            tNaturalBoundaryConditions(aParamList.sublist("Natural Boundary Conditions", false));
-        tNaturalBoundaryConditions.get(&aMesh, aMeshSets, mBoundaryLoads);
     }
 };
 
 #ifdef PLATO_1D
-extern template class HeatEquationProblem<::Plato::Thermal<1>>;
+extern template class ParabolicProblem<::Plato::Thermal<1>>;
 #endif
 #ifdef PLATO_2D
-extern template class HeatEquationProblem<::Plato::Thermal<2>>;
+extern template class ParabolicProblem<::Plato::Thermal<2>>;
 #endif
 #ifdef PLATO_3D
-extern template class HeatEquationProblem<::Plato::Thermal<3>>;
+extern template class ParabolicProblem<::Plato::Thermal<3>>;
 #endif
 
 #endif // PLATO_PROBLEM_HPP

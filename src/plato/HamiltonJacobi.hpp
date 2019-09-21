@@ -125,7 +125,7 @@ Plato::Scalar Delta(const Plato::Scalar signedDist, const Plato::Scalar eps)
 }
 
 template<int SpatialDim, class Lambda>
-Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, const Lambda & levelSetFn, double levelSet)
+Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, Plato::Scalar eps, const Lambda & levelSetFn, Plato::Scalar levelSet)
 {
   constexpr int nodesPerElem = SpatialDim + 1;
   Plato::NodeCoordinate<SpatialDim> nodeCoordinate(&omega_h_mesh);
@@ -150,7 +150,7 @@ Plato::Scalar level_set_integral(Omega_h::Mesh & omega_h_mesh, ProblemFields<Spa
 }
 
 template<int SpatialDim>
-Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, Plato::Scalar eps, Plato::Scalar levelSet = 0.)
 {
   constexpr int nodesPerElem = SpatialDim + 1;
   Plato::NodeCoordinate<SpatialDim> nodeCoordinate(&omega_h_mesh);
@@ -186,7 +186,7 @@ Plato::Scalar level_set_volume_rate_of_change(Omega_h::Mesh & omega_h_mesh, Prob
 }
 
 template<int SpatialDim>
-Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, Plato::Scalar eps, Plato::Scalar levelSet = 0.)
 {
   auto fn = LAMBDA_EXPRESSION(const Plato::Scalar signedDist, const Plato::Scalar eps) {
     return Heaviside(signedDist, eps);
@@ -195,7 +195,7 @@ Plato::Scalar level_set_volume(Omega_h::Mesh & omega_h_mesh, ProblemFields<Spati
 }
 
 template<int SpatialDim>
-Plato::Scalar level_set_area(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, double eps, double levelSet = 0.)
+Plato::Scalar level_set_area(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, Plato::Scalar eps, Plato::Scalar levelSet = 0.)
 {
   auto fn = LAMBDA_EXPRESSION(const Plato::Scalar signedDist, const Plato::Scalar eps) {
     return Delta(signedDist, eps);
@@ -279,7 +279,7 @@ template<int SpatialDim, class Lambda>
 inline void initialize_level_set(Omega_h::Mesh & aOmega_h_Mesh,
                                  ProblemFields<SpatialDim> & aFields,
                                  const Lambda & aLevelSetFunction,
-                                 const double aMultiplier = 1.0)
+                                 const Plato::Scalar aMultiplier = 1.0)
 {
     auto tLevelSet = aFields.mLevelSet;
     const Omega_h::Reals tCoords = aOmega_h_Mesh.coords();
@@ -472,7 +472,7 @@ private:
   const Plato::NodeCoordinate<SpatialDim> mNodeCoordinate;
   const Plato::ComputeGradient<SpatialDim> mComputeGradient;
   const ProblemFields<SpatialDim> mFields;
-  const double mEps;
+  const Plato::Scalar mEps;
 
   DEVICE_TYPE inline
   Plato::Scalar get_element_speed(const ProblemFields<SpatialDim> & fields, int elem) const
@@ -486,7 +486,7 @@ private:
     return elementSpeed/nodesPerElem;
   }
 public:
-  AssembleElementSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const double eps) :
+  AssembleElementSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh, ProblemFields<SpatialDim> & fields, const Plato::Scalar eps) :
     mElems2Verts(omega_h_mesh.ask_elem_verts()),
     mNodeCoordinate(&omega_h_mesh),
     mComputeGradient(mNodeCoordinate),
@@ -512,10 +512,10 @@ public:
 
     const Plato::Scalar elementSpeed = get_element_speed(mFields, elem);
     Omega_h::Vector<nodesPerElem> volHamiltonianCoeffs; // K_i in Barth-Sethian
-    double sumNegCoeffs = 0.;
-    double sumPosCoeffs = 0.;
-    double sumNegContrib = 0.;
-    double volHamiltonian = 0.;
+    Plato::Scalar sumNegCoeffs = 0.;
+    Plato::Scalar sumPosCoeffs = 0.;
+    Plato::Scalar sumNegContrib = 0.;
+    Plato::Scalar volHamiltonian = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
       auto node = mElems2Verts[elem * nodesPerElem + n];
@@ -535,7 +535,7 @@ public:
     }
 
     Omega_h::Vector<nodesPerElem> alpha; // delta phi_i in Barth-Sethian
-    double sumPosAlpha = 0.;
+    Plato::Scalar sumPosAlpha = 0.;
     for (int n=0; n<nodesPerElem; ++n)
     {
       alpha[n] = 0.;
@@ -574,13 +574,13 @@ private:
   const Plato::NodeCoordinate<SpatialDim> mNodeCoordinate;
   const Plato::ComputeGradient<SpatialDim> mComputeGradient;
   const ProblemFields<SpatialDim> mFields;
-  const double mEps;
+  const Plato::Scalar mEps;
   const bool mComputeTimeOfArrival;
 
 public:
   AssembleNodalSpeedHamiltonian(Omega_h::Mesh & omega_h_mesh,
       ProblemFields<SpatialDim> & fields,
-      const double eps,
+      const Plato::Scalar eps,
       const bool computeTimeOfArrival) :
         mElems2Verts(omega_h_mesh.ask_elem_verts()),
         mNodeCoordinate(&omega_h_mesh),
@@ -591,7 +591,7 @@ public:
 
 
   DEVICE_TYPE inline
-  Plato::Scalar get_nodal_speed(const ProblemFields<SpatialDim> & fields, int elem, int node, double eps) const
+  Plato::Scalar get_nodal_speed(const ProblemFields<SpatialDim> & fields, int elem, int node, Plato::Scalar eps) const
   {
     // Note that this could be generalized to support some other type of nodal speed.
     // For now just implement Eikonal-type nodal speed (either redistancing or time-of-arrival).

@@ -21,22 +21,22 @@ template<typename PhysicsT>
 class DivisionFunction : public Plato::ScalarFunctionBase, public Plato::WorksetBase<PhysicsT>
 {
 private:
-    using Plato::WorksetBase<PhysicsT>::m_numDofsPerCell; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_numNodesPerCell; /*!< number of nodes per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_numDofsPerNode; /*!< number of degree of freedom per node */
-    using Plato::WorksetBase<PhysicsT>::m_numSpatialDims; /*!< number of spatial dimensions */
-    using Plato::WorksetBase<PhysicsT>::m_numControl; /*!< number of control variables */
-    using Plato::WorksetBase<PhysicsT>::m_numNodes; /*!< total number of nodes in the mesh */
-    using Plato::WorksetBase<PhysicsT>::m_numCells; /*!< total number of cells/elements in the mesh */
+    using Plato::WorksetBase<PhysicsT>::mNumDofsPerCell; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mNumNodesPerCell; /*!< number of nodes per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mNumDofsPerNode; /*!< number of degree of freedom per node */
+    using Plato::WorksetBase<PhysicsT>::mNumSpatialDims; /*!< number of spatial dimensions */
+    using Plato::WorksetBase<PhysicsT>::mNumControl; /*!< number of control variables */
+    using Plato::WorksetBase<PhysicsT>::mNumNodes; /*!< total number of nodes in the mesh */
+    using Plato::WorksetBase<PhysicsT>::mNumCells; /*!< total number of cells/elements in the mesh */
 
-    using Plato::WorksetBase<PhysicsT>::m_stateEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_controlEntryOrdinal; /*!< number of degree of freedom per cell/element */
-    using Plato::WorksetBase<PhysicsT>::m_configEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mStateEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mControlEntryOrdinal; /*!< number of degree of freedom per cell/element */
+    using Plato::WorksetBase<PhysicsT>::mConfigEntryOrdinal; /*!< number of degree of freedom per cell/element */
 
     std::shared_ptr<Plato::ScalarFunctionBase> mScalarFunctionBaseNumerator; /*!< numerator function */
     std::shared_ptr<Plato::ScalarFunctionBase> mScalarFunctionBaseDenominator; /*!< denominator function */
 
-    Plato::DataMap& m_dataMap; /*!< PLATO Engine and Analyze data map */
+    Plato::DataMap& mDataMap; /*!< PLATO Engine and Analyze data map */
 
     std::string mFunctionName; /*!< User defined function name */
 
@@ -56,10 +56,10 @@ private:
         auto tDenominatorFunctionName = tProblemFunctionName.get<std::string>("Denominator");
 
         mScalarFunctionBaseNumerator = 
-             tFactory.create(aMesh, aMeshSets, m_dataMap, aInputParams, tNumeratorFunctionName);
+             tFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tNumeratorFunctionName);
 
         mScalarFunctionBaseDenominator = 
-             tFactory.create(aMesh, aMeshSets, m_dataMap, aInputParams, tDenominatorFunctionName);
+             tFactory.create(aMesh, aMeshSets, mDataMap, aInputParams, tDenominatorFunctionName);
     }
 
 public:
@@ -77,7 +77,7 @@ public:
                 Teuchos::ParameterList& aInputParams,
                 std::string& aName) :
             Plato::WorksetBase<PhysicsT>(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mFunctionName(aName)
     {
         initialize(aMesh, aMeshSets, aInputParams);
@@ -90,7 +90,7 @@ public:
     **********************************************************************************/
     DivisionFunction(Omega_h::Mesh& aMesh, Plato::DataMap& aDataMap) :
             Plato::WorksetBase<PhysicsT>(aMesh),
-            m_dataMap(aDataMap),
+            mDataMap(aDataMap),
             mFunctionName("Division Function")
     {
     }
@@ -157,7 +157,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numSpatialDims * m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumSpatialDims * mNumNodes;
         Plato::ScalarVector tGradientX ("gradient configuration", tNumDofs);
 
         Plato::Scalar tNumeratorValue = mScalarFunctionBaseNumerator->value(aState, aControl, aTimeStep);
@@ -185,7 +185,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numDofsPerNode * m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumDofsPerNode * mNumNodes;
         Plato::ScalarVector tGradientU ("gradient state", tNumDofs);
 
         Plato::Scalar tNumeratorValue = mScalarFunctionBaseNumerator->value(aState, aControl, aTimeStep);
@@ -213,7 +213,7 @@ public:
                                    const Plato::ScalarVector & aControl,
                                    Plato::Scalar aTimeStep = 0.0) const
     {
-        const Plato::OrdinalType tNumDofs = m_numNodes;
+        const Plato::OrdinalType tNumDofs = mNumNodes;
         Plato::ScalarVector tGradientZ ("gradient control", tNumDofs);
         
         Plato::Scalar tNumeratorValue = mScalarFunctionBaseNumerator->value(aState, aControl, aTimeStep);

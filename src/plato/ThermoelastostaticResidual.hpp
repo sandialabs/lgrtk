@@ -38,13 +38,13 @@ private:
     static constexpr int TDofOffset = SpaceDim;
     static constexpr int MDofOffset = 0;
 
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numVoigtTerms;
-    using Plato::Simplex<SpaceDim>::m_numNodesPerCell;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerNode;
-    using Plato::SimplexThermomechanics<SpaceDim>::m_numDofsPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumVoigtTerms;
+    using Plato::Simplex<SpaceDim>::mNumNodesPerCell;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerNode;
+    using Plato::SimplexThermomechanics<SpaceDim>::mNumDofsPerCell;
 
     using Plato::AbstractVectorFunction<EvaluationType>::mMesh;
-    using Plato::AbstractVectorFunction<EvaluationType>::m_dataMap;
+    using Plato::AbstractVectorFunction<EvaluationType>::mDataMap;
     using Plato::AbstractVectorFunction<EvaluationType>::mMeshSets;
 
     using StateScalarType = typename EvaluationType::StateScalarType;
@@ -52,20 +52,20 @@ private:
     using ConfigScalarType = typename EvaluationType::ConfigScalarType;
     using ResultScalarType = typename EvaluationType::ResultScalarType;
 
-    IndicatorFunctionType m_indicatorFunction;
-    Plato::ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> m_applyFluxWeighting;
-    Plato::ApplyWeighting<SpaceDim, m_numVoigtTerms, IndicatorFunctionType> m_applyStressWeighting;
+    IndicatorFunctionType mIndicatorFunction;
+    Plato::ApplyWeighting<SpaceDim, SpaceDim,        IndicatorFunctionType> mApplyFluxWeighting;
+    Plato::ApplyWeighting<SpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyStressWeighting;
 
-    std::shared_ptr<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>> m_bodyLoads;
+    std::shared_ptr<Plato::BodyLoads<EvaluationType>> mBodyLoads;
 
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>> m_boundaryLoads;
-    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NThrmDims, m_numDofsPerNode, TDofOffset>> m_boundaryFluxes;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>> mBoundaryLoads;
+    std::shared_ptr<Plato::NaturalBCs<SpaceDim, NThrmDims, mNumDofsPerNode, TDofOffset>> mBoundaryFluxes;
 
     std::shared_ptr<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>> mCubatureRule;
 
-    Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> m_materialModel;
+    Teuchos::RCP<Plato::LinearThermoelasticMaterial<SpaceDim>> mMaterialModel;
 
-    std::vector<std::string> m_plottable;
+    std::vector<std::string> mPlottable;
 
 public:
     /**************************************************************************/
@@ -75,45 +75,45 @@ public:
                                Teuchos::ParameterList& aProblemParams,
                                Teuchos::ParameterList& aPenaltyParams) :
             Plato::AbstractVectorFunction<EvaluationType>(aMesh, aMeshSets, aDataMap),
-            m_indicatorFunction(aPenaltyParams),
-            m_applyStressWeighting(m_indicatorFunction),
-            m_applyFluxWeighting(m_indicatorFunction),
-            m_bodyLoads(nullptr),
-            m_boundaryLoads(nullptr),
-            m_boundaryFluxes(nullptr),
+            mIndicatorFunction(aPenaltyParams),
+            mApplyStressWeighting(mIndicatorFunction),
+            mApplyFluxWeighting(mIndicatorFunction),
+            mBodyLoads(nullptr),
+            mBoundaryLoads(nullptr),
+            mBoundaryFluxes(nullptr),
             mCubatureRule(std::make_shared<Plato::LinearTetCubRuleDegreeOne<EvaluationType::SpatialDim>>())
     /**************************************************************************/
     {
         // create material model and get stiffness
         //
         Plato::ThermoelasticModelFactory<SpaceDim> mmfactory(aProblemParams);
-        m_materialModel = mmfactory.create();
+        mMaterialModel = mmfactory.create();
   
 
         // parse body loads
         // 
         if(aProblemParams.isSublist("Body Loads"))
         {
-            m_bodyLoads = std::make_shared<Plato::BodyLoads<SpaceDim,m_numDofsPerNode>>(aProblemParams.sublist("Body Loads"));
+            mBodyLoads = std::make_shared<Plato::BodyLoads<EvaluationType>>(aProblemParams.sublist("Body Loads"));
         }
   
         // parse mechanical boundary Conditions
         // 
         if(aProblemParams.isSublist("Mechanical Natural Boundary Conditions"))
         {
-            m_boundaryLoads =   std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, m_numDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
+            mBoundaryLoads =   std::make_shared<Plato::NaturalBCs<SpaceDim, NMechDims, mNumDofsPerNode, MDofOffset>>(aProblemParams.sublist("Mechanical Natural Boundary Conditions"));
         }
   
         // parse thermal boundary Conditions
         // 
         if(aProblemParams.isSublist("Thermal Natural Boundary Conditions"))
         {
-            m_boundaryFluxes = std::make_shared<Plato::NaturalBCs<SpaceDim, NThrmDims, m_numDofsPerNode, TDofOffset>>(aProblemParams.sublist("Thermal Natural Boundary Conditions"));
+            mBoundaryFluxes = std::make_shared<Plato::NaturalBCs<SpaceDim, NThrmDims, mNumDofsPerNode, TDofOffset>>(aProblemParams.sublist("Thermal Natural Boundary Conditions"));
         }
   
         auto tResidualParams = aProblemParams.sublist("Thermoelastostatics");
         if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
-          m_plottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
+          mPlottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
 
     }
 
@@ -132,21 +132,21 @@ public:
 
       Plato::ComputeGradientWorkset<SpaceDim> computeGradient;
       Plato::TMKinematics<SpaceDim>                  kinematics;
-      Plato::TMKinetics<SpaceDim>                    kinetics(m_materialModel);
+      Plato::TMKinetics<SpaceDim>                    kinetics(mMaterialModel);
       
-      Plato::StressDivergence<SpaceDim, m_numDofsPerNode, MDofOffset> stressDivergence;
-      Plato::FluxDivergence  <SpaceDim, m_numDofsPerNode, TDofOffset> fluxDivergence;
+      Plato::StressDivergence<SpaceDim, mNumDofsPerNode, MDofOffset> stressDivergence;
+      Plato::FluxDivergence  <SpaceDim, mNumDofsPerNode, TDofOffset> fluxDivergence;
 
-      Plato::InterpolateFromNodal<SpaceDim, m_numDofsPerNode, TDofOffset> interpolateFromNodal;
+      Plato::InterpolateFromNodal<SpaceDim, mNumDofsPerNode, TDofOffset> interpolateFromNodal;
 
       Plato::ScalarVectorT<ConfigScalarType> cellVolume("cell weight",tNumCells);
 
-      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient", tNumCells, m_numNodesPerCell, SpaceDim);
+      Plato::ScalarArray3DT<ConfigScalarType> gradient("gradient", tNumCells, mNumNodesPerCell, SpaceDim);
 
-      Plato::ScalarMultiVectorT<GradScalarType> strain("strain", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<GradScalarType> strain("strain", tNumCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<GradScalarType> tgrad("tgrad", tNumCells, SpaceDim);
     
-      Plato::ScalarMultiVectorT<ResultScalarType> stress("stress", tNumCells, m_numVoigtTerms);
+      Plato::ScalarMultiVectorT<ResultScalarType> stress("stress", tNumCells, mNumVoigtTerms);
       Plato::ScalarMultiVectorT<ResultScalarType> flux ("flux" , tNumCells, SpaceDim);
     
       Plato::ScalarVectorT<StateScalarType> temperature("Gauss point temperature", tNumCells);
@@ -170,8 +170,8 @@ public:
 
       }, "Cauchy stress");
 
-      auto& applyStressWeighting = m_applyStressWeighting;
-      auto& applyFluxWeighting  = m_applyFluxWeighting;
+      auto& applyStressWeighting = mApplyStressWeighting;
+      auto& applyFluxWeighting  = mApplyFluxWeighting;
       Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,tNumCells), LAMBDA_EXPRESSION(int cellOrdinal)
       {
         // apply weighting
@@ -185,25 +185,25 @@ public:
         fluxDivergence (cellOrdinal, result, flux,  gradient, cellVolume);
       }, "Apply weighting and compute divergence");
 
-      if( m_bodyLoads != nullptr )
+      if( mBodyLoads != nullptr )
       {
-          m_bodyLoads->get( mMesh, state, control, result );
+          mBodyLoads->get( mMesh, state, control, result, -1.0 );
       }
 
-      if( m_boundaryLoads != nullptr )
+      if( mBoundaryLoads != nullptr )
       {
-          m_boundaryLoads->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
-      if( m_boundaryFluxes != nullptr )
+      if( mBoundaryFluxes != nullptr )
       {
-          m_boundaryFluxes->get( &mMesh, mMeshSets, state, control, result );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
 
-      if( std::count(m_plottable.begin(),m_plottable.end(),"strain") ) toMap(m_dataMap, strain, "strain");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"tgrad") ) toMap(m_dataMap, strain, "tgrad");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"stress") ) toMap(m_dataMap, stress, "stress");
-      if( std::count(m_plottable.begin(),m_plottable.end(),"flux" ) ) toMap(m_dataMap, stress, "flux" );
+      if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, strain, "strain");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, strain, "tgrad");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"stress") ) toMap(mDataMap, stress, "stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, stress, "flux" );
 
     }
 };
