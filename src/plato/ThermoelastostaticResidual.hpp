@@ -201,9 +201,9 @@ public:
       }
 
       if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, strain, "strain");
-      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, strain, "tgrad");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, tgrad, "tgrad");
       if( std::count(mPlottable.begin(),mPlottable.end(),"stress") ) toMap(mDataMap, stress, "stress");
-      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, stress, "flux" );
+      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, flux, "flux" );
 
     }
 };

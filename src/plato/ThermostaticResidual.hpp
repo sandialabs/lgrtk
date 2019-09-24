@@ -11,6 +11,7 @@
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
+#include "plato/ToMap.hpp"
 
 #include "plato/LinearThermalMaterial.hpp"
 #include "plato/AbstractVectorFunction.hpp"
@@ -56,6 +57,8 @@ class ThermostaticResidual :
 
     std::shared_ptr<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>> mBoundaryLoads;
 
+    std::vector<std::string> mPlottable;
+
   public:
     /**************************************************************************/
     ThermostaticResidual(Omega_h::Mesh& aMesh,
@@ -85,6 +88,10 @@ class ThermostaticResidual :
       {
           mBoundaryLoads = std::make_shared<Plato::NaturalBCs<SpaceDim,mNumDofsPerNode>>(problemParams.sublist("Natural Boundary Conditions"));
       }
+
+      auto tResidualParams = problemParams.sublist("Thermostatics");
+      if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
+        mPlottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
     
     }
 
@@ -154,6 +161,9 @@ class ThermostaticResidual :
       {
           mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
       }
+
+      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, tgrad, "tgrad");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, tflux, "flux" );
     }
 };
 // class ThermostaticResidual

@@ -218,6 +218,8 @@ void output(Teuchos::ParameterList & aParamList,
               (tStride, tNumVertices, tSubView, tTemp);
           
           aMesh.add_tag(Omega_h::VERT, "Temperature", 1 /*output_numDof_per_node*/, Omega_h::Reals(tTemp));
+
+          addElementStateTags(aMesh, aStateDataMap);
           Omega_h::TagSet tTags = Omega_h::vtk::get_all_vtk_tags(&aMesh, SpatialDim);
           tWriter.write(/*time_index*/iStep, /*current_time=*/(Plato::Scalar)iStep, tTags);
         }
