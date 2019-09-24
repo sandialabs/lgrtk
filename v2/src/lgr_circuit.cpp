@@ -163,6 +163,37 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          AddMeshUser(e);
       } // Mesh element number
 
+      // Branches
+      if (circuit_pl.is_list("branch")) {
+         auto& branch_pl = circuit_pl.get_list("branch");
+
+         for (int i=0; i < branch_pl.size(); i++) {
+            if (branch_pl.is_map(i)) {
+                auto& bmap_pl = branch_pl.get_map(i);
+
+                // Add number of branches
+                if (bmap_pl.is<int>("count")) {
+                   int n = bmap_pl.get<int>("count");
+                   Branch b;
+                   b.count = n;
+                   branch.push_back(b);
+                }
+
+                // Add repeated elements numbers in branch
+                if (bmap_pl.is_list("elements")){
+                
+                   auto& belem_pl = bmap_pl.get_list("elements");
+                   auto this_branch = branch.size() - 1;
+                   for (int j=0; j < belem_pl.size(); j++) {
+                      auto elem = belem_pl.get<int>(j);
+                      branch.at(this_branch).elements.push_back(elem);
+                   }
+                } 
+            }
+         }
+      } // Branches
+
+
       // Resistors
       if (circuit_pl.is_list("resistors")) {
          auto& resistors_pl = circuit_pl.get_list("resistors");
@@ -332,11 +363,35 @@ double Circuit::GetMeshCathodeVoltage()
    return GetNodeVoltage(enMap[std::size_t(efind)][0]);
 }
 
+double Circuit::GetMeshVoltageDrop()
+{
+    return GetMeshAnodeVoltage() - GetMeshCathodeVoltage();
+}
+
 double Circuit::GetMeshConductance()
 {
    if (!usingMesh) return 0.0;
 
-   return GetElementConductance(eMesh);
+   double conductance = GetElementConductance(eMesh);
+
+   for (auto it = branch.begin(); it != branch.end(); ++it) {
+      for (auto eit = (*it).elements.begin(); eit != (*it).elements.end(); ++eit) {
+         if ( (*eit) == eMesh) {
+            // This is a single branches mesh conductance, not the combined branch
+            conductance *= 1.0/(*it).count;
+         }
+      }
+    }
+
+   return conductance;
+}
+
+double Circuit::GetMeshCurrent()
+{
+   if (!usingMesh) return 0.0;
+
+   // This is a single branches current, since GetMeshConductance scales by the count
+   return GetMeshVoltageDrop()*GetMeshConductance();
 }
 
 double Circuit::GetNodeVoltage(int nodein)
@@ -419,7 +474,22 @@ double Circuit::GetElementConductance(int e)
 
 void Circuit::SetMeshConductance(double c)
 {
-   if (usingMesh) SetElementConductance(eMesh, c);
+   if (usingMesh) {
+
+   double conductance = c;
+
+   for (auto it = branch.begin(); it != branch.end(); ++it) {
+      for (auto eit = (*it).elements.begin(); eit != (*it).elements.end(); ++eit) {
+         // Note this does not use eNumMap since SetElementConductance will do that below;
+         // This is pure user driven
+         if ( (*eit) == eMesh) {
+            conductance *= (*it).count;
+         }
+      }
+    }
+
+   SetElementConductance(eMesh, conductance);
+   }
 }
 
 int Circuit::GetNumNodes()
@@ -473,6 +543,7 @@ void Circuit::Setup()
 
    UpdateGrounds();
    UpdateMatrixSize();
+   UpdateBranchValues();
 }
 
 
@@ -480,20 +551,48 @@ void Circuit::Solve(double dtin, double timein)
 {
 
    if (usingCircuit) {
-      try {
-         if ((dtin <= 0) & (cNum + lNum > 0)) {
-            throw 1; // Invalid time step
-         }
-      }
-      catch (int ex) {
-         std::cout << "Circuit solve Solve() execption " << ex << std::endl;
-      }
       dt   = dtin;
       time = timein;
 
       AssembleMatrix();
-      SolveMatrix();
+      if ( (dt > 0) || (cNum + lNum == 0) )
+         SolveMatrix();
    }
+}
+
+void Circuit::UpdateBranchValues()
+{
+    for (auto it = branch.begin(); it != branch.end(); ++it) {
+       for (auto eit = (*it).elements.begin(); eit != (*it).elements.end(); ++eit) {
+
+          int e = (*eit);
+          int efind = -1;
+          for (int i=0;i<eNum;i++) {
+             if (eNumMap[std::size_t(i)] == e) {
+                efind = i;
+                break;
+             }
+          }
+          if (efind == -1) {
+             printf("Circuit could not find element %d\n",e);
+             OMEGA_H_CHECK(0 > 1);
+          }
+
+          std::size_t ecomp = static_cast<std::size_t>(eValMap[std::size_t(efind)]);
+
+          if (eType[std::size_t(efind)] == ETYPE_RESISTOR) {
+             // Modify conductance (inverse resistance)
+             rVal[ecomp] *= (*it).count;
+          } else if (eType[std::size_t(efind)] == ETYPE_CAPACITOR) {
+             // Modify capacitance
+             cVal[ecomp] *= (*it).count;
+          } else if (eType[std::size_t(efind)] == ETYPE_INDUCTOR) {
+             // Modify inductance
+             lVal[ecomp] *= 1.0/(*it).count;
+          }
+       }
+
+    }
 }
 
 void Circuit::UpdateMatrixSize()
