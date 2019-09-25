@@ -13,6 +13,7 @@ namespace Plato
 /*! Stress functor.
   
     given a strain, compute the stress.
+    stress tensor in Voigt notation = {s_xx, s_yy, s_zz, s_yz, s_xz, s_xy}
 */
 /******************************************************************************/
 template<int SpaceDim>

@@ -13,6 +13,7 @@ namespace Plato
 /*! Strain functor.
   
     given a gradient matrix and displacement array, compute the strain.
+    strain tensor in Voigt notation = {e_xx, e_yy, e_zz, e_yz, e_xz, e_xy}
 */
 /******************************************************************************/
 template<Plato::OrdinalType SpaceDim>
