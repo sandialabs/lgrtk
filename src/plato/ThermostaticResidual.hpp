@@ -89,7 +89,7 @@ class ThermostaticResidual :
           mBoundaryLoads = std::make_shared<Plato::NaturalBCs<mSpaceDim,mNumDofsPerNode>>(aProblemParams.sublist("Natural Boundary Conditions"));
       }
 
-      auto tResidualParams = problemParams.sublist("Thermostatics");
+      auto tResidualParams = aProblemParams.sublist("Thermostatics");
       if( tResidualParams.isType<Teuchos::Array<std::string>>("Plottable") )
         mPlottable = tResidualParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
     
@@ -162,8 +162,8 @@ class ThermostaticResidual :
           mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aResult, -1.0 );
       }
 
-      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, tgrad, "tgrad");
-      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, tflux, "flux" );
+      if( std::count(mPlottable.begin(),mPlottable.end(),"tgrad") ) toMap(mDataMap, tGrad, "tgrad");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"flux" ) ) toMap(mDataMap, tFlux, "flux" );
     }
 };
 // class ThermostaticResidual
