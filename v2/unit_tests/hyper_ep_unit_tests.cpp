@@ -1,3 +1,4 @@
+#ifdef ACTUALLY_BUILD_THIS_TEST
 #include <cmath>
 
 #include <lgr_hyper_ep.hpp>
@@ -694,3 +695,4 @@ TEST(HyperEPMaterialModel, ZerilliArmstrongRateDependentMotionNoTest)
 
 } // namespace
 
+#endif
