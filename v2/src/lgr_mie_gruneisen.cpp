@@ -29,7 +29,7 @@ struct MieGruneisen : public Model<Elem> {
 
   std::uint64_t exec_stages() override final { return AT_MATERIAL_MODEL; }
 
-  char const* name() override final { return "Mie-Gruniesen"; }
+  char const* name() override final { return "Mie-Gruneisen"; }
 
   void at_material_model() override final {
     auto points_to_rho = this->points_get(this->sim.density);
