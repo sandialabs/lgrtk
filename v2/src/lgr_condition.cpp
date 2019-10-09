@@ -156,14 +156,16 @@ void Condition::apply(
     Omega_h::copy_into(cached_values, storage);
   } else {
     auto ncomps = divide_no_remainder(
-        cached_values.size(), bridge->mapping.things.size());
+        cached_values.size(), support->count());
     if (storage.size() != ncomps * field->support->count()) {
       Omega_h_fail(
           "Value of condition \"%s\" on subset of field \"%s\" was of the "
-          "wrong size\n",
-          str.c_str(), field->long_name.c_str());
+          "wrong size: storage.size() %d != ncomps %d * field->support->count() %d\n",
+          str.c_str(), field->long_name.c_str(),
+          storage.size(), ncomps, field->support->count());
     }
-    Omega_h::map_into(cached_values, bridge->mapping.things, storage, ncomps);
+    auto ncomps_per_ent = divide_no_remainder(cached_values.size(), bridge->mapping.things.size());
+    Omega_h::map_into(cached_values, bridge->mapping.things, storage, ncomps_per_ent);
   }
   fields.print_and_clear_set_fields();
 }
