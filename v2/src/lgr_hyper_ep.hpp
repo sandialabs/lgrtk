@@ -4,6 +4,7 @@
 #include <iostream>
 #endif
 #include <lgr_mie_gruneisen.hpp>
+#include <lgr_exp.hpp>
 
 //#define LGR_COMPILE_TIME_MATERIAL_BRANCHES
 
@@ -354,7 +355,7 @@ double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
       sig_star = Omega_h::max2(Omega_h::min2(sig_star, 1.5), -1.5);
 
       // Stress contribution to damage
-      double stress_contrib = props.D1 + props.D2 * exp(props.D3 * sig_star);
+      double stress_contrib = props.D1 + props.D2 * std::exp(props.D3 * sig_star);
 
       // Strain rate contribution to damage
       double dep_contrib = 1.0;
@@ -416,11 +417,12 @@ ErrorCode radial_return(Properties const props, Tensor<3> const Te,
   auto const Nu = props.Nu;
   auto const mu = E / 2.0 / (1.0 + Nu);
   auto const twomu = 2.0 * mu;
-  auto gamma = epdot * dtime * sq32;
   // Possible states at this point are TRIAL or REMAPPED
   if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
   // check yield
   auto Y = flow_stress(props, temp, ep, epdot, dp);
+  auto dY = dflow_stress(props, temp, ep, epdot, dtime, dp);
+  auto gamma = -twomu - twothird * props.B;
   auto const S0 = deviator(Te);
   auto const norm_S0 = norm(S0);
   auto f = norm_S0 / sq2 - Y / sq3;
@@ -460,16 +462,6 @@ ErrorCode radial_return(Properties const props, Tensor<3> const Te,
         conv = 2;
         break;
       }
-#ifdef LGR_HYPER_EP_VERBOSE_DEBUG
-      std::cout << "Iteration: " << iter + 1 << "\n"
-                << "\tROOTJ20: " << Omega_h::norm(S0) << "\n"
-                << "\tROOTJ2: " << Omega_h::norm(S) << "\n"
-                << "\tep: " << ep << "\n"
-                << "\tepdot: " << epdot << "\n"
-                << "\tgamma: " << gamma << "\n"
-                << "\tg: " << g << "\n"
-                << "\tdg: " << dg << "\n\n\n";
-#endif
     }
     // Update the stress tensor
     T = Te - twomu * gamma * N;
@@ -484,10 +476,12 @@ ErrorCode radial_return(Properties const props, Tensor<3> const Te,
 
   if (flag != StateFlag::ELASTIC) {
     // determine elastic deformation
+    auto const N = S0 / norm_S0;
     auto const jac = determinant(F);
     auto const j13 = std::cbrt(jac);
     auto const j23 = j13 * j13;
-    auto const Fe = Fn * invert(Fp);
+    auto const Fpinc = lgr::exp::exp(gamma * N);
+    auto const Fe = F * invert(Fp);
     Tensor<3> Bbe = (Fe * Fe) / j23;
     auto found = find_bbe(T, mu, Bbe);
     if (!found) {
