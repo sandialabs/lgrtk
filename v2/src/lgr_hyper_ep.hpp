@@ -4,7 +4,10 @@
 #include <iostream>
 #endif
 #include <lgr_mie_gruneisen.hpp>
+<<<<<<< HEAD
 #include <lgr_exp.hpp>
+=======
+>>>>>>> f53343bff37fe67a495d28a44aeb63d1aa682323
 
 //#define LGR_COMPILE_TIME_MATERIAL_BRANCHES
 
