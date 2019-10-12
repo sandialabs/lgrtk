@@ -306,8 +306,17 @@ radial_return(Properties const props, Tensor<3> const F, double const temp,
     double const dtime, Tensor<3>& S, Tensor<3>& Fp, double& ep,
     double& epdot, double& dp) {
 
-  auto const sq23 = std::sqrt(2.0 / 3.0);
+  auto const J     = determinant(F);
+  auto const Jp13  = std::cbrt(J);
+  auto const Jm23  = 1.0 / Jp13 / Jp13;
+  auto const Fpinv = invert(Fp);
+
+  // compute the trial state
+  auto const Cpinv = Fpinv * transpose(Fpinv);
+  auto const be    = Jm23 * F * Cpinv * transpose(F);
   auto const mu = props.E / 2.0 / (1.0 + props.Nu);
+  auto const mubar = trace(be) * mu / 3.0;
+  auto const sq23 = std::sqrt(2.0 / 3.0);
 
   // check yield
   auto Y = flow_stress(props, temp, ep, epdot, dp);
@@ -322,15 +331,15 @@ radial_return(Properties const props, Tensor<3> const F, double const temp,
       Y = flow_stress(props, temp, ep, epdot, dp);
       auto const dY = dflow_stress(props, temp, ep, epdot, dtime, dp);
 
-      g = smag - (2.0 * mu * gamma + sq23 * Y);
-      dg = -2.0 * mu * (1.0 + dY / (3.0 * mu));
+      g = smag - (2.0 * mubar * gamma + sq23 * Y);
+      dg = -2.0 * mubar * (1.0 + dY / (3.0 * mubar));
       gamma -= g / dg;
 
       auto const dep = Omega_h::max2(sq23 * gamma, 0.0);
       epdot = dep / dtime;
       ep += dep;
 
-      if (std::abs(g) < 1.0e-11) {
+      if ((std::abs(g) < 1.0e-11) || (std::abs(g) / Y < 1.0e-11)) {
         conv = true;
         break;
       }
@@ -340,7 +349,7 @@ radial_return(Properties const props, Tensor<3> const F, double const temp,
     // Update the stress tensor
     auto const N = S / smag;  // Flow direction
     auto const fpinc = gamma * N;
-    S -= 2.0 * mu * fpinc;
+    S -= 2.0 * mubar * fpinc;
 
     auto const Fpinc = lgr::exp::exp(fpinc);
     Fp = Fpinc * Fp;
@@ -453,8 +462,10 @@ update(Properties const props, double const rho, Tensor<3> const F,
   }
 
   // check yield and perform radial return (if applicable)
+  auto const jac     = determinant(F);
+  S = S * jac;
   radial_return(props, F, temp, dtime, S, Fp, ep, epdot, dp);
-  T = S - pres * I;
+  T = S/jac - pres * I;
 
   // Update damage
   dp = scalar_damage(props, T, dp, temp, ep, epdot, dtime);
