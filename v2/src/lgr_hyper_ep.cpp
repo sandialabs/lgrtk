@@ -7,26 +7,6 @@ namespace lgr {
 
 namespace hyper_ep {
 
-char const* get_error_code_string(ErrorCode code) {
-  switch (code) {
-    case ErrorCode::NOT_SET:
-      return "NOT SET";
-    case ErrorCode::SUCCESS:
-      return "SUCCESS";
-    case ErrorCode::LINEAR_ELASTIC_FAILURE:
-      return "LINEAR ELASTIC FAILURE";
-    case ErrorCode::HYPERELASTIC_FAILURE:
-      return "HYPERELASTIC FAILURE";
-    case ErrorCode::RADIAL_RETURN_FAILURE:
-      return "RADIAL RETURN FAILURE";
-    case ErrorCode::ELASTIC_DEFORMATION_UPDATE_FAILURE:
-      return "ELASTIC DEFORMATION UPDATE FAILURE";
-    case ErrorCode::MODEL_EVAL_FAILURE:
-      return "MODEL EVAL FAILURE";
-  }
-  return "UNKNOWN";
-}
-
 void read_and_validate_elastic_params(
     Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
@@ -285,8 +265,6 @@ struct HyperEP : public Model<Elem> {
     this->localized_ = this->point_define("localized", "localized", 1, "0");
     this->defgrad_p = this->point_define(
         "Fp", "plastic deformation gradient", square(dim), "I");
-    this->defgrad_n = this->point_define(
-        "Fn", "old deformation gradient", square(dim), "I");
     // Define kinematic quantities
     this->defgrad =
         this->point_define("F", "deformation gradient", square(dim), "I");
@@ -308,7 +286,6 @@ struct HyperEP : public Model<Elem> {
     auto points_to_dp = this->points_getset(this->scalar_damage);
     auto points_to_localized = this->points_getset(this->localized_);
     auto points_to_fp = this->points_getset(this->defgrad_p);
-    auto points_to_fn = this->points_getset(this->defgrad_n);
     auto points_to_F = this->points_get(this->defgrad);
     // Variables to update
     auto points_to_stress = this->points_set(this->sim.stress);
@@ -331,13 +308,10 @@ struct HyperEP : public Model<Elem> {
       auto dp = points_to_dp[point];
       auto localized = points_to_localized[point];
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
-      auto Fn = resize<3>(getfull<Elem>(points_to_fn, point));
       // Update the material response
       Tensor<3> T;  // stress tensor
       double c;
-      auto err_c = hyper_ep::update(
-          props, rho, Fn, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
-      OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
+      hyper_ep::update(props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
       // Update in/output variables
       setstress(points_to_stress, point, T);
       points_to_wave_speed[point] = c;
@@ -348,7 +322,6 @@ struct HyperEP : public Model<Elem> {
       points_to_kappa_tilde[point] =
         3.0 * (rho * c * c) * (1.0 - props.Nu) / (1.0 + props.Nu);
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
-      setfull<Elem>(points_to_fn, point, resize<Elem::dim>(F));
     };
     parallel_for(this->points(), std::move(functor));
   }

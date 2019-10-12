@@ -116,17 +116,12 @@ static void eval_prescribed_motions(
   scalar_type dp = 0.;
   scalar_type localized = 0.;
 
-  Details::ErrorCode err;
-
   // Uniaxial strain, tension
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "UNIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
   EXPECT_TRUE(Omega_h::are_close(wave_speed, wave_speed_expected))
     << "EXPECTED WAVE SPEED: " << wave_speed_expected << ", "
     << "CALCULATED WAVE SPEED: " << wave_speed;
@@ -135,81 +130,57 @@ static void eval_prescribed_motions(
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "UNIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Simple shear, 2D
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "SIMPLE SHEAR, 2D EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Hydrostatic compression
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. - eps;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "HYDROSTATIC COMPRESSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Hydrostatic tension
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1. + eps;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "HYDROSTATIC TENSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Simple shear, 3D
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = eps;
   F(2,0) = eps;      F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "SIMPLE SHEAR, 3D EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Biaxial strain, tension
   F(0,0) = 1. + eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. + eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "BIAXIAL STRAIN, TENSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Biaxial strain, compression
   F(0,0) = 1. - eps; F(0,1) = 0.;       F(0,2) = 0.;
   F(1,0) = 0.;       F(1,1) = 1. - eps; F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "BIAXIAL STRAIN, COMPRESSION EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
   // Pure shear, 2D
   F(0,0) = 1.;       F(0,1) = eps;      F(0,2) = 0.;
   F(1,0) = eps;      F(1,1) = 1.;       F(1,2) = 0.;
   F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-  err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+  Details::update(props, rho, F, dtime, temp, T, wave_speed,
                         Fp, ep, epdot, dp, localized);
-  EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-    << "PURE SHEAR, 2D EVAL FAILED WITH ERROR "
-    << "'" << Details::get_error_code_string(err) << "'";
 
 }
 } // namespace hyper_ep_utils
@@ -524,14 +495,12 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type epdot = 0.;
   scalar_type dp = 0.;
 
-  Details::StateFlag flag;
-
   // Uniaxial stress, below yield
   Tensor<3> Te = zero_matrix<3, 3>();
   scalar_type fac = .9;
   Te(0,0) = fac * props.A;
-  flag = Details::StateFlag::TRIAL;
-  Details::radial_return(props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
+  T = 1.0 * Te;
+  Details::radial_return(props, F, temp, dtime, T, Fp, ep, epdot, dp);
 
   EXPECT_TRUE(Omega_h::are_close(T(0,0), Te(0,0)));
   EXPECT_TRUE(Omega_h::are_close(T(1,1), Te(1,1)));
@@ -542,9 +511,8 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
 
   // Uniaxial stress, above yield
   fac = 1.1;
-  Te(0,0) = fac * props.A;
-  flag = Details::StateFlag::TRIAL;
-  Details::radial_return(props, Te, F, temp, dtime, T, Fp, ep, epdot, dp, flag);
+  T(0,0) = fac * props.A;
+  Details::radial_return(props, F, temp, dtime, T, Fp, ep, epdot, dp);
 
   scalar_type Txx = 2.*std::pow(props.A,2)*fac/(3.*props.A*fac) + props.A*fac/3.;
   scalar_type Tyy =   -std::pow(props.A,2)*fac/(3.*props.A*fac) + props.A*fac/3.;
@@ -578,8 +546,6 @@ TEST(HyperEPMaterialModel, JohnsonCookDamage2)
   scalar_type dp = 0.;
   scalar_type localized = 0.;
 
-  Details::ErrorCode err;
-
   auto n = 100;
   scalar_type eps = 0.1;
   for (int i=0; i<n; i++) {
@@ -590,11 +556,8 @@ TEST(HyperEPMaterialModel, JohnsonCookDamage2)
     F(0,0) = 1.;       F(0,1) = e;        F(0,2) = 0.;
     F(1,0) = 0.;       F(1,1) = 1.;       F(1,2) = 0.;
     F(2,0) = 0.;       F(2,1) = 0.;       F(2,2) = 1.;
-    err = Details::update(props, rho, F, dtime, temp, T, wave_speed,
+    Details::update(props, rho, F, dtime, temp, T, wave_speed,
                           Fp, ep, epdot, dp, localized);
-    EXPECT_TRUE(err == Details::ErrorCode::SUCCESS)
-      << "SIMPLE SHEAR, DAMAGE, 2D EVAL FAILED WITH ERROR "
-      << "'" << Details::get_error_code_string(err) << "'";
     std::cout << "LOCALIZED: " << localized << std::endl;
     std::cout << "DP = " << dp << std::endl;
     std::cout << "FP = [";
