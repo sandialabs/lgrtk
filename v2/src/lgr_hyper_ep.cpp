@@ -20,6 +20,8 @@ void read_and_validate_elastic_params(
     auto hyperelastic = pl.get<std::string>("hyperelastic");
     if (hyperelastic == "neo hookean") {
       props.elastic = hyper_ep::Elastic::NEO_HOOKEAN;
+    } else if (hyperelastic == "hyperelastic") {
+      props.elastic = hyper_ep::Elastic::HYPERELASTIC;
     } else {
       std::ostringstream os;
       os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
@@ -55,37 +57,45 @@ void read_and_validate_plastic_params(
   }
   auto& pl = params.get_map("plastic");
   auto max_double_str = std::to_string(std::numeric_limits<double>::max());
-  props.A = pl.get<double>("A", max_double_str.c_str());
+  props.p0 = std::numeric_limits<double>::max();
   if (!pl.is_map("hardening")) {
     props.hardening = Hardening::NONE;
+    props.p0 = pl.get<double>("Y0", max_double_str.c_str());
   } else {
     auto& p2 = pl.get_map("hardening");
     std::string type = p2.get<std::string>("type", "none");
     if (type == "linear isotropic") {
       // Linear isotropic hardening J2 plasticity
       props.hardening = Hardening::LINEAR_ISOTROPIC;
-      props.B = p2.get<double>("B", "0.0");
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("H", "0.0");
     } else if (type == "power law") {
       // Power law hardening
       props.hardening = Hardening::POWER_LAW;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("B", "0.0");
+      props.p2 = p2.get<double>("N", "1.0");
     } else if (type == "johnson cook") {
       // Johnson Cook hardening
       props.hardening = Hardening::JOHNSON_COOK;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
-      props.C1 = p2.get<double>("T0", "298.0");
-      props.C2 = p2.get<double>("TM", max_double_str.c_str());
-      props.C3 = p2.get<double>("M", "0.0");
+      props.p0 = p2.get<double>("A", max_double_str.c_str());
+      props.p1 = p2.get<double>("B", "0.0");
+      props.p2 = p2.get<double>("N", "1.0");
+      props.p3 = p2.get<double>("T0", "298.0");
+      props.p4 = p2.get<double>("TM", max_double_str.c_str());
+      props.p5 = p2.get<double>("M", "0.0");
     } else if (type == "zerilli armstrong") {
       // Zerilli Armstrong hardening
       props.hardening = Hardening::ZERILLI_ARMSTRONG;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
-      props.C1 = p2.get<double>("C1", "0.0");
-      props.C2 = p2.get<double>("C2", "0.0");
-      props.C3 = p2.get<double>("C3", "0.0");
+      props.p0 = p2.get<double>("A", max_double_str.c_str());
+      props.p1 = p2.get<double>("B", "0.0");
+      props.p2 = p2.get<double>("N", "1.0");
+      props.p3 = p2.get<double>("C", "0.0");
+      props.p4 = p2.get<double>("alpha_0", "0.0");
+      props.p5 = p2.get<double>("alpha_1", "0.0");
+      props.p6 = p2.get<double>("D", "0.0");
+      props.p7 = p2.get<double>("beta_0", "0.0");
+      props.p8 = p2.get<double>("beta_1", "0.0");
     } else if (type != "none") {
       std::ostringstream os;
       os << "Unrecognized hardening type \"" << type << "\"";
@@ -103,16 +113,8 @@ void read_and_validate_plastic_params(
             "johnson cook rate dependent type requires johnson cook hardening");
       }
       props.rate_dep = RateDependence::JOHNSON_COOK;
-      props.C4 = p2.get<double>("C", "0.0");
-      props.ep_dot_0 = p2.get<double>("EPDOT0", "0.0");
-    } else if (type == "zerilli armstrong") {
-      if (props.hardening != Hardening::ZERILLI_ARMSTRONG) {
-        Omega_h_fail(
-            "zerilli armstrong rate dependent type requires zerilli armstrong"
-            "hardening");
-      }
-      props.rate_dep = RateDependence::ZERILLI_ARMSTRONG;
-      props.C4 = p2.get<double>("C4", "0.0");
+      props.p6 = p2.get<double>("C", "0.0");
+      props.p7 = p2.get<double>("EPDOT0", "0.0");
     } else if (type != "none") {
       std::ostringstream os;
       os << "Unrecognized rate dependent type \"" << type << "\"";
@@ -144,16 +146,24 @@ void read_and_validate_damage_params(
       props.D3 = p2.get<double>("D3", "0.0");
       props.D4 = p2.get<double>("D4", "0.0");
       props.D5 = p2.get<double>("D5", "0.0");
+
+      // Temperature dependence
+      props.D6 = p2.get<double>("T0", "298.0");
+      props.D7 = p2.get<double>("TM", max_double_str.c_str());
+
+      props.D8 =
+          p2.get<double>("spall failure strain", "0.6");
+
       props.D0 = p2.get<double>("D0", "0.0");  // Initial scalar damage
       props.DC = p2.get<double>("DC", "0.7"); // Critical scalar damage
-      props.eps_f_min =
-          p2.get<double>("spall failure strain", "0.6");
+
       bool no_shear =
           static_cast<bool>(p2.get<double>("allow no shear", "0.0"));
       bool no_tension =
           static_cast<bool>(p2.get<double>("allow no tension", "0.0"));
       bool zero_stress =
           static_cast<bool>(p2.get<double>("set stress to zero", "0.0"));
+
       if (!(no_shear && no_tension && zero_stress)) {
         // by default, allow no tension
         no_tension = true;
@@ -162,9 +172,6 @@ void read_and_validate_damage_params(
       props.allow_no_tension = no_tension;
       props.set_stress_to_zero = zero_stress;
 
-      // Temperature dependence
-      props.D6 = p2.get<double>("T0", "298.0");
-      props.D7 = p2.get<double>("TM", max_double_str.c_str());
 
     } else if (type != "none") {
       std::ostringstream os;
