@@ -2,6 +2,8 @@
 #define LGR_HYPER_EP_HPP
 
 #include <string>
+#include <sstream>
+#include <iostream>
 
 #include <lgr_element_types.hpp>
 #include <lgr_exp.hpp>
@@ -11,6 +13,41 @@
 namespace lgr {
 
 namespace hyper_ep {
+
+
+OMEGA_H_INLINE double
+absmax(Tensor<3> a) {
+  double m = std::abs(a(0,0));
+  for (int i=1; i<3; i++)
+    m = (m < a(i,i)) ? a(i,i) : m;
+  return m;
+}
+
+
+OMEGA_H_INLINE Tensor<3>
+deviatoric_part(Tensor<3> const a)
+{
+  auto tr = trace(a) / 3.0;
+  auto const I = identity_matrix<3, 3>();
+  auto dev = a - tr / 3.0 * I;
+  // Manage round-off from working with large numbers by "re-deviating" the
+  // deviator.
+  tr = trace(dev);
+  if (std::abs(tr) > 1.0E-14) {
+    dev(0,0) = dev(0,0) - tr / 3.0;
+    dev(1,1) = dev(1,1) - tr / 3.0;
+    dev(2,2) = -(dev(0,0) + dev(1,1));
+  }
+  OMEGA_H_CHECK(std::abs(trace(dev) / absmax(a)) < 1.E-14);
+  return dev;
+}
+
+
+OMEGA_H_INLINE bool
+is_deviatoric(Tensor<3> const a){
+  return std::abs(trace(a) / absmax(a)) < 1.0E-14;
+}
+
 
 enum class Elastic { LINEAR_ELASTIC, NEO_HOOKEAN, HYPERELASTIC };
 
@@ -162,7 +199,7 @@ uhard_johnson_cook(double& Y, double& dY,
 {
 
   // Constant and plastic strain contribution
-  double f = B * std::pow(ep, n);
+  double f = A + B * std::pow(ep, n);
   double df = (ep > 0.0) ? (B * n * std::pow(ep, n - 1)) : 0.0;
 
   // Temperature contribution
@@ -171,8 +208,8 @@ uhard_johnson_cook(double& Y, double& dY,
     th = (temp - T0) / (TM - T0);
   else if (temp > TM)
     th = 1.0;
-  double g = 1.0 - std::pow(th, m);
-  double  dg = 0.0;
+  double g = (th > 1.e-14) ? 1.0 - std::pow(th, m) : 1.0;
+  double dg = 0.0;
 
   // Rate of plastic strain contribution
   double h = 1.0;
@@ -185,7 +222,7 @@ uhard_johnson_cook(double& Y, double& dY,
       h = 1.0 + C * std::log(rfac);
     }
   }
-  Y = A * g * h + f * g * h;
+  Y = f * g * h;
   dY = (Y - A) * (df / f + dg / g + dh / h);
 }
 
@@ -321,8 +358,7 @@ hooke(double& pres, Tensor<3>& s,
   auto const grad_u = Fe - I;
   auto const strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
   auto const ev = trace(strain);
-  auto const isotropic_strain = ev / 3.0 * I;
-  auto const deviatoric_strain = strain - isotropic_strain;
+  auto const deviatoric_strain = deviatoric_part(strain);
   pres = -3.0 * kappa * ev;
   s = 2.0 * mu * deviatoric_strain;
 }
@@ -345,10 +381,8 @@ neohooke(double& pres, Tensor<3>& s,
   auto const D1 = 6.0 * (1.0 - 2.0 * props.Nu) / props.E;
   auto const EG = 2.0 * C10 / jac;
   // Deviatoric left Cauchy-Green deformation tensor
-  auto Bb = Fb * transpose(Fb);
-  // Deviatoric Cauchy stress
-  auto const TRBb = trace(Bb) / 3.0;
-  for (int i = 0; i < 3; ++i) Bb(i, i) -= TRBb;
+  auto Bb = deviatoric_part(Fb * transpose(Fb));
+  // Deviatoric Kirchhoff stress
   s = EG * Bb * jac;
   pres = -2.0 / D1 * (jac - 1.0);
 }
@@ -370,7 +404,7 @@ neohooke2(double& pres, Tensor<3>& s,
   auto const Cpinv = Fpinv * transpose(Fpinv);
   auto const be    = Jm23 * F * Cpinv * transpose(F);
 
-  s = mu * deviator(be);
+  s = mu * deviatoric_part(be);
   pres = -0.5 * kappa * (jac - 1.0 / jac);
 }
 
@@ -388,6 +422,7 @@ elastic(double& pres, Tensor<3>& s, double& wave_speed,
   } else if (props.elastic == Elastic::HYPERELASTIC) {
     neohooke2(pres, s, F, Fp, props);
   }
+  OMEGA_H_CHECK(is_deviatoric(s));
 
   double K = 0.0;
   if (props.eos == EOS::MIE_GRUNEISEN) {
@@ -439,7 +474,9 @@ radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
     double& ep, double& epdot, double const temp, double const dtime,
     Properties const props)
 {
+  OMEGA_H_CHECK(is_deviatoric(s));
   double const sqrt23 = std::sqrt(2.0 / 3.0);
+  double const tol = 1.0E-11;
 
   auto const mu = props.E / (2.0 * (1.0 + props.Nu));
   auto const kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
@@ -471,7 +508,7 @@ radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
     g = smag - (2.0 * mubar * gamma + sqrt23 * Y);
     dg = -2.0 * mubar * (1.0 + dY / (3.0 * mubar));
     auto R = std::abs(g);
-    if ((R < 1.0e-11) || (R / Y < 1.0e-11)) {
+    if ((R < tol) || (R / Y < tol)) {
       conv = true;
       break;
     }
@@ -480,7 +517,18 @@ radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
     epdot  = dep / dtime;
     alpha = ep + dep;
   }
-  OMEGA_H_CHECK(conv);
+  if (!conv) {
+      std::ostringstream os;
+      os << "Radial return algorithm failed!\n";
+      os << "\tInitial deviator: {"
+         << s(0,0) << ", " << s(1,1) << ", " << s(2,2) << ", "
+         << s(0,1) << ", " << s(0,2) << ", " << s(1,2) << "}\n";
+      os << "\tInitial plastic strain: " << ep << "\n";
+      os << "\tFinal plastic strain: " << alpha << "\n";
+      os << "\tFinal yield strength: " << Y << ", " << dY << "\n";
+      auto str = os.str();
+      Omega_h_fail("%s\n", str.c_str());
+  }
 
   // updates
   auto const N = (1.0 / smag) * s;

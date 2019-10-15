@@ -52,19 +52,22 @@ void read_and_validate_plastic_params(
   // Set the defaults
   props.hardening = Hardening::NONE;
   props.rate_dep = RateDependence::NONE;
+  auto max_double_str = std::to_string(std::numeric_limits<double>::max());
+  props.p0 = std::numeric_limits<double>::max();
   if (!params.is_map("plastic")) {
     return;
   }
   auto& pl = params.get_map("plastic");
-  auto max_double_str = std::to_string(std::numeric_limits<double>::max());
-  props.p0 = std::numeric_limits<double>::max();
   if (!pl.is_map("hardening")) {
     props.hardening = Hardening::NONE;
     props.p0 = pl.get<double>("Y0", max_double_str.c_str());
   } else {
     auto& p2 = pl.get_map("hardening");
     std::string type = p2.get<std::string>("type", "none");
-    if (type == "linear isotropic") {
+    if (type == "none") {
+      props.hardening = Hardening::NONE;
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+    } else if (type == "linear isotropic") {
       // Linear isotropic hardening J2 plasticity
       props.hardening = Hardening::LINEAR_ISOTROPIC;
       props.p0 = p2.get<double>("Y0", max_double_str.c_str());
@@ -83,7 +86,7 @@ void read_and_validate_plastic_params(
       props.p2 = p2.get<double>("N", "1.0");
       props.p3 = p2.get<double>("T0", "298.0");
       props.p4 = p2.get<double>("TM", max_double_str.c_str());
-      props.p5 = p2.get<double>("M", "0.0");
+      props.p5 = p2.get<double>("M", "1.0");
     } else if (type == "zerilli armstrong") {
       // Zerilli Armstrong hardening
       props.hardening = Hardening::ZERILLI_ARMSTRONG;
@@ -96,7 +99,7 @@ void read_and_validate_plastic_params(
       props.p6 = p2.get<double>("D", "0.0");
       props.p7 = p2.get<double>("beta_0", "0.0");
       props.p8 = p2.get<double>("beta_1", "0.0");
-    } else if (type != "none") {
+    } else {
       std::ostringstream os;
       os << "Unrecognized hardening type \"" << type << "\"";
       auto str = os.str();
@@ -265,7 +268,7 @@ struct HyperEP : public Model<Elem> {
 
     // Define state dependent variables
     this->equivalent_plastic_strain =
-        this->point_define("ep", "equivalent plastic strain", 1, "0");
+        this->point_define("eqps", "equivalent plastic strain", 1, "0");
     this->equivalent_plastic_strain_rate =
         this->point_define("ep_dot", "equivalent plastic strain rate", 1, "0");
     this->scalar_damage = this->point_define("dp", "scalar damage", 1, "0");
