@@ -2,6 +2,7 @@
 #include <Omega_h_array_ops.hpp>
 #include <Omega_h_map.hpp>
 #include <Omega_h_simplex.hpp>
+#include <Omega_h_fail.hpp>
 #include <lgr_for.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_linear_algebra.hpp>
@@ -32,6 +33,8 @@ struct JouleHeating : public Model<Elem> {
   double integrated_conductance;
   int cg_iterations;
   bool constant_voltage_field;
+  double z_thickness;
+  double z_total;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
     this->conductivity =
@@ -85,6 +88,28 @@ struct JouleHeating : public Model<Elem> {
     sim.globals.set("Joule heating relative tolerance", std::nan("1"));
     sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
     sim.globals.set("Joule heating iterations", 0);
+    // 2D thickness
+    read_name = "z thickness";
+    expression = pl.get<std::string>(read_name,"-1.0");
+    se_nav = SingleExpression(sim_in,expression,read_name);
+    z_thickness = se_nav.evaluate();
+    if (z_thickness > 0) {
+       if (Elem::dim != 2)
+           Omega_h_fail("Only 2D simulations can use z thickness\n");
+       // Divide: recover conductance integral with symmetry
+       // Multiply: 3D to 2D volume integration
+       // conductance_multiplier*=z_thickness/z_thickness;
+    }
+    read_name = "z total";
+    expression = pl.get<std::string>(read_name,"-1.0");
+    se_nav = SingleExpression(sim_in,expression,read_name);
+    z_total = se_nav.evaluate();
+    if (z_total > 0) {
+       if (Elem::dim != 2)
+           Omega_h_fail("Only 2D simulations can use z total\n");
+       // Multiply: recover conductance integral with symmetry
+       conductance_multiplier*=z_total;
+    }
   }
   void learn_disc() override final {
     // linear specific!
@@ -239,6 +264,13 @@ struct JouleHeating : public Model<Elem> {
   }
   void compute_conductance() {
     OMEGA_H_TIME_FUNCTION;
+    // 2D thickness factors
+    auto const grad_mult = (z_thickness > 0.0) ? 0.0 : 1.0;
+    auto const grad_add = (z_thickness > 0.0) ? (normalized_anode_voltage -
+                                                 normalized_cathode_voltage ) / z_total
+                                              : 0.0;
+    auto const grad_add_sq = grad_add * grad_add;
+    // Voltage contribution
     auto const nodes_to_phi = sim.get(this->normalized_voltage);
     auto const points_to_grad = this->points_get(this->sim.gradient);
     auto const points_to_conductivity = this->points_get(this->conductivity);
@@ -253,7 +285,8 @@ struct JouleHeating : public Model<Elem> {
       auto const G = points_to_conductivity[point];
       auto const grads = getgrads<Elem>(points_to_grad, point);
       auto const grad_phi = grad<Elem>(grads, phi);
-      auto const integral = weight * G * (grad_phi * grad_phi);
+      auto const grad_phi_sq = grad_phi * grad_phi * grad_mult + grad_add_sq;
+      auto const integral = weight * G * (grad_phi_sq);
       points_to_G[point] = integral;
     };
     parallel_for(this->points(), std::move(functor));
