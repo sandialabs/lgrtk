@@ -7,6 +7,7 @@
 #include <lgr_field_access.hpp>
 #include <lgr_field_index.hpp>
 #include <lgr_remap_type.hpp>
+#include <Omega_h_expr.hpp>
 
 namespace lgr {
 
@@ -74,6 +75,8 @@ struct ModelBase {
   virtual void at_secondaries();
   virtual void after_secondaries();
   virtual void after_correction();
+  double get_double(
+      Omega_h::InputMap& pl, const char* name, const char* default_expr);
 };
 
 template <class Elem>

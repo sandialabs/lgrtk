@@ -110,7 +110,7 @@ static void change_element_count(Omega_h::Mesh& mesh, double desired_nelems) {
   }
 }
 
-void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
+void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in) {
   if (pl.is<std::string>("file")) {
     mesh = Omega_h::read_mesh_file(pl.get<std::string>("file"), comm);
   } else if (pl.is_map("box")) {
@@ -188,6 +188,9 @@ void Disc::setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl) {
   if (pl.is<std::string>("transform")) {
     Omega_h::ExprReader reader(mesh.nverts(), mesh.dim());
     reader.register_variable("x", Omega_h::any(mesh.coords()));
+    for (auto it = env_in.variables.begin(); it != env_in.variables.end(); ++it) {
+        reader.register_variable(it->first, it->second);
+    }
     auto result =
         reader.read_string(pl.get<std::string>("transform"), "mesh transform");
     reader.repeat(result);

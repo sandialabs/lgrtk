@@ -1,8 +1,9 @@
 #ifndef LGR_CIRCUIT_HPP
 #define LGR_CIRCUIT_HPP
 
-#include <Omega_h_input.hpp>
-#include <lgr_linear_algebra.hpp>
+#include<Omega_h_input.hpp>
+#include<Omega_h_expr.hpp>
+#include<lgr_linear_algebra.hpp>
 #include<string>
 #include<vector>
 
@@ -36,9 +37,6 @@ class Circuit
 
       // Logic switches
       bool firstCall;
-
-      // Mesh filename
-      char meshfname[20] = "circuit_mesh.txt";
 
       // Element types
       const int ETYPE_RESISTOR  = 1;
@@ -109,7 +107,8 @@ class Circuit
       void UpdateGrounds();
       void UpdateMatrixSize();
       void UpdateBranchValues();
-      void ParseYAML(Omega_h::InputMap& pl);
+      void ParseYAML(Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in);
+      double get_double(Omega_h::ExprEnv& env_in, std::string& expr);
 
       // Solve routines
       void AssembleMatrix();
@@ -136,7 +135,7 @@ class Circuit
       ~Circuit();
 
       // Typical user interaction with circuit routines
-      void Setup(Omega_h::InputMap& pl);
+      void Setup(Omega_h::ExprEnv& env_in, Omega_h::InputMap& pl);
       void Solve(double dtin, double timein); 
       double GetNodeVoltage(int nodein); 
       void SetElementConductance(int e, double c); 
