@@ -14,7 +14,6 @@ void InputVariables::setup(Omega_h::InputMap& pl) {
     if (name == "aprepro filename") {
        auto filename = get_string(pl, name.c_str(), "");
        register_aprepro_vars(filename);
-
     } else {
        double const value = get_double(pl, name.c_str(), "");
        env.register_variable(name, Omega_h::any(value));
