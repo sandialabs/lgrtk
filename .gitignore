@@ -1,3 +1,6 @@
 .project
 .cproject
 .settings
+/v2/.vs
+/v2/out/build
+/v2/CMakeSettings.json

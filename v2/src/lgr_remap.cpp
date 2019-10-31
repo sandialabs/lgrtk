@@ -69,6 +69,7 @@ static Omega_h::Write<double> allocate_and_fill_with_same(
     Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
     Omega_h::Reals old_data);
 
+#ifndef _MSC_VER
 template <class Elem>
 static void swap_point_remap_polar(Omega_h::Mesh& old_mesh,
     Omega_h::Mesh& new_mesh, int const key_dim, int const prod_dim,
@@ -130,6 +131,7 @@ static void swap_point_remap_polar(Omega_h::Mesh& old_mesh,
   new_mesh.add_tag(
       new_mesh.dim(), tag->name(), tag->ncomps(), Omega_h::read(new_data));
 }
+#endif
 
 template <class Elem>
 struct Remap : public RemapBase {
@@ -626,9 +628,13 @@ void Remap<Elem>::swap(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
           same_ents2new_ents, name);
     }
     for (auto& name : fields_to_remap[RemapType::POLAR]) {
+#ifdef _MSC_VER
+      std::abort();
+#else
       swap_point_remap_polar<Elem>(old_mesh, new_mesh, 1, prod_dim, keys2edges,
           keys2prods, prods2new_ents, same_ents2old_ents, same_ents2new_ents,
           old_mesh.get_tag<double>(prod_dim, name), this->axis_angle_tolerance);
+#endif
     }
     remap_old_class_id(old_mesh, new_mesh, prods2new_ents, same_ents2old_ents,
         same_ents2new_ents);
