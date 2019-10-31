@@ -109,6 +109,7 @@ static void run(
   Omega_h_fail("Unknown element type \"%s\"\n", elem.c_str());
 }
 
+LGR_DLL
 int run_cmdline(int argc, char** argv,
     std::function<void(lgr::Factories&, std::string const&)> add_factories,
     std::function<void(lgr::Setups&)> add_other_setups

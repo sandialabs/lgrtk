@@ -96,6 +96,7 @@ install(FILES
     lgr_circuit.hpp
     lgr_globals.hpp
     lgr_linear_algebra.hpp
+    lgr_macros.hpp
     DESTINATION include)
 
 if(LGR_COMPTET)
