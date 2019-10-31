@@ -91,7 +91,12 @@ struct Model : public ModelBase {
   MappedPointWrite<Elem> elems_getset(FieldIndex fi);
 };
 
+#ifdef _MSC_VER
+#define LGR_EXPL_INST(Elem) extern template struct Model<Elem>; \
+  extern template MappedPointRead<Elem> Model<Elem>::elems_get(FieldIndex);
+#else
 #define LGR_EXPL_INST(Elem) extern template struct Model<Elem>;
+#endif
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
