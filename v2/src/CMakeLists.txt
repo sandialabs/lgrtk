@@ -111,6 +111,10 @@ set_target_properties(lgr_executable PROPERTIES
     OUTPUT_NAME lgr
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set_target_properties(lgr_library PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
 bob_export_target(lgr_library)
 bob_export_target(lgr_executable)
 
