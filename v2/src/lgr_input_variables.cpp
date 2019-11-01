@@ -1,6 +1,8 @@
 #include <lgr_input_variables.hpp>
 #include <Omega_h_fail.hpp>
+#ifndef LGR_DISABLE_APREPRO
 #include <aprepro.h>
+#endif
 #include <fstream>
 #include <vector>
 
@@ -41,7 +43,7 @@ std::string InputVariables::get_string(
 }
 
 void InputVariables::register_aprepro_vars(std::string& filename) {
-
+#ifndef LGR_DISABLE_APREPRO
    SEAMS::Aprepro aprepro;
 
    std::fstream infile(filename.c_str());
@@ -67,6 +69,7 @@ void InputVariables::register_aprepro_vars(std::string& filename) {
            }
        }
    }
+#endif
 }
 
 }  // namespace lgr

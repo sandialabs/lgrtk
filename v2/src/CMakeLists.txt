@@ -57,7 +57,11 @@ set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
 
 bob_library_includes(lgr_library)
 bob_link_dependency(lgr_library PUBLIC Omega_h)
-bob_link_dependency(lgr_library PUBLIC SEACASAprepro)
+if (LGR_USE_SEACASAprepro)
+  bob_link_dependency(lgr_library PUBLIC SEACASAprepro)
+else()
+  target_compile_definitions(lgr_library PRIVATE -DLGR_DISABLE_APREPRO)
+endif()
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp
