@@ -10,6 +10,8 @@ set(LGR_USE_Omega_h_DEFAULT ON)
 bob_add_dependency(PUBLIC NAME Omega_h TARGETS Omega_h::omega_h)
 set(LGR_USE_GTest_DEFAULT ${BUILD_TESTING})
 bob_add_dependency(PUBLIC NAME GTest TARGETS GTest::gtest_main)
+set(LGR_USE_SEACASAprepro_DEFAULT ON)
+bob_add_dependency(PUBLIC NAME SEACASAprepro TARGETS aprepro_lib)
 
 bob_input(LGR_ELEMENTS "Bar2;Tri3;Tet4" STRING "Element types to instantiate")
 

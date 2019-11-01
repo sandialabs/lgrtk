@@ -7,13 +7,14 @@
 
 #include <Omega_h_input.hpp>
 #include <Omega_h_mesh.hpp>
+#include <Omega_h_expr.hpp>
 
 namespace lgr {
 
 struct Disc {
   int dim();
   int count(EntityType type);
-  void setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl);
+  void setup(Omega_h::CommPtr comm, Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in);
   Omega_h::LOs ents_to_nodes(EntityType type);
   Omega_h::Adj nodes_to_ents(EntityType type);
   Omega_h::LOs ents_on_closure(ClassNames const& class_names, EntityType type);

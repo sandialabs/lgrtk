@@ -8,7 +8,7 @@
 #include <lgr_linear_algebra.hpp>
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
-#include <lgr_expression.hpp>
+#include <lgr_model.hpp>
 
 namespace lgr {
 
@@ -66,33 +66,16 @@ struct JouleHeating : public Model<Elem> {
     anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
     cg_iterations = pl.get<int>("iterations", "0");
-    std::string read_name, expression;
-    SingleExpression se_nav, se_ncv, se_cm;
-    // Normalized anode voltage
-    read_name = "normalized anode voltage";
-    expression = pl.get<std::string>(read_name,"1.0");
-    se_nav = SingleExpression(sim_in,expression,read_name);
-    normalized_anode_voltage = se_nav.evaluate();
-    // Normalized cathode voltage
-    read_name = "normalized cathode voltage";
-    expression = pl.get<std::string>(read_name,"0.0");
-    se_ncv = SingleExpression(sim_in,expression,read_name);
-    normalized_cathode_voltage = se_ncv.evaluate();
-    // Conductance multiplier
-    read_name = "conductance multiplier";
-    expression = pl.get<std::string>(read_name,"1.0");
-    se_cm = SingleExpression(sim_in,expression,read_name);
-    conductance_multiplier = se_cm.evaluate();
+    normalized_anode_voltage = this->get_double(pl,"normalized anode voltage","1.0");
+    normalized_cathode_voltage = this->get_double(pl,"normalized cathode voltage","0.0");
+    conductance_multiplier = this->get_double(pl,"conductance multiplier","1.0");
     JouleHeating::learn_disc();
     // Initially set global outputs for case where constant voltage field is used
     sim.globals.set("Joule heating relative tolerance", std::nan("1"));
     sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
     sim.globals.set("Joule heating iterations", 0);
     // 2D thickness
-    read_name = "z thickness";
-    expression = pl.get<std::string>(read_name,"-1.0");
-    se_nav = SingleExpression(sim_in,expression,read_name);
-    z_thickness = se_nav.evaluate();
+    z_thickness = this->get_double(pl,"z thickness","-1.0");
     if (z_thickness > 0) {
        if (Elem::dim != 2)
            Omega_h_fail("Only 2D simulations can use z thickness\n");
@@ -100,10 +83,7 @@ struct JouleHeating : public Model<Elem> {
        // Multiply: 3D to 2D volume integration
        // conductance_multiplier*=z_thickness/z_thickness;
     }
-    read_name = "z total";
-    expression = pl.get<std::string>(read_name,"-1.0");
-    se_nav = SingleExpression(sim_in,expression,read_name);
-    z_total = se_nav.evaluate();
+    z_total = this->get_double(pl,"z total","-1.0");
     if (z_total > 0) {
        if (Elem::dim != 2)
            Omega_h_fail("Only 2D simulations can use z total\n");

@@ -17,7 +17,8 @@ struct CsvHist : public Response {
       scalars.push_back(scalars_in.get<std::string>(i));
     }
     auto path = pl.get<std::string>("path", "lgr_out.csv");
-    stream.open(path.c_str());
+    // Open with out to overwrite file
+    stream.open(path.c_str(),std::ios_base::out);
     OMEGA_H_CHECK(stream.is_open());
     std::stringstream header_stream;
     for (std::size_t i = 0; i < scalars.size(); ++i) {
@@ -27,6 +28,9 @@ struct CsvHist : public Response {
     header_stream << '\n';
     auto header_string = header_stream.str();
     stream.write(header_string.data(), std::streamsize(header_string.length()));
+    // Close and reopen with append
+    stream.close();
+    stream.open(path.c_str(),std::ios_base::app);
   }
   void respond() override final {
     if (sim.no_output) return;

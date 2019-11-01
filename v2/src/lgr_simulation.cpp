@@ -120,7 +120,7 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   end_step = pl.get<int>("end step", int_max.c_str());
   // done setting up constants
   // set up mesh
-  disc.setup(comm, pl.get_map("mesh"));
+  disc.setup(comm, pl.get_map("mesh"),input_variables.env);
   // done setting up mesh
   // start defining fields
   fields.setup(pl);
@@ -166,7 +166,7 @@ void Simulation::setup(Omega_h::InputMap& pl) {
   fields.setup_default_conditions(*this, time);
   // done setting up conditions
   // setup circuit
-  circuit.Setup(pl);
+  circuit.Setup(input_variables.env,pl);
   // done settting up circuit
   // set coordinates
   auto const field_x = fields.set(position);

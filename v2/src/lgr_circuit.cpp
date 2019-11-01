@@ -76,7 +76,7 @@ void Circuit::AddMeshUser(int &e) {
    eMesh = e;
 }
 
-void Circuit::ParseYAML(Omega_h::InputMap& pl)
+void Circuit::ParseYAML(Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in)
 {
 
    if (pl.is_map("circuit")) {
@@ -99,7 +99,9 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          if (fixedv_pl.is_list("voltage values")){
             auto& fvn_pl = fixedv_pl.get_list("voltage values");
             for (int j=0; j < fvn_pl.size(); j++) {
-               fvVals.push_back(fvn_pl.get<double>(j));
+               auto read_value = fvn_pl.get<std::string>(j);
+               auto value = get_double(env_in, read_value);
+               fvVals.push_back(value);
             }
          } 
 
@@ -115,7 +117,9 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          if (fixedv_pl.is_list("current values")){
             auto& fvn_pl = fixedv_pl.get_list("current values");
             for (int j=0; j < fvn_pl.size(); j++) {
-               fiVals.push_back(fvn_pl.get<double>(j));
+               auto read_value = fvn_pl.get<std::string>(j);
+               auto value = get_double(env_in, read_value);
+               fiVals.push_back(value);
             }
          } 
       }
@@ -136,7 +140,9 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          if (fixedv_pl.is_list("voltage values")){
             auto& fvn_pl = fixedv_pl.get_list("voltage values");
             for (int j=0; j < fvn_pl.size(); j++) {
-               ivVals.push_back(fvn_pl.get<double>(j));
+               auto read_value = fvn_pl.get<std::string>(j);
+               auto value = get_double(env_in, read_value);
+               ivVals.push_back(value);
             }
          } 
 
@@ -152,7 +158,9 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
          if (fixedv_pl.is_list("current values")){
             auto& fvn_pl = fixedv_pl.get_list("current values");
             for (int j=0; j < fvn_pl.size(); j++) {
-               iiVals.push_back(fvn_pl.get<double>(j));
+               auto read_value = fvn_pl.get<std::string>(j);
+               auto value = get_double(env_in, read_value);
+               iiVals.push_back(value);
             }
          } 
       }
@@ -229,6 +237,11 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                    double rcval = static_cast<double>(rmap_pl.get<int>("conductance"));
                    AddConductance(rcval);
                 }
+                if (rmap_pl.is<std::string>("conductance")) {
+                   auto read_value = rmap_pl.get<std::string>("conductance");
+                   auto rcval = get_double(env_in, read_value);
+                   AddConductance(rcval);
+                }
             }
          }
       } // resistors
@@ -268,6 +281,11 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                    double ccval = static_cast<double>(cmap_pl.get<int>("capacitance"));
                    AddCapacitance(ccval);
                 }
+                if (cmap_pl.is<std::string>("capacitance")) {
+                   auto read_value = cmap_pl.get<std::string>("capacitance");
+                   auto ccval = get_double(env_in, read_value);
+                   AddCapacitance(ccval);
+                }
             }
          }
       } // capacitors
@@ -305,6 +323,11 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl)
                 } 
                 if (cmap_pl.is<int>("inductance")) {
                    double ccval = static_cast<double>(cmap_pl.get<int>("inductance"));
+                   AddInductance(ccval);
+                }
+                if (cmap_pl.is<std::string>("inductance")) {
+                   auto read_value = cmap_pl.get<std::string>("inductance");
+                   auto ccval = get_double(env_in, read_value);
                    AddInductance(ccval);
                 }
             }
@@ -522,10 +545,17 @@ int Circuit::GetNumGrounds()
    return gNum;
 }
 
-void Circuit::Setup(Omega_h::InputMap& pl)
+void Circuit::Setup(Omega_h::ExprEnv& env_in, Omega_h::InputMap& pl)
 {
-   ParseYAML(pl);
+   ParseYAML(pl, env_in);
    Setup();
+}
+
+double Circuit::get_double(Omega_h::ExprEnv& env_in, std::string& expr) {
+    Omega_h::ExprOpsReader reader;
+    auto op = reader.read_ops(expr);
+    auto const value_any = op->eval(env_in);
+    return Omega_h::any_cast<double>(value_any);
 }
 
 void Circuit::Setup()
