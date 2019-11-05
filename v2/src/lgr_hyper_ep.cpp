@@ -18,10 +18,8 @@ void read_and_validate_elastic_params(
   auto& pl = params.get_map("elastic");
   if (pl.is<std::string>("hyperelastic")) {
     auto hyperelastic = pl.get<std::string>("hyperelastic");
-    if (hyperelastic == "neo hookean") {
+    if (hyperelastic == "Neo Hookean") {
       props.elastic = hyper_ep::Elastic::NEO_HOOKEAN;
-    } else if (hyperelastic == "hyperelastic") {
-      props.elastic = hyper_ep::Elastic::HYPERELASTIC;
     } else {
       std::ostringstream os;
       os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
@@ -67,19 +65,19 @@ void read_and_validate_plastic_params(
     if (type == "none") {
       props.hardening = Hardening::NONE;
       props.p0 = p2.get<double>("Y0", max_double_str.c_str());
-    } else if (type == "linear isotropic") {
-      // Linear isotropic hardening J2 plasticity
+    } else if (type == "Linear Isotropic") {
+      // Linear Isotropic hardening J2 plasticity
       props.hardening = Hardening::LINEAR_ISOTROPIC;
       props.p0 = p2.get<double>("Y0", max_double_str.c_str());
       props.p1 = p2.get<double>("H", "0.0");
-    } else if (type == "power law") {
-      // Power law hardening
+    } else if (type == "Power Law") {
+      // Power Law hardening
       props.hardening = Hardening::POWER_LAW;
       props.p0 = p2.get<double>("Y0", max_double_str.c_str());
       props.p1 = p2.get<double>("B", "0.0");
       props.p2 = p2.get<double>("N", "1.0");
-    } else if (type == "johnson cook") {
-      // Johnson Cook hardening
+    } else if (type == "Johnson-Cook") {
+      // Johnson-Cook hardening
       props.hardening = Hardening::JOHNSON_COOK;
       props.p0 = p2.get<double>("A", max_double_str.c_str());
       props.p1 = p2.get<double>("B", "0.0");
@@ -87,8 +85,8 @@ void read_and_validate_plastic_params(
       props.p3 = p2.get<double>("T0", "298.0");
       props.p4 = p2.get<double>("TM", max_double_str.c_str());
       props.p5 = p2.get<double>("M", "1.0");
-    } else if (type == "zerilli armstrong") {
-      // Zerilli Armstrong hardening
+    } else if (type == "Zerilli-Armstrong") {
+      // Zerilli-Armstrong hardening
       props.hardening = Hardening::ZERILLI_ARMSTRONG;
       props.p0 = p2.get<double>("A", max_double_str.c_str());
       props.p1 = p2.get<double>("B", "0.0");
@@ -99,6 +97,12 @@ void read_and_validate_plastic_params(
       props.p6 = p2.get<double>("D", "0.0");
       props.p7 = p2.get<double>("beta_0", "0.0");
       props.p8 = p2.get<double>("beta_1", "0.0");
+    } else if (type == "Sierra J2") {
+      // Call the Sierra J2 model
+      props.hardening = Hardening::SIERRA_J2;
+      props.p0 = p2.get<double>("yield strength", max_double_str.c_str());
+      props.p1 = p2.get<double>("hardening modulus", "0.0");
+      props.p2 = p2.get<double>("hardening exponent", "1.0");
     } else {
       std::ostringstream os;
       os << "Unrecognized hardening type \"" << type << "\"";
@@ -110,10 +114,10 @@ void read_and_validate_plastic_params(
     // Rate dependence
     auto& p2 = pl.get_map("rate dependent");
     auto const type = p2.get<std::string>("type", "none");
-    if (type == "johnson cook") {
+    if (type == "Johnson-Cook") {
       if (props.hardening != Hardening::JOHNSON_COOK) {
         Omega_h_fail(
-            "johnson cook rate dependent type requires johnson cook hardening");
+            "Johnson-Cook rate dependent type requires Johnson-Cook hardening");
       }
       props.rate_dep = RateDependence::JOHNSON_COOK;
       props.p6 = p2.get<double>("C", "0.0");
@@ -141,8 +145,8 @@ void read_and_validate_damage_params(
   } else {
     auto& p2 = pl.get_map("damage");
     std::string type = p2.get<std::string>("type", "none");
-    if (type == "johnson cook") {
-      // Johnson Cook damage
+    if (type == "Johnson-Cook") {
+      // Johnson-Cook damage
       props.damage = Damage::JOHNSON_COOK;
       props.D1 = p2.get<double>("D1", "0.0");
       props.D2 = p2.get<double>("D2", "0.0");

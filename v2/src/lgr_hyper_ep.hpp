@@ -8,6 +8,7 @@
 #include <lgr_element_types.hpp>
 #include <lgr_exp.hpp>
 #include <lgr_mie_gruneisen.hpp>
+#include <lgr_sierra_J2.hpp>
 #include <lgr_model.hpp>
 
 namespace lgr {
@@ -49,21 +50,39 @@ is_deviatoric(Tensor<3> const a){
 }
 
 
-enum class Elastic { LINEAR_ELASTIC, NEO_HOOKEAN, HYPERELASTIC };
+enum class Elastic
+{
+  LINEAR_ELASTIC,
+  NEO_HOOKEAN
+};
 
-enum class Hardening {
+enum class Hardening
+{
   NONE,
   LINEAR_ISOTROPIC,
   POWER_LAW,
   ZERILLI_ARMSTRONG,
+  JOHNSON_COOK,
+  SIERRA_J2
+};
+
+enum class RateDependence
+{
+  NONE,
+  ZERILLI_ARMSTRONG,
   JOHNSON_COOK
 };
 
-enum class RateDependence { NONE, ZERILLI_ARMSTRONG, JOHNSON_COOK };
+enum class Damage
+{
+  NONE,
+  JOHNSON_COOK
+};
 
-enum class Damage { NONE, JOHNSON_COOK };
-
-enum class EOS { NONE, MIE_GRUNEISEN };
+enum class EOS {
+  NONE,
+  MIE_GRUNEISEN
+};
 
 struct Properties {
   // Elasticity
@@ -140,7 +159,7 @@ void read_and_validate_eos_params(
  * where Y0 is a material parameter (yield in uniaxial tension)
 */
 OMEGA_H_INLINE void
-uhard_constant(double& Y, double& dY,
+hard_constant(double& Y, double& dY,
     double const /* ep */, double const /* epdot */, double const /* temp */,
     double const Y0)
 {
@@ -159,7 +178,7 @@ uhard_constant(double& Y, double& dY,
  * plastic strain.
  */
 OMEGA_H_INLINE void
-uhard_linear_isotropic(double& Y, double& dY,
+hard_linear_isotropic(double& Y, double& dY,
     double const ep, double const /* epdot */, double const /* temp */,
     double const A, double const B)
 {
@@ -168,7 +187,7 @@ uhard_linear_isotropic(double& Y, double& dY,
 }
 
 OMEGA_H_INLINE void
-uhard_power_law(double& Y, double& dY,
+hard_power_law(double& Y, double& dY,
     double const ep, double const /* epdot */, double const /* temp */,
     double const A, double const B, double const n)
 {
@@ -191,7 +210,7 @@ uhard_power_law(double& Y, double& dY,
  * and epdot0, T0, and TM are material properties
 */
 OMEGA_H_INLINE void
-uhard_johnson_cook(double& Y, double& dY,
+hard_johnson_cook(double& Y, double& dY,
     double const ep, double const epdot, double const temp,
     double const A, double const B, double const n,
     double const T0, double const TM, double const m,
@@ -240,7 +259,7 @@ uhard_johnson_cook(double& Y, double& dY,
  *
 */
 OMEGA_H_INLINE void
-uhard_zerilli_armstrong(double& Y, double& dY,
+hard_zerilli_armstrong(double& Y, double& dY,
     double const ep, double const epdot, double const temp,
     double const A, double const B, double const n,
     double const C, double const alpha_0, double const alpha_1,
@@ -262,22 +281,22 @@ uhard_zerilli_armstrong(double& Y, double& dY,
 }
 
 OMEGA_H_INLINE void
-uhard(double&Y, double& dY,
+hard(double&Y, double& dY,
     double const ep, double const epdot, double const temp,
     Properties const props)
 {
   if(props.hardening == Hardening::NONE) {
-    uhard_constant(Y, dY, ep, epdot, temp, props.p0);
+    hard_constant(Y, dY, ep, epdot, temp, props.p0);
   } else if (props.hardening == Hardening::LINEAR_ISOTROPIC) {
-    uhard_linear_isotropic(Y, dY, ep, epdot, temp, props.p0, props.p1);
+    hard_linear_isotropic(Y, dY, ep, epdot, temp, props.p0, props.p1);
   } else if (props.hardening == Hardening::POWER_LAW) {
-    uhard_power_law(Y, dY, ep, epdot, temp, props.p0, props.p1, props.p2);
+    hard_power_law(Y, dY, ep, epdot, temp, props.p0, props.p1, props.p2);
   } else if (props.hardening == Hardening::ZERILLI_ARMSTRONG) {
-    uhard_zerilli_armstrong(Y, dY, ep, epdot, temp,
+    hard_zerilli_armstrong(Y, dY, ep, epdot, temp,
         props.p0, props.p1, props.p2, props.p3, props.p4,
         props.p5, props.p6, props.p7, props.p8);
   } else if (props.hardening == Hardening::JOHNSON_COOK) {
-    uhard_johnson_cook(Y, dY, ep, epdot, temp,
+    hard_johnson_cook(Y, dY, ep, epdot, temp,
         props.p0, props.p1, props.p2, props.p3,
         props.p4, props.p5, props.p6, props.p7);
   }
@@ -383,29 +402,8 @@ neohooke(double& pres, Tensor<3>& s,
   // Deviatoric left Cauchy-Green deformation tensor
   auto Bb = deviatoric_part(Fb * transpose(Fb));
   // Deviatoric Kirchhoff stress
-  s = EG * Bb * jac;
+  s = EG * Bb;
   pres = -2.0 / D1 * (jac - 1.0);
-}
-
-
-OMEGA_H_INLINE void
-neohooke2(double& pres, Tensor<3>& s,
-    Tensor<3> const F, Tensor<3> const Fp, Properties const props)
-{
-  auto const mu    = props.E / (2.0 * (1.0 + props.Nu));
-  auto const kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
-
-  auto const jac     = determinant(F);
-  auto const Jp13  = std::cbrt(jac);
-  auto const Jm23  = 1.0 / Jp13 / Jp13;
-  auto const Fpinv = invert(Fp);
-
-  // compute the trial state
-  auto const Cpinv = Fpinv * transpose(Fpinv);
-  auto const be    = Jm23 * F * Cpinv * transpose(F);
-
-  s = mu * deviatoric_part(be);
-  pres = -0.5 * kappa * (jac - 1.0 / jac);
 }
 
 
@@ -419,8 +417,6 @@ elastic(double& pres, Tensor<3>& s, double& wave_speed,
     hooke(pres, s, F, Fp, props);
   } else if (props.elastic == Elastic::NEO_HOOKEAN) {
     neohooke(pres, s, F, Fp, props);
-  } else if (props.elastic == Elastic::HYPERELASTIC) {
-    neohooke2(pres, s, F, Fp, props);
   }
   OMEGA_H_CHECK(is_deviatoric(s));
 
@@ -452,7 +448,7 @@ at_yield(Tensor<3> const s,
   auto const smag = Omega_h::norm(s);
   auto Y = Omega_h::ArithTraits<double>::max();
   double dY = 0.0;
-  uhard(Y, dY, ep, epdot, temp, props);
+  hard(Y, dY, ep, epdot, temp, props);
   double const sqrt23 = std::sqrt(2.0 / 3.0);
   auto const f = smag - sqrt23 * Y;
   return f > 1.0e-12;
@@ -485,12 +481,6 @@ radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
   auto const Jp13 = std::cbrt(J);
   auto const Jm23 = 1.0 / Jp13 / Jp13;
   auto const Fpinv = invert(Fp);
-
-  // compute the trial state
-  auto const Cpinv = Fpinv * transpose(Fpinv);
-  auto const be = Jm23 * F * Cpinv * transpose(F);
-  auto const mubar = trace(be) * mu / 3.0;
-
   auto const smag = Omega_h::norm(s);
 
   bool conv = false;
@@ -504,39 +494,28 @@ radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
   double dY = 0.0;
 
   for (int iter=0; iter<30; iter++) {
-    uhard(Y, dY, alpha, epdot, temp, props);
-    g = smag - (2.0 * mubar * gamma + sqrt23 * Y);
-    dg = -2.0 * mubar * (1.0 + dY / (3.0 * mubar));
-    auto R = std::abs(g);
+    hard(Y, dY, alpha, epdot, temp, props);
+    g = smag - (2.0 * mu * gamma + sqrt23 * Y);
+    auto const R = std::abs(g);
     if ((R < tol) || (R / Y < tol)) {
       conv = true;
       break;
     }
+    dg = -2.0 * mu * (1.0 + dY / (3.0 * mu));
     gamma = gamma - g / dg;
     dep = sqrt23 * gamma;
     epdot  = dep / dtime;
     alpha = ep + dep;
   }
-  if (!conv) {
-      std::ostringstream os;
-      os << "Radial return algorithm failed!\n";
-      os << "\tInitial deviator: {"
-         << s(0,0) << ", " << s(1,1) << ", " << s(2,2) << ", "
-         << s(0,1) << ", " << s(0,2) << ", " << s(1,2) << "}\n";
-      os << "\tInitial plastic strain: " << ep << "\n";
-      os << "\tFinal plastic strain: " << alpha << "\n";
-      os << "\tFinal yield strength: " << Y << ", " << dY << "\n";
-      auto str = os.str();
-      Omega_h_fail("%s\n", str.c_str());
-  }
+  if (!conv)
+    Omega_h_fail("Radial return failure in HyperEP model");
 
   // updates
   auto const N = (1.0 / smag) * s;
-  auto const fpinc = gamma * N;
-  s -= 2.0 * mubar * fpinc;
+  auto const A = gamma * N;
+  s -= 2.0 * mu * A;
   ep = alpha;
-  auto const Fpinc = lgr::exp::exp(fpinc);
-  Fp = Fpinc * Fp;
+  Fp = lgr::exp::exp(A) * Fp;
 }
 
 
@@ -613,7 +592,27 @@ update_damage(double& pres, Tensor<3>& s, double& dp, int& localized,
 OMEGA_H_INLINE_BIG void
 update(Properties const props, double const rho, Tensor<3> const F,
     double const dtime, double const temp, Tensor<3>& T, double& wave_speed,
-    Tensor<3>& Fp, double& ep, double& epdot, double& dp, double& localized) {
+    Tensor<3>& Fp, double& ep, double& epdot, double& dp, double& localized)
+{
+
+  if (props.hardening == Hardening::SIERRA_J2)
+  {
+    sierra_J2_update(rho, props.E, props.Nu, props.p2, props.p3, props.p1,
+      F, Fp, ep, T, wave_speed);
+    if (props.eos == EOS::MIE_GRUNEISEN)
+    {
+      double pres = 0.0;
+      double c = 0.0;
+      mie_gruneisen_update(props.rho0, props.gamma0, props.cs, props.s1,
+                           rho, props.e0, pres, c);
+      for (int i=0; i<3; i++) T(i,i) = -pres;
+      auto const H = 3.0 * (rho * c * c) * (1.0 - props.Nu) / (1 + props.Nu);
+      OMEGA_H_CHECK(H > 0.0);
+      wave_speed = std::sqrt(H / rho);
+      OMEGA_H_CHECK(wave_speed > 0.0);
+    }
+    return;
+  }
 
   // compute material properties
   auto const J = determinant(F);
@@ -630,8 +629,9 @@ update(Properties const props, double const rho, Tensor<3> const F,
 
   // compute stress
   auto const I = Omega_h::identity_matrix<3, 3>();
-  T = s / J - pres * I;
-
+  auto const M = s - pres * I;
+  auto const Fe = F * invert(Fp);
+  T = transpose(invert(Fe)) * M * transpose(Fe) / J;
 }
 
 }  // namespace hyper_ep
