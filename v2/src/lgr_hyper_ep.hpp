@@ -20,8 +20,14 @@ OMEGA_H_INLINE double
 absmax(Tensor<3> a) {
   double m = std::abs(a(0,0));
   for (int i=1; i<3; i++)
-    m = (m < a(i,i)) ? a(i,i) : m;
+    m = Omega_h::max2(m, std::abs(a(i,i)));
   return m;
+}
+
+
+OMEGA_H_INLINE bool
+is_deviatoric(Tensor<3> const a){
+  return std::abs(trace(a)) <= 1.0e-12;
 }
 
 
@@ -34,26 +40,29 @@ deviatoric_part(Tensor<3> const a)
   // Manage round-off from working with large numbers by "re-deviating" the
   // deviator.
   tr = trace(dev);
-  if (std::abs(tr) > 1.0E-14) {
+  if (std::abs(tr) > 1.0e-14) {
     dev(0,0) = dev(0,0) - tr / 3.0;
     dev(1,1) = dev(1,1) - tr / 3.0;
     dev(2,2) = -(dev(0,0) + dev(1,1));
   }
-  OMEGA_H_CHECK(std::abs(trace(dev) / absmax(a)) < 1.E-14);
+  if (!is_deviatoric(dev))
+  {
+    printf(
+        "The following matrix was not made deviatoric!:\n"
+        "\tbefore => [%g, %g, %g, %g, %g, %g], trace = %g\n"
+        "\t after => [%g, %g, %g, %g, %g, %g], trace = %g\n",
+        a(0,0), a(1,1), a(2,2), a(0,1), a(1,2), a(0,2), trace(a),
+        dev(0,0), dev(1,1), dev(2,2), dev(0,1), dev(1,2), dev(0,2), trace(dev)
+    );
+    OMEGA_H_CHECK(false);
+  }
   return dev;
-}
-
-
-OMEGA_H_INLINE bool
-is_deviatoric(Tensor<3> const a){
-  return std::abs(trace(a) / absmax(a)) < 1.0E-14;
 }
 
 
 enum class Elastic
 {
-  LINEAR_ELASTIC,
-  NEO_HOOKEAN
+  MANDEL
 };
 
 enum class Hardening
@@ -128,7 +137,7 @@ struct Properties {
   double e0;
 
   Properties()
-      : elastic(Elastic::LINEAR_ELASTIC),
+      : elastic(Elastic::MANDEL),
         hardening(Hardening::NONE),
         rate_dep(RateDependence::NONE),
         damage(Damage::NONE),
@@ -366,44 +375,27 @@ scalar_damage(double& dp, double const pres, Tensor<3> const s,
 }
 
 
+// Returns the Mandel stress
 OMEGA_H_INLINE void
-hooke(double& pres, Tensor<3>& s,
+mandel(double& pres, Tensor<3>& s,
     Tensor<3> const F, Tensor<3> const Fp, Properties const props)
 {
   auto const Fe = F * invert(Fp);
   auto const kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
   auto const mu = props.E / 2.0 / (1.0 + props.Nu);
-  auto const I = identity_matrix<3, 3>();
-  auto const grad_u = Fe - I;
-  auto const strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
-  auto const ev = trace(strain);
-  auto const deviatoric_strain = deviatoric_part(strain);
-  pres = -3.0 * kappa * ev;
-  s = 2.0 * mu * deviatoric_strain;
-}
+  auto const lambda = 2.0 * mu * props.Nu / (1.0 - 2.0 * props.Nu);
 
-/*
- * Update the stress using Neo-Hookean hyperelasticity
- *
- */
-OMEGA_H_INLINE void
-neohooke(double& pres, Tensor<3>& s,
-    Tensor<3> const F, Tensor<3> const Fp, Properties const props)
-{
-  auto const jac = determinant(F);
-  auto const Fe = F * invert(Fp);
-  // Jacobian and distortion tensor
-  auto const scale = 1.0 / std::cbrt(jac);
-  auto const Fb = scale * Fe;
-  // Elastic moduli
-  auto const C10 = props.E / (4.0 * (1.0 + props.Nu));
-  auto const D1 = 6.0 * (1.0 - 2.0 * props.Nu) / props.E;
-  auto const EG = 2.0 * C10 / jac;
-  // Deviatoric left Cauchy-Green deformation tensor
-  auto Bb = deviatoric_part(Fb * transpose(Fb));
-  // Deviatoric Kirchhoff stress
-  s = EG * Bb;
-  pres = -2.0 / D1 * (jac - 1.0);
+  // elastic log strain: 1/2 log(Ce)
+  auto const Ce = transpose(Fe) * Fe;
+  auto const Ee = 0.5 * Omega_h::log_spd(Ce);
+
+  // M - Mandel stress in intermediate config
+  // s - deviatoric Mandel stress
+  auto const ev = trace(Ee);
+  auto const I = Omega_h::identity_matrix<3, 3>();
+  auto M = lambda * ev * I + 2.0 * mu * Ee;
+  s = deviatoric_part(M);
+  pres = -kappa * ev;
 }
 
 
@@ -413,10 +405,13 @@ elastic(double& pres, Tensor<3>& s, double& wave_speed,
     double const J, Tensor<3> const F, Tensor<3> const Fp,
     double const rho, Properties const props)
 {
-  if (props.elastic == Elastic::LINEAR_ELASTIC) {
-    hooke(pres, s, F, Fp, props);
-  } else if (props.elastic == Elastic::NEO_HOOKEAN) {
-    neohooke(pres, s, F, Fp, props);
+  if (props.elastic == Elastic::MANDEL)
+  {
+    mandel(pres, s, F, Fp, props);
+  }
+  else
+  {
+    Omega_h_fail("Unsupported elastic type");
   }
   OMEGA_H_CHECK(is_deviatoric(s));
 
@@ -449,8 +444,8 @@ at_yield(Tensor<3> const s,
   auto Y = Omega_h::ArithTraits<double>::max();
   double dY = 0.0;
   hard(Y, dY, ep, epdot, temp, props);
-  double const sqrt23 = std::sqrt(2.0 / 3.0);
-  auto const f = smag - sqrt23 * Y;
+  double const sq23 = std::sqrt(2.0 / 3.0);
+  auto const f = smag - sq23 * Y;
   return f > 1.0e-12;
 }
 
@@ -466,53 +461,91 @@ at_yield(Tensor<3> const s,
  *
  */
 OMEGA_H_INLINE void
-radial_return(Tensor<3>& s, double const J, Tensor<3> const F, Tensor<3>& Fp,
-    double& ep, double& epdot, double const temp, double const dtime,
+radial_return(Tensor<3>& s, double const /*J*/, Tensor<3> const /*F*/, Tensor<3>& Fp,
+    double& ep, double& epdot, double const temp, double const /*dtime*/,
     Properties const props)
 {
   OMEGA_H_CHECK(is_deviatoric(s));
-  double const sqrt23 = std::sqrt(2.0 / 3.0);
-  double const tol = 1.0E-11;
+  double const sq32 = std::sqrt(3.0 / 2.0);
+  double const tol = 1.0E-10;
 
   auto const mu = props.E / (2.0 * (1.0 + props.Nu));
-  auto const kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
-
-  // get def grad quantities
-  auto const Jp13 = std::cbrt(J);
-  auto const Jm23 = 1.0 / Jp13 / Jp13;
-  auto const Fpinv = invert(Fp);
-  auto const smag = Omega_h::norm(s);
-
-  bool conv = false;
-
-  double dep = 0.0;
-  double alpha = ep;
-  double gamma = 0.0;
-  double g = 0.0, dg = 0.0;
+  auto const seff = sq32 * Omega_h::norm(s);
 
   auto Y = Omega_h::ArithTraits<double>::max();
   double dY = 0.0;
+  hard(Y, dY, ep, epdot, temp, props);
+  if (seff <= Y)
+    return;
 
-  for (int iter=0; iter<30; iter++) {
-    hard(Y, dY, alpha, epdot, temp, props);
-    g = smag - (2.0 * mu * gamma + sqrt23 * Y);
-    auto const R = std::abs(g);
-    if ((R < tol) || (R / Y < tol)) {
-      conv = true;
+  double dep = 0.0;
+  double alpha  = 0.0;
+
+  // line search parameters
+  double const eta_ls = 0.1;
+  double const beta_ls = 1.e-05;
+
+  bool conv1 = false;
+  int const max_rma_iter = 128;
+  for (int iter=0; iter<max_rma_iter; iter++)
+  {
+
+    alpha = ep + dep;
+
+    auto const g = seff - (3.0 * mu * dep + Y);
+    auto const dg = -3.0 * mu - dY;
+    auto const dgamma = -g / dg;
+
+    // line search
+    auto merit_old = g * g;
+    auto merit_new = 1.0;
+    auto dep0 = dep;
+    auto alpha_ls = 1.0;
+
+    bool conv2 = false;
+    int const max_ls_iter = 128;
+    for (int ls_iter=0; ls_iter<max_ls_iter; ls_iter++)
+    {
+
+      dep = dep0 + alpha_ls * dgamma;
+      if (dep < 0.0) dep = 0.0;
+
+      alpha = ep + dep;
+      hard(Y, dY, alpha, epdot, temp, props);
+
+      auto const R = seff - Y - 3.0 * mu * dep;
+      merit_new = R * R;
+      auto const factor = 1.0 - 2.0 * beta_ls * alpha_ls;
+      if (merit_new <= factor * merit_old)
+      {
+        conv2 = true;
+        break;
+      }
+
+      auto const alpha_ls_old = alpha_ls;
+      alpha_ls = alpha_ls_old * alpha_ls_old * merit_old /
+                 (merit_new - merit_old + 2.0 * alpha_ls_old * merit_old);
+      if (eta_ls * alpha_ls_old > alpha_ls) {
+        alpha_ls = eta_ls * alpha_ls_old;
+      }
+    }  // end line search
+    if (!conv2)
+      Omega_h_fail("Line search failed in Hyper EP model.\n");
+
+    auto const dep_tol = std::sqrt(0.5 * merit_new / (2.0 * mu) / (2.0 * mu));
+    if (dep_tol <= tol)
+    {
+      conv1 = true;
       break;
     }
-    dg = -2.0 * mu * (1.0 + dY / (3.0 * mu));
-    gamma = gamma - g / dg;
-    dep = sqrt23 * gamma;
-    epdot  = dep / dtime;
-    alpha = ep + dep;
   }
-  if (!conv)
-    Omega_h_fail("Radial return failure in HyperEP model");
+
+  if (!conv1)
+    Omega_h_fail("Radial return not converged in Hyper EP model.\n");
 
   // updates
-  auto const N = (1.0 / smag) * s;
-  auto const A = gamma * N;
+  auto const N = 1.5 * s / seff;
+  auto const A = dep * N;
   s -= 2.0 * mu * A;
   ep = alpha;
   Fp = lgr::exp::exp(A) * Fp;
@@ -592,12 +625,12 @@ update_damage(double& pres, Tensor<3>& s, double& dp, int& localized,
 OMEGA_H_INLINE_BIG void
 update(Properties const props, double const rho, Tensor<3> const F,
     double const dtime, double const temp, Tensor<3>& T, double& wave_speed,
-    Tensor<3>& Fp, double& ep, double& epdot, double& dp, double& localized)
+    Tensor<3>& Fp, double& ep, double& epdot, double& /*dp*/, double& /*localized*/)
 {
 
   if (props.hardening == Hardening::SIERRA_J2)
   {
-    sierra_J2_update(rho, props.E, props.Nu, props.p2, props.p3, props.p1,
+    sierra_J2_update(rho, props.E, props.Nu, props.p1, props.p2, props.p0,
       F, Fp, ep, T, wave_speed);
     if (props.eos == EOS::MIE_GRUNEISEN)
     {

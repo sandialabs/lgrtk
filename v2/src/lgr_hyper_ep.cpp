@@ -10,19 +10,18 @@ namespace hyper_ep {
 void read_and_validate_elastic_params(
     Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
-  props.elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
   if (!params.is_map("elastic")) {
     Omega_h_fail("elastic submodel must be defined");
   }
   auto& pl = params.get_map("elastic");
-  if (pl.is<std::string>("hyperelastic")) {
-    auto hyperelastic = pl.get<std::string>("hyperelastic");
-    if (hyperelastic == "Neo Hookean") {
-      props.elastic = hyper_ep::Elastic::NEO_HOOKEAN;
+  if (pl.is<std::string>("model")) {
+    auto model = pl.get<std::string>("model");
+    if (model == "Mandel") {
+      props.elastic = hyper_ep::Elastic::MANDEL;
     } else {
       std::ostringstream os;
-      os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
+      os << "Elastic model \"" << model << "\" not recognized";
       auto str = os.str();
       Omega_h_fail("%s\n", str.c_str());
     }
@@ -74,8 +73,8 @@ void read_and_validate_plastic_params(
       // Power Law hardening
       props.hardening = Hardening::POWER_LAW;
       props.p0 = p2.get<double>("Y0", max_double_str.c_str());
-      props.p1 = p2.get<double>("B", "0.0");
-      props.p2 = p2.get<double>("N", "1.0");
+      props.p1 = p2.get<double>("H", "0.0");
+      props.p2 = p2.get<double>("beta", "1.0");
     } else if (type == "Johnson-Cook") {
       // Johnson-Cook hardening
       props.hardening = Hardening::JOHNSON_COOK;
@@ -100,9 +99,9 @@ void read_and_validate_plastic_params(
     } else if (type == "Sierra J2") {
       // Call the Sierra J2 model
       props.hardening = Hardening::SIERRA_J2;
-      props.p0 = p2.get<double>("yield strength", max_double_str.c_str());
-      props.p1 = p2.get<double>("hardening modulus", "0.0");
-      props.p2 = p2.get<double>("hardening exponent", "1.0");
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("H", "0.0");
+      props.p2 = p2.get<double>("beta", "1.0");
     } else {
       std::ostringstream os;
       os << "Unrecognized hardening type \"" << type << "\"";
