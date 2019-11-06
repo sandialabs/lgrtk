@@ -587,7 +587,7 @@ void twisting_column() {
   in.zero_acceleration_conditions.push_back({y_min, x_axis});
   in.zero_acceleration_conditions.push_back({y_min, y_axis});
   in.zero_acceleration_conditions.push_back({y_min, z_axis});
-  in.enable_nodal_pressure[body] = true;
+  in.enable_nodal_pressure[body] = false;
   in.c_tau[body] = 0.5;
   in.CFL = 0.9;
   run(in);
@@ -948,9 +948,9 @@ void triple_point() {
   in.element = TRIANGLE;
   in.end_time = 6.0;
   in.num_file_outputs = 60;
-  in.elements_along_x = 112;
+  in.elements_along_x = 56;
   in.x_domain_size = 7.0;
-  in.elements_along_y = 48;
+  in.elements_along_y = 24;
   in.y_domain_size = 3.0;
   in.rho0[right_top] = 0.1;
   in.rho0[right_bottom] = 1.0;
@@ -984,9 +984,9 @@ void triple_point() {
   in.domains[right_top] = std::move(right_top_domain);
   in.enable_viscosity = true;
   in.linear_artificial_viscosity = 0.5;
-  in.enable_nodal_energy[left] = true;
-  in.enable_nodal_energy[right_bottom] = true;
-  in.enable_nodal_energy[right_top] = true;
+  in.enable_nodal_energy[left] = false;
+  in.enable_nodal_energy[right_bottom] = false;
+  in.enable_nodal_energy[right_top] = false;
   in.c_tau[left] = 1.0;
   in.c_tau[right_bottom] = 1.0;
   in.c_tau[right_top] = 1.0;
@@ -1038,7 +1038,7 @@ int main() {
   if ((0)) lgr::twisting_column_ep(0.05, true);
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D(false,false);
-  if ((0)) lgr::Noh_2D(true,false);
+  if ((1)) lgr::Noh_2D(true,false);
   if ((0)) lgr::Noh_2D(true,true);
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
@@ -1046,6 +1046,6 @@ int main() {
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  run_for_average();
+//run_for_average();
 }
 
