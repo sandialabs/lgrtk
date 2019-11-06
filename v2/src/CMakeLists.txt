@@ -57,7 +57,11 @@ set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
 
 bob_library_includes(lgr_library)
 bob_link_dependency(lgr_library PUBLIC Omega_h)
-bob_link_dependency(lgr_library PUBLIC SEACASAprepro)
+if (LGR_USE_SEACASAprepro)
+  bob_link_dependency(lgr_library PUBLIC SEACASAprepro)
+else()
+  target_compile_definitions(lgr_library PRIVATE -DLGR_DISABLE_APREPRO)
+endif()
 
 install(FILES
     ${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp
@@ -111,6 +115,10 @@ target_link_libraries(lgr_executable lgr_library)
 set_target_properties(lgr_executable PROPERTIES
     OUTPUT_NAME lgr
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  set_target_properties(lgr_library PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 bob_export_target(lgr_library)
 bob_export_target(lgr_executable)
