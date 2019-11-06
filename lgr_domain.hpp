@@ -77,7 +77,7 @@ class domain {
         hpc::device_array_vector<hpc::position<double>, node_index> const& points,
         int const marker,
         hpc::device_vector<int, node_index>* markers) const = 0;
-#ifndef HPC_DISABLE_STRONG_INDICES
+#ifdef HPC_ENABLE_STRONG_INDICES
     virtual void mark(
         hpc::device_array_vector<hpc::position<double>, element_index> const& points,
         material_index const marker,
@@ -132,7 +132,7 @@ class clipped_domain : public domain {
       hpc::device_vector<int, node_index>* markers) const override {
     this->mark_tmpl<node_index, int>(points, marker, markers);
   }
-#ifndef HPC_DISABLE_STRONG_INDICES
+#ifdef HPC_ENABLE_STRONG_INDICES
   void mark(
       hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
@@ -177,7 +177,7 @@ class union_domain : public domain {
       hpc::device_array_vector<hpc::position<double>, node_index> const& points,
       int const marker,
       hpc::device_vector<int, node_index>* markers) const override;
-#ifndef HPC_DISABLE_STRONG_INDICES
+#ifdef HPC_ENABLE_STRONG_INDICES
   void mark(
       hpc::device_array_vector<hpc::position<double>, element_index> const& points,
       material_index const marker,
