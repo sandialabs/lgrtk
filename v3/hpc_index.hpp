@@ -12,7 +12,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr std::enable_if_t<std::is_integral<In
   return i;
 }
 
-#ifndef HPC_DISABLE_STRONG_INDICES
+#ifdef HPC_ENABLE_STRONG_INDICES
 
 template <class Tag, class Integral = std::ptrdiff_t>
 class index {

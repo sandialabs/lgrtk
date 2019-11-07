@@ -128,7 +128,7 @@ using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_di
 using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
 using pressure_gradient_dimension = divide_dimensions_t<pressure_dimension, length_dimension>;
 
-#ifndef HPC_DISABLE_DIMENSIONAL_ANALYSIS
+#ifdef HPC_ENABLE_DIMENSIONAL_ANALYSIS
 
 template <class T, class Dimension>
 class quantity {

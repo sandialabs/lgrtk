@@ -108,6 +108,7 @@ class Circuit
       void UpdateMatrixSize();
       void UpdateBranchValues();
       void ParseYAML(Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in);
+      int get_int(Omega_h::ExprEnv& env_in, std::string& expr);
       double get_double(Omega_h::ExprEnv& env_in, std::string& expr);
 
       // Solve routines
