@@ -320,7 +320,7 @@ public:
         {
             auto tMesh = AbstractVectorFunction<EvaluationType>::getMesh();
             auto tMeshSets = AbstractVectorFunction<EvaluationType>::getMeshSets();
-            mBoundaryLoads->get(&tMesh, tMeshSets, aState, aControl, aResidual);
+            mBoundaryLoads->get(&tMesh, tMeshSets, aState, aControl, aConfiguration, aResidual);
         }
     }
 

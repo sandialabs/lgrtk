@@ -60,12 +60,14 @@ namespace Plato {
 
     template<typename StateScalarType,
              typename ControlScalarType,
+             typename ConfigScalarType,
              typename ResultScalarType>
     void get( Omega_h::Mesh* aMesh,             
               const Omega_h::MeshSets& aMeshSets,
               Plato::ScalarMultiVectorT<  StateScalarType>,
               Plato::ScalarMultiVectorT<ControlScalarType>,
-              Plato::ScalarMultiVectorT< ResultScalarType> result,
+              Plato::ScalarArray3DT    < ConfigScalarType>,
+              Plato::ScalarMultiVectorT< ResultScalarType>,
               Plato::Scalar scale) const;
 
     // ! Get sideset name
@@ -104,12 +106,14 @@ namespace Plato {
     */
     template<typename StateScalarType,
              typename ControlScalarType,
+             typename ConfigScalarType,
              typename ResultScalarType>
     void get( Omega_h::Mesh* aMesh,             
               const Omega_h::MeshSets& aMeshSets,
               Plato::ScalarMultiVectorT<  StateScalarType>,
               Plato::ScalarMultiVectorT<ControlScalarType>,
-              Plato::ScalarMultiVectorT< ResultScalarType> result,
+              Plato::ScalarArray3DT    < ConfigScalarType>,
+              Plato::ScalarMultiVectorT< ResultScalarType>,
               Plato::Scalar scale = 1.0) const;
   };
 
@@ -117,12 +121,14 @@ namespace Plato {
   template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
   template<typename StateScalarType,
            typename ControlScalarType,
+           typename ConfigScalarType,
            typename ResultScalarType>
   void NaturalBC<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get( Omega_h::Mesh* aMesh,             
                                                const Omega_h::MeshSets& aMeshSets,
-                                               Plato::ScalarMultiVectorT<  StateScalarType>,
-                                               Plato::ScalarMultiVectorT<ControlScalarType>,
-                                               Plato::ScalarMultiVectorT< ResultScalarType> result,
+                                               Plato::ScalarMultiVectorT<  StateScalarType> aState,
+                                               Plato::ScalarMultiVectorT<ControlScalarType> aControl,
+                                               Plato::ScalarArray3DT    < ConfigScalarType> aConfig,
+                                               Plato::ScalarMultiVectorT< ResultScalarType> aResult,
                                                Plato::Scalar scale) const
   /**************************************************************************/
   {
@@ -144,56 +150,56 @@ namespace Plato {
     auto nodesPerFace = SpatialDim;
     auto nodesPerCell = SpatialDim+1;
 
-    // create functor for accessing side node coordinates
-    Plato::SideNodeCoordinate<SpatialDim> sideNodeCoordinate(aMesh);
-    
+    Plato::ScalarArray3DT<ConfigScalarType> tJacobian("jacobian", numFaces, SpatialDim-1, SpatialDim);
+
     auto flux = mFlux;
     Kokkos::parallel_for(Kokkos::RangePolicy<int>(0,numFaces), LAMBDA_EXPRESSION(int iFace)
     {
 
       auto faceOrdinal = faceLids[iFace];
 
-      // integrate
-      //
-      Omega_h::Matrix<SpatialDim, SpatialDim-1> jacobian;
-      for (int d1=0; d1<SpatialDim-1; d1++)
-      {
-        for (int d2=0; d2<SpatialDim; d2++)
-        { 
-          jacobian[d1][d2] = sideNodeCoordinate(faceOrdinal,d1,d2) - sideNodeCoordinate(faceOrdinal,SpatialDim-1,d2);
-        }
-      }
+      // for each element that the face is connected to: (either 1 or 2)
+      for( int localElemOrd = face2elems_map[faceOrdinal]; localElemOrd < face2elems_map[faceOrdinal+1]; ++localElemOrd ){
 
-      Scalar weight(0.0);
-      if(SpatialDim==1){
-        weight=scale;
-      } else
-      if(SpatialDim==2){
-        weight = scale/2.0*sqrt(jacobian[0][0]*jacobian[0][0]+jacobian[0][1]*jacobian[0][1]);
-      } else
-      if(SpatialDim==3){
-        auto a1 = jacobian[0][1]*jacobian[1][2]-jacobian[0][2]*jacobian[1][1];
-        auto a2 = jacobian[0][2]*jacobian[1][0]-jacobian[0][0]*jacobian[1][2];
-        auto a3 = jacobian[0][0]*jacobian[1][1]-jacobian[0][1]*jacobian[1][0];
-        weight = scale/6.0*sqrt(a1*a1+a2*a2+a3*a3);
-      }
-
-      int localNodeOrd[SpatialDim];
-      for( int localElemOrd = face2elems_map[faceOrdinal]; 
-               localElemOrd < face2elems_map[faceOrdinal+1]; ++localElemOrd ){
+        // create a map from face local node index to elem local node index
+        int localNodeOrd[SpatialDim];
         auto cellOrdinal = face2elems_elems[localElemOrd];
         for( int iNode=0; iNode<nodesPerFace; iNode++){
           for( int jNode=0; jNode<nodesPerCell; jNode++){
             if( face2verts[faceOrdinal*nodesPerFace+iNode] == cell2verts[cellOrdinal*nodesPerCell + jNode] ) localNodeOrd[iNode] = jNode;
           }
         }
+
+        // compute jacobian from aConfig
+        for( int iNode=0; iNode<SpatialDim-1; iNode++){
+          for( int iDim=0; iDim<SpatialDim; iDim++){
+            tJacobian(iFace,iNode,iDim) = aConfig(cellOrdinal, localNodeOrd[iNode], iDim)
+                                        - aConfig(cellOrdinal, localNodeOrd[SpatialDim-1], iDim);
+          }
+        }
+        ConfigScalarType weight(0.0);
+        if(SpatialDim==1){
+          weight=scale;
+        } else
+        if(SpatialDim==2){
+          weight = scale/2.0*sqrt(tJacobian(iFace,0,0)*tJacobian(iFace,0,0)+tJacobian(iFace,0,1)*tJacobian(iFace,0,1));
+        } else
+        if(SpatialDim==3){
+          auto a1 = tJacobian(iFace,0,1)*tJacobian(iFace,1,2)-tJacobian(iFace,0,2)*tJacobian(iFace,1,1);
+          auto a2 = tJacobian(iFace,0,2)*tJacobian(iFace,1,0)-tJacobian(iFace,0,0)*tJacobian(iFace,1,2);
+          auto a3 = tJacobian(iFace,0,0)*tJacobian(iFace,1,1)-tJacobian(iFace,0,1)*tJacobian(iFace,1,0);
+          weight = scale/6.0*sqrt(a1*a1+a2*a2+a3*a3);
+        }
+
+        // project into aResult workset
         for( int iNode=0; iNode<nodesPerFace; iNode++){
           for( int iDof=0; iDof<NumDofs; iDof++){
             auto cellDofOrdinal = localNodeOrd[iNode] * DofsPerNode + iDof + DofOffset;
-            result(cellOrdinal,cellDofOrdinal) += weight*flux[iDof];
+            aResult(cellOrdinal,cellDofOrdinal) += weight*flux[iDof];
           }
         }
       }
+
     });
   }
 
@@ -264,17 +270,19 @@ namespace Plato {
   template<int SpatialDim, int NumDofs, int DofsPerNode, int DofOffset>
   template<typename StateScalarType,
            typename ControlScalarType,
+           typename ConfigScalarType,
            typename ResultScalarType>
   void NaturalBCs<SpatialDim,NumDofs,DofsPerNode,DofOffset>::get(Omega_h::Mesh* aMesh,      
        const Omega_h::MeshSets& aMeshSets, 
-       Kokkos::View<   StateScalarType**, Kokkos::LayoutRight, Plato::MemSpace > state,
-       Kokkos::View< ControlScalarType**, Kokkos::LayoutRight, Plato::MemSpace > control,
-       Kokkos::View<  ResultScalarType**, Kokkos::LayoutRight, Plato::MemSpace > result,
-       Plato::Scalar scale) const
+       Plato::ScalarMultiVectorT<  StateScalarType> aState,
+       Plato::ScalarMultiVectorT<ControlScalarType> aControl,
+       Plato::ScalarArray3DT    < ConfigScalarType> aConfig,
+       Plato::ScalarMultiVectorT< ResultScalarType> aResult,
+       Plato::Scalar aScale) const
   /**************************************************************************/
   {
     for (const auto &bc : BCs){
-      bc->get(aMesh, aMeshSets, state, control, result, scale);
+      bc->get(aMesh, aMeshSets, aState, aControl, aConfig, aResult, aScale);
     }
   }
 
