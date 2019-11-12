@@ -13,6 +13,10 @@ bob_add_dependency(PUBLIC NAME GTest TARGETS GTest::gtest_main)
 set(LGR_USE_SEACASAprepro_DEFAULT ON)
 bob_add_dependency(PUBLIC NAME SEACASAprepro TARGETS aprepro_lib)
 
+set(CMAKE_CXX_STANDARD "11")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 bob_input(LGR_ELEMENTS "Bar2;Tri3;Tet4" STRING "Element types to instantiate")
 
 foreach(ELEMENT IN LISTS LGR_ELEMENTS)
