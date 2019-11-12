@@ -184,12 +184,12 @@ public:
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, result, -1.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, state, control, config, result, -1.0 );
       }
 
       if( mBoundaryCharges != nullptr )
       {
-          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, result, -1.0 );
+          mBoundaryCharges->get( &mMesh, mMeshSets, state, control, config, result, -1.0 );
       }
 
       if( std::count(mPlottable.begin(),mPlottable.end(),"strain") ) toMap(mDataMap, strain, "strain");

@@ -11,13 +11,13 @@ namespace lgr {
 struct CsvHist : public Response {
   std::vector<std::string> scalars;
   std::ofstream stream;
+  std::string path;
   CsvHist(Simulation& sim_in, Omega_h::InputMap& pl) : Response(sim_in, pl) {
     auto& scalars_in = pl.get_list("scalars");
     for (int i = 0; i < scalars_in.size(); ++i) {
       scalars.push_back(scalars_in.get<std::string>(i));
     }
-    auto path = pl.get<std::string>("path", "lgr_out.csv");
-    // Open with out to overwrite file
+    path = pl.get<std::string>("path", "lgr_out.csv");
     stream.open(path.c_str(),std::ios_base::out);
     OMEGA_H_CHECK(stream.is_open());
     std::stringstream header_stream;
@@ -28,9 +28,7 @@ struct CsvHist : public Response {
     header_stream << '\n';
     auto header_string = header_stream.str();
     stream.write(header_string.data(), std::streamsize(header_string.length()));
-    // Close and reopen with append
     stream.close();
-    stream.open(path.c_str(),std::ios_base::app);
   }
   void respond() override final {
     if (sim.no_output) return;
@@ -43,7 +41,9 @@ struct CsvHist : public Response {
     }
     step_stream << '\n';
     auto step_string = step_stream.str();
+    stream.open(path.c_str(), std::ios_base::out | std::ios_base::app);
     stream.write(step_string.data(), std::streamsize(step_string.length()));
+    stream.close();
   }
   void out_of_line_virtual_method() override;
 };
