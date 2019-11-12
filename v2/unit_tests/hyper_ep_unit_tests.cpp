@@ -87,11 +87,13 @@ static void eval_prescribed_motions(
     const scalar_type& rho)
 {
 
+#ifdef LGR_CHECK_HYPER_EP_RESULTS
   auto const E = props.E;
   auto const Nu = props.Nu;
   auto const bulk_modulus = E / 3.0 / (1.0 - 2.0 * Nu);
   auto const shear_modulus = E/2./(1.+Nu);
   auto const wave_speed_expected = std::sqrt((bulk_modulus+(4./3.)*shear_modulus)/rho);
+#endif
 
   scalar_type dtime = 1.;
   scalar_type temp = 298.;
@@ -360,9 +362,6 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   props.Nu = .1;
   props.p0 = std::numeric_limits<scalar_type>::max();
 
-  scalar_type C10 = props.E / (4. * (1. + props.Nu));
-  scalar_type D1 = 6. * (1. - 2. * props.Nu) / props.E;
-
   // Uniaxial strain
   scalar_type f1 = 1.1;
   F(0,0) = f1;
@@ -374,11 +373,12 @@ TEST(HyperEPMaterialModel, NeoHookeanHyperElastic)
   Details::update(props, rho, F, dtime, temp, T, c,
                   Fp, ep, epdot, dp, localized);
 
+#ifdef LGR_CHECK_HYPER_EP_RESULTS
+  scalar_type C10 = props.E / (4. * (1. + props.Nu));
+  scalar_type D1 = 6. * (1. - 2. * props.Nu) / props.E;
   scalar_type fac = 1.66666666666667;  // 10/6
   scalar_type sxx = (2.0/3.0)*std::pow(f1,-fac)*(-2.*C10*D1*(-f1*f1+1)+3*std::pow(f1,fac)*(f1-1))/D1;
   scalar_type syy = (2.0/3.0)*std::pow(f1,-fac)*(C10*D1*(-f1*f1+1)+3*std::pow(f1,fac)*(f1-1))/D1;
-
-#ifdef LGR_CHECK_HYPER_EP_RESULTS
   // Recent updates to the hyper ep model caused results to change. Analytic
   // solutions for new formulation need to be calculated.
   EXPECT_TRUE(Omega_h::are_close(T(0,0), sxx, 5e-7));
@@ -417,11 +417,11 @@ TEST(HyperEPMaterialModel, LinearElastic)
   Details::update(props, rho, F, dtime, temp, T, c,
                   Fp, ep, epdot, dp, localized);
 
+#ifdef LGR_CHECK_HYPER_EP_RESULTS
   scalar_type K = props.E / 3. / (1. - 2. * props.Nu);
   scalar_type G = props.E / 2. / (1. + props.Nu);
   scalar_type sxx = K * eps + 4.0 / 3.0 * G * eps;
   scalar_type syy = K * eps - 2.0 / 3.0 * G * eps;
-#ifdef LGR_CHECK_HYPER_EP_RESULTS
   // Recent updates to the hyper ep model caused results to change. Analytic
   // solutions for new formulation need to be calculated.
   EXPECT_TRUE(Omega_h::are_close(T(0,0), sxx));
@@ -483,7 +483,9 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   scalar_type temp = 298.;
   scalar_type dtime = 1.;
 
+#ifdef LGR_CHECK_HYPER_EP_RESULTS
   Tensor<3> T;
+#endif
   Tensor<3> F = identity_tensor<3>();
   Tensor<3> Fp = identity_tensor<3>();
 
@@ -495,7 +497,6 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
 
   scalar_type ep = 0.;
   scalar_type epdot = 0.;
-  scalar_type dp = 0.;
 
   // Uniaxial stress, below yield
   Tensor<3> Te = zero_matrix<3, 3>();
@@ -506,6 +507,7 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   Details::radial_return(s, J, F, Fp, ep, epdot, temp, dtime, props);
 
 #ifdef LGR_CHECK_HYPER_EP_RESULTS
+  scalar_type dp = 0.;
   // Recent updates to the hyper ep model caused results to change. Analytic
   // solutions for new formulation need to be calculated.
   EXPECT_TRUE(Omega_h::are_close(T(0,0), Te(0,0)));
@@ -521,9 +523,9 @@ TEST(HyperEPMaterialModel, NonHardeningRadialReturn)
   s = lgr::hyper_ep::deviatoric_part(Te);
   Details::radial_return(s, J, F, Fp, ep, epdot, temp, dtime, props);
 
+#ifdef LGR_CHECK_HYPER_EP_RESULTS
   scalar_type Txx = 2.*std::pow(props.p0,2)*fac/(3.*props.p0*fac) + props.p0*fac/3.;
   scalar_type Tyy =   -std::pow(props.p0,2)*fac/(3.*props.p0*fac) + props.p0*fac/3.;
-#ifdef LGR_CHECK_HYPER_EP_RESULTS
   // Recent updates to the hyper ep model caused results to change. Analytic
   // solutions for new formulation need to be calculated.
   EXPECT_TRUE(Omega_h::are_close(T(0,0), Txx));
