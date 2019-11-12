@@ -40,8 +40,6 @@ foreach(ELEMENT IN LISTS LGR_ELEMENTS)
   endif()
 endforeach()
 
-set(CMAKE_CXX_FLAGS "${Omega_h_CXX_FLAGS}")
-
 find_program(LGR_CUBIT NAMES cubit cubit.command PATHS "${CUBIT_PREFIX}")
 if (LGR_CUBIT)
   message(STATUS "Found LGR_CUBIT=\"${LGR_CUBIT}\"")
