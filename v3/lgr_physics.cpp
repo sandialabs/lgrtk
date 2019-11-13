@@ -13,7 +13,9 @@
 #include <lgr_input.hpp>
 #include <lgr_stabilized.hpp>
 #include <lgr_adapt.hpp>
+#if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
+#endif
 
 namespace lgr {
 
@@ -223,6 +225,7 @@ HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index c
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
+#if defined(HYPER_EP)
 HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_index const material) {
   // Constant state
   auto const points_to_dt = s.dt;
@@ -307,6 +310,7 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
+#endif // HYPER_EP
 
 HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index const material) {
   auto const points_to_rho = s.rho.cbegin();
@@ -591,9 +595,11 @@ HPC_NOINLINE inline void update_single_material_state(input const& in, state& s,
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
   }
+#if defined(HYPER_EP)
   else if (in.enable_hyper_ep[material]) {
     hyper_ep_update(in, s, material);
   }
+#endif // HYPER_EP
   if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy[material]) {
       nodal_ideal_gas(in, s, material);

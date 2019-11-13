@@ -7,42 +7,21 @@ namespace lgr {
 
 namespace hyper_ep {
 
-char const* get_error_code_string(ErrorCode code) {
-  switch (code) {
-    case ErrorCode::NOT_SET:
-      return "NOT SET";
-    case ErrorCode::SUCCESS:
-      return "SUCCESS";
-    case ErrorCode::LINEAR_ELASTIC_FAILURE:
-      return "LINEAR ELASTIC FAILURE";
-    case ErrorCode::HYPERELASTIC_FAILURE:
-      return "HYPERELASTIC FAILURE";
-    case ErrorCode::RADIAL_RETURN_FAILURE:
-      return "RADIAL RETURN FAILURE";
-    case ErrorCode::ELASTIC_DEFORMATION_UPDATE_FAILURE:
-      return "ELASTIC DEFORMATION UPDATE FAILURE";
-    case ErrorCode::MODEL_EVAL_FAILURE:
-      return "MODEL EVAL FAILURE";
-  }
-  return "UNKNOWN";
-}
-
 void read_and_validate_elastic_params(
     Omega_h::InputMap& params, Properties& props) {
   // Set the defaults
-  props.elastic = Elastic::LINEAR_ELASTIC;
   // Elastic model
   if (!params.is_map("elastic")) {
     Omega_h_fail("elastic submodel must be defined");
   }
   auto& pl = params.get_map("elastic");
-  if (pl.is<std::string>("hyperelastic")) {
-    auto hyperelastic = pl.get<std::string>("hyperelastic");
-    if (hyperelastic == "neo hookean") {
-      props.elastic = hyper_ep::Elastic::NEO_HOOKEAN;
+  if (pl.is<std::string>("model")) {
+    auto model = pl.get<std::string>("model");
+    if (model == "Mandel") {
+      props.elastic = hyper_ep::Elastic::MANDEL;
     } else {
       std::ostringstream os;
-      os << "Hyper elastic model \"" << hyperelastic << "\" not recognized";
+      os << "Elastic model \"" << model << "\" not recognized";
       auto str = os.str();
       Omega_h_fail("%s\n", str.c_str());
     }
@@ -70,43 +49,62 @@ void read_and_validate_plastic_params(
   // Set the defaults
   props.hardening = Hardening::NONE;
   props.rate_dep = RateDependence::NONE;
+  auto max_double_str = std::to_string(std::numeric_limits<double>::max());
+  props.p0 = std::numeric_limits<double>::max();
   if (!params.is_map("plastic")) {
     return;
   }
   auto& pl = params.get_map("plastic");
-  auto max_double_str = std::to_string(std::numeric_limits<double>::max());
-  props.A = pl.get<double>("A", max_double_str.c_str());
   if (!pl.is_map("hardening")) {
     props.hardening = Hardening::NONE;
+    props.p0 = pl.get<double>("Y0", max_double_str.c_str());
   } else {
     auto& p2 = pl.get_map("hardening");
     std::string type = p2.get<std::string>("type", "none");
-    if (type == "linear isotropic") {
-      // Linear isotropic hardening J2 plasticity
+    if (type == "none") {
+      props.hardening = Hardening::NONE;
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+    } else if (type == "Linear Isotropic") {
+      // Linear Isotropic hardening J2 plasticity
       props.hardening = Hardening::LINEAR_ISOTROPIC;
-      props.B = p2.get<double>("B", "0.0");
-    } else if (type == "power law") {
-      // Power law hardening
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("H", "0.0");
+    } else if (type == "Power Law") {
+      // Power Law hardening
       props.hardening = Hardening::POWER_LAW;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
-    } else if (type == "johnson cook") {
-      // Johnson Cook hardening
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("H", "0.0");
+      props.p2 = p2.get<double>("beta", "1.0");
+    } else if (type == "Johnson-Cook") {
+      // Johnson-Cook hardening
       props.hardening = Hardening::JOHNSON_COOK;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
-      props.C1 = p2.get<double>("T0", "298.0");
-      props.C2 = p2.get<double>("TM", max_double_str.c_str());
-      props.C3 = p2.get<double>("M", "0.0");
-    } else if (type == "zerilli armstrong") {
-      // Zerilli Armstrong hardening
+      props.p0 = p2.get<double>("A", max_double_str.c_str());
+      props.p1 = p2.get<double>("B", "0.0");
+      props.p2 = p2.get<double>("N", "1.0");
+      props.p3 = p2.get<double>("T0", "298.0");
+      props.p4 = p2.get<double>("TM", max_double_str.c_str());
+      props.p5 = p2.get<double>("M", "1.0");
+    } else if (type == "Zerilli-Armstrong") {
+      // Zerilli-Armstrong hardening
       props.hardening = Hardening::ZERILLI_ARMSTRONG;
-      props.B = p2.get<double>("B", "0.0");
-      props.n = p2.get<double>("N", "1.0");
-      props.C1 = p2.get<double>("C1", "0.0");
-      props.C2 = p2.get<double>("C2", "0.0");
-      props.C3 = p2.get<double>("C3", "0.0");
-    } else if (type != "none") {
+      props.p0 = p2.get<double>("A", max_double_str.c_str());
+      props.p1 = p2.get<double>("B", "0.0");
+      props.p2 = p2.get<double>("N", "1.0");
+      props.p3 = p2.get<double>("C", "0.0");
+      props.p4 = p2.get<double>("alpha_0", "0.0");
+      props.p5 = p2.get<double>("alpha_1", "0.0");
+      props.p6 = p2.get<double>("D", "0.0");
+      props.p7 = p2.get<double>("beta_0", "0.0");
+      props.p8 = p2.get<double>("beta_1", "0.0");
+#ifdef LGR_HAVE_SIERRA_J2
+    } else if (type == "Sierra J2") {
+      // Call the Sierra J2 model
+      props.hardening = Hardening::SIERRA_J2;
+      props.p0 = p2.get<double>("Y0", max_double_str.c_str());
+      props.p1 = p2.get<double>("H", "0.0");
+      props.p2 = p2.get<double>("beta", "1.0");
+#endif
+    } else {
       std::ostringstream os;
       os << "Unrecognized hardening type \"" << type << "\"";
       auto str = os.str();
@@ -117,22 +115,14 @@ void read_and_validate_plastic_params(
     // Rate dependence
     auto& p2 = pl.get_map("rate dependent");
     auto const type = p2.get<std::string>("type", "none");
-    if (type == "johnson cook") {
+    if (type == "Johnson-Cook") {
       if (props.hardening != Hardening::JOHNSON_COOK) {
         Omega_h_fail(
-            "johnson cook rate dependent type requires johnson cook hardening");
+            "Johnson-Cook rate dependent type requires Johnson-Cook hardening");
       }
       props.rate_dep = RateDependence::JOHNSON_COOK;
-      props.C4 = p2.get<double>("C", "0.0");
-      props.ep_dot_0 = p2.get<double>("EPDOT0", "0.0");
-    } else if (type == "zerilli armstrong") {
-      if (props.hardening != Hardening::ZERILLI_ARMSTRONG) {
-        Omega_h_fail(
-            "zerilli armstrong rate dependent type requires zerilli armstrong"
-            "hardening");
-      }
-      props.rate_dep = RateDependence::ZERILLI_ARMSTRONG;
-      props.C4 = p2.get<double>("C4", "0.0");
+      props.p6 = p2.get<double>("C", "0.0");
+      props.p7 = p2.get<double>("EPDOT0", "0.0");
     } else if (type != "none") {
       std::ostringstream os;
       os << "Unrecognized rate dependent type \"" << type << "\"";
@@ -156,24 +146,32 @@ void read_and_validate_damage_params(
   } else {
     auto& p2 = pl.get_map("damage");
     std::string type = p2.get<std::string>("type", "none");
-    if (type == "johnson cook") {
-      // Johnson Cook damage
+    if (type == "Johnson-Cook") {
+      // Johnson-Cook damage
       props.damage = Damage::JOHNSON_COOK;
       props.D1 = p2.get<double>("D1", "0.0");
       props.D2 = p2.get<double>("D2", "0.0");
       props.D3 = p2.get<double>("D3", "0.0");
       props.D4 = p2.get<double>("D4", "0.0");
       props.D5 = p2.get<double>("D5", "0.0");
+
+      // Temperature dependence
+      props.D6 = p2.get<double>("T0", "298.0");
+      props.D7 = p2.get<double>("TM", max_double_str.c_str());
+
+      props.D8 =
+          p2.get<double>("spall failure strain", "0.6");
+
       props.D0 = p2.get<double>("D0", "0.0");  // Initial scalar damage
       props.DC = p2.get<double>("DC", "0.7"); // Critical scalar damage
-      props.eps_f_min =
-          p2.get<double>("spall failure strain", "0.6");
+
       bool no_shear =
           static_cast<bool>(p2.get<double>("allow no shear", "0.0"));
       bool no_tension =
           static_cast<bool>(p2.get<double>("allow no tension", "0.0"));
       bool zero_stress =
           static_cast<bool>(p2.get<double>("set stress to zero", "0.0"));
+
       if (!(no_shear && no_tension && zero_stress)) {
         // by default, allow no tension
         no_tension = true;
@@ -182,9 +180,6 @@ void read_and_validate_damage_params(
       props.allow_no_tension = no_tension;
       props.set_stress_to_zero = zero_stress;
 
-      // Temperature dependence
-      props.D6 = p2.get<double>("T0", "298.0");
-      props.D7 = p2.get<double>("TM", max_double_str.c_str());
 
     } else if (type != "none") {
       std::ostringstream os;
@@ -278,15 +273,13 @@ struct HyperEP : public Model<Elem> {
 
     // Define state dependent variables
     this->equivalent_plastic_strain =
-        this->point_define("ep", "equivalent plastic strain", 1, "0");
+        this->point_define("eqps", "equivalent plastic strain", 1, "0");
     this->equivalent_plastic_strain_rate =
         this->point_define("ep_dot", "equivalent plastic strain rate", 1, "0");
     this->scalar_damage = this->point_define("dp", "scalar damage", 1, "0");
     this->localized_ = this->point_define("localized", "localized", 1, "0");
     this->defgrad_p = this->point_define(
         "Fp", "plastic deformation gradient", square(dim), "I");
-    this->defgrad_n = this->point_define(
-        "Fn", "old deformation gradient", square(dim), "I");
     // Define kinematic quantities
     this->defgrad =
         this->point_define("F", "deformation gradient", square(dim), "I");
@@ -308,7 +301,6 @@ struct HyperEP : public Model<Elem> {
     auto points_to_dp = this->points_getset(this->scalar_damage);
     auto points_to_localized = this->points_getset(this->localized_);
     auto points_to_fp = this->points_getset(this->defgrad_p);
-    auto points_to_fn = this->points_getset(this->defgrad_n);
     auto points_to_F = this->points_get(this->defgrad);
     // Variables to update
     auto points_to_stress = this->points_set(this->sim.stress);
@@ -331,13 +323,10 @@ struct HyperEP : public Model<Elem> {
       auto dp = points_to_dp[point];
       auto localized = points_to_localized[point];
       auto Fp = resize<3>(getfull<Elem>(points_to_fp, point));
-      auto Fn = resize<3>(getfull<Elem>(points_to_fn, point));
       // Update the material response
       Tensor<3> T;  // stress tensor
       double c;
-      auto err_c = hyper_ep::update(
-          props, rho, Fn, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
-      OMEGA_H_CHECK(err_c == hyper_ep::ErrorCode::SUCCESS);
+      hyper_ep::update(props, rho, F, dt, temp, T, c, Fp, ep, epdot, dp, localized);
       // Update in/output variables
       setstress(points_to_stress, point, T);
       points_to_wave_speed[point] = c;
@@ -348,7 +337,6 @@ struct HyperEP : public Model<Elem> {
       points_to_kappa_tilde[point] =
         3.0 * (rho * c * c) * (1.0 - props.Nu) / (1.0 + props.Nu);
       setfull<Elem>(points_to_fp, point, resize<Elem::dim>(Fp));
-      setfull<Elem>(points_to_fn, point, resize<Elem::dim>(F));
     };
     parallel_for(this->points(), std::move(functor));
   }
@@ -358,7 +346,7 @@ void setup_hyper_ep(Simulation& sim, Omega_h::InputMap& pl) {
   auto& models_pl = pl.get_list("material models");
   for (int i = 0; i < models_pl.size(); ++i) {
     auto& model_pl = models_pl.get_map(i);
-    if (model_pl.get<std::string>("type") == "hyper elastic-plastic") {
+    if (model_pl.get<std::string>("type") == "Hyper EP") {
 #define LGR_EXPL_INST(Elem) \
       if (sim.elem_name == Elem::name()) { \
         sim.models.add(new HyperEP<Elem>(sim, model_pl)); \

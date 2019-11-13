@@ -6,7 +6,9 @@
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
+#if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
+#endif
 #include <hpc_vector.hpp>
 #include <hpc_dimensional.hpp>
 
@@ -17,6 +19,9 @@ enum element_kind {
   TRIANGLE,
   TETRAHEDRON,
   COMPOSITE_TETRAHEDRON,
+#if defined(LGR_ENABLE_OTM)
+  MESHLESS,
+#endif
 };
 
 enum time_integrator_kind {
@@ -38,14 +43,14 @@ class zero_acceleration_condition {
 class input {
   public:
   std::string name;
-  element_kind element;
+  element_kind element{TETRAHEDRON};
   time_integrator_kind time_integrator = MIDPOINT_PREDICTOR_CORRECTOR;
   h_min_kind h_min = INBALL_DIAMETER;
   hpc::counting_range<material_index> materials;
   hpc::counting_range<material_index> boundaries;
-  hpc::time<double> end_time;
+  hpc::time<double> end_time{0.0};
   double CFL = 0.9;
-  int num_file_outputs;
+  int num_file_outputs{0};
   int elements_along_x = 0;
   hpc::length<double> x_domain_size = 1.0;
   int elements_along_y = 0;
@@ -67,13 +72,17 @@ class input {
   hpc::host_vector<double, material_index> c_tau;
 
   // Inputs for the hyper elastic-plastic model
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Elastic, material_index> elastic;
+#endif
   hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
   hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
 
   // Plasticity
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Hardening, material_index> hardening;
   hpc::host_vector<hyper_ep::RateDependence, material_index> rate_dep;
+#endif
   hpc::host_vector<hpc::pressure<double>, material_index> A;  // Yield strength in shear
   hpc::host_vector<hpc::pressure<double>, material_index> B;  // hardenint modules
   hpc::host_vector<double, material_index> n;  // hardening exponent
@@ -84,7 +93,9 @@ class input {
   hpc::host_vector<double, material_index> ep_dot_0;
 
   // Damage
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Damage, material_index> damage;
+#endif
   hpc::host_vector<bool, material_index> allow_no_tension;
   hpc::host_vector<bool, material_index> allow_no_shear;
   hpc::host_vector<bool, material_index> set_stress_to_zero;
@@ -130,11 +141,15 @@ class input {
     ,enable_nodal_energy(material_count_in, false)
     ,enable_p_prime(material_count_in, false)
     ,c_tau(material_count_in, 0.5)
+#if defined(HYPER_EP)
     ,elastic(material_count_in)
+#endif
     ,E(material_count_in)
     ,Nu(material_count_in)
+#if defined(HYPER_EP)
     ,hardening(material_count_in)
     ,rate_dep(material_count_in)
+#endif
     ,A(material_count_in)
     ,B(material_count_in)
     ,n(material_count_in)
@@ -143,7 +158,9 @@ class input {
     ,C3(material_count_in)
     ,C4(material_count_in)
     ,ep_dot_0(material_count_in)
+#if defined(HYPER_EP)
     ,damage(material_count_in)
+#endif
     ,allow_no_tension(material_count_in, true)
     ,allow_no_shear(material_count_in, false)
     ,set_stress_to_zero(material_count_in, false)

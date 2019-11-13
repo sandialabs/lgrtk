@@ -180,8 +180,9 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in)
                 auto& bmap_pl = branch_pl.get_map(i);
 
                 // Add number of branches
-                if (bmap_pl.is<int>("count")) {
-                   int n = bmap_pl.get<int>("count");
+                if (bmap_pl.is<std::string>("count")) {
+                   auto read_value = bmap_pl.get<std::string>("count");
+                   auto n = get_int(env_in, read_value);
                    Branch b;
                    b.count = n;
                    branch.push_back(b);
@@ -189,7 +190,6 @@ void Circuit::ParseYAML(Omega_h::InputMap& pl, Omega_h::ExprEnv& env_in)
 
                 // Add repeated elements numbers in branch
                 if (bmap_pl.is_list("elements")){
-                
                    auto& belem_pl = bmap_pl.get_list("elements");
                    auto this_branch = branch.size() - 1;
                    for (int j=0; j < belem_pl.size(); j++) {
@@ -556,6 +556,10 @@ double Circuit::get_double(Omega_h::ExprEnv& env_in, std::string& expr) {
     auto op = reader.read_ops(expr);
     auto const value_any = op->eval(env_in);
     return Omega_h::any_cast<double>(value_any);
+}
+
+int Circuit::get_int(Omega_h::ExprEnv& env_in, std::string& expr) {
+  return static_cast<int>(get_double(env_in, expr));
 }
 
 void Circuit::Setup()

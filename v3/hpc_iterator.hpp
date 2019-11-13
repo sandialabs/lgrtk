@@ -162,7 +162,7 @@ class counting_iterator {
   T m_value;
  public:
   using value_type = T;
-  using difference_type = decltype(m_value - m_value);
+  using difference_type = T;
   using reference = T;
   using pointer = T const*;
   using iterator_category = std::random_access_iterator_tag;
