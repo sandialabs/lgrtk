@@ -13,7 +13,7 @@
 #include <lgr_input.hpp>
 #include <lgr_stabilized.hpp>
 #include <lgr_adapt.hpp>
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
 

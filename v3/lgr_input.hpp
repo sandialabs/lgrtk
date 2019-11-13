@@ -6,7 +6,7 @@
 
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
 #include <hpc_vector.hpp>
@@ -69,14 +69,14 @@ class input {
   hpc::host_vector<double, material_index> c_tau;
 
   // Inputs for the hyper elastic-plastic model
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Elastic, material_index> elastic;
 #endif
   hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
   hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
 
   // Plasticity
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Hardening, material_index> hardening;
   hpc::host_vector<hyper_ep::RateDependence, material_index> rate_dep;
 #endif
@@ -90,7 +90,7 @@ class input {
   hpc::host_vector<double, material_index> ep_dot_0;
 
   // Damage
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Damage, material_index> damage;
 #endif
   hpc::host_vector<bool, material_index> allow_no_tension;
@@ -138,12 +138,12 @@ class input {
     ,enable_nodal_energy(material_count_in, false)
     ,enable_p_prime(material_count_in, false)
     ,c_tau(material_count_in, 0.5)
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
     ,elastic(material_count_in)
 #endif
     ,E(material_count_in)
     ,Nu(material_count_in)
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
     ,hardening(material_count_in)
     ,rate_dep(material_count_in)
 #endif
@@ -155,7 +155,7 @@ class input {
     ,C3(material_count_in)
     ,C4(material_count_in)
     ,ep_dot_0(material_count_in)
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
     ,damage(material_count_in)
 #endif
     ,allow_no_tension(material_count_in, true)
