@@ -116,7 +116,7 @@ set_target_properties(lgr_executable PROPERTIES
     OUTPUT_NAME lgr
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+if ("bob_${CMAKE_CXX_COMPILER_ID}" STREQUAL "bob_MSVC")
   set_target_properties(lgr_library PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
