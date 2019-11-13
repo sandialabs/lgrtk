@@ -6,6 +6,9 @@
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 #include <hpc_vector3.hpp>
+#if defined(LGR_ENABLE_OTM)
+#include <otm/otm.hpp>
+#endif
 
 namespace lgr {
 
@@ -1054,6 +1057,9 @@ int main() {
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
+#if defined(LGR_ENABLE_OTM)
+  if ((0)) lgr::otm();
+#endif
 //run_for_average();
 }
 
