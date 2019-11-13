@@ -392,13 +392,13 @@ void twisting_column_ep(
   in.K0[body] = K;
   in.G0[body] = G;
 
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   in.elastic[body] = hyper_ep::Elastic::NEO_HOOKEAN;
 #endif
   in.E[body] = E;
   in.Nu[body] = nu;
 
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   in.hardening[body] = hyper_ep::Hardening::JOHNSON_COOK;
 #endif
   in.A[body] = 1000.0e+02;
@@ -413,12 +413,12 @@ void twisting_column_ep(
   if (!plastic)
   {
     in.A[body] *= 1.0e+60;
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
     in.hardening[body] = hyper_ep::Hardening::NONE;
 #endif
   }
 
-#if defined (HYPER_EP)
+#if defined(HYPER_EP)
   in.damage[body] = hyper_ep::Damage::NONE;
 #endif
   in.allow_no_tension[body] = false;
