@@ -61,7 +61,7 @@ void InputVariables::register_aprepro_vars(std::string& filename) {
 	   std::string lower_name = name;
 	   std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
 			       [](unsigned char c){ return std::tolower(c); });
-           if (lower_name.find("material") != std::string::npos) {
+           if (lower_name.find("name") != std::string::npos) {
               auto value = var->value.svar;
               printf("Found APREPRO name %s with value %s \n", name.c_str(), value.c_str());
               env.register_variable(name, Omega_h::any(value));

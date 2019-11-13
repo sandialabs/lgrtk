@@ -74,8 +74,8 @@ class ThermalFluxRate :
         Plato::ScalarMultiVectorT<ResultScalarType> boundaryLoads("boundary loads", numCells, mNumDofsPerCell);
         Kokkos::deep_copy(boundaryLoads, 0.0);
 
-        mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, boundaryLoads, 1.0/aTimeStep );
-        mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, boundaryLoads, 1.0/aTimeStep );
+        mBoundaryLoads->get( &mMesh, mMeshSets, aState, aControl, aConfig, boundaryLoads, 1.0/aTimeStep );
+        mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aConfig, boundaryLoads, 1.0/aTimeStep );
 
         Kokkos::parallel_for(Kokkos::RangePolicy<>(0,numCells), LAMBDA_EXPRESSION(const int & cellOrdinal)
         {

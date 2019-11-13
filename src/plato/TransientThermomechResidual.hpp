@@ -226,13 +226,13 @@ class TransientThermomechResidual :
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
-          mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aState,     aControl, aConfig, aResult, -aTimeStep/2.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aPrevState, aControl, aConfig, aResult, -aTimeStep/2.0 );
       }
       if( mBoundaryFluxes != nullptr )
       {
-          mBoundaryFluxes->get( &mMesh, mMeshSets, aState,     aControl, aResult, -aTimeStep/2.0 );
-          mBoundaryFluxes->get( &mMesh, mMeshSets, aPrevState, aControl, aResult, -aTimeStep/2.0 );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, aState,     aControl, aConfig, aResult, -aTimeStep/2.0 );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, aPrevState, aControl, aConfig, aResult, -aTimeStep/2.0 );
       }
     }
 };

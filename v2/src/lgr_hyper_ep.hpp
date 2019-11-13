@@ -1,63 +1,99 @@
 #ifndef LGR_HYPER_EP_HPP
 #define LGR_HYPER_EP_HPP
-#ifdef LGR_HYPER_EP_VERBOSE_DEBUG
-#include <iostream>
-#endif
-#include <lgr_mie_gruneisen.hpp>
-
-//#define LGR_COMPILE_TIME_MATERIAL_BRANCHES
-
-#ifdef LGR_COMPILE_TIME_MATERIAL_BRANCHES
-// Allows for compile time branching in the material model.
-// The variables props_##ARG1 must be defined in lgr_hyper_ep_user.hpp.
-#define IF_MAT_PROPS_EQ(ARG1, ARG2) if constexpr(props_##ARG1 == ARG2)
-#define IF_MAT_PROPS_NEQ(ARG1, ARG2) if constexpr(props_##ARG1 != ARG2)
-#define IF_MAT_PROPS(ARG1) if constexpr(props_##ARG1)
-
-#else
-// Allows for run time branching in the material model.
-// The variables props.ARG1 are defined by reading the user input.
-#define IF_MAT_PROPS_EQ(ARG1, ARG2) if (props.ARG1 == ARG2)
-#define IF_MAT_PROPS_NEQ(ARG1, ARG2) if (props.ARG1 != ARG2)
-#define IF_MAT_PROPS(ARG1) if (props.ARG1)
-#endif
 
 #include <string>
+#include <sstream>
 
 #include <lgr_element_types.hpp>
+#include <lgr_mie_gruneisen.hpp>
+#ifdef LGR_HAVE_SIERRA_J2
+#include <lgr_sierra_J2.hpp>
+#endif
 #include <lgr_model.hpp>
 
 namespace lgr {
 
 namespace hyper_ep {
 
-enum class ErrorCode {
-  NOT_SET,
-  SUCCESS,
-  LINEAR_ELASTIC_FAILURE,
-  HYPERELASTIC_FAILURE,
-  RADIAL_RETURN_FAILURE,
-  ELASTIC_DEFORMATION_UPDATE_FAILURE,
-  MODEL_EVAL_FAILURE
+
+OMEGA_H_INLINE double
+absmax(Tensor<3> a) {
+  double m = std::abs(a(0,0));
+  for (int i=1; i<3; i++)
+    m = Omega_h::max2(m, std::abs(a(i,i)));
+  return m;
+}
+
+
+OMEGA_H_INLINE bool
+is_deviatoric(Tensor<3> const a){
+  return std::abs(trace(a)) <= 1.0e-12;
+}
+
+
+OMEGA_H_INLINE Tensor<3>
+deviatoric_part(Tensor<3> const a)
+{
+  auto tr = trace(a) / 3.0;
+  auto const I = identity_matrix<3, 3>();
+  auto dev = a - tr / 3.0 * I;
+  // Manage round-off from working with large numbers by "re-deviating" the
+  // deviator.
+  tr = trace(dev);
+  if (std::abs(tr) > 1.0e-14) {
+    dev(0,0) = dev(0,0) - tr / 3.0;
+    dev(1,1) = dev(1,1) - tr / 3.0;
+    dev(2,2) = -(dev(0,0) + dev(1,1));
+  }
+  if (!is_deviatoric(dev))
+  {
+    printf(
+        "The following matrix was not made deviatoric!:\n"
+        "\tbefore => [%g, %g, %g, %g, %g, %g], trace = %g\n"
+        "\t after => [%g, %g, %g, %g, %g, %g], trace = %g\n",
+        a(0,0), a(1,1), a(2,2), a(0,1), a(1,2), a(0,2), trace(a),
+        dev(0,0), dev(1,1), dev(2,2), dev(0,1), dev(1,2), dev(0,2), trace(dev)
+    );
+    OMEGA_H_CHECK(false);
+  }
+  return dev;
+}
+
+
+enum class Elastic
+{
+  MANDEL
 };
 
-enum class Elastic { LINEAR_ELASTIC, NEO_HOOKEAN };
-
-enum class Hardening {
+enum class Hardening
+{
   NONE,
   LINEAR_ISOTROPIC,
   POWER_LAW,
   ZERILLI_ARMSTRONG,
+  JOHNSON_COOK,
+#ifdef LGR_HAVE_SIERRA_J2
+  SIERRA_J2
+#endif
+};
+
+enum class RateDependence
+{
+  NONE,
+  ZERILLI_ARMSTRONG,
   JOHNSON_COOK
 };
 
-enum class RateDependence { NONE, ZERILLI_ARMSTRONG, JOHNSON_COOK };
+enum class Damage
+{
+  NONE,
+  JOHNSON_COOK
+};
 
-enum class Damage { NONE, JOHNSON_COOK };
-
-enum class EOS { NONE, MIE_GRUNEISEN };
-
-enum class StateFlag { NONE, TRIAL, ELASTIC, PLASTIC, REMAPPED };
+enum class EOS {
+  NONE,
+  MIE_GRUNEISEN
+};
 
 struct Properties {
   // Elasticity
@@ -68,14 +104,15 @@ struct Properties {
   // Plasticity
   Hardening hardening;
   RateDependence rate_dep;
-  double A;
-  double B;  // Hardening modulus
-  double n;  // exponent in hardening
-  double C1;
-  double C2;
-  double C3;
-  double C4;
-  double ep_dot_0;
+  double p0;
+  double p1;  // Hardening modulus
+  double p2;  // exponent in hardening
+  double p3;
+  double p4;
+  double p5;
+  double p6;
+  double p7;
+  double p8;
 
   // Damage parameters
   Damage damage;
@@ -89,9 +126,9 @@ struct Properties {
   double D5;
   double D6;
   double D7;
+  double D8;
   double D0;
   double DC;
-  double eps_f_min;
 
   // Equation of state
   EOS eos;
@@ -102,7 +139,7 @@ struct Properties {
   double e0;
 
   Properties()
-      : elastic(Elastic::LINEAR_ELASTIC),
+      : elastic(Elastic::MANDEL),
         hardening(Hardening::NONE),
         rate_dep(RateDependence::NONE),
         damage(Damage::NONE),
@@ -114,281 +151,308 @@ struct Properties {
 
 using tensor_type = Matrix<3, 3>;
 
-#ifdef LGR_COMPILE_TIME_MATERIAL_BRANCHES
-#include "lgr_hyper_ep_user.hpp"
-#endif
-
-char const* get_error_code_string(ErrorCode code);
 void read_and_validate_elastic_params(
     Omega_h::InputMap& params, Properties& props);
 void read_and_validate_plastic_params(
     Omega_h::InputMap& params, Properties& props);
 void read_and_validate_damage_params(
     Omega_h::InputMap& params, Properties& props);
+void read_and_validate_eos_params(
+    Omega_h::InputMap& params, Properties& props);
 
-/** \brief Determine the square of the left stretch B=V.V
 
-Parameters
-----------
-tau : ndarray
-    The Kirchhoff stress
-mu : float
-    The shear modulus
-
-Notes
------
-On unloading from the current configuration, the left stretch V is recovered.
-For materials with an isotropic fourth order elastic stiffness, the square of
-the stretch is related to the Kirchhoff stress by
-
-                       dev(tau) = mu dev(BB)                 (1)
-
-where BB is J**(-2/3) B. Since det(BB) = 1 (1) can then be solved for BB
-uniquely.
-
-This routine solves the following nonlinear problem with local Newton
-iterations
-
-                      Solve:       Y = dev(X)
-                      Subject to:  det(X) = 1
-
-where Y = dev(tau) / mu
-
-Let
-                      X = trace(X) / 3 I + dev(tau) / mu    (2)
-
-Solve det(X) = 1 for trace(X) and then return (2)
-
+/** \brief Constant yield strength
+ *
+ * Constant J2 plasticity with yield strength given by
+ *
+ *     Y = Y0
+ *
+ * where Y0 is a material parameter (yield in uniaxial tension)
 */
-OMEGA_H_INLINE
-bool find_bbe(Tensor<3> const tau, double const mu, Tensor<3>& Be) {
-  constexpr int maxit = 25;
-  constexpr double tol = 1e-8;
-  auto const txx = tau(0, 0);
-  auto const tyy = tau(1, 1);
-  auto const tzz = tau(2, 2);
-  auto const txy = .5 * (tau(0, 1) + tau(1, 0));
-  auto const txz = .5 * (tau(0, 2) + tau(2, 0));
-  auto const tyz = .5 * (tau(1, 2) + tau(2, 1));
-  auto tr = trace(Be);
-  for (int i = 0; i < maxit; i++) {
-    // computes det(X) - 1, where X is the iscohoric deformation
-    auto fun = (
-        9*txy*txy*(-tr*mu + txx + tyy - 2*tzz) + 54*txy*txz*tyz
-      + 9*txz*txz*(-tr*mu + txx - 2*tyy + tzz)
-      + 9*tyz*tyz*(-tr*mu - 2*txx + tyy + tzz)
-      + (tr*mu - txx - tyy + 2*tzz)*(tr*mu - txx + 2*tyy - tzz)*(tr*mu + 2*txx - tyy - tzz)
-      ) / (27*mu*mu*mu) - 1;
-    // computes d(det(X) - 1)/d(tr(X))
-    auto dfun = (
-         tr*tr*mu*mu - txx*txx + txx*tyy + txx*tzz - tyy*tyy + tyy*tzz - tzz*tzz
-       - 3*txy*txy - 3*txz*txz - 3*tyz*tyz
-       ) / (9*mu*mu);
-    auto dtr = -fun / dfun;
-    tr += dtr;
-    if (std::abs(dtr) < tol) {
-      Be = Omega_h::deviator(tau) / mu;
-      for (int j=0; j<3; j++) Be(j,j) += tr / 3;
-      return true;
-    }
-  }
-  return false;
+OMEGA_H_INLINE void
+hard_constant(double& Y, double& dY,
+    double const /* ep */, double const /* epdot */, double const /* temp */,
+    double const Y0)
+{
+  Y = Y0;
+  dY = 0.0;
 }
 
-OMEGA_H_INLINE
-double flow_stress(Properties props, double const temp, double const ep,
-    double const epdot, double const dp) {
-  auto Y = Omega_h::ArithTraits<double>::max();
-  IF_MAT_PROPS_EQ(hardening, Hardening::NONE) {
-    Y = props.A;
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::LINEAR_ISOTROPIC) {
-    Y = props.A + props.B * ep;
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::POWER_LAW) {
-    auto const a = props.A;
-    auto const b = props.B;
-    auto const n = props.n;
-    Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::ZERILLI_ARMSTRONG) {
-    auto const a = props.A;
-    auto const b = props.B;
-    auto const n = props.n;
-    Y = (ep > 0.0) ? (a + b * std::pow(ep, n)) : a;
-    auto const C1 = props.C1;
-    auto const C2 = props.C2;
-    auto const C3 = props.C3;
-    auto alpha = C3;
-    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
-      auto const C4 = props.C4;
-      alpha -= C4 * std::log(epdot);
-    }
-    Y += (C1 + C2 * std::sqrt(ep)) * std::exp(-alpha * temp);
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::JOHNSON_COOK) {
-    auto const ajo = props.A;
-    auto const bjo = props.B;
-    auto const njo = props.n;
-    auto const temp_ref = props.C1;
-    auto const temp_melt = props.C2;
-    auto const mjo = props.C3;
-    // Constant contribution
-    Y = ajo;
-    // Plastic strain contribution
-    if (bjo > 0.0) {
-      Y += (std::abs(njo) > 0.0) ? bjo * std::pow(ep, njo) : bjo;
-    }
-    // Temperature contribution
-    if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 !=
-        1.0) {
-      auto const tstar = (temp > temp_melt)
-                             ? 1.0
-                             : ((temp - temp_ref) / (temp_melt - temp_ref));
-      Y *= (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
-    }
-  }
-  IF_MAT_PROPS_EQ(rate_dep, RateDependence::JOHNSON_COOK) {
-    auto const cjo = props.C4;
-    auto const epdot0 = props.ep_dot_0;
+/** \brief Linear isotropic hardening.
+ *
+ * Yield strength given by
+ *
+ *     Y = Y0 + H ep
+ *
+ * where Y0 and H are material parameters (yield in uniaxial tension and
+ * constant hardening modulus, respecitvely) and ep is the current equivalent
+ * plastic strain.
+ */
+OMEGA_H_INLINE void
+hard_linear_isotropic(double& Y, double& dY,
+    double const ep, double const /* epdot */, double const /* temp */,
+    double const A, double const B)
+{
+  Y = A + B * ep;
+  dY = B;
+}
+
+OMEGA_H_INLINE void
+hard_power_law(double& Y, double& dY,
+    double const ep, double const /* epdot */, double const /* temp */,
+    double const A, double const B, double const n)
+{
+  Y = (ep > 0.0) ? (A + B * std::pow(ep, n)) : A;
+  dY = (ep > 0.0) ? n * B * std::pow(ep, (n - 1)) : 0.0;
+}
+
+/** \brief Johnson-Cook yield strength
+ *
+ * Implements the Johnson-Cook strength model, namely
+ *
+ *     Y = (A + B ep^n) (1 + C log(R)) (1 - th^m)
+ *
+ * where A, B, C, n, and m are material properties and the terms R and th are
+ * given by
+ *
+ *     R = epdot / epdot0
+ *     th = (T - T0) / (TM - T0)
+ *
+ * and epdot0, T0, and TM are material properties
+*/
+OMEGA_H_INLINE void
+hard_johnson_cook(double& Y, double& dY,
+    double const ep, double const epdot, double const temp,
+    double const A, double const B, double const n,
+    double const T0, double const TM, double const m,
+    double const C, double const epdot0)
+{
+
+  // Constant and plastic strain contribution
+  double f = A + B * std::pow(ep, n);
+  double df = (ep > 0.0) ? (B * n * std::pow(ep, n - 1)) : 0.0;
+
+  // Temperature contribution
+  double th = 0.0;
+  if (temp >= T0 && temp <= TM)
+    th = (temp - T0) / (TM - T0);
+  else if (temp > TM)
+    th = 1.0;
+  double g = (th > 1.e-14) ? 1.0 - std::pow(th, m) : 1.0;
+  double dg = 0.0;
+
+  // Rate of plastic strain contribution
+  double h = 1.0;
+  double dh = 0.0;
+  if ((epdot0 > 0.0) && (C > 0.0)) {
     auto const rfac = epdot / epdot0;
-    // FIXME: This assumes that all the
-    // strain rate is plastic.  Should
-    // use actual strain rate.
-    // Rate of plastic strain contribution
-    if (cjo > 0.0) {
-      Y *= (rfac < 1.0) ? std::pow((1.0 + rfac), cjo)
-                        : (1.0 + cjo * std::log(rfac));
+    if (rfac < 1.0) {
+      h = std::pow((1.0 + rfac), C);
+    } else {
+      h = 1.0 + C * std::log(rfac);
     }
   }
-  return (1 - dp) * Y;
+  Y = f * g * h;
+  dY = (Y - A) * (df / f + dg / g + dh / h);
 }
 
-OMEGA_H_INLINE
-double dflow_stress(Properties const props, double const temp, double const ep,
-    double const epdot, double const dtime, double const dp) {
-  double deriv = 0.;
-  IF_MAT_PROPS_EQ(hardening, Hardening::LINEAR_ISOTROPIC) {
-    auto const b = props.B;
-    deriv = b;
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::POWER_LAW) {
-    auto const b = props.B;
-    auto const n = props.n;
-    deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::ZERILLI_ARMSTRONG) {
-    auto const b = props.B;
-    auto const n = props.n;
-    deriv = (ep > 0.0) ? b * n * std::pow(ep, n - 1) : 0.0;
-    auto const C1 = props.C1;
-    auto const C2 = props.C2;
-    auto const C3 = props.C3;
-    auto alpha = C3;
-    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
-      auto const C4 = props.C4;
-      alpha -= C4 * std::log(epdot);
+
+/** \brief Johnson-Cook yield strength
+ *
+ * Implements a modified Zerilli-Armstrong model, namely
+ *
+ *     Y = (A + B ep^n) + C sqrt(ep) e^(-alpha T) + D e^(-beta T)
+ *
+ * with
+ *
+ *     alpha = alpha_0 - alpha_1 log(epdot)
+ *     beta = beta_0 - beta_1 log(epdot)
+ *
+*/
+OMEGA_H_INLINE void
+hard_zerilli_armstrong(double& Y, double& dY,
+    double const ep, double const epdot, double const temp,
+    double const A, double const B, double const n,
+    double const C, double const alpha_0, double const alpha_1,
+    double const D, double const beta_0, double const beta_1)
+{
+  double const f = A + B * std::pow(ep, n);
+  double const df = (std::abs(ep) < 1.0e-14) ? 0.0
+                  : n * B * std::pow(ep, n - 1.0);
+
+  double const alpha = alpha_0 - alpha_1 * std::log(epdot);
+  double const g = C * std::sqrt(ep) * std::exp(-alpha * temp);
+  double const dg = (std::abs(ep) < 1.0e-14) ? 0.0
+                  : 0.5 * C * std::exp(-alpha * temp) / std::sqrt(ep);
+
+  double const beta = beta_0 - beta_1 * std::log(epdot);
+  double const h = D * std::exp(-beta * temp);
+  double const dh = 0.0;
+
+  Y = f + g + h;
+  dY = df + dg + dh;
+}
+
+OMEGA_H_INLINE void
+hard(double&Y, double& dY,
+    double const ep, double const epdot, double const temp,
+    Properties const props)
+{
+  if(props.hardening == Hardening::NONE) {
+    hard_constant(Y, dY, ep, epdot, temp, props.p0);
+  } else if (props.hardening == Hardening::LINEAR_ISOTROPIC) {
+    hard_linear_isotropic(Y, dY, ep, epdot, temp, props.p0, props.p1);
+  } else if (props.hardening == Hardening::POWER_LAW) {
+    hard_power_law(Y, dY, ep, epdot, temp, props.p0, props.p1, props.p2);
+  } else if (props.hardening == Hardening::ZERILLI_ARMSTRONG) {
+    hard_zerilli_armstrong(Y, dY, ep, epdot, temp,
+        props.p0, props.p1, props.p2, props.p3, props.p4,
+        props.p5, props.p6, props.p7, props.p8);
+  } else if (props.hardening == Hardening::JOHNSON_COOK) {
+    hard_johnson_cook(Y, dY, ep, epdot, temp,
+        props.p0, props.p1, props.p2, props.p3,
+        props.p4, props.p5, props.p6, props.p7);
+  }
+}
+
+
+OMEGA_H_INLINE void
+scalar_damage_johnson_cook(double& dp, double const pres, Tensor<3> const s,
+    double const /* ep */, double const epdot, double const temp, double const dtime,
+    double const D1, double const D2, double const D3, double const D4,
+    double const D5, double const D6, double const D7, double const eps_f_min)
+{
+  double tolerance = 1e-10;
+  auto const smag = norm(s);
+  auto const seq = std::sqrt(smag * smag * 1.5);
+
+  double eps_f = eps_f_min;
+  double sig_star = (std::abs(seq) > 1e-16) ? -pres / seq : 0.0;
+  if (sig_star < 1.5) {
+    // NOT SPALL
+    // sig_star < 1.5 indicates spall conditions are *not* met and the failure
+    // strain must be calculated.
+    sig_star = Omega_h::max2(Omega_h::min2(sig_star, 1.5), -1.5);
+
+    // Stress contribution to damage
+    double stress_contrib = D1 + D2 * std::exp(D3 * sig_star);
+
+    // Strain rate contribution to damage
+    double dep_contrib = 1.0;
+    if (epdot < 1.0) {
+      dep_contrib = std::pow((1.0 + epdot), D4);
+    } else {
+      dep_contrib = 1.0 + D4 * std::log(epdot);
     }
-    deriv +=
-        .5 * C2 / std::sqrt(ep <= 0.0 ? 1.e-8 : ep) * std::exp(-alpha * temp);
-    IF_MAT_PROPS_EQ(rate_dep, RateDependence::ZERILLI_ARMSTRONG) {
-      auto const C4 = props.C4;
-      auto const term1 = C1 * C4 * temp * std::exp(-alpha * temp);
-      auto const term2 = C2 * sqrt(ep) * C4 * temp * std::exp(-alpha * temp);
-      deriv += (term1 + term2) / (epdot <= 0.0 ? 1.e-8 : epdot) / dtime;
-    }
-  } else IF_MAT_PROPS_EQ(hardening, Hardening::JOHNSON_COOK) {
-    auto const bjo = props.B;
-    auto const njo = props.n;
-    auto const temp_ref = props.C1;
-    auto const temp_melt = props.C2;
-    auto const mjo = props.C3;
-    // Calculate temperature contribution
+
     double temp_contrib = 1.0;
-    if (std::abs(temp_melt - Omega_h::ArithTraits<double>::max()) + 1.0 !=
-        1.0) {
+    auto const temp_ref = D6;
+    auto const temp_melt = D7;
+    if (std::abs(temp_melt-Omega_h::ArithTraits<double>::max())+1.0 != 1.0) {
       auto const tstar =
-          (temp > temp_melt) ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
-      temp_contrib =
-          (tstar < 0.0) ? (1.0 - tstar) : (1.0 - std::pow(tstar, mjo));
+          temp > temp_melt ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
+      temp_contrib += D5 * tstar;
     }
-    deriv =
-        (ep > 0.0) ? (bjo * njo * std::pow(ep, njo - 1) * temp_contrib) : 0.0;
-    IF_MAT_PROPS_EQ(rate_dep, RateDependence::JOHNSON_COOK) {
-      auto const ajo = props.A;
-      auto const cjo = props.C4;
-      auto const epdot0 = props.ep_dot_0;
-      auto const rfac = epdot / epdot0;
-      // Calculate strain rate contribution
-      auto const term1 = (rfac < 1.0) ? (std::pow((1.0 + rfac), cjo))
-                                      : (1.0 + cjo * std::log(rfac));
-      auto term2 = (ajo + bjo * std::pow(ep, njo)) * temp_contrib;
-      if (rfac < 1.0) {
-        term2 *= cjo * std::pow((1.0 + rfac), (cjo - 1.0));
-      } else {
-        term2 *= cjo / rfac;
-      }
-      deriv *= term1;
-      deriv += term2 / dtime;
-    }
+
+    // Calculate the updated scalar damage parameter
+    eps_f = stress_contrib * dep_contrib * temp_contrib;
   }
-  constexpr double sq23 = 0.8164965809277261;
-  return (1. - dp) * sq23 * deriv;
+
+  if (eps_f < tolerance) return;
+
+  // Calculate plastic strain increment
+  auto const dep = epdot * dtime;
+  auto const ddp = dep / eps_f;
+  dp = (dp + ddp < tolerance) ? 0.0 : dp + ddp;
 }
 
-OMEGA_H_INLINE
-double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
-    double const temp, double const /* ep */, double const epdot,
-    double const dtime) {
-  IF_MAT_PROPS_EQ(damage, Damage::NONE) {
-    return 0.0;
+
+OMEGA_H_INLINE void
+scalar_damage(double& dp, double const pres, Tensor<3> const s,
+    double const ep, double const epdot, double const temp, double const dtime,
+    Properties const props)
+{
+  if (props.damage == Damage::JOHNSON_COOK) {
+    scalar_damage_johnson_cook(dp, pres, s, ep, epdot, temp, dtime,
+        props.D1, props.D2, props.D3, props.D4, props.D5, props.D6, props.D7, props.D8);
   }
-  else IF_MAT_PROPS_EQ(damage, Damage::JOHNSON_COOK) {
-    double tolerance = 1e-10;
-    auto const I = identity_matrix<3, 3>();
-    auto const T_mean = (trace(T) / 3.0);
-    auto const S = T - I * T_mean;
-    auto const norm_S = norm(S);
-    auto const S_eq = std::sqrt(norm_S * norm_S * 1.5);
-
-    double eps_f = props.eps_f_min;
-    double sig_star = (std::abs(S_eq) > 1e-16) ? T_mean / S_eq : 0.0;
-    if (sig_star < 1.5) {
-      // NOT SPALL
-      // sig_star < 1.5 indicates spall conditions are *not* met and the failure
-      // strain must be calculated.
-      sig_star = Omega_h::max2(Omega_h::min2(sig_star, 1.5), -1.5);
-
-      // Stress contribution to damage
-      double stress_contrib = props.D1 + props.D2 * exp(props.D3 * sig_star);
-
-      // Strain rate contribution to damage
-      double dep_contrib = 1.0;
-      if (epdot < 1.0) {
-        dep_contrib = std::pow((1.0 + epdot), props.D4);
-      } else {
-        dep_contrib = 1.0 + props.D4 * std::log(epdot);
-      }
-
-      double temp_contrib = 1.0;
-      auto const temp_ref = props.D6;
-      auto const temp_melt = props.D7;
-      if (std::abs(temp_melt-Omega_h::ArithTraits<double>::max())+1.0 != 1.0) {
-        auto const tstar =
-            temp > temp_melt ? 1.0 : (temp - temp_ref) / (temp_melt - temp_ref);
-        temp_contrib += props.D5 * tstar;
-      }
-
-      // Calculate the updated scalar damage parameter
-      eps_f = stress_contrib * dep_contrib * temp_contrib;
-    }
-
-    if (eps_f < tolerance) return dp;
-
-    // Calculate plastic strain increment
-    auto const dep = epdot * dtime;
-    auto const ddp = dep / eps_f;
-    return (dp + ddp < tolerance) ? 0.0 : dp + ddp;
-  }
-
-  // Should never get here. The input reader already through threw if there was
-  // a bad input.
-  return 0.0;
 }
+
+
+// Returns the Mandel stress
+OMEGA_H_INLINE void
+mandel(double& pres, Tensor<3>& s,
+    Tensor<3> const F, Tensor<3> const Fp, Properties const props)
+{
+  auto const Fe = F * invert(Fp);
+  auto const kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
+  auto const mu = props.E / 2.0 / (1.0 + props.Nu);
+  auto const lambda = 2.0 * mu * props.Nu / (1.0 - 2.0 * props.Nu);
+
+  // elastic log strain: 1/2 log(Ce)
+  auto const Ce = transpose(Fe) * Fe;
+  auto const Ee = 0.5 * Omega_h::log_spd(Ce);
+
+  // M - Mandel stress in intermediate config
+  // s - deviatoric Mandel stress
+  auto const ev = trace(Ee);
+  auto const I = Omega_h::identity_matrix<3, 3>();
+  auto M = lambda * ev * I + 2.0 * mu * Ee;
+  s = deviatoric_part(M);
+  pres = -kappa * ev;
+}
+
+
+/** \brief High-level wrapper around elastic update */
+OMEGA_H_INLINE void
+elastic(double& pres, Tensor<3>& s, double& wave_speed,
+    double const J, Tensor<3> const F, Tensor<3> const Fp,
+    double const rho, Properties const props)
+{
+  if (props.elastic == Elastic::MANDEL)
+  {
+    mandel(pres, s, F, Fp, props);
+  }
+  else
+  {
+    Omega_h_fail("Unsupported elastic type");
+  }
+  OMEGA_H_CHECK(is_deviatoric(s));
+
+  double K = 0.0;
+  if (props.eos == EOS::MIE_GRUNEISEN) {
+    // Replace pressure with that computed from EOS if needed.
+    double c = 0.0;
+    mie_gruneisen_update(props.rho0, props.gamma0, props.cs, props.s1,
+                         rho, props.e0, pres, c);
+    K = rho * c * c;
+  } else {
+    // wave speed
+    auto kappa = props.E / (3.0 * (1.0 - 2.0 * props.Nu));
+    K = 0.5 * kappa * (J + 1.0 / J);
+  }
+  auto const H = 3.0 * K * (1.0 - props.Nu) / (1 + props.Nu);
+  OMEGA_H_CHECK(H > 0.0);
+  wave_speed = std::sqrt(H / rho);
+  OMEGA_H_CHECK(wave_speed > 0.0);
+}
+
+
+OMEGA_H_INLINE bool
+at_yield(Tensor<3> const s,
+    double const ep, double const epdot, double const temp,
+    Properties const props)
+{
+  // check the yield condition
+  auto const smag = Omega_h::norm(s);
+  auto Y = Omega_h::ArithTraits<double>::max();
+  double dY = 0.0;
+  hard(Y, dY, ep, epdot, temp, props);
+  double const sq23 = std::sqrt(2.0 / 3.0);
+  auto const f = smag - sq23 * Y;
+  return f > 1.0e-12;
+}
+
 
 /* Computes the radial return
  *
@@ -400,223 +464,132 @@ double scalar_damage(Properties const props, Tensor<3>& T, double const dp,
  *   ep = Integrate[Sqrt[2/3]*Sqrt[epdot:epdot], 0, t]
  *
  */
-OMEGA_H_INLINE
-ErrorCode radial_return(Properties const props, Tensor<3> const Te,
-    Tensor<3> const Fn, Tensor<3> const F, double const dtime, double const temp,
-    Tensor<3>& T, Tensor<3>& Fp, double& ep, double& epdot, double& dp,
-    StateFlag& flag) {
-  constexpr double tol1 = 1e-12;
-  auto const tol2 = Omega_h::min2(dtime, 1e-6);
-  constexpr double twothird = 2.0 / 3.0;
-  auto const sq2 = std::sqrt(2.0);
-  auto const sq3 = std::sqrt(3.0);
-  auto const sq23 = sq2 / sq3;
-  auto const sq32 = 1.0 / sq23;
-  auto const E = props.E;
-  auto const Nu = props.Nu;
-  auto const mu = E / 2.0 / (1.0 + Nu);
-  auto const twomu = 2.0 * mu;
-  auto gamma = epdot * dtime * sq32;
-  // Possible states at this point are TRIAL or REMAPPED
-  if (flag != StateFlag::REMAPPED) flag = StateFlag::TRIAL;
-  // check yield
-  auto Y = flow_stress(props, temp, ep, epdot, dp);
-  auto const S0 = deviator(Te);
-  auto const norm_S0 = norm(S0);
-  auto f = norm_S0 / sq2 - Y / sq3;
-  if (f <= tol1) {
-    // Elastic loading
-    T = 1. * Te;
-    if (flag != StateFlag::REMAPPED) flag = StateFlag::ELASTIC;
-  } else {
-    int conv = 0;
-    if (flag != StateFlag::REMAPPED) flag = StateFlag::PLASTIC;
-    auto const N = S0 / norm_S0;  // Flow direction
-    for (int iter = 0; iter < 100; ++iter) {
-      // Compute the yield stress
-      Y = flow_stress(props, temp, ep, epdot, dp);
-      // Compute g
-      auto const g = norm_S0 - sq23 * Y - twomu * gamma;
-      // Compute derivatives of g
-      auto const dydg = dflow_stress(props, temp, ep, epdot, dtime, dp);
-      auto const dg = -twothird * dydg - twomu;
-      // Update dgamma
-      auto const dgamma = -g / dg;
-      gamma += dgamma;
-      // Update state
-      auto const dep = Omega_h::max2(sq23 * gamma, 0.0);
-      epdot = dep / dtime;
-      ep += dep;
-      auto const S = S0 - twomu * gamma * N;
-      f = norm(S) / sq2 - Y / sq3;
-      if (f < tol1) {
-        conv = 1;
-        break;
-      } else if (std::abs(dgamma) < tol2) {
-        conv = 1;
-        break;
-      } else if (iter > 24 && f <= tol1 * 1000.0) {
-        // Weaker convergence
-        conv = 2;
+OMEGA_H_INLINE void
+radial_return(Tensor<3>& s, double const /*J*/, Tensor<3> const /*F*/, Tensor<3>& Fp,
+    double& ep, double& epdot, double const temp, double const /*dtime*/,
+    Properties const props)
+{
+  OMEGA_H_CHECK(is_deviatoric(s));
+  double const sq32 = std::sqrt(3.0 / 2.0);
+  double const tol = 1.0E-10;
+
+  auto const mu = props.E / (2.0 * (1.0 + props.Nu));
+  auto const seff = sq32 * Omega_h::norm(s);
+
+  auto Y = Omega_h::ArithTraits<double>::max();
+  double dY = 0.0;
+  hard(Y, dY, ep, epdot, temp, props);
+  if (seff <= Y)
+    return;
+
+  double dep = 0.0;
+  double alpha  = 0.0;
+
+  // line search parameters
+  double const eta_ls = 0.1;
+  double const beta_ls = 1.e-05;
+
+  bool conv1 = false;
+  int const max_rma_iter = 128;
+  for (int iter=0; iter<max_rma_iter; iter++)
+  {
+
+    alpha = ep + dep;
+
+    auto const g = seff - (3.0 * mu * dep + Y);
+    auto const dg = -3.0 * mu - dY;
+    auto const dgamma = -g / dg;
+
+    // line search
+    auto merit_old = g * g;
+    auto merit_new = 1.0;
+    auto dep0 = dep;
+    auto alpha_ls = 1.0;
+
+    bool conv2 = false;
+    int const max_ls_iter = 128;
+    for (int ls_iter=0; ls_iter<max_ls_iter; ls_iter++)
+    {
+
+      dep = dep0 + alpha_ls * dgamma;
+      if (dep < 0.0) dep = 0.0;
+
+      alpha = ep + dep;
+      hard(Y, dY, alpha, epdot, temp, props);
+
+      auto const R = seff - Y - 3.0 * mu * dep;
+      merit_new = R * R;
+      auto const factor = 1.0 - 2.0 * beta_ls * alpha_ls;
+      if (merit_new <= factor * merit_old)
+      {
+        conv2 = true;
         break;
       }
-#ifdef LGR_HYPER_EP_VERBOSE_DEBUG
-      std::cout << "Iteration: " << iter + 1 << "\n"
-                << "\tROOTJ20: " << Omega_h::norm(S0) << "\n"
-                << "\tROOTJ2: " << Omega_h::norm(S) << "\n"
-                << "\tep: " << ep << "\n"
-                << "\tepdot: " << epdot << "\n"
-                << "\tgamma: " << gamma << "\n"
-                << "\tg: " << g << "\n"
-                << "\tdg: " << dg << "\n\n\n";
-#endif
+
+      auto const alpha_ls_old = alpha_ls;
+      alpha_ls = alpha_ls_old * alpha_ls_old * merit_old /
+                 (merit_new - merit_old + 2.0 * alpha_ls_old * merit_old);
+      if (eta_ls * alpha_ls_old > alpha_ls) {
+        alpha_ls = eta_ls * alpha_ls_old;
+      }
+    }  // end line search
+    if (!conv2)
+      Omega_h_fail("Line search failed in Hyper EP model.\n");
+
+    auto const dep_tol = std::sqrt(0.5 * merit_new / (2.0 * mu) / (2.0 * mu));
+    if (dep_tol <= tol)
+    {
+      conv1 = true;
+      break;
     }
-    // Update the stress tensor
-    T = Te - twomu * gamma * N;
-    if (!conv) {
-      return ErrorCode::RADIAL_RETURN_FAILURE;
-    } else if (conv == 2) {
-      // print warning about weaker convergence
-    }
-    // Update damage
-    dp = scalar_damage(props, T, dp, temp, ep, epdot, dtime);
   }
 
-  if (flag != StateFlag::ELASTIC) {
-    // determine elastic deformation
-    auto const jac = determinant(F);
-    auto const j13 = std::cbrt(jac);
-    auto const j23 = j13 * j13;
-    auto const Fe = Fn * invert(Fp);
-    Tensor<3> Bbe = (Fe * Fe) / j23;
-    auto found = find_bbe(T, mu, Bbe);
-    if (!found) {
-      Omega_h_fail("Failed to find elastic deformation after stress update");
-    } else {
-      auto const Be = Bbe * j23;
-      auto const Ve = sqrt_spd(Be);
-      Fp = invert(Ve) * F;
-    }
-    if (flag == StateFlag::REMAPPED) {
-      // Correct pressure term
-      auto p = trace(T);
-      auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
-      p = (2.0 * jac / D1 * (jac - 1.0)) - (p / 3.0);
-      for (int i = 0; i < 3; ++i) T(i, i) = p;
-    }
-  }
-  return ErrorCode::SUCCESS;
+  if (!conv1)
+    Omega_h_fail("Radial return not converged in Hyper EP model.\n");
+
+  // updates
+  auto const N = 1.5 * s / seff;
+  auto const A = dep * N;
+  s -= 2.0 * mu * A;
+  ep = alpha;
+  Fp = Omega_h::exp_spd(A) * Fp;
 }
 
-OMEGA_H_INLINE
-Tensor<3> linear_elastic_stress(
-    Properties const props, Tensor<3> const Fe) {
-  auto const E = props.E;
-  auto const nu = props.Nu;
-  auto const K = E / (3.0 * (1.0 - 2.0 * nu));
-  auto const G = E / 2.0 / (1.0 + nu);
+
+OMEGA_H_INLINE void
+update_damage(double& pres, Tensor<3>& s, double& dp, int& localized,
+    double const ep, double const epdot, double const temp, double const dtime,
+    Properties const props)
+{
+
+  assert(false); // this has not yet been tested!
+
   auto const I = identity_matrix<3, 3>();
-  auto const grad_u = Fe - I;
-  auto const strain = (1.0 / 2.0) * (grad_u + transpose(grad_u));
-  auto const isotropic_strain = (trace(strain) / 3.0) * I;
-  auto const deviatoric_strain = strain - isotropic_strain;
-  return (3.0 * K) * isotropic_strain + (2.0 * G) * deviatoric_strain;
-}
+  auto T = s - pres * I;
 
-/*
- * Update the stress using Neo-Hookean hyperelasticity
- *
- */
-OMEGA_H_INLINE
-Tensor<3> hyper_elastic_stress(
-    Properties const props, Tensor<3> const Fe, double const jac) {
-  auto const E = props.E;
-  auto const Nu = props.Nu;
-  // Jacobian and distortion tensor
-  auto const scale = 1.0 / std::cbrt(jac);
-  auto const Fb = scale * Fe;
-  // Elastic moduli
-  auto const C10 = E / (4.0 * (1.0 + Nu));
-  auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
-  auto const EG = 2.0 * C10 / jac;
-  // Deviatoric left Cauchy-Green deformation tensor
-  auto Bb = Fb * transpose(Fb);
-  // Deviatoric Cauchy stress
-  auto const TRBb = trace(Bb) / 3.0;
-  for (int i = 0; i < 3; ++i) Bb(i, i) -= TRBb;
-  auto T = EG * Bb;
-  // Pressure response
-  auto const PR = 2.0 / D1 * (jac - 1.0);
-  for (int i = 0; i < 3; ++i) T(i, i) += PR;
-  return T;
-}
-
-OMEGA_H_INLINE_BIG
-ErrorCode update(Properties const props, double const rho, Tensor<3> const Fn,
-    Tensor<3> const F, double const dtime, double const temp, Tensor<3>& T,
-    double& wave_speed, Tensor<3>& Fp, double& ep, double& epdot, double& dp,
-    double& localized) {
-
-  auto const E = props.E;
-  auto const nu = props.Nu;
-  {
-    // wave speed
-    auto const plane_wave_modulus = E * (1.0 - nu) / (1.0 + nu) / (1.0 - 2.0 * nu);
-    wave_speed = std::sqrt(plane_wave_modulus / rho);
-  }
-
-  // Determine the stress predictor.
-  Tensor<3> Te;
-  auto const Fe = F * invert(Fp);
-  auto const jac = determinant(F);
-  ErrorCode err_c = ErrorCode::NOT_SET;
-  IF_MAT_PROPS_EQ(elastic, Elastic::LINEAR_ELASTIC) {
-    Te = linear_elastic_stress(props, Fe);
-  } else IF_MAT_PROPS_EQ(elastic, Elastic::NEO_HOOKEAN) {
-    Te = hyper_elastic_stress(props, Fe, jac);
-  }
-
-  // Replace pressure with that computed from EOS if needed.
-  IF_MAT_PROPS_EQ(eos, EOS::MIE_GRUNEISEN) {
-    double pressure = 0.0;
-    double c = 0.0;
-    mie_gruneisen_update(props.rho0, props.gamma0,
-      props.cs, props.s1, rho, props.e0, pressure, c);
-    // replace diagonal of stress
-    for (int i = 0; i < 3; ++i) Te(i, i) = -pressure;
-    auto const K = rho * c * c;
-    auto const plane_wave_modulus = 3.0 * K * (1.0 - nu) / (1 + nu);
-    wave_speed = std::sqrt(plane_wave_modulus / rho);
-  }
-
-  // check yield and perform radial return (if applicable)
-  auto flag = StateFlag::TRIAL;
-  err_c = radial_return(props, Te, Fn, F, dtime, temp, T, Fp, ep, epdot, dp, flag);
-  if (err_c != ErrorCode::SUCCESS) {
-    return err_c;
-  }
+  // Update damage
+  scalar_damage(dp, pres, s, ep, epdot, temp, dtime, props);
 
   bool is_localized = false;
-  auto p = -trace(T) / 3.;
-  auto const I = identity_matrix<3, 3>();
-  IF_MAT_PROPS_NEQ(damage, Damage::NONE) {
+  if (props.damage != Damage::NONE) {
     // If the particle has already failed, apply various erosion algorithms
     if (localized > 0.0) {
-      IF_MAT_PROPS(allow_no_tension) {
-        if (p < 0.0) {
+      if(props.allow_no_tension) {
+        if (pres < 0.0) {
           T = 0.0 * I;
         } else {
-          T = -p * I;
+          T = -pres * I;
         }
-      } else IF_MAT_PROPS(allow_no_shear) {
-        T = -p * I;
-      } else IF_MAT_PROPS(set_stress_to_zero) {
+      } else if(props.allow_no_shear) {
+        T = -pres * I;
+      } else if(props.set_stress_to_zero) {
         T = 0.0 * I;
       }
     }
 
     // Update damage and check modified TEPLA rule
-    dp = scalar_damage(props, T, dp, temp, ep, epdot, dtime);
+    scalar_damage(dp, pres, s, ep, epdot, temp, dtime, props);
+
     double const por = 0.0;
     double const por_crit = 1.0;
     double const por_ratio = por / por_crit;
@@ -637,20 +610,67 @@ ErrorCode update(Properties const props, double const rho, Tensor<3> const Fn,
       localized = 1.0;
       dp = 0.0;
       // Apply various erosion algorithms
-      IF_MAT_PROPS(allow_no_tension) {
-        if (p < 0.0) {
+      if(props.allow_no_tension) {
+        if (pres < 0.0) {
           T = 0.0 * I;
         } else {
-          T = -p * I;
+          T = -pres * I;
         }
-      } else IF_MAT_PROPS(allow_no_shear) {
-        T = -p * I;
-      } else IF_MAT_PROPS(set_stress_to_zero) {
+      } else if(props.allow_no_shear) {
+        T = -pres * I;
+      } else if(props.set_stress_to_zero) {
         T = 0.0 * I;
       }
     }
   }
-  return ErrorCode::SUCCESS;
+}
+
+
+OMEGA_H_INLINE_BIG void
+update(Properties const props, double const rho, Tensor<3> const F,
+    double const dtime, double const temp, Tensor<3>& T, double& wave_speed,
+    Tensor<3>& Fp, double& ep, double& epdot, double& /*dp*/, double& /*localized*/)
+{
+
+#ifdef LGR_HAVE_SIERRA_J2
+  if (props.hardening == Hardening::SIERRA_J2)
+  {
+    sierra_J2_update(rho, props.E, props.Nu, props.p1, props.p2, props.p0,
+      F, Fp, ep, T, wave_speed);
+    if (props.eos == EOS::MIE_GRUNEISEN)
+    {
+      double pres = 0.0;
+      double c = 0.0;
+      mie_gruneisen_update(props.rho0, props.gamma0, props.cs, props.s1,
+                           rho, props.e0, pres, c);
+      for (int i=0; i<3; i++) T(i,i) = -pres;
+      auto const H = 3.0 * (rho * c * c) * (1.0 - props.Nu) / (1 + props.Nu);
+      OMEGA_H_CHECK(H > 0.0);
+      wave_speed = std::sqrt(H / rho);
+      OMEGA_H_CHECK(wave_speed > 0.0);
+    }
+    return;
+  }
+#endif
+
+  // compute material properties
+  auto const J = determinant(F);
+
+  Tensor<3> s;
+  double pres = 0.0;
+
+  // Determine the stress predictor.
+  elastic(pres, s, wave_speed, J, F, Fp, rho, props);
+
+  // check the yield condition
+  if (at_yield(s, ep, epdot, temp, props))
+    radial_return(s, J, F, Fp, ep, epdot, temp, dtime, props);
+
+  // compute stress
+  auto const I = Omega_h::identity_matrix<3, 3>();
+  auto const M = s - pres * I;
+  auto const Fe = F * invert(Fp);
+  T = transpose(invert(Fe)) * M * transpose(Fe) / J;
 }
 
 }  // namespace hyper_ep

@@ -226,12 +226,12 @@ public:
 
       if( mBoundaryLoads != nullptr )
       {
-          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS, -1.0 );
+          mBoundaryLoads->get( &mMesh, mMeshSets, aStateWS, aControlWS, aConfigWS, aResultWS, -1.0 );
       }
 
       if( mBoundaryFluxes != nullptr )
       {
-          mBoundaryFluxes->get( &mMesh, mMeshSets, aStateWS, aControlWS, aResultWS, -1.0 );
+          mBoundaryFluxes->get( &mMesh, mMeshSets, aStateWS, aControlWS, aConfigWS, aResultWS, -1.0 );
       }
     }
 };
