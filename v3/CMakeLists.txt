@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10.0...${CMAKE_VERSION})
 project(LGR VERSION 3.0.0 LANGUAGES CXX)
 
 option(LGR_ENABLE_CUDA "Build GPU support" OFF)
+option(LGR_ENABLE_OTM "Build support for meshless OTM method" OFF)
 
 if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
@@ -37,6 +38,11 @@ set(LGR_SOURCES
     lgr_stabilized.cpp
     lgr_adapt.cpp
     )
+
+if (LGR_ENABLE_OTM)
+  set(LGR_SOURCES ${LGR_SOURCES} otm/otm.cpp)
+
+endif()
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
 
