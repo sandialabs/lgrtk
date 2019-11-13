@@ -19,6 +19,9 @@ enum element_kind {
   TRIANGLE,
   TETRAHEDRON,
   COMPOSITE_TETRAHEDRON,
+#if defined(LGR_ENABLE_OTM)
+  MESHLESS,
+#endif
 };
 
 enum time_integrator_kind {
