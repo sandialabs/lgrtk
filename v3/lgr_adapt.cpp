@@ -116,6 +116,12 @@ void update_quality(input const& in, state& s) {
     case TRIANGLE: update_triangle_quality(s); break;
     case TETRAHEDRON: update_tetrahedron_quality(s); break;
     case COMPOSITE_TETRAHEDRON: assert(0); break;
+#if defined(LGR_ENABLE_OTM)
+      // FIXME: use correct adaptation
+    case MESHLESS:
+      update_tetrahedron_quality(s);
+      break;
+#endif
   }
 }
 
