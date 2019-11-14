@@ -39,11 +39,6 @@ set(LGR_SOURCES
     lgr_adapt.cpp
     )
 
-if (LGR_ENABLE_OTM)
-  set(LGR_SOURCES ${LGR_SOURCES} otm/otm.cpp)
-
-endif()
-
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
 
 if (LGR_ENABLE_EXODUS)
@@ -53,6 +48,11 @@ endif()
 
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
+endif()
+
+if (LGR_ENABLE_OTM)
+  set_source_files_properties(${LGR_SOURCES}
+    PROPERTIES COMPILE_DEFINITIONS LGR_ENABLE_OTM)
 endif()
 
 add_executable(lgr ${LGR_SOURCES})
