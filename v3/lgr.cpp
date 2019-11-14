@@ -1049,7 +1049,7 @@ int main() {
   if ((0)) lgr::twisting_column_ep(0.05, true);
   if ((0)) lgr::Noh_1D();
   if ((0)) lgr::Noh_2D(false,false);
-  if ((1)) lgr::Noh_2D(true,false);
+  if ((0)) lgr::Noh_2D(true, false);
   if ((0)) lgr::Noh_2D(true,true);
   if ((0)) lgr::Noh_3D();
   if ((0)) lgr::composite_Noh_3D();
@@ -1058,7 +1058,7 @@ int main() {
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 #if defined(LGR_ENABLE_OTM)
-  if ((0)) lgr::otm();
+  if ((1)) lgr::otm();
 #endif
 //run_for_average();
 }
