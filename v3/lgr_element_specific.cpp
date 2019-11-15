@@ -16,12 +16,8 @@ void initialize_V(
     case TRIANGLE: initialize_triangle_V(s); break;
     case TETRAHEDRON: initialize_tetrahedron_V(s); break;
     case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_V(s); break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct velocity
-    case MESHLESS:
-      initialize_tetrahedron_V(s);
-      break;
-#endif
+    // FIXME: use correct velocity
+    case MESHLESS: initialize_tetrahedron_V(s); break;
   }
 }
 
@@ -33,12 +29,8 @@ void initialize_grad_N(
     case TRIANGLE: initialize_triangle_grad_N(s); break;
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s); break;
     case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_grad_N(s); break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct gradient
-    case MESHLESS:
-      initialize_tetrahedron_grad_N(s);
-      break;
-#endif
+    // FIXME: use correct gradient
+    case MESHLESS: initialize_tetrahedron_grad_N(s); break;
   }
 }
 
@@ -84,12 +76,8 @@ void update_h_min(input const& in, state& s)
     case TRIANGLE: update_triangle_h_min(in, s); break;
     case TETRAHEDRON: update_tetrahedron_h_min(in, s); break;
     case COMPOSITE_TETRAHEDRON: update_composite_tetrahedron_h_min(s); break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct size function
-    case MESHLESS:
-      update_tetrahedron_h_min(in, s);
-      break;
-#endif
+    // FIXME: use correct size function
+    case MESHLESS: update_tetrahedron_h_min(in, s); break;
   }
 }
 
@@ -99,12 +87,8 @@ void update_h_art(input const& in, state& s) {
     case TRIANGLE: update_triangle_h_art(s); break;
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
     case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct size function
-    case MESHLESS:
-      update_tetrahedron_h_art(s);
-      break;
-#endif
+    // FIXME: use correct size function
+    case MESHLESS: update_tetrahedron_h_art(s); break;
   }
 }
 
@@ -145,12 +129,8 @@ void update_nodal_mass(input const& in, state& s) {
         update_nodal_mass_uniform(s, material); break;
       case COMPOSITE_TETRAHEDRON:
         update_nodal_mass_composite_tetrahedron(s, material); break;
-#if defined(LGR_ENABLE_OTM)
-        // FIXME: use correct nodal mass
-      case MESHLESS:
-        update_nodal_mass_uniform(s, material);
-        break;
-#endif
+      // FIXME: use correct nodal mass
+      case MESHLESS: update_nodal_mass_uniform(s, material); break;
     }
   }
   hpc::fill(hpc::device_policy(), s.mass, hpc::mass<double>(0.0));
