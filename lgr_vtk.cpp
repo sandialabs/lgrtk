@@ -45,12 +45,8 @@ static void write_vtk_cells(std::ostream& stream, input const& in, captured_stat
     case TRIANGLE: cell_type = 5; break;
     case TETRAHEDRON: cell_type = 10; break;
     case COMPOSITE_TETRAHEDRON: cell_type = 24; break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct cell type
-    case MESHLESS:
-      cell_type = 10;
-      break;
-#endif
+    // FIXME: use correct cell type
+    case MESHLESS: cell_type = 10; break;
   }
   for (element_index i(0); i < s.elements.size(); ++i) {
     stream << cell_type << "\n";

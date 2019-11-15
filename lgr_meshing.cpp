@@ -386,12 +386,8 @@ void build_mesh(input const& in, state& s) {
     case TRIANGLE: build_triangle_mesh(in, s); break;
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
     case COMPOSITE_TETRAHEDRON: build_10_node_tetrahedron_mesh(in, s); break;
-#if defined(LGR_ENABLE_OTM)
-      // FIXME: use correct discretization initialization
-    case MESHLESS:
-      build_tetrahedron_mesh(in, s);
-      break;
-#endif
+    // FIXME: use correct discretization initialization
+    case MESHLESS: build_tetrahedron_mesh(in, s); break;
   }
   propagate_connectivity(s);
 }
