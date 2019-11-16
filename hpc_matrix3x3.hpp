@@ -303,10 +303,36 @@ inverse(matrix3x3<T> const x) {
   auto const C = (d * h - e * g);
   auto const F = -(a * h - b * g);
   auto const I = (a * e - b * d);
-  using denom_t = matrix3x3<std::remove_const_t<decltype(A)>>;
-  auto const denom = denom_t(A, D, G, B, E, H, C, F, I);
-  // (tjf: jul 2019) why is the variable called `denom` when it is the numerator?
-  return denom / determinant(x);
+  using num_t    = matrix3x3<std::remove_const_t<decltype(A)>>;
+  auto const num = num_t(A, D, G, B, E, H, C, F, I);
+  return num / determinant(x);
+}
+
+// Logarithm by Gregory series. Convergence guaranteed for symmetric A
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+log(matrix3x3<T> const A)
+{
+  auto const max_iter  = 8192;
+  auto const tol       = machine_epsilon<T>();
+  auto const norm_a    = norm(A);
+  auto const I         = matrix3x3<T>::identity();
+  auto const IpA       = I + A;
+  auto const ImA       = I - A;
+  auto       S         = ImA * inverse(IpA);
+  auto       norm_s    = norm(S);
+  auto       rel_error = norm_s / norm_a;
+  auto const C         = S * S;
+  auto       B         = S;
+  auto       k         = 0;
+  while (rel_error > tol && ++k <= max_iter) {
+    S = (2.0 * k - 1.0) * S * C / (2.0 * k + 1.0);
+    B += S;
+    norm_s    = norm(S);
+    rel_error = norm_s / norm_a;
+  }
+  B *= -2.0;
+  return B;
 }
 
 template <class T>
