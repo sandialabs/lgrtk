@@ -282,6 +282,12 @@ determinant(matrix3x3<Scalar> const x) noexcept {
          (a * f * h);
 }
 
+template <typename Scalar>
+HPC_HOST_DEVICE constexpr auto
+det(matrix3x3<Scalar> const A) noexcept {
+  return determinant(A);
+}
+
 template <class T>
 HPC_HOST_DEVICE constexpr auto
 inverse(matrix3x3<T> const x) {
@@ -391,6 +397,39 @@ inverse_full_pivot(matrix3x3<T> const A)
   return X;
 }
 
+// Matrix square root by product form of Denman-Beavers iteration.
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+sqrt(matrix3x3<T> const A)
+{
+  auto const eps = machine_epsilon<T>();
+  auto const tol = 0.5 * std::sqrt(3.0) * eps; // 3 is dim
+  auto const I = matrix3x3<T>::identity();
+  auto const max_iter = 32;
+  auto X = A;
+  auto M = A;
+  auto scale = true;
+  for (auto k = 0; k < max_iter; ++k) {
+    if (scale == true) {
+      auto const d = std::abs(det(M));
+      auto const d2 = std::sqrt(d);
+      auto const d6 = std::cbrt(d2);
+      auto const g = 1.0 / d6;
+      X *= g;
+      M *= g * g;
+    }
+    auto const Y = X;
+    auto const N = inverse(M);
+    X *= 0.5 * (I + N);
+    M = 0.5 * (I + 0.5 * (M + N));
+    auto const error = norm(M - I);
+    auto const diff = norm(X - Y) / norm(X);
+    scale = diff >= 0.01;
+    if (error <= tol) break;
+  }
+  return X;
+}
+
 template <class T>
 HPC_HOST_DEVICE constexpr T
 trace(matrix3x3<T> x) noexcept {
@@ -404,6 +443,12 @@ isotropic_part(matrix3x3<T> const x) noexcept {
 }
 
 template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+vol(matrix3x3<T> const A) noexcept {
+  return isotropic_part(A);
+}
+
+template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 deviatoric_part(matrix3x3<T> x) noexcept {
   auto x_dev = matrix3x3<T>(x);
@@ -412,6 +457,12 @@ deviatoric_part(matrix3x3<T> x) noexcept {
   x_dev(1,1) -= a;
   x_dev(2,2) -= a;
   return x_dev;
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+dev(matrix3x3<T> const A) noexcept {
+  return deviatoric_part(A);
 }
 
 template <class T>

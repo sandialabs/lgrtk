@@ -54,7 +54,7 @@ TEST(tensor, inverse)
   // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
   auto const dim = 3;
   auto const tol = 2 * (dim - 1) * eps;
-  Tensor const A(7, 4, 5, 1, 8, 6, 2, 3, 9);
+  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
   auto const B = hpc::inverse_full_pivot(A);
   auto const I = Tensor::identity();
   auto const C = A * B;
@@ -63,4 +63,17 @@ TEST(tensor, inverse)
   auto const D = B * A;
   auto const error_2 = hpc::norm(D - I) / hpc::norm(A);
   ASSERT_LE(error_2, tol);
+}
+
+TEST(tensor, sqrt)
+{
+  auto const eps = hpc::machine_epsilon<Real>();
+  // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
+  auto const dim = 3;
+  auto const tol = 2 * (dim - 1) * eps;
+  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const B = hpc::sqrt(A);
+  auto const C = B * B;
+  auto const error = hpc::norm(C - A) / hpc::norm(A);
+  ASSERT_LE(error, tol);
 }
