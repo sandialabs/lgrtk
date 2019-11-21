@@ -1,8 +1,24 @@
 #include <gtest/gtest.h>
 #include <hpc_matrix3x3.hpp>
+#include <iostream>
 
 using Real = double;
 using Tensor = hpc::matrix3x3<Real>;
+
+template <typename T>
+std::ostream &
+operator<<(std::ostream & os, hpc::matrix3x3<T> const & A)
+{
+  os << std::scientific << std::setprecision(17);
+  for (auto i = 0; i < 3; ++i) {
+    os << std::setw(24) << A(i,0);
+    for (auto j = 1; j < 3; ++j) {
+      os << "," << std::setw(24) << A(i,j);
+    }
+    os << std::endl;
+  }
+  return os;
+}
 
 int
 main(int ac, char* av[])
@@ -30,4 +46,21 @@ TEST(tensor, log)
   ASSERT_LE(error_R, eps);
   auto const error_r = std::abs(r(0,1) + r(1,0));
   ASSERT_LE(error_r, eps);
+}
+
+TEST(tensor, inverse)
+{
+  auto const eps = hpc::machine_epsilon<Real>();
+  // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
+  auto const dim = 3;
+  auto const tol = 2 * (dim - 1) * eps;
+  Tensor const A(7, 4, 5, 1, 8, 6, 2, 3, 9);
+  auto const B = hpc::inverse_full_pivot(A);
+  auto const I = Tensor::identity();
+  auto const C = A * B;
+  auto const error_1 = hpc::norm(C - I) / hpc::norm(A);
+  ASSERT_LE(error_1, tol);
+  auto const D = B * A;
+  auto const error_2 = hpc::norm(D - I) / hpc::norm(A);
+  ASSERT_LE(error_2, tol);
 }
