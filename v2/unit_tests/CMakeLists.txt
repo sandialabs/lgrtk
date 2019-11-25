@@ -6,6 +6,10 @@ set(unit_test_exes
   circuit_unit_tests.cpp
   )
 
+if (Omega_h_USE_CUDA)
+  set_source_files_properties(${unit_test_exes} PROPERTIES LANGUAGE CUDA)
+endif()
+
 if(LGR_COMPTET)
   list(APPEND unit_test_exes comptet_unit_tests.cpp)
 endif()

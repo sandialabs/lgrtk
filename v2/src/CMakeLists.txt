@@ -1,6 +1,6 @@
 bob_config_header("${CMAKE_CURRENT_BINARY_DIR}/lgr_config.hpp")
 
-add_library(lgr_library
+set(LGR_SOURCES
     lgr_scope.cpp
     lgr_condition.cpp
     lgr_input_variables.cpp
@@ -52,6 +52,12 @@ add_library(lgr_library
     lgr_pressure.cpp
     lgr_setup.cpp
     )
+
+if (Omega_h_USE_CUDA)
+  set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
+endif()
+
+add_library(lgr_library ${LGR_SOURCES})
 
 set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
 
@@ -108,6 +114,10 @@ if(LGR_COMPTET)
   install(FILES
     lgr_comptet_functions.hpp
     DESTINATION include)
+endif()
+
+if (Omega_h_USE_CUDA)
+  set_source_files_properties(lgr.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_executable(lgr_executable lgr.cpp)

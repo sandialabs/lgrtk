@@ -17,6 +17,10 @@ set(CMAKE_CXX_STANDARD "11")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (Omega_h_USE_CUDA)
+  enable_language(CUDA)
+endif()
+
 bob_input(LGR_ELEMENTS "Bar2;Tri3;Tet4" STRING "Element types to instantiate")
 
 foreach(ELEMENT IN LISTS LGR_ELEMENTS)
