@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <hpc_macros.hpp>
+#include <limits>
 
 namespace hpc {
 
@@ -18,4 +19,11 @@ class array_traits {
   HPC_HOST_DEVICE static void store(Iterator it, T const& value) noexcept { *it = value; }
 };
 
+// machine epsilon
+template <typename T>
+T
+machine_epsilon()
+{
+  return std::numeric_limits<T>::epsilon();
+}
 }

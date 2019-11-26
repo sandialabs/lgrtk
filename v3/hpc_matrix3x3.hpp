@@ -282,6 +282,12 @@ determinant(matrix3x3<Scalar> const x) noexcept {
          (a * f * h);
 }
 
+template <typename Scalar>
+HPC_HOST_DEVICE constexpr auto
+det(matrix3x3<Scalar> const A) noexcept {
+  return determinant(A);
+}
+
 template <class T>
 HPC_HOST_DEVICE constexpr auto
 inverse(matrix3x3<T> const x) {
@@ -303,10 +309,125 @@ inverse(matrix3x3<T> const x) {
   auto const C = (d * h - e * g);
   auto const F = -(a * h - b * g);
   auto const I = (a * e - b * d);
-  using denom_t = matrix3x3<std::remove_const_t<decltype(A)>>;
-  auto const denom = denom_t(A, D, G, B, E, H, C, F, I);
-  // (tjf: jul 2019) why is the variable called `denom` when it is the numerator?
-  return denom / determinant(x);
+  using num_t    = matrix3x3<std::remove_const_t<decltype(A)>>;
+  auto const num = num_t(A, D, G, B, E, H, C, F, I);
+  return num / determinant(x);
+}
+
+// Logarithm by Gregory series. Convergence guaranteed for symmetric A
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+log(matrix3x3<T> const A)
+{
+  auto const max_iter  = 8192;
+  auto const tol       = machine_epsilon<T>();
+  auto const norm_a    = norm(A);
+  auto const I         = matrix3x3<T>::identity();
+  auto const IpA       = I + A;
+  auto const ImA       = I - A;
+  auto       S         = ImA * inverse(IpA);
+  auto       norm_s    = norm(S);
+  auto       rel_error = norm_s / norm_a;
+  auto const C         = S * S;
+  auto       B         = S;
+  auto       k         = 0;
+  while (rel_error > tol && ++k <= max_iter) {
+    S = (2.0 * k - 1.0) * S * C / (2.0 * k + 1.0);
+    B += S;
+    norm_s    = norm(S);
+    rel_error = norm_s / norm_a;
+  }
+  B *= -2.0;
+  return B;
+}
+
+// Inverse by full pivot. Since this is 3x3, can afford it, and avoids
+// cancellation errors as much as possible. This is important for an
+// explicit dynamics code that will perform a huge number of these
+// calculations.
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+inverse_full_pivot(matrix3x3<T> const A)
+{
+  auto S = A;
+  auto B = matrix3x3<T>::identity();
+  unsigned int intact_rows = (1U << 3) - 1;
+  unsigned int intact_cols = intact_rows;
+  // Gauss-Jordan elimination with full pivoting
+  for (auto k = 0; k < 3; ++k) {
+    // Determine full pivot
+    auto pivot = 0.0;
+    auto pivot_row = 3;
+    auto pivot_col = 3;
+    for (auto row = 0; row < 3; ++row) {
+      if (!(intact_rows & (1 << row))) continue;
+      for (auto col = 0; col < 3; ++col) {
+        if (!(intact_cols & (1 << col))) continue;
+        auto s = std::abs(S(row, col));
+        if (s > pivot) {
+          pivot_row = row;
+          pivot_col = col;
+          pivot = s;
+        }
+      }
+    }
+    assert(pivot_row < 3);
+    assert(pivot_col < 3);
+    // Gauss-Jordan elimination
+    auto const t = S(pivot_row, pivot_col);
+    assert(t != 0.0);
+    for (auto j = 0; j < 3; ++j) {
+      S(pivot_row, j) /= t;
+      B(pivot_row, j) /= t;
+    }
+
+    for (auto i = 0; i < 3; ++i) {
+      if (i == pivot_row) continue;
+      auto const c = S(i, pivot_col);
+      for (auto j = 0; j < 3; ++j) {
+        S(i, j) -= c * S(pivot_row, j);
+        B(i, j) -= c * B(pivot_row, j);
+      }
+    }
+    // Eliminate current row and col from intact rows and cols
+    intact_rows &= ~(1 << pivot_row);
+    intact_cols &= ~(1 << pivot_col);
+  }
+  auto const X = transpose(S) * B;
+  return X;
+}
+
+// Matrix square root by product form of Denman-Beavers iteration.
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+sqrt(matrix3x3<T> const A)
+{
+  auto const eps = machine_epsilon<T>();
+  auto const tol = 0.5 * std::sqrt(3.0) * eps; // 3 is dim
+  auto const I = matrix3x3<T>::identity();
+  auto const max_iter = 32;
+  auto X = A;
+  auto M = A;
+  auto scale = true;
+  for (auto k = 0; k < max_iter; ++k) {
+    if (scale == true) {
+      auto const d = std::abs(det(M));
+      auto const d2 = std::sqrt(d);
+      auto const d6 = std::cbrt(d2);
+      auto const g = 1.0 / d6;
+      X *= g;
+      M *= g * g;
+    }
+    auto const Y = X;
+    auto const N = inverse(M);
+    X *= 0.5 * (I + N);
+    M = 0.5 * (I + 0.5 * (M + N));
+    auto const error = norm(M - I);
+    auto const diff = norm(X - Y) / norm(X);
+    scale = diff >= 0.01;
+    if (error <= tol) break;
+  }
+  return X;
 }
 
 template <class T>
@@ -322,6 +443,12 @@ isotropic_part(matrix3x3<T> const x) noexcept {
 }
 
 template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+vol(matrix3x3<T> const A) noexcept {
+  return isotropic_part(A);
+}
+
+template <class T>
 HPC_HOST_DEVICE constexpr matrix3x3<T>
 deviatoric_part(matrix3x3<T> x) noexcept {
   auto x_dev = matrix3x3<T>(x);
@@ -330,6 +457,12 @@ deviatoric_part(matrix3x3<T> x) noexcept {
   x_dev(1,1) -= a;
   x_dev(2,2) -= a;
   return x_dev;
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
+dev(matrix3x3<T> const A) noexcept {
+  return deviatoric_part(A);
 }
 
 template <class T>

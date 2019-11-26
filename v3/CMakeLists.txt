@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.10.0...${CMAKE_VERSION})
 project(LGR VERSION 3.0.0 LANGUAGES CXX)
 
 option(LGR_ENABLE_CUDA "Build GPU support" OFF)
-option(LGR_ENABLE_OTM "Build support for meshless OTM method" OFF)
 
 if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
@@ -50,11 +49,6 @@ if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
-if (LGR_ENABLE_OTM)
-  set_source_files_properties(${LGR_SOURCES}
-    PROPERTIES COMPILE_DEFINITIONS LGR_ENABLE_OTM)
-endif()
-
 add_executable(lgr ${LGR_SOURCES})
 
 set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
@@ -68,4 +62,14 @@ if (LGR_ENABLE_EXODUS)
   target_include_directories(lgr PRIVATE "${SEACASExodus_INCLUDE_DIRS}")
   target_include_directories(lgr PRIVATE "${SEACASExodus_TPL_INCLUDE_DIRS}")
 # target_link_libraries(lgr PRIVATE "${SEACASExodus_TPL_LIBRARIES}")
+endif()
+
+option(LGR_ENABLE_UNIT_TESTS "Build support for unit tests" ON)
+if (LGR_ENABLE_UNIT_TESTS AND NOT LGR_ENABLE_CUDA)
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
+  add_executable(ut_tensor unit_tests/tensor.cpp)
+  gtest_add_tests(TARGET ut_tensor)
+  target_include_directories(ut_tensor PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+  target_link_libraries(ut_tensor PRIVATE gtest)
 endif()

@@ -19,9 +19,7 @@ enum element_kind {
   TRIANGLE,
   TETRAHEDRON,
   COMPOSITE_TETRAHEDRON,
-#if defined(LGR_ENABLE_OTM)
   MESHLESS,
-#endif
 };
 
 enum time_integrator_kind {
@@ -176,6 +174,11 @@ class input {
     ,eps_f_min(material_count_in)
     ,domains(material_count_in + boundary_count_in)
   {}
+  bool
+  is_meshless()
+  {
+    return element == MESHLESS;
+  }
 };
 
 }
