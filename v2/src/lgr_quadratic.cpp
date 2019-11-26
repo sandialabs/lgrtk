@@ -13,7 +13,7 @@ namespace lgr {
 // this ensures that we can index into edge node arrays without
 // race conditions when we loop over vertices
 
-static Omega_h::LOs count_nodes_by_verts(Omega_h::Mesh& mesh) {
+Omega_h::LOs count_nodes_by_verts(Omega_h::Mesh& mesh) {
   OMEGA_H_TIME_FUNCTION;
   auto const verts2edges = mesh.ask_up(0, 1);
   Omega_h::Write<Omega_h::LO> counts(mesh.nverts(), "node_counts_by_vert");
@@ -97,7 +97,7 @@ static Omega_h::Adj get_adj(
   return adj;
 }
 
-static void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
+void count_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
     Omega_h::LOs nodes, Omega_h::Write<Omega_h::LO> counts) {
   OMEGA_H_TIME_FUNCTION;
   auto const node_ents2ents = get_adj(mesh, node_dim, ent_dim);
@@ -121,7 +121,7 @@ static Omega_h::LOs count_nodes2ents(
   return node_counts;
 }
 
-static void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
+void build_ent_nodes2ents(Omega_h::Mesh& mesh, int node_dim, int ent_dim,
     Omega_h::LOs nodes, Omega_h::LOs a2ab, Omega_h::Write<Omega_h::LO> ab2b,
     Omega_h::Write<Omega_h::I8> codes, int const which_down_offset) {
   OMEGA_H_TIME_FUNCTION;
@@ -159,7 +159,7 @@ Omega_h::Adj build_p2_nodes2ents(
   return Omega_h::Adj{a2ab, ab2b, codes};
 }
 
-static void build_ent_node_coords(Omega_h::Mesh& mesh, int node_dim,
+void build_ent_node_coords(Omega_h::Mesh& mesh, int node_dim,
     Omega_h::LOs nodes, Omega_h::Reals ent_coords,
     Omega_h::Write<Omega_h::Real> coords) {
   OMEGA_H_TIME_FUNCTION;

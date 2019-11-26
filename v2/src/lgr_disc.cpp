@@ -18,7 +18,7 @@
 namespace lgr {
 
 template <int dim>
-static void mark_closest_vertex_dim(Omega_h::Mesh& mesh,
+void mark_closest_vertex_dim(Omega_h::Mesh& mesh,
     std::string const& set_name, Omega_h::any const& pos_any) {
   auto const pos = Omega_h::any_cast<Vector<dim>>(pos_any);
   auto const coords = mesh.coords();

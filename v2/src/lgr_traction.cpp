@@ -13,7 +13,7 @@ bool has_traction(Simulation& sim) {
 }
 
 template <class Elem>
-static void eval_traction_weights(Simulation& sim) {
+void eval_traction_weights(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
   using Side = typename Elem::side;
   auto const subset = sim.fields[sim.traction].support->subset;
@@ -35,7 +35,7 @@ static void eval_traction_weights(Simulation& sim) {
 }
 
 template <class Elem>
-static void integrate_nodal_tractions(Simulation& sim) {
+void integrate_nodal_tractions(Simulation& sim) {
   OMEGA_H_TIME_FUNCTION;
   // TODO: this could be done over only the adjacent nodes
   using Side = typename Elem::side;

@@ -40,7 +40,7 @@ struct MassWeighter {
   }
 };
 
-static void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
+void remap_old_class_id(Omega_h::Mesh& old_mesh, Omega_h::Mesh& new_mesh,
     Omega_h::LOs prods2new_ents, Omega_h::LOs same_ents2old_ents,
     Omega_h::LOs same_ents2new_ents) {
   if (!old_mesh.has_tag(old_mesh.dim(), "old class_id")) return;
@@ -209,19 +209,39 @@ void Remap<Elem>::before_adapt() {
   sim.fields.copy_to_omega_h(sim.disc, field_indices_to_remap);
 }
 
-static Omega_h::Write<double> allocate_and_fill_with_same(
-    Omega_h::Mesh& new_mesh, int ent_dim, int ncomps,
-    Omega_h::LOs same_ents2old_ents, Omega_h::LOs same_ents2new_ents,
-    Omega_h::Reals old_data) {
-  auto const new_data =
-      Omega_h::Write<double>(new_mesh.nents(ent_dim) * ncomps);
-  auto same_functor = OMEGA_H_LAMBDA(int same_ent) {
+class allocate_and_fill_with_same_functor {
+  Omega_h::LOs same_ents2old_ents;
+  Omega_h::LOs same_ents2new_ents;
+  Omega_h::Reals old_data;
+  Omega_h::Write<double> new_data;
+  int ncomps;
+
+ public:
+  allocate_and_fill_with_same_functor(Omega_h::LOs same_ents2old_ents_in,
+      Omega_h::LOs same_ents2new_ents_in, Omega_h::Reals old_data_in,
+      Omega_h::Write<double> new_data_in, int ncomps_in)
+      : same_ents2old_ents(same_ents2old_ents_in),
+        same_ents2new_ents(same_ents2new_ents_in),
+        old_data(old_data_in),
+	  new_data(new_data_in),
+        ncomps(ncomps_in)
+  {}
+  OMEGA_H_DEVICE void operator()(int same_ent) const {
     auto old_ent = same_ents2old_ents[same_ent];
     auto new_ent = same_ents2new_ents[same_ent];
     for (int comp = 0; comp < ncomps; ++comp) {
       new_data[new_ent * ncomps + comp] = old_data[old_ent * ncomps + comp];
     }
-  };
+  }
+};
+
+Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh,
+    int ent_dim, int ncomps, Omega_h::LOs same_ents2old_ents,
+    Omega_h::LOs same_ents2new_ents, Omega_h::Reals old_data) {
+  auto const new_data =
+      Omega_h::Write<double>(new_mesh.nents(ent_dim) * ncomps);
+  allocate_and_fill_with_same_functor same_functor(
+      same_ents2old_ents, same_ents2new_ents, old_data, new_data, ncomps);
   parallel_for(same_ents2old_ents.size(), std::move(same_functor));
   return new_data;
 }
