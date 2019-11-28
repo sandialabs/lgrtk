@@ -46,6 +46,12 @@ TEST(tensor, log)
   ASSERT_LE(error_R, eps);
   auto const error_r = std::abs(r(0,1) + r(1,0));
   ASSERT_LE(error_r, eps);
+  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const a = hpc::log(A);
+  auto const b = hpc::log_gregory(A);
+  auto const error_a = norm(b - a);
+  auto const tol = 32 * eps;
+  ASSERT_LE(error_a, tol);
 }
 
 TEST(tensor, inverse)
