@@ -239,12 +239,23 @@ norm(matrix3x3<T> const x) noexcept {
   return std::sqrt(inner_product(x, x));
 }
 
+// \return \f$ \max_{j \in {0,\cdots,N}}\Sigma_{i=0}^N |A_{ij}| \f$
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
-norm1(matrix3x3<T> const A) noexcept {
+norm_1(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(1,0)) + std::abs(A(2,0));
   auto const v1 = std::abs(A(0,1)) + std::abs(A(1,1)) + std::abs(A(2,1));
   auto const v2 = std::abs(A(0,2)) + std::abs(A(1,2)) + std::abs(A(2,2));
+  return std::max(std::max(v0, v1), v2);
+}
+
+// \return \f$ \max_{i \in {0,\cdots,N}}\Sigma_{j=0}^N |A_{ij}| \f$
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+norm_infinity(matrix3x3<T> const A) noexcept {
+  auto const v0 = std::abs(A(0,0)) + std::abs(A(0,1)) + std::abs(A(0,2));
+  auto const v1 = std::abs(A(1,0)) + std::abs(A(1,1)) + std::abs(A(1,2));
+  auto const v2 = std::abs(A(2,0)) + std::abs(A(2,1)) + std::abs(A(2,2));
   return std::max(std::max(v0, v1), v2);
 }
 
@@ -479,7 +490,7 @@ log_iss(matrix3x3<T> const A)
   auto k = 0;
   auto m = 0;
   while (true) {
-    auto const diff = norm1(X - I);
+    auto const diff = norm_1(X - I);
     if (diff <= c15) {
       auto p = 2; while(pade_coefficients<T>(p) <= diff && p < 16) {++p;};
       auto q = 2; while(pade_coefficients<T>(q) <= diff / 2.0 && q < 16) {++q;};
@@ -497,6 +508,82 @@ HPC_HOST_DEVICE constexpr auto
 log(matrix3x3<T> const A)
 {
   return log_iss(A);
+}
+
+// Project to O(N) (Orthogonal Group) using a Newton-type algorithm.
+// See Higham's Functions of Matrices p210 [2008]
+// \param A tensor (often a deformation-gradient-like tensor)
+// \return \f$ R = \argmin_Q \|A - Q\|\f$
+// This algorithm projects a given tensor in GL(N) to O(N).
+// The rotation/reflection obtained through this projection is
+// the orthogonal component of the real polar decomposition
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+polar_rotation(matrix3x3<T> const A)
+{
+  auto const dim = 3;
+  auto scale = true;
+  auto const tol_scale = 0.01;
+  auto const tol_conv = std::sqrt(dim) * machine_epsilon<T>();
+  auto X = A;
+  auto gamma = 2.0;
+  auto const max_iter = 128;
+  auto num_iter = 0;
+  while (num_iter < max_iter) {
+    auto const Y = inverse_full_pivot(X);
+    auto mu = 1.0;
+    if (scale == true) {
+      mu = (norm_1(Y) * norm_infinity(Y)) / (norm_1(X) * norm_infinity(X));
+      mu = std::sqrt(std::sqrt(mu));
+    }
+    auto const Z = 0.5 * (mu * X + transpose(Y) / mu);
+    auto const D = Z - X;
+    auto const delta = norm(D) / norm(Z);
+    if (scale == true && delta < tol_scale) {
+      scale = false;
+    }
+    bool const end_iter = norm(D) <= std::sqrt(tol_conv) ||
+        (delta > 0.5 * gamma && scale == false);
+    X = Z;
+    gamma = delta;
+    if (end_iter == true) {
+      break;
+    }
+    num_iter++;
+  }
+  return X;
+}
+
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+symm(matrix3x3<T> const A)
+{
+  return 0.5 * (A + transpose(A));
+}
+
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+skew(matrix3x3<T> const A)
+{
+  return 0.5 * (A - transpose(A));
+}
+
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+polar_left(matrix3x3<T> const A)
+{
+  auto const R = polar_rotation(A);
+  auto const V = symm(A * transpose(R));
+  return std::make_pair(V, R);
+}
+
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+polar_right(matrix3x3<T> const A)
+{
+  auto const R = polar_rotation(A);
+  auto const U = symm(transpose(R) * A);
+  return std::make_pair(R, U);
 }
 
 template <class T>
