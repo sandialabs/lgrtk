@@ -46,7 +46,7 @@ TEST(tensor, log)
   ASSERT_LE(error_R, eps);
   auto const error_r = std::abs(r(0,1) + r(1,0));
   ASSERT_LE(error_r, eps);
-  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const A = Tensor(7, 1, 2, 3, 8, 4, 5, 6, 9);
   auto const a = hpc::log(A);
   auto const b = hpc::log_gregory(A);
   auto const error_a = norm(b - a);
@@ -60,7 +60,7 @@ TEST(tensor, inverse)
   // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
   auto const dim = 3;
   auto const tol = 2 * (dim - 1) * eps;
-  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const A = Tensor(7, 1, 2, 3, 8, 4, 5, 6, 9);
   auto const B = hpc::inverse_full_pivot(A);
   auto const I = Tensor::identity();
   auto const C = A * B;
@@ -77,9 +77,23 @@ TEST(tensor, sqrt)
   // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
   auto const dim = 3;
   auto const tol = 2 * (dim - 1) * eps;
-  Tensor const A(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const A = Tensor(7, 1, 2, 3, 8, 4, 5, 6, 9);
   auto const B = hpc::sqrt(A);
   auto const C = B * B;
   auto const error = hpc::norm(C - A) / hpc::norm(A);
   ASSERT_LE(error, tol);
+}
+
+TEST(tensor, polar)
+{
+  auto const eps = hpc::machine_epsilon<Real>();
+  auto const c = std::sqrt(2.0) / 2.0;
+  auto const A = Tensor(c, -c, 0.0, c, c, 0.0, 0.0, 0.0, 1.0);
+  auto const B = Tensor(2, 1, 0, 1, 2, 1, 0, 1, 2);
+  auto const C = A * B;
+  auto R = 0.0 * A;
+  auto U = 0.0 * B;
+  std::tie(R, U) = hpc::polar_right(C);
+  auto const error = (hpc::norm(R - A) + hpc::norm(B - U)) / hpc::norm(C);
+  ASSERT_LE(error, eps);
 }
