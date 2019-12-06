@@ -55,8 +55,6 @@ private:
     using ConfigScalarType = typename EvaluationType::ConfigScalarType;
     using ResultScalarType = typename EvaluationType::ResultScalarType;
 
-    Omega_h::Matrix<mNumVoigtTerms, mNumVoigtTerms> mCellStiffness;
-
     IndicatorFunctionType mIndicatorFunction;
     Plato::ApplyWeighting<mSpaceDim, mNumVoigtTerms, IndicatorFunctionType> mApplyWeighting;
 
@@ -115,7 +113,7 @@ public:
         if(aProblemParams.isSublist("Cell Problem Forcing"))
         {
             Plato::OrdinalType tColumnIndex = aProblemParams.sublist("Cell Problem Forcing").get<Plato::OrdinalType>("Column Index");
-            mCellForcing = std::make_shared<Plato::CellForcing<mNumVoigtTerms>>(mCellStiffness, tColumnIndex);
+            mCellForcing = std::make_shared<Plato::CellForcing<mNumVoigtTerms>>(mMaterialModel->getStiffnessMatrix(), tColumnIndex);
         }
 
         auto tResidualParams = aProblemParams.sublist("Elliptic");

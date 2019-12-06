@@ -11,6 +11,7 @@
 #include "plato/HomogenizedStress.hpp"
 #include "plato/AbstractScalarFunction.hpp"
 #include "plato/ExpInstMacros.hpp"
+#include "plato/ToMap.hpp"
 #include "plato/Simp.hpp"
 #include "plato/Ramp.hpp"
 #include "plato/Heaviside.hpp"
@@ -52,6 +53,8 @@ class EffectiveEnergy :
     Omega_h::Vector<mNumVoigtTerms> mAssumedStrain;
     Plato::OrdinalType mColumnIndex;
     Plato::Scalar mQuadratureWeight;
+
+    std::vector<std::string> mPlottable;
 
   public:
     /**************************************************************************/
@@ -95,6 +98,8 @@ class EffectiveEnergy :
           mQuadratureWeight /= Plato::Scalar(d);
       }
     
+      if( tParams.isType<Teuchos::Array<std::string>>("Plottable") )
+        mPlottable = tParams.get<Teuchos::Array<std::string>>("Plottable").toVector();
     }
 
     /**************************************************************************/
@@ -152,6 +157,10 @@ class EffectiveEnergy :
         scalarProduct(aCellOrdinal, aResult, stress, assumedStrain, cellVolume);
 
       },"energy gradient");
+
+      if( std::count(mPlottable.begin(),mPlottable.end(),"effective stress") ) toMap(mDataMap, stress, "effective stress");
+      if( std::count(mPlottable.begin(),mPlottable.end(),"cell volume") ) toMap(mDataMap, cellVolume, "cell volume");
+
     }
 };
 // class EffectiveEnergy
