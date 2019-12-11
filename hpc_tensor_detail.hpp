@@ -15,7 +15,7 @@ template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 gauss_legendre_abscissae(int const m, int const n) noexcept
 {
-  assert(0 < m && m <= 64 && n < m);
+  assert(0 < m && m <= 64 && 0 <= n && n < m);
   T x = 0.0;
   switch (m) {
   default: break;
