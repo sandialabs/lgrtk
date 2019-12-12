@@ -9,7 +9,7 @@ template <typename T>
 std::ostream &
 operator<<(std::ostream & os, hpc::matrix3x3<T> const & A)
 {
-  os << std::scientific << std::setprecision(17);
+  os << std::scientific << std::setprecision(15);
   for (auto i = 0; i < 3; ++i) {
     os << std::setw(24) << A(i,0);
     for (auto j = 1; j < 3; ++j) {
@@ -27,6 +27,26 @@ main(int ac, char* av[])
   ::testing::InitGoogleTest(&ac, av);
   auto const retval = RUN_ALL_TESTS();
   return retval;
+}
+
+TEST(tensor, exp)
+{
+  auto const eps = hpc::machine_epsilon<Real>();
+  // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
+  auto const dim = 3;
+  auto const tol = 2 * (dim - 1) * eps;
+  auto const A = Tensor(2, 1, 1, 1, 2, 1, 1, 1, 2);
+  auto const a = sqrt(2.0) / 2.0;
+  auto const b = sqrt(3.0) / 3.0;
+  auto const c = sqrt(6.0) / 6.0;
+  auto const V = Tensor(c, a, b, c, -a, b, -2*c, 0, b);
+  auto const p = std::exp(1.0);
+  auto const q = std::exp(4.0);
+  auto const D = Tensor(p, 0, 0, 0, p, 0, 0, 0, q);
+  auto const B = hpc::exp(A);
+  auto const C = V * D * hpc::transpose(V);
+  auto const error = hpc::norm(C - B) / hpc::norm(A);
+  ASSERT_LE(error, tol);
 }
 
 TEST(tensor, log)
