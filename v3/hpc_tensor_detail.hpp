@@ -11,6 +11,73 @@ pade_coefficients(int n) noexcept
   return c[n];
 }
 
+// Scaling parameter theta for scaling and squaring exponential.
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+scaling_squaring_theta(int const order) noexcept {
+  assert(order > 0 && order < 22);
+  T const theta[] = {
+    0.0e-0, 3.7e-8, 5.3e-4, 1.5e-2, 8.5e-2, 2.5e-1, 5.4e-1, 9.5e-1,
+    1.5e-0, 2.1e-0, 2.8e-0, 3.6e-0, 4.5e-0, 5.4e-0, 6.3e-0, 7.3e-0,
+    8.4e-0, 9,4e-0, 1.1e+1, 1.2e+1, 1.3e+1, 1.4e+1
+  };
+  return theta[order];
+}
+
+// Polynomial coefficients for Padé approximants.
+template <typename T>
+HPC_HOST_DEVICE constexpr auto
+polynomial_coefficient(int const order, int const index) noexcept {
+  assert(index <= order);
+  T c = 0.0;
+  switch (order) {
+    case 3:
+      {
+        T const b[] = {
+          120.0, 60.0, 12.0, 1.0};
+        c = b[index];
+      }
+      break;
+    case 5:
+      {
+        T const b[] = {
+          30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0};
+        c = b[index];
+      }
+      break;
+    case 7:
+      {
+        T const b[] = {
+          17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0,
+          56.0, 1.0};
+        c = b[index];
+      }
+      break;
+    case 9:
+      {
+        T const b[] = {
+          17643225600.0, 8821612800.0, 2075673600.0, 302702400.0,
+          30270240.0, 2162160.0, 110880.0, 3960.0, 90.0, 1.0};
+        c = b[index];
+      }
+      break;
+    case 13:
+      {
+        T const b[] = {
+          64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
+          1187353796428800.0, 129060195264000.0, 10559470521600.0,
+          670442572800.0, 33522128640.0, 1323241920.0, 40840800.0,
+          960960.0, 16380.0, 182.0, 1.0};
+        c = b[index];
+      }
+      break;
+    default:
+      bool incorrect_order_in_pade_polynomial = false;
+      assert(incorrect_order_in_pade_polynomial);
+  }
+  return c;
+}
+
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 gauss_legendre_abscissae(int const m, int const n) noexcept
