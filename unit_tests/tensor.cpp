@@ -32,21 +32,22 @@ main(int ac, char* av[])
 TEST(tensor, exp)
 {
   auto const eps = hpc::machine_epsilon<Real>();
-  // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
-  auto const dim = 3;
-  auto const tol = 2 * (dim - 1) * eps;
-  auto const A = Tensor(2, 1, 1, 1, 2, 1, 1, 1, 2);
+  auto const A = Tensor(2.5, 0.5, 1, 0.5, 2.5, 1, 1, 1, 2);
   auto const a = sqrt(2.0) / 2.0;
   auto const b = sqrt(3.0) / 3.0;
   auto const c = sqrt(6.0) / 6.0;
   auto const V = Tensor(c, a, b, c, -a, b, -2*c, 0, b);
   auto const p = std::exp(1.0);
-  auto const q = std::exp(4.0);
-  auto const D = Tensor(p, 0, 0, 0, p, 0, 0, 0, q);
+  auto const q = std::exp(2.0);
+  auto const r = std::exp(4.0);
+  auto const D = Tensor(p, 0, 0, 0, q, 0, 0, 0, r);
   auto const B = hpc::exp(A);
   auto const C = V * D * hpc::transpose(V);
-  auto const error = hpc::norm(C - B) / hpc::norm(A);
-  ASSERT_LE(error, tol);
+  auto const F = hpc::exp_taylor(A);
+  auto const error_pade = hpc::norm(B - C) / hpc::norm(A);
+  ASSERT_LE(error_pade, 9 * eps);
+  auto const error_taylor = hpc::norm(F - C) / hpc::norm(A);
+  ASSERT_LE(error_taylor, 20 * eps);
 }
 
 TEST(tensor, log)

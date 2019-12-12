@@ -630,7 +630,7 @@ template <typename T>
 HPC_HOST_DEVICE constexpr auto
 exp_taylor(matrix3x3<T> const& A) {
   auto const max_iter = 1024;
-  auto const tol = machine_epsilon<T>() / 128;
+  auto const tol = machine_epsilon<T>();
   auto term = matrix3x3<T>::identity();
   // Relative error taken wrt to the first term, which is I and norm = 1
   auto relative_error = 1.0;
