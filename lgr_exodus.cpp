@@ -16,7 +16,7 @@
 
 namespace lgr {
 
-void read_exodus_file(std::string const& filepath, input const& in, state& s) {
+int read_exodus_file(std::string const& filepath, input const& in, state& s) {
   int comp_ws = int(sizeof(double));
   int io_ws = 0;
   float version;
@@ -47,6 +47,9 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
       s.nodes_in_element.resize(node_in_element_index(10));
       s.points_in_element.resize(point_in_element_index(4));
       break;
+    case MESHLESS:
+      exodus_error_code = 100;
+      return exodus_error_code;
   }
   s.nodes.resize(int(init_params.num_nodes));
   s.elements.resize(int(init_params.num_elem));
@@ -112,6 +115,7 @@ void read_exodus_file(std::string const& filepath, input const& in, state& s) {
   s.x.resize(s.nodes.size());
   hpc::copy(pinned_coords, s.x);
   propagate_connectivity(s);
+  return exodus_error_code;
 }
 
 }
