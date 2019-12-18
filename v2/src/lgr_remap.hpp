@@ -31,10 +31,6 @@ RemapBase* remap_factory(Simulation& sim, Omega_h::InputMap& pl);
 LGR_EXPL_INST_ELEMS
 #undef LGR_EXPL_INST
 
-Omega_h::Write<double> allocate_and_fill_with_same(Omega_h::Mesh& new_mesh,
-    int ent_dim, int ncomps, Omega_h::LOs same_ents2old_ents,
-    Omega_h::LOs same_ents2new_ents, Omega_h::Reals old_data);
-
 }  // namespace lgr
 
 #endif
