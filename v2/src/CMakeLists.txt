@@ -59,7 +59,7 @@ endif()
 
 add_library(lgr_library ${LGR_SOURCES})
 
-set_target_properties(lgr_library PROPERTIES OUTPUT_NAME lgr)
+set_target_properties(lgr_library PROPERTIES OUTPUT_NAME liblgr)
 
 bob_library_includes(lgr_library)
 bob_link_dependency(lgr_library PUBLIC Omega_h)
