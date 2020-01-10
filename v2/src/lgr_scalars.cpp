@@ -20,21 +20,17 @@ double Scalars::ask_value(std::string const& name) {
   if (name == "dt") return sim.dt;
   if (name == "step") return double(sim.step);
   if (name == "elements") return double(sim.disc.mesh.nelems());
-  if (sim.circuit.usingMesh) {
-     auto const vdrop = sim.circuit.GetMeshVoltageDrop();
-     auto const conductance = sim.circuit.GetMeshConductance();
-     auto const current = sim.circuit.GetMeshCurrent();
-     if (name == "mesh voltage")     return vdrop;
-     if (name == "mesh current")     return current;
-     if (name == "mesh conductance") return conductance;
-  }
-  for (auto it = sim.globals.data.begin(); it != sim.globals.data.end(); ++it) {
-      if (name == (*it).name) return sim.globals.get(name);
-  }
+  // Check builtin scalars before globals
   auto it = by_name.find(name);
-  if (it == by_name.end())
-    Omega_h_fail("Request for undefined scalar \"%s\"\n", name.c_str());
-  return (*it)->ask_value();
+  if (it != by_name.end())
+     return (*it)->ask_value();
+  // Check registered globals values
+  for (auto it = sim.globals.data.begin(); it != sim.globals.data.end(); ++it) {
+      if (name == (*it).name) {
+         return sim.globals.get(name);
+      }
+  }
+  Omega_h_fail("Request for undefined scalar \"%s\"\n", name.c_str());
 }
 void Scalars::setup(Omega_h::InputMap& pl) {
   ::lgr::setup(sim.factories.scalar_factories, sim, pl, storage, "scalar");

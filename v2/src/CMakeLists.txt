@@ -29,6 +29,7 @@ set(LGR_SOURCES
     lgr_csv_hist.cpp
     lgr_cmdline_hist.cpp
     lgr_node_scalar.cpp
+    lgr_compute_scalar.cpp
     lgr_comparison.cpp
     lgr_l2_error.cpp
     lgr_ray_trace.cpp

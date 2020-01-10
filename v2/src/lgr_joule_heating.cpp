@@ -74,6 +74,9 @@ struct JouleHeating : public Model<Elem> {
     sim.globals.set("Joule heating relative tolerance", std::nan("1"));
     sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
     sim.globals.set("Joule heating iterations", 0);
+    sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
+    sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
+    sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
     // 2D thickness
     z_thickness = this->get_double(pl,"z thickness","-1.0");
     if (z_thickness > 0) {
@@ -279,15 +282,17 @@ struct JouleHeating : public Model<Elem> {
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
     if (this->sim.circuit.usingMesh) {
-       auto& myCircuit = this->sim.circuit;
        auto mesh_conductance = conductance_multiplier*
                                integrated_conductance;
-       myCircuit.SetMeshConductance(mesh_conductance);
+       sim.circuit.SetMeshConductance(mesh_conductance);
        // Below: 
        //   overwrites default/specified values in YAML 
        //   modifiers for joule heating when using circuit
-       anode_voltage = myCircuit.GetMeshAnodeVoltage();
-       cathode_voltage = myCircuit.GetMeshCathodeVoltage();
+       anode_voltage = sim.circuit.GetMeshAnodeVoltage();
+       cathode_voltage = sim.circuit.GetMeshCathodeVoltage();
+       sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
+       sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
+       sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
      }
   }
   void contribute_joule_heating() {

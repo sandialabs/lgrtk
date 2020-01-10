@@ -40,6 +40,15 @@ struct Globals {
          data.push_back(g);
       }
   }
+  void remove(std::string name) {
+      // Check if name is defined
+      for (auto it = data.begin(); it != data.end(); ++it) {
+          if ((*it).name == name) {
+              data.erase(it);
+              break;
+          }
+      }
+  }
   double get(std::string name) {
       // Check if name is defined
       for (auto it = data.begin(); it != data.end(); ++it) {

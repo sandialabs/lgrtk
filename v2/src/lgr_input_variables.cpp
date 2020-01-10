@@ -33,6 +33,13 @@ double InputVariables::get_double(
   return Omega_h::any_cast<double>(value_any);
 }
 
+double InputVariables::get_double(std::string const expr) {
+  Omega_h::ExprOpsReader reader;
+  auto op = reader.read_ops(expr);
+  auto const value_any = op->eval(this->env);
+  return Omega_h::any_cast<double>(value_any);
+}
+
 int InputVariables::get_int(
     Omega_h::InputMap& pl, const char* name, const char* default_expr) {
   return static_cast<int>(get_double(pl, name, default_expr));

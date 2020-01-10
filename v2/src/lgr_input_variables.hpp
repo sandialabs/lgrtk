@@ -14,6 +14,8 @@ struct InputVariables {
   void setup(Omega_h::InputMap& pl);
   double get_double(
       Omega_h::InputMap& pl, const char* name, const char* default_expr);
+  double get_double(
+      std::string const expr);
   int get_int(
       Omega_h::InputMap& pl, const char* name, const char* default_expr);
   std::string get_string(

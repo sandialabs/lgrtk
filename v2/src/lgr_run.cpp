@@ -57,7 +57,6 @@ static void close_state(Simulation& sim) {
   sim.models.at_secondaries();
   sim.models.after_secondaries();
   update_cpu_time(sim);
-  sim.responses.evaluate();
 }
 
 template <class Elem>
@@ -83,6 +82,7 @@ static void run_simulation(Simulation& sim) {
     close_state<Elem>(sim);
     correct_velocity<Elem>(sim);
     sim.models.after_correction();
+    sim.responses.evaluate();
   }
 }
 

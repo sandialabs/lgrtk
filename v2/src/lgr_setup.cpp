@@ -9,6 +9,7 @@
 #include <lgr_internal_energy.hpp>
 #include <lgr_joule_heating.hpp>
 #include <lgr_ray_trace.hpp>
+#include <lgr_compute_scalar.hpp>
 
 namespace lgr {
 
@@ -19,6 +20,7 @@ void add_builtin_setups(Setups& setups) {
   setups.modifiers.push_back(setup_artifical_viscosity);
   setups.modifiers.push_back(setup_joule_heating);
   setups.modifiers.push_back(setup_ray_trace);
+  setups.modifiers.push_back(setup_compute_scalar);
   setups.responses.push_back(setup_cmdline_hist);
   setups.responses.push_back(setup_comparison);
   setups.field_updates.push_back(setup_deformation_gradient);
