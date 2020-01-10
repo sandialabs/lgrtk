@@ -113,15 +113,6 @@ MappedWrite ModelBase::elems_getset(FieldIndex fi) {
   return sim.getset(fi, elem_support->subset);
 }
 
-double ModelBase::get_double(Omega_h::InputMap& pl, 
-  const char* name, const char* default_expr) {
-    auto const expr = pl.get<std::string>(name, default_expr);
-    Omega_h::ExprOpsReader reader;
-    auto op = reader.read_ops(expr);
-    auto const value_any = op->eval(sim.input_variables.env);
-    return Omega_h::any_cast<double>(value_any);
-}
-
 void ModelBase::learn_disc() {}
 
 #define LGR_STAGE_DEF(name)                                                    \

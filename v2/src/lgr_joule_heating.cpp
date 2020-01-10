@@ -66,9 +66,9 @@ struct JouleHeating : public Model<Elem> {
     anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
     cg_iterations = pl.get<int>("iterations", "0");
-    normalized_anode_voltage = this->get_double(pl,"normalized anode voltage","1.0");
-    normalized_cathode_voltage = this->get_double(pl,"normalized cathode voltage","0.0");
-    conductance_multiplier = this->get_double(pl,"conductance multiplier","1.0");
+    normalized_anode_voltage = sim.input_variables.get_double(pl,"normalized anode voltage","1.0");
+    normalized_cathode_voltage = sim.input_variables.get_double(pl,"normalized cathode voltage","0.0");
+    conductance_multiplier = sim.input_variables.get_double(pl,"conductance multiplier","1.0");
     JouleHeating::learn_disc();
     // Initially set global outputs for case where constant voltage field is used
     sim.globals.set("Joule heating relative tolerance", std::nan("1"));
@@ -78,7 +78,7 @@ struct JouleHeating : public Model<Elem> {
     sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
     sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
     // 2D thickness
-    z_thickness = this->get_double(pl,"z thickness","-1.0");
+    z_thickness = sim.input_variables.get_double(pl,"z thickness","-1.0");
     if (z_thickness > 0) {
        if (Elem::dim != 2)
            Omega_h_fail("Only 2D simulations can use z thickness\n");
@@ -86,7 +86,7 @@ struct JouleHeating : public Model<Elem> {
        // Multiply: 3D to 2D volume integration
        // conductance_multiplier*=z_thickness/z_thickness;
     }
-    z_total = this->get_double(pl,"z total","-1.0");
+    z_total = sim.input_variables.get_double(pl,"z total","-1.0");
     if (z_total > 0) {
        if (Elem::dim != 2)
            Omega_h_fail("Only 2D simulations can use z total\n");

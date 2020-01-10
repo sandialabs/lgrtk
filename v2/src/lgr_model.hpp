@@ -75,8 +75,6 @@ struct ModelBase {
   virtual void at_secondaries();
   virtual void after_secondaries();
   virtual void after_correction();
-  double get_double(
-      Omega_h::InputMap& pl, const char* name, const char* default_expr);
 };
 
 template <class Elem>
