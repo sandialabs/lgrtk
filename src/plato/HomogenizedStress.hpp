@@ -43,7 +43,7 @@ class HomogenizedStress : public Plato::SimplexMechanics<SpaceDim>
       for( int iVoigt=0; iVoigt<mNumVoigtTerms; iVoigt++){
         stress(cellOrdinal,iVoigt) = mCellStiffness(mColumnIndex, iVoigt);
         for( int jVoigt=0; jVoigt<mNumVoigtTerms; jVoigt++){
-          stress(cellOrdinal,iVoigt) -= strain(cellOrdinal,jVoigt)*mCellStiffness(mColumnIndex, jVoigt);
+          stress(cellOrdinal,iVoigt) -= strain(cellOrdinal,jVoigt)*mCellStiffness(jVoigt, iVoigt);
         }
       }
     }
