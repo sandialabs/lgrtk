@@ -105,13 +105,14 @@ using current_dimension = dimension<0, 0, 0, 1, 0, 0, 0>;
 using temperature_dimension = dimension<0, 0, 0, 0, 1, 0, 0>;
 using amount_dimension = dimension<0, 0, 0, 0, 0, 1, 0>;
 using intensity_dimension = dimension<0, 0, 0, 0, 0, 0, 1>;
-using speed_dimesion = divide_dimensions_t<length_dimension, time_dimension>;
-using velocity_dimension = speed_dimesion;
-using acceleration_dimension = divide_dimensions_t<speed_dimesion, time_dimension>;
+using speed_dimension = divide_dimensions_t<length_dimension, time_dimension>;
+using velocity_dimension = speed_dimension;
+using acceleration_dimension = divide_dimensions_t<speed_dimension, time_dimension>;
 using force_dimension = multiply_dimensions_t<mass_dimension, acceleration_dimension>;
 using area_dimension = multiply_dimensions_t<length_dimension, length_dimension>;
 using pressure_dimension = divide_dimensions_t<force_dimension, area_dimension>;
 using volume_dimension = multiply_dimensions_t<area_dimension, length_dimension>;
+using basis_dimension = no_dimension;
 using gradient_dimension = divide_dimensions_t<no_dimension, length_dimension>;
 using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
 using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
@@ -439,7 +440,7 @@ using time = quantity<T, time_dimension>;
 template <class T>
 using temperature = quantity<T, temperature_dimension>;
 template <class T>
-using speed = quantity<T, speed_dimesion>;
+using speed = quantity<T, speed_dimension>;
 template <class T>
 using area = quantity<T, area_dimension>;
 template <class T>
