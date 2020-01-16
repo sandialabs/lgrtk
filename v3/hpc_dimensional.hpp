@@ -454,6 +454,8 @@ using velocity = vector3<speed<T>>;
 template <class T>
 using acceleration = vector3<quantity<T, acceleration_dimension>>;
 template <class T>
+using basis_value = quantity<T, basis_dimension>;
+template <class T>
 using basis_gradient = vector3<quantity<T, gradient_dimension>>;
 template <class T>
 using deformation_gradient = matrix3x3<quantity<T, no_dimension>>;
