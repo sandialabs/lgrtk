@@ -32,6 +32,7 @@ class state {
   hpc::device_array_vector<hpc::displacement<double>, node_index> u; // nodal displacements since previous time state
   hpc::device_array_vector<hpc::velocity<double>, node_index> v; // nodal velocities
   hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes
+  hpc::device_array_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total; // deformation gradient since simulation start
   hpc::device_array_vector<hpc::symmetric_stress<double>, point_index> sigma; // Cauchy stress tensor
