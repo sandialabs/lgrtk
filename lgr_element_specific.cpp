@@ -5,6 +5,7 @@
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
 #include <lgr_element_specific.hpp>
+#include <otm_meshless.hpp>
 
 namespace lgr {
 
@@ -69,6 +70,10 @@ HPC_NOINLINE inline void update_tetrahedron_h_min(input const& in, state& s) {
   }
 }
 
+HPC_NOINLINE inline void update_meshless_h_min(input const& in, state& s) {
+  update_meshless_h_min_inball(in, s);
+}
+
 void update_h_min(input const& in, state& s)
 {
   switch (in.element) {
@@ -88,7 +93,7 @@ void update_h_art(input const& in, state& s) {
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
     case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
     // FIXME: use correct size function
-    case MESHLESS: update_tetrahedron_h_art(s); break;
+    case MESHLESS: update_meshless_h_art(s); break;
   }
 }
 

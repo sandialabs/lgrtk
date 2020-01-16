@@ -36,6 +36,7 @@ set(LGR_SOURCES
     lgr_meshing.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
+    otm_meshless.cpp
     )
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)

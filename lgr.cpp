@@ -6,7 +6,7 @@
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 #include <hpc_vector3.hpp>
-#include <otm/otm.hpp>
+#include <otm.hpp>
 
 namespace lgr {
 
