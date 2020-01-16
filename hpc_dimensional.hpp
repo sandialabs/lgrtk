@@ -110,9 +110,12 @@ using velocity_dimension = speed_dimension;
 using acceleration_dimension = divide_dimensions_t<speed_dimension, time_dimension>;
 using force_dimension = multiply_dimensions_t<mass_dimension, acceleration_dimension>;
 using area_dimension = multiply_dimensions_t<length_dimension, length_dimension>;
-using pressure_dimension = divide_dimensions_t<force_dimension, area_dimension>;
+using stress_dimension = divide_dimensions_t<force_dimension, area_dimension>;
+using pressure_dimension = stress_dimension;
 using volume_dimension = multiply_dimensions_t<area_dimension, length_dimension>;
 using basis_dimension = no_dimension;
+using strain_dimension = divide_dimensions_t<length_dimension, length_dimension>;
+using strain_rate_dimension = divide_dimensions_t<strain_dimension, time_dimension>;
 using gradient_dimension = divide_dimensions_t<no_dimension, length_dimension>;
 using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
 using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
@@ -124,10 +127,12 @@ using dynamic_viscosity_dimension = divide_dimensions_t<pressure_dimension, velo
 using kinematic_viscosity_dimension = divide_dimensions_t<area_dimension, time_dimension>;
 using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
 using heat_flux_dimension = divide_dimensions_t<power_dimension, area_dimension>;
-using pressure_rate_dimension = divide_dimensions_t<pressure_dimension, time_dimension>;
+using stress_rate_dimension = divide_dimensions_t<stress_dimension, time_dimension>;
+using pressure_rate_dimension = stress_rate_dimension;
 using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_dimension>;
 using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
-using pressure_gradient_dimension = divide_dimensions_t<pressure_dimension, length_dimension>;
+using stress_gradient_dimension = divide_dimensions_t<stress_dimension, length_dimension>;
+using pressure_gradient_dimension = stress_gradient_dimension;
 
 #ifdef HPC_ENABLE_DIMENSIONAL_ANALYSIS
 
@@ -458,13 +463,21 @@ using basis_value = quantity<T, basis_dimension>;
 template <class T>
 using basis_gradient = vector3<quantity<T, gradient_dimension>>;
 template <class T>
-using deformation_gradient = matrix3x3<quantity<T, no_dimension>>;
+using strain = quantity<T, strain_dimension>;
+template <class T>
+using strain_rate = quantity<T, strain_rate_dimension>;
+template <class T>
+using deformation_gradient = matrix3x3<quantity<T, strain_dimension>>;
+template <class T>
+using stress = matrix3x3<quantity<T, stress_dimension>>;
+template <class T>
+using stress_rate = matrix3x3<quantity<T, stress_rate_dimension>>;
 template <class T>
 using pressure = quantity<T, pressure_dimension>;
 template <class T>
 using symmetric_stress = symmetric3x3<pressure<T>>;
 template <class T>
-using symmetric_deformation = symmetric3x3<quantity<T, no_dimension>>;
+using symmetric_deformation = symmetric3x3<quantity<T, strain_dimension>>;
 template <class T>
 using force = vector3<quantity<T, force_dimension>>;
 template <class T>
