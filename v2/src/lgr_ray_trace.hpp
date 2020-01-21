@@ -28,9 +28,12 @@ namespace lgr {
  *                                         Moller1997a/
  *                                         raytri.c 
  */
-using tuple3 = Omega_h::Write<double>;
-OMEGA_H_DEVICE int intersect_triangle1(tuple3 orig, tuple3 dir,
-			tuple3 vert0, tuple3 vert1, tuple3 vert2,
+OMEGA_H_DEVICE int intersect_triangle1(
+			double orig_x, double orig_y, double orig_z, 
+			double dir_x, double dir_y, double dir_z, 
+			double vert0_x, double vert0_y, double vert0_z, 
+			double vert1_x, double vert1_y, double vert1_z, 
+			double vert2_x, double vert2_y, double vert2_z, 
 			double& t)
 {
 
@@ -40,6 +43,12 @@ OMEGA_H_DEVICE int intersect_triangle1(tuple3 orig, tuple3 dir,
    
    /* catch case where ray is pointing in opposite of possible directions */
    double test[3], sign;
+   double orig[3] = {orig_x, orig_y, orig_z};
+   double dir[3] = {dir_x, dir_y, dir_z};
+   double vert0[3] = {vert0_x, vert0_y, vert0_z};
+   double vert1[3] = {vert1_x, vert1_y, vert1_z};
+   double vert2[3] = {vert2_x, vert2_y, vert2_z};
+
    SUB(test,vert0,orig);
    sign = DOT(test,dir);
    if (sign < 0.0) return 0;

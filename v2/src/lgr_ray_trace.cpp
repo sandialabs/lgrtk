@@ -98,8 +98,8 @@ struct RayTrace : public Model<Elem> {
           (*it).last_max_distance = (*it).max_distance;
           (*it).last_min_distance = (*it).min_distance;
 
-	  Omega_h::Write<double> location(3, 0.0);
-	  Omega_h::Write<double> direction(3, 0.0);
+          double location[3] = {0.0};
+          double direction[3] = {0.0};
           for (int i = 0; i < 3; ++i) {
               location[i]  = (*it).location[i];
               direction[i] = (*it).direction[i];
@@ -107,20 +107,15 @@ struct RayTrace : public Model<Elem> {
 
           Omega_h::Write<double> elem_min_distances(this->elems(), LARGE_VALUE);
           Omega_h::Write<double> elem_max_distances(this->elems(), -LARGE_VALUE);
-          Omega_h::Write<double> vert0(3, 0.0);
-          Omega_h::Write<double> vert1(3, 0.0);
-          Omega_h::Write<double> vert2(3, 0.0);
 
           auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
             auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
             auto const x = getvecs<Elem>(nodes_to_x,elem_nodes);
 
             for (int face = 0; face < faces_per_elem; ++face) {
-		for (int i = 0; i < Elem::dim; ++i) {
-		   vert0[i] = 0.0;
-		   vert1[i] = 0.0;
-		   vert2[i] = 0.0;
-		}
+                double vert0[3] = {0.0};
+                double vert1[3] = {0.0};
+                double vert2[3] = {0.0};
                 for (int node = 0; node < nodes_per_face; ++node) {
                     const int node_of_element = Omega_h::simplex_down_template(Elem::dim,
                                                                                Elem::dim-1,
@@ -144,11 +139,11 @@ struct RayTrace : public Model<Elem> {
                     }
                 }
                 double distance;
-                int hit = ::lgr::intersect_triangle1( location, 
-                                                      direction,
-                                                      vert0,
-                                                      vert1,
-                                                      vert2,
+                int hit = ::lgr::intersect_triangle1( location[0], location[1], location[2],
+                                                      direction[0], direction[1], direction[2],
+                                                      vert0[0], vert0[1], vert0[2],
+                                                      vert1[0], vert1[1], vert1[2],
+                                                      vert2[0], vert2[1], vert2[2],
                                                       distance);
                 if (hit == 1) {
                    if (distance > elem_max_distances[elem]) elem_max_distances[elem] = distance;
