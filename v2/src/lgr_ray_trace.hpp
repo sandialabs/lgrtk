@@ -28,8 +28,9 @@ namespace lgr {
  *                                         Moller1997a/
  *                                         raytri.c 
  */
-OMEGA_H_INLINE int intersect_triangle1(double const orig[3], double const dir[3],
-			double vert0[3], double vert1[3], double vert2[3],
+using tuple3 = Omega_h::Write<double>;
+OMEGA_H_DEVICE int intersect_triangle1(tuple3 orig, tuple3 dir,
+			tuple3 vert0, tuple3 vert1, tuple3 vert2,
 			double& t)
 {
 

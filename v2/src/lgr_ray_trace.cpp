@@ -12,7 +12,6 @@ namespace lgr {
 
 #define LARGE_VALUE (1.0e8)
 
-template <class Elem>
 struct RayTracePair {
    double default_min = LARGE_VALUE;
    double default_max = -LARGE_VALUE;
@@ -43,7 +42,7 @@ struct RayTracePair {
 template <class Elem>
 struct RayTrace : public Model<Elem> {
   using Model<Elem>::sim;
-  std::vector<RayTracePair<Elem>> pairs;
+  std::vector<RayTracePair> pairs;
   RayTrace(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
       // Get user input
@@ -51,7 +50,7 @@ struct RayTrace : public Model<Elem> {
           auto& pairs_pl = pl.get_list("pairs");
 
           for (int i=0; i < pairs_pl.size(); ++i) {
-              RayTracePair<Elem> mdp;
+              RayTracePair mdp;
               pairs.push_back(mdp);
           }
 
@@ -99,8 +98,8 @@ struct RayTrace : public Model<Elem> {
           (*it).last_max_distance = (*it).max_distance;
           (*it).last_min_distance = (*it).min_distance;
 
-          double location[3] = {0.0};
-          double direction[3] = {0.0};
+	  Omega_h::Write<double> location(3, 0.0);
+	  Omega_h::Write<double> direction(3, 0.0);
           for (int i = 0; i < 3; ++i) {
               location[i]  = (*it).location[i];
               direction[i] = (*it).direction[i];
@@ -108,15 +107,20 @@ struct RayTrace : public Model<Elem> {
 
           Omega_h::Write<double> elem_min_distances(this->elems(), LARGE_VALUE);
           Omega_h::Write<double> elem_max_distances(this->elems(), -LARGE_VALUE);
+          Omega_h::Write<double> vert0(3, 0.0);
+          Omega_h::Write<double> vert1(3, 0.0);
+          Omega_h::Write<double> vert2(3, 0.0);
 
           auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
             auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
             auto const x = getvecs<Elem>(nodes_to_x,elem_nodes);
 
             for (int face = 0; face < faces_per_elem; ++face) {
-                double vert0[3] = {0.0};
-                double vert1[3] = {0.0};
-                double vert2[3] = {0.0};
+		for (int i = 0; i < Elem::dim; ++i) {
+		   vert0[i] = 0.0;
+		   vert1[i] = 0.0;
+		   vert2[i] = 0.0;
+		}
                 for (int node = 0; node < nodes_per_face; ++node) {
                     const int node_of_element = Omega_h::simplex_down_template(Elem::dim,
                                                                                Elem::dim-1,
