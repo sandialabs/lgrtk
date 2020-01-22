@@ -4,6 +4,7 @@
 
 using Real = double;
 using Tensor = hpc::matrix3x3<Real>;
+using Vector = hpc::vector3<Real>;
 
 template <typename T>
 std::ostream &
@@ -90,6 +91,19 @@ TEST(tensor, inverse)
   auto const D = B * A;
   auto const error_2 = hpc::norm(D - I) / hpc::norm(A);
   ASSERT_LE(error_2, tol);
+}
+
+TEST(tensor, solve)
+{
+  auto const eps = hpc::machine_epsilon<Real>();
+  // Tolerance: see Golub & Van Loan, Matrix Computations 4th Ed., pp 122-123
+  auto const dim = 3;
+  auto const tol = 2 * (dim - 1) * eps;
+  auto const A = Tensor(7, 1, 2, 3, 8, 4, 5, 6, 9);
+  auto const b = Vector(1, 2, 4);
+  auto const c = hpc::solve_full_pivot(A, b);
+  auto const error = hpc::norm(A * c - b) / hpc::norm(A);
+  ASSERT_LE(error, tol);
 }
 
 TEST(tensor, sqrt)
