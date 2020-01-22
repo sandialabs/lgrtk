@@ -20,7 +20,7 @@ class state {
   int n = 0;
   hpc::time<double> time = 0.0;
   hpc::counting_range<element_index> elements{element_index(0)};
-  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
+  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)}; // OTM: Support for each material point
   hpc::counting_range<node_index> nodes{node_index(0)};
   hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
@@ -31,6 +31,8 @@ class state {
   hpc::device_array_vector<hpc::position<double>, node_index> x; // current nodal positions
   hpc::device_array_vector<hpc::displacement<double>, node_index> u; // nodal displacements since previous time state
   hpc::device_array_vector<hpc::velocity<double>, node_index> v; // nodal velocities
+  hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
+  hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
   hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes
   hpc::device_array_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
