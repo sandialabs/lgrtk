@@ -32,7 +32,7 @@ void initialize_meshless_N(state& s) {
   using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
   hpc::dimensionless<double> gamma(1.5);
   auto const nodes_to_x = s.x.cbegin();
-  //auto const point_nodes_to_N = s.N.begin();
+  auto const point_nodes_to_N = s.N.begin();
   auto const points_to_xm = s.xm.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
   // TODO: s.nodes_in_element filled by search algorithm
@@ -47,9 +47,9 @@ void initialize_meshless_N(state& s) {
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
-    hpc::position<double> R(0.0, 0.0, 0.0);
-    jacobian J = jacobian::zero();
     while (converged == false) {
+      hpc::position<double> R(0.0, 0.0, 0.0);
+      jacobian J = jacobian::zero();
       for (auto node : support) {
         xn = nodes_to_x[node].load();
         auto const r = xn - xm;
@@ -62,6 +62,20 @@ void initialize_meshless_N(state& s) {
       auto const dmu = - hpc::solve_full_pivot(J, R);
       mu += dmu;
       converged = hpc::norm(dmu) < 1.0e-10;
+    }
+    auto Z = 0.0;
+    for (auto node : support) {
+      xn = nodes_to_x[node].load();
+      auto const r = xn - xm;
+      auto const rs = hpc::inner_product(r, r);
+      auto const mur = hpc::inner_product(mu, r);
+      auto const boltzmann_factor = std::exp(-mur - beta * rs);
+      Z += boltzmann_factor;
+      point_nodes_to_N[node] = boltzmann_factor;
+    }
+    for (auto node : support) {
+      auto const N = point_nodes_to_N[node].load();
+      point_nodes_to_N[node] = N / Z;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
