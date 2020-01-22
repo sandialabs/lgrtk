@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cassert>
+
 namespace hpc {
 
 template <typename T>
