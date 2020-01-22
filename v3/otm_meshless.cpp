@@ -48,10 +48,7 @@ void initialize_meshless_N(state& s) {
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     hpc::position<double> R(0.0, 0.0, 0.0);
-    jacobian J(
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0,
-        0.0, 0.0, 0.0);
+    jacobian J = jacobian::zero();
     while (converged == false) {
       for (auto node : support) {
         xn = nodes_to_x[node].load();
