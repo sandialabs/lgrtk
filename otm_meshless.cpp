@@ -44,7 +44,7 @@ void initialize_meshless_N(state& s) {
     hpc::position<double> xm(0.0, 0.0, 0.0);
     hpc::position<double> xn(0.0, 0.0, 0.0);
     xm = points_to_xm[point].load();
-    // Newton algorithm
+    // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     hpc::position<double> R(0.0, 0.0, 0.0);
@@ -58,8 +58,10 @@ void initialize_meshless_N(state& s) {
         auto const boltzmann_factor = std::exp(-mur - beta * rs);
         R += r * boltzmann_factor;
         J -= boltzmann_factor * hpc::outer_product(r, r);
-        // TODO: Complete Newton's method
       }
+      auto const dmu = - hpc::solve_full_pivot(J, R);
+      mu += dmu;
+      converged = hpc::norm(dmu) < 1.0e-10;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
