@@ -102,13 +102,16 @@ struct RayTrace : public Model<Elem> {
           Omega_h::Write<double> elem_min_distances(this->elems(), LARGE_VALUE);
           Omega_h::Write<double> elem_max_distances(this->elems(), -LARGE_VALUE);
 
+          double loc_x = (*it).location[0];
+          double loc_y = (*it).location[1];
+          double loc_z = (*it).location[2];
+          double dir_x = (*it).direction[0];
+          double dir_y = (*it).direction[1];
+          double dir_z = (*it).direction[2];
+
           auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
-			double location[3] = { 0.0 };
-			double direction[3] = { 0.0 };
-			for (int i = 0; i < 3; ++i) {
-				location[i] = (*it).location[i];
-				direction[i] = (*it).direction[i];
-			}
+			double location[3] = { loc_x, loc_y, loc_z };
+			double direction[3] = { dir_x, dir_y, dir_z };
             auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
             auto const x = getvecs<Elem>(nodes_to_x,elem_nodes);
 
