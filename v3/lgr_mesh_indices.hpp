@@ -10,6 +10,8 @@ struct node_tag {};
 using node_index = hpc::index<node_tag, int>;
 struct node_in_element_tag {};
 using node_in_element_index = hpc::index<node_in_element_tag, int>;
+struct node_in_support_tag {};
+using node_in_support_index = hpc::index<node_in_support_tag, int>;
 struct element_tag {};
 using element_index = hpc::index<element_tag, int>;
 struct node_element_tag {};
