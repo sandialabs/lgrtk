@@ -20,11 +20,13 @@ class state {
   int n = 0;
   hpc::time<double> time = 0.0;
   hpc::counting_range<element_index> elements{element_index(0)};
-  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)}; // OTM: Support for each material point
+  hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
+  hpc::counting_range<node_in_support_index> nodes_in_support{node_in_support_index(0)}; // OTM: Support for each material point
   hpc::counting_range<node_index> nodes{node_index(0)};
   hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
+  hpc::device_vector<node_index, point_index> supports_to_nodes;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
   hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;

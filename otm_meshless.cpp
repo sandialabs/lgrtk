@@ -31,12 +31,14 @@ void initialize_meshless_V(state& s)
 void initialize_meshless_N(state& s) {
   using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
   hpc::dimensionless<double> gamma(1.5);
+  auto const support_nodes_to_nodes = s.supports_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto const points_to_xm = s.xm.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
   // TODO: s.nodes_in_element filled by search algorithm
-  auto const supports = s.points * s.nodes_in_element;
+  auto const supports = s.points * s.nodes_in_support;
+  auto const num_nodes_in_support = s.nodes_in_support.size();
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto const support = supports[point];
     auto const h = points_to_h[point];
@@ -44,13 +46,15 @@ void initialize_meshless_N(state& s) {
     hpc::position<double> xm(0.0, 0.0, 0.0);
     hpc::position<double> xn(0.0, 0.0, 0.0);
     xm = points_to_xm[point].load();
+    using NSI = node_in_support_index;
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     while (converged == false) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian J = jacobian::zero();
-      for (auto node : support) {
+      for (auto i = 0; i < num_nodes_in_support; ++i) {
+        auto const node = support_nodes_to_nodes[support[NSI(i)]];
         xn = nodes_to_x[node].load();
         auto const r = xn - xm;
         auto const rs = hpc::inner_product(r, r);
@@ -64,7 +68,8 @@ void initialize_meshless_N(state& s) {
       converged = hpc::norm(dmu) < 1.0e-10;
     }
     auto Z = 0.0;
-    for (auto node : support) {
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
       xn = nodes_to_x[node].load();
       auto const r = xn - xm;
       auto const rs = hpc::inner_product(r, r);
@@ -73,7 +78,8 @@ void initialize_meshless_N(state& s) {
       Z += boltzmann_factor;
       point_nodes_to_N[node] = boltzmann_factor;
     }
-    for (auto node : support) {
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
       auto const N = point_nodes_to_N[node].load();
       point_nodes_to_N[node] = N / Z;
     }
