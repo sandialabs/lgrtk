@@ -55,5 +55,23 @@ TEST(maxent, values)
 
   lgr::initialize_meshless_N(s);
 
-  ASSERT_LE(0, 1);
+  auto const point_nodes_to_N = s.N.begin();
+  auto const supports = s.points * s.nodes_in_support;
+  auto const num_nodes_in_support = s.nodes_in_support.size();
+  auto error = 0.0;
+  auto functor = [=, &error] HPC_DEVICE (lgr::point_index const point) {
+    auto const support = supports[point];
+    auto s = -1.0;
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const N = point_nodes_to_N[node].load();
+      s += N;
+    }
+    error += s * s;
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+  error /= num_points;
+  auto const tol = 1.0e-16;
+
+  ASSERT_LE(error, tol);
 }
