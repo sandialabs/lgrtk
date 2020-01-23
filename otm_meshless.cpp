@@ -47,6 +47,7 @@ void initialize_meshless_N(state& s) {
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
+    auto const eps = hpc::machine_epsilon<double>();
     while (converged == false) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian J = jacobian::zero();
@@ -62,7 +63,7 @@ void initialize_meshless_N(state& s) {
       }
       auto const dmu = - hpc::solve_full_pivot(J, R);
       mu += dmu;
-      converged = hpc::norm(dmu) < 1.0e-10;
+      converged = hpc::norm(dmu) / hpc::norm(mu) <= eps;
     }
     auto Z = 0.0;
     for (auto i = 0; i < num_nodes_in_support; ++i) {

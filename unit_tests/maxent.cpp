@@ -67,11 +67,11 @@ TEST(maxent, values)
       auto const N = point_nodes_to_N[node].load();
       s += N;
     }
-    error += s * s;
+    error += std::abs(s);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
   error /= num_points;
-  auto const tol = 1.0e-16;
+  auto const eps = hpc::machine_epsilon<double>();
 
-  ASSERT_LE(error, tol);
+  ASSERT_LE(error, eps);
 }
