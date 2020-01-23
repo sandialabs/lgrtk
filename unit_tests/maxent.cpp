@@ -15,10 +15,9 @@ main(int ac, char* av[])
   return retval;
 }
 
-TEST(maxent, values)
+void
+tetrahedron_single_point(lgr::state& s)
 {
-  lgr::state s;
-
   using NI = lgr::node_index;
   auto const num_nodes = NI(4);
   s.x.resize(num_nodes);
@@ -36,6 +35,7 @@ TEST(maxent, values)
 
   using NPI = lgr::point_node_index;
   s.N.resize(NPI(num_nodes));
+  s.grad_N.resize(NPI(num_nodes));
 
   s.h_otm.resize(num_points);
   auto const points_to_h = s.h_otm.begin();
@@ -54,10 +54,20 @@ TEST(maxent, values)
   support_nodes_to_nodes[PI(3)] = NI(3);
 
   lgr::initialize_meshless_N(s);
+}
 
+TEST(maxent, partition_unity_value)
+{
+  lgr::state s;
+
+  tetrahedron_single_point(s);
+
+  using NSI = lgr::node_in_support_index;
+  auto num_points = s.points.size();
   auto const point_nodes_to_N = s.N.begin();
   auto const supports = s.points * s.nodes_in_support;
   auto const num_nodes_in_support = s.nodes_in_support.size();
+  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
   auto error = 0.0;
   auto functor = [=, &error] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
@@ -71,6 +81,72 @@ TEST(maxent, values)
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
   error /= num_points;
+  auto const eps = hpc::machine_epsilon<double>();
+
+  ASSERT_LE(error, eps);
+}
+
+TEST(maxent, partition_unity_gradient)
+{
+  lgr::state s;
+
+  tetrahedron_single_point(s);
+
+  using NSI = lgr::node_in_support_index;
+  auto num_points = s.points.size();
+  auto const point_nodes_to_grad_N = s.grad_N.begin();
+  auto const supports = s.points * s.nodes_in_support;
+  auto const num_nodes_in_support = s.nodes_in_support.size();
+  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
+  hpc::basis_gradient<double> errors(0, 0, 0);
+  auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
+    auto const support = supports[point];
+    hpc::basis_gradient<double> s(0, 0, 0);
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const grad_N = point_nodes_to_grad_N[node].load();
+      s += grad_N;
+    }
+    errors += hpc::abs(s);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+  errors /= (3 * num_points);
+  auto const error = hpc::norm(errors);
+  auto const eps = hpc::machine_epsilon<double>();
+
+  ASSERT_LE(error, eps);
+}
+
+TEST(maxent, linear_reproducibility)
+{
+  lgr::state s;
+
+  tetrahedron_single_point(s);
+
+  using NSI = lgr::node_in_support_index;
+  auto num_points = s.points.size();
+  auto const points_to_xm = s.xm.begin();
+  auto const point_nodes_to_N = s.N.begin();
+  auto const nodes_to_x = s.x.begin();
+  auto const supports = s.points * s.nodes_in_support;
+  auto const num_nodes_in_support = s.nodes_in_support.size();
+  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
+  hpc::position<double> errors(0, 0, 0);
+  auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
+    auto const support = supports[point];
+    auto const xm = points_to_xm[point].load();
+    hpc::position<double> x(0, 0, 0);
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const xn = nodes_to_x[node].load();
+      auto const N = point_nodes_to_N[node].load();
+      x += (N * xn);
+    }
+    errors += hpc::abs(x - xm);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+  errors /= (3 * num_points);
+  auto const error = hpc::norm(errors);
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);

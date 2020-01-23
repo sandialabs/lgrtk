@@ -33,6 +33,7 @@ void initialize_meshless_N(state& s) {
   auto const support_nodes_to_nodes = s.supports_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
+  auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xm = s.xm.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
   auto const supports = s.points * s.nodes_in_support;
@@ -44,13 +45,14 @@ void initialize_meshless_N(state& s) {
     auto const xm = points_to_xm[point].load();
     using NSI = node_in_support_index;
     // Newton's algorithm
-    using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     auto const eps = hpc::machine_epsilon<double>();
+    using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
+    jacobian J = jacobian::zero();
     while (converged == false) {
       hpc::position<double> R(0.0, 0.0, 0.0);
-      jacobian J = jacobian::zero();
+      jacobian dRdmu = jacobian::zero();
       for (auto i = 0; i < num_nodes_in_support; ++i) {
         auto const node = support_nodes_to_nodes[support[NSI(i)]];
         auto const xn = nodes_to_x[node].load();
@@ -59,11 +61,12 @@ void initialize_meshless_N(state& s) {
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rs);
         R += r * boltzmann_factor;
-        J -= boltzmann_factor * hpc::outer_product(r, r);
+        dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
       }
-      auto const dmu = - hpc::solve_full_pivot(J, R);
+      auto const dmu = - hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
       converged = hpc::norm(dmu) / hpc::norm(mu) <= eps;
+      if (converged == true) J = dRdmu;
     }
     auto Z = 0.0;
     for (auto i = 0; i < num_nodes_in_support; ++i) {
@@ -80,6 +83,14 @@ void initialize_meshless_N(state& s) {
       auto const node = support_nodes_to_nodes[support[NSI(i)]];
       auto const N = point_nodes_to_N[node].load();
       point_nodes_to_N[node] = N / Z;
+    }
+    for (auto i = 0; i < num_nodes_in_support; ++i) {
+      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const xn = nodes_to_x[node].load();
+      auto const r = xn - xm;
+      auto const N = point_nodes_to_N[node].load();
+      auto const Jinvr = hpc::solve_full_pivot(J, r);
+      point_nodes_to_grad_N[node] = N * Z * Jinvr;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
