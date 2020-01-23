@@ -53,5 +53,7 @@ TEST(maxent, values)
   support_nodes_to_nodes[PI(2)] = NI(2);
   support_nodes_to_nodes[PI(3)] = NI(3);
 
+  lgr::initialize_meshless_N(s);
+
   ASSERT_LE(0, 1);
 }
