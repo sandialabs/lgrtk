@@ -173,4 +173,10 @@ class array_traits<vector3<T>> {
   }
 };
 
+template <typename T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
+abs(vector3<T> const v) noexcept {
+  return vector3<T>(std::abs(v(0)), std::abs(v(1)), std::abs(v(2)));
+}
+
 }
