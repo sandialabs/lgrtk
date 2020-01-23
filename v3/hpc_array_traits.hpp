@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cfloat>
 #include <cstddef>
 #include <hpc_macros.hpp>
 #include <limits>
@@ -21,9 +22,17 @@ class array_traits {
 
 // machine epsilon
 template <typename T>
-T
+HPC_HOST_DEVICE constexpr auto
 machine_epsilon()
 {
   return std::numeric_limits<T>::epsilon();
 }
+
+template <>
+HPC_HOST_DEVICE  constexpr auto
+machine_epsilon<double>()
+{
+  return DBL_EPSILON;
+}
+
 }
