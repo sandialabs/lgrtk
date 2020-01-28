@@ -20,7 +20,6 @@ else()
 endif()
 
 set(LGR_SOURCES
-    lgr.cpp
     lgr_state.cpp
     lgr_vtk.cpp
     lgr_domain.cpp
@@ -51,32 +50,26 @@ if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
-add_executable(lgr ${LGR_SOURCES})
+add_library(lgrlib ${LGR_SOURCES})
+set_property(TARGET lgrlib PROPERTY CXX_STANDARD "14")
+set_property(TARGET lgrlib PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET lgrlib PROPERTY CXX_EXTENSIONS OFF)
+set_property(TARGET lgrlib PROPERTY OUTPUT_NAME lgr)
+target_include_directories(lgrlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
+if (LGR_ENABLE_EXODUS)
+  target_compile_definitions(lgrlib PUBLIC -DLGR_ENABLE_EXODUS)
+  target_link_libraries(lgrlib PUBLIC exodus)
+  target_include_directories(lgrlib PUBLIC "${SEACASExodus_INCLUDE_DIRS}")
+  target_include_directories(lgrlib PUBLIC "${SEACASExodus_TPL_INCLUDE_DIRS}")
+  target_link_libraries(lgrlib PUBLIC "${SEACASExodus_TPL_LIBRARIES}")
+  target_include_directories(lgrlib PUBLIC "${MPI_CXX_INCLUDE_DIRS}")
+endif()
+
+add_executable(lgr lgr.cpp)
 set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgr PROPERTY CXX_EXTENSIONS OFF)
-target_include_directories(lgr
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-if (LGR_ENABLE_EXODUS)
-  target_compile_definitions(lgr PRIVATE -DLGR_ENABLE_EXODUS)
-  target_link_libraries(lgr PRIVATE exodus)
-  target_include_directories(lgr PRIVATE "${SEACASExodus_INCLUDE_DIRS}")
-  target_include_directories(lgr PRIVATE "${SEACASExodus_TPL_INCLUDE_DIRS}")
-# target_link_libraries(lgr PRIVATE "${SEACASExodus_TPL_LIBRARIES}")
-  target_include_directories(lgr PRIVATE "${MPI_CXX_INCLUDE_DIRS}")
-endif()
+target_link_libraries(lgr lgrlib)
 
-option(LGR_ENABLE_UNIT_TESTS "Build support for unit tests" ON)
-if (LGR_ENABLE_UNIT_TESTS AND NOT LGR_ENABLE_CUDA)
-  find_package(GTest REQUIRED)
-  include(GoogleTest)
-  add_executable(ut_tensor unit_tests/tensor.cpp)
-  add_executable(ut_maxent unit_tests/maxent.cpp otm_meshless.cpp)
-  gtest_add_tests(TARGET ut_tensor)
-  gtest_add_tests(TARGET ut_maxent)
-  target_include_directories(ut_tensor PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> ${GTEST_INCLUDE_DIR})
-  target_include_directories(ut_maxent PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}> ${GTEST_INCLUDE_DIR})
-  target_link_libraries(ut_tensor PRIVATE ${GTEST_LIBRARY} pthread)
-  target_link_libraries(ut_maxent PRIVATE ${GTEST_LIBRARY} pthread)
-endif()
+add_subdirectory(unit_tests)

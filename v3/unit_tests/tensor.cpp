@@ -21,15 +21,6 @@ operator<<(std::ostream & os, hpc::matrix3x3<T> const & A)
   return os;
 }
 
-int
-main(int ac, char* av[])
-{
-  ::testing::GTEST_FLAG(print_time) = true;
-  ::testing::InitGoogleTest(&ac, av);
-  auto const retval = RUN_ALL_TESTS();
-  return retval;
-}
-
 TEST(tensor, exp)
 {
   auto const eps = hpc::machine_epsilon<Real>();

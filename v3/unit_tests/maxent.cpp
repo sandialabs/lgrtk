@@ -6,15 +6,6 @@
 #include <otm_meshless.hpp>
 #include <iostream>
 
-int
-main(int ac, char* av[])
-{
-  ::testing::GTEST_FLAG(print_time) = true;
-  ::testing::InitGoogleTest(&ac, av);
-  auto const retval = RUN_ALL_TESTS();
-  return retval;
-}
-
 void
 tetrahedron_single_point(lgr::state& s)
 {
