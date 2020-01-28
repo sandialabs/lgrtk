@@ -26,7 +26,8 @@ class state {
   hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
-  hpc::device_vector<node_index, point_index> supports_to_nodes;
+  hpc::device_vector<node_index, point_node_index> supports_to_nodes;
+  hpc::device_vector<point_index, node_index> nodes_to_influenced_points;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
   hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;
@@ -53,6 +54,7 @@ class state {
   hpc::device_vector<hpc::pressure<double>, point_index> G; // (tangent/effective) shear modulus
   hpc::device_vector<hpc::speed<double>, point_index> c; // sound speed / plane wave speed
   hpc::device_array_vector<hpc::force<double>, point_node_index> element_f; // (internal) force per element-node pair (contribution to a node's force by an element)
+  hpc::device_array_vector<hpc::force<double>, point_node_index> support_f; // (internal) force per sopport-node pair (contribution to a node's force by a support)
   hpc::device_array_vector<hpc::force<double>, node_index> f; // nodal (internal) forces
   hpc::device_vector<hpc::density<double>, point_index> rho; // element density
   hpc::device_vector<hpc::specific_energy<double>, point_index> e; // element specific internal energy
@@ -93,5 +95,6 @@ class state {
 class input;
 
 void resize_state(input const& in, state& s);
+void resize_state_meshless(input const& in, state& s);
 
 }
