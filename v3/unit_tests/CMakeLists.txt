@@ -6,8 +6,11 @@ if (LGR_ENABLE_UNIT_TESTS AND NOT LGR_ENABLE_CUDA)
   set(LGR_UNIT_SOURCES
     tensor.cpp
     maxent.cpp
-    exodus.cpp
     ut_main.cpp)
+
+  if (LGR_ENABLE_EXODUS)
+    set(LGR_UNIT_SOURCES ${LGR_UNIT_SOURCES} exodus.cpp)
+  endif()
 
   include(CTest)
 
