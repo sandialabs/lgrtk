@@ -174,4 +174,50 @@ void update_meshless_h_art(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
+HPC_NOINLINE inline void update_meshless_internal_force(state& s)
+{
+  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_V = s.V.cbegin();
+  auto const point_nodes_to_grad_N = s.grad_N.cbegin();
+  auto const point_nodes_to_f = s.element_f.begin();
+  auto const points_to_point_nodes = s.points * s.nodes_in_support;
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const sigma = points_to_sigma[point].load();
+    auto const V = points_to_V[point];
+    auto const point_nodes = points_to_point_nodes[point];
+    for (auto const point_node : point_nodes) {
+      auto const grad_N = point_nodes_to_grad_N[point_node].load();
+      auto const f = -(sigma * grad_N) * V;
+      point_nodes_to_f[point_node] = f;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
+  auto const nodes_to_node_elements = s.nodes_to_node_elements.cbegin();
+  auto const node_elements_to_elements = s.node_elements_to_elements.cbegin();
+  auto const node_elements_to_nodes_in_element = s.node_elements_to_nodes_in_element.cbegin();
+  auto const point_nodes_to_f = s.element_f.cbegin();
+  auto const nodes_to_f = s.f.begin();
+  auto const points_to_point_nodes = s.points * s.nodes_in_element;
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto node_f = hpc::force<double>::zero();
+    auto const node_elements = nodes_to_node_elements[node];
+    for (auto const node_element : node_elements) {
+      auto const element = node_elements_to_elements[node_element];
+      auto const node_in_element = node_elements_to_nodes_in_element[node_element];
+      for (auto const point : elements_to_points[element]) {
+        auto const point_nodes = points_to_point_nodes[point];
+        auto const point_node = point_nodes[node_in_element];
+        auto const point_f = point_nodes_to_f[point_node].load();
+        node_f = node_f + point_f;
+      }
+    }
+    nodes_to_f[node] = node_f;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 }
