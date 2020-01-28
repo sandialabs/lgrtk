@@ -28,7 +28,7 @@ void initialize_meshless_V(state& s)
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-void initialize_meshless_N(state& s) {
+void initialize_meshless_grad_val_N(state& s) {
   hpc::dimensionless<double> gamma(1.5);
   auto const support_nodes_to_nodes = s.supports_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
