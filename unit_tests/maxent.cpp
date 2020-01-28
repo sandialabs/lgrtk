@@ -44,7 +44,7 @@ tetrahedron_single_point(lgr::state& s)
   support_nodes_to_nodes[PI(2)] = NI(2);
   support_nodes_to_nodes[PI(3)] = NI(3);
 
-  lgr::initialize_meshless_N(s);
+  lgr::initialize_meshless_grad_val_N(s);
 }
 
 TEST(maxent, partition_unity_value)
