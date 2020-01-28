@@ -29,7 +29,7 @@ void otm() {
   input in(nmaterials, nboundaries);
   in.name = "otm";
   in.element = MESHLESS;
-  in.end_time = 2.0e-3;
+  in.end_time = 1.0e-3;
   in.num_file_outputs = 100;
   in.elements_along_x = 1;
   in.x_domain_size = 1.0e-3;

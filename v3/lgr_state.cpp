@@ -4,18 +4,26 @@
 namespace lgr {
 
 void resize_state(input const& in, state& s) {
+  auto const is_meshless = in.element == MESHLESS;
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
   s.V.resize(s.points.size());
-  s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
+  if (is_meshless == true) {
+    s.grad_N.resize(s.points.size() * s.nodes_in_support.size());
+    s.N.resize(s.points.size() * s.nodes_in_support.size());
+  } else {
+    s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
+  }
   s.F_total.resize(s.points.size());
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
-  auto have_nodal_pressure_or_energy = [&] (material_index const material) {
-    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
-  };
-  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
-    s.p.resize(s.points.size());
+  if (is_meshless == false) {
+    auto have_nodal_pressure_or_energy = [&] (material_index const material) {
+      return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
+    };
+    if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+      s.p.resize(s.points.size());
+    }
   }
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
