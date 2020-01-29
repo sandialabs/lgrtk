@@ -36,6 +36,7 @@ set(LGR_SOURCES
     lgr_stabilized.cpp
     lgr_adapt.cpp
     otm_meshless.cpp
+    otm_tet2meshless.cpp
     )
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
@@ -63,6 +64,7 @@ if (LGR_ENABLE_EXODUS)
   target_include_directories(lgrlib PUBLIC "${SEACASExodus_INCLUDE_DIRS}")
   target_include_directories(lgrlib PUBLIC "${SEACASExodus_TPL_INCLUDE_DIRS}")
   target_link_libraries(lgrlib PUBLIC "${SEACASExodus_TPL_LIBRARIES}")
+  target_link_libraries(lgrlib PUBLIC "${MPI_CXX_LIBRARIES}")
   target_include_directories(lgrlib PUBLIC "${MPI_CXX_INCLUDE_DIRS}")
 endif()
 

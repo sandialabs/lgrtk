@@ -48,8 +48,9 @@ int read_exodus_file(std::string const& filepath, input const& in, state& s) {
       s.points_in_element.resize(point_in_element_index(4));
       break;
     case MESHLESS:
-      exodus_error_code = 100;
-      return exodus_error_code;
+      s.nodes_in_element.resize(node_in_element_index(4));
+      s.points_in_element.resize(point_in_element_index(1));
+      break;
   }
   s.nodes.resize(int(init_params.num_nodes));
   s.elements.resize(int(init_params.num_elem));
