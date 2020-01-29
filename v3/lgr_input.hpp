@@ -25,6 +25,7 @@ enum element_kind {
 enum time_integrator_kind {
   MIDPOINT_PREDICTOR_CORRECTOR,
   VELOCITY_VERLET,
+  EXPLICIT_NEWMARK,
 };
 
 enum h_min_kind {
@@ -174,11 +175,6 @@ class input {
     ,eps_f_min(material_count_in)
     ,domains(material_count_in + boundary_count_in)
   {}
-  bool
-  is_meshless()
-  {
-    return element == MESHLESS;
-  }
 };
 
 }
