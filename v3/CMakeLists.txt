@@ -47,6 +47,14 @@ if (LGR_ENABLE_EXODUS)
   find_package(MPI REQUIRED)
 endif()
 
+option(LGR_ENABLE_SEARCH "Build support for meshfree search via ArborX" OFF)
+
+if (LGR_ENABLE_SEARCH)
+  find_package(ArborX REQUIRED)
+  find_package(Kokkos REQUIRED COMPONENTS KokkosCore)
+  set(LGR_SOURCES ${LGR_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
+endif()
+
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
@@ -66,6 +74,12 @@ if (LGR_ENABLE_EXODUS)
   target_link_libraries(lgrlib PUBLIC "${SEACASExodus_TPL_LIBRARIES}")
   target_link_libraries(lgrlib PUBLIC "${MPI_CXX_LIBRARIES}")
   target_include_directories(lgrlib PUBLIC "${MPI_CXX_INCLUDE_DIRS}")
+endif()
+
+if (LGR_ENABLE_SEARCH)
+  target_include_directories(lgrlib PUBLIC "${KokkosCore_INCLUDE_DIRS}")
+  target_include_directories(lgrlib PUBLIC "${KokkosCore_TPL_INCLUDE_DIRS}")
+  target_link_libraries(lgrlib PUBLIC ArborX::ArborX)
 endif()
 
 add_executable(lgr lgr.cpp)

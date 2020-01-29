@@ -11,6 +11,10 @@ if (LGR_ENABLE_UNIT_TESTS)
     set(LGR_UNIT_SOURCES ${LGR_UNIT_SOURCES} exodus.cpp)
   endif()
 
+  if (LGR_ENABLE_SEARCH)
+    set(LGR_UNIT_SOURCES ${LGR_UNIT_SOURCES} search.cpp)
+  endif()
+
   include(CTest)
 
   find_package(GTest REQUIRED)
