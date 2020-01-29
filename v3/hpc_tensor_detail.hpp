@@ -74,8 +74,12 @@ polynomial_coefficient(int const order, int const index) noexcept {
       }
       break;
     default:
+#ifndef NDEBUG
       bool incorrect_order_in_pade_polynomial = false;
       assert(incorrect_order_in_pade_polynomial);
+#else
+      break;
+#endif
   }
   return c;
 }
