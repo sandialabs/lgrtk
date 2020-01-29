@@ -44,6 +44,40 @@ HPC_NOINLINE inline void update_u(state& s, hpc::time<double> const dt) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
+HPC_NOINLINE inline void explicit_newmark_predict(state& s, hpc::time<double> const dt) {
+  auto const nodes_to_u = s.u.begin();
+  auto const nodes_to_v = s.v.begin();
+  auto const nodes_to_a = s.a.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const u = nodes_to_u[node].load();
+    auto const v = nodes_to_v[node].load();
+    auto const a = nodes_to_a[node].load();
+    auto const vp = 0.5 * dt * a;
+    auto const u_pred = u + (dt * v) + (dt * vp);
+    auto const v_pred = v + vp;
+    nodes_to_u[node] = u_pred;
+    nodes_to_v[node] = v_pred;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+HPC_NOINLINE inline void explicit_newmark_correct(state& s, hpc::time<double> const dt) {
+  auto const nodes_to_u = s.u.begin();
+  auto const nodes_to_v = s.v.begin();
+  auto const nodes_to_a = s.a.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const u = nodes_to_u[node].load();
+    auto const v = nodes_to_v[node].load();
+    auto const a = nodes_to_a[node].load();
+    auto const vp = dt * a;
+    auto const u_corr = u + (dt * vp);
+    auto const v_corr = v + vp;
+    nodes_to_u[node] = u_corr;
+    nodes_to_v[node] = v_corr;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 HPC_NOINLINE inline void update_v(state& s, hpc::time<double> const dt,
     hpc::device_array_vector<hpc::velocity<double>, node_index> const& old_v_vector) {
   auto const nodes_to_v = s.v.begin();
@@ -627,7 +661,6 @@ HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, ma
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
-
   auto const is_meshless = in.element == MESHLESS;
   if (is_meshless == true) {
     update_otm_material_state(in, s, material, dt);
@@ -789,6 +822,31 @@ HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
+HPC_NOINLINE inline void explicit_newmark_step(input const& in, state& s) {
+  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
+  advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
+  update_v(s, s.dt / 2.0, s.v);
+  hpc::fill(hpc::serial_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
+  update_u(s, s.dt);
+  update_x(s);
+  update_reference(s);
+  if (in.enable_J_averaging) volume_average_J(s);
+  update_h_min(in, s);
+  update_material_state(in, s, s.dt, old_p_h);
+  update_c(s);
+  update_element_dt(s);
+  find_max_stable_dt(s);
+  update_a_from_material_state(in, s);
+  for (auto const material : in.materials) {
+    if (in.enable_nodal_pressure[material]) {
+      update_p_h_dot_from_a(in, s, material);
+    } else {
+      update_p(s, material);
+    }
+  }
+  update_v(s, s.dt / 2.0, s.v);
+}
+
 HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
@@ -796,6 +854,9 @@ HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
       break;
     case VELOCITY_VERLET:
       velocity_verlet_step(in, s);
+      break;
+    case EXPLICIT_NEWMARK:
+      explicit_newmark_step(in, s);
       break;
   }
 }
