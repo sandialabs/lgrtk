@@ -53,25 +53,9 @@ TEST(maxent, partition_unity_value)
 
   tetrahedron_single_point(s);
 
-  using NSI = lgr::node_in_support_index;
   auto num_points = s.points.size();
-  auto const point_nodes_to_N = s.N.begin();
-  auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
-  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
-  auto error = 0.0;
-  auto functor = [=, &error] HPC_DEVICE (lgr::point_index const point) {
-    auto const support = supports[point];
-    auto s = -1.0;
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const node = support_nodes_to_nodes[support[NSI(i)]];
-      auto const N = point_nodes_to_N[node];
-      s += N;
-    }
-    error += std::abs(s);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
-  error /= num_points;
+  double const init = -num_points;
+  auto const error = hpc::reduce(hpc::device_policy(), s.N, init);
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
