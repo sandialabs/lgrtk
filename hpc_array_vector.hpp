@@ -234,11 +234,20 @@ void copy(pinned_array_vector<T, Index> const& from, device_array_vector<T, Inde
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
   using array_value_type = typename pinned_array_vector<T, Index>::array_value_type;
-  auto err = cudaDeviceSynchronize();
+#ifndef NDEBUG
+  auto err =
+#endif
+      cudaDeviceSynchronize();
   assert(cudaSuccess == err);
-  err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(array_value_type), cudaMemcpyHostToDevice);
+#ifndef NDEBUG
+  err =
+#endif
+      cudaMemcpy(to_ptr, from_ptr, size * sizeof(array_value_type), cudaMemcpyHostToDevice);
   assert(cudaSuccess == err);
-  err = cudaDeviceSynchronize();
+#ifndef NDEBUG
+  err =
+#endif
+      cudaDeviceSynchronize();
   assert(cudaSuccess == err);
 }
 
@@ -251,11 +260,20 @@ void copy(device_array_vector<T, Index> const& from, pinned_array_vector<T, Inde
   auto const from_ptr = from.data();
   auto const to_ptr = to.data();
   using array_value_type = typename pinned_array_vector<T, Index>::array_value_type;
-  auto err = cudaDeviceSynchronize();
+#ifndef NDEBUG
+  auto err =
+#endif
+      cudaDeviceSynchronize();
   assert(cudaSuccess == err);
-  err = cudaMemcpy(to_ptr, from_ptr, size * sizeof(array_value_type), cudaMemcpyDeviceToHost);
+#ifndef NDEBUG
+  err =
+#endif
+      cudaMemcpy(to_ptr, from_ptr, size * sizeof(array_value_type), cudaMemcpyDeviceToHost);
   assert(cudaSuccess == err);
-  err = cudaDeviceSynchronize();
+#ifndef NDEBUG
+  err =
+#endif
+      cudaDeviceSynchronize();
   assert(cudaSuccess == err);
 }
 

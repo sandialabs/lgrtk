@@ -1,8 +1,7 @@
 
 option(LGR_ENABLE_UNIT_TESTS "Build support for unit tests" ON)
 
-if (LGR_ENABLE_UNIT_TESTS AND NOT LGR_ENABLE_CUDA)
-
+if (LGR_ENABLE_UNIT_TESTS)
   set(LGR_UNIT_SOURCES
     tensor.cpp
     maxent.cpp
@@ -23,4 +22,6 @@ if (LGR_ENABLE_UNIT_TESTS AND NOT LGR_ENABLE_CUDA)
   gtest_discover_tests(ut_lgr)
   target_include_directories(ut_lgr PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> ${GTEST_INCLUDE_DIR})
   target_link_libraries(ut_lgr PRIVATE "lgrlib;${GTEST_LIBRARY};pthread")
+
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tets.g ${CMAKE_CURRENT_BINARY_DIR}/tets.g COPYONLY)
 endif()

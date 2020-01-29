@@ -1,5 +1,8 @@
-#include <lgr_state.hpp>
+#include <hpc_algorithm.hpp>
+#include <hpc_execution.hpp>
+#include <hpc_vector.hpp>
 #include <lgr_input.hpp>
+#include <lgr_state.hpp>
 
 namespace lgr {
 
