@@ -38,7 +38,7 @@ class state {
   hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
   hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes
-  hpc::device_array_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
+  hpc::device_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total; // deformation gradient since simulation start
   hpc::device_array_vector<hpc::symmetric_stress<double>, point_index> sigma; // Cauchy stress tensor
