@@ -589,29 +589,70 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
+HPC_DEVICE constexpr auto
+neo_Hookean_point(hpc::deformation_gradient<double> const & F, double const K, double const G) {
+  auto const J = determinant(F);
+  auto const Jinv = 1.0 / J;
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  auto const Jm53 = (Jm23 * Jm23) * Jm13;
+  auto const B = self_times_transpose(F);
+  auto const devB = deviatoric_part(B);
+  auto const sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
+  auto const Keff = 0.5 * K * (J + Jinv);
+  return std::make_tuple(sigma, Keff, G);
+}
+
+HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
+    hpc::time<double> const) {
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
+  auto const K = in.K0[material];
+  auto const G = in.G0[material];
+  auto const is_neohookean = in.enable_neo_Hookean[material];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+      auto const F = points_to_F_total[point].load();
+      auto&& sigma = points_to_sigma[point];
+      auto&& Keff = points_to_K[point];
+      auto&& Geff = points_to_G[point];
+      if (is_neohookean == true) {
+        std::tie(sigma, Keff, Geff) = neo_Hookean_point(F, K, G);
+      }
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
-  if (in.enable_neo_Hookean[material]) {
-    neo_Hookean(in, s, material);
-  }
-#if defined(HYPER_EP)
-  else if (in.enable_hyper_ep[material]) {
-    hyper_ep_update(in, s, material);
-  }
-#endif // HYPER_EP
-  if (in.enable_ideal_gas[material]) {
-    if (in.enable_nodal_energy[material]) {
-      nodal_ideal_gas(in, s, material);
-    } else {
-      ideal_gas(in, s, material);
+
+  auto const is_meshless = in.element == MESHLESS;
+  if (is_meshless == true) {
+    update_otm_material_state(in, s, material, dt);
+  } else {
+    if (in.enable_neo_Hookean[material]) {
+      neo_Hookean(in, s, material);
     }
-  }
-  if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
-    if (in.enable_p_prime[material]) {
-      update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
-    } else {
-      update_sigma_with_p_h(s, material);
+#if defined(HYPER_EP)
+    else if (in.enable_hyper_ep[material]) {
+      hyper_ep_update(in, s, material);
+    }
+#endif // HYPER_EP
+    if (in.enable_ideal_gas[material]) {
+      if (in.enable_nodal_energy[material]) {
+        nodal_ideal_gas(in, s, material);
+      } else {
+        ideal_gas(in, s, material);
+      }
+    }
+    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
+      if (in.enable_p_prime[material]) {
+        update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
+      } else {
+        update_sigma_with_p_h(s, material);
+      }
     }
   }
 }
