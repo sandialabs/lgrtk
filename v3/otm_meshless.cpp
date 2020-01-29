@@ -81,14 +81,14 @@ void initialize_meshless_grad_val_N(state& s) {
     }
     for (auto i = 0; i < num_nodes_in_support; ++i) {
       auto const node = support_nodes_to_nodes[support[NSI(i)]];
-      auto const N = point_nodes_to_N[node].load();
+      auto const N = point_nodes_to_N[node];
       point_nodes_to_N[node] = N / Z;
     }
     for (auto i = 0; i < num_nodes_in_support; ++i) {
       auto const node = support_nodes_to_nodes[support[NSI(i)]];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xm;
-      auto const N = point_nodes_to_N[node].load();
+      auto const N = point_nodes_to_N[node];
       auto const Jinvr = hpc::solve_full_pivot(J, r);
       point_nodes_to_grad_N[node] = N * Z * Jinvr;
     }

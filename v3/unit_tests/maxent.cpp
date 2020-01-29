@@ -65,7 +65,7 @@ TEST(maxent, partition_unity_value)
     auto s = -1.0;
     for (auto i = 0; i < num_nodes_in_support; ++i) {
       auto const node = support_nodes_to_nodes[support[NSI(i)]];
-      auto const N = point_nodes_to_N[node].load();
+      auto const N = point_nodes_to_N[node];
       s += N;
     }
     error += std::abs(s);
@@ -130,7 +130,7 @@ TEST(maxent, linear_reproducibility)
     for (auto i = 0; i < num_nodes_in_support; ++i) {
       auto const node = support_nodes_to_nodes[support[NSI(i)]];
       auto const xn = nodes_to_x[node].load();
-      auto const N = point_nodes_to_N[node].load();
+      auto const N = point_nodes_to_N[node];
       x += (N * xn);
     }
     errors += hpc::abs(x - xm);
