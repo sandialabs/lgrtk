@@ -395,8 +395,8 @@ HPC_NOINLINE inline void build_otm_mesh(input const& in, state& s)
   int const nvxy = nvx * nvy;
   int const nv = nvxy * nvz;
   s.nodes.resize(node_index(nv));
-  // For now without search all nodes are in the support
-  s.nodes_in_support.resize(node_in_support_index(nv));
+  hpc::device_vector<point_index> support_sizes(s.points.size(), node_in_support_index(nv));
+  s.nodes_in_support.assign_sizes(support_sizes);
   int const nxy = nx * ny;
   int const nh = nxy * nz;
   int const nt = nh * 6;

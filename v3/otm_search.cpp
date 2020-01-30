@@ -25,8 +25,7 @@ void finalize_otm_search()
   Kokkos::finalize();
 }
 
-HPC_NOINLINE void do_otm_point_node_search(lgr::state &s,
-    hpc::device_range_sum<point_node_index, point_index> &points_to_point_nodes)
+HPC_NOINLINE void do_otm_point_node_search(lgr::state &s)
 {
   auto search_nodes = arborx::create_arborx_nodes(s);
   auto search_points = arborx::create_arborx_points(s);
@@ -50,9 +49,9 @@ HPC_NOINLINE void do_otm_point_node_search(lgr::state &s,
           };
   hpc::for_each(hpc::device_policy(), s.points, count_func);
 
-  points_to_point_nodes.assign_sizes(counts);
+  s.nodes_in_support.assign_sizes(counts);
 
-  auto points_to_nodes_of_point = points_to_point_nodes.cbegin();
+  auto points_to_nodes_of_point = s.nodes_in_support.cbegin();
   auto points_to_supported_nodes = s.points_to_supported_nodes.begin();
   auto fill_func =
       HPC_DEVICE [=](

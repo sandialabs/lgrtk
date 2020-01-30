@@ -127,11 +127,9 @@ TEST_F(arborx_search, canDoNearestNodePointSearchThroughLGRInterface)
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
   hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
 
-  hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes;
+  search::do_otm_point_node_search(s);
 
-  search::do_otm_point_node_search(s, points_to_point_nodes);
-
-  auto points_to_nodes_of_point = points_to_point_nodes.cbegin();
+  auto points_to_nodes_of_point = s.nodes_in_support.cbegin();
   auto old_points_to_supported_nodes = points_to_supported_nodes_before_search.cbegin();
   auto new_points_to_supported_nodes = s.points_to_supported_nodes.cbegin();
   auto pt_node_check_func = HPC_DEVICE [=](lgr::point_index point) {
@@ -164,11 +162,9 @@ TEST_F(arborx_search, canDoNearestNodePointSearchOnExodusMesh)
       st.points_to_supported_nodes.size());
   hpc::copy(st.points_to_supported_nodes, points_to_supported_nodes_before_search);
 
-  hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes;
+  search::do_otm_point_node_search(st);
 
-  search::do_otm_point_node_search(st, points_to_point_nodes);
-
-  auto points_to_nodes_of_point = points_to_point_nodes.cbegin();
+  auto points_to_nodes_of_point = st.nodes_in_support.cbegin();
   auto old_points_to_supported_nodes = points_to_supported_nodes_before_search.cbegin();
   auto new_points_to_supported_nodes = st.points_to_supported_nodes.cbegin();
   auto pt_node_check_func =
