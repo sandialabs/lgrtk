@@ -50,13 +50,11 @@ TEST(maxent, partition_unity_gradient_1)
   auto num_points = s.points.size();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
   hpc::basis_gradient<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
     hpc::basis_gradient<double> s(0, 0, 0);
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[lgr::node_in_support_index(i)];
+    for (auto point_node_index : support) {
       auto const grad_N = point_nodes_to_grad_N[point_node_index].load();
       s += grad_N;
     }
@@ -79,13 +77,11 @@ TEST(maxent, partition_unity_gradient_2)
   auto num_points = s.points.size();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
   hpc::basis_gradient<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
     hpc::basis_gradient<double> s(0, 0, 0);
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[lgr::node_in_support_index(i)];
+    for (auto point_node_index : support) {
       auto const grad_N = point_nodes_to_grad_N[point_node_index].load();
       s += grad_N;
     }
@@ -110,15 +106,13 @@ TEST(maxent, linear_reproducibility_1)
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
   auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
     auto const xm = points_to_xm[point].load();
     hpc::position<double> x(0, 0, 0);
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[lgr::node_in_support_index(i)];
+    for (auto point_node_index : support) {
       auto const node = support_nodes_to_nodes[point_node_index];
       auto const xn = nodes_to_x[node].load();
       auto const N = point_nodes_to_N[point_node_index];
@@ -145,7 +139,6 @@ TEST(maxent, linear_reproducibility_2)
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
   auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
 #if 0
@@ -165,16 +158,13 @@ TEST(maxent, linear_reproducibility_2)
     std::cout << "*** point : " << point << '\n';
     std::cout << "*** xm    : " << xm(0) << ',' << xm(1) << ',' << xm(2) << '\n';
 #endif
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[lgr::node_in_support_index(i)];
+    for (auto point_node_index : support) {
       auto const node = support_nodes_to_nodes[point_node_index];
       auto const xn = nodes_to_x[node].load();
       auto const N = point_nodes_to_N[point_node_index];
       x += (N * xn);
 #if 0
       std::cout << '\n';
-      std::cout << "*** i                : " << i << '\n';
-      std::cout << "*** NSI(i)           : " << lgr::node_in_support_index(i) << '\n';
       std::cout << "*** point_node_index : " << point_node_index << '\n';
       std::cout << "*** node             : " << node << '\n';
       std::cout << "*** N                : " << N << '\n';
