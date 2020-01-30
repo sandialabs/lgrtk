@@ -1,6 +1,11 @@
 #pragma once
 
+#include <Kokkos_Core.hpp>
+#include <Kokkos_Pair.hpp>
 #include <Kokkos_View.hpp>
+
+#include <ArborX_Point.hpp>
+#include <ArborX_Predicates.hpp>
 
 namespace lgr {
 class state;

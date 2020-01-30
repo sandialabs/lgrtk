@@ -12,6 +12,7 @@
 #include <unit_tests/otm_unit_mesh.hpp>
 #include <ArborX_Point.hpp>
 #include <ArborX_Predicates.hpp>
+#include <hpc_range_sum.hpp>
 
 class search : public ::testing::Test
 {
@@ -104,4 +105,33 @@ TEST_F(search, canDoNearestNodePointSearch) {
   };
 
   hpc::for_each(hpc::device_policy(), s.points, pt_check_func);
+}
+
+TEST_F(search, canDoNearestNodePointSearchThroughLGRInterface) {
+  lgr::state s;
+  tetrahedron_single_point(s);
+
+  hpc::device_vector<lgr::node_index, lgr::point_node_index> supports_to_nodes_before_search(s.supports_to_nodes.size());
+  hpc::copy(s.supports_to_nodes, supports_to_nodes_before_search);
+
+  hpc::device_range_sum<lgr::point_node_index, lgr::point_index> points_to_point_nodes;
+
+  lgr::search::do_otm_point_node_search(s, points_to_point_nodes);
+
+  auto points_to_nodes_of_point = points_to_point_nodes.cbegin();
+  auto old_supports_to_nodes = supports_to_nodes_before_search.cbegin();
+  auto new_supports_to_nodes = s.supports_to_nodes.cbegin();
+  auto node_indices = s.points * s.nodes_in_support;
+  auto pt_node_check_func = HPC_DEVICE [=](lgr::point_index point) {
+    auto point_node_range = points_to_nodes_of_point[point];
+    auto point_node_indices = node_indices[point];
+    EXPECT_EQ(point_node_range.size(), 4);
+    for (auto point_node : point_node_range)
+    {
+      auto point_node_index = point_node_indices[point_node];
+      EXPECT_EQ(old_supports_to_nodes[point_node_index], new_supports_to_nodes[point_node_index]);
+    }
+  };
+
+  hpc::for_each(hpc::device_policy(), s.points, pt_node_check_func);
 }
