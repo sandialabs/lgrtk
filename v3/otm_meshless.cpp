@@ -187,20 +187,26 @@ HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
 
 HPC_NOINLINE inline void lump_nodal_mass(state& s) {
   auto const nodes_to_mass = s.mass.begin();
-  auto const influences = s.nodes * s.points_in_influence;
+  auto zero_mass = [=] HPC_DEVICE (node_index const node) {
+    nodes_to_mass[node] = 0.0;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, zero_mass);
+  auto const supports = s.points * s.nodes_in_support;
+  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_vol = s.V.cbegin();
-  auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto const influence = influences[node];
-    auto m = 0.0;
-    for (auto const point : influence) {
-      auto const rho = points_to_rho[point];
-      auto const V = points_to_vol[point];
-      m += rho * V;
+  auto const point_nodes_to_N = s.N.begin();
+  auto lump_mass = [=] HPC_DEVICE (node_index const point) {
+    auto const support = supports[point];
+    auto const rho = points_to_rho[point];
+    auto const V = points_to_vol[point];
+    for (auto point_node_index : support) {
+      auto const N = point_nodes_to_N[point_node_index];
+      auto const node = support_nodes_to_nodes[point_node_index];
+      nodes_to_mass[node] += rho * V * N;
     }
-    nodes_to_mass[node] = m;
   };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.points, lump_mass);
 }
 
 }
