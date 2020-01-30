@@ -196,7 +196,7 @@ HPC_NOINLINE inline void update_meshless_internal_force(state& s)
 
 // TODO: Is this correct?????
 HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
-  auto const point_nodes_to_f = s.element_f.cbegin();
+  auto const point_nodes_to_f = s.support_f.cbegin();
   auto const nodes_to_f = s.f.begin();
   auto const nodes_to_influence_points = s.nodes * s.points_in_influence;
   auto functor = [=] HPC_DEVICE (node_index const node) {
@@ -207,6 +207,24 @@ HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
       node_f = node_f + point_f;
     }
     nodes_to_f[node] = node_f;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+HPC_NOINLINE inline void lump_nodal_mass(state& s) {
+  auto const nodes_to_mass = s.mass.begin();
+  auto const nodes_to_influence_points = s.nodes * s.points_in_influence;
+  auto const points_to_rho = s.rho.cbegin();
+  auto const points_to_vol = s.V.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const influenced_points = nodes_to_influence_points[node];
+    auto m = 0.0;
+    for (auto const point : influenced_points) {
+      auto const rho = points_to_rho[point];
+      auto const V = points_to_vol[point];
+      m += rho * V;
+    }
+    nodes_to_mass[node] = m;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
