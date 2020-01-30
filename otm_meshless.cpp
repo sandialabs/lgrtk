@@ -43,7 +43,6 @@ void initialize_meshless_grad_val_N(state& s) {
     auto const h = points_to_h[point];
     auto const beta = gamma / h / h;
     auto const xm = points_to_xm[point].load();
-    using NSI = node_in_support_index;
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
@@ -54,7 +53,8 @@ void initialize_meshless_grad_val_N(state& s) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian dRdmu = jacobian::zero();
       for (auto i = 0; i < num_nodes_in_support; ++i) {
-        auto const node = support_nodes_to_nodes[support[NSI(i)]];
+        auto const point_node_index = support[node_in_support_index(i)];
+        auto const node = support_nodes_to_nodes[point_node_index];
         auto const xn = nodes_to_x[node].load();
         auto const r = xn - xm;
         auto const rs = hpc::inner_product(r, r);
@@ -70,58 +70,32 @@ void initialize_meshless_grad_val_N(state& s) {
     }
     auto Z = 0.0;
     for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const point_node_index = support[node_in_support_index(i)];
+      auto const node = support_nodes_to_nodes[point_node_index];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xm;
       auto const rs = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rs);
       Z += boltzmann_factor;
-      point_nodes_to_N[node] = boltzmann_factor;
+      point_nodes_to_N[point_node_index] = boltzmann_factor;
     }
     for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const node = support_nodes_to_nodes[support[NSI(i)]];
-      auto const N = point_nodes_to_N[node];
-      point_nodes_to_N[node] = N / Z;
+      auto const point_node_index = support[node_in_support_index(i)];
+      auto const N = point_nodes_to_N[point_node_index];
+      point_nodes_to_N[point_node_index] = N / Z;
     }
     for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const node = support_nodes_to_nodes[support[NSI(i)]];
+      auto const point_node_index = support[node_in_support_index(i)];
+      auto const node = support_nodes_to_nodes[point_node_index];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xm;
-      auto const N = point_nodes_to_N[node];
+      auto const N = point_nodes_to_N[point_node_index];
       auto const Jinvr = hpc::solve_full_pivot(J, r);
-      point_nodes_to_grad_N[node] = N * Z * Jinvr;
+      point_nodes_to_grad_N[point_node_index] = N * Z * Jinvr;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
-}
-
-void initialize_meshless_grad_N(state& s) {
-  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_x = s.x.cbegin();
-  auto const points_to_V = s.V.cbegin();
-  auto const point_nodes_to_grad_N = s.grad_N.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto const elements_to_points = s.elements * s.points_in_element;
-  auto const points_to_point_nodes = s.points * s.nodes_in_element;
-  auto functor = [=] HPC_DEVICE (element_index const element) {
-    constexpr point_in_element_index fp(0);
-    auto const element_nodes = elements_to_element_nodes[element];
-    auto const point = elements_to_points[element][fp];
-    auto const point_nodes = points_to_point_nodes[point];
-    using l_t = node_in_element_index;
-    hpc::array<hpc::position<double>, 4> x;
-    for (int i = 0; i < 4; ++i) {
-      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
-      x[i] = nodes_to_x[node].load();
-    }
-    auto const volume = points_to_V[point];
-    auto const grad_N = tetrahedron_basis_gradients(x, volume);
-    for (int i = 0; i < 4; ++i) {
-      point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
-    }
-  };
-  hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
 void update_meshless_h_min_inball(input const&, state& s) {
@@ -198,11 +172,11 @@ HPC_NOINLINE inline void update_meshless_internal_force(state& s)
 HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
   auto const point_nodes_to_f = s.support_f.cbegin();
   auto const nodes_to_f = s.f.begin();
-  auto const nodes_to_influence_points = s.nodes * s.points_in_influence;
+  auto const influences = s.nodes * s.points_in_influence;
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto node_f = hpc::force<double>::zero();
-    auto const influenced_points = nodes_to_influence_points[node];
-    for (auto const point : influenced_points) {
+    auto const influence = influences[node];
+    for (auto const point : influence) {
       auto const point_f = point_nodes_to_f[point].load();
       node_f = node_f + point_f;
     }
@@ -213,13 +187,13 @@ HPC_NOINLINE inline void update_meshless_nodal_force(state& s) {
 
 HPC_NOINLINE inline void lump_nodal_mass(state& s) {
   auto const nodes_to_mass = s.mass.begin();
-  auto const nodes_to_influence_points = s.nodes * s.points_in_influence;
+  auto const influences = s.nodes * s.points_in_influence;
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_vol = s.V.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto const influenced_points = nodes_to_influence_points[node];
+    auto const influence = influences[node];
     auto m = 0.0;
-    for (auto const point : influenced_points) {
+    for (auto const point : influence) {
       auto const rho = points_to_rho[point];
       auto const V = points_to_vol[point];
       m += rho * V;
