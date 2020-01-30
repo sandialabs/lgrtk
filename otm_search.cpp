@@ -54,17 +54,14 @@ HPC_NOINLINE void do_otm_point_node_search(lgr::state &s,
 
   auto points_to_nodes_of_point = points_to_point_nodes.cbegin();
   auto points_to_supported_nodes = s.points_to_supported_nodes.begin();
-  auto node_indices = s.points * s.nodes_in_support;
   auto fill_func =
       HPC_DEVICE [=](
           lgr::point_index point)
           {
             auto const point_nodes_range = points_to_nodes_of_point[point];
-            auto point_node_indices = node_indices[point];
             for (auto point_node : point_nodes_range)
             {
-              auto point_node_index = point_node_indices[point_node];
-              points_to_supported_nodes[point_node_index] = indices(hpc::weaken(point_node_index));
+              points_to_supported_nodes[point_node] = indices(hpc::weaken(point_node));
             }
           };
 }

@@ -1,5 +1,7 @@
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_range.hpp>
@@ -18,6 +20,7 @@ void convert_tet_mesh_to_meshless(state& st)
   auto num_points = st.points.size();
   auto num_nodes_in_support = st.nodes_in_support.size();
   st.points_to_supported_nodes.resize(num_points * num_nodes_in_support);
+  st.xm.resize(num_points);
 
   auto supports = st.points * st.nodes_in_support;
   auto nodes_in_support = st.nodes_in_support;
@@ -30,6 +33,8 @@ void convert_tet_mesh_to_meshless(state& st)
 
   auto support_nodes_to_nodes = st.points_to_supported_nodes.begin();
 
+  auto nodes_to_x = st.x.cbegin();
+  auto mat_pts_to_x = st.xm.begin();
   auto func = [=] HPC_DEVICE (element_index const element)
   {
     auto cur_elem_points = elements_to_points[element];
@@ -38,23 +43,26 @@ void convert_tet_mesh_to_meshless(state& st)
     constexpr nodes_in_elem_size_type max_num_elem_nodes = 10;
     hpc::array<node_index, max_num_elem_nodes> cur_elem_nodes;
 
+    hpc::position<double> avg_coord(0., 0., 0.);
     for (auto n : nodes_in_element)
     {
       auto cur_elem_node_offset = element_nodes[n];
       auto node = element_nodes_to_nodes[cur_elem_node_offset];
       cur_elem_nodes[n] = node;
+      avg_coord += nodes_to_x[node].load();
     }
+    avg_coord /= nodes_in_element.size();
 
     for (auto&& element_point : points_in_element)
     {
       auto&& point = cur_elem_points[element_point];
+      mat_pts_to_x[point].store(avg_coord);
       auto&& point_support_nodes = supports[point];
       for (auto&& n : nodes_in_support)
       {
         support_nodes_to_nodes[point_support_nodes[n]] = cur_elem_nodes[n];
       }
     }
-
   };
 
   hpc::for_each(hpc::device_policy(), st.elements, func);
