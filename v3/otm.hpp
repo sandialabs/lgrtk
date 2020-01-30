@@ -29,7 +29,7 @@ void otm() {
   input in(nmaterials, nboundaries);
   in.name = "otm";
   in.element = MESHLESS;
-  in.time_integrator = EXPLICIT_NEWMARK;
+  in.time_integrator = OTM_EXPLICIT;
   in.end_time = 1.0e-3;
   in.num_file_outputs = 100;
   in.elements_along_x = 1;

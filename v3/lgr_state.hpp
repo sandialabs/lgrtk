@@ -35,6 +35,7 @@ class state {
   hpc::device_array_vector<hpc::position<double>, node_index> x; // current nodal positions
   hpc::device_array_vector<hpc::displacement<double>, node_index> u; // nodal displacements since previous time state
   hpc::device_array_vector<hpc::velocity<double>, node_index> v; // nodal velocities
+  hpc::device_array_vector<hpc::momentum<double>, node_index> lm; // nodal linear momenta
   hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
   hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes

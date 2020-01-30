@@ -108,6 +108,7 @@ using intensity_dimension = dimension<0, 0, 0, 0, 0, 0, 1>;
 using speed_dimension = divide_dimensions_t<length_dimension, time_dimension>;
 using velocity_dimension = speed_dimension;
 using acceleration_dimension = divide_dimensions_t<speed_dimension, time_dimension>;
+using momentum_dimension = multiply_dimensions_t<mass_dimension, velocity_dimension>;
 using force_dimension = multiply_dimensions_t<mass_dimension, acceleration_dimension>;
 using area_dimension = multiply_dimensions_t<length_dimension, length_dimension>;
 using stress_dimension = divide_dimensions_t<force_dimension, area_dimension>;
@@ -478,6 +479,8 @@ template <class T>
 using symmetric_stress = symmetric3x3<pressure<T>>;
 template <class T>
 using symmetric_deformation = symmetric3x3<quantity<T, strain_dimension>>;
+template <class T>
+using momentum = vector3<quantity<T, momentum_dimension>>;
 template <class T>
 using force = vector3<quantity<T, force_dimension>>;
 template <class T>
