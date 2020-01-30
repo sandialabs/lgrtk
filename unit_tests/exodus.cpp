@@ -83,7 +83,7 @@ TEST(exodus, convertTetMeshToMeshfree) {
 
   auto nodes_in_support = st.nodes_in_support;
   auto supports = st.points * st.nodes_in_support;
-  auto support_nodes_to_nodes = st.supports_to_nodes.cbegin();
+  auto support_nodes_to_nodes = st.points_to_supported_nodes.cbegin();
   auto pt_func = [=] HPC_DEVICE (point_index const point) {
     auto point_support_nodes = supports[point];
     for (auto&& n : nodes_in_support)

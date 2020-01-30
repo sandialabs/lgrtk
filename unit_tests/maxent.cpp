@@ -106,7 +106,7 @@ TEST(maxent, linear_reproducibility_1)
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
+  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
@@ -139,7 +139,7 @@ TEST(maxent, linear_reproducibility_2)
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points * s.nodes_in_support;
-  auto const support_nodes_to_nodes = s.supports_to_nodes.begin();
+  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
 #if 0
   std::cout << "*** s.points.size()            : " << s.points.size() << '\n';
@@ -147,7 +147,7 @@ TEST(maxent, linear_reproducibility_2)
   std::cout << "*** s.N.size()                 : " << s.N.size() << '\n';
   std::cout << "*** s.x.size()                 : " << s.x.size() << '\n';
   std::cout << "*** s.nodes_in_support.size()  : " << s.nodes_in_support.size() << '\n';
-  std::cout << "*** s.supports_to_nodes.size() : " << s.supports_to_nodes.size() << '\n';
+  std::cout << "*** s.points_to_supported_nodes.size() : " << s.points_to_supported_nodes.size() << '\n';
 #endif
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];

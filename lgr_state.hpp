@@ -27,7 +27,7 @@ class state {
   hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
-  hpc::device_vector<node_index, point_node_index> supports_to_nodes;
+  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes;
   hpc::device_vector<point_index, node_index> nodes_to_influenced_points;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;

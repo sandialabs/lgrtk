@@ -30,7 +30,7 @@ void initialize_meshless_V(state& s)
 
 void initialize_meshless_grad_val_N(state& s) {
   hpc::dimensionless<double> gamma(1.5);
-  auto const support_nodes_to_nodes = s.supports_to_nodes.cbegin();
+  auto const support_nodes_to_nodes = s.points_to_supported_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
