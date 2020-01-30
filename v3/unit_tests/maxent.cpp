@@ -49,7 +49,7 @@ TEST(maxent, partition_unity_gradient_1)
 
   auto num_points = s.points.size();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
-  auto const supports = s.points * s.nodes_in_support;
+  auto const supports = s.nodes_in_support.cbegin();
   hpc::basis_gradient<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
@@ -76,7 +76,7 @@ TEST(maxent, partition_unity_gradient_2)
 
   auto num_points = s.points.size();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
-  auto const supports = s.points * s.nodes_in_support;
+  auto const supports = s.nodes_in_support.cbegin();
   hpc::basis_gradient<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
@@ -105,7 +105,7 @@ TEST(maxent, linear_reproducibility_1)
   auto const points_to_xm = s.xm.begin();
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
-  auto const supports = s.points * s.nodes_in_support;
+  auto const supports = s.nodes_in_support.cbegin();
   auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
@@ -138,7 +138,7 @@ TEST(maxent, linear_reproducibility_2)
   auto const points_to_xm = s.xm.begin();
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
-  auto const supports = s.points * s.nodes_in_support;
+  auto const supports = s.nodes_in_support.cbegin();
   auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
   hpc::position<double> errors(0, 0, 0);
 #if 0

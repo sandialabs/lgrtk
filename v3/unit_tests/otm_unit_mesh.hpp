@@ -39,7 +39,8 @@ tetrahedron_single_point(lgr::state& s)
   s.points.resize(num_points);
 
   using NSI = lgr::node_in_support_index;
-  s.nodes_in_support.resize(NSI(num_nodes));
+  hpc::device_vector<lgr::node_in_support_index, lgr::point_index> support_sizes(num_points, NSI(num_nodes));
+  s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
   auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
@@ -84,7 +85,8 @@ two_tetrahedra_two_points(lgr::state& s)
   s.points.resize(num_points);
 
   using NSI = lgr::node_in_support_index;
-  s.nodes_in_support.resize(NSI(num_nodes));
+  hpc::device_vector<lgr::node_in_support_index, lgr::point_index> support_sizes(s.points.size(), NSI(num_nodes));
+  s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
   auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();

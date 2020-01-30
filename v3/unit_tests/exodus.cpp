@@ -53,7 +53,15 @@ TEST(exodus, convertTetMeshToMeshfree) {
 
   convert_tet_mesh_to_meshless(st);
 
-  EXPECT_EQ(st.nodes_in_support.size(), nodes_in_support_size_type(4));
+  EXPECT_EQ(st.nodes_in_support.size(), st.points.size());
+
+  auto support_nodes = st.nodes_in_support.cbegin();
+  auto check_points_func = [=] HPC_DEVICE (point_index const point)
+  {
+    auto point_support_node_range = support_nodes[point];
+    EXPECT_EQ(point_support_node_range.size(), nodes_in_support_size_type(4));
+  };
+  hpc::for_each(hpc::device_policy(), st.points, check_points_func);
 
   auto const element_nodes_to_nodes = st.elements_to_nodes.cbegin();
   auto const elements_to_element_nodes = st.elements * st.nodes_in_element;
@@ -62,7 +70,7 @@ TEST(exodus, convertTetMeshToMeshfree) {
   auto const points_in_element = st.points_in_element;
 
   hpc::device_vector<node_index, point_node_index> point_node_indices;
-  point_node_indices.resize(st.points.size() * st.nodes_in_support.size());
+  point_node_indices.resize(st.points.size() * st.nodes_in_element.size());
   auto points_to_point_nodes = st.points * st.nodes_in_element;
   auto points_to_nodes = point_node_indices.begin();
 
@@ -81,14 +89,13 @@ TEST(exodus, convertTetMeshToMeshfree) {
   };
   hpc::for_each(hpc::device_policy(), st.elements, elem_func);
 
-  auto nodes_in_support = st.nodes_in_support;
-  auto supports = st.points * st.nodes_in_support;
+  auto supports = st.nodes_in_support.cbegin();
   auto support_nodes_to_nodes = st.points_to_supported_nodes.cbegin();
   auto pt_func = [=] HPC_DEVICE (point_index const point) {
     auto point_support_nodes = supports[point];
-    for (auto&& n : nodes_in_support)
+    for (auto&& n : point_support_nodes)
     {
-      EXPECT_EQ(points_to_nodes[hpc::weaken(point_support_nodes[n])], support_nodes_to_nodes[point_support_nodes[n]]);
+      EXPECT_EQ(points_to_nodes[hpc::weaken(n)], support_nodes_to_nodes[n]);
     }
   };
   hpc::for_each(hpc::device_policy(), st.points, pt_func);

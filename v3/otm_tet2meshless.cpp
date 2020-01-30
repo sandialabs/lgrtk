@@ -15,15 +15,10 @@ void convert_tet_mesh_to_meshless(state& st)
 {
   using nodes_in_elem_size_type = hpc::counting_range<node_in_element_index>::size_type;
 
-  st.nodes_in_support.resize(st.nodes_in_element.size());
-
   auto num_points = st.points.size();
-  auto num_nodes_in_support = st.nodes_in_support.size();
+  auto num_nodes_in_support = st.nodes_in_element.size();
   st.points_to_supported_nodes.resize(num_points * num_nodes_in_support);
   st.xm.resize(num_points);
-
-  auto supports = st.points * st.nodes_in_support;
-  auto nodes_in_support = st.nodes_in_support;
 
   auto nodes_in_element = st.nodes_in_element;
   auto elements_to_element_nodes = st.elements * st.nodes_in_element;
@@ -31,10 +26,15 @@ void convert_tet_mesh_to_meshless(state& st)
   auto points_in_element = st.points_in_element;
   auto elements_to_points = st.elements * st.points_in_element;
 
+  hpc::device_vector<point_index> nodes_in_support_counts(st.points.size(),
+      point_index(st.nodes_in_element.size()));
+  st.nodes_in_support.assign_sizes(nodes_in_support_counts);
+
   auto support_nodes_to_nodes = st.points_to_supported_nodes.begin();
 
   auto nodes_to_x = st.x.cbegin();
   auto mat_pts_to_x = st.xm.begin();
+  auto nodes_in_support = st.nodes_in_support.cbegin();
   auto func = [=] HPC_DEVICE (element_index const element)
   {
     auto cur_elem_points = elements_to_points[element];
@@ -55,10 +55,10 @@ void convert_tet_mesh_to_meshless(state& st)
 
     for (auto&& element_point : points_in_element)
     {
-      auto&& point = cur_elem_points[element_point];
+      auto point = cur_elem_points[element_point];
       mat_pts_to_x[point].store(avg_coord);
-      auto&& point_support_nodes = supports[point];
-      for (auto&& n : nodes_in_support)
+      auto&& point_support_nodes = nodes_in_support[point];
+      for (auto&& n : nodes_in_element)
       {
         support_nodes_to_nodes[point_support_nodes[n]] = cur_elem_nodes[n];
       }

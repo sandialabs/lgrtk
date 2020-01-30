@@ -1,5 +1,6 @@
 #include <lgr_state.hpp>
 #include <hpc_array.hpp>
+#include <hpc_execution.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <otm_meshless.hpp>
 
@@ -36,10 +37,9 @@ void initialize_meshless_grad_val_N(state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xm = s.xm.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
-  auto const supports = s.points * s.nodes_in_support;
-  auto const num_nodes_in_support = s.nodes_in_support.size();
+  auto const nodes_in_support = s.nodes_in_support.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
-    auto const support = supports[point];
+    auto point_nodes = nodes_in_support[point];
     auto const h = points_to_h[point];
     auto const beta = gamma / h / h;
     auto const xm = points_to_xm[point].load();
@@ -52,9 +52,8 @@ void initialize_meshless_grad_val_N(state& s) {
     while (converged == false) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian dRdmu = jacobian::zero();
-      for (auto i = 0; i < num_nodes_in_support; ++i) {
-        auto const point_node_index = support[node_in_support_index(i)];
-        auto const node = support_nodes_to_nodes[point_node_index];
+      for (auto point_node : point_nodes) {
+        auto const node = support_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
         auto const r = xn - xm;
         auto const rs = hpc::inner_product(r, r);
@@ -69,30 +68,27 @@ void initialize_meshless_grad_val_N(state& s) {
       if (converged == true) J = dRdmu;
     }
     auto Z = 0.0;
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[node_in_support_index(i)];
-      auto const node = support_nodes_to_nodes[point_node_index];
+    for (auto point_node : point_nodes) {
+      auto const node = support_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xm;
       auto const rs = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rs);
       Z += boltzmann_factor;
-      point_nodes_to_N[point_node_index] = boltzmann_factor;
+      point_nodes_to_N[point_node] = boltzmann_factor;
     }
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[node_in_support_index(i)];
-      auto const N = point_nodes_to_N[point_node_index];
-      point_nodes_to_N[point_node_index] = N / Z;
+    for (auto point_node : point_nodes) {
+      auto const N = point_nodes_to_N[point_node];
+      point_nodes_to_N[point_node] = N / Z;
     }
-    for (auto i = 0; i < num_nodes_in_support; ++i) {
-      auto const point_node_index = support[node_in_support_index(i)];
-      auto const node = support_nodes_to_nodes[point_node_index];
+    for (auto point_node : point_nodes) {
+      auto const node = support_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xm;
-      auto const N = point_nodes_to_N[point_node_index];
+      auto const N = point_nodes_to_N[point_node];
       auto const Jinvr = hpc::solve_full_pivot(J, r);
-      point_nodes_to_grad_N[point_node_index] = N * Z * Jinvr;
+      point_nodes_to_grad_N[point_node] = N * Z * Jinvr;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
@@ -154,7 +150,7 @@ HPC_NOINLINE inline void update_meshless_internal_force(state& s)
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const point_nodes_to_f = s.support_f.begin();
-  auto const points_to_point_nodes = s.points * s.nodes_in_support;
+  auto const points_to_point_nodes = s.nodes_in_support.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto const sigma = points_to_sigma[point].load();
     auto const V = points_to_V[point];
