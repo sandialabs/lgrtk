@@ -82,18 +82,18 @@ two_tetrahedra_two_points(lgr::state& s)
   s.nodes.resize(num_nodes);
   s.x.resize(s.nodes.size());
   auto const nodes_to_x = s.x.begin();
-  nodes_to_x[NI(0)] = hpc::position<double>(-0.1, -0.2, -0.3);
-  nodes_to_x[NI(1)] = hpc::position<double>(0.9, 0.0, 0.1);
-  nodes_to_x[NI(2)] = hpc::position<double>(0.2, 1.0, 0.3);
-  nodes_to_x[NI(3)] = hpc::position<double>(0.1, 0.2, 1.1);
-  nodes_to_x[NI(4)] = hpc::position<double>(1.2, 1.3, 1.4);
+  nodes_to_x[NI(0)] = hpc::position<double>(0, 0, 0);
+  nodes_to_x[NI(1)] = hpc::position<double>(1, 0, 0);
+  nodes_to_x[NI(2)] = hpc::position<double>(0, 1, 0);
+  nodes_to_x[NI(3)] = hpc::position<double>(0, 0, 1);
+  nodes_to_x[NI(4)] = hpc::position<double>(1, 1, 1);
 
   using PI = lgr::point_index;
   auto const num_points = PI(2);
   s.xm.resize(num_points);
   auto const points_to_xm = s.xm.begin();
-  points_to_xm[PI(0)] = hpc::position<double>(0.2, 0.25, 0.3);
-  points_to_xm[PI(1)] = hpc::position<double>(0.6, 0.6, 0.75);
+  points_to_xm[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
+  points_to_xm[PI(1)] = hpc::position<double>(0.75, 0.75, 0.75);
 
   using PNI = lgr::point_node_index;
   s.N.resize(PNI(num_points * num_nodes));
