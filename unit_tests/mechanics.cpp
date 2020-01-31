@@ -22,8 +22,9 @@ TEST(mechanics, lumped_mass_1)
   lgr::lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
-  auto const error = std::abs(mass - 1000.0 / 6.0);
-  auto const eps = 128 * hpc::machine_epsilon<double>();
+  auto const expected_mass = s.rho.cbegin()[0] * s.V.cbegin()[0];
+  auto const error = std::abs(mass / expected_mass - 1);
+  auto const eps = hpc::machine_epsilon<double>();
 
 #if 0
   std::cout << '\n';
