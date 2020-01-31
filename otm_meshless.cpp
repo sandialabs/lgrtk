@@ -144,20 +144,21 @@ void update_meshless_h_art(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_NOINLINE inline void assemble_meshless_internal_force(state& s)
+void assemble_meshless_internal_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const supports = s.nodes_in_support.cbegin();
   auto const nodes_to_f = s.f.begin();
+  auto const points_to_point_nodes = s.points_to_supported_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto const support = supports[point];
     auto const sigma = points_to_sigma[point].load();
     auto const V = points_to_V[point];
-    for (auto node_index = 0; node_index < support.size(); ++node_index) {
-      auto node = support[node_index];
-      auto const grad_N = point_nodes_to_grad_N[node_index].load();
+    for (auto point_node : support) {
+      auto const node = points_to_point_nodes[point_node];
+      auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const f = -(sigma * grad_N) * V;
       auto&& force = nodes_to_f[node].load();
       force = force + f;
@@ -166,10 +167,38 @@ HPC_NOINLINE inline void assemble_meshless_internal_force(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_NOINLINE inline void update_meshless_nodal_force(state&) {
+void update_meshless_nodal_force(state&) {
 }
 
-HPC_NOINLINE inline void lump_nodal_mass(state&) {
+void lump_nodal_mass(state& s) {
+  auto const node_to_mass = s.mass.begin();
+  auto const point_to_rho = s.rho.cbegin();
+  auto const point_to_V = s.V.cbegin();
+  auto const influences = s.points_in_influence.cbegin();
+  auto const nodes_to_node_points = s.nodes_to_influenced_points.cbegin();
+  auto const supports = s.nodes_in_support.cbegin();
+  auto const points_to_point_nodes = s.points_to_supported_nodes.cbegin();
+  auto const point_nodes_to_N = s.N.begin();
+  auto node_to_point_node = [=] HPC_DEVICE (point_index const point, node_index const node) {
+    auto const support = supports[point];
+    for (auto point_node : support) {
+      auto const trial_node = points_to_point_nodes[point_node];
+      if (trial_node == node) return point_node;
+    }
+    return -1;
+  };
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto m = 0.0;
+    auto const influence = influences[node];
+    for (auto node_point: influence) {
+      auto const point = nodes_to_node_points[node_point];
+      auto const point_node = node_to_point_node(point, node);
+      auto const N = point_nodes_to_N[point_node];
+      m += N * point_to_rho[point] * point_to_V[point];
+    }
+    node_to_mass[node] = m;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 }
