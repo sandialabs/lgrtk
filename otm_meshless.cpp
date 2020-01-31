@@ -5,6 +5,7 @@
 #include <hpc_vector3.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <otm_meshless.hpp>
+#include <iostream>
 
 namespace lgr {
 
@@ -48,10 +49,11 @@ void initialize_meshless_grad_val_N(state& s) {
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
-    auto const eps = hpc::machine_epsilon<double>();
+    auto const eps = 1024 * hpc::machine_epsilon<double>();
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     jacobian J = jacobian::zero();
-    while (converged == false) {
+    auto const max_iter = 16;
+    for (auto iter = 0; iter < max_iter; ++iter) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -66,8 +68,22 @@ void initialize_meshless_grad_val_N(state& s) {
       }
       auto const dmu = - hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
-      converged = hpc::norm(dmu) / hpc::norm(mu) <= eps;
-      if (converged == true) J = dRdmu;
+      auto const error = hpc::norm(dmu) / hpc::norm(mu);
+      converged = error <= eps;
+#if 0
+      std::cout << "converged  : " << converged << std::endl;
+      std::cout << "iter       : " << iter << std::endl;
+      std::cout << "det(J)     : " << hpc::determinant(dRdmu) << std::endl;
+      std::cout << "|R|        : " << hpc::norm(R) << std::endl;
+      std::cout << "|dmu|      : " << hpc::norm(dmu) << std::endl;
+      std::cout << "|mu|       : " << hpc::norm(mu) << std::endl;
+      std::cout << "|dmu|/|mu| : " << error << std::endl;
+      std::cout << "eps        : " << eps << std::endl;
+#endif
+      if (converged == true) {
+        J = dRdmu;
+        break;
+      }
     }
     auto Z = 0.0;
     for (auto point_node : point_nodes) {

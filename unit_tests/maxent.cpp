@@ -21,7 +21,7 @@ TEST(maxent, partition_unity_value_1)
 
   auto num_points = s.points.size();
   double const init = -num_points;
-  auto const error = hpc::reduce(hpc::device_policy(), s.N, init);
+  auto const error = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
@@ -35,7 +35,7 @@ TEST(maxent, partition_unity_value_2)
 
   auto num_points = s.points.size();
   double const init = -num_points;
-  auto const error = hpc::reduce(hpc::device_policy(), s.N, init);
+  auto const error = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
@@ -61,8 +61,8 @@ TEST(maxent, partition_unity_gradient_1)
     errors += hpc::abs(s);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
-  errors /= (3 * num_points);
-  auto const error = hpc::norm(errors);
+  errors /= num_points;
+  auto const error = hpc::norm(errors) / 3;
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
@@ -88,9 +88,9 @@ TEST(maxent, partition_unity_gradient_2)
     errors += hpc::abs(s);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
-  errors /= (3 * num_points);
-  auto const error = hpc::norm(errors);
-  auto const eps = hpc::machine_epsilon<double>();
+  errors /= num_points;
+  auto const error = hpc::norm(errors) / 3;
+  auto const eps = 4 * hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
