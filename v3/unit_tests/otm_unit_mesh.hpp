@@ -39,7 +39,7 @@ tetrahedron_single_point(lgr::state& s)
   s.points.resize(num_points);
 
   using NSI = lgr::node_in_support_index;
-  hpc::device_vector<lgr::node_in_support_index, lgr::point_index> support_sizes(num_points, NSI(num_nodes));
+  hpc::device_vector<NSI, PI> support_sizes(num_points, NSI(num_nodes));
   s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
@@ -49,7 +49,29 @@ tetrahedron_single_point(lgr::state& s)
   support_nodes_to_nodes[PNI(2)] = NI(2);
   support_nodes_to_nodes[PNI(3)] = NI(3);
 
+  using PII = lgr::point_in_influence_index;
+  hpc::device_vector<PII, NI> influence_sizes(num_nodes, PII(num_points));
+  s.points_in_influence.assign_sizes(influence_sizes);
+
+  using NPI = lgr::node_point_index;
+  s.nodes_to_influenced_points.resize(num_nodes * num_points);
+  auto const influence_points_to_points = s.nodes_to_influenced_points.begin();
+  influence_points_to_points[NPI(0)] = PI(0);
+  influence_points_to_points[NPI(1)] = PI(0);
+  influence_points_to_points[NPI(2)] = PI(0);
+  influence_points_to_points[NPI(3)] = PI(0);
+
   lgr::initialize_meshless_grad_val_N(s);
+
+  s.mass.resize(num_nodes);
+  s.V.resize(num_points);
+  s.rho.resize(num_points);
+
+  auto const V = s.V.begin();
+  auto const rho = s.rho.begin();
+
+  V[PI(0)] = 1.0 / 6.0;
+  rho[PI(0)] = 1000.0;
 }
 
 inline void
