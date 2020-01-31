@@ -1,6 +1,8 @@
+#include <hpc_algorithm.hpp>
 #include <lgr_state.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <otm_meshless.hpp>
 
@@ -151,20 +153,27 @@ void assemble_meshless_internal_force(state& s)
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const supports = s.nodes_in_support.cbegin();
   auto const nodes_to_f = s.f.begin();
-  auto const points_to_point_nodes = s.points_to_supported_nodes.cbegin();
-  auto functor = [=] HPC_DEVICE (point_index const point) {
-    auto const support = supports[point];
-    auto const sigma = points_to_sigma[point].load();
-    auto const V = points_to_V[point];
-    for (auto point_node : support) {
-      auto const node = points_to_point_nodes[point_node];
+  auto const node_points_to_points = s.nodes_to_influenced_points.cbegin();
+  auto const nodes_to_node_points = s.points_in_influence.cbegin();
+  auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto node_f = hpc::force<double>::zero();
+    auto const node_points = nodes_to_node_points[node];
+    for (auto const node_point : node_points)
+    {
+      auto const point = node_points_to_points[node_point];
+      auto const sigma = points_to_sigma[point].load();
+      auto const V = points_to_V[point];
+      auto const point_nodes = supports[point];
+      auto node_ordinal = node_points_to_node_ordinals[node_point];
+      auto point_node = point_nodes[node_ordinal];
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const f = -(sigma * grad_N) * V;
-      auto&& force = nodes_to_f[node].load();
-      force = force + f;
+      node_f = node_f + f;
     }
+    nodes_to_f[node] = node_f;
   };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 void update_meshless_nodal_force(state&) {
