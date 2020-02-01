@@ -5,6 +5,8 @@
 #include <hpc_vector3.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <otm_meshless.hpp>
+#include <cassert>
+#include <cmath>
 #include <iostream>
 
 namespace lgr {

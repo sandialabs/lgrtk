@@ -3,9 +3,11 @@
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
+#include <hpc_functional.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 
@@ -17,6 +19,7 @@ void convert_tet_mesh_to_meshless(state& st)
   auto num_nodes_in_support = st.nodes_in_element.size();
   st.points_to_supported_nodes.resize(num_points * num_nodes_in_support);
   st.xm.resize(num_points);
+  st.h_otm.resize(num_points);
 
   auto nodes_in_element = st.nodes_in_element;
   auto elements_to_element_nodes = st.elements * st.nodes_in_element;
@@ -32,6 +35,7 @@ void convert_tet_mesh_to_meshless(state& st)
 
   auto nodes_to_x = st.x.cbegin();
   auto mat_pts_to_x = st.xm.begin();
+  auto mat_pts_to_h = st.h_otm.begin();
   auto nodes_in_support = st.nodes_in_support.cbegin();
   auto func = [=] HPC_DEVICE (element_index const element)
   {
@@ -50,8 +54,19 @@ void convert_tet_mesh_to_meshless(state& st)
         avg_coord += nodes_to_x[node].load();
         support_nodes_to_nodes[point_support_nodes[n]] = node;
       }
+
       avg_coord /= nodes_in_element.size();
+
+      auto min_node_centroid_dist = 1. / hpc::machine_epsilon<double>();
+      for (auto&& n : nodes_in_element)
+      {
+        auto cur_elem_node_offset = element_nodes[n];
+        auto node = element_nodes_to_nodes[cur_elem_node_offset];
+        auto node_centroid_dist = hpc::norm(nodes_to_x[node].load() - avg_coord);
+        min_node_centroid_dist = hpc::min(min_node_centroid_dist, node_centroid_dist);
+      }
       mat_pts_to_x[point] = avg_coord;
+      mat_pts_to_h[point] = min_node_centroid_dist;
     }
   };
 
