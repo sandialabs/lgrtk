@@ -63,10 +63,10 @@ tetrahedron_single_point(lgr::state& s)
 
   s.node_influenced_points_to_supporting_nodes.resize(num_nodes * num_points);
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
-  node_points_to_node_ordinals[NSI(0)] = PI(0);
-  node_points_to_node_ordinals[NSI(1)] = PI(0);
-  node_points_to_node_ordinals[NSI(2)] = PI(0);
-  node_points_to_node_ordinals[NSI(3)] = PI(0);
+  node_points_to_node_ordinals[NSI(0)] = NI(0);
+  node_points_to_node_ordinals[NSI(1)] = NI(1);
+  node_points_to_node_ordinals[NSI(2)] = NI(2);
+  node_points_to_node_ordinals[NSI(3)] = NI(3);
 
   lgr::initialize_meshless_grad_val_N(s);
 
@@ -100,7 +100,7 @@ two_tetrahedra_two_points(lgr::state& s)
   s.xm.resize(num_points);
   auto const points_to_xm = s.xm.begin();
   points_to_xm[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
-  points_to_xm[PI(1)] = hpc::position<double>(0.75, 0.75, 0.75);
+  points_to_xm[PI(1)] = hpc::position<double>(0.50, 0.50, 0.50);
 
   using PNI = lgr::point_node_index;
   s.N.resize(PNI(num_points * num_nodes));
@@ -151,16 +151,16 @@ two_tetrahedra_two_points(lgr::state& s)
 
   s.node_influenced_points_to_supporting_nodes.resize(num_nodes * num_points);
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
-  node_points_to_node_ordinals[NSI(0)] = PI(0);
-  node_points_to_node_ordinals[NSI(1)] = PI(1);
-  node_points_to_node_ordinals[NSI(2)] = PI(0);
-  node_points_to_node_ordinals[NSI(3)] = PI(1);
-  node_points_to_node_ordinals[NSI(4)] = PI(0);
-  node_points_to_node_ordinals[NSI(5)] = PI(1);
-  node_points_to_node_ordinals[NSI(6)] = PI(0);
-  node_points_to_node_ordinals[NSI(7)] = PI(1);
-  node_points_to_node_ordinals[NSI(8)] = PI(0);
-  node_points_to_node_ordinals[NSI(9)] = PI(1);
+  node_points_to_node_ordinals[NSI(0)] = NI(0);
+  node_points_to_node_ordinals[NSI(1)] = NI(1);
+  node_points_to_node_ordinals[NSI(2)] = NI(2);
+  node_points_to_node_ordinals[NSI(3)] = NI(3);
+  node_points_to_node_ordinals[NSI(4)] = NI(4);
+  node_points_to_node_ordinals[NSI(5)] = NI(0);
+  node_points_to_node_ordinals[NSI(6)] = NI(1);
+  node_points_to_node_ordinals[NSI(7)] = NI(2);
+  node_points_to_node_ordinals[NSI(8)] = NI(3);
+  node_points_to_node_ordinals[NSI(9)] = NI(4);
 
   lgr::initialize_meshless_grad_val_N(s);
 

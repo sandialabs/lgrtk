@@ -205,7 +205,15 @@ void lump_nodal_mass(state& s) {
   auto const supports = s.nodes_in_support.cbegin();
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.cbegin();
   auto const point_nodes_to_N = s.N.begin();
+  auto zero_mass = [=] HPC_DEVICE (node_index const node) {
+    node_to_mass[node] = 0.0;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, zero_mass);
   auto functor = [=] HPC_DEVICE (node_index const node) {
+#if 0
+    std::cout << '\n';
+    std::cout << "**** node : " << node << '\n';
+#endif
     auto node_m = 0.0;
     auto const node_points = influences[node];
     for (auto const node_point : node_points) {
@@ -218,8 +226,25 @@ void lump_nodal_mass(state& s) {
       auto const N = point_nodes_to_N[point_node];
       auto const m = N * rho * V;
       node_m += m;
+#if 0
+      std::cout << "**** node_point   : " << node_point << '\n';
+      std::cout << "**** point        : " << point << '\n';
+      std::cout << "**** V            : " << V << '\n';
+      std::cout << "**** rho          : " << rho << '\n';
+      std::cout << "**** node_ordinal : " << node_ordinal << '\n';
+      std::cout << "**** point_node   : " << point_node << '\n';
+      std::cout << "**** N            : " << N << '\n';
+      std::cout << "**** m            : " << m << '\n';
+      std::cout << "**** node_m             : " << node_m << '\n';
+      std::cout << '\n';
+#endif
     }
-    node_to_mass[node] = node_m;
+    node_to_mass[node] += node_m;
+#if 0
+    std::cout << "**** node_m             : " << node_m << '\n';
+    std::cout << "**** node_to_mass[node] : " << node_to_mass[node] << '\n';
+    std::cout << '\n';
+#endif
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
