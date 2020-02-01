@@ -79,6 +79,33 @@ TEST_F(arborx_search, canInitializeArborXPointsFromOTMPoints)
   hpc::for_each(hpc::device_policy(), s.points, pt_check_func);
 }
 
+TEST_F(arborx_search, canInitializeArborXPointSpheresFromOTMPoints)
+{
+  state s;
+
+  tetrahedron_single_point(s);
+
+  auto search_points = search::arborx::create_arborx_point_spheres(s);
+
+  EXPECT_EQ(search_points.extent(0), 1);
+
+  auto points_to_x = s.xm.cbegin();
+  auto points_to_r = s.h_otm.cbegin();
+  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  {
+    auto&& lgr_pt_coord = points_to_x[point].load();
+    auto&& lgr_pt_h = points_to_r[point];
+    auto&& search_sphere = search_points(hpc::weaken(point));
+    auto&& sphere_coord = search_sphere.centroid();
+    auto&& sphere_radius = search_sphere.radius();
+    EXPECT_DOUBLE_EQ(lgr_pt_coord(0), sphere_coord[0]);
+    EXPECT_DOUBLE_EQ(lgr_pt_coord(1), sphere_coord[1]);
+    EXPECT_DOUBLE_EQ(lgr_pt_coord(2), sphere_coord[2]);
+    EXPECT_DOUBLE_EQ(lgr_pt_h, sphere_radius);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, pt_check_func);
+}
+
 TEST_F(arborx_search, canDoNearestNodePointSearch)
 {
   state s;
@@ -92,10 +119,46 @@ TEST_F(arborx_search, canDoNearestNodePointSearch)
 
   search::arborx::device_int_view offsets;
   search::arborx::device_int_view indices;
-  Kokkos::tie(offsets, indices) = search::arborx::do_search(search_nodes,
-      queries);
+  Kokkos::tie(offsets, indices) = search::arborx::do_search(search_nodes, queries);
 
   int num_points = search_points.extent(0);
+  auto nodes_to_x = s.x.cbegin();
+
+  EXPECT_EQ(num_points, 1);
+
+  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  {
+    auto point_begin = offsets(hpc::weaken(point));
+    auto point_end = offsets(hpc::weaken(point)+1);
+    EXPECT_EQ(point_end - point_begin, 4);
+    for (auto j=point_begin; j<point_end; ++j)
+    {
+      auto search_node_coord = search_nodes(indices(j));
+      auto&& lgr_node_coord = nodes_to_x[indices(j)].load();
+      EXPECT_DOUBLE_EQ(lgr_node_coord(0), search_node_coord[0]);
+      EXPECT_DOUBLE_EQ(lgr_node_coord(1), search_node_coord[1]);
+      EXPECT_DOUBLE_EQ(lgr_node_coord(2), search_node_coord[2]);
+
+    }
+  };
+
+  hpc::for_each(hpc::device_policy(), s.points, pt_check_func);
+}
+
+TEST_F(arborx_search, canDoNodeIntersectingSphereSearch)
+{
+  state s;
+  tetrahedron_single_point(s);
+
+  auto search_nodes = search::arborx::create_arborx_nodes(s);
+  auto search_spheres = search::arborx::create_arborx_point_spheres(s);
+  auto queries = search::arborx::make_intersect_sphere_queries(search_spheres);
+
+  search::arborx::device_int_view offsets;
+  search::arborx::device_int_view indices;
+  Kokkos::tie(offsets, indices) = search::arborx::do_search(search_nodes, queries);
+
+  int num_points = search_spheres.extent(0);
   auto nodes_to_x = s.x.cbegin();
 
   EXPECT_EQ(num_points, 1);
@@ -180,7 +243,7 @@ TEST_F(arborx_search, canDoNearestNodePointSearchThroughLGRInterface)
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
   hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
 
-  search::do_otm_point_node_search(s, 4);
+  search::do_otm_point_nearest_node_search(s, 4);
 
   check_search_results(s, points_to_supported_nodes_before_search, 4);
 }
@@ -193,12 +256,25 @@ TEST_F(arborx_search, canDoNearestNodePointSearchTwoTets)
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
   hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
 
-  search::do_otm_point_node_search(s, 5);
+  search::do_otm_point_nearest_node_search(s, 5);
 
   check_search_results(s, points_to_supported_nodes_before_search, 5);
 }
 
-TEST_F(arborx_search, canDoNearestNodePointSearchOnExodusMesh)
+TEST_F(arborx_search, canDoIterativeSphereIntersectSearchTwoTets)
+{
+  state s;
+  two_tetrahedra_two_points(s);
+
+  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
+  hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
+
+  search::do_otm_iterative_point_support_search(s, 5);
+
+  check_search_results(s, points_to_supported_nodes_before_search, 5);
+}
+
+TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
 {
   material_index mat(1);
   material_index bnd(1);
@@ -216,9 +292,9 @@ TEST_F(arborx_search, canDoNearestNodePointSearchOnExodusMesh)
       st.points_to_supported_nodes.size());
   hpc::copy(st.points_to_supported_nodes, points_to_supported_nodes_before_search);
 
-  EXPECT_NO_THROW(search::do_otm_point_node_search(st, 4));
+  EXPECT_NO_THROW(search::do_otm_iterative_point_support_search(st, 4));
 
-  // TODO: reenable results check for improved search
+  // TODO: reenable results check for improved search...
   //
   // check_search_results(st, points_to_supported_nodes_before_search, 4);
 }
