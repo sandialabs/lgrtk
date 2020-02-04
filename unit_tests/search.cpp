@@ -1,11 +1,8 @@
 #include <gtest/gtest.h>
 #include <hpc_algorithm.hpp>
-#include <hpc_array_vector.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_index.hpp>
 #include <hpc_macros.hpp>
-#include <hpc_range.hpp>
-#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
 #include <Kokkos_Pair.hpp>
 #include <Kokkos_View.hpp>
@@ -14,6 +11,7 @@
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
+#include <otm_meshing.hpp>
 #include <otm_search.hpp>
 #include <otm_tet2meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
@@ -304,7 +302,7 @@ TEST_F(arborx_search, invertConnectivityForSingleTet)
   state s;
   tetrahedron_single_point(s);
 
-  search::invert_otm_point_node_relations(s);
+  invert_otm_point_node_relations(s);
 
   auto points_in_influence = s.points_in_influence.cbegin();
   auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();
@@ -324,7 +322,7 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
   state s;
   two_tetrahedra_two_points(s);
 
-  search::invert_otm_point_node_relations(s);
+  invert_otm_point_node_relations(s);
 
   auto points_in_influence = s.points_in_influence.cbegin();
   auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();

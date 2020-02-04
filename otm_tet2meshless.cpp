@@ -1,15 +1,17 @@
 #include <hpc_algorithm.hpp>
-#include <hpc_array.hpp>
-#include <hpc_array_vector.hpp>
+#include <hpc_array_traits.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_functional.hpp>
 #include <hpc_macros.hpp>
+#include <hpc_matrix3x3.hpp>
 #include <hpc_range.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
+#include <otm_meshing.hpp>
 
 namespace lgr {
 
@@ -71,6 +73,8 @@ void convert_tet_mesh_to_meshless(state& st)
   };
 
   hpc::for_each(hpc::device_policy(), st.elements, func);
+
+  invert_otm_point_node_relations(st);
 }
 
 }

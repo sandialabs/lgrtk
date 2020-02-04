@@ -623,8 +623,9 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_DEVICE constexpr auto
-neo_Hookean_point(hpc::deformation_gradient<double> const & F, double const K, double const G) {
+HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
+{
   auto const J = determinant(F);
   auto const Jinv = 1.0 / J;
   auto const Jm13 = 1.0 / std::cbrt(J);
@@ -632,9 +633,9 @@ neo_Hookean_point(hpc::deformation_gradient<double> const & F, double const K, d
   auto const Jm53 = (Jm23 * Jm23) * Jm13;
   auto const B = self_times_transpose(F);
   auto const devB = deviatoric_part(B);
-  auto const sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
-  auto const Keff = 0.5 * K * (J + Jinv);
-  return std::make_tuple(sigma, Keff, G);
+  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
+  Keff = 0.5 * K * (J + Jinv);
+  Geff = G;
 }
 
 HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
@@ -648,11 +649,11 @@ HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, ma
   auto const is_neohookean = in.enable_neo_Hookean[material];
   auto functor = [=] HPC_DEVICE (point_index const point) {
       auto const F = points_to_F_total[point].load();
-      auto&& sigma = points_to_sigma[point];
+      auto&& sigma = points_to_sigma[point].load();
       auto&& Keff = points_to_K[point];
       auto&& Geff = points_to_G[point];
       if (is_neohookean == true) {
-        std::tie(sigma, Keff, Geff) = neo_Hookean_point(F, K, G);
+        neo_Hookean_point(F, K, G, sigma, Keff, Geff);
       }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
