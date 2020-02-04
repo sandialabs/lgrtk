@@ -55,9 +55,16 @@ void initialize_meshless_grad_val_N(state& s) {
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     jacobian J = jacobian::zero();
     auto const max_iter = 16;
+#if 0
+    std::cout << "max_iter   : " << max_iter << std::endl;
+#endif
     for (auto iter = 0; iter < max_iter; ++iter) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian dRdmu = jacobian::zero();
+#if 0
+      std::cout << "iter               : " << iter << std::endl;
+      std::cout << "point_nodes.size() : " << point_nodes.size() << std::endl;
+#endif
       for (auto point_node : point_nodes) {
         auto const node = support_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
@@ -65,6 +72,10 @@ void initialize_meshless_grad_val_N(state& s) {
         auto const rs = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rs);
+#if 0
+        std::cout << "point_node   : " << point_node << std::endl;
+        std::cout << "node         : " << node << std::endl;
+#endif
         R += r * boltzmann_factor;
         dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
       }
