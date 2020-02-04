@@ -48,6 +48,9 @@ void initialize_meshless_grad_val_N(state& s) {
     auto const h = points_to_h[point];
     auto const beta = gamma / h / h;
     auto const xm = points_to_xm[point].load();
+#if 0
+    std::cout << "point     : " << point << std::endl;
+#endif
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
@@ -112,6 +115,10 @@ void initialize_meshless_grad_val_N(state& s) {
     for (auto point_node : point_nodes) {
       auto const N = point_nodes_to_N[point_node];
       point_nodes_to_N[point_node] = N / Z;
+#if 0
+        std::cout << "point_node   : " << point_node << std::endl;
+        std::cout << "N            : " << point_nodes_to_N[point_node] << std::endl;
+#endif
     }
     for (auto point_node : point_nodes) {
       auto const node = support_nodes_to_nodes[point_node];
