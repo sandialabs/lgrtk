@@ -42,7 +42,7 @@ TEST_F(arborx_search, canInitializeArborXNodesFromOTMNodes)
   EXPECT_EQ(search_nodes.extent(0), 4);
 
   auto nodes_to_x = s.x.cbegin();
-  auto node_check_func = HPC_DEVICE [=](node_index node)
+  auto node_check_func = [=](node_index node)
   {
     auto&& lgr_node_coord = nodes_to_x[node].load();
     auto&& search_node_coord = search_nodes(hpc::weaken(node));
@@ -65,7 +65,7 @@ TEST_F(arborx_search, canInitializeArborXPointsFromOTMPoints)
   EXPECT_EQ(search_points.extent(0), 1);
 
   auto points_to_x = s.xm.cbegin();
-  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  auto pt_check_func = [=](point_index point)
   {
     auto&& lgr_pt_coord = points_to_x[point].load();
     auto&& search_pt_coord = search_points(hpc::weaken(point));
@@ -89,7 +89,7 @@ TEST_F(arborx_search, canInitializeArborXPointSpheresFromOTMPoints)
 
   auto points_to_x = s.xm.cbegin();
   auto points_to_r = s.h_otm.cbegin();
-  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  auto pt_check_func = [=](point_index point)
   {
     auto&& lgr_pt_coord = points_to_x[point].load();
     auto&& lgr_pt_h = points_to_r[point];
@@ -124,7 +124,7 @@ TEST_F(arborx_search, canDoNearestNodePointSearch)
 
   EXPECT_EQ(num_points, 1);
 
-  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  auto pt_check_func = [=](point_index point)
   {
     auto point_begin = offsets(hpc::weaken(point));
     auto point_end = offsets(hpc::weaken(point)+1);
@@ -161,7 +161,7 @@ TEST_F(arborx_search, canDoNodeIntersectingSphereSearch)
 
   EXPECT_EQ(num_points, 1);
 
-  auto pt_check_func = HPC_DEVICE [=](point_index point)
+  auto pt_check_func = [=](point_index point)
   {
     auto point_begin = offsets(hpc::weaken(point));
     auto point_end = offsets(hpc::weaken(point)+1);
@@ -306,7 +306,7 @@ TEST_F(arborx_search, invertConnectivityForSingleTet)
 
   auto points_in_influence = s.points_in_influence.cbegin();
   auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();
-  auto node_point_check_func = HPC_DEVICE [=] (node_index const node) {
+  auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];
     EXPECT_EQ(1, node_points_range.size());
     for (auto node_point : node_points_range)
@@ -326,7 +326,7 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
 
   auto points_in_influence = s.points_in_influence.cbegin();
   auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();
-  auto node_point_check_func = HPC_DEVICE [=] (node_index const node) {
+  auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];
     EXPECT_EQ(2, node_points_range.size());
     for (auto i=0; i < 2; ++i)

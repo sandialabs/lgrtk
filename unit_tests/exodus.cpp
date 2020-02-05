@@ -56,7 +56,7 @@ TEST(exodus, convertTetMeshToMeshfree) {
   EXPECT_EQ(st.nodes_in_support.size(), st.points.size());
 
   auto support_nodes = st.nodes_in_support.cbegin();
-  auto check_points_func = [=] HPC_DEVICE (point_index const point)
+  auto check_points_func = [=] (point_index const point)
   {
     auto point_support_node_range = support_nodes[point];
     EXPECT_EQ(point_support_node_range.size(), nodes_in_support_size_type(4));
@@ -74,7 +74,7 @@ TEST(exodus, convertTetMeshToMeshfree) {
   auto points_to_point_nodes = st.points * st.nodes_in_element;
   auto points_to_nodes = point_node_indices.begin();
 
-  auto elem_func = [=] HPC_DEVICE (element_index const element) {
+  auto elem_func = [=] (element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     auto const element_points = elements_to_points[element];
     for (auto const point_ordinal : points_in_element) {
@@ -91,7 +91,7 @@ TEST(exodus, convertTetMeshToMeshfree) {
 
   auto supports = st.nodes_in_support.cbegin();
   auto support_nodes_to_nodes = st.points_to_supported_nodes.cbegin();
-  auto pt_func = [=] HPC_DEVICE (point_index const point) {
+  auto pt_func = [=] (point_index const point) {
     auto point_support_nodes = supports[point];
     for (auto&& n : point_support_nodes)
     {

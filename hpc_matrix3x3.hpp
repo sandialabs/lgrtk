@@ -234,14 +234,14 @@ inner_product(matrix3x3<L> const left, matrix3x3<R> const right) noexcept {
 }
 
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+HPC_ALWAYS_INLINE HPC_HOST constexpr T
 norm(matrix3x3<T> const x) noexcept {
   return std::sqrt(inner_product(x, x));
 }
 
 // \return \f$ \max_{j \in {0,\cdots,N}}\Sigma_{i=0}^N |A_{ij}| \f$
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+HPC_ALWAYS_INLINE HPC_HOST constexpr T
 norm_1(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(1,0)) + std::abs(A(2,0));
   auto const v1 = std::abs(A(0,1)) + std::abs(A(1,1)) + std::abs(A(2,1));
@@ -251,7 +251,7 @@ norm_1(matrix3x3<T> const A) noexcept {
 
 // \return \f$ \max_{i \in {0,\cdots,N}}\Sigma_{j=0}^N |A_{ij}| \f$
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+HPC_ALWAYS_INLINE HPC_HOST constexpr T
 norm_infinity(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(0,1)) + std::abs(A(0,2));
   auto const v1 = std::abs(A(1,0)) + std::abs(A(1,1)) + std::abs(A(1,2));
@@ -339,7 +339,7 @@ inverse(matrix3x3<T> const x) {
 
 // Logarithm by Gregory series. Convergence guaranteed for symmetric A
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 log_gregory(matrix3x3<T> const A)
 {
   auto const max_iter  = 8192;
@@ -475,7 +475,7 @@ solve_full_pivot(matrix3x3<T> const A, vector3<T> b)
 
 // Matrix square root by product form of Denman-Beavers iteration.
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 sqrt_dbp(matrix3x3<T> const A)
 {
   auto const eps = machine_epsilon<T>();
@@ -509,7 +509,7 @@ sqrt_dbp(matrix3x3<T> const A)
 
 // Matrix square root
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 sqrt(matrix3x3<T> const A)
 {
   auto X = A;
@@ -567,7 +567,7 @@ log(matrix3x3<T> const A)
 }
 
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 pade_polynomial_terms(matrix3x3<T> const& A, int const order) {
   auto B = matrix3x3<T>::identity();
   auto U = polynomial_coefficient<T>(order, 1) * B;
@@ -622,7 +622,7 @@ binary_powering(matrix3x3<T> const& A, int const e) {
 // Exponential map by squaring and scaling and Padé approximants.
 // See algorithm 10.20 in Functions of Matrices, N.J. Higham, SIAM, 2008.
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 exp(matrix3x3<T> const& A) {
   auto B = matrix3x3<T>::identity();
   int const orders[] = {3, 5, 7, 9, 13};
@@ -683,7 +683,7 @@ exp(matrix3x3<T> const& A) {
 
 // Exponential map by Taylor series, radius of convergence is infinity
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 exp_taylor(matrix3x3<T> const& A) {
   auto const max_iter = 1024;
   auto const tol = machine_epsilon<T>();
@@ -709,7 +709,7 @@ exp_taylor(matrix3x3<T> const& A) {
 // The rotation/reflection obtained through this projection is
 // the orthogonal component of the real polar decomposition
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 polar_rotation(matrix3x3<T> const A)
 {
   auto const dim = 3;
@@ -760,7 +760,7 @@ skew(matrix3x3<T> const A)
 }
 
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 polar_left(matrix3x3<T> const A)
 {
   auto const R = polar_rotation(A);
@@ -769,7 +769,7 @@ polar_left(matrix3x3<T> const A)
 }
 
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 polar_right(matrix3x3<T> const A)
 {
   auto const R = polar_rotation(A);

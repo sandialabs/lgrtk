@@ -6,6 +6,7 @@
 #include <lgr_state.hpp>
 #include <lgr_physics.hpp>
 #include <hpc_symmetric3x3.hpp>
+#include <hpc_macros.hpp>
 #include <lgr_print.hpp>
 #include <lgr_vtk.hpp>
 #include <lgr_element_specific.hpp>
