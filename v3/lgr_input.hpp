@@ -60,6 +60,7 @@ class input {
   hpc::host_vector<hpc::density<double>, material_index> rho0;
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
   hpc::host_vector<bool, material_index> enable_neo_Hookean;
+  hpc::host_vector<bool, material_index> enable_sierra_J2;
   hpc::host_vector<bool, material_index> enable_hyper_ep;
   hpc::host_vector<hpc::pressure<double>, material_index> K0;
   hpc::host_vector<hpc::pressure<double>, material_index> G0;
@@ -131,6 +132,7 @@ class input {
     ,rho0(material_count_in)
     ,e0(material_count_in, double(0.0))
     ,enable_neo_Hookean(material_count_in, false)
+    ,enable_sierra_J2(material_count_in, false)
     ,enable_hyper_ep(material_count_in, false)
     ,K0(material_count_in)
     ,G0(material_count_in, double(0.0))

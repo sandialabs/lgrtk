@@ -638,6 +638,22 @@ HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, do
   Geff = G;
 }
 
+// TODO: This the same as Neo-Hookean for now. Change to Sierra J2 "FeFp".
+HPC_DEVICE void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
+{
+  auto const J = determinant(F);
+  auto const Jinv = 1.0 / J;
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  auto const Jm53 = (Jm23 * Jm23) * Jm13;
+  auto const B = self_times_transpose(F);
+  auto const devB = deviatoric_part(B);
+  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
+  Keff = 0.5 * K * (J + Jinv);
+  Geff = G;
+}
+
 HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const) {
   auto const points_to_F_total = s.F_total.cbegin();
@@ -646,14 +662,18 @@ HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, ma
   auto const points_to_G = s.G.begin();
   auto const K = in.K0[material];
   auto const G = in.G0[material];
-  auto const is_neohookean = in.enable_neo_Hookean[material];
+  auto const is_neo_hookean = in.enable_neo_Hookean[material];
+  auto const is_sierra_J2 = in.enable_sierra_J2[material];
   auto functor = [=] HPC_DEVICE (point_index const point) {
       auto const F = points_to_F_total[point].load();
       auto&& sigma = points_to_sigma[point].load();
       auto&& Keff = points_to_K[point];
       auto&& Geff = points_to_G[point];
-      if (is_neohookean == true) {
+      if (is_neo_hookean == true) {
         neo_Hookean_point(F, K, G, sigma, Keff, Geff);
+      }
+      if (is_sierra_J2 == true) {
+        sierra_J2_point(F, K, G, sigma, Keff, Geff);
       }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
