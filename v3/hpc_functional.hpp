@@ -22,6 +22,13 @@ struct minimum {
 };
 
 template <class T>
+struct maximum {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T operator()(T const& a, T const& b) noexcept {
+    return ::hpc::max(a, b);
+  }
+};
+
+template <class T>
 struct plus {
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T operator()(T const& a, T const& b) noexcept {
     return a + b;

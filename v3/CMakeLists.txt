@@ -52,7 +52,7 @@ option(LGR_ENABLE_SEARCH "Build support for meshfree search via ArborX" OFF)
 
 if (LGR_ENABLE_SEARCH)
   find_package(ArborX REQUIRED)
-  find_package(Kokkos REQUIRED COMPONENTS KokkosCore)
+  # find_package(Kokkos REQUIRED)
   set(LGR_SOURCES ${LGR_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
 endif()
 
@@ -78,9 +78,13 @@ if (LGR_ENABLE_EXODUS)
 endif()
 
 if (LGR_ENABLE_SEARCH)
-  target_include_directories(lgrlib PUBLIC "${KokkosCore_INCLUDE_DIRS}")
-  target_include_directories(lgrlib PUBLIC "${KokkosCore_TPL_INCLUDE_DIRS}")
+  target_include_directories(lgrlib PUBLIC "${Kokkos_INCLUDE_DIRS}")
+  target_include_directories(lgrlib PUBLIC "${Kokkos_TPL_INCLUDE_DIRS}")
   target_link_libraries(lgrlib PUBLIC ArborX::ArborX)
+endif()
+
+if (LGR_ENABLE_CUDA)
+  set_source_files_properties(lgr.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_executable(lgr lgr.cpp)

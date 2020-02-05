@@ -16,7 +16,7 @@ namespace search {
 namespace arborx {
 
 using device_range = Kokkos::RangePolicy<device_exec_space>;
-using device_bvh = ArborX::BoundingVolumeHierarchy<lgr::search::arborx::device_exec_space>;
+using device_bvh = ArborX::BoundingVolumeHierarchy<lgr::search::arborx::device_mem_space>;
 
 using Kokkos::parallel_for;
 using Kokkos::fence;

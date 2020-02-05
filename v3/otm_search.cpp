@@ -40,7 +40,7 @@ HPC_NOINLINE void do_otm_point_nearest_node_search(lgr::state &s, int max_suppor
 
   hpc::device_vector<int, point_index> counts(s.points.size());
   auto points_node_count = counts.begin();
-  auto count_func = HPC_DEVICE [=](lgr::point_index point)
+  auto count_func = [=] HPC_DEVICE (lgr::point_index point)
   {
     auto point_begin = offsets(hpc::weaken(point));
     auto point_end = offsets(hpc::weaken(point) + 1);
@@ -52,7 +52,7 @@ HPC_NOINLINE void do_otm_point_nearest_node_search(lgr::state &s, int max_suppor
 
   auto points_to_nodes_of_point = s.nodes_in_support.cbegin();
   auto points_to_supported_nodes = s.points_to_supported_nodes.begin();
-  auto fill_func = HPC_DEVICE [=](lgr::point_index point)
+  auto fill_func = [=] HPC_DEVICE (lgr::point_index point)
   {
     auto const point_nodes_range = points_to_nodes_of_point[point];
     for (auto point_node : point_nodes_range)
@@ -93,7 +93,7 @@ void do_otm_iterative_point_support_search(lgr::state &s, int min_support_nodes_
     Kokkos::tie(offsets, indices) = arborx::do_search(search_nodes, queries);
 
     auto points_node_count = counts.begin();
-    auto count_func = HPC_DEVICE [=](lgr::point_index point)
+    auto count_func = [=] HPC_DEVICE (lgr::point_index point)
     {
       auto point_begin = offsets(hpc::weaken(point));
       auto point_end = offsets(hpc::weaken(point) + 1);
@@ -112,7 +112,7 @@ void do_otm_iterative_point_support_search(lgr::state &s, int min_support_nodes_
 
   auto points_to_nodes_of_point = s.nodes_in_support.cbegin();
   auto points_to_supported_nodes = s.points_to_supported_nodes.begin();
-  auto fill_func = HPC_DEVICE [=](lgr::point_index point)
+  auto fill_func = [=] HPC_DEVICE (lgr::point_index point)
   {
     auto const point_nodes_range = points_to_nodes_of_point[point];
     for (auto point_node : point_nodes_range)

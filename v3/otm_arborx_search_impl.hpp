@@ -24,11 +24,16 @@ namespace search {
 namespace arborx {
 
 using device_exec_space = Kokkos::DefaultExecutionSpace;
-using device_point_view = Kokkos::View<ArborX::Point *, device_exec_space>;
-using device_sphere_view = Kokkos::View<ArborX::Sphere *, device_exec_space>;
-using device_nearest_query_view = Kokkos::View<ArborX::Nearest<ArborX::Point> *, device_exec_space>;
-using device_intersects_query_view = Kokkos::View<ArborX::Intersects<ArborX::Sphere> *, device_exec_space>;
-using device_int_view = Kokkos::View<int *, device_exec_space>;
+#ifdef KOKKOS_ENABLE_CUDA
+using device_mem_space = Kokkos::CudaSpace;
+#else
+    using device_mem_space = device_exec_space::memory_space;
+#endif
+using device_point_view = Kokkos::View<ArborX::Point *, device_mem_space>;
+using device_sphere_view = Kokkos::View<ArborX::Sphere *, device_mem_space>;
+using device_nearest_query_view = Kokkos::View<ArborX::Nearest<ArborX::Point> *, device_mem_space>;
+using device_intersects_query_view = Kokkos::View<ArborX::Intersects<ArborX::Sphere> *, device_mem_space>;
+using device_int_view = Kokkos::View<int *, device_mem_space>;
 using device_search_results = Kokkos::pair<device_int_view, device_int_view>;
 
 device_point_view create_arborx_nodes(const lgr::state &s);
