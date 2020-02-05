@@ -185,3 +185,94 @@ two_tetrahedra_two_points(lgr::state& s)
   V[PI(1)] = std::abs(hpc::inner_product(ad, hpc::cross(bd, cd))) / 6.0;
   rho[PI(1)] = 1000.0;
 }
+
+inline void
+hexahedron_eight_points(lgr::state& s)
+{
+  using NI = lgr::node_index;
+  auto const num_nodes = NI(8);
+  s.nodes.resize(num_nodes);
+  s.x.resize(s.nodes.size());
+  auto const nodes_to_x = s.x.begin();
+  nodes_to_x[NI(0)] = hpc::position<double>(-1, -1, -1);
+  nodes_to_x[NI(1)] = hpc::position<double>( 1, -1, -1);
+  nodes_to_x[NI(2)] = hpc::position<double>( 1,  1, -1);
+  nodes_to_x[NI(3)] = hpc::position<double>(-1,  1, -1);
+  nodes_to_x[NI(4)] = hpc::position<double>(-1, -1,  1);
+  nodes_to_x[NI(5)] = hpc::position<double>( 1, -1,  1);
+  nodes_to_x[NI(6)] = hpc::position<double>( 1,  1,  1);
+  nodes_to_x[NI(7)] = hpc::position<double>(-1,  1,  1);
+
+  using PI = lgr::point_index;
+  auto const num_points = PI(8);
+  s.xm.resize(num_points);
+  auto const points_to_xm = s.xm.begin();
+  auto const g = std::sqrt(3.0) / 3.0;
+  points_to_xm[PI(0)] = hpc::position<double>(-g, -g, -g);
+  points_to_xm[PI(1)] = hpc::position<double>( g, -g, -g);
+  points_to_xm[PI(2)] = hpc::position<double>( g,  g, -g);
+  points_to_xm[PI(3)] = hpc::position<double>(-g,  g, -g);
+  points_to_xm[PI(4)] = hpc::position<double>(-g, -g,  g);
+  points_to_xm[PI(5)] = hpc::position<double>( g, -g,  g);
+  points_to_xm[PI(6)] = hpc::position<double>( g,  g,  g);
+  points_to_xm[PI(7)] = hpc::position<double>(-g,  g,  g);
+
+  using PNI = lgr::point_node_index;
+  s.N.resize(PNI(num_points * num_nodes));
+  s.grad_N.resize(PNI(num_points * num_nodes));
+
+  s.h_otm.resize(num_points);
+  auto const points_to_h = s.h_otm.begin();
+  for (auto i = 0; i < num_points; ++i) {
+    points_to_h[PI(i)] = 2.0;
+  }
+
+  s.points.resize(num_points);
+
+  using NSI = lgr::node_in_support_index;
+  hpc::device_vector<NSI, PI> support_sizes(num_points, NSI(num_nodes));
+  s.nodes_in_support.assign_sizes(support_sizes);
+
+  s.points_to_supported_nodes.resize(num_points * num_nodes);
+  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
+  for (auto i = 0; i < num_points * num_nodes; ++i) {
+    auto const point_node = i % num_points;
+    support_nodes_to_nodes[PNI(i)] = NI(point_node);
+
+  }
+
+  using PII = lgr::point_in_influence_index;
+  hpc::device_vector<PII, NI> influence_sizes(num_nodes, PII(num_points));
+  s.points_in_influence.assign_sizes(influence_sizes);
+
+  using NPI = lgr::node_point_index;
+  s.nodes_to_influenced_points.resize(num_nodes * num_points);
+  auto const influence_points_to_points = s.nodes_to_influenced_points.begin();
+  for (auto i = 0; i < num_points * num_nodes; ++i) {
+    auto const node_point = i % num_nodes;
+    influence_points_to_points[NPI(i)] = PI(node_point);
+
+  }
+
+  s.node_influenced_points_to_supporting_nodes.resize(num_nodes * num_points);
+  auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
+  for (auto i = 0; i < num_points * num_nodes; ++i) {
+    auto const node_ordinal = i / num_points;
+    node_points_to_node_ordinals[NSI(i)] = NI(node_ordinal);
+  }
+
+  lgr::initialize_meshless_grad_val_N(s);
+
+  s.mass.resize(num_nodes);
+  s.V.resize(num_points);
+  s.rho.resize(num_points);
+
+  auto const V = s.V.begin();
+  auto const rho = s.rho.begin();
+
+  for (auto i = 0; i < num_points; ++i) {
+    V[PI(i)] = 1.0;
+    rho[PI(i)] = 1000.0;
+  }
+
+}
