@@ -81,3 +81,37 @@ TEST(mechanics, lumped_mass_2)
 
   ASSERT_LE(error, eps);
 }
+
+TEST(mechanics, lumped_mass_3)
+{
+  lgr::state s;
+
+  hexahedron_eight_points(s);
+  lgr::lump_nodal_mass(s);
+
+  auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
+  auto const rho = s.rho.cbegin();
+  auto const V = s.V.cbegin();
+  auto expected_mass = 0.0;
+  for (auto p = 0; p < s.points.size(); ++p) {
+    expected_mass += rho[p] * V[p];
+#if 0
+    std::cout << "rho[" << p << "] : " << rho[p] << '\n';
+    std::cout << "  V[" << p << "] : " << V[p] << '\n';
+#endif
+  }
+  auto const error = std::abs(mass / expected_mass - 1.0);
+  auto const eps = hpc::machine_epsilon<double>();
+
+#if 0
+  std::cout << '\n';
+  std::cout << "*** expected mass : " << expected_mass << '\n';
+  std::cout << "*** computed mass : " << mass << '\n';
+  for (auto i = 0; i < s.mass.size(); ++i) {
+    std::cout << "s.mass[" << i << "] : " << s.mass[i] << '\n';
+  }
+  std::cout << '\n';
+#endif
+
+  ASSERT_LE(error, eps);
+}
