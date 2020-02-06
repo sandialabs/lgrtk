@@ -27,7 +27,7 @@ using device_exec_space = Kokkos::DefaultExecutionSpace;
 #ifdef KOKKOS_ENABLE_CUDA
 using device_mem_space = Kokkos::CudaSpace;
 #else
-    using device_mem_space = device_exec_space::memory_space;
+using device_mem_space = device_exec_space::memory_space;
 #endif
 using device_point_view = Kokkos::View<ArborX::Point *, device_mem_space>;
 using device_sphere_view = Kokkos::View<ArborX::Sphere *, device_mem_space>;
