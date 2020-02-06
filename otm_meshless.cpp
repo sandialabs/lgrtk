@@ -132,7 +132,7 @@ void otm_initialize_grad_val_N(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-void assemble_meshless_internal_force(state& s)
+void otm_assemble_internal_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -163,7 +163,7 @@ void assemble_meshless_internal_force(state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-void assemble_meshless_external_force(state& s)
+void otm_assemble_external_force(state& s)
 {
   auto const points_to_body_acce = s.b.cbegin();
   auto const points_to_rho = s.rho.cbegin();
@@ -205,8 +205,8 @@ void otm_update_nodal_force(state& s) {
     node_to_f = node_f;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
-  assemble_meshless_internal_force(s);
-  assemble_meshless_external_force(s);
+  otm_assemble_internal_force(s);
+  otm_assemble_external_force(s);
 }
 
 void otm_lump_nodal_mass(state& s) {
@@ -260,6 +260,9 @@ void otm_lump_nodal_mass(state& s) {
 #endif
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+void otm_update_reference(state&) {
 }
 
 }

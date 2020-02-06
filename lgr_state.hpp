@@ -22,7 +22,7 @@ class state {
   hpc::counting_range<element_index> elements{element_index(0)};
   hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
   hpc::device_range_sum<point_node_index, point_index> nodes_in_support; // OTM: Support for each material point
-  hpc::device_range_sum<point_in_influence_index, node_index> points_in_influence;
+  hpc::device_range_sum<node_point_index, node_index> points_in_influence;
   hpc::counting_range<node_index> nodes{node_index(0)};
   hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
