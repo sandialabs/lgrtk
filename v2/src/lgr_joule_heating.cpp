@@ -282,9 +282,6 @@ struct JouleHeating : public Model<Elem> {
   void compute_electrode_voltages() {
     OMEGA_H_TIME_FUNCTION;
     if (this->sim.circuit.usingMesh) {
-       auto mesh_conductance = conductance_multiplier*
-                               integrated_conductance;
-       sim.circuit.SetMeshConductance(mesh_conductance);
        // Below: 
        //   overwrites default/specified values in YAML 
        //   modifiers for joule heating when using circuit
@@ -293,6 +290,11 @@ struct JouleHeating : public Model<Elem> {
        sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
        sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
        sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
+
+       // Update mesh values for next solve
+       auto mesh_conductance = conductance_multiplier*
+                               integrated_conductance;
+       sim.circuit.SetMeshConductance(mesh_conductance);
      }
   }
   void contribute_joule_heating() {
