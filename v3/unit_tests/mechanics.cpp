@@ -19,7 +19,7 @@ TEST(mechanics, lumped_mass_1)
   lgr::state s;
 
   tetrahedron_single_point(s);
-  lgr::lump_nodal_mass(s);
+  lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const rho = s.rho.cbegin();
@@ -53,7 +53,7 @@ TEST(mechanics, lumped_mass_2)
   lgr::state s;
 
   two_tetrahedra_two_points(s);
-  lgr::lump_nodal_mass(s);
+  lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const rho = s.rho.cbegin();
@@ -87,7 +87,7 @@ TEST(mechanics, lumped_mass_3)
   lgr::state s;
 
   hexahedron_eight_points(s);
-  lgr::lump_nodal_mass(s);
+  lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const rho = s.rho.cbegin();
@@ -114,4 +114,22 @@ TEST(mechanics, lumped_mass_3)
 #endif
 
   ASSERT_LE(error, eps);
+}
+
+TEST(mechanics, hex_translation)
+{
+  lgr::state s;
+
+  hexahedron_eight_points(s);
+  lgr::otm_lump_nodal_mass(s);
+
+  auto const num_node_dofs = s.x.size();
+  auto const num_point_dofs = s.xm.size();
+
+  s.u.resize(num_node_dofs);
+  s.v.resize(num_node_dofs);
+  s.lm.resize(num_node_dofs);
+
+  s.b.resize(num_point_dofs);
+
 }

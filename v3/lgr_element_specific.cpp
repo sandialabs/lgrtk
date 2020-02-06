@@ -70,8 +70,7 @@ HPC_NOINLINE inline void update_tetrahedron_h_min(input const& in, state& s) {
   }
 }
 
-HPC_NOINLINE inline void update_meshless_h_min(input const& in, state& s) {
-  update_meshless_h_min_inball(in, s);
+HPC_NOINLINE inline void update_meshless_h_min(input const&, state&) {
 }
 
 void update_h_min(input const& in, state& s)
@@ -93,7 +92,7 @@ void update_h_art(input const& in, state& s) {
     case TETRAHEDRON: update_tetrahedron_h_art(s); break;
     case COMPOSITE_TETRAHEDRON: update_tetrahedron_h_art(s); break;
     // FIXME: use correct size function
-    case MESHLESS: update_meshless_h_art(s); break;
+    case MESHLESS: break;
   }
 }
 
