@@ -33,8 +33,8 @@ void invert_otm_point_node_relations(lgr::state &s)
   s.nodes_to_node_points.assign_sizes(node_point_counts);
   hpc::fill(hpc::device_policy(), node_point_counts, 0);
   auto node_points_to_points = s.node_points_to_points.begin();
-  auto points_in_influence = s.nodes_to_node_points.cbegin();
-  auto node_points_to_supporting_nodes = s.node_points_to_point_nodes.begin();
+  auto nodes_to_node_points = s.nodes_to_node_points.cbegin();
+  auto node_points_to_point_nodes = s.node_points_to_point_nodes.begin();
   auto node_point_fill_functor = [=] HPC_DEVICE(point_index const point)
   {
     auto const point_nodes = points_to_point_nodes[point];
@@ -44,10 +44,10 @@ void invert_otm_point_node_relations(lgr::state &s)
       node_index const node = point_nodes_to_nodes[point_node];
       hpc::atomic_ref<int> count(counts[node]);
       int const offset = count++;
-      auto const node_points_range = points_in_influence[node];
+      auto const node_points_range = nodes_to_node_points[node];
       auto const node_point = node_points_range[point_node_index(offset)];
       node_points_to_points[node_point] = point;
-      node_points_to_supporting_nodes[node_point] = ni;
+      node_points_to_point_nodes[node_point] = ni;
     }
   };
 
