@@ -19,7 +19,7 @@ void convert_tet_mesh_to_meshless(state& st)
 {
   auto const num_points = st.points.size();
   auto const num_nodes_in_support = st.nodes_in_element.size();
-  st.points_to_supported_nodes.resize(num_points * num_nodes_in_support);
+  st.point_nodes_to_nodes.resize(num_points * num_nodes_in_support);
   st.xm.resize(num_points);
   st.h_otm.resize(num_points);
 
@@ -31,14 +31,14 @@ void convert_tet_mesh_to_meshless(state& st)
 
   hpc::device_vector<int, point_index> nodes_in_support_counts(st.points.size(),
       st.nodes_in_element.size());
-  st.nodes_in_support.assign_sizes(nodes_in_support_counts);
+  st.point_nodes.assign_sizes(nodes_in_support_counts);
 
-  auto const support_nodes_to_nodes = st.points_to_supported_nodes.begin();
+  auto const support_nodes_to_nodes = st.point_nodes_to_nodes.begin();
 
   auto const nodes_to_x = st.x.cbegin();
   auto const mat_pts_to_x = st.xm.begin();
   auto const mat_pts_to_h = st.h_otm.begin();
-  auto const nodes_in_support = st.nodes_in_support.cbegin();
+  auto const nodes_in_support = st.point_nodes.cbegin();
   auto func = [=] HPC_DEVICE (element_index const element)
   {
     auto const cur_elem_points = elements_to_points[element];

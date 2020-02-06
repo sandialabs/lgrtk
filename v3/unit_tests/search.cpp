@@ -186,9 +186,9 @@ void check_search_results(state &s,
     const hpc::device_vector<node_index, point_node_index> &points_to_supported_nodes_before_search,
     const int num_nodes_in_support_before_search)
 {
-  auto points_to_nodes_of_point = s.nodes_in_support.cbegin();
+  auto points_to_nodes_of_point = s.point_nodes.cbegin();
   auto old_points_to_supported_nodes = points_to_supported_nodes_before_search.cbegin();
-  auto new_points_to_supported_nodes = s.points_to_supported_nodes.cbegin();
+  auto new_points_to_supported_nodes = s.point_nodes_to_nodes.cbegin();
   auto pt_node_check_func = [=](lgr::point_index point) 
   {
     auto point_node_range = points_to_nodes_of_point[point];
@@ -238,8 +238,8 @@ TEST_F(arborx_search, canDoNearestNodePointSearchThroughLGRInterface)
   state s;
   tetrahedron_single_point(s);
 
-  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
-  hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
+  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.point_nodes_to_nodes.size());
+  hpc::copy(s.point_nodes_to_nodes, points_to_supported_nodes_before_search);
 
   search::do_otm_point_nearest_node_search(s, 4);
 
@@ -251,8 +251,8 @@ TEST_F(arborx_search, canDoNearestNodePointSearchTwoTets)
   state s;
   two_tetrahedra_two_points(s);
 
-  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
-  hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
+  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.point_nodes_to_nodes.size());
+  hpc::copy(s.point_nodes_to_nodes, points_to_supported_nodes_before_search);
 
   search::do_otm_point_nearest_node_search(s, 5);
 
@@ -264,8 +264,8 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchTwoTets)
   state s;
   two_tetrahedra_two_points(s);
 
-  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.points_to_supported_nodes.size());
-  hpc::copy(s.points_to_supported_nodes, points_to_supported_nodes_before_search);
+  hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(s.point_nodes_to_nodes.size());
+  hpc::copy(s.point_nodes_to_nodes, points_to_supported_nodes_before_search);
 
   search::do_otm_iterative_point_support_search(s, 5);
 
@@ -287,8 +287,8 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
   convert_tet_mesh_to_meshless(st);
 
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(
-      st.points_to_supported_nodes.size());
-  hpc::copy(st.points_to_supported_nodes, points_to_supported_nodes_before_search);
+      st.point_nodes_to_nodes.size());
+  hpc::copy(st.point_nodes_to_nodes, points_to_supported_nodes_before_search);
 
   EXPECT_NO_THROW(search::do_otm_iterative_point_support_search(st, 4));
 
@@ -304,8 +304,8 @@ TEST_F(arborx_search, invertConnectivityForSingleTet)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.points_in_influence.cbegin();
-  auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();
+  auto points_in_influence = s.node_points.cbegin();
+  auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
   auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];
     EXPECT_EQ(1, node_points_range.size());
@@ -324,8 +324,8 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.points_in_influence.cbegin();
-  auto nodes_to_influenced_points = s.nodes_to_influenced_points.cbegin();
+  auto points_in_influence = s.node_points.cbegin();
+  auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
   auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];
     EXPECT_EQ(2, node_points_range.size());
