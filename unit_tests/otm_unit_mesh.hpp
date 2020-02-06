@@ -5,6 +5,7 @@
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 #include <otm_meshless.hpp>
@@ -68,7 +69,7 @@ tetrahedron_single_point(lgr::state& s)
   node_points_to_node_ordinals[NSI(2)] = NI(2);
   node_points_to_node_ordinals[NSI(3)] = NI(3);
 
-  lgr::initialize_meshless_grad_val_N(s);
+  lgr::otm_initialize_grad_val_N(s);
 
   s.mass.resize(num_nodes);
   s.V.resize(num_points);
@@ -162,7 +163,7 @@ two_tetrahedra_two_points(lgr::state& s)
   node_points_to_node_ordinals[NSI(8)] = NI(4);
   node_points_to_node_ordinals[NSI(9)] = NI(4);
 
-  lgr::initialize_meshless_grad_val_N(s);
+  lgr::otm_initialize_grad_val_N(s);
 
   s.mass.resize(num_nodes);
   s.V.resize(num_points);
@@ -261,7 +262,7 @@ hexahedron_eight_points(lgr::state& s)
     node_points_to_node_ordinals[NSI(i)] = NI(node_ordinal);
   }
 
-  lgr::initialize_meshless_grad_val_N(s);
+  lgr::otm_initialize_grad_val_N(s);
 
   s.mass.resize(num_nodes);
   s.V.resize(num_points);
@@ -275,4 +276,32 @@ hexahedron_eight_points(lgr::state& s)
     rho[PI(i)] = 1000.0;
   }
 
+}
+
+inline void
+hexahedron_eight_points(lgr::input& in, lgr::state& s)
+{
+  hexahedron_eight_points(s);
+
+  constexpr lgr::material_index num_materials(1);
+  constexpr lgr::material_index num_boundaries(0);
+
+  lgr::input hex_input(num_materials, num_boundaries);
+  hex_input.name = "single_hex";
+  hex_input.element = lgr::MESHLESS;
+  hex_input.time_integrator = lgr::OTM_EXPLICIT;
+  hex_input.end_time = 1.0e-3;
+  hex_input.num_file_outputs = 100;
+  hex_input.elements_along_x = 1;
+  hex_input.x_domain_size = 2.0;
+  hex_input.elements_along_y = 1;
+  hex_input.y_domain_size = 2.0;
+  hex_input.elements_along_z = 1;
+  hex_input.z_domain_size = 2.0;;
+  hex_input.rho0[0] = 1000.0;
+  hex_input.enable_neo_Hookean[0] = true;
+  hex_input.K0[0] = 1.0e09;
+  hex_input.G0[0] = 1.0e09;
+
+  in = std::move(hex_input);
 }
