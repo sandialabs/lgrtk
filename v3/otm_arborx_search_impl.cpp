@@ -6,6 +6,7 @@
 #include <hpc_macros.hpp>
 #include <hpc_range.hpp>
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #include <Kokkos_Pair.hpp>
 #include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
