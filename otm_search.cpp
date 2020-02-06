@@ -48,9 +48,9 @@ HPC_NOINLINE void do_otm_point_nearest_node_search(lgr::state &s, int max_suppor
   };
   hpc::for_each(hpc::device_policy(), s.points, count_func);
 
-  s.point_nodes.assign_sizes(counts);
+  s.points_to_point_nodes.assign_sizes(counts);
 
-  auto points_to_nodes_of_point = s.point_nodes.cbegin();
+  auto points_to_nodes_of_point = s.points_to_point_nodes.cbegin();
   auto points_to_supported_nodes = s.point_nodes_to_nodes.begin();
   auto fill_func = [=] HPC_DEVICE (lgr::point_index point)
   {
@@ -105,12 +105,12 @@ void do_otm_iterative_point_support_search(lgr::state &s, int min_support_nodes_
         std::numeric_limits<int>::max());
   }
 
-  s.point_nodes.assign_sizes(counts);
+  s.points_to_point_nodes.assign_sizes(counts);
 
   auto new_points_to_support_size = hpc::reduce(hpc::device_policy(), counts, 0);
   s.point_nodes_to_nodes.resize(new_points_to_support_size);
 
-  auto points_to_nodes_of_point = s.point_nodes.cbegin();
+  auto points_to_nodes_of_point = s.points_to_point_nodes.cbegin();
   auto points_to_supported_nodes = s.point_nodes_to_nodes.begin();
   auto fill_func = [=] HPC_DEVICE (lgr::point_index point)
   {
