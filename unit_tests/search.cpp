@@ -198,17 +198,17 @@ void check_search_results(state &s,
     for (auto point_node: point_node_range)
     {
       auto old_node = old_points_to_supported_nodes[point_node];
-      bool found_node_in_support = false;
+      bool found_point_node = false;
       for (auto new_point_node: point_node_range)
       {
         auto new_node = new_points_to_supported_nodes[new_point_node];
         if (new_node == old_node)
         {
-          found_node_in_support = true;
+          found_point_node = true;
           break;
         }
       }
-      EXPECT_TRUE(found_node_in_support) << "  node = " << old_node;
+      EXPECT_TRUE(found_point_node) << "  node = " << old_node;
     }
 
     // check no extra nodes found

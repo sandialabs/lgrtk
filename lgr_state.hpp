@@ -29,7 +29,7 @@ class state {
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes;
   hpc::device_vector<point_index, node_point_index> nodes_to_influenced_points;
-  hpc::device_vector<node_in_support_index, node_point_index> node_influenced_points_to_supporting_nodes;
+  hpc::device_vector<point_node_index, node_point_index> node_influenced_points_to_supporting_nodes;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
   hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;

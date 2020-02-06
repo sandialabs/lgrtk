@@ -39,8 +39,7 @@ tetrahedron_single_point(lgr::state& s)
 
   s.points.resize(num_points);
 
-  using NSI = lgr::node_in_support_index;
-  hpc::device_vector<NSI, PI> support_sizes(num_points, NSI(num_nodes));
+  hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
   s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
@@ -63,10 +62,10 @@ tetrahedron_single_point(lgr::state& s)
 
   s.node_influenced_points_to_supporting_nodes.resize(num_nodes * num_points);
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
-  node_points_to_node_ordinals[NSI(0)] = NI(0);
-  node_points_to_node_ordinals[NSI(1)] = NI(1);
-  node_points_to_node_ordinals[NSI(2)] = NI(2);
-  node_points_to_node_ordinals[NSI(3)] = NI(3);
+  node_points_to_node_ordinals[PNI(0)] = NI(0);
+  node_points_to_node_ordinals[PNI(1)] = NI(1);
+  node_points_to_node_ordinals[PNI(2)] = NI(2);
+  node_points_to_node_ordinals[PNI(3)] = NI(3);
 
   lgr::otm_initialize_grad_val_N(s);
 
@@ -113,8 +112,7 @@ two_tetrahedra_two_points(lgr::state& s)
 
   s.points.resize(num_points);
 
-  using NSI = lgr::node_in_support_index;
-  hpc::device_vector<NSI, PI> support_sizes(num_points, NSI(num_nodes));
+  hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
   s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
@@ -150,16 +148,16 @@ two_tetrahedra_two_points(lgr::state& s)
 
   s.node_influenced_points_to_supporting_nodes.resize(num_nodes * num_points);
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
-  node_points_to_node_ordinals[NSI(0)] = NI(0);
-  node_points_to_node_ordinals[NSI(1)] = NI(0);
-  node_points_to_node_ordinals[NSI(2)] = NI(1);
-  node_points_to_node_ordinals[NSI(3)] = NI(1);
-  node_points_to_node_ordinals[NSI(4)] = NI(2);
-  node_points_to_node_ordinals[NSI(5)] = NI(3);
-  node_points_to_node_ordinals[NSI(6)] = NI(3);
-  node_points_to_node_ordinals[NSI(7)] = NI(3);
-  node_points_to_node_ordinals[NSI(8)] = NI(4);
-  node_points_to_node_ordinals[NSI(9)] = NI(4);
+  node_points_to_node_ordinals[PNI(0)] = NI(0);
+  node_points_to_node_ordinals[PNI(1)] = NI(0);
+  node_points_to_node_ordinals[PNI(2)] = NI(1);
+  node_points_to_node_ordinals[PNI(3)] = NI(1);
+  node_points_to_node_ordinals[PNI(4)] = NI(2);
+  node_points_to_node_ordinals[PNI(5)] = NI(3);
+  node_points_to_node_ordinals[PNI(6)] = NI(3);
+  node_points_to_node_ordinals[PNI(7)] = NI(3);
+  node_points_to_node_ordinals[PNI(8)] = NI(4);
+  node_points_to_node_ordinals[PNI(9)] = NI(4);
 
   lgr::otm_initialize_grad_val_N(s);
 
@@ -228,8 +226,7 @@ hexahedron_eight_points(lgr::state& s)
 
   s.points.resize(num_points);
 
-  using NSI = lgr::node_in_support_index;
-  hpc::device_vector<NSI, PI> support_sizes(num_points, NSI(num_nodes));
+  hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
   s.nodes_in_support.assign_sizes(support_sizes);
 
   s.points_to_supported_nodes.resize(num_points * num_nodes);
@@ -256,7 +253,7 @@ hexahedron_eight_points(lgr::state& s)
   auto const node_points_to_node_ordinals = s.node_influenced_points_to_supporting_nodes.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const node_ordinal = i / num_points;
-    node_points_to_node_ordinals[NSI(i)] = NI(node_ordinal);
+    node_points_to_node_ordinals[PNI(i)] = NI(node_ordinal);
   }
 
   lgr::otm_initialize_grad_val_N(s);

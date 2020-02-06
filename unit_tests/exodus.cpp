@@ -19,7 +19,7 @@ using nodes_size_type = range_size_type<node_index>;
 using elems_size_type = range_size_type<element_index>;
 using points_size_type = range_size_type<point_index>;
 using nodes_in_elem_size_type = range_size_type<node_in_element_index>;
-using nodes_in_support_size_type = range_size_type<node_in_support_index>;
+using nodes_in_support_size_type = range_size_type<point_node_index>;
 }
 
 TEST(exodus, readSimpleFile) {
