@@ -124,7 +124,7 @@ TEST(mechanics, hex_translation)
   lgr::otm_lump_nodal_mass(s);
 
   auto const num_node_dofs = s.x.size();
-  auto const num_point_dofs = s.xm.size();
+  auto const num_point_dofs = s.xp.size();
 
   s.u.resize(num_node_dofs);
   s.v.resize(num_node_dofs);

@@ -40,14 +40,14 @@ void otm_initialize_grad_val_N(state& s) {
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
-  auto const points_to_xm = s.xm.cbegin();
+  auto const points_to_xp = s.xp.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
   auto const nodes_in_support = s.points_to_point_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = nodes_in_support[point];
     auto const h = points_to_h[point];
     auto const beta = gamma / h / h;
-    auto const xm = points_to_xm[point].load();
+    auto const xp = points_to_xp[point].load();
 #if 0
     std::cout << "point     : " << point << std::endl;
 #endif
@@ -71,7 +71,7 @@ void otm_initialize_grad_val_N(state& s) {
       for (auto point_node : point_nodes) {
         auto const node = support_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
-        auto const r = xn - xm;
+        auto const r = xn - xp;
         auto const rs = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rs);
@@ -105,7 +105,7 @@ void otm_initialize_grad_val_N(state& s) {
     for (auto point_node : point_nodes) {
       auto const node = support_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
-      auto const r = xn - xm;
+      auto const r = xn - xp;
       auto const rs = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rs);
@@ -123,7 +123,7 @@ void otm_initialize_grad_val_N(state& s) {
     for (auto point_node : point_nodes) {
       auto const node = support_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
-      auto const r = xn - xm;
+      auto const r = xn - xp;
       auto const N = point_nodes_to_N[point_node];
       auto const Jinvr = hpc::solve_full_pivot(J, r);
       point_nodes_to_grad_N[point_node] = N * Z * Jinvr;

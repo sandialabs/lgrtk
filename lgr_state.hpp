@@ -82,7 +82,7 @@ class state {
   hpc::device_vector<point_index, node_point_index> node_points_to_points;
   hpc::device_vector<point_node_index, node_point_index> node_points_to_point_nodes;
   hpc::device_array_vector<hpc::momentum<double>, node_index> lm; // nodal linear momenta
-  hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
+  hpc::device_array_vector<hpc::position<double>, point_index> xp; // current material point positions
   hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
 
