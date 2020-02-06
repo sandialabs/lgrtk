@@ -36,21 +36,18 @@ void otm_initialize_V(state& s)
 
 void otm_initialize_grad_val_N(state& s) {
   hpc::dimensionless<double> gamma(1.5);
-  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
-  auto const nodes_in_support = s.points_to_point_nodes.cbegin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
-    auto point_nodes = nodes_in_support[point];
+    auto point_nodes = points_to_point_nodes[point];
     auto const h = points_to_h[point];
     auto const beta = gamma / h / h;
     auto const xp = points_to_xp[point].load();
-#if 0
-    std::cout << "point     : " << point << std::endl;
-#endif
     // Newton's algorithm
     bool converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
@@ -58,44 +55,23 @@ void otm_initialize_grad_val_N(state& s) {
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     jacobian J = jacobian::zero();
     auto const max_iter = 16;
-#if 0
-    std::cout << "max_iter   : " << max_iter << std::endl;
-#endif
     for (auto iter = 0; iter < max_iter; ++iter) {
       hpc::position<double> R(0.0, 0.0, 0.0);
       jacobian dRdmu = jacobian::zero();
-#if 0
-      std::cout << "iter               : " << iter << std::endl;
-      std::cout << "point_nodes.size() : " << points_to_point_nodes.size() << std::endl;
-#endif
       for (auto point_node : point_nodes) {
-        auto const node = support_nodes_to_nodes[point_node];
+        auto const node = point_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
         auto const r = xn - xp;
-        auto const rs = hpc::inner_product(r, r);
+        auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
-        auto const boltzmann_factor = std::exp(-mur - beta * rs);
-#if 0
-        std::cout << "point_node   : " << point_node << std::endl;
-        std::cout << "node         : " << node << std::endl;
-#endif
+        auto const boltzmann_factor = std::exp(-mur - beta * rr);
         R += r * boltzmann_factor;
         dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
       }
-      auto const dmu = - hpc::solve_full_pivot(dRdmu, R);
+      auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
       auto const error = hpc::norm(dmu) / hpc::norm(mu);
       converged = error <= eps;
-#if 0
-      std::cout << "converged  : " << converged << std::endl;
-      std::cout << "iter       : " << iter << std::endl;
-      std::cout << "det(J)     : " << hpc::determinant(dRdmu) << std::endl;
-      std::cout << "|R|        : " << hpc::norm(R) << std::endl;
-      std::cout << "|dmu|      : " << hpc::norm(dmu) << std::endl;
-      std::cout << "|mu|       : " << hpc::norm(mu) << std::endl;
-      std::cout << "|dmu|/|mu| : " << error << std::endl;
-      std::cout << "eps        : " << eps << std::endl;
-#endif
       if (converged == true) {
         J = dRdmu;
         break;
@@ -103,30 +79,23 @@ void otm_initialize_grad_val_N(state& s) {
     }
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
-      auto const node = support_nodes_to_nodes[point_node];
+      auto const node = point_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xp;
-      auto const rs = hpc::inner_product(r, r);
+      auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
-      auto const boltzmann_factor = std::exp(-mur - beta * rs);
+      auto const boltzmann_factor = std::exp(-mur - beta * rr);
       Z += boltzmann_factor;
       point_nodes_to_N[point_node] = boltzmann_factor;
     }
     for (auto point_node : point_nodes) {
-      auto const N = point_nodes_to_N[point_node];
-      point_nodes_to_N[point_node] = N / Z;
-#if 0
-        std::cout << "point_node   : " << point_node << std::endl;
-        std::cout << "N            : " << point_nodes_to_N[point_node] << std::endl;
-#endif
-    }
-    for (auto point_node : point_nodes) {
-      auto const node = support_nodes_to_nodes[point_node];
+      auto const node = point_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
       auto const r = xn - xp;
-      auto const N = point_nodes_to_N[point_node];
       auto const Jinvr = hpc::solve_full_pivot(J, r);
-      point_nodes_to_grad_N[point_node] = N * Z * Jinvr;
+      auto const NZ = point_nodes_to_N[point_node];
+      point_nodes_to_N[point_node] = NZ / Z;
+      point_nodes_to_grad_N[point_node] = NZ * Jinvr;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
