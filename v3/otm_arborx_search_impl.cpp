@@ -110,12 +110,12 @@ HPC_NOINLINE device_point_view create_arborx_nodes(const lgr::state& s)
 
 HPC_NOINLINE device_point_view create_arborx_points(const lgr::state& s)
 {
-  return make_point_view("points", s.points, s.xm);
+  return make_point_view("points", s.points, s.xp);
 }
 
 HPC_NOINLINE device_sphere_view create_arborx_point_spheres(const lgr::state& s)
 {
-  return make_sphere_view("point_spheres", s.points, s.xm, s.h_otm);
+  return make_sphere_view("point_spheres", s.points, s.xp, s.h_otm);
 }
 
 void inflate_sphere_query_radii(device_intersects_query_view queries, double factor)

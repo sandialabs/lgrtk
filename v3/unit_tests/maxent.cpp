@@ -143,7 +143,7 @@ TEST(maxent, linear_reproducibility_1)
   tetrahedron_single_point(s);
 
   auto num_points = s.points.size();
-  auto const points_to_xm = s.xm.begin();
+  auto const points_to_xp = s.xp.begin();
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points_to_point_nodes.cbegin();
@@ -151,7 +151,7 @@ TEST(maxent, linear_reproducibility_1)
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
-    auto const xm = points_to_xm[point].load();
+    auto const xp = points_to_xp[point].load();
     hpc::position<double> x(0, 0, 0);
     for (auto point_node : support) {
       auto const node = points_to_point_nodes[point_node];
@@ -159,7 +159,7 @@ TEST(maxent, linear_reproducibility_1)
       auto const N = point_nodes_to_N[point_node];
       x += (N * xn);
     }
-    errors += hpc::abs(x - xm);
+    errors += hpc::abs(x - xp);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
   errors /= (3 * num_points);
@@ -176,7 +176,7 @@ TEST(maxent, linear_reproducibility_2)
   two_tetrahedra_two_points(s);
 
   auto num_points = s.points.size();
-  auto const points_to_xm = s.xm.begin();
+  auto const points_to_xp = s.xp.begin();
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points_to_point_nodes.cbegin();
@@ -184,7 +184,7 @@ TEST(maxent, linear_reproducibility_2)
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
-    auto const xm = points_to_xm[point].load();
+    auto const xp = points_to_xp[point].load();
     hpc::position<double> x(0, 0, 0);
     for (auto point_node : support) {
       auto const node = points_to_point_nodes[point_node];
@@ -192,7 +192,7 @@ TEST(maxent, linear_reproducibility_2)
       auto const N = point_nodes_to_N[point_node];
       x += (N * xn);
     }
-    errors += hpc::abs(x - xm);
+    errors += hpc::abs(x - xp);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
   errors /= (3 * num_points);
@@ -209,7 +209,7 @@ TEST(maxent, linear_reproducibility_3)
   hexahedron_eight_points(s);
 
   auto num_points = s.points.size();
-  auto const points_to_xm = s.xm.begin();
+  auto const points_to_xp = s.xp.begin();
   auto const point_nodes_to_N = s.N.begin();
   auto const nodes_to_x = s.x.begin();
   auto const supports = s.points_to_point_nodes.cbegin();
@@ -217,7 +217,7 @@ TEST(maxent, linear_reproducibility_3)
   hpc::position<double> errors(0, 0, 0);
   auto functor = [=, &errors] HPC_DEVICE (lgr::point_index const point) {
     auto const support = supports[point];
-    auto const xm = points_to_xm[point].load();
+    auto const xp = points_to_xp[point].load();
     hpc::position<double> x(0, 0, 0);
     for (auto point_node : support) {
       auto const node = points_to_point_nodes[point_node];
@@ -225,7 +225,7 @@ TEST(maxent, linear_reproducibility_3)
       auto const N = point_nodes_to_N[point_node];
       x += (N * xn);
     }
-    errors += hpc::abs(x - xm);
+    errors += hpc::abs(x - xp);
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
   errors /= (3 * num_points);

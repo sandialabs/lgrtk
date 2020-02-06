@@ -25,9 +25,9 @@ tetrahedron_single_point(lgr::state& s)
 
   using PI = lgr::point_index;
   auto const num_points = PI(1);
-  s.xm.resize(num_points);
-  auto const points_to_xm = s.xm.begin();
-  points_to_xm[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
+  s.xp.resize(num_points);
+  auto const points_to_xp = s.xp.begin();
+  points_to_xp[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
 
   using PNI = lgr::point_node_index;
   s.N.resize(PNI(num_points * num_nodes));
@@ -96,10 +96,10 @@ two_tetrahedra_two_points(lgr::state& s)
 
   using PI = lgr::point_index;
   auto const num_points = PI(2);
-  s.xm.resize(num_points);
-  auto const points_to_xm = s.xm.begin();
-  points_to_xm[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
-  points_to_xm[PI(1)] = hpc::position<double>(0.50, 0.50, 0.50);
+  s.xp.resize(num_points);
+  auto const points_to_xp = s.xp.begin();
+  points_to_xp[PI(0)] = hpc::position<double>(0.25, 0.25, 0.25);
+  points_to_xp[PI(1)] = hpc::position<double>(0.50, 0.50, 0.50);
 
   using PNI = lgr::point_node_index;
   s.N.resize(PNI(num_points * num_nodes));
@@ -202,17 +202,17 @@ hexahedron_eight_points(lgr::state& s)
 
   using PI = lgr::point_index;
   auto const num_points = PI(8);
-  s.xm.resize(num_points);
-  auto const points_to_xm = s.xm.begin();
+  s.xp.resize(num_points);
+  auto const points_to_xp = s.xp.begin();
   auto const g = std::sqrt(3.0) / 3.0;
-  points_to_xm[PI(0)] = hpc::position<double>(-g, -g, -g);
-  points_to_xm[PI(1)] = hpc::position<double>( g, -g, -g);
-  points_to_xm[PI(2)] = hpc::position<double>( g,  g, -g);
-  points_to_xm[PI(3)] = hpc::position<double>(-g,  g, -g);
-  points_to_xm[PI(4)] = hpc::position<double>(-g, -g,  g);
-  points_to_xm[PI(5)] = hpc::position<double>( g, -g,  g);
-  points_to_xm[PI(6)] = hpc::position<double>( g,  g,  g);
-  points_to_xm[PI(7)] = hpc::position<double>(-g,  g,  g);
+  points_to_xp[PI(0)] = hpc::position<double>(-g, -g, -g);
+  points_to_xp[PI(1)] = hpc::position<double>( g, -g, -g);
+  points_to_xp[PI(2)] = hpc::position<double>( g,  g, -g);
+  points_to_xp[PI(3)] = hpc::position<double>(-g,  g, -g);
+  points_to_xp[PI(4)] = hpc::position<double>(-g, -g,  g);
+  points_to_xp[PI(5)] = hpc::position<double>( g, -g,  g);
+  points_to_xp[PI(6)] = hpc::position<double>( g,  g,  g);
+  points_to_xp[PI(7)] = hpc::position<double>(-g,  g,  g);
 
   using PNI = lgr::point_node_index;
   s.N.resize(PNI(num_points * num_nodes));

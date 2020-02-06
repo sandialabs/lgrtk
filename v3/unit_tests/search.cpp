@@ -64,7 +64,7 @@ TEST_F(arborx_search, canInitializeArborXPointsFromOTMPoints)
 
   EXPECT_EQ(search_points.extent(0), 1);
 
-  auto points_to_x = s.xm.cbegin();
+  auto points_to_x = s.xp.cbegin();
   auto pt_check_func = [=](point_index point)
   {
     auto&& lgr_pt_coord = points_to_x[point].load();
@@ -87,7 +87,7 @@ TEST_F(arborx_search, canInitializeArborXPointSpheresFromOTMPoints)
 
   EXPECT_EQ(search_points.extent(0), 1);
 
-  auto points_to_x = s.xm.cbegin();
+  auto points_to_x = s.xp.cbegin();
   auto points_to_r = s.h_otm.cbegin();
   auto pt_check_func = [=](point_index point)
   {
