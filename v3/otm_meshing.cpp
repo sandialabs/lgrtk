@@ -45,7 +45,7 @@ void invert_otm_point_node_relations(lgr::state &s)
       hpc::atomic_ref<int> count(counts[node]);
       int const offset = count++;
       auto const node_points_range = points_in_influence[node];
-      auto const node_point = node_points_range[node_in_support_index(offset)];
+      auto const node_point = node_points_range[point_node_index(offset)];
       node_points_to_points[node_point] = point;
       node_points_to_supporting_nodes[node_point] = ni;
     }

@@ -395,7 +395,7 @@ HPC_NOINLINE inline void build_otm_mesh(input const& in, state& s)
   int const nvxy = nvx * nvy;
   int const nv = nvxy * nvz;
   s.nodes.resize(node_index(nv));
-  hpc::device_vector<point_index> support_sizes(s.points.size(), node_in_support_index(nv));
+  hpc::device_vector<point_index> support_sizes(s.points.size(), point_node_index(nv));
   s.nodes_in_support.assign_sizes(support_sizes);
   int const nxy = nx * ny;
   int const nh = nxy * nz;
