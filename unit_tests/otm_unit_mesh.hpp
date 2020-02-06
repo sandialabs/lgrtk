@@ -43,29 +43,29 @@ tetrahedron_single_point(lgr::state& s)
   s.points_to_point_nodes.assign_sizes(support_sizes);
 
   s.point_nodes_to_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
-  support_nodes_to_nodes[PNI(0)] = NI(0);
-  support_nodes_to_nodes[PNI(1)] = NI(1);
-  support_nodes_to_nodes[PNI(2)] = NI(2);
-  support_nodes_to_nodes[PNI(3)] = NI(3);
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.begin();
+  point_nodes_to_nodes[PNI(0)] = NI(0);
+  point_nodes_to_nodes[PNI(1)] = NI(1);
+  point_nodes_to_nodes[PNI(2)] = NI(2);
+  point_nodes_to_nodes[PNI(3)] = NI(3);
 
   using NPI = lgr::node_point_index;
   hpc::device_vector<NPI, NI> influence_sizes(num_nodes, NPI(num_points));
   s.nodes_to_node_points.assign_sizes(influence_sizes);
 
   s.node_points_to_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.node_points_to_points.begin();
-  influence_points_to_points[NPI(0)] = PI(0);
-  influence_points_to_points[NPI(1)] = PI(0);
-  influence_points_to_points[NPI(2)] = PI(0);
-  influence_points_to_points[NPI(3)] = PI(0);
+  auto const node_points_to_points = s.node_points_to_points.begin();
+  node_points_to_points[NPI(0)] = PI(0);
+  node_points_to_points[NPI(1)] = PI(0);
+  node_points_to_points[NPI(2)] = PI(0);
+  node_points_to_points[NPI(3)] = PI(0);
 
   s.node_points_to_point_nodes.resize(num_nodes * num_points);
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.begin();
-  node_points_to_node_ordinals[PNI(0)] = NI(0);
-  node_points_to_node_ordinals[PNI(1)] = NI(1);
-  node_points_to_node_ordinals[PNI(2)] = NI(2);
-  node_points_to_node_ordinals[PNI(3)] = NI(3);
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.begin();
+  node_points_to_point_nodes[NPI(0)] = PNI(0);
+  node_points_to_point_nodes[NPI(1)] = PNI(1);
+  node_points_to_point_nodes[NPI(2)] = PNI(2);
+  node_points_to_point_nodes[NPI(3)] = PNI(3);
 
   lgr::otm_initialize_grad_val_N(s);
 
@@ -116,48 +116,48 @@ two_tetrahedra_two_points(lgr::state& s)
   s.points_to_point_nodes.assign_sizes(support_sizes);
 
   s.point_nodes_to_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
-  support_nodes_to_nodes[PNI(0)] = NI(0);
-  support_nodes_to_nodes[PNI(1)] = NI(1);
-  support_nodes_to_nodes[PNI(2)] = NI(2);
-  support_nodes_to_nodes[PNI(3)] = NI(3);
-  support_nodes_to_nodes[PNI(4)] = NI(4);
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.begin();
+  point_nodes_to_nodes[PNI(0)] = NI(0);
+  point_nodes_to_nodes[PNI(1)] = NI(1);
+  point_nodes_to_nodes[PNI(2)] = NI(2);
+  point_nodes_to_nodes[PNI(3)] = NI(3);
+  point_nodes_to_nodes[PNI(4)] = NI(4);
 
-  support_nodes_to_nodes[PNI(5)] = NI(0);
-  support_nodes_to_nodes[PNI(6)] = NI(1);
-  support_nodes_to_nodes[PNI(7)] = NI(2);
-  support_nodes_to_nodes[PNI(8)] = NI(3);
-  support_nodes_to_nodes[PNI(9)] = NI(4);
+  point_nodes_to_nodes[PNI(5)] = NI(0);
+  point_nodes_to_nodes[PNI(6)] = NI(1);
+  point_nodes_to_nodes[PNI(7)] = NI(2);
+  point_nodes_to_nodes[PNI(8)] = NI(3);
+  point_nodes_to_nodes[PNI(9)] = NI(4);
 
   using NPI = lgr::node_point_index;
   hpc::device_vector<NPI, NI> influence_sizes(num_nodes, NPI(num_points));
   s.nodes_to_node_points.assign_sizes(influence_sizes);
 
   s.node_points_to_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.node_points_to_points.begin();
-  influence_points_to_points[NPI(0)] = PI(0);
-  influence_points_to_points[NPI(1)] = PI(1);
-  influence_points_to_points[NPI(2)] = PI(0);
-  influence_points_to_points[NPI(3)] = PI(1);
-  influence_points_to_points[NPI(4)] = PI(0);
-  influence_points_to_points[NPI(5)] = PI(1);
-  influence_points_to_points[NPI(6)] = PI(0);
-  influence_points_to_points[NPI(7)] = PI(1);
-  influence_points_to_points[NPI(8)] = PI(0);
-  influence_points_to_points[NPI(9)] = PI(1);
+  auto const node_points_to_points = s.node_points_to_points.begin();
+  node_points_to_points[NPI(0)] = PI(0);
+  node_points_to_points[NPI(1)] = PI(1);
+  node_points_to_points[NPI(2)] = PI(0);
+  node_points_to_points[NPI(3)] = PI(1);
+  node_points_to_points[NPI(4)] = PI(0);
+  node_points_to_points[NPI(5)] = PI(1);
+  node_points_to_points[NPI(6)] = PI(0);
+  node_points_to_points[NPI(7)] = PI(1);
+  node_points_to_points[NPI(8)] = PI(0);
+  node_points_to_points[NPI(9)] = PI(1);
 
   s.node_points_to_point_nodes.resize(num_nodes * num_points);
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.begin();
-  node_points_to_node_ordinals[PNI(0)] = NI(0);
-  node_points_to_node_ordinals[PNI(1)] = NI(0);
-  node_points_to_node_ordinals[PNI(2)] = NI(1);
-  node_points_to_node_ordinals[PNI(3)] = NI(1);
-  node_points_to_node_ordinals[PNI(4)] = NI(2);
-  node_points_to_node_ordinals[PNI(5)] = NI(3);
-  node_points_to_node_ordinals[PNI(6)] = NI(3);
-  node_points_to_node_ordinals[PNI(7)] = NI(3);
-  node_points_to_node_ordinals[PNI(8)] = NI(4);
-  node_points_to_node_ordinals[PNI(9)] = NI(4);
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.begin();
+  node_points_to_point_nodes[NPI(0)] = PNI(0);
+  node_points_to_point_nodes[NPI(1)] = PNI(0);
+  node_points_to_point_nodes[NPI(2)] = PNI(1);
+  node_points_to_point_nodes[NPI(3)] = PNI(1);
+  node_points_to_point_nodes[NPI(4)] = PNI(2);
+  node_points_to_point_nodes[NPI(5)] = PNI(3);
+  node_points_to_point_nodes[NPI(6)] = PNI(3);
+  node_points_to_point_nodes[NPI(7)] = PNI(3);
+  node_points_to_point_nodes[NPI(8)] = PNI(4);
+  node_points_to_point_nodes[NPI(9)] = PNI(4);
 
   lgr::otm_initialize_grad_val_N(s);
 
@@ -230,10 +230,10 @@ hexahedron_eight_points(lgr::state& s)
   s.points_to_point_nodes.assign_sizes(support_sizes);
 
   s.point_nodes_to_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const point_node = i % num_points;
-    support_nodes_to_nodes[PNI(i)] = NI(point_node);
+    point_nodes_to_nodes[PNI(i)] = NI(point_node);
 
   }
 
@@ -242,18 +242,18 @@ hexahedron_eight_points(lgr::state& s)
   s.nodes_to_node_points.assign_sizes(influence_sizes);
 
   s.node_points_to_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.node_points_to_points.begin();
+  auto const node_points_to_points = s.node_points_to_points.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const node_point = i % num_nodes;
-    influence_points_to_points[NPI(i)] = PI(node_point);
+    node_points_to_points[NPI(i)] = PI(node_point);
 
   }
 
   s.node_points_to_point_nodes.resize(num_nodes * num_points);
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.begin();
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const node_ordinal = i / num_points;
-    node_points_to_node_ordinals[PNI(i)] = NI(node_ordinal);
+    node_points_to_point_nodes[NPI(i)] = PNI(node_ordinal);
   }
 
   lgr::otm_initialize_grad_val_N(s);
@@ -270,32 +270,4 @@ hexahedron_eight_points(lgr::state& s)
     rho[PI(i)] = 1000.0;
   }
 
-}
-
-inline void
-hexahedron_eight_points(lgr::input& in, lgr::state& s)
-{
-  hexahedron_eight_points(s);
-
-  constexpr lgr::material_index num_materials(1);
-  constexpr lgr::material_index num_boundaries(0);
-
-  lgr::input hex_input(num_materials, num_boundaries);
-  hex_input.name = "single_hex";
-  hex_input.element = lgr::MESHLESS;
-  hex_input.time_integrator = lgr::OTM_EXPLICIT;
-  hex_input.end_time = 1.0e-3;
-  hex_input.num_file_outputs = 100;
-  hex_input.elements_along_x = 1;
-  hex_input.x_domain_size = 2.0;
-  hex_input.elements_along_y = 1;
-  hex_input.y_domain_size = 2.0;
-  hex_input.elements_along_z = 1;
-  hex_input.z_domain_size = 2.0;;
-  hex_input.rho0[0] = 1000.0;
-  hex_input.enable_neo_Hookean[0] = true;
-  hex_input.K0[0] = 1.0e09;
-  hex_input.G0[0] = 1.0e09;
-
-  in = std::move(hex_input);
 }

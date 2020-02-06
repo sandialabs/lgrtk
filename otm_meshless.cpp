@@ -137,22 +137,20 @@ void otm_assemble_internal_force(state& s)
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
-  auto const supports = s.points_to_point_nodes.cbegin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const nodes_to_f = s.f.begin();
   auto const node_points_to_points = s.node_points_to_points.cbegin();
   auto const nodes_to_node_points = s.nodes_to_node_points.cbegin();
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.cbegin();
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto node_f = hpc::force<double>::zero();
     auto const node_points = nodes_to_node_points[node];
-    for (auto const node_point : node_points)
-    {
+    for (auto const node_point : node_points) {
       auto const point = node_points_to_points[node_point];
       auto const sigma = points_to_sigma[point].load();
       auto const V = points_to_V[point];
-      auto const point_nodes = supports[point];
-      auto node_ordinal = node_points_to_node_ordinals[node_point];
-      auto point_node = point_nodes[node_ordinal];
+      auto const point_nodes = points_to_point_nodes[point];
+      auto const point_node = point_nodes[node_points_to_point_nodes[node_point]];
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const f = -(sigma * grad_N) * V;
       node_f = node_f + f;
@@ -169,23 +167,21 @@ void otm_assemble_external_force(state& s)
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_N = s.N.cbegin();
-  auto const supports = s.points_to_point_nodes.cbegin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const nodes_to_f = s.f.begin();
   auto const node_points_to_points = s.node_points_to_points.cbegin();
   auto const nodes_to_node_points = s.nodes_to_node_points.cbegin();
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.cbegin();
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto node_f = hpc::force<double>::zero();
     auto const node_points = nodes_to_node_points[node];
-    for (auto const node_point : node_points)
-    {
+    for (auto const node_point : node_points) {
       auto const point = node_points_to_points[node_point];
       auto const body_acce = points_to_body_acce[point].load();
       auto const V = points_to_V[point];
       auto const rho = points_to_rho[point];
-      auto const point_nodes = supports[point];
-      auto node_ordinal = node_points_to_node_ordinals[node_point];
-      auto point_node = point_nodes[node_ordinal];
+      auto const point_nodes = points_to_point_nodes[point];
+      auto const point_node = point_nodes[node_points_to_point_nodes[node_point]];
       auto const N = point_nodes_to_N[point_node];
       auto const m = N * rho * V;
       auto const f = m * body_acce;
@@ -213,51 +209,29 @@ void otm_lump_nodal_mass(state& s) {
   auto const node_to_mass = s.mass.begin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_V = s.V.cbegin();
-  auto const influences = s.nodes_to_node_points.cbegin();
+  auto const nodes_to_node_points = s.nodes_to_node_points.cbegin();
   auto const node_points_to_points = s.node_points_to_points.cbegin();
-  auto const supports = s.points_to_point_nodes.cbegin();
-  auto const node_points_to_node_ordinals = s.node_points_to_point_nodes.cbegin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto const node_points_to_point_nodes = s.node_points_to_point_nodes.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto zero_mass = [=] HPC_DEVICE (node_index const node) {
     node_to_mass[node] = 0.0;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, zero_mass);
   auto functor = [=] HPC_DEVICE (node_index const node) {
-#if 0
-    std::cout << '\n';
-    std::cout << "**** node : " << node << '\n';
-#endif
     auto node_m = 0.0;
-    auto const node_points = influences[node];
+    auto const node_points = nodes_to_node_points[node];
     for (auto const node_point : node_points) {
       auto const point = node_points_to_points[node_point];
       auto const V = points_to_V[point];
       auto const rho = points_to_rho[point];
-      auto const point_nodes = supports[point];
-      auto node_ordinal = node_points_to_node_ordinals[node_point];
-      auto point_node = point_nodes[node_ordinal];
+      auto const point_nodes = points_to_point_nodes[point];
+      auto const point_node = point_nodes[node_points_to_point_nodes[node_point]];
       auto const N = point_nodes_to_N[point_node];
       auto const m = N * rho * V;
       node_m += m;
-#if 0
-      std::cout << "**** node_point   : " << node_point << '\n';
-      std::cout << "**** point        : " << point << '\n';
-      std::cout << "**** V            : " << V << '\n';
-      std::cout << "**** rho          : " << rho << '\n';
-      std::cout << "**** node_ordinal : " << node_ordinal << '\n';
-      std::cout << "**** point_node   : " << point_node << '\n';
-      std::cout << "**** N            : " << N << '\n';
-      std::cout << "**** m            : " << m << '\n';
-      std::cout << "**** node_m             : " << node_m << '\n';
-      std::cout << '\n';
-#endif
     }
     node_to_mass[node] += node_m;
-#if 0
-    std::cout << "**** node_m             : " << node_m << '\n';
-    std::cout << "**** node_to_mass[node] : " << node_to_mass[node] << '\n';
-    std::cout << '\n';
-#endif
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
