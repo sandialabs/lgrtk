@@ -186,7 +186,7 @@ void check_search_results(state &s,
     const hpc::device_vector<node_index, point_node_index> &points_to_supported_nodes_before_search,
     const int num_nodes_in_support_before_search)
 {
-  auto points_to_nodes_of_point = s.point_nodes.cbegin();
+  auto points_to_nodes_of_point = s.points_to_point_nodes.cbegin();
   auto old_points_to_supported_nodes = points_to_supported_nodes_before_search.cbegin();
   auto new_points_to_supported_nodes = s.point_nodes_to_nodes.cbegin();
   auto pt_node_check_func = [=](lgr::point_index point) 
@@ -304,7 +304,7 @@ TEST_F(arborx_search, invertConnectivityForSingleTet)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.node_points.cbegin();
+  auto points_in_influence = s.nodes_to_node_points.cbegin();
   auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
   auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];
@@ -324,7 +324,7 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.node_points.cbegin();
+  auto points_in_influence = s.nodes_to_node_points.cbegin();
   auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
   auto node_point_check_func = [=] (node_index const node) {
     auto node_points_range = points_in_influence[node];

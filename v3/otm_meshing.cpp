@@ -13,7 +13,7 @@ namespace lgr {
 
 void invert_otm_point_node_relations(lgr::state &s)
 {
-  auto points_to_point_nodes = s.point_nodes.cbegin();
+  auto points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   hpc::device_vector<int, node_index> node_point_counts(s.nodes.size(), 0);
   auto counts = node_point_counts.begin();
@@ -29,12 +29,12 @@ void invert_otm_point_node_relations(lgr::state &s)
   auto total_node_points = hpc::reduce(hpc::device_policy(), node_point_counts, 0);
 
   s.node_points_to_points.resize(node_point_index(total_node_points));
-  s.node_influenced_points_to_supporting_nodes.resize(node_point_index(total_node_points));
-  s.node_points.assign_sizes(node_point_counts);
+  s.node_points_to_point_nodes.resize(node_point_index(total_node_points));
+  s.nodes_to_node_points.assign_sizes(node_point_counts);
   hpc::fill(hpc::device_policy(), node_point_counts, 0);
   auto node_points_to_points = s.node_points_to_points.begin();
-  auto points_in_influence = s.node_points.cbegin();
-  auto node_points_to_supporting_nodes = s.node_influenced_points_to_supporting_nodes.begin();
+  auto points_in_influence = s.nodes_to_node_points.cbegin();
+  auto node_points_to_supporting_nodes = s.node_points_to_point_nodes.begin();
   auto node_point_fill_functor = [=] HPC_DEVICE(point_index const point)
   {
     auto const point_nodes = points_to_point_nodes[point];
@@ -53,7 +53,7 @@ void invert_otm_point_node_relations(lgr::state &s)
 
   hpc::for_each(hpc::device_policy(), s.points, node_point_fill_functor);
 
-  sort_node_relations(s, s.node_points, s.node_points_to_points, s.node_influenced_points_to_supporting_nodes);
+  sort_node_relations(s, s.nodes_to_node_points, s.node_points_to_points, s.node_points_to_point_nodes);
 }
 
 }

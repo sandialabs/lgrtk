@@ -21,25 +21,16 @@ class state {
   hpc::time<double> time = 0.0;
   hpc::counting_range<element_index> elements{element_index(0)};
   hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
-  hpc::device_range_sum<point_node_index, point_index> point_nodes; // OTM: Support for each point
-  hpc::device_range_sum<node_point_index, node_index> node_points; // OTM: Influence for each node
   hpc::counting_range<node_index> nodes{node_index(0)};
-  hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::counting_range<point_index> points{point_index(0)};
+  hpc::counting_range<point_in_element_index> points_in_element{point_in_element_index(1)};
   hpc::device_vector<node_index, element_node_index> elements_to_nodes;
-  hpc::device_vector<node_index, point_node_index> point_nodes_to_nodes;
-  hpc::device_vector<point_index, node_point_index> node_points_to_points;
-  hpc::device_vector<point_node_index, node_point_index> node_influenced_points_to_supporting_nodes;
   hpc::device_range_sum<node_element_index, node_index> nodes_to_node_elements;
   hpc::device_vector<element_index, node_element_index> node_elements_to_elements;
   hpc::device_vector<node_in_element_index, node_element_index> node_elements_to_nodes_in_element;
   hpc::device_array_vector<hpc::position<double>, node_index> x; // current nodal positions
   hpc::device_array_vector<hpc::displacement<double>, node_index> u; // nodal displacements since previous time state
   hpc::device_array_vector<hpc::velocity<double>, node_index> v; // nodal velocities
-  hpc::device_array_vector<hpc::momentum<double>, node_index> lm; // nodal linear momenta
-  hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
-  hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
-  hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
   hpc::device_vector<hpc::volume<double>, point_index> V; // integration point volumes
   hpc::device_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
@@ -58,7 +49,6 @@ class state {
   hpc::device_vector<hpc::pressure<double>, point_index> G; // (tangent/effective) shear modulus
   hpc::device_vector<hpc::speed<double>, point_index> c; // sound speed / plane wave speed
   hpc::device_array_vector<hpc::force<double>, point_node_index> element_f; // (internal) force per element-node pair (contribution to a node's force by an element)
-  hpc::device_array_vector<hpc::force<double>, point_node_index> support_f; // (internal) force per sopport-node pair (contribution to a node's force by a support)
   hpc::device_array_vector<hpc::force<double>, node_index> f; // nodal (internal) forces
   hpc::device_vector<hpc::density<double>, point_index> rho; // element density
   hpc::device_vector<hpc::specific_energy<double>, point_index> e; // element specific internal energy
@@ -85,6 +75,18 @@ class state {
   hpc::time<double> max_stable_dt;
   hpc::dimensionless<double> min_quality;
 
+  // Exclusive OTM data structures
+  hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes; // OTM: Support for each point
+  hpc::device_range_sum<node_point_index, node_index> nodes_to_node_points; // OTM: Influence for each node
+  hpc::device_vector<node_index, point_node_index> point_nodes_to_nodes;
+  hpc::device_vector<point_index, node_point_index> node_points_to_points;
+  hpc::device_vector<point_node_index, node_point_index> node_points_to_point_nodes;
+  hpc::device_array_vector<hpc::momentum<double>, node_index> lm; // nodal linear momenta
+  hpc::device_array_vector<hpc::position<double>, point_index> xm; // current material point positions
+  hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
+  hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
+
+  // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start
   hpc::device_vector<hpc::temperature<double>, point_index> temp; // temperature
   hpc::device_vector<hpc::strain<double>, point_index> ep; // equivalent plastic strain
