@@ -97,8 +97,8 @@ void resize_state_meshless(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
   s.V.resize(s.points.size());
-  s.grad_N.resize(s.points.size() * s.nodes_in_support.size());
-  s.N.resize(s.points.size() * s.nodes_in_support.size());
+  s.grad_N.resize(s.points.size() * s.point_nodes.size());
+  s.N.resize(s.points.size() * s.point_nodes.size());
   s.F_total.resize(s.points.size());
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());

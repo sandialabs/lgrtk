@@ -40,10 +40,10 @@ tetrahedron_single_point(lgr::state& s)
   s.points.resize(num_points);
 
   hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
-  s.nodes_in_support.assign_sizes(support_sizes);
+  s.point_nodes.assign_sizes(support_sizes);
 
-  s.points_to_supported_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
+  s.point_nodes_to_nodes.resize(num_points * num_nodes);
+  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
   support_nodes_to_nodes[PNI(0)] = NI(0);
   support_nodes_to_nodes[PNI(1)] = NI(1);
   support_nodes_to_nodes[PNI(2)] = NI(2);
@@ -51,10 +51,10 @@ tetrahedron_single_point(lgr::state& s)
 
   using NPI = lgr::node_point_index;
   hpc::device_vector<NPI, NI> influence_sizes(num_nodes, NPI(num_points));
-  s.points_in_influence.assign_sizes(influence_sizes);
+  s.node_points.assign_sizes(influence_sizes);
 
-  s.nodes_to_influenced_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.nodes_to_influenced_points.begin();
+  s.node_points_to_points.resize(num_nodes * num_points);
+  auto const influence_points_to_points = s.node_points_to_points.begin();
   influence_points_to_points[NPI(0)] = PI(0);
   influence_points_to_points[NPI(1)] = PI(0);
   influence_points_to_points[NPI(2)] = PI(0);
@@ -113,10 +113,10 @@ two_tetrahedra_two_points(lgr::state& s)
   s.points.resize(num_points);
 
   hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
-  s.nodes_in_support.assign_sizes(support_sizes);
+  s.point_nodes.assign_sizes(support_sizes);
 
-  s.points_to_supported_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
+  s.point_nodes_to_nodes.resize(num_points * num_nodes);
+  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
   support_nodes_to_nodes[PNI(0)] = NI(0);
   support_nodes_to_nodes[PNI(1)] = NI(1);
   support_nodes_to_nodes[PNI(2)] = NI(2);
@@ -131,10 +131,10 @@ two_tetrahedra_two_points(lgr::state& s)
 
   using NPI = lgr::node_point_index;
   hpc::device_vector<NPI, NI> influence_sizes(num_nodes, NPI(num_points));
-  s.points_in_influence.assign_sizes(influence_sizes);
+  s.node_points.assign_sizes(influence_sizes);
 
-  s.nodes_to_influenced_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.nodes_to_influenced_points.begin();
+  s.node_points_to_points.resize(num_nodes * num_points);
+  auto const influence_points_to_points = s.node_points_to_points.begin();
   influence_points_to_points[NPI(0)] = PI(0);
   influence_points_to_points[NPI(1)] = PI(1);
   influence_points_to_points[NPI(2)] = PI(0);
@@ -227,10 +227,10 @@ hexahedron_eight_points(lgr::state& s)
   s.points.resize(num_points);
 
   hpc::device_vector<PNI, PI> support_sizes(num_points, PNI(num_nodes));
-  s.nodes_in_support.assign_sizes(support_sizes);
+  s.point_nodes.assign_sizes(support_sizes);
 
-  s.points_to_supported_nodes.resize(num_points * num_nodes);
-  auto const support_nodes_to_nodes = s.points_to_supported_nodes.begin();
+  s.point_nodes_to_nodes.resize(num_points * num_nodes);
+  auto const support_nodes_to_nodes = s.point_nodes_to_nodes.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const point_node = i % num_points;
     support_nodes_to_nodes[PNI(i)] = NI(point_node);
@@ -239,10 +239,10 @@ hexahedron_eight_points(lgr::state& s)
 
   using NPI = lgr::node_point_index;
   hpc::device_vector<NPI, NI> influence_sizes(num_nodes, NPI(num_points));
-  s.points_in_influence.assign_sizes(influence_sizes);
+  s.node_points.assign_sizes(influence_sizes);
 
-  s.nodes_to_influenced_points.resize(num_nodes * num_points);
-  auto const influence_points_to_points = s.nodes_to_influenced_points.begin();
+  s.node_points_to_points.resize(num_nodes * num_points);
+  auto const influence_points_to_points = s.node_points_to_points.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const node_point = i % num_nodes;
     influence_points_to_points[NPI(i)] = PI(node_point);
