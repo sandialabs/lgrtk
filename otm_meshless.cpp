@@ -49,15 +49,15 @@ void otm_initialize_grad_val_N(state& s) {
     auto const beta = gamma / h / h;
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
-    bool converged = false;
+    auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     auto const eps = 1024 * hpc::machine_epsilon<double>();
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
-    jacobian J = jacobian::zero();
+    auto J = jacobian::zero();
     auto const max_iter = 16;
     for (auto iter = 0; iter < max_iter; ++iter) {
       hpc::position<double> R(0.0, 0.0, 0.0);
-      jacobian dRdmu = jacobian::zero();
+      auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
         auto const node = point_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
@@ -77,6 +77,7 @@ void otm_initialize_grad_val_N(state& s) {
         break;
       }
     }
+    assert(converged == true);
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
