@@ -6,6 +6,8 @@ if (LGR_ENABLE_UNIT_TESTS)
     tensor.cpp
     maxent.cpp
     mechanics.cpp
+    materials.cpp
+    ../lgr_physics.cpp
     ut_main.cpp)
 
   if (LGR_ENABLE_EXODUS)
