@@ -17,6 +17,7 @@
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
+#include <j2/hardening.hpp>
 
 namespace lgr {
 
@@ -624,6 +625,86 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
+HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
+    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff,
+    double& potential, hpc::deformation_gradient<double> &Fp)
+{
+  auto const J = determinant(F);
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  double const logJ = std::log(J);
+
+  double const& K = props.K;
+  double const& G = props.G;
+
+  auto const Wvol = 0.5*K*logJ*logJ;
+  auto const p = K*logJ/J;
+
+  auto Fe_tr = F*hpc::inverse(Fp);
+  auto dev_Ce_tr = Jm23*hpc::transpose_times_self(Fe_tr);
+  hpc::matrix3x3<double> temp;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      temp(i,j) = dev_Ce_tr(i,j);
+    }
+  }
+  temp = 0.5*hpc::log(temp);
+  hpc::symmetric3x3<double> const dev_Ee_tr(temp);
+  auto const dev_M_tr = 2.0*G*dev_Ee_tr;
+
+  //double const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
+  //double S = j2::FlowStrength(eqps);
+  //auto Np{hpc::symmetric3x3<double>::zero()};
+
+
+
+  auto dev_sigma_full = 1.0/J*hpc::transpose(hpc::inverse(Fe_tr))*dev_M_tr*hpc::transpose(Fe_tr);
+  hpc::symmetric3x3<double> dev_sigma;
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      dev_sigma(i,j) = dev_sigma_full(i,j);
+    }
+  }
+
+  auto Wdev = G*hpc::inner_product(dev_Ee_tr, dev_Ee_tr);
+  sigma = dev_sigma + p*hpc::symmetric3x3<double>::identity();
+
+  Keff = K;
+  Geff = G;
+  potential = Wvol + Wdev;
+}
+
+HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
+    hpc::time<double> const) {
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
+  auto const K = in.K0[material];
+  auto const G = in.G0[material];
+  auto const is_neo_hookean = in.enable_neo_Hookean[material];
+  auto const is_sierra_J2 = in.enable_sierra_J2[material];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+      auto const F = points_to_F_total[point].load();
+      auto&& sigma = points_to_sigma[point].load();
+      auto&& Keff = points_to_K[point];
+      auto&& Geff = points_to_G[point];
+      double potential(0);
+      if (is_neo_hookean == true) {
+        neo_Hookean_point(F, K, G, sigma, Keff, Geff, potential);
+      }
+      if (is_sierra_J2 == true) {
+        j2::Properties props{.K = K, .G = G, .S0 = 0,
+                             .n = 1, .eps0 = 1.0,
+                             .Svis0 = 0, .m = 1.0, .eps_dot0 = 1.0};
+        auto Fp{hpc::matrix3x3<double>::identity()};
+        variational_J2_point(F, props, sigma, Keff, Geff, potential, Fp);
+      }
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+>>>>>>> Variational J2 WIP
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
