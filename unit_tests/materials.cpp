@@ -1,6 +1,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include "materials.hpp"
+#include <j2/hardening.hpp>
 
 void PrintMatrix(hpc::matrix3x3<double> const &A)
 {
@@ -69,4 +70,42 @@ TEST(materials, neohookean_point_consistency)
   auto const eps = 10.0 * h*h;
 
   ASSERT_LE(error, eps);
+}
+
+
+TEST(materials, power_law_hardening)
+{
+  double const S0{10e9};
+  double const n{2.0};
+  double const eps0{1e-3};
+  lgr::j2::Properties const props{ .S0 = S0, .n = n, .eps0 = eps0 };
+
+  double eqps = 0.685;
+
+  //double W = lgr::j2::HardeningPotential(props, eqps);
+  double S = lgr::j2::FlowStrength(props, eqps);
+  double H = lgr::j2::HardeningRate(props, eqps);
+
+  double h = 1e-5;
+
+  eqps += h;
+  double Wp = lgr::j2::HardeningPotential(props, eqps);
+  double Sp = lgr::j2::FlowStrength(props, eqps);
+
+  eqps -= 2*h;
+  double Wm = lgr::j2::HardeningPotential(props, eqps);
+  double Sm = lgr::j2::FlowStrength(props, eqps);
+
+  eqps += h;
+
+  double S_h = 0.5*(Wp - Wm)/h;
+  double H_h = 0.5*(Sp - Sm)/h;
+
+  double error1 = std::abs(S_h - S)/S_h;
+  double error2 = std::abs(H_h - H)/H_h;
+
+  double error = std::max(error1, error2);
+  double tol = 10.0*h*h  ;
+
+  ASSERT_LE(error, tol);
 }
