@@ -3,11 +3,19 @@
 #include <hpc_functional.hpp>
 #include <hpc_transform_reduce.hpp>
 
+#ifdef LGR_ENABLE_CUDA
 #define DEVICE_TEST(a) [=] HPC_DEVICE(a, int& num_fails)
 #define DEVICE_ASSERT_EQ(a, b) if (a != b) { ++num_fails; return; }
 #define DEVICE_EXPECT_EQ(a, b) if (a != b) { ++num_fails; }
 #define DEVICE_EXPECT_TRUE(a) if (!a) { ++num_fails; }
 #define DEVICE_EXPECT_FALSE(a) if (a) { ++num_fails; }
+#else
+#define DEVICE_TEST(a) [=] HPC_DEVICE(a)
+#define DEVICE_ASSERT_EQ(a, b) ASSERT_EQ(a, b)
+#define DEVICE_EXPECT_EQ(a, b) EXPECT_EQ(a, b)
+#define DEVICE_EXPECT_TRUE(a) EXPECT_TRUE(a)
+#define DEVICE_EXPECT_FALSE(a) EXPECT_FALSE(a)
+#endif
 
 namespace unit {
 
@@ -24,9 +32,14 @@ public:
 
   HPC_ALWAYS_INLINE HPC_DEVICE int operator()(typename Range::value_type i) const
   {
+#ifdef LGR_ENABLE_CUDA
     int num_fails = 0;
     func(i, num_fails);
     return num_fails;
+#else
+    func(i);
+    return 0;
+#endif
   }
 
 private:

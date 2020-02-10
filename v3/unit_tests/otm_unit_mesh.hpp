@@ -271,3 +271,30 @@ hexahedron_eight_points(lgr::state& s)
   }
 
 }
+
+inline void compute_material_points_as_element_centroids(
+    hpc::counting_range<lgr::point_index> const points,
+    hpc::device_range_sum<lgr::point_node_index, lgr::point_index> const &points_to_point_nodes,
+    hpc::device_vector<lgr::node_index, lgr::point_node_index> const &point_nodes_to_nodes,
+    hpc::device_array_vector<hpc::position<double>, lgr::node_index> const &x,
+    hpc::device_array_vector<hpc::position<double>, lgr::point_index> &xp)
+{
+  auto pt_to_pt_nodes = points_to_point_nodes.cbegin();
+  auto pt_nodes_to_nodes = point_nodes_to_nodes.cbegin();
+  auto x_nodes = x.cbegin();
+  auto x_points = xp.begin();
+  auto point_func = [=] HPC_DEVICE(const lgr::point_index point)
+  {
+    auto const point_nodes = pt_to_pt_nodes[point];
+    hpc::position<double> avg_coord(0., 0., 0.);
+    for (auto&& point_node : point_nodes)
+    {
+      auto const node = pt_nodes_to_nodes[point_node];
+      avg_coord += x_nodes[node].load();
+    }
+    avg_coord /= point_nodes.size();
+
+    x_points[point] = avg_coord;
+  };
+  hpc::for_each(hpc::device_policy(), points, point_func);
+}
