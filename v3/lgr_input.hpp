@@ -10,6 +10,7 @@
 #include <lgr_hyper_ep/model.hpp>
 #endif
 #include <hpc_vector.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_dimensional.hpp>
 
 namespace lgr {
@@ -56,6 +57,7 @@ class input {
   hpc::length<double> y_domain_size = 1.0;
   int elements_along_z = 0;
   hpc::length<double> z_domain_size = 1.0;
+  int otm_material_points_to_add_per_element = 1;
   bool output_to_command_line = true;
   hpc::host_vector<hpc::density<double>, material_index> rho0;
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
@@ -124,6 +126,12 @@ class input {
         hpc::device_array_vector<hpc::velocity<double>, node_index>*)> initial_v;
   std::vector<zero_acceleration_condition> zero_acceleration_conditions;
   std::function<void(hpc::device_array_vector<hpc::position<double>, node_index>*)> x_transform;
+  std::function<
+    void(hpc::counting_range<point_index> const,
+        hpc::device_range_sum<point_node_index, point_index> const&,
+        hpc::device_vector<node_index, point_node_index> const&,
+        hpc::device_array_vector<hpc::position<double>, node_index> const&,
+        hpc::device_array_vector<hpc::position<double>, point_index>&)> xp_transform;
   hpc::host_vector<std::unique_ptr<domain>, material_index> domains;
   input() = delete;
   input(material_index const material_count_in, material_index const boundary_count_in)

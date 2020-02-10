@@ -280,12 +280,15 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
   input in(mat, bnd);
   state st;
   in.element = MESHLESS;
+  in.otm_material_points_to_add_per_element = 1;
+
+  in.xp_transform = compute_material_points_as_element_centroids;
 
   int err_code = read_exodus_file("tets.g", in, st);
 
   ASSERT_EQ(err_code, 0);
 
-  convert_tet_mesh_to_meshless(st);
+  convert_tet_mesh_to_meshless(st, in);
 
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(
       st.point_nodes_to_nodes.size());
