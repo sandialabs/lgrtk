@@ -628,6 +628,7 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
 HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
     hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff,
     double& potential, hpc::deformation_gradient<double> &Fp)
+
 {
   auto const J = determinant(F);
   auto const Jm13 = 1.0 / std::cbrt(J);
@@ -637,7 +638,7 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
   double const& K = props.K;
   double const& G = props.G;
 
-  auto const Wvol = 0.5*K*logJ*logJ;
+  auto const Wevol = 0.5*K*logJ*logJ;
   auto const p = K*logJ/J;
 
   auto Fe_tr = F*hpc::inverse(Fp);
@@ -652,13 +653,36 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
   hpc::symmetric3x3<double> const dev_Ee_tr(temp);
   auto const dev_M_tr = 2.0*G*dev_Ee_tr;
 
-  //double const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
-  //double S = j2::FlowStrength(eqps);
-  //auto Np{hpc::symmetric3x3<double>::zero()};
+  double const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
+  auto Np{hpc::symmetric3x3<double>::zero()};
+  if (sigma_tr_eff > 0) {
+    Np = 1.5*dev_M_tr/sigma_tr_eff;
+  }
 
+  double S = j2::FlowStrength(props, eqps);
+  double const r0 = sigma_tr_eff - S;
+  auto r = r0;
+  double delta_eqps = 0;
 
+  double const tolerance = 1e-10;
+  if (r/r0 > tolerance) {
+    //TODO: radial return
 
-  auto dev_sigma_full = 1.0/J*hpc::transpose(hpc::inverse(Fe_tr))*dev_M_tr*hpc::transpose(Fe_tr);
+  }
+
+  auto Np_full{hpc::matrix3x3<double>::zero()};
+  for (int i = 0; i < 3; ++i) {
+    for (int j = 0; j < 3; ++j) {
+      Np_full(i,j) = Np(i,j);
+    }
+  }
+  auto dFp = hpc::exp(delta_eqps*Np_full);
+  Fp = dFp*Fp;
+  eqps += delta_eqps;
+
+  auto dev_Ee = dev_Ee_tr - delta_eqps*Np;
+
+  auto dev_sigma_full = 1.0/J*hpc::transpose(hpc::inverse(Fe_tr))*(dev_M_tr - 2.0*G*delta_eqps*Np)*hpc::transpose(Fe_tr);
   hpc::symmetric3x3<double> dev_sigma;
   for (int i = 0; i < 3; ++i) {
     for (int j = 0; j < 3; ++j) {
@@ -666,12 +690,16 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
     }
   }
 
-  auto Wdev = G*hpc::inner_product(dev_Ee_tr, dev_Ee_tr);
+  auto Wedev = G*hpc::inner_product(dev_Ee, dev_Ee);
+  double const dt = 1.0;
+  auto psi_star = j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
+  auto Wp = j2::HardeningPotential(props, eqps);
+
   sigma = dev_sigma + p*hpc::symmetric3x3<double>::identity();
 
   Keff = K;
   Geff = G;
-  potential = Wvol + Wdev;
+  potential = Wevol + Wedev + Wp + psi_star;
 }
 
 HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
@@ -698,7 +726,8 @@ HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, ma
                              .n = 1, .eps0 = 1.0,
                              .Svis0 = 0, .m = 1.0, .eps_dot0 = 1.0};
         auto Fp{hpc::matrix3x3<double>::identity()};
-        variational_J2_point(F, props, sigma, Keff, Geff, potential, Fp);
+        double eqps = 0;
+        variational_J2_point(F, props, sigma, Keff, Geff, potential, Fp, eqps);
       }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
