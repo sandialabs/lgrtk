@@ -102,11 +102,13 @@ TEST(materials, J2_point_consistency)
   Fp(2,2) *= 0.4;
   PrintMatrix(Fp);
 
+  double eqps = 0.13;
+
 
   auto sigma(hpc::symmetric3x3<double>::zero());
   double Keff, Geff, W;
 
-  lgr::variational_J2_point(F, props, sigma, Keff, Geff, W, Fp);
+  lgr::variational_J2_point(F, props, sigma, Keff, Geff, W, Fp, eqps);
 
   auto dummy_stress(hpc::symmetric3x3<double>::zero());
   auto P_h(hpc::matrix3x3<double>::zero());
@@ -115,10 +117,10 @@ TEST(materials, J2_point_consistency)
   for (int i=0; i<3; ++i) {
     for (int j=0; j<3; ++j) {
       F(i,j) += h;
-      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wp, Fp);
+      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wp, Fp, eqps);
 
       F(i,j) -= 2*h;
-      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wm, Fp);
+      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wm, Fp, eqps);
 
       F(i,j) += h;
 
@@ -130,7 +132,9 @@ TEST(materials, J2_point_consistency)
   auto error = hpc::norm(sigma - sigma_h)/hpc::norm(sigma_h);
   auto const tol = 10.0 * h*h;
 
+  std::cout << "sigma = \n";
   PrintMatrix(sigma);
+  std::cout << "sigma_h = \n";
   PrintMatrix(sigma_h);
 
   ASSERT_LE(error, tol);
