@@ -96,7 +96,7 @@ auto collect_points_to_nodes_from_elements(state &st)
   }
   ;
   hpc::for_each(hpc::device_policy(), st.elements, elem_func);
-  return std::move(point_node_indices);
+  return point_node_indices;
 }
 
 TEST(exodus, convertTetMeshToMeshfree)
