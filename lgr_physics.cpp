@@ -624,7 +624,7 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+HPC_DEVICE inline void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
     hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
 {
   auto const J = determinant(F);
@@ -640,7 +640,7 @@ HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, do
 }
 
 // TODO: This the same as Neo-Hookean for now. Change to Sierra J2 "FeFp".
-HPC_DEVICE void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+HPC_DEVICE inline void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
     hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
 {
   auto const J = determinant(F);

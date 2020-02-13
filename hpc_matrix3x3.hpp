@@ -5,6 +5,7 @@
 #include <hpc_vector3.hpp>
 #include <hpc_array_traits.hpp>
 #include <hpc_tensor_detail.hpp>
+#include <hpc_functional.hpp>
 
 namespace hpc {
 
@@ -246,7 +247,7 @@ norm_1(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(1,0)) + std::abs(A(2,0));
   auto const v1 = std::abs(A(0,1)) + std::abs(A(1,1)) + std::abs(A(2,1));
   auto const v2 = std::abs(A(0,2)) + std::abs(A(1,2)) + std::abs(A(2,2));
-  return std::max(std::max(v0, v1), v2);
+  return hpc::max(hpc::max(v0, v1), v2);
 }
 
 // \return \f$ \max_{i \in {0,\cdots,N}}\Sigma_{j=0}^N |A_{ij}| \f$
@@ -256,7 +257,7 @@ norm_infinity(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(0,1)) + std::abs(A(0,2));
   auto const v1 = std::abs(A(1,0)) + std::abs(A(1,1)) + std::abs(A(1,2));
   auto const v2 = std::abs(A(2,0)) + std::abs(A(2,1)) + std::abs(A(2,2));
-  return std::max(std::max(v0, v1), v2);
+  return hpc::max(hpc::max(v0, v1), v2);
 }
 
 template <class T>
@@ -413,8 +414,7 @@ inverse_full_pivot(matrix3x3<T> const A)
     intact_rows &= ~(1 << pivot_row);
     intact_cols &= ~(1 << pivot_col);
   }
-  auto const X = transpose(S) * B;
-  return X;
+  return transpose(S) * B;
 }
 
 // Solve by full pivot. Since this is 3x3, can afford it, and avoids
@@ -469,8 +469,7 @@ solve_full_pivot(matrix3x3<T> const A, vector3<T> b)
     intact_rows &= ~(1 << pivot_row);
     intact_cols &= ~(1 << pivot_col);
   }
-  auto const X = transpose(S) * B;
-  return X;
+  return transpose(S) * B;
 }
 
 // Matrix square root by product form of Denman-Beavers iteration.

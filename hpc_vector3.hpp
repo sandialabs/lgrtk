@@ -9,9 +9,6 @@ namespace hpc {
 
 struct axis_tag {};
 using axis_index = hpc::index<axis_tag, int>;
-static constexpr axis_index X{0};
-static constexpr axis_index Y{1};
-static constexpr axis_index Z{2};
 
 template <typename Scalar>
 class vector3 {

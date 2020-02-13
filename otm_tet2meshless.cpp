@@ -16,7 +16,7 @@
 
 namespace lgr {
 
-void convert_tet_mesh_to_meshless(state& st, const input& in)
+inline void convert_tet_mesh_to_meshless(state& st, const input& in)
 {
   auto const num_points = st.elements.size() * in.otm_material_points_to_add_per_element;
   st.points.resize(num_points);
@@ -42,11 +42,11 @@ void convert_tet_mesh_to_meshless(state& st, const input& in)
     auto const cur_elem_points = elements_to_points[element];
     auto const element_nodes = elements_to_element_nodes[element];
 
-    for (auto&& element_point : points_in_support)
+    for (auto element_point : points_in_support)
     {
       auto const point = cur_elem_points[element_point];
       auto&& point_support_nodes = nodes_in_support[point];
-      for (auto&& n : nodes_in_element)
+      for (auto n : nodes_in_element)
       {
         auto const cur_elem_node_offset = element_nodes[n];
         auto const node = element_nodes_to_nodes[cur_elem_node_offset];
@@ -69,7 +69,7 @@ void convert_tet_mesh_to_meshless(state& st, const input& in)
   auto h_min_func = [=] HPC_DEVICE (point_index const point)
   {
     auto min_node_pt_dist = 1.0 / hpc::machine_epsilon<double>();
-    for (auto&& n : nodes_in_support[point])
+    for (auto n : nodes_in_support[point])
     {
       auto node = support_nodes_to_nodes[n];
       auto node_pt_dist = hpc::norm(nodes_to_x[node].load() - mat_pts_to_x[point].load());

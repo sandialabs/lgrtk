@@ -231,9 +231,9 @@ template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> const left, vector3<R> const right) noexcept {
   return vector3<decltype(L() * R())>(
-      left(S_XX) * right(X) + left(S_XY) * right(Y) + left(S_XZ) * right(Z),
-      left(S_XY) * right(X) + left(S_YY) * right(Y) + left(S_YZ) * right(Z),
-      left(S_XZ) * right(X) + left(S_YZ) * right(Y) + left(S_ZZ) * right(Z));
+      left(S_XX) * right(0) + left(S_XY) * right(1) + left(S_XZ) * right(2),
+      left(S_XY) * right(0) + left(S_YY) * right(1) + left(S_YZ) * right(2),
+      left(S_XZ) * right(0) + left(S_YZ) * right(1) + left(S_ZZ) * right(2));
 }
 
 template <class L, class R>
