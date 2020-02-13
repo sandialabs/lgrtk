@@ -139,7 +139,7 @@ public:
   }
   template <class RangeSizes>
   void assign_sizes(RangeSizes const& sizes) {
-    m_vector.resize(sizes.size() + size_type(1));
+    m_vector.resize(size_type(sizes.size() + size_type(1)));
     auto it = m_vector.begin();
     auto const first = it;
     ++it;

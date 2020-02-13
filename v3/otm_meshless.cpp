@@ -102,7 +102,7 @@ void otm_initialize_grad_val_N(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-void otm_assemble_internal_force(state& s)
+inline void otm_assemble_internal_force(state& s)
 {
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
@@ -131,7 +131,7 @@ void otm_assemble_internal_force(state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-void otm_assemble_external_force(state& s)
+inline void otm_assemble_external_force(state& s)
 {
   auto const points_to_body_acce = s.b.cbegin();
   auto const points_to_rho = s.rho.cbegin();

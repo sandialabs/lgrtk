@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10.0...${CMAKE_VERSION})
 project(LGR VERSION 3.0.0 LANGUAGES CXX)
 
 option(LGR_ENABLE_CUDA "Build GPU support" OFF)
+option(LGR_ENABLE_UNIT_TESTS "Enable unit tests" ON)
 
 if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
@@ -93,4 +94,6 @@ set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgr PROPERTY CXX_EXTENSIONS OFF)
 target_link_libraries(lgr lgrlib)
 
-add_subdirectory(unit_tests)
+if (LGR_ENABLE_UNIT_TESTS)
+  add_subdirectory(unit_tests)
+endif()
