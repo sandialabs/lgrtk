@@ -17,6 +17,7 @@
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
+#include <materials.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -694,39 +695,6 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
   potential = We_vol + We_dev + Wp + psi_star;
 }
 
-HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
-    hpc::time<double> const) {
-  auto const points_to_F_total = s.F_total.cbegin();
-  auto const points_to_sigma = s.sigma.begin();
-  auto const points_to_K = s.K.begin();
-  auto const points_to_G = s.G.begin();
-  auto const K = in.K0[material];
-  auto const G = in.G0[material];
-  auto dt = s.dt;
-  auto const is_neo_hookean = in.enable_neo_Hookean[material];
-  auto const is_sierra_J2 = in.enable_sierra_J2[material];
-  auto functor = [=] HPC_DEVICE (point_index const point) {
-      auto const F = points_to_F_total[point].load();
-      auto&& sigma = points_to_sigma[point].load();
-      auto&& Keff = points_to_K[point];
-      auto&& Geff = points_to_G[point];
-      double potential(0);
-      if (is_neo_hookean == true) {
-        neo_Hookean_point(F, K, G, sigma, Keff, Geff, potential);
-      }
-      if (is_sierra_J2 == true) {
-        j2::Properties props{.K = K, .G = G, .S0 = 0,
-                             .n = 1, .eps0 = 1.0,
-                             .Svis0 = 0, .m = 1.0, .eps_dot0 = 1.0};
-        auto Fp{hpc::matrix3x3<double>::identity()};
-        double eqps = 0;
-        variational_J2_point(F, props, dt, sigma, Keff, Geff, potential, Fp, eqps);
-      }
-  };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
-}
-
->>>>>>> Variational J2 WIP
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
