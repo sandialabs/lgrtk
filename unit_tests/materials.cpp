@@ -79,9 +79,9 @@ TEST(materials, J2_point_consistency)
   double const S0{350e6};
   double const n{4.0};
   double const eps0{1e-2};
-  double const Svis0{0};
+  double const Svis0{S0};
   double const m{2.0};
-  double const eps_dot0{1e-3};
+  double const eps_dot0{1e-1};
   lgr::j2::Properties const props{ .K = K, .G = G, .S0 = S0,
                                    .n = n, .eps0 = eps0, .Svis0 = Svis0,
                                    .m = m, .eps_dot0 = eps_dot0 };
@@ -149,7 +149,7 @@ TEST(materials, J2_point_consistency)
 //  PrintMatrix(sigma);
 //  std::cout << "sigma_h = \n";
 //  PrintMatrix(sigma_h);
-
+//  std:: cout << "error " << error << std::endl;
   ASSERT_LE(error, tol);
 }
 

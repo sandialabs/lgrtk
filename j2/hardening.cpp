@@ -45,9 +45,9 @@ ViscoplasticDualKineticPotential(Properties const props, double const delta_eqps
   double const& eps_dot0 = props.eps_dot0;
 
   double const exponent = (1.0 + m)/m;
-  double const eqps_dot = delta_eqps/dt;
+  double const eqps_dot = (delta_eqps > 0)? delta_eqps/dt : eps_dot0*1e-8;
 
-  return dt*Svis0*eps_dot0/exponent*(std::pow(1.0 + eqps_dot/eps_dot0, exponent) - 1.0);
+  return dt*Svis0*eps_dot0/exponent*std::pow(eqps_dot/eps_dot0, exponent);
 }
 
 double
@@ -57,9 +57,9 @@ ViscoplasticStress(Properties const props, double const delta_eqps, double const
   double const& m = props.m;
   double const& eps_dot0 = props.eps_dot0;
 
-  double const eqps_dot = delta_eqps/dt;
+  double const eqps_dot = (delta_eqps > 0)? delta_eqps/dt : eps_dot0*1e-8;
 
-  return Svis0*std::pow(1.0 + eqps_dot/eps_dot0, 1.0/m);
+  return Svis0*std::pow(eqps_dot/eps_dot0, 1.0/m);
 }
 
 double
@@ -69,9 +69,9 @@ ViscoplasticHardeningRate(Properties const props, double const delta_eqps, doubl
   double const& m = props.m;
   double const& eps_dot0 = props.eps_dot0;
 
-  double const eqps_dot = delta_eqps/dt;
+  double const eqps_dot = (delta_eqps > 0)? delta_eqps/dt : eps_dot0*1e-8;
 
-  return Svis0/(eps_dot0*m*dt)*std::pow(1.0 + eqps_dot/eps_dot0, (1.0 - m)/m);
+  return Svis0/(eps_dot0*m*dt)*std::pow(eqps_dot/eps_dot0, (1.0 - m)/m);
 }
 
 } // namespace j2
