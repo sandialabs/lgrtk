@@ -655,12 +655,13 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
   auto r = r0;
 
   double delta_eqps = 0;
-  constexpr int max_iters = 8;
   double const tolerance = 1e-10;
   if (r > tolerance) {
+    constexpr int max_iters = 8;
+    int iters = 0;
     bool converged = false;
-    for (int i = 0; i < max_iters; ++i) {
-      if (converged) break;
+    while (!converged) {
+      if (iters == max_iters) break;
       double H = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
       double dr = -3.0*G - H;
       double corr = -r/dr;
@@ -668,19 +669,18 @@ HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F,
       double S = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
       r = sigma_tr_eff - 3.0*G*delta_eqps - S;
       converged = std::abs(r/r0) < tolerance;
+      ++iters;
     }
     if (!converged) {
       throw;
       // TODO: handle non-convergence error
     }
+    auto dFp = hpc::exp(delta_eqps*Np);
+    Fp = dFp*Fp;
+    eqps += delta_eqps;
   }
   auto Ee_correction = delta_eqps*Np;
   auto dev_Ee = dev_Ee_tr - Ee_correction;
-  auto dFp = hpc::exp(Ee_correction);
-  Fp = dFp*Fp;
-  eqps += delta_eqps;
-
-
   auto dev_sigma = 1.0/J*hpc::transpose(hpc::inverse(Fe_tr))*(dev_M_tr - 2.0*G*Ee_correction)*hpc::transpose(Fe_tr);
 
   auto We_dev = G*hpc::inner_product(dev_Ee, dev_Ee);
