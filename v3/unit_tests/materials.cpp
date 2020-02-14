@@ -73,54 +73,67 @@ TEST(materials, neohookean_point_consistency)
 
 TEST(materials, J2_point_consistency)
 {
-  double const K{1.0e9};
-  double const G{1.0e9};
-  double const S0{10e9};
-  double const n{2.0};
-  double const eps0{1e-3};
+  std::cout.precision(12);
+  double const K{(400.0/3.0)*1e9};
+  double const G{80.0e9};
+  double const S0{350e6};
+  double const n{4.0};
+  double const eps0{1e-2};
   double const Svis0{0};
-  double const m{1.0};
+  double const m{2.0};
   double const eps_dot0{1e-3};
   lgr::j2::Properties const props{ .K = K, .G = G, .S0 = S0,
                                    .n = n, .eps0 = eps0, .Svis0 = Svis0,
                                    .m = m, .eps_dot0 = eps_dot0 };
 
+  double dt = 1.0;
+
   auto F(hpc::matrix3x3<double>::identity());
-  F(0,0) = 1.2;
-  F(0,1) = 0.05;
-  F(0,2) = 0.733;
-  F(1,0) = 0.66;
-  F(1,1) = 1.18;
-  F(1,2) = 0.23;
-  F(2,0) = 0.0;
-  F(2,1) = 0.41;
-  F(2,2) = 0.91;
+  F(0,0) =  4.487668105802061e-01;
+  F(0,1) =  3.518970848025007e-01;
+  F(0,2) =  8.164609618407068e-01;
+  F(1,0) = -8.254793765639534e-01;
+  F(1,1) =  5.645538419297988e-01;
+  F(1,2) =  1.692966029173534e-01;
+  F(2,0) = -3.667724595991901e-01;
+  F(2,1) = -7.456034473500678e-01;
+  F(2,2) =  5.420598320853882e-01;
 
   auto Fp(hpc::matrix3x3<double>::identity());
-  Fp(0,0) *= 1.25;
-  Fp(1,1) *= 2.0;
-  Fp(2,2) *= 0.4;
-  PrintMatrix(Fp);
+  Fp(0,0) =  4.463159537096824e-01;
+  Fp(0,1) =  3.561859252816812e-01;
+  Fp(0,2) =  8.168361447751614e-01;
+  Fp(1,0) = -8.215608636281700e-01;
+  Fp(1,1) =  5.613285804297486e-01;
+  Fp(1,2) =  1.740541995649333e-01;
+  Fp(2,0) = -3.712031484597964e-01;
+  Fp(2,1) = -7.457840032128831e-01;
+  Fp(2,2) =  5.420064153795635e-01;
 
-  double eqps = 0.13;
-
+  double eqps = 2.145536499224904e-2;
 
   auto sigma(hpc::symmetric3x3<double>::zero());
   double Keff, Geff, W;
 
-  lgr::variational_J2_point(F, props, sigma, Keff, Geff, W, Fp, eqps);
+  hpc::matrix3x3<double> Fp_new{Fp};
+  double eqps_new{eqps};
+  lgr::variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp_new, eqps_new);
 
-  auto dummy_stress(hpc::symmetric3x3<double>::zero());
   auto P_h(hpc::matrix3x3<double>::zero());
+  auto stress_dummy(hpc::symmetric3x3<double>::zero());
   double Wp(0), Wm(0);
   double h = 1e-5;
   for (int i=0; i<3; ++i) {
     for (int j=0; j<3; ++j) {
       F(i,j) += h;
-      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wp, Fp, eqps);
+      hpc::matrix3x3<double> Fp_dummy{Fp};
+      double eqps_dummy{eqps};
+      lgr::variational_J2_point(F, props, dt, stress_dummy, Keff, Geff, Wp, Fp_dummy, eqps_dummy);
 
-      F(i,j) -= 2*h;
-      lgr::variational_J2_point(F, props, dummy_stress, Keff, Geff, Wm, Fp, eqps);
+      F(i,j) -= 2.0*h;
+      Fp_dummy = Fp;
+      eqps_dummy = eqps;
+      lgr::variational_J2_point(F, props, dt, stress_dummy, Keff, Geff, Wm, Fp_dummy, eqps_dummy);
 
       F(i,j) += h;
 
@@ -130,12 +143,12 @@ TEST(materials, J2_point_consistency)
   hpc::symmetric3x3<double> sigma_h(1.0/hpc::determinant(F)*P_h*hpc::transpose(F));
 
   auto error = hpc::norm(sigma - sigma_h)/hpc::norm(sigma_h);
-  auto const tol = 10.0 * h*h;
+  auto const tol = 5e3 * h*h;
 
-  std::cout << "sigma = \n";
-  PrintMatrix(sigma);
-  std::cout << "sigma_h = \n";
-  PrintMatrix(sigma_h);
+//  std::cout << "sigma = \n";
+//  PrintMatrix(sigma);
+//  std::cout << "sigma_h = \n";
+//  PrintMatrix(sigma_h);
 
   ASSERT_LE(error, tol);
 }

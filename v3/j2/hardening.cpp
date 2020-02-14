@@ -14,7 +14,7 @@ HardeningPotential(Properties const props, double const eqps)
 
   double const exponent = (1.0 + n)/n;
 
-  return S0*eps0/exponent*std::pow(1.0 + eqps/eps0, exponent);
+  return S0*eps0/exponent*(std::pow(1.0 + eqps/eps0, exponent) - 1.0);
 }
 
 double
@@ -47,7 +47,7 @@ ViscoplasticDualKineticPotential(Properties const props, double const delta_eqps
   double const exponent = (1.0 + m)/m;
   double const eqps_dot = delta_eqps/dt;
 
-  return dt*Svis0*eps_dot0/exponent*std::pow(1.0 + eqps_dot/eps_dot0, exponent);
+  return dt*Svis0*eps_dot0/exponent*(std::pow(1.0 + eqps_dot/eps_dot0, exponent) - 1.0);
 }
 
 double
