@@ -1,6 +1,6 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include "materials.hpp"
+#include "../materials.hpp"
 
 void PrintMatrix(hpc::matrix3x3<double> const &A)
 {
