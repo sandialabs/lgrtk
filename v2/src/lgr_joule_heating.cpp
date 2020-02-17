@@ -265,11 +265,11 @@ struct JouleHeating : public Model<Elem> {
       auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
       auto const phi = getscals<Elem>(nodes_to_phi, elem_nodes);
       auto const weight = points_to_weight[point];
-      auto const G = points_to_conductivity[point];
+      auto const sig = points_to_conductivity[point];
       auto const grads = getgrads<Elem>(points_to_grad, point);
       auto const grad_phi = grad<Elem>(grads, phi);
       auto const grad_phi_sq = grad_phi * grad_phi * grad_mult + grad_add_sq;
-      auto const integral = weight * G * (grad_phi_sq);
+      auto const integral = weight * sig * (grad_phi_sq);
       points_to_G[point] = integral;
     };
     parallel_for(this->points(), std::move(functor));
@@ -303,14 +303,14 @@ struct JouleHeating : public Model<Elem> {
     auto const Vsq = square(V);
     auto const points_to_G = this->points_get(this->conductance);
     auto const points_to_rho = this->points_get(sim.density);
-    auto const points_to_volume = this->points_get(sim.weight);
+    auto const points_to_weight = this->points_get(sim.weight);
     auto const points_to_e_dot = this->points_set(this->specific_internal_energy_rate);
     auto functor = OMEGA_H_LAMBDA(int const point) {
       auto const G = points_to_G[point];
       auto const P = Vsq * G;
       auto const rho = points_to_rho[point];
-      auto const volume = points_to_volume[point];
-      auto const mass = rho * volume;
+      auto const weight = points_to_weight[point];
+      auto const mass = rho * weight;
       auto const e_dot = P / mass;
       points_to_e_dot[point] += e_dot;
     };
