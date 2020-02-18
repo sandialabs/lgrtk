@@ -10,8 +10,8 @@
 namespace hpc {
 
 // forward declarations
-template <typename Scalar>
-struct symmetric3x3;
+//template <typename Scalar>
+//struct symmetric3x3;
 
 
 template <typename Scalar>
@@ -36,10 +36,10 @@ public:
     raw[2][1] = h;
     raw[2][2] = i;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3(symmetric3x3<Scalar> const& A) noexcept
-  {
-    matrix3x3(A(0,0), A(0,1), A(0,2), A(1,0), A(1,1), A(1,2), A(2,0), A(2,1), A(2,2));
-  }
+//  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3(symmetric3x3<Scalar> const& A) noexcept
+//  {
+//    matrix3x3(A(0,0), A(0,1), A(0,2), A(1,0), A(1,1), A(1,2), A(2,0), A(2,1), A(2,2));
+//  }
   HPC_ALWAYS_INLINE matrix3x3() noexcept = default;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr matrix3x3 identity() noexcept {
     return matrix3x3(
