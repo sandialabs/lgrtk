@@ -11,7 +11,7 @@
 
 namespace lgr {
 
-inline void invert_otm_point_node_relations(lgr::state &s)
+void invert_otm_point_node_relations(lgr::state &s)
 {
   auto points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();

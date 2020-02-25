@@ -16,7 +16,7 @@
 
 namespace lgr {
 
-inline void convert_tet_mesh_to_meshless(state& st, const input& in)
+void convert_tet_mesh_to_meshless(state& st, const input& in)
 {
   auto const num_points = st.elements.size() * in.otm_material_points_to_add_per_element;
   st.points.resize(num_points);
