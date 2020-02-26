@@ -81,6 +81,7 @@ TEST(mechanics, hex_translation)
   hexahedron_eight_points(s);
   lgr::otm_lump_nodal_mass(s);
 
+  auto const num_points = s.points.size();
   auto const num_node_dofs = s.x.size();
   auto const num_point_dofs = s.xp.size();
 
@@ -90,4 +91,9 @@ TEST(mechanics, hex_translation)
 
   s.b.resize(num_point_dofs);
 
+  s.F_total.resize(num_points);
+
+  lgr::otm_initialize_u(s);
+  lgr::otm_initialize_F(s);
+  lgr::otm_update_reference(s);
 }

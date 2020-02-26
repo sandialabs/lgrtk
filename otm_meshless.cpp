@@ -11,27 +11,26 @@
 
 namespace lgr {
 
-void otm_initialize_V(state& s)
+void otm_initialize_u(state& s)
 {
-  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
-  auto const nodes_to_x = s.x.cbegin();
-  auto const points_to_V = s.V.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] HPC_DEVICE (element_index const element) {
-    constexpr point_in_element_index fp(0);
-    auto const element_nodes = elements_to_element_nodes[element];
-    using l_t = node_in_element_index;
-    hpc::array<hpc::position<double>, 4> x;
-    for (int i = 0; i < 4; ++i) {
-      auto const node = element_nodes_to_nodes[element_nodes[l_t(i)]];
-      x[i] = nodes_to_x[node].load();
-    }
-    auto const volume = tetrahedron_volume(x);
-    assert(volume > 0.0);
-    points_to_V[elements_to_points[element][fp]] = volume;
+  auto const nodes_to_u = s.u.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto u = nodes_to_u[node].load();
+    u(0) = 0.0;
+    u(1) = 1.0;
+    u(2) = 2.0;
   };
-  hpc::for_each(hpc::device_policy(), s.elements, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+void otm_initialize_F(state& s)
+{
+  auto const points_to_F = s.F_total.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto F = points_to_F[point].load();
+    F = hpc::deformation_gradient<double>::identity();
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 void otm_initialize_grad_val_N(state& s) {
