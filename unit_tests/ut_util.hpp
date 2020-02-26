@@ -1,20 +1,26 @@
 #pragma once
 
 #include <hpc_matrix3x3.hpp>
+#include <hpc_vector3.hpp>
 #include <iostream>
+
+template <typename T>
+std::ostream &
+operator<<(std::ostream & os, hpc::vector3<T> const & v)
+{
+  os << std::scientific << std::setprecision(15);
+  os << std::setw(24) << v(0) << "," << std::setw(24) << v(1) << "," << std::setw(24) << v(2) << std::endl;
+  return os;
+}
 
 template <typename T>
 std::ostream &
 operator<<(std::ostream & os, hpc::matrix3x3<T> const & A)
 {
   os << std::scientific << std::setprecision(15);
-  for (auto i = 0; i < 3; ++i) {
-    os << std::setw(24) << A(i,0);
-    for (auto j = 1; j < 3; ++j) {
-      os << "," << std::setw(24) << A(i,j);
-    }
-    os << std::endl;
-  }
+  os << std::setw(24) << A(0,0) << "," << std::setw(24) << A(0,1) << "," << std::setw(24) << A(0,2) << std::endl;
+  os << std::setw(24) << A(1,0) << "," << std::setw(24) << A(1,1) << "," << std::setw(24) << A(1,2) << std::endl;
+  os << std::setw(24) << A(2,0) << "," << std::setw(24) << A(2,1) << "," << std::setw(24) << A(2,2) << std::endl;
   return os;
 }
 

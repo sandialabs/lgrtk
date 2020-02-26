@@ -36,7 +36,7 @@ struct Properties {
   // Elasticity
   Elastic elastic;
   double E;
-  double Nu;
+  double nu;
 
   // Plasticity
   Hardening hardening;

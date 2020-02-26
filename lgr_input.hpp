@@ -78,7 +78,7 @@ class input {
   hpc::host_vector<hyper_ep::Elastic, material_index> elastic;
 #endif
   hpc::host_vector<hpc::pressure<double>, material_index> E;  // Young's modulus
-  hpc::host_vector<double, material_index> Nu;  // Poisson's ratio
+  hpc::host_vector<double, material_index> nu;  // Poisson's ratio
 
   // Plasticity
 #if defined(HYPER_EP)
@@ -154,7 +154,7 @@ class input {
     ,elastic(material_count_in)
 #endif
     ,E(material_count_in)
-    ,Nu(material_count_in)
+    ,nu(material_count_in)
 #if defined(HYPER_EP)
     ,hardening(material_count_in)
     ,rate_dep(material_count_in)
