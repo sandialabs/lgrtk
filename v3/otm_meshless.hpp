@@ -13,4 +13,5 @@ void otm_update_nodal_external_force(state& s);
 void otm_update_nodal_force(state& s);
 void otm_lump_nodal_mass(state& s);
 void otm_update_reference(state& s);
+void otm_update_material_state(input const& in, state& s, material_index const material);
 }

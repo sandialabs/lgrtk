@@ -2,33 +2,32 @@
 #include <cmath>
 #include <iostream>
 #include <hpc_algorithm.hpp>
-#include <lgr_state.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
-#include <lgr_element_specific_inline.hpp>
+#include <lgr_input.hpp>
+#include <lgr_state.hpp>
 #include <otm_meshless.hpp>
 
 namespace lgr {
 
 void otm_initialize_u(state& s)
 {
-  auto const nodes_to_u = s.u.cbegin();
+  auto constexpr x = std::acos(-1.0);
+  auto constexpr y = std::exp(1.0);
+  auto constexpr z = std::sqrt(2.0);
+  auto const nodes_to_u = s.u.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto u = nodes_to_u[node].load();
-    u(0) = 0.0;
-    u(1) = 1.0;
-    u(2) = 2.0;
+    nodes_to_u[node] = hpc::position<double>(x, y, z);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 void otm_initialize_F(state& s)
 {
-  auto const points_to_F = s.F_total.cbegin();
+  auto const points_to_F = s.F_total.begin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
-    auto F = points_to_F[point].load();
-    F = hpc::deformation_gradient<double>::identity();
+    points_to_F[point] = hpc::deformation_gradient<double>::identity();
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
@@ -240,6 +239,65 @@ void otm_update_reference(state& s) {
     auto const old_rho = points_to_rho[point];
     auto const new_rho = old_rho / J;
     points_to_rho[point] = new_rho;
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+HPC_DEVICE inline void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+    hpc::matrix3x3<double> &sigma, double &Keff, double& Geff)
+{
+  auto const J = determinant(F);
+  auto const Jinv = 1.0 / J;
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  auto const Jm53 = (Jm23 * Jm23) * Jm13;
+  auto const B = F * transpose(F);
+  auto const devB = deviatoric_part(B);
+  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
+  Keff = 0.5 * K * (J + Jinv);
+  Geff = G;
+}
+
+// TODO: This the same as Neo-Hookean for now. Change to Sierra J2 "FeFp".
+HPC_DEVICE inline void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
+    hpc::matrix3x3<double> &sigma, double &Keff, double& Geff)
+{
+  auto const J = determinant(F);
+  auto const Jinv = 1.0 / J;
+  auto const Jm13 = 1.0 / std::cbrt(J);
+  auto const Jm23 = Jm13 * Jm13;
+  auto const Jm53 = (Jm23 * Jm23) * Jm13;
+  auto const B = F * transpose(F);
+  auto const devB = deviatoric_part(B);
+  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
+  Keff = 0.5 * K * (J + Jinv);
+  Geff = G;
+}
+
+void otm_update_material_state(input const& in, state& s, material_index const material)
+{
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_sigma = s.cauchy.begin();
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
+  auto const K = in.K0[material];
+  auto const G = in.G0[material];
+  auto const is_neo_hookean = in.enable_neo_Hookean[material];
+  auto const is_sierra_J2 = in.enable_sierra_J2[material];
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+      auto const F = points_to_F_total[point].load();
+      auto sigma = hpc::stress<double>::zero();
+      auto Keff = hpc::pressure<double>(0.0);
+      auto Geff = hpc::pressure<double>(0.0);;
+      if (is_neo_hookean == true) {
+        neo_Hookean_point(F, K, G, sigma, Keff, Geff);
+      }
+      if (is_sierra_J2 == true) {
+        sierra_J2_point(F, K, G, sigma, Keff, Geff);
+      }
+      points_to_sigma[point] = sigma;
+      points_to_K[point] = Keff;
+      points_to_G[point] = Geff;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }

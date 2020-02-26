@@ -283,7 +283,7 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
   hyper_ep::Properties props;
   props.elastic = in.elastic[material];
   props.E = in.E[material];
-  props.Nu = in.Nu[material];
+  props.nu = in.nu[material];
   props.hardening = in.hardening[material];
   props.A = in.A[material];
   props.B = in.B[material];
@@ -307,8 +307,8 @@ HPC_NOINLINE inline void hyper_ep_update(input const& in, state& s, material_ind
   props.eps_f_min = in.eps_f_min[material];
 
   // Derived properties
-  auto const K0 = props.E / 3. / (1. - 2. * props.Nu);
-  auto const G0 = props.E / 2. / (1. + props.Nu);
+  auto const K0 = props.E / 3. / (1. - 2. * props.nu);
+  auto const G0 = props.E / 2. / (1. + props.nu);
 
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] HPC_DEVICE (element_index const element) {
@@ -624,68 +624,13 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
 
-HPC_DEVICE inline void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
-    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
-{
-  auto const J = determinant(F);
-  auto const Jinv = 1.0 / J;
-  auto const Jm13 = 1.0 / std::cbrt(J);
-  auto const Jm23 = Jm13 * Jm13;
-  auto const Jm53 = (Jm23 * Jm23) * Jm13;
-  auto const B = self_times_transpose(F);
-  auto const devB = deviatoric_part(B);
-  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
-  Keff = 0.5 * K * (J + Jinv);
-  Geff = G;
-}
-
-// TODO: This the same as Neo-Hookean for now. Change to Sierra J2 "FeFp".
-HPC_DEVICE inline void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
-    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff)
-{
-  auto const J = determinant(F);
-  auto const Jinv = 1.0 / J;
-  auto const Jm13 = 1.0 / std::cbrt(J);
-  auto const Jm23 = Jm13 * Jm13;
-  auto const Jm53 = (Jm23 * Jm23) * Jm13;
-  auto const B = self_times_transpose(F);
-  auto const devB = deviatoric_part(B);
-  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
-  Keff = 0.5 * K * (J + Jinv);
-  Geff = G;
-}
-
-HPC_NOINLINE inline void update_otm_material_state(input const& in, state& s, material_index const material,
-    hpc::time<double> const) {
-  auto const points_to_F_total = s.F_total.cbegin();
-  auto const points_to_sigma = s.sigma.begin();
-  auto const points_to_K = s.K.begin();
-  auto const points_to_G = s.G.begin();
-  auto const K = in.K0[material];
-  auto const G = in.G0[material];
-  auto const is_neo_hookean = in.enable_neo_Hookean[material];
-  auto const is_sierra_J2 = in.enable_sierra_J2[material];
-  auto functor = [=] HPC_DEVICE (point_index const point) {
-      auto const F = points_to_F_total[point].load();
-      auto&& sigma = points_to_sigma[point].load();
-      auto&& Keff = points_to_K[point];
-      auto&& Geff = points_to_G[point];
-      if (is_neo_hookean == true) {
-        neo_Hookean_point(F, K, G, sigma, Keff, Geff);
-      }
-      if (is_sierra_J2 == true) {
-        sierra_J2_point(F, K, G, sigma, Keff, Geff);
-      }
-  };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
-}
-
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
   auto const is_meshless = in.element == MESHLESS;
   if (is_meshless == true) {
-    update_otm_material_state(in, s, material, dt);
+    // TODO: Maybe don't need this here at all.
+    // otm_update_material_state(in, s, material, dt);
   } else {
     if (in.enable_neo_Hookean[material]) {
       neo_Hookean(in, s, material);

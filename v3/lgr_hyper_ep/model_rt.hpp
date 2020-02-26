@@ -244,8 +244,8 @@ radial_return(Properties const props, hpc::symmetric_stress<double> const Te,
   auto const sq23 = sq2 / sq3;
   auto const sq32 = 1.0 / sq23;
   auto const E = props.E;
-  auto const Nu = props.Nu;
-  auto const mu = E / 2.0 / (1.0 + Nu);
+  auto const nu = props.nu;
+  auto const mu = E / 2.0 / (1.0 + nu);
   auto const twomu = 2.0 * mu;
   auto gamma = epdot * dtime * sq32;
   // Possible states at this point are TRIAL or REMAPPED
@@ -325,7 +325,7 @@ radial_return(Properties const props, hpc::symmetric_stress<double> const Te,
     if (flag == StateFlag::REMAPPED) {
       // Correct pressure term
       auto p = trace(T);
-      auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
+      auto const D1 = 6.0 * (1.0 - 2.0 * nu) / E;
       p = (2.0 * jac / D1 * (jac - 1.0)) - (p / 3.0);
       for (int i = 0; i < 3; ++i) T(i, i) = p;
     }
@@ -338,7 +338,7 @@ hpc::symmetric_stress<double>
 linear_elastic_stress(Properties const props, hpc::deformation_gradient<double> const Fe)
 {
   auto const E = props.E;
-  auto const nu = props.Nu;
+  auto const nu = props.nu;
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
   auto const G = E / 2.0 / (1.0 + nu);
   auto const grad_u = Fe - hpc::deformation_gradient<double>::identity();
@@ -355,13 +355,13 @@ hpc::symmetric_stress<double>
 hyper_elastic_stress(Properties const props, hpc::deformation_gradient<double> const Fe, double const jac)
 {
   auto const E = props.E;
-  auto const Nu = props.Nu;
+  auto const nu = props.nu;
   // Jacobian and distortion tensor
   auto const scale = 1.0 / std::cbrt(jac);
   auto const Fb = scale * Fe;
   // Elastic moduli
-  auto const C10 = E / (4.0 * (1.0 + Nu));
-  auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
+  auto const C10 = E / (4.0 * (1.0 + nu));
+  auto const D1 = 6.0 * (1.0 - 2.0 * nu) / E;
   auto const EG = 2.0 * C10 / jac;
   // Deviatoric left Cauchy-Green deformation tensor
   auto Bb = self_times_transpose(Fb);

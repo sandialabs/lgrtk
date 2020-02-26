@@ -29,7 +29,7 @@ elastic_stress<Elastic::LINEAR_ELASTIC>(
   double const /* jac */)
 {
   auto const E = props.E;
-  auto const nu = props.Nu;
+  auto const nu = props.nu;
   auto const K = E / (3.0 * (1.0 - 2.0 * nu));
   auto const G = E / 2.0 / (1.0 + nu);
   auto const grad_u = Fe - hpc::deformation_gradient<double>::identity();
@@ -50,13 +50,13 @@ elastic_stress<Elastic::NEO_HOOKEAN>(
   double const jac)
 {
   auto const E = props.E;
-  auto const Nu = props.Nu;
+  auto const nu = props.nu;
   // Jacobian and distortion tensor
   auto const scale = 1.0 / std::cbrt(jac);
   auto const Fb = scale * Fe;
   // Elastic moduli
-  auto const C10 = E / (4.0 * (1.0 + Nu));
-  auto const D1 = 6.0 * (1.0 - 2.0 * Nu) / E;
+  auto const C10 = E / (4.0 * (1.0 + nu));
+  auto const D1 = 6.0 * (1.0 - 2.0 * nu) / E;
   auto const EG = 2.0 * C10 / jac;
   // Deviatoric left Cauchy-Green deformation tensor
   auto Bb = self_times_transpose(Fb);

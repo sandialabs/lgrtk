@@ -394,7 +394,7 @@ void twisting_column_ep(
   in.elastic[body] = hyper_ep::Elastic::NEO_HOOKEAN;
 #endif
   in.E[body] = E;
-  in.Nu[body] = nu;
+  in.nu[body] = nu;
 
 #if defined(HYPER_EP)
   in.hardening[body] = hyper_ep::Hardening::JOHNSON_COOK;
