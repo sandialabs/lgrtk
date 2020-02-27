@@ -320,4 +320,25 @@ void otm_update_nodal_position(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
+void otm_update_point_position(state& s)
+{
+  auto const point_nodes_to_N = s.N.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
+  auto const points_to_xp = s.xp.begin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto point_nodes = points_to_point_nodes[point];
+    auto xp = hpc::position<double>::zero();
+    for (auto point_node : point_nodes) {
+      auto const node = point_nodes_to_nodes[point_node];
+      auto const x = nodes_to_x[node].load();
+      auto const N = point_nodes_to_N[point_node];
+      xp += N * x;
+    }
+    points_to_xp[point].load() = xp;
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
 } // namespace lgr
