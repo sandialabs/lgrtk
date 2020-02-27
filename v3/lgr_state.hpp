@@ -73,6 +73,7 @@ class state {
   hpc::host_vector<hpc::device_vector<element_index, int>, material_index> element_sets;
   hpc::time<double> next_file_output_time;
   hpc::time<double> dt = 0.0;
+  hpc::time<double> dt_old = 0.0;
   hpc::time<double> max_stable_dt;
   hpc::dimensionless<double> min_quality;
 
