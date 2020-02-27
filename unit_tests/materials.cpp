@@ -1,26 +1,6 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include "../materials.hpp"
-
-void PrintMatrix(hpc::matrix3x3<double> const &A)
-{
-  for (int i=0; i<3; ++i) {
-    for (int j=0; j<3; ++j) {
-      std::cout << A(i,j) << " ";
-    }
-    std::cout << std::endl;
-  }
-}
-
-void PrintMatrix(hpc::symmetric3x3<double> const &A)
-{
-  for (int i=0; i<3; ++i) {
-    for (int j=0; j<3; ++j) {
-      std::cout << A(i,j) << " ";
-    }
-    std::cout << std::endl;
-  }
-}
+#include "../otm_materials.hpp"
 
 
 TEST(materials, neohookean_point_consistency)
@@ -37,9 +17,6 @@ TEST(materials, neohookean_point_consistency)
   F(2,0) = 0.0;
   F(2,1) = 0.41;
   F(2,2) = 0.91;
-  //std::cout.precision(12);
-  //std::cout << "F = \n";
-  //PrintMatrix(F);
 
   auto sigma(hpc::symmetric3x3<double>::zero());
   double Keff, Geff, W;
@@ -145,11 +122,6 @@ TEST(materials, J2_point_consistency)
   auto error = hpc::norm(sigma - sigma_h)/hpc::norm(sigma_h);
   auto const tol = 5e3 * h*h;
 
-//  std::cout << "sigma = \n";
-//  PrintMatrix(sigma);
-//  std::cout << "sigma_h = \n";
-//  PrintMatrix(sigma_h);
-//  std:: cout << "error " << error << std::endl;
   ASSERT_LE(error, tol);
 }
 
