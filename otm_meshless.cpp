@@ -258,22 +258,6 @@ HPC_DEVICE inline void neo_Hookean_point(hpc::deformation_gradient<double> const
   Geff = G;
 }
 
-// TODO: This the same as Neo-Hookean for now. Change to Sierra J2 "FeFp".
-HPC_DEVICE inline void sierra_J2_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
-    hpc::matrix3x3<double> &sigma, double &Keff, double& Geff)
-{
-  auto const J = determinant(F);
-  auto const Jinv = 1.0 / J;
-  auto const Jm13 = 1.0 / std::cbrt(J);
-  auto const Jm23 = Jm13 * Jm13;
-  auto const Jm53 = (Jm23 * Jm23) * Jm13;
-  auto const B = F * transpose(F);
-  auto const devB = deviatoric_part(B);
-  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
-  Keff = 0.5 * K * (J + Jinv);
-  Geff = G;
-}
-
 void otm_update_material_state(input const& in, state& s, material_index const material)
 {
   auto const points_to_F_total = s.F_total.cbegin();
