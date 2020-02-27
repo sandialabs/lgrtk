@@ -7,7 +7,9 @@
 #include <hpc_vector3.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
+#include <otm_materials.hpp>
 #include <otm_meshless.hpp>
+#include <j2/hardening.hpp>
 
 namespace lgr {
 
@@ -243,45 +245,45 @@ void otm_update_reference(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_DEVICE inline void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
-    hpc::matrix3x3<double> &sigma, double &Keff, double& Geff)
-{
-  auto const J = determinant(F);
-  auto const Jinv = 1.0 / J;
-  auto const Jm13 = 1.0 / std::cbrt(J);
-  auto const Jm23 = Jm13 * Jm13;
-  auto const Jm53 = (Jm23 * Jm23) * Jm13;
-  auto const B = F * transpose(F);
-  auto const devB = deviatoric_part(B);
-  sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
-  Keff = 0.5 * K * (J + Jinv);
-  Geff = G;
-}
-
 void otm_update_material_state(input const& in, state& s, material_index const material)
 {
+  auto const dt = s.dt;
   auto const points_to_F_total = s.F_total.cbegin();
   auto const points_to_sigma = s.cauchy.begin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
+  auto const points_to_W = s.potential_density.begin();
+  auto const points_to_Fp = s.Fp_total.begin();
+  auto const points_to_ep = s.ep.begin();
   auto const K = in.K0[material];
   auto const G = in.G0[material];
+  auto const Y0 = in.Y0[material];
+  auto const n = in.n[material];
+  auto const eps0 = in.eps0[material];
+  auto const Svis0 = in.Svis0[material];
+  auto const m = in.m[material];
+  auto const eps_dot0 = in.eps_dot0[material];
   auto const is_neo_hookean = in.enable_neo_Hookean[material];
-  auto const is_sierra_J2 = in.enable_sierra_J2[material];
+  auto const is_variational_J2 = in.enable_variational_J2[material];
   auto functor = [=] HPC_DEVICE (point_index const point) {
       auto const F = points_to_F_total[point].load();
       auto sigma = hpc::stress<double>::zero();
       auto Keff = hpc::pressure<double>(0.0);
-      auto Geff = hpc::pressure<double>(0.0);;
+      auto Geff = hpc::pressure<double>(0.0);
+      auto W = hpc::energy_density<double>(0.0);
       if (is_neo_hookean == true) {
-        neo_Hookean_point(F, K, G, sigma, Keff, Geff);
+        neo_Hookean_point(F, K, G, sigma, Keff, Geff, W);
       }
-      if (is_sierra_J2 == true) {
-        sierra_J2_point(F, K, G, sigma, Keff, Geff);
+      if (is_variational_J2 == true) {
+        j2::Properties props{K, G, Y0, n, eps0, Svis0, m, eps_dot0};
+        auto Fp = points_to_Fp[point].load();
+        auto ep = points_to_ep[point];
+        variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp, ep);
       }
       points_to_sigma[point] = sigma;
       points_to_K[point] = Keff;
       points_to_G[point] = Geff;
+      points_to_W[point] = W;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }

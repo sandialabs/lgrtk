@@ -69,7 +69,7 @@ flow_stress(Properties props, double const temp, double const ep,
   }
   if (props.rate_dep == RateDependence::JOHNSON_COOK) {
     auto const cjo = props.C4;
-    auto const epdot0 = props.ep_dot_0;
+    auto const epdot0 = props.eps_dot0;
     auto const rfac = epdot / epdot0;
     // FIXME: This assumes that all the
     // strain rate is plastic.  Should
@@ -139,7 +139,7 @@ dflow_stress(Properties const props, double const temp, double const ep,
     if (props.rate_dep == RateDependence::JOHNSON_COOK) {
       auto const ajo = props.A;
       auto const cjo = props.C4;
-      auto const epdot0 = props.ep_dot_0;
+      auto const epdot0 = props.eps_dot0;
       auto const rfac = epdot / epdot0;
       // Calculate strain rate contribution
       auto const term1 = (rfac < 1.0) ? (std::pow((1.0 + rfac), cjo))

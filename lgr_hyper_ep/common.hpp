@@ -48,7 +48,7 @@ struct Properties {
   double C2;
   double C3;
   double C4;
-  double ep_dot_0;
+  double eps_dot0;
 
   // Damage parameters
   Damage damage;

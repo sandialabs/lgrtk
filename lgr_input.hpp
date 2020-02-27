@@ -62,7 +62,7 @@ class input {
   hpc::host_vector<hpc::density<double>, material_index> rho0;
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
   hpc::host_vector<bool, material_index> enable_neo_Hookean;
-  hpc::host_vector<bool, material_index> enable_sierra_J2;
+  hpc::host_vector<bool, material_index> enable_variational_J2;
   hpc::host_vector<bool, material_index> enable_hyper_ep;
   hpc::host_vector<hpc::pressure<double>, material_index> K0;
   hpc::host_vector<hpc::pressure<double>, material_index> G0;
@@ -87,12 +87,18 @@ class input {
 #endif
   hpc::host_vector<hpc::pressure<double>, material_index> A;  // Yield strength in shear
   hpc::host_vector<hpc::pressure<double>, material_index> B;  // hardenint modules
-  hpc::host_vector<double, material_index> n;  // hardening exponent
   hpc::host_vector<double, material_index> C1;
   hpc::host_vector<double, material_index> C2;
   hpc::host_vector<double, material_index> C3;
   hpc::host_vector<double, material_index> C4;
-  hpc::host_vector<double, material_index> ep_dot_0;
+
+  // Variational J2
+  hpc::host_vector<hpc::pressure<double>, material_index> Y0;
+  hpc::host_vector<hpc::dimensionless<double>, material_index> n;
+  hpc::host_vector<hpc::strain<double>, material_index> eps0;
+  hpc::host_vector<hpc::pressure<double>, material_index> Svis0;
+  hpc::host_vector<hpc::dimensionless<double>, material_index> m;
+  hpc::host_vector<hpc::strain_rate<double>, material_index> eps_dot0;
 
   // Damage
 #if defined(HYPER_EP)
@@ -140,7 +146,7 @@ class input {
     ,rho0(material_count_in)
     ,e0(material_count_in, double(0.0))
     ,enable_neo_Hookean(material_count_in, false)
-    ,enable_sierra_J2(material_count_in, false)
+    ,enable_variational_J2(material_count_in, false)
     ,enable_hyper_ep(material_count_in, false)
     ,K0(material_count_in)
     ,G0(material_count_in, double(0.0))
@@ -161,12 +167,16 @@ class input {
 #endif
     ,A(material_count_in)
     ,B(material_count_in)
-    ,n(material_count_in)
     ,C1(material_count_in)
     ,C2(material_count_in)
     ,C3(material_count_in)
     ,C4(material_count_in)
-    ,ep_dot_0(material_count_in)
+    ,Y0(material_count_in)
+    ,n(material_count_in)
+    ,eps0(material_count_in)
+    ,Svis0(material_count_in)
+    ,m(material_count_in)
+    ,eps_dot0(material_count_in)
 #if defined(HYPER_EP)
     ,damage(material_count_in)
 #endif
