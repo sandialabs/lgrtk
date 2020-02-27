@@ -86,10 +86,10 @@ struct ComputeScalar : public Model<Elem> {
               (*itr).last_value = value;
           else
               (*itr).last_value = (*itr).value;
-              (*itr).value = value;
-              double added = ((*itr).value + (*itr).last_value)*sim.dt/2.0;
-              (*itr).integral += added;
-              value = (*itr).integral;
+          (*itr).value = value;
+          double added = ((*itr).value + (*itr).last_value)*sim.dt/2.0;
+          (*itr).integral += added;
+          value = (*itr).integral;
        }
        // Register the name with globals
        sim.globals.set(scalar_name,value);
