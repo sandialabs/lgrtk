@@ -288,4 +288,36 @@ void otm_update_material_state(input const& in, state& s, material_index const m
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
+void otm_nodal_linear_momentum(state& s) {
+  auto const nodes_to_lm = s.lm.begin();
+  auto const nodes_to_v = s.v.cbegin();
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const m = nodes_to_mass[node];
+    auto const v = nodes_to_v[node].load();
+    auto lm = nodes_to_lm[node].load();
+    lm = m * v;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
+
+void otm_update_nodal_position(state& s) {
+  auto const dt = s.dt;
+  auto const dt_old = s.dt_old;
+  auto const dt_avg = 0.5 * (dt + dt_old);
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto const nodes_to_f = s.f.cbegin();
+  auto const nodes_to_lm = s.lm.cbegin();
+  auto const nodes_to_x = s.x.begin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const m = nodes_to_mass[node];
+    auto const lm = nodes_to_lm[node].load();
+    auto const f = nodes_to_f[node].load();
+    auto const disp = dt / m * (lm + dt_avg * f);
+    auto x = nodes_to_x[node].load();
+    x += disp;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+} // namespace lgr
