@@ -11,15 +11,15 @@
 
 namespace lgr {
 
-HPC_ALWAYS_INLINE HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, double const K, double const G,
-    hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff, double& potential)
+HPC_ALWAYS_INLINE HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, hpc::pressure<double> const K, hpc::pressure<double> const G,
+    hpc::stress<double> &sigma, hpc::pressure<double> &Keff, hpc::pressure<double>& Geff, hpc::energy_density<double>& potential)
 {
   auto const J = determinant(F);
   auto const Jinv = 1.0 / J;
   auto const Jm13 = 1.0 / std::cbrt(J);
   auto const Jm23 = Jm13 * Jm13;
   auto const Jm53 = (Jm23 * Jm23) * Jm13;
-  auto const B = self_times_transpose(F);
+  auto const B = F * transpose(F);
   auto const devB = deviatoric_part(B);
   sigma = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
   Keff = 0.5 * K * (J + Jinv);
@@ -28,8 +28,8 @@ HPC_ALWAYS_INLINE HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<do
 }
 
 HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
-    double const dt, hpc::symmetric3x3<double> &sigma, double &Keff, double& Geff,
-    double& potential, hpc::deformation_gradient<double> &Fp, double& eqps)
+    hpc::time<double> const dt, hpc::stress<double> &sigma, hpc::pressure<double> &Keff, hpc::pressure<double>& Geff,
+    hpc::energy_density<double> &potential, hpc::deformation_gradient<double> &Fp, hpc::strain<double> &eqps)
 {
   auto const J = determinant(F);
   auto const Jm13 = 1.0 / std::cbrt(J);
@@ -47,7 +47,7 @@ HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient
   auto dev_Ee_tr = 0.5*hpc::log(dev_Ce_tr);
   auto const dev_M_tr = 2.0*G*dev_Ee_tr;
   double const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
-  auto Np{hpc::matrix3x3<double>::zero()};
+  auto Np = hpc::matrix3x3<double>::zero();
   if (sigma_tr_eff > 0) {
     Np = 1.5*dev_M_tr/sigma_tr_eff;
   }
@@ -91,7 +91,7 @@ HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient
   auto psi_star = j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
   auto Wp = j2::HardeningPotential(props, eqps);
 
-  sigma = hpc::symmetric3x3<double>(dev_sigma) + p*hpc::symmetric3x3<double>::identity();
+  sigma = dev_sigma+ p*hpc::matrix3x3<double>::identity();
 
   Keff = K;
   Geff = G;

@@ -86,6 +86,7 @@ class state {
   hpc::device_array_vector<hpc::position<double>, point_index> xp; // current point positions
   hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
+  hpc::device_vector<hpc::energy_density<double>, point_node_index> potential_density; // Helmholtz energy density
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start

@@ -1,6 +1,4 @@
-#ifndef J2_HARDENING_HPP_
-#define J2_HARDENING_HPP_
-
+#pragma once
 
 namespace lgr {
 
@@ -10,7 +8,7 @@ struct Properties {
   double K;
   double G;
 
-  double S0;
+  double Y0;
   double n;
   double eps0;
 
@@ -41,6 +39,3 @@ ViscoplasticHardeningRate(Properties props, double delta_eqps, double dt);
 
 } // namespace j2
 } // namespace lgr
-
-
-#endif /* J2_HARDENING_HPP_ */

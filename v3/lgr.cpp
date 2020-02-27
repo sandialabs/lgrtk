@@ -406,7 +406,7 @@ void twisting_column_ep(
   in.C2[body] = 1.0e+40;
   in.C3[body] = 0.0;
   in.C4[body] = 0.0;
-  in.ep_dot_0[body] = 0.0;
+  in.eps_dot0[body] = 0.0;
 
   if (!plastic)
   {

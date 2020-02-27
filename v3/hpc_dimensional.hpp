@@ -506,6 +506,8 @@ using heat_flux = vector3<quantity<T, heat_flux_dimension>>;
 template <class T>
 using pressure_rate = quantity<T, pressure_rate_dimension>;
 template <class T>
+using energy_density = quantity<T, energy_density_dimension>;
+template <class T>
 using energy_density_rate = quantity<T, energy_density_rate_dimension>;
 template <class T>
 using pressure_gradient = vector3<quantity<T, pressure_gradient_dimension>>;

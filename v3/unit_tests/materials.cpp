@@ -1,5 +1,6 @@
 #include <iostream>
 #include <gtest/gtest.h>
+#include <j2/hardening.hpp>
 #include "../otm_materials.hpp"
 
 
@@ -18,12 +19,12 @@ TEST(materials, neohookean_point_consistency)
   F(2,1) = 0.41;
   F(2,2) = 0.91;
 
-  auto sigma(hpc::symmetric3x3<double>::zero());
+  auto sigma(hpc::matrix3x3<double>::zero());
   double Keff, Geff, W;
 
   lgr::neo_Hookean_point(F, K, G, sigma, Keff, Geff, W);
 
-  auto dummy_stress(hpc::symmetric3x3<double>::zero());
+  auto dummy_stress(hpc::matrix3x3<double>::zero());
   auto P_h(hpc::matrix3x3<double>::zero());
   double Wp(0), Wm(0);
   double h = 1e-5;
@@ -40,7 +41,7 @@ TEST(materials, neohookean_point_consistency)
       P_h(i,j) = (Wp - Wm)/(2.0*h);
     }
   }
-  hpc::symmetric3x3<double> sigma_h(1.0/hpc::determinant(F)*P_h*hpc::transpose(F));
+  hpc::matrix3x3<double> sigma_h(1.0/hpc::determinant(F)*P_h*hpc::transpose(F));
 
   auto error = hpc::norm(sigma - sigma_h)/hpc::norm(sigma_h);
   auto const eps = 10.0 * h*h;
@@ -53,13 +54,13 @@ TEST(materials, J2_point_consistency)
   std::cout.precision(12);
   double const K{(400.0/3.0)*1e9};
   double const G{80.0e9};
-  double const S0{350e6};
+  double const Y0{350e6};
   double const n{4.0};
   double const eps0{1e-2};
-  double const Svis0{S0};
+  double const Svis0{Y0};
   double const m{2.0};
   double const eps_dot0{1e-1};
-  lgr::j2::Properties const props{ .K = K, .G = G, .S0 = S0,
+  lgr::j2::Properties const props{ .K = K, .G = G, .Y0 = Y0,
                                    .n = n, .eps0 = eps0, .Svis0 = Svis0,
                                    .m = m, .eps_dot0 = eps_dot0 };
 
@@ -89,7 +90,7 @@ TEST(materials, J2_point_consistency)
 
   double eqps = 2.145536499224904e-2;
 
-  auto sigma(hpc::symmetric3x3<double>::zero());
+  auto sigma(hpc::matrix3x3<double>::zero());
   double Keff, Geff, W;
 
   hpc::matrix3x3<double> Fp_new{Fp};
@@ -97,7 +98,7 @@ TEST(materials, J2_point_consistency)
   lgr::variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp_new, eqps_new);
 
   auto P_h(hpc::matrix3x3<double>::zero());
-  auto stress_dummy(hpc::symmetric3x3<double>::zero());
+  auto stress_dummy(hpc::matrix3x3<double>::zero());
   double Wp(0), Wm(0);
   double h = 1e-5;
   for (int i=0; i<3; ++i) {
@@ -117,7 +118,7 @@ TEST(materials, J2_point_consistency)
       P_h(i,j) = (Wp - Wm)/(2.0*h);
     }
   }
-  hpc::symmetric3x3<double> sigma_h(1.0/hpc::determinant(F)*P_h*hpc::transpose(F));
+  hpc::matrix3x3<double> sigma_h(1.0/hpc::determinant(F)*P_h*hpc::transpose(F));
 
   auto error = hpc::norm(sigma - sigma_h)/hpc::norm(sigma_h);
   auto const tol = 5e3 * h*h;
@@ -130,13 +131,13 @@ TEST(materials, power_law_hardening)
 {
   double const K{1.0e9};
   double const G{1.0e9};
-  double const S0{10e9};
+  double const Y0{10e9};
   double const n{2.0};
   double const eps0{1e-3};
   double const Svis0{0};
   double const m{1.0};
   double const eps_dot0{1e-3};
-  lgr::j2::Properties const props{ .K = K, .G = G, .S0 = S0,
+  lgr::j2::Properties const props{ .K = K, .G = G, .Y0 = Y0,
                                    .n = n, .eps0 = eps0, .Svis0 = Svis0,
                                    .m = m, .eps_dot0 = eps_dot0 };
 
@@ -174,13 +175,13 @@ TEST(materials, power_law_rate_sensitivity)
 {
   double const K{1.0e9};
   double const G{1.0e9};
-  double const S0{10e9};
+  double const Y0{10e9};
   double const n{2.0};
   double const eps0{1e-3};
   double const Svis0{10e6};
   double const m{1.0};
   double const eps_dot0{1e-3};
-  lgr::j2::Properties const props{ .K = K, .G = G, .S0 = S0,
+  lgr::j2::Properties const props{ .K = K, .G = G, .Y0 = Y0,
                                    .n = n, .eps0 = eps0, .Svis0 = Svis0,
                                    .m = m, .eps_dot0 = eps_dot0 };
 

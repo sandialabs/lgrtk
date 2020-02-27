@@ -85,12 +85,12 @@ TEST(mechanics, hex_translation)
   lgr::input in(num_materials, num_boundaries);
 
   in.enable_neo_Hookean.resize(num_materials);
-  in.enable_sierra_J2.resize(num_materials);
+  in.enable_variational_J2.resize(num_materials);
   in.K0.resize(num_materials);
   in.G0.resize(num_materials);
 
   in.enable_neo_Hookean[0] = true;
-  in.enable_sierra_J2[0] = false;
+  in.enable_variational_J2[0] = false;
   in.K0[0] = hpc::pressure<double>(1.0e+09);
   in.G0[0] = hpc::pressure<double>(1.0e+09);
 
@@ -110,6 +110,7 @@ TEST(mechanics, hex_translation)
   s.cauchy.resize(num_points);
   s.K.resize(num_points);
   s.G.resize(num_points);
+  s.potential_density.resize(num_points);
 
   lgr::otm_initialize_u(s);
   lgr::otm_initialize_F(s);

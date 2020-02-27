@@ -116,7 +116,7 @@ flow_stress<Hardening::JOHNSON_COOK, RateDependence::JOHNSON_COOK>(
   Properties props, double const temp, double const ep, double const epdot)
 {
   auto Y = flow_stress<Hardening::JOHNSON_COOK, RateDependence::NONE>(props, temp, ep, epdot);
-  auto const rfac = epdot / props.ep_dot_0;
+  auto const rfac = epdot / props.eps_dot0;
   // FIXME: This assumes that all the strain rate is plastic. Should use actual
   // strain rate.
   // Rate of plastic strain contribution
@@ -256,7 +256,7 @@ dflow_stress<Hardening::JOHNSON_COOK, RateDependence::JOHNSON_COOK>(
   double const epdot, double const dtime)
 {
   auto dY = dflow_stress<Hardening::JOHNSON_COOK, RateDependence::NONE>(props, temp, ep, epdot, dtime);
-  auto const rfac = epdot / props.ep_dot_0;
+  auto const rfac = epdot / props.eps_dot0;
 
   // Calculate strain rate contribution
   auto const term1 = (rfac < 1.0) ? (std::pow((1.0 + rfac), props.C4)) : (1.0 + props.C4 * std::log(rfac));
