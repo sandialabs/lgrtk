@@ -103,6 +103,7 @@ TEST(mechanics, hex_translation)
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.lm.resize(num_nodes);
+  s.f.resize(num_nodes);
 
   s.b.resize(num_points);
 

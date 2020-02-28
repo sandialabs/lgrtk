@@ -12,6 +12,8 @@ void otm_update_nodal_internal_force(state& s);
 void otm_update_nodal_external_force(state& s);
 void otm_update_nodal_force(state& s);
 void otm_update_nodal_position(state& s);
+void otm_update_point_position(state& s);
+void otm_update_point_volume(state& s);
 void otm_lump_nodal_mass(state& s);
 void otm_update_reference(state& s);
 void otm_nodal_linear_momentum(state& s);

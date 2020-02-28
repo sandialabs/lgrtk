@@ -207,6 +207,8 @@ void otm_lump_nodal_mass(state& s) {
 }
 
 void otm_update_reference(state& s) {
+  otm_update_nodal_position(s);
+  otm_update_point_position(s);
   auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
@@ -309,13 +311,16 @@ void otm_update_nodal_position(state& s) {
   auto const nodes_to_f = s.f.cbegin();
   auto const nodes_to_lm = s.lm.cbegin();
   auto const nodes_to_x = s.x.begin();
+  auto const nodes_to_u = s.u.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const m = nodes_to_mass[node];
     auto const lm = nodes_to_lm[node].load();
     auto const f = nodes_to_f[node].load();
     auto const disp = dt / m * (lm + dt_avg * f);
     auto x = nodes_to_x[node].load();
+    auto u = nodes_to_u[node].load();
     x += disp;
+    u = disp;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -323,20 +328,21 @@ void otm_update_nodal_position(state& s) {
 void otm_update_point_position(state& s)
 {
   auto const point_nodes_to_N = s.N.cbegin();
-  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.cbegin();
   auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const points_to_xp = s.xp.begin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
-    auto xp = hpc::position<double>::zero();
+    auto up = hpc::position<double>::zero();
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
-      auto const x = nodes_to_x[node].load();
+      auto const u = nodes_to_u[node].load();
       auto const N = point_nodes_to_N[point_node];
-      xp += N * x;
+      up += N * u;
     }
-    points_to_xp[point].load() = xp;
+    auto xp = points_to_xp[point].load();
+    xp += up;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
