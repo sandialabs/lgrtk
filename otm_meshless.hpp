@@ -5,6 +5,8 @@ namespace lgr {
 class state;
 class input;
 
+void otm_initialize(input& in, state& s);
+void otm_run(input& in, state& s);
 void otm_initialize_u(state& s);
 void otm_initialize_F(state& s);
 void otm_initialize_grad_val_N(state& s);

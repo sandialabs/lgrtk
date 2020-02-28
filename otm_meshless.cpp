@@ -225,6 +225,7 @@ void otm_update_reference(state& s) {
       auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
       F_incr = F_incr + outer_product(u, old_grad_N);
     }
+    // TODO: Verify this is also true for OTM
     auto const F_inverse_transpose = transpose(inverse(F_incr));
     for (auto const point_node : point_nodes) {
       auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
@@ -345,6 +346,15 @@ void otm_update_point_position(state& s)
     xp += up;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+void otm_initialize(input&, state&)
+{
+}
+
+void otm_run(input& in, state& s)
+{
+  otm_initialize(in, s);
 }
 
 } // namespace lgr
