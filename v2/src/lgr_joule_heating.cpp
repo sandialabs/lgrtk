@@ -120,7 +120,8 @@ struct JouleHeating : public Model<Elem> {
     if (this->sim.circuit.usingMesh) {
        auto dt   = this->sim.dt;
        auto time = this->sim.time;
-       this->sim.circuit.Solve(dt,time);
+       if (dt > 1e-14)
+          this->sim.circuit.Solve(dt,time);
     }
     sim.globals.set("Joule heating CPU time", timer.total_runtime());
   }
