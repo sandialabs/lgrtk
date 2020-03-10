@@ -190,29 +190,63 @@ struct JouleHeating : public Model<Elem> {
     auto const nsteps = 1;
     auto const dtau = 1.0;
     auto const dnumber = lscale*lscale/(4.0*dtau*nsteps);
+    std::printf("Diffusion number is: %e\n", dnumber);
     Omega_h::Write<double> diffno(sim.disc.mesh.nelems(), dnumber);
 
     // Solve diffusion equation
     Global_FEM<Elem> gfem(sim);
     matrix = gfem.stiffness(diffno);
-    auto const S = matrix;
     auto const inv_mass = gfem.inv_lumped_mass();
 
+    Omega_h::Write<double> nodes_to_initial_nodal_conductivity(sim.disc.mesh.nverts());
+    auto const verts_to_edges = sim.disc.mesh.ask_up(0, 1);
     auto row_functor = OMEGA_H_LAMBDA(int const row) {
       auto const row_begin = matrix.rows_to_columns.a2ab[row];
       auto row_col = row_begin;
-      S.entries[row_col] = 1 + dtau*inv_mass[row_col]*S.entries[row_col];
+      auto const factor = dtau*inv_mass.entries[row_col];
+      matrix.entries[row_col] = 1.0 + factor*matrix.entries[row_col];
       row_col++;
+      auto const edge_begin = verts_to_edges.a2ab[row];
+      auto const edge_end = verts_to_edges.a2ab[row + 1];
+      for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
+//      auto const edge = verts_to_edges.ab2b[vert_edge];
+        matrix.entries[row_col] = factor*matrix.entries[row_col];
+        row_col++;
+      }
+      nodes_to_initial_nodal_conductivity[row] = nodes_to_nodal_conductivity[row];
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
 
     double relative_out, absolute_out;
+    auto const cg_it = (sim.step == 0) ? sim.disc.mesh.nverts() : cg_iterations;
+    rhs = nodes_to_initial_nodal_conductivity;
+    GlobalVector x = nodes_to_nodal_conductivity;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        S, nodal_conductivity, nodal_conductivity, relative_tolerance, absolute_tolerance, cg_it,
+        matrix, rhs, x, 
+        relative_tolerance, absolute_tolerance, cg_it,
         relative_out, absolute_out);
     std::printf("relative tol: %e\n", relative_out);
     std::printf("absolute tol: %e\n", absolute_out);
     std::printf("iterations  : %d\n", niter);
+
+    auto const elems_to_nodes = sim.disc.ents_to_nodes(ELEMS);
+    auto end_functor = OMEGA_H_LAMBDA(int const elem) {
+       double value = 0.0;
+       int count = 0;
+       auto const elem_nodes = getnodes<Elem>(elems_to_nodes,elem);
+       for (int elem_node = 0; elem_node < Elem::nodes; ++elem_node) {
+          auto const node = elem_nodes[elem_node];
+          value += nodes_to_nodal_conductivity[node];
+          count += 1;
+       }
+       points_to_diffused_conductivity[elem] = value/count;
+    };
+    parallel_for(sim.disc.mesh.nelems(), std::move(end_functor));
+
+//  auto end_functor = OMEGA_H_LAMBDA(int const row) {
+//      nodes_to_nodal_conductivity[row] = x[row];
+//  };
+//  parallel_for(sim.disc.mesh.nverts(), std::move(end_functor));
 
 //  auto const nnodes = sim.disc.mesh.nverts();
 //  constexpr int verts_per_elem = Omega_h::simplex_degree(Elem::dim, 0);
