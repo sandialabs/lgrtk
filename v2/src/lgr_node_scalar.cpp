@@ -32,7 +32,21 @@ struct NodeScalar : public Scalar {
     auto nodes_to_data = sim.fields.get(fi);
     auto node = subset->mapping.things.get(0);
     auto ncomps = sim.fields[fi].ncomps;
-    auto value = nodes_to_data.get(node * ncomps + comp);
+    double value = 0.0;
+    if (sim.fields[fi].on_points) {
+       auto const verts_to_elems = sim.disc.mesh.ask_up(0, sim.disc.dim());
+       auto const begin = verts_to_elems.a2ab.get(node);
+       auto const end = verts_to_elems.a2ab.get(node + 1);
+       auto const count = end-begin;
+       for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
+          auto const elem = verts_to_elems.ab2b.get(vert_elem);
+          auto const point = elem; // Assumes only one point per element
+          value += nodes_to_data.get(point);
+       }
+       value /= count;
+    } else {
+       value = nodes_to_data.get(node * ncomps + comp);
+    }
     return value;
   }
 };
