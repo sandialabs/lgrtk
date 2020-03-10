@@ -9,6 +9,7 @@
 #include <lgr_simulation.hpp>
 #include <lgr_circuit.hpp>
 #include <lgr_model.hpp>
+#include <map>
 
 namespace lgr {
 
@@ -77,6 +78,19 @@ struct JouleHeating : public Model<Elem> {
     sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
     sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
     sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
+    // Also set voltage/current elements as a possible variable
+    auto element_voltages = sim.circuit.element_voltages;
+    auto element_currents = sim.circuit.element_currents;
+    for (auto it = element_voltages.begin(); it != element_voltages.end(); ++it) {
+        std::string name = "circuit_v" + std::to_string(it->first);
+        double voltage = it->second;
+        sim.globals.set(name, voltage);
+    }
+    for (auto it = element_currents.begin(); it != element_currents.end(); ++it) {
+        std::string name = "circuit_i" + std::to_string(it->first);
+        double current = it->second;
+        sim.globals.set(name, current);
+    }
     // 2D thickness
     z_thickness = sim.input_variables.get_double(pl,"z thickness","-1.0");
     if (z_thickness > 0) {
@@ -291,7 +305,18 @@ struct JouleHeating : public Model<Elem> {
        sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
        sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
        sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
-
+       auto element_voltages = sim.circuit.element_voltages;
+       auto element_currents = sim.circuit.element_currents;
+       for (auto it = element_voltages.begin(); it != element_voltages.end(); ++it) {
+           std::string name = "circuit_v" + std::to_string(it->first);
+           double voltage = it->second;
+           sim.globals.set(name, voltage);
+       }
+       for (auto it = element_currents.begin(); it != element_currents.end(); ++it) {
+           std::string name = "circuit_i" + std::to_string(it->first);
+           double current = it->second;
+           sim.globals.set(name, current);
+       }
        // Update mesh values for next solve
        auto mesh_conductance = conductance_multiplier*
                                integrated_conductance;

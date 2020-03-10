@@ -358,7 +358,7 @@ double Circuit::GetMeshAnodeVoltage()
       std::cout << "Circuit solve GetMeshAnodeVoltage() execption " << ex << std::endl;
    }
 
-   return GetNodeVoltage(enMap[std::size_t(efind)][1]);
+   return GetNodeVoltage(enMap[std::size_t(efind)][0]);
 }
 
 double Circuit::GetMeshCathodeVoltage()
@@ -383,7 +383,7 @@ double Circuit::GetMeshCathodeVoltage()
       std::cout << "Circuit solve GetMeshCathodVoltage() execption " << ex << std::endl;
    }
 
-   return GetNodeVoltage(enMap[std::size_t(efind)][0]);
+   return GetNodeVoltage(enMap[std::size_t(efind)][1]);
 }
 
 double Circuit::GetMeshVoltageDrop()
@@ -578,8 +578,77 @@ void Circuit::Setup()
    UpdateGrounds();
    UpdateMatrixSize();
    UpdateBranchValues();
+
+   InitOutputValues();
+
 }
 
+void Circuit::InitOutputValues() {
+   for (int i=0; i<eNum; i++){
+      // eval is user element number mapping
+      int eval = eNumMap[std::size_t(i)];
+      int node1 = enMap[std::size_t(i)][0];
+      int node2 = enMap[std::size_t(i)][1];
+      double voltage = GetNodeVoltage(node2) - GetNodeVoltage(node1);
+
+      // Element voltages
+      element_voltages.insert(std::pair<int, double>(eval, voltage));
+
+      // Currents (assume initially zero)
+      element_currents.insert(std::pair<int, double>(i, 0.0));
+   }
+}
+
+void Circuit::UpdateOutputValues() {
+   for (int i=0; i<eNum; i++){
+      // eval is user element number mapping
+      int eval = eNumMap[std::size_t(i)];
+      int node1 = enMap[std::size_t(i)][0];
+      int node2 = enMap[std::size_t(i)][1];
+
+      // Voltages
+      auto it = element_voltages.find(eval);
+      if (it != element_voltages.end()) {
+         double voltage = GetNodeVoltage(node2) - GetNodeVoltage(node1);
+         it->second = voltage;
+      }
+
+      // Currents
+      it = element_currents.find(eval);
+      if (it != element_currents.end()) {
+         std::size_t ecomp = static_cast<std::size_t>(eValMap[std::size_t(i)]);
+
+         // Resistor:
+         //   I = G*V
+         if (eType[std::size_t(i)] == ETYPE_RESISTOR) {
+            double voltage = GetNodeVoltage(node1) - GetNodeVoltage(node2);
+            it->second = rVal[ecomp]*voltage;
+
+         // Capacitor:
+         //   I = C*dV/dt
+         } else if (eType[std::size_t(i)] == ETYPE_CAPACITOR) {
+            int ieqn1 = ConvertNodeToEq<int>(node1);
+            int ieqn2 = ConvertNodeToEq<int>(node2);
+            double this_voltage = x_vector(ieqn1) - x_vector(ieqn2);
+            double last_voltage = x_vector_last(ieqn1) - x_vector_last(ieqn2);
+            double dVdt = (this_voltage - last_voltage)/dt;
+            it->second = cVal[ecomp]*dVdt;
+
+         // Inductor:
+         //   I = from solution vector
+         } else if (eType[std::size_t(i)] == ETYPE_INDUCTOR) {
+            // Find which inductor this is
+            int il = 0;
+            for (int j=0;j<eNum;j++) {
+               if (eNumMap[std::size_t(j)] == it->first) break;
+               if (eType[std::size_t(j)] == ETYPE_INDUCTOR) il += 1;
+            }
+            int jshift = nNum-gNum;
+            it->second = x_vector(jshift+il);
+         }
+      }
+   }
+}
 
 void Circuit::Solve(double dtin, double timein)
 {
@@ -589,8 +658,10 @@ void Circuit::Solve(double dtin, double timein)
       time = timein;
 
       AssembleMatrix();
-      if ( (dt > 0) || (cNum + lNum == 0) )
+      if ( (dt > 0) || (cNum + lNum == 0) ) {
          SolveMatrix();
+         UpdateOutputValues();
+      }
    }
 }
 
@@ -660,6 +731,7 @@ void Circuit::UpdateMatrixSize()
          NM_matrix = MediumMatrix(nmat_size);
          b_vector = MediumVector(nmat_size);
          x_vector = MediumVector(nmat_size);
+         x_vector_last = MediumVector(nmat_size);
       } else {
          N_matrix.size = nmat_size;
          M_matrix.size = nmat_size;
@@ -697,6 +769,7 @@ void Circuit::ZeroMatrix() {
    if (firstCall) {
       for (int i = 0; i<nmat_size; i++) {
          x_vector(i) = 0.0;
+         x_vector_last(i) = 0.0;
       }
    
       for (std::size_t i = 0; i<ivNodes.size(); i++) {
@@ -1111,6 +1184,10 @@ void Circuit::AssembleMatrix()
 
 void Circuit::SolveMatrix()
 {
+   for (int j=0;j<nmat_size;j++) {
+       x_vector_last(j) = x_vector(j);
+   }
+
    gaussian_elimination(NM_matrix, b_vector);
    back_substitution(NM_matrix, b_vector, x_vector);
 }

@@ -6,6 +6,7 @@
 #include<lgr_linear_algebra.hpp>
 #include<string>
 #include<vector>
+#include<map>
 
 namespace lgr {
 
@@ -53,6 +54,7 @@ class Circuit
       MediumMatrix NM_matrix;
       MediumVector b_vector;
       MediumVector x_vector;
+      MediumVector x_vector_last;
 
       // Non-square matricies/vectors
       std::vector< std::vector<int> > AR_matrix;
@@ -124,7 +126,8 @@ class Circuit
          void AssembleNMMatrix();
          void AssemblebVector();
       void SolveMatrix();
-
+      void InitOutputValues();
+      void UpdateOutputValues();
 
    public:
       // Logic switches
@@ -147,6 +150,8 @@ class Circuit
       double GetMeshVoltageDrop(); 
       double GetMeshConductance();
       double GetMeshCurrent();
+      std::map<int,double> element_voltages;
+      std::map<int,double> element_currents;
 
       // Count Number of components
       int GetNumNodes();

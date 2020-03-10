@@ -17,9 +17,9 @@ circuit:
     voltage values: [0.0,3.0]
 
   resistors:
-    - {element: 0, nodes: [1,2], conductance: 0.1}
+    - {element: 0, nodes: [2,1], conductance: 0.1}
   inductors:
-    - {element: 1, nodes: [2,0], inductance: 10.0}
+    - {element: 1, nodes: [0,2], inductance: 10.0}
 
 */
 
@@ -27,11 +27,11 @@ circuit:
    std::vector<double> fixedv_values = {0.0,3.0};
 
    int e0 = 0;
-   std::vector<int> nodes0 = {1,2};
+   std::vector<int> nodes0 = {2,1};
    double conductance = 0.1;
 
    int e1 = 1;
-   std::vector<int> nodes1 = {2,0};
+   std::vector<int> nodes1 = {0,2};
    double inductance = 10.0;
 
    lgr::Circuit circuit;
@@ -77,7 +77,7 @@ circuit:
     current values: [5.0]
  
   resistors:
-    - {element: 0, nodes: [1,0], conductance: 0.1}
+    - {element: 0, nodes: [0,1], conductance: 0.1}
 
 */
 
@@ -87,7 +87,7 @@ circuit:
    std::vector<double> fixedi_values = {5.0};
 
    int e0 = 0;
-   std::vector<int> nodes0 = {1,0};
+   std::vector<int> nodes0 = {0,1};
    double conductance = 0.1;
 
    lgr::Circuit circuit;
@@ -128,10 +128,10 @@ circuit:
     voltage values: [0.0]
 
   capacitors:
-    - {element: 0, nodes: [0,1], capacitance: 0.1}
+    - {element: 0, nodes: [1,0], capacitance: 0.1}
 
   resistors:
-    - {element: 1, nodes: [1,0], conductance: 0.1}
+    - {element: 1, nodes: [0,1], conductance: 0.1}
 
 */
 
@@ -141,11 +141,11 @@ circuit:
    std::vector<double> initv_values  = {3.0};
 
    int e0 = 0;
-   std::vector<int> nodes0 = {0,1};
+   std::vector<int> nodes0 = {1,0};
    double capacitance = 0.1;
 
    int e1 = 1;
-   std::vector<int> nodes1 = {1,0};
+   std::vector<int> nodes1 = {0,1};
    double conductance = 0.1;
 
    lgr::Circuit circuit;
@@ -190,9 +190,9 @@ circuit:
     voltage values: [0.0,3.0]
 
   resistors:
-    - {element: 0, nodes: [1,2], conductance: 0.1}
+    - {element: 0, nodes: [2,1], conductance: 0.1}
   capacitors:
-    - {element: 1, nodes: [2,0], capacitance: 0.1}
+    - {element: 1, nodes: [0,2], capacitance: 0.1}
 
 */
 
@@ -226,7 +226,7 @@ circuit:
 
    double vna = circuit.GetMeshAnodeVoltage();
    double vnc = circuit.GetMeshCathodeVoltage();
-   double vdrop = vnc - vna;
+   double vdrop = vna - vnc;
 
    double vdrop_capacitor = fixedv_values[1]*(1.0-exp(-tfinal));
    double vdrop_expect    = fixedv_values[1] - vdrop_capacitor;
@@ -252,11 +252,11 @@ circuit:
     voltage values: [10.0]
 
   capacitors:
-    - {element: 0, nodes: [0,1], capacitance: 0.1111}
+    - {element: 0, nodes: [1,0], capacitance: 0.1111}
   resistors:
-    - {element: 1, nodes: [1,2], conductance: 2.0}
+    - {element: 1, nodes: [2,1], conductance: 2.0}
   inductors:
-    - {element: 2, nodes: [2,0], inductance: 1.0}
+    - {element: 2, nodes: [0,2], inductance: 1.0}
 
 */
 
@@ -266,15 +266,15 @@ circuit:
    std::vector<double> initv_values  = {10.0};
 
    int e0 = 0;
-   std::vector<int> nodes0 = {0,1};
+   std::vector<int> nodes0 = {1,0};
    double capacitance = 0.1111;
 
    int e1 = 1;
-   std::vector<int> nodes1 = {1,2};
+   std::vector<int> nodes1 = {2,1};
    double conductance = 2.0;
 
    int e2 = 2;
-   std::vector<int> nodes2 = {2,0};
+   std::vector<int> nodes2 = {0,2};
    double inductance = 1.0;
 
    lgr::Circuit circuit;
@@ -328,11 +328,11 @@ circuit:
     voltage values: [10.0]
 
   capacitors:
-    - {element: 0, nodes: [0,1], capacitance: 0.1111}
+    - {element: 0, nodes: [1,0], capacitance: 0.1111}
   resistors:
-    - {element: 1, nodes: [1,2], conductance: 0.1}
+    - {element: 1, nodes: [2,1], conductance: 0.1}
   inductors:
-    - {element: 2, nodes: [2,0], inductance: 1.0}
+    - {element: 2, nodes: [0,2], inductance: 1.0}
 
 */
 
@@ -374,7 +374,7 @@ circuit:
 
    double vna = circuit.GetMeshAnodeVoltage();
    double vnc = circuit.GetMeshCathodeVoltage();
-   double vdrop = vnc - vna;
+   double vdrop = vna - vnc;
 
    double alpha = (1.0/conductance)/(2.0*inductance);
    double omega = 1.0/sqrt(inductance*capacitance);
@@ -401,9 +401,9 @@ circuit:
     voltage values: [0.0,32.0,20.0]
 
   resistors:
-    - {element: 0, nodes: [1,2], conductance: 0.5}
-    - {element: 1, nodes: [2,0], conductance: 0.125}
-    - {element: 2, nodes: [3,2], conductance: 0.25}
+    - {element: 0, nodes: [2,1], conductance: 0.5}
+    - {element: 1, nodes: [0,2], conductance: 0.125}
+    - {element: 2, nodes: [2,3], conductance: 0.25}
 
 */
 
@@ -413,9 +413,9 @@ circuit:
    int e0 = 0;
    int e1 = 1;
    int e2 = 2;
-   std::vector<int> nodes0 = {1,2};
-   std::vector<int> nodes1 = {2,0};
-   std::vector<int> nodes2 = {3,2};
+   std::vector<int> nodes0 = {2,1};
+   std::vector<int> nodes1 = {0,2};
+   std::vector<int> nodes2 = {2,3};
    double con0 = 0.5;
    double con1 = 0.125;
    double con2 = 0.25;
