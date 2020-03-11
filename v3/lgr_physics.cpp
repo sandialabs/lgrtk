@@ -17,7 +17,6 @@
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
-#include <otm_materials.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
