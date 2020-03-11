@@ -9,7 +9,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Pair.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_state.hpp>
+#include <otm_state.hpp>
 #include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>

@@ -3,7 +3,7 @@
 #include <hpc_macros.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
-#include <lgr_input.hpp>
+#include <otm_input.hpp>
 #include <lgr_physics.hpp>
 
 namespace lgr {

@@ -6,8 +6,8 @@
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_meshing_sort.hpp>
-#include <lgr_state.hpp>
+#include <otm_meshing_sort.hpp>
+#include <otm_state.hpp>
 
 namespace lgr {
 
@@ -53,7 +53,7 @@ void invert_otm_point_node_relations(lgr::state &s)
 
   hpc::for_each(hpc::device_policy(), s.points, node_point_fill_functor);
 
-  sort_node_relations(s, s.nodes_to_node_points, s.node_points_to_points, s.node_points_to_point_nodes);
+  otm_sort_node_relations(s, s.nodes_to_node_points, s.node_points_to_points, s.node_points_to_point_nodes);
 }
 
 }

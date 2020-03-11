@@ -7,9 +7,9 @@
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_exodus.hpp>
-#include <lgr_input.hpp>
+#include <otm_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_state.hpp>
+#include <otm_state.hpp>
 #include <otm_tet2meshless.hpp>
 #include <unit_tests/unit_device_util.hpp>
 

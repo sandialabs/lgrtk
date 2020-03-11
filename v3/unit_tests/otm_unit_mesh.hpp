@@ -5,9 +5,9 @@
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
-#include <lgr_input.hpp>
+#include <otm_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_state.hpp>
+#include <otm_state.hpp>
 #include <otm_meshless.hpp>
 
 inline void

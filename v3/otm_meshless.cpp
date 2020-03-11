@@ -5,10 +5,10 @@
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
-#include <lgr_input.hpp>
-#include <lgr_state.hpp>
+#include <otm_input.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
+#include <otm_state.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -104,7 +104,7 @@ void otm_initialize_grad_val_N(state& s) {
 
 inline void otm_assemble_internal_force(state& s)
 {
-  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_cauchy = s.cauchy.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
@@ -117,12 +117,12 @@ inline void otm_assemble_internal_force(state& s)
     auto const node_points = nodes_to_node_points[node];
     for (auto const node_point : node_points) {
       auto const point = node_points_to_points[node_point];
-      auto const sigma = points_to_sigma[point].load();
+      auto const cauchy = points_to_cauchy[point].load();
       auto const V = points_to_V[point];
       auto const point_nodes = points_to_point_nodes[point];
       auto const point_node = point_nodes[node_points_to_point_nodes[node_point]];
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
-      auto const f = -(sigma * grad_N) * V;
+      auto const f = -(cauchy * grad_N) * V;
       node_f = node_f + f;
     }
     auto node_to_f = nodes_to_f[node].load();
@@ -252,7 +252,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
 {
   auto const dt = s.dt;
   auto const points_to_F_total = s.F_total.cbegin();
-  auto const points_to_sigma = s.cauchy.begin();
+  auto const points_to_cauchy = s.cauchy.begin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
   auto const points_to_W = s.potential_density.begin();
@@ -270,20 +270,20 @@ void otm_update_material_state(input const& in, state& s, material_index const m
   auto const is_variational_J2 = in.enable_variational_J2[material];
   auto functor = [=] HPC_DEVICE (point_index const point) {
       auto const F = points_to_F_total[point].load();
-      auto sigma = hpc::stress<double>::zero();
+      auto cauchy = hpc::stress<double>::zero();
       auto Keff = hpc::pressure<double>(0.0);
       auto Geff = hpc::pressure<double>(0.0);
       auto W = hpc::energy_density<double>(0.0);
       if (is_neo_hookean == true) {
-        neo_Hookean_point(F, K, G, sigma, Keff, Geff, W);
+        neo_Hookean_point(F, K, G, cauchy, Keff, Geff, W);
       }
       if (is_variational_J2 == true) {
         j2::Properties props{K, G, Y0, n, eps0, Svis0, m, eps_dot0};
         auto Fp = points_to_Fp[point].load();
         auto ep = points_to_ep[point];
-        variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp, ep);
+        variational_J2_point(F, props, dt, cauchy, Keff, Geff, W, Fp, ep);
       }
-      points_to_sigma[point] = sigma;
+      points_to_cauchy[point] = cauchy;
       points_to_K[point] = Keff;
       points_to_G[point] = Geff;
       points_to_W[point] = W;
@@ -355,7 +355,7 @@ void otm_initialize_state(input const& in, state& s) {
   s.grad_N.resize(s.points.size() * s.points_to_point_nodes.size());
   s.N.resize(s.points.size() * s.points_to_point_nodes.size());
   s.F_total.resize(s.points.size());
-  s.sigma.resize(s.points.size());
+  s.cauchy.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
