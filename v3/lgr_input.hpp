@@ -26,7 +26,6 @@ enum element_kind {
 enum time_integrator_kind {
   MIDPOINT_PREDICTOR_CORRECTOR,
   VELOCITY_VERLET,
-  OTM_EXPLICIT,
 };
 
 enum h_min_kind {
