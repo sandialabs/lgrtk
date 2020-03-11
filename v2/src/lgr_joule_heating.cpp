@@ -20,6 +20,7 @@ struct JouleHeating : public Model<Elem> {
   FieldIndex conductivity;
   FieldIndex diffused_conductivity;
   FieldIndex nodal_conductivity;
+  FieldIndex electric_field;
   FieldIndex normalized_voltage;
   FieldIndex conductance;
   FieldIndex specific_internal_energy_rate;
@@ -54,9 +55,19 @@ struct JouleHeating : public Model<Elem> {
         pl.get<std::string>("normalized voltage", "0.0");
     this->nodal_conductivity = sim.fields.define("nodal_sigma", "nodal conductivity", 1,
         NODES, false, sim.disc.covering_class_names());
-    sim.fields[this->nodal_conductivity].remap_type = RemapType::NODAL;
+    sim.fields[this->nodal_conductivity].remap_type = RemapType::NONE;
     sim.fields[this->nodal_conductivity].default_value =
-        pl.get<std::string>("nodal conductivity", "0.0");
+        pl.get<std::string>("nodal conductivity", "");
+
+    this->electric_field = sim.fields.define("efield", "electric field", Elem::dim,
+        NODES, false, sim.disc.covering_class_names());
+    sim.fields[this->electric_field].remap_type = RemapType::NONE;
+    sim.fields[this->electric_field].default_value =
+        pl.get<std::string>("electric field", "");
+
+//  this->electric_field =
+//      this->point_define("efield", "electric field", Elem::dim, RemapType::NONE, pl, "");
+
     this->conductance =
         this->point_define("G", "conductance", 1, RemapType::NONE, "");
     this->specific_internal_energy_rate = this->point_define(
@@ -146,6 +157,7 @@ struct JouleHeating : public Model<Elem> {
        assemble_normalized_voltage_system();
        solve_normalized_voltage_system();
     }
+    compute_electric_field();
     compute_conductance();
     integrate_conductance();
     compute_electrode_voltages();
@@ -158,17 +170,51 @@ struct JouleHeating : public Model<Elem> {
     }
     sim.globals.set("Joule heating CPU time", timer.total_runtime());
   }
+  void compute_electric_field() {
+    auto const nodes_to_phi = sim.get(this->normalized_voltage);
+    auto const points_to_grad = this->points_get(this->sim.gradient);
+    auto const elems_to_nodes = this->get_elems_to_nodes();
+    auto const verts_to_elems = sim.disc.mesh.ask_up(0, Elem::dim);
+    auto const nodes_to_efield = sim.set(this->electric_field);
+    auto v_functor = OMEGA_H_LAMBDA(int const vert) {
+      auto const begin = verts_to_elems.a2ab[vert];
+      auto const end = verts_to_elems.a2ab[vert + 1];
+      int const e_count = end-begin;
+      Omega_h::Vector<Elem::dim> g_count;
+      for (int i=0; i < Elem::dim; ++i) {
+         g_count[i] = 0.0;
+      }
+      for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
+        auto const elem = verts_to_elems.ab2b[vert_elem];
+        auto const point = elem;
+        auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
+        auto const phi = getscals<Elem>(nodes_to_phi, elem_nodes);
+        auto const grads = getgrads<Elem>(points_to_grad, point);
+        auto const grad_phi = grad<Elem>(grads, phi);
+        for (int i=0; i < Elem::dim; ++i) {
+           g_count[i] += -grad_phi[i]/e_count;
+        }
+      }
+      setvec<Elem>(nodes_to_efield, vert, g_count);
+    };
+    parallel_for(sim.disc.mesh.nverts(), std::move(v_functor));
+//  auto functor = OMEGA_H_LAMBDA(int const point) {
+//    auto const elem = point / Elem::points;
+//    auto const elem_nodes = getnodes<Elem>(elems_to_nodes, elem);
+//    auto const phi = getscals<Elem>(nodes_to_phi, elem_nodes);
+//    auto const grads = getgrads<Elem>(points_to_grad, point);
+//    auto const grad_phi = grad<Elem>(grads, phi);
+//    for (int i=0; i < Elem::dim; ++i) {
+//       points_to_efield[point+i] = -grad_phi[i];
+//    }
+//  };
+//  parallel_for(this->points(), std::move(functor));
+  }
   void compute_diffused_conductivity() {
+    OMEGA_H_TIME_FUNCTION;
     // Compute nodal conductivity
     auto const points_to_conductivity = this->points_get(this->conductivity);
-    auto const points_to_diffused_conductivity = this->points_set(this->diffused_conductivity);
     auto const nodes_to_nodal_conductivity = sim.set(this->nodal_conductivity);
-
-    // Just for now, we can remove when all done
-    auto functor = OMEGA_H_LAMBDA(int const point) {
-      points_to_diffused_conductivity[point] = points_to_conductivity[point];
-    };
-    parallel_for(sim.disc.mesh.nelems(), std::move(functor));
 
     auto const verts_to_elems = sim.disc.mesh.ask_up(0, Elem::dim);
     auto v_functor = OMEGA_H_LAMBDA(int const vert) {
@@ -190,46 +236,54 @@ struct JouleHeating : public Model<Elem> {
     auto const nsteps = 1;
     auto const dtau = 1.0;
     auto const dnumber = lscale*lscale/(4.0*dtau*nsteps);
-    std::printf("Diffusion number is: %e\n", dnumber);
     Omega_h::Write<double> diffno(sim.disc.mesh.nelems(), dnumber);
 
-    // Solve diffusion equation
+    // Compute matrix:
+    //    matrix = I + inv(M)*S
     Global_FEM<Elem> gfem(sim);
     matrix = gfem.stiffness(diffno);
     auto const inv_mass = gfem.inv_lumped_mass();
 
-    Omega_h::Write<double> nodes_to_initial_nodal_conductivity(sim.disc.mesh.nverts());
     auto const verts_to_edges = sim.disc.mesh.ask_up(0, 1);
     auto row_functor = OMEGA_H_LAMBDA(int const row) {
       auto const row_begin = matrix.rows_to_columns.a2ab[row];
       auto row_col = row_begin;
-      auto const factor = dtau*inv_mass.entries[row_col];
+      auto const factor = dtau*inv_mass[row];
       matrix.entries[row_col] = 1.0 + factor*matrix.entries[row_col];
       row_col++;
       auto const edge_begin = verts_to_edges.a2ab[row];
       auto const edge_end = verts_to_edges.a2ab[row + 1];
       for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
-//      auto const edge = verts_to_edges.ab2b[vert_edge];
         matrix.entries[row_col] = factor*matrix.entries[row_col];
         row_col++;
       }
-      nodes_to_initial_nodal_conductivity[row] = nodes_to_nodal_conductivity[row];
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
 
+    // Compute rhs: 
+    //    rhs = initial nodal conductivity
+    Omega_h::Write<double> 
+       nodes_to_initial_nodal_conductivity(nodes_to_nodal_conductivity);
+    rhs = nodes_to_initial_nodal_conductivity;
+
+    // Solve system:
+    //    matrix * x = rhs,
+    //
+    //    where:
+    //       x = diffused nodal conductivity
     double relative_out, absolute_out;
     auto const cg_it = (sim.step == 0) ? sim.disc.mesh.nverts() : cg_iterations;
-    rhs = nodes_to_initial_nodal_conductivity;
-    GlobalVector x = nodes_to_nodal_conductivity;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        matrix, rhs, x, 
+        matrix, rhs, nodes_to_nodal_conductivity, 
         relative_tolerance, absolute_tolerance, cg_it,
         relative_out, absolute_out);
-    std::printf("relative tol: %e\n", relative_out);
-    std::printf("absolute tol: %e\n", absolute_out);
-    std::printf("iterations  : %d\n", niter);
+    OMEGA_H_CHECK(niter <= nodes_to_nodal_conductivity.size());
 
+    // Convert diffused nodal conductivity to diffused element conductivity
+    // through averaging the nodes of each element
     auto const elems_to_nodes = sim.disc.ents_to_nodes(ELEMS);
+    auto const points_to_diffused_conductivity = 
+        this->points_set(this->diffused_conductivity);
     auto end_functor = OMEGA_H_LAMBDA(int const elem) {
        double value = 0.0;
        int count = 0;
@@ -242,28 +296,6 @@ struct JouleHeating : public Model<Elem> {
        points_to_diffused_conductivity[elem] = value/count;
     };
     parallel_for(sim.disc.mesh.nelems(), std::move(end_functor));
-
-//  auto end_functor = OMEGA_H_LAMBDA(int const row) {
-//      nodes_to_nodal_conductivity[row] = x[row];
-//  };
-//  parallel_for(sim.disc.mesh.nverts(), std::move(end_functor));
-
-//  auto const nnodes = sim.disc.mesh.nverts();
-//  constexpr int verts_per_elem = Omega_h::simplex_degree(Elem::dim, 0);
-
-//  Omega_h::Write<double> nodal_conductivity(nnodes, 0.0);
-//  Omega_h::Write<int> nodal_count(nnodes, 0);
-
-//  auto elem_functor = OMEGA_H_LAMBDA(int const elem) {
-//    for (int elem_pt = 0; elem_pt < Elem::points; ++elem_pt) {
-//      auto const point = elem * Elem::points + elem_pt;
-//      for (int elem_vert = 0; elem_vert < verts_per_elem; ++elem_vert) {
-//        elems_to_vert_contribs[elem * verts_per_elem + elem_vert] = contrib;
-//      }
-//    }
-//  };
-//  parallel_for(sim.disc.mesh.nelems(), std::move(elem_functor));
-    
   }
   void assemble_normalized_voltage_system() {
 //  std::cerr << "assembling normalized voltage system\n";
