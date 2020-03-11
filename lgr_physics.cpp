@@ -790,24 +790,6 @@ HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
-HPC_NOINLINE inline void otm_explicit_step(input const& in, state& s) {
-  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
-  //auto const dt_prev = s.dt;
-  advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
-  auto const dt_curr = s.dt;
-  hpc::fill(hpc::serial_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
-  explicit_newmark_predict(s, dt_curr);
-  update_x(s);
-  update_reference(s);
-  update_h_min(in, s);
-  update_material_state(in, s, s.dt, old_p_h);
-  update_c(s);
-  update_element_dt(s);
-  find_max_stable_dt(s);
-  update_a_from_material_state(in, s);
-  explicit_newmark_correct(s, dt_curr);
-}
-
 HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
@@ -815,9 +797,6 @@ HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
       break;
     case VELOCITY_VERLET:
       velocity_verlet_step(in, s);
-      break;
-    case OTM_EXPLICIT:
-      otm_explicit_step(in, s);
       break;
   }
 }
