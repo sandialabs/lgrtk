@@ -628,32 +628,26 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
-  auto const is_meshless = in.element == MESHLESS;
-  if (is_meshless == true) {
-    // TODO: Maybe don't need this here at all.
-    // otm_update_material_state(in, s, material, dt);
-  } else {
-    if (in.enable_neo_Hookean[material]) {
-      neo_Hookean(in, s, material);
-    }
+  if (in.enable_neo_Hookean[material]) {
+    neo_Hookean(in, s, material);
+  }
 #if defined(HYPER_EP)
-    else if (in.enable_hyper_ep[material]) {
-      hyper_ep_update(in, s, material);
-    }
+  else if (in.enable_hyper_ep[material]) {
+    hyper_ep_update(in, s, material);
+  }
 #endif // HYPER_EP
-    if (in.enable_ideal_gas[material]) {
-      if (in.enable_nodal_energy[material]) {
-        nodal_ideal_gas(in, s, material);
-      } else {
-        ideal_gas(in, s, material);
-      }
+  if (in.enable_ideal_gas[material]) {
+    if (in.enable_nodal_energy[material]) {
+      nodal_ideal_gas(in, s, material);
+    } else {
+      ideal_gas(in, s, material);
     }
-    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
-      if (in.enable_p_prime[material]) {
-        update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
-      } else {
-        update_sigma_with_p_h(s, material);
-      }
+  }
+  if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
+    if (in.enable_p_prime[material]) {
+      update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
+    } else {
+      update_sigma_with_p_h(s, material);
     }
   }
 }

@@ -31,7 +31,6 @@ TEST(exodus, readSimpleFile)
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.element = MESHLESS;
 
   int err_code = read_exodus_file("tets.g", in, st);
 
@@ -105,7 +104,6 @@ TEST(exodus, convertTetMeshToMeshfree)
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.element = MESHLESS;
   in.otm_material_points_to_add_per_element = 1;
 
   in.xp_transform = compute_material_points_as_element_centroids;
@@ -204,7 +202,6 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateSingleMaterialPoint) {
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.element = MESHLESS;
   in.otm_material_points_to_add_per_element = 1;
 
   hpc::host_vector<hpc::position<double>, point_node_index> tet_gauss_pts(1, { 0.25, 0.25, 0.25 });
@@ -251,7 +248,6 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateMaterialPoints) {
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.element = MESHLESS;
   in.otm_material_points_to_add_per_element = 4;
 
   hpc::host_vector<hpc::position<double>, point_node_index> tet_gauss_pts(4);

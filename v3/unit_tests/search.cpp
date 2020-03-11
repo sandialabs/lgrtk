@@ -279,7 +279,6 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.element = MESHLESS;
   in.otm_material_points_to_add_per_element = 1;
 
   in.xp_transform = compute_material_points_as_element_centroids;
