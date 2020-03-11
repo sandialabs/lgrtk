@@ -104,6 +104,5 @@ class state {
 class input;
 
 void resize_state(input const& in, state& s);
-void resize_state_meshless(input const& in, state& s);
 
 }

@@ -20,7 +20,6 @@ enum element_kind {
   TRIANGLE,
   TETRAHEDRON,
   COMPOSITE_TETRAHEDRON,
-  MESHLESS,
 };
 
 enum time_integrator_kind {
