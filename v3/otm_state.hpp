@@ -35,7 +35,7 @@ class state {
   hpc::device_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total; // deformation gradient since simulation start
-  hpc::device_array_vector<hpc::stress<double>, point_index> cauchy; // Cauchy stress tensor (full)
+  hpc::device_array_vector<hpc::stress<double>, point_index> sigma; // Cauchy stress tensor (full)
   hpc::device_array_vector<hpc::symmetric_velocity_gradient<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
   hpc::device_vector<hpc::pressure<double>, point_index> p; // pressure at elements (output only!)
   hpc::device_array_vector<hpc::velocity<double>, point_index> v_prime; // fine-scale velocity
