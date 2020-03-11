@@ -6,7 +6,6 @@
 #include <lgr_domain.hpp>
 #include <lgr_input.hpp>
 #include <hpc_vector3.hpp>
-#include <otm.hpp>
 
 namespace lgr {
 
@@ -1032,7 +1031,7 @@ void run_for_average()
 }
 
 int main() {
-  if ((0)) lgr::elastic_wave();
+  if ((1)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -1055,7 +1054,6 @@ int main() {
   if ((0)) lgr::twisting_composite_column();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((1)) lgr::otm();
 //run_for_average();
 }
 
