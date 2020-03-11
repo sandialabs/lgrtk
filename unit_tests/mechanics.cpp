@@ -10,7 +10,7 @@
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_state.hpp>
+#include <otm_state.hpp>
 #include <otm_meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 #include <unit_tests/ut_util.hpp>
