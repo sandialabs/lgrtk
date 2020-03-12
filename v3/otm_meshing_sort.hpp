@@ -4,14 +4,14 @@
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_state.hpp>
+#include <otm_state.hpp>
 #include <cassert>
 
 namespace lgr {
 
 template<typename NodeRelRangeType, typename NodeRelToRelRangeType,
     typename NodeRelToNodesOfRelRangeType>
-void sort_node_relations(lgr::state &s, NodeRelRangeType &nodes_to_node_relations,
+void otm_sort_node_relations(lgr::state &s, NodeRelRangeType &nodes_to_node_relations,
     NodeRelToRelRangeType &node_relations_to_relation_indices,
     NodeRelToNodesOfRelRangeType &node_relations_to_nodes_of_relation)
 {

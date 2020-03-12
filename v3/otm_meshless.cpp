@@ -5,10 +5,10 @@
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
-#include <lgr_input.hpp>
-#include <lgr_state.hpp>
+#include <otm_input.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
+#include <otm_state.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -252,7 +252,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
 {
   auto const dt = s.dt;
   auto const points_to_F_total = s.F_total.cbegin();
-  auto const points_to_sigma = s.cauchy.begin();
+  auto const points_to_sigma = s.sigma.begin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
   auto const points_to_W = s.potential_density.begin();
@@ -346,6 +346,71 @@ void otm_update_point_position(state& s)
     xp += up;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+void otm_initialize_state(input const& in, state& s) {
+  s.u.resize(s.nodes.size());
+  s.v.resize(s.nodes.size());
+  s.V.resize(s.points.size());
+  s.grad_N.resize(s.points.size() * s.points_to_point_nodes.size());
+  s.N.resize(s.points.size() * s.points_to_point_nodes.size());
+  s.F_total.resize(s.points.size());
+  s.sigma.resize(s.points.size());
+  s.symm_grad_v.resize(s.points.size());
+  s.K.resize(s.points.size());
+  s.G.resize(s.points.size());
+  s.c.resize(s.points.size());
+  s.element_f.resize(s.points.size() * s.nodes_in_element.size());
+  s.f.resize(s.nodes.size());
+  s.rho.resize(s.points.size());
+  s.material_mass.resize(in.materials.size());
+  for (auto& mm : s.material_mass) mm.resize(s.nodes.size());
+  s.mass.resize(s.nodes.size());
+  s.a.resize(s.nodes.size());
+  s.h_min.resize(s.elements.size());
+  if (in.enable_viscosity) {
+    s.h_art.resize(s.elements.size());
+  }
+  s.nu_art.resize(s.points.size());
+  s.element_dt.resize(s.points.size());
+  s.p_h.resize(in.materials.size());
+  s.p_h_dot.resize(in.materials.size());
+  s.e_h.resize(in.materials.size());
+  s.e_h_dot.resize(in.materials.size());
+  s.rho_h.resize(in.materials.size());
+  s.K_h.resize(in.materials.size());
+  s.dp_de_h.resize(in.materials.size());
+  s.temp.resize(in.materials.size());
+  s.ep_h.resize(in.materials.size());
+  for (auto const material : in.materials) {
+    if (in.enable_nodal_pressure[material]) {
+      s.p_h[material].resize(s.nodes.size());
+      s.p_h_dot[material].resize(s.nodes.size());
+      s.v_prime.resize(s.points.size());
+      s.W.resize(s.points.size() * s.nodes_in_element.size());
+    }
+    if (in.enable_nodal_energy[material]) {
+      s.p_h[material].resize(s.nodes.size());
+      s.e_h[material].resize(s.nodes.size());
+      s.e_h_dot[material].resize(s.nodes.size());
+      s.rho_h[material].resize(s.nodes.size());
+      s.K_h[material].resize(s.nodes.size());
+      s.q.resize(s.points.size());
+      s.W.resize(s.points.size() * s.nodes_in_element.size());
+      s.dp_de_h[material].resize(s.nodes.size());
+      if (in.enable_p_prime[material]) {
+        s.p_prime.resize(s.points.size());
+      }
+    }
+    if (in.enable_hyper_ep[material]) {
+      s.ep_h[material].resize(s.nodes.size());
+    }
+  }
+  s.material.resize(s.elements.size());
+  if (in.enable_adapt) {
+    s.quality.resize(s.elements.size());
+    s.h_adapt.resize(s.nodes.size());
+  }
 }
 
 void otm_initialize(input&, state&)

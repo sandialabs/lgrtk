@@ -3,7 +3,7 @@
 #include <hpc_macros.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
-#include <lgr_input.hpp>
+#include <otm_input.hpp>
 #include <lgr_physics.hpp>
 
 namespace lgr {
@@ -28,8 +28,6 @@ void otm() {
   constexpr material_index nboundaries(3);
   input in(nmaterials, nboundaries);
   in.name = "otm";
-  in.element = MESHLESS;
-  in.time_integrator = OTM_EXPLICIT;
   in.end_time = 1.0e-3;
   in.num_file_outputs = 100;
   in.elements_along_x = 1;

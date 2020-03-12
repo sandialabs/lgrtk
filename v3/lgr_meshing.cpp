@@ -380,112 +380,12 @@ HPC_NOINLINE inline void build_10_node_tetrahedron_mesh(input const& in, state& 
   hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
 }
 
-HPC_NOINLINE inline void build_otm_mesh(input const& in, state& s)
-{
-  assert(in.elements_along_x >= 1);
-  int const nx = in.elements_along_x;
-  assert(in.elements_along_y >= 1);
-  int const ny = in.elements_along_y;
-  assert(in.elements_along_z >= 1);
-  int const nz = in.elements_along_z;
-  s.nodes_in_element.resize(node_in_element_index(4));
-  int const nvx = nx + 1;
-  int const nvy = ny + 1;
-  int const nvz = nz + 1;
-  int const nvxy = nvx * nvy;
-  int const nv = nvxy * nvz;
-  s.nodes.resize(node_index(nv));
-  hpc::device_vector<point_index> support_sizes(s.points.size(), point_node_index(nv));
-  s.points_to_point_nodes.assign_sizes(support_sizes);
-  int const nxy = nx * ny;
-  int const nh = nxy * nz;
-  int const nt = nh * 6;
-  s.elements.resize(element_index(nt));
-  s.elements_to_nodes.resize(s.elements.size() * s.nodes_in_element.size());
-  auto const elements_to_nodes = s.elements_to_nodes.begin();
-  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto connectivity_functor = [=] HPC_DEVICE (int const hex) {
-    int const ij = hex % nxy;
-    int const k = hex / nxy;
-    int const i = ij % nx;
-    int const j = ij / nx;
-    using g_t = node_index;
-    node_index hex_nodes[8] = {
-      g_t(((k + 0) * nvy + (j + 0)) * nvx + (i + 0)),
-      g_t(((k + 0) * nvy + (j + 0)) * nvx + (i + 1)),
-      g_t(((k + 0) * nvy + (j + 1)) * nvx + (i + 0)),
-      g_t(((k + 0) * nvy + (j + 1)) * nvx + (i + 1)),
-      g_t(((k + 1) * nvy + (j + 0)) * nvx + (i + 0)),
-      g_t(((k + 1) * nvy + (j + 0)) * nvx + (i + 1)),
-      g_t(((k + 1) * nvy + (j + 1)) * nvx + (i + 0)),
-      g_t(((k + 1) * nvy + (j + 1)) * nvx + (i + 1))
-    };
-    auto tet = element_index(hex * 6 + 0);
-    auto element_nodes = elements_to_element_nodes[tet];
-    using l_t = node_in_element_index;
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[1];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[3];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-    tet = element_index(hex * 6 + 1);
-    element_nodes = elements_to_element_nodes[tet];
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[3];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[2];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-    tet = element_index(hex * 6 + 2);
-    element_nodes = elements_to_element_nodes[tet];
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[2];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[6];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-    tet = element_index(hex * 6 + 3);
-    element_nodes = elements_to_element_nodes[tet];
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[6];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[4];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-    tet = element_index(hex * 6 + 4);
-    element_nodes = elements_to_element_nodes[tet];
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[4];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[5];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-    tet = element_index(hex * 6 + 5);
-    element_nodes = elements_to_element_nodes[tet];
-    elements_to_nodes[element_nodes[l_t(0)]] = hex_nodes[0];
-    elements_to_nodes[element_nodes[l_t(1)]] = hex_nodes[5];
-    elements_to_nodes[element_nodes[l_t(2)]] = hex_nodes[1];
-    elements_to_nodes[element_nodes[l_t(3)]] = hex_nodes[7];
-  };
-  hpc::counting_range<int> hexes(nh);
-  hpc::for_each(hpc::device_policy(), hexes, connectivity_functor);
-  s.x.resize(s.nodes.size());
-  auto const nodes_to_x = s.x.begin();
-  auto const x = in.x_domain_size;
-  auto const y = in.y_domain_size;
-  auto const z = in.z_domain_size;
-  auto const dx = x / double(nx);
-  auto const dy = y / double(ny);
-  auto const dz = z / double(nz);
-  auto coordinates_functor = [=] HPC_DEVICE (node_index const node) {
-    int const ij = hpc::weaken(node) % nvxy;
-    auto const k = double(hpc::weaken(node) / nvxy);
-    auto const i = double(ij % nvx);
-    auto const j = double(ij / nvx);
-    nodes_to_x[node] = hpc::position<double>(i * dx, j * dy, k * dz);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, coordinates_functor);
-}
-
 void build_mesh(input const& in, state& s) {
   switch (in.element) {
     case BAR: build_bar_mesh(in, s); break;
     case TRIANGLE: build_triangle_mesh(in, s); break;
     case TETRAHEDRON: build_tetrahedron_mesh(in, s); break;
     case COMPOSITE_TETRAHEDRON: build_10_node_tetrahedron_mesh(in, s); break;
-    // OTM is initialized with a tetrahedral mesh.
-    case MESHLESS: build_otm_mesh(in, s); break;
   }
   propagate_connectivity(s);
 }

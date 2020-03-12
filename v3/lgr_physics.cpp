@@ -17,7 +17,6 @@
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
-#include <otm_materials.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -629,32 +628,26 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
 HPC_NOINLINE inline void update_single_material_state(input const& in, state& s, material_index const material,
     hpc::time<double> const dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
-  auto const is_meshless = in.element == MESHLESS;
-  if (is_meshless == true) {
-    // TODO: Maybe don't need this here at all.
-    // otm_update_material_state(in, s, material, dt);
-  } else {
-    if (in.enable_neo_Hookean[material]) {
-      neo_Hookean(in, s, material);
-    }
+  if (in.enable_neo_Hookean[material]) {
+    neo_Hookean(in, s, material);
+  }
 #if defined(HYPER_EP)
-    else if (in.enable_hyper_ep[material]) {
-      hyper_ep_update(in, s, material);
-    }
+  else if (in.enable_hyper_ep[material]) {
+    hyper_ep_update(in, s, material);
+  }
 #endif // HYPER_EP
-    if (in.enable_ideal_gas[material]) {
-      if (in.enable_nodal_energy[material]) {
-        nodal_ideal_gas(in, s, material);
-      } else {
-        ideal_gas(in, s, material);
-      }
+  if (in.enable_ideal_gas[material]) {
+    if (in.enable_nodal_energy[material]) {
+      nodal_ideal_gas(in, s, material);
+    } else {
+      ideal_gas(in, s, material);
     }
-    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
-      if (in.enable_p_prime[material]) {
-        update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
-      } else {
-        update_sigma_with_p_h(s, material);
-      }
+  }
+  if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
+    if (in.enable_p_prime[material]) {
+      update_sigma_with_p_h_p_prime(in, s, material, dt, old_p_h);
+    } else {
+      update_sigma_with_p_h(s, material);
     }
   }
 }
@@ -791,24 +784,6 @@ HPC_NOINLINE inline void velocity_verlet_step(input const& in, state& s) {
   update_v(s, s.dt / 2.0, s.v);
 }
 
-HPC_NOINLINE inline void otm_explicit_step(input const& in, state& s) {
-  hpc::host_vector<hpc::device_vector<hpc::pressure<double>, node_index>, material_index> old_p_h(in.materials.size());
-  //auto const dt_prev = s.dt;
-  advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
-  auto const dt_curr = s.dt;
-  hpc::fill(hpc::serial_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
-  explicit_newmark_predict(s, dt_curr);
-  update_x(s);
-  update_reference(s);
-  update_h_min(in, s);
-  update_material_state(in, s, s.dt, old_p_h);
-  update_c(s);
-  update_element_dt(s);
-  find_max_stable_dt(s);
-  update_a_from_material_state(in, s);
-  explicit_newmark_correct(s, dt_curr);
-}
-
 HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
   switch (in.time_integrator) {
     case MIDPOINT_PREDICTOR_CORRECTOR:
@@ -816,9 +791,6 @@ HPC_NOINLINE inline void time_integrator_step(input const& in, state& s) {
       break;
     case VELOCITY_VERLET:
       velocity_verlet_step(in, s);
-      break;
-    case OTM_EXPLICIT:
-      otm_explicit_step(in, s);
       break;
   }
 }
