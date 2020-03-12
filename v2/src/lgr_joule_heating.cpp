@@ -42,83 +42,96 @@ struct JouleHeating : public Model<Elem> {
   double z_total;
   bool diffuse_conductivity;
   double diffusion_length;
+  bool compute_efield;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
+    // Detect user options:
+    compute_efield = pl.get<bool>("compute electric field","false");
+    diffuse_conductivity = pl.get<bool>("diffuse conductivity","false");
+    constant_voltage_field = pl.get<bool>("constant voltage field","false");
+    // CG solver:
+    relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
+    absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
+    cg_iterations = pl.get<int>("iterations", "0");
+    // Default fields:
+    // Conductivity
     this->conductivity =
         this->point_define("sigma", "conductivity", 1, RemapType::PER_UNIT_MASS, pl, "");
-    this->diffused_conductivity =
-        this->point_define("sigmad", "diffused conductivity", 1, RemapType::NONE, pl, "");
+    // Normalized voltage
     this->normalized_voltage = sim.fields.define("phi", "normalized voltage", 1,
         NODES, false, sim.disc.covering_class_names());
     sim.fields[this->normalized_voltage].remap_type = RemapType::NODAL;
     sim.fields[this->normalized_voltage].default_value =
         pl.get<std::string>("normalized voltage", "0.0");
-    this->nodal_conductivity = sim.fields.define("nodal_sigma", "nodal conductivity", 1,
-        NODES, false, sim.disc.covering_class_names());
-    sim.fields[this->nodal_conductivity].remap_type = RemapType::NODAL;
-    sim.fields[this->nodal_conductivity].default_value =
-        pl.get<std::string>("nodal conductivity", "0.0");
-
-    this->electric_field = sim.fields.define("efield", "electric field", Elem::dim,
-        NODES, false, sim.disc.covering_class_names());
-    sim.fields[this->electric_field].remap_type = RemapType::NONE;
-    sim.fields[this->electric_field].default_value =
-        pl.get<std::string>("electric field", "");
-
-//  this->electric_field =
-//      this->point_define("efield", "electric field", Elem::dim, RemapType::NONE, pl, "");
-
+    // Weighted conductance
     this->conductance =
         this->point_define("G", "conductance", 1, RemapType::NONE, "");
+    // Specific internal energy rate
     this->specific_internal_energy_rate = this->point_define(
         "e_dot", "specific internal energy rate", 1, RemapType::NONE, "0.0");
+    // Diffused fields:
+    if (diffuse_conductivity) {
+       // Diffused conductivity
+       this->diffused_conductivity =
+           this->point_define("sigmad", "diffused conductivity", 1, RemapType::NONE, pl, "");
+       // Nodal conductivity
+       this->nodal_conductivity = sim.fields.define("nodal_sigma", "nodal conductivity", 1,
+           NODES, false, sim.disc.covering_class_names());
+       sim.fields[this->nodal_conductivity].remap_type = RemapType::NODAL;
+       sim.fields[this->nodal_conductivity].default_value =
+           pl.get<std::string>("nodal conductivity", "0.0");
+       // Diffusion length (required)
+       diffusion_length = pl.get<double>("diffusion length");
+    }
+    // Electric field
+    if (compute_efield) {
+       this->electric_field = sim.fields.define("efield", "electric field", Elem::dim,
+           NODES, false, sim.disc.covering_class_names());
+       sim.fields[this->electric_field].remap_type = RemapType::NONE;
+       sim.fields[this->electric_field].default_value =
+           pl.get<std::string>("electric field", "");
+    }
+    // Boundary conditions:
+    // Anode
     auto& anode_pl = pl.get_list("anode");
     ClassNames anode_class_names;
     for (int i = 0; i < anode_pl.size(); ++i) {
       anode_class_names.insert(anode_pl.get<std::string>(i));
     }
     anode_subset = sim.subsets.get_subset(NODES, anode_class_names);
+    anode_voltage = pl.get<double>("anode voltage", "1.0");
+    normalized_anode_voltage = sim.input_variables.get_double(pl,"normalized anode voltage","1.0");
+    // Cathode
     auto& cathode_pl = pl.get_list("cathode");
     ClassNames cathode_class_names;
     for (int i = 0; i < cathode_pl.size(); ++i) {
       cathode_class_names.insert(cathode_pl.get<std::string>(i));
     }
     cathode_subset = sim.subsets.get_subset(NODES, cathode_class_names);
-    diffuse_conductivity = pl.get<bool>("diffuse conductivity","false");
-    if (diffuse_conductivity) {
-        diffusion_length = pl.get<double>("diffusion length");
-    }
-    constant_voltage_field = pl.get<bool>("constant voltage field","false");
-    relative_tolerance = pl.get<double>("relative tolerance", "1.0e-6");
-    absolute_tolerance = pl.get<double>("absolute tolerance", "1.0e-10");
-    anode_voltage = pl.get<double>("anode voltage", "1.0");
     cathode_voltage = pl.get<double>("cathode voltage", "0.0");
-    cg_iterations = pl.get<int>("iterations", "0");
-    normalized_anode_voltage = sim.input_variables.get_double(pl,"normalized anode voltage","1.0");
     normalized_cathode_voltage = sim.input_variables.get_double(pl,"normalized cathode voltage","0.0");
+    // Circuit options:
     conductance_multiplier = sim.input_variables.get_double(pl,"conductance multiplier","1.0");
-    JouleHeating::learn_disc();
-    // Initially set global outputs for case where constant voltage field is used
-    sim.globals.set("Joule heating relative tolerance", std::nan("1"));
-    sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
-    sim.globals.set("Joule heating iterations", 0);
+    // Register circuit elements as variables:
+    // Finite element mesh
     sim.globals.set("mesh voltage", sim.circuit.GetMeshVoltageDrop());
     sim.globals.set("mesh current", sim.circuit.GetMeshCurrent());
     sim.globals.set("mesh conductance", sim.circuit.GetMeshConductance());
-    // Also set voltage/current elements as a possible variable
-    auto element_voltages = sim.circuit.element_voltages;
-    auto element_currents = sim.circuit.element_currents;
+    // Circuit element voltages
+    auto& element_voltages = sim.circuit.element_voltages;
     for (auto it = element_voltages.begin(); it != element_voltages.end(); ++it) {
         std::string name = "circuit_v" + std::to_string(it->first);
         double voltage = it->second;
         sim.globals.set(name, voltage);
     }
+    // Circuit element currents
+    auto& element_currents = sim.circuit.element_currents;
     for (auto it = element_currents.begin(); it != element_currents.end(); ++it) {
         std::string name = "circuit_i" + std::to_string(it->first);
         double current = it->second;
         sim.globals.set(name, current);
     }
-    // 2D thickness
+    // 2D degenerate thickness scaling parameters
     z_thickness = sim.input_variables.get_double(pl,"z thickness","-1.0");
     if (z_thickness > 0) {
        if (Elem::dim != 2)
@@ -134,6 +147,12 @@ struct JouleHeating : public Model<Elem> {
        // Multiply: recover conductance integral with symmetry
        conductance_multiplier*=z_total;
     }
+    // Initially set global outputs for Joule heating solver
+    sim.globals.set("Joule heating relative tolerance", std::nan("1"));
+    sim.globals.set("Joule heating absolute tolerance", std::nan("1"));
+    sim.globals.set("Joule heating iterations", 0);
+    // Setup Joule geometry mapping
+    JouleHeating::learn_disc();
   }
   void learn_disc() override final {
     // linear specific!
@@ -151,23 +170,16 @@ struct JouleHeating : public Model<Elem> {
   void at_secondaries() override final {
     Omega_h::ScopedTimer timer("JouleHeating::at_secondaries");
     if (!this->constant_voltage_field) {
-       if (this->diffuse_conductivity) {
-          compute_diffused_conductivity();
-       }
+       if (this->diffuse_conductivity) compute_diffused_conductivity();
        assemble_normalized_voltage_system();
        solve_normalized_voltage_system();
     }
-    compute_electric_field();
+    if (this->compute_efield) compute_electric_field();
     compute_conductance();
     integrate_conductance();
     compute_electrode_voltages();
     contribute_joule_heating();
-    if (this->sim.circuit.usingMesh) {
-       auto dt   = this->sim.dt;
-       auto time = this->sim.time;
-       if (dt > 1e-14)
-          this->sim.circuit.Solve(dt,time);
-    }
+    if (sim.circuit.usingMesh && sim.dt > 1e-14) sim.circuit.Solve(sim.dt,sim.time);
     sim.globals.set("Joule heating CPU time", timer.total_runtime());
   }
   void compute_electric_field() {
