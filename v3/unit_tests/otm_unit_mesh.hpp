@@ -287,7 +287,7 @@ inline void compute_material_points_as_element_centroids(
   {
     auto const point_nodes = pt_to_pt_nodes[point];
     hpc::position<double> avg_coord(0., 0., 0.);
-    for (auto&& point_node : point_nodes)
+    for (auto point_node : point_nodes)
     {
       auto const node = pt_nodes_to_nodes[point_node];
       avg_coord += x_nodes[node].load();

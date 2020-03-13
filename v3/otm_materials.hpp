@@ -52,8 +52,8 @@ HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient
     Np = 1.5*dev_M_tr/sigma_tr_eff;
   }
 
-  double S = j2::FlowStrength(props, eqps);
-  double const r0 = sigma_tr_eff - S;
+  double S0 = j2::FlowStrength(props, eqps);
+  double const r0 = sigma_tr_eff - S0;
   auto r = r0;
 
   double delta_eqps = 0;
