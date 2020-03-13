@@ -8,6 +8,7 @@
 #include <lgr_mesh_indices.hpp>
 #include <otm_meshing_sort.hpp>
 #include <otm_state.hpp>
+#include <otm_meshing.hpp>
 
 namespace lgr {
 

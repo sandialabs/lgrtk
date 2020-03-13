@@ -24,13 +24,11 @@ using Kokkos::fence;
 using Kokkos::tie;
 
 template<typename query_view_type>
-HPC_NOINLINE device_search_results do_search(device_point_view nodes, query_view_type queries)
+HPC_NOINLINE void do_search(device_point_view nodes, query_view_type queries,
+    device_int_view& indices, device_int_view& offsets)
 {
   device_bvh bvh(nodes);
-  device_int_view offsets("offsets", 0);
-  device_int_view indices("indices", 0);
   bvh.query(queries, indices, offsets);
-  return tie(offsets, indices);
 }
 
 HPC_NOINLINE device_nearest_query_view make_nearest_node_queries(device_point_view points,
@@ -130,8 +128,8 @@ void inflate_sphere_query_radii(device_intersects_query_view queries, double fac
   });
 }
 
-template device_search_results do_search(device_point_view nodes, device_nearest_query_view queries);
-template device_search_results do_search(device_point_view nodes, device_intersects_query_view queries);
+template void do_search(device_point_view nodes, device_nearest_query_view queries, device_int_view& indices, device_int_view& offsets);
+template void do_search(device_point_view nodes, device_intersects_query_view queries, device_int_view& indices, device_int_view& offsets);
 
 }
 }

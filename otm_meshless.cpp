@@ -15,9 +15,9 @@ namespace lgr {
 
 void otm_initialize_u(state& s)
 {
-  auto constexpr x = std::acos(-1.0);
-  auto constexpr y = std::exp(1.0);
-  auto constexpr z = std::sqrt(2.0);
+  auto const x = std::acos(-1.0);
+  auto const y = std::exp(1.0);
+  auto const z = std::sqrt(2.0);
   auto const nodes_to_u = s.u.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     nodes_to_u[node] = hpc::position<double>(x, y, z);

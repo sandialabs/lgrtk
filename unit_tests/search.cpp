@@ -19,16 +19,28 @@
 
 using namespace lgr;
 
+struct arborx_testing_singleton {
+public:
+  static arborx_testing_singleton& instance() {
+    static arborx_testing_singleton s;
+    return s;
+  }
+
+  ~arborx_testing_singleton() {
+    search::finalize_otm_search();
+  }
+
+private:
+  arborx_testing_singleton() {
+    search::initialize_otm_search();
+  }
+};
+
 class arborx_search: public ::testing::Test
 {
   void SetUp() override
   {
-    search::initialize_otm_search();
-  }
-
-  void TearDown() override
-  {
-    search::finalize_otm_search();
+    arborx_testing_singleton::instance();
   }
 };
 
@@ -116,9 +128,9 @@ TEST_F(arborx_search, canDoNearestNodePointSearch)
   auto queries = search::arborx::make_nearest_node_queries(search_points,
       num_nodes_per_point_to_find);
 
-  search::arborx::device_int_view offsets;
-  search::arborx::device_int_view indices;
-  Kokkos::tie(offsets, indices) = search::arborx::do_search(search_nodes, queries);
+  search::arborx::device_int_view offsets("offsets", 0);
+  search::arborx::device_int_view indices("indices", 0);
+  search::arborx::do_search(search_nodes, queries, indices, offsets);
 
   int num_points = search_points.extent(0);
   auto nodes_to_x = s.x.cbegin();
@@ -153,9 +165,9 @@ TEST_F(arborx_search, canDoNodeIntersectingSphereSearch)
   auto search_spheres = search::arborx::create_arborx_point_spheres(s);
   auto queries = search::arborx::make_intersect_sphere_queries(search_spheres);
 
-  search::arborx::device_int_view offsets;
-  search::arborx::device_int_view indices;
-  Kokkos::tie(offsets, indices) = search::arborx::do_search(search_nodes, queries);
+  search::arborx::device_int_view offsets("offsets", 0);
+  search::arborx::device_int_view indices("indices", 0);
+  search::arborx::do_search(search_nodes, queries, indices, offsets);
 
   int num_points = search_spheres.extent(0);
   auto nodes_to_x = s.x.cbegin();
