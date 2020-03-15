@@ -132,15 +132,6 @@ TEST(exodus, convertTetMeshToMeshfree)
   unit::test_for_each(hpc::device_policy(), st.points, pt_func);
 }
 
-HPC_ALWAYS_INLINE hpc::position<double>
-tetrahedron_local_to_global_coord(const hpc::array<hpc::position<double>, 4>& node_coords,
-    const hpc::position<double> &parametric_coord)
-{
-  return parametric_coord(0) * node_coords[0] + parametric_coord(1) * node_coords[1]
-      + parametric_coord(2) * node_coords[2]
-      + (1.0 - parametric_coord(0) - parametric_coord(1) - parametric_coord(2)) * node_coords[3];
-}
-
 TEST(exodus, convertTetMeshToMeshfreeInterpolateSingleMaterialPoint) {
   material_index mat(1);
   material_index bnd(1);
