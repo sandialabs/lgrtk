@@ -1,5 +1,6 @@
 #include <cassert>
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
@@ -10,6 +11,7 @@
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
 #include <otm_state.hpp>
+#include <otm_tet2meshless.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -426,10 +428,50 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   lgr::tet_gauss_points_to_material_points point_interpolator(tet_gauss_pts);
   in.xp_transform = std::ref(point_interpolator);
 
-  auto const err_code = lgr::read_exodus_file("tets.g", in, s);
+  auto const err_code = lgr::read_exodus_file(filename, in, s);
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
+  lgr::convert_tet_mesh_to_meshless(s, in);
+  in.name = "OTM";
+  in.end_time = 0.001;
+  in.num_file_outputs = 100;
+  double const rho{7.8e+03};
+  double const nu{0.25};
+  double const E{200.0e09};
+  double const K{E / (3.0 * (1.0 - 2.0 * nu))};
+  double const G{E / (2.0 * (1.0 + nu))};
+  double const Y0{1.0e+09};
+  double const n{4.0};
+  double const eps0{1e-2};
+  double const Svis0{Y0};
+  double const m{2.0};
+  double const eps_dot0{1e-1};
+  constexpr material_index body(0);
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  auto constant_vy = [=] (
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::position<double>, node_index> const&,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto const v = hpc::velocity<double>(0.0, 10.0, 0.0);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+  in.initial_v = constant_vy;
+  in.CFL = 0.1;
+  otm_initialize_state(in, s);
 }
 
 void otm_run(std::string const& filename)
@@ -439,6 +481,9 @@ void otm_run(std::string const& filename)
   input in(mat, bnd);
   state s;
   otm_initialize(in, s, filename);
+  std::cout << std::scientific << std::setprecision(17);
+  auto const num_file_outputs = in.num_file_outputs;
+  auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
 }
 
 } // namespace lgr
