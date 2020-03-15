@@ -412,6 +412,17 @@ void otm_initialize_state(input const& in, state& s) {
   }
 }
 
+template <typename Quantity, typename Index, typename Range>
+void otm_initialize_quantity(
+    hpc::device_array_vector<Quantity, Index>& array, Quantity const& value, Range& range)
+{
+  auto const node_or_point_to_array = array.begin();
+  auto functor = [=] HPC_DEVICE (Index const node_or_point) {
+    node_or_point_to_array[node_or_point] = value;
+  };
+  hpc::for_each(hpc::device_policy(), range, functor);
+}
+
 void otm_initialize(input& in, state& s, std::string const& filename)
 {
   in.otm_material_points_to_add_per_element = 4;
@@ -454,20 +465,12 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   in.Svis0[body] = Svis0;
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
-  auto constant_vy = [=] (
-    hpc::counting_range<node_index> const nodes,
-    hpc::device_array_vector<hpc::position<double>, node_index> const&,
-    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
-    auto const nodes_to_v = v_vector->begin();
-    auto functor = [=] HPC_DEVICE (node_index const node) {
-      auto const v = hpc::velocity<double>(0.0, 10.0, 0.0);
-      nodes_to_v[node] = v;
-    };
-    hpc::for_each(hpc::device_policy(), nodes, functor);
-  };
-  in.initial_v = constant_vy;
   in.CFL = 0.1;
   otm_initialize_state(in, s);
+  auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
+  otm_initialize_quantity(s.v, v0, s.nodes);
+  auto const u0 = hpc::velocity<double>(0.0, 0.0, 0.0);
+  otm_initialize_quantity(s.u, u0, s.nodes);
 }
 
 void otm_run(std::string const& filename)
