@@ -439,7 +439,6 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
-  lgr::convert_tet_mesh_to_meshless(s, in);
   in.name = "OTM";
   in.end_time = 0.001;
   in.num_file_outputs = 100;
@@ -467,6 +466,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   in.eps_dot0[body] = eps_dot0;
   in.CFL = 0.1;
   otm_initialize_state(in, s);
+  lgr::convert_tet_mesh_to_meshless(in, s);
   auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
   otm_initialize_quantity(s.v, v0, s.nodes);
   auto const u0 = hpc::velocity<double>(0.0, 0.0, 0.0);
