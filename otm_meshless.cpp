@@ -384,7 +384,6 @@ void otm_initialize_state(input const& in, state& s) {
   s.K_h.resize(in.materials.size());
   s.dp_de_h.resize(in.materials.size());
   s.temp.resize(in.materials.size());
-  s.ep_h.resize(in.materials.size());
   for (auto const material : in.materials) {
     if (in.enable_nodal_pressure[material]) {
       s.p_h[material].resize(s.nodes.size());
@@ -404,9 +403,6 @@ void otm_initialize_state(input const& in, state& s) {
       if (in.enable_p_prime[material]) {
         s.p_prime.resize(s.points.size());
       }
-    }
-    if (in.enable_hyper_ep[material]) {
-      s.ep_h[material].resize(s.nodes.size());
     }
   }
   s.material.resize(s.elements.size());
@@ -482,8 +478,8 @@ void otm_run(std::string const& filename)
   state s;
   otm_initialize(in, s, filename);
   std::cout << std::scientific << std::setprecision(17);
-  auto const num_file_outputs = in.num_file_outputs;
-  auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
+  //auto const num_file_outputs = in.num_file_outputs;
+  //auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
 }
 
 } // namespace lgr
