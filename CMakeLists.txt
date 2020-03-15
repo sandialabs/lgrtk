@@ -36,6 +36,10 @@ set(LGR_SOURCES
     lgr_meshing.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
+    )
+
+set(OTM_SOURCES
+    otm.cpp
     otm_meshless.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
@@ -62,7 +66,7 @@ if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
-add_library(lgrlib ${LGR_SOURCES})
+add_library(lgrlib ${LGR_SOURCES} ${OTM_SOURCES})
 set_property(TARGET lgrlib PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgrlib PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgrlib PROPERTY CXX_EXTENSIONS OFF)
@@ -94,6 +98,12 @@ set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgr PROPERTY CXX_EXTENSIONS OFF)
 target_link_libraries(lgr lgrlib)
+
+add_executable(otm otm.cpp)
+set_property(TARGET otm PROPERTY CXX_STANDARD "14")
+set_property(TARGET otm PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET otm PROPERTY CXX_EXTENSIONS OFF)
+target_link_libraries(otm lgrlib)
 
 if (LGR_ENABLE_UNIT_TESTS)
   add_subdirectory(unit_tests)

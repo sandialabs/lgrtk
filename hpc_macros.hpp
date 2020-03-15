@@ -25,14 +25,34 @@
   } while (0)
 #else
 #include <iostream>
+#include <sstream>
 #define HPC_TRACE_IMPL(msg, ...)                                      \
   do {                                                                \
     std::ostringstream omsg;                                          \
     omsg << "********** HPC_TRACE at ";                               \
     omsg << __FILE__ << " +" << __LINE__ << '\n' << msg << '\n';      \
-    std::cerr << "********** HPC_TRACE at ";                          \
-    std::cerr << __FILE__ << " +" << __LINE__ << "\n" << msg << '\n'; \
+    std::cout << "********** HPC_TRACE at ";                          \
+    std::cout << __FILE__ << " +" << __LINE__ << "\n" << msg << '\n'; \
+  } while (0)
+#endif
+
+#ifdef __CUDACC__
+#define HPC_ERROR_EXIT_IMPL(msg, ...)                                 \
+  do {                                                                \
+  } while (0)
+#else
+#include <iostream>
+#include <sstream>
+#define HPC_ERROR_EXIT_IMPL(msg, ...)                                 \
+  do {                                                                \
+    std::ostringstream omsg;                                          \
+    omsg << "********** HPC ERROR at ";                               \
+    omsg << __FILE__ << " +" << __LINE__ << '\n' << msg << '\n';      \
+    std::cout << "********** HPC ERROR at ";                          \
+    std::cout << __FILE__ << " +" << __LINE__ << "\n" << msg << '\n'; \
+    exit(1);                                                          \
   } while (0)
 #endif
 
 #define HPC_TRACE(...) HPC_TRACE_IMPL(__VA_ARGS__, "")
+#define HPC_ERROR_EXIT(...) HPC_ERROR_EXIT_IMPL(__VA_ARGS__, "")

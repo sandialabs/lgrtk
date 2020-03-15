@@ -5,6 +5,7 @@
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
+#include <otm_exodus.hpp>
 #include <otm_input.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
@@ -413,13 +414,31 @@ void otm_initialize_state(input const& in, state& s) {
   }
 }
 
-void otm_initialize(input&, state&)
+void otm_initialize(input& in, state& s, std::string const& filename)
 {
+  in.otm_material_points_to_add_per_element = 4;
+
+  hpc::host_vector<hpc::position<double>, point_node_index> tet_gauss_pts(4);
+  tet_gauss_pts[0] = { 0.1381966011250105, 0.1381966011250105, 0.1381966011250105 };
+  tet_gauss_pts[1] = { 0.5854101966249685, 0.1381966011250105, 0.1381966011250105 };
+  tet_gauss_pts[2] = { 0.1381966011250105, 0.5854101966249685, 0.1381966011250105 };
+  tet_gauss_pts[3] = { 0.1381966011250105, 0.1381966011250105, 0.5854101966249685 };
+  lgr::tet_gauss_points_to_material_points point_interpolator(tet_gauss_pts);
+  in.xp_transform = std::ref(point_interpolator);
+
+  auto const err_code = lgr::read_exodus_file("tets.g", in, s);
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+  }
 }
 
-void otm_run(input& in, state& s)
+void otm_run(std::string const& filename)
 {
-  otm_initialize(in, s);
+  material_index mat(1);
+  material_index bnd(1);
+  input in(mat, bnd);
+  state s;
+  otm_initialize(in, s, filename);
 }
 
 } // namespace lgr
