@@ -104,7 +104,7 @@ TEST(exodus, convertTetMeshToMeshfree)
   EXPECT_EQ(st.points.size(), points_size_type(12));
   EXPECT_EQ(st.nodes_in_element.size(), nodes_in_elem_size_type(4));
 
-  convert_tet_mesh_to_meshless(st, in);
+  convert_tet_mesh_to_meshless(in, st);
 
   EXPECT_EQ(st.points_to_point_nodes.size(), st.points.size());
 
@@ -150,7 +150,7 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateSingleMaterialPoint) {
   EXPECT_EQ(st.points.size(), points_size_type(12));
   EXPECT_EQ(st.nodes_in_element.size(), nodes_in_elem_size_type(4));
 
-  convert_tet_mesh_to_meshless(st, in);
+  convert_tet_mesh_to_meshless(in, st);
 
   EXPECT_EQ(st.points_to_point_nodes.size(), st.points.size());
 
@@ -200,7 +200,7 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateMaterialPoints) {
   EXPECT_EQ(st.points.size(), points_size_type(12));
   EXPECT_EQ(st.nodes_in_element.size(), nodes_in_elem_size_type(4));
 
-  convert_tet_mesh_to_meshless(st, in);
+  convert_tet_mesh_to_meshless(in, st);
 
   EXPECT_EQ(st.points_to_point_nodes.size(), st.points.size());
   EXPECT_EQ(st.xp.size(), st.points.size());

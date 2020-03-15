@@ -9,15 +9,16 @@
 #include <hpc_symmetric3x3.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
-#include <otm_input.hpp>
 #include <lgr_mesh_indices.hpp>
+#include <lgr_tetrahedron.hpp>
+#include <otm_input.hpp>
 #include <otm_state.hpp>
 #include <otm_meshing.hpp>
 #include <otm_tet2meshless.hpp>
 
 namespace lgr {
 
-void convert_tet_mesh_to_meshless(state& st, const input& in)
+void convert_tet_mesh_to_meshless(const input& in, state& st)
 {
   auto const num_points = st.elements.size() * in.otm_material_points_to_add_per_element;
   st.points.resize(num_points);
@@ -79,6 +80,9 @@ void convert_tet_mesh_to_meshless(state& st, const input& in)
     mat_pts_to_h[point] = min_node_pt_dist;
   };
   hpc::for_each(hpc::device_policy(), st.points, h_min_func);
+
+  st.V.resize(num_points);
+  initialize_tetrahedron_V(st);
 }
 
 }

@@ -299,7 +299,7 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
 
   ASSERT_EQ(err_code, 0);
 
-  convert_tet_mesh_to_meshless(st, in);
+  convert_tet_mesh_to_meshless(in, st);
 
   hpc::device_vector<node_index, point_node_index> points_to_supported_nodes_before_search(
       st.point_nodes_to_nodes.size());
