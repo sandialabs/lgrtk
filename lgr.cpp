@@ -783,6 +783,71 @@ void twisting_composite_column() {
   run(in);
 }
 
+HPC_NOINLINE void twisting_composite_column_J2();
+void twisting_composite_column_J2() {
+  constexpr material_index body(0);
+  constexpr material_index nmaterials(1);
+  constexpr material_index y_min(1);
+  constexpr material_index nboundaries(1);
+  input in(nmaterials, nboundaries);
+  in.name = "twisting_composite_column J2 plasticity";
+  in.element = COMPOSITE_TETRAHEDRON;
+  in.end_time = 0.1;
+  in.num_file_outputs = 1000;
+  in.elements_along_x = 3;
+  in.x_domain_size = 1.0;
+  in.elements_along_y = 18;
+  in.y_domain_size = 6.0;
+  in.elements_along_z = 3;
+  in.z_domain_size = 1.0;
+  double const rho{7.8e+03};
+  double const nu{0.25};
+  double const E{200.0e09};
+  double const K{E / (3.0 * (1.0 - 2.0 * nu))};
+  double const G{E / (2.0 * (1.0 + nu))};
+  double const Y0{1.0e+09};
+  double const n{4.0};
+  double const eps0{1e-2};
+  double const Svis0{Y0};
+  double const m{2.0};
+  double const eps_dot0{1e-1};
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  auto twisting_column_v = [=] (
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const v = 100.0 * std::sin((hpc::pi<double>() / 12.0) * x(1)) * hpc::velocity<double>((x(2) - 0.5), 0.0, -(x(0) - 0.5));
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+  in.initial_v = twisting_column_v;
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({y_min, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_min, z_axis});
+  in.enable_J_averaging = true;
+  in.CFL = 0.05;
+  run(in);
+}
+
 HPC_NOINLINE void Noh_3D();
 void Noh_3D() {
   constexpr material_index gas(0);
@@ -1031,7 +1096,7 @@ void run_for_average()
 }
 
 int main() {
-  if ((1)) lgr::elastic_wave();
+  if ((0)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();
   if ((0)) lgr::Cooks_membrane();
@@ -1052,6 +1117,7 @@ int main() {
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
+  if ((1)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
 //run_for_average();

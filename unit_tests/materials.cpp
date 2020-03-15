@@ -1,7 +1,7 @@
 #include <iostream>
 #include <gtest/gtest.h>
 #include <j2/hardening.hpp>
-#include "../otm_materials.hpp"
+#include <otm_materials.hpp>
 
 
 TEST(materials, neohookean_point_consistency)
