@@ -45,13 +45,13 @@ public:
   }
 
 private:
-  const FuncType &func;
+  const FuncType func;
 };
 
 }
 
 template<typename PolicyType, class Range, class FuncType>
-HPC_NOINLINE void test_for_each(PolicyType policy, Range const &range, const FuncType &func)
+HPC_NOINLINE void test_for_each(PolicyType policy, Range const range, const FuncType func)
 {
   int init(0);
   auto num_test_failures = hpc::transform_reduce(policy, range, init, hpc::plus<int>(),

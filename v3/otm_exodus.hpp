@@ -2,17 +2,22 @@
 
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_index.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_exodus.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <otm_input.hpp>
 #include <otm_state.hpp>
 #include <otm_util.hpp>
 #include <otm_tet2meshless.hpp>
+#include <cassert>
 
 namespace lgr
 {
@@ -29,7 +34,7 @@ tetrahedron_local_to_global_coord(const hpc::array<hpc::position<double>, 4>& no
 struct tet_gauss_points_to_material_points
 {
   tet_gauss_points_to_material_points(
-      const hpc::host_vector<hpc::position<double>, point_node_index> &gauss_pts) :
+      const hpc::pinned_vector<hpc::position<double>, point_node_index> &gauss_pts) :
       gauss_points(gauss_pts.size())
   {
     hpc::copy(gauss_pts, gauss_points);
@@ -67,7 +72,7 @@ struct tet_gauss_points_to_material_points
   hpc::device_vector<hpc::position<double>, point_node_index> gauss_points;
 };
 
-HPC_ALWAYS_INLINE hpc::position<double>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::position<double>
 tet_parametric_to_physical(hpc::array<hpc::position<double>, 4> const& xn,
     point_index const point, int const points_per_element)
 {

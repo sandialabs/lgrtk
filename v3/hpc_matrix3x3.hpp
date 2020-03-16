@@ -543,7 +543,7 @@ log_pade_pf(matrix3x3<T> const A, int const n)
 
 // Logarithmic map by inverse scaling and squaring and Padé approximants
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 log_iss(matrix3x3<T> const A)
 {
   auto const I = matrix3x3<T>::identity();
@@ -568,7 +568,7 @@ log_iss(matrix3x3<T> const A)
 
 // Logarithmic map
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST constexpr auto
 log(matrix3x3<T> const A)
 {
   return log_iss(A);

@@ -6,6 +6,7 @@
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_exodus.hpp>
 #include <otm_exodus.hpp>
 #include <otm_input.hpp>
 #include <otm_materials.hpp>
@@ -22,20 +23,12 @@ void otm_initialize_u(state& s)
   auto const x = std::acos(-1.0);
   auto const y = std::exp(1.0);
   auto const z = std::sqrt(2.0);
-  auto const nodes_to_u = s.u.begin();
-  auto functor = [=] HPC_DEVICE (node_index const node) {
-    nodes_to_u[node] = hpc::position<double>(x, y, z);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
 void otm_initialize_F(state& s)
 {
-  auto const points_to_F = s.F_total.begin();
-  auto functor = [=] HPC_DEVICE (point_index const point) {
-    points_to_F[point] = hpc::deformation_gradient<double>::identity();
-  };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
+  hpc::fill(hpc::device_policy(), s.F_total, hpc::deformation_gradient<double>::identity());
 }
 
 void otm_initialize_grad_val_N(state& s) {
@@ -273,7 +266,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
   auto const eps_dot0 = in.eps_dot0[material];
   auto const is_neo_hookean = in.enable_neo_Hookean[material];
   auto const is_variational_J2 = in.enable_variational_J2[material];
-  auto functor = [=] HPC_DEVICE (point_index const point) {
+  auto functor = [=] HPC_HOST (point_index const point) {
       auto const F = points_to_F_total[point].load();
       auto sigma = hpc::stress<double>::zero();
       auto Keff = hpc::pressure<double>(0.0);
@@ -293,7 +286,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
       points_to_G[point] = Geff;
       points_to_W[point] = W;
   };
-  hpc::for_each(hpc::device_policy(), s.points, functor);
+  hpc::for_each(hpc::host_policy(), s.points, functor);
 }
 
 void otm_nodal_linear_momentum(state& s) {
@@ -454,6 +447,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
+
   in.name = "OTM";
   in.end_time = 0.001;
   in.num_file_outputs = 100;

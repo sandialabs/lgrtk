@@ -1,17 +1,17 @@
 #include <hpc_algorithm.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_functional.hpp>
-#include <hpc_index.hpp>
+#include <hpc_limits.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_numeric.hpp>
 #include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
-#include <Kokkos_Core.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_state.hpp>
 #include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>
+#include <otm_state.hpp>
 #include <limits>
 
 namespace lgr {
@@ -19,12 +19,12 @@ namespace search {
 
 void initialize_otm_search()
 {
-  Kokkos::initialize();
+  arborx::initialize();
 }
 
 void finalize_otm_search()
 {
-  Kokkos::finalize();
+  arborx::finalize();
 }
 
 HPC_NOINLINE void do_otm_point_nearest_node_search(lgr::state &s, int max_support_nodes_per_point)
