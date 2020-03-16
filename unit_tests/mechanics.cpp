@@ -15,6 +15,23 @@
 #include <otm_util.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 
+namespace lgr_unit {
+
+double compute_total_mass(const lgr::state &s)
+{
+  auto const rho = s.rho.cbegin();
+  auto const V = s.V.cbegin();
+  auto mass_func = [=] HPC_DEVICE (lgr::point_index p)
+  {
+    return rho[p] * V[p];
+  };
+  double init_mass = 0.0;
+  return hpc::transform_reduce(hpc::device_policy(), s.points, init_mass, hpc::plus<double>(),
+      mass_func);
+}
+
+}
+
 TEST(mechanics, lumped_mass_1)
 {
   lgr::state s;
@@ -23,12 +40,7 @@ TEST(mechanics, lumped_mass_1)
   lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
-  auto const rho = s.rho.cbegin();
-  auto const V = s.V.cbegin();
-  auto expected_mass = 0.0;
-  for (auto p = 0; p < s.points.size(); ++p) {
-    expected_mass += rho[p] * V[p];
-  }
+  auto const expected_mass = lgr_unit::compute_total_mass(s);
   auto const error = std::abs(mass / expected_mass - 1.0);
   auto const eps = hpc::machine_epsilon<double>();
 
@@ -43,12 +55,7 @@ TEST(mechanics, lumped_mass_2)
   lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
-  auto const rho = s.rho.cbegin();
-  auto const V = s.V.cbegin();
-  auto expected_mass = 0.0;
-  for (auto p = 0; p < s.points.size(); ++p) {
-    expected_mass += rho[p] * V[p];
-  }
+  auto const expected_mass = lgr_unit::compute_total_mass(s);
   auto const error = std::abs(mass / expected_mass - 1.0);
   auto const eps = hpc::machine_epsilon<double>();
 
@@ -63,16 +70,26 @@ TEST(mechanics, lumped_mass_3)
   lgr::otm_lump_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
-  auto const rho = s.rho.cbegin();
-  auto const V = s.V.cbegin();
-  auto expected_mass = 0.0;
-  for (auto p = 0; p < s.points.size(); ++p) {
-    expected_mass += rho[p] * V[p];
-  }
+  auto const expected_mass = lgr_unit::compute_total_mass(s);
   auto const error = std::abs(mass / expected_mass - 1.0);
   auto const eps = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
+}
+
+namespace lgr_unit {
+
+double compute_sigma_error(const lgr::state& s) {
+  auto const points_to_sigma = s.sigma.cbegin();
+  auto get_error = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const s = points_to_sigma[point].load();
+    return s(0,0)+s(0,1)+s(0,2)+s(1,0)+s(1,1)+s(1,2)+s(2,0)+s(2,1)+s(2,2);
+  };
+  auto error = hpc::transform_reduce(hpc::device_policy(), s.points, 0.0, hpc::plus<double>(), get_error);
+  error /= (9 * s.points.size());
+  return error;
+}
+
 }
 
 TEST(mechanics, hex_translation)
@@ -159,14 +176,7 @@ TEST(mechanics, hex_translation)
   hpc::for_each(hpc::device_policy(), s.points, print_sigma);
 #endif
 
-  auto error = 0.0;
-  auto const points_to_sigma = s.sigma.cbegin();
-  auto get_error = [=, &error] HPC_HOST (lgr::point_index const point) {
-    auto const s = points_to_sigma[point].load();
-    error += s(0,0)+s(0,1)+s(0,2)+s(1,0)+s(1,1)+s(1,2)+s(2,0)+s(2,1)+s(2,2);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, get_error);
-  error /= (9 * num_points);
+  auto const error = lgr_unit::compute_sigma_error(s);
   auto const tol = 1.0e-06;
   ASSERT_LE(error, tol);
 }

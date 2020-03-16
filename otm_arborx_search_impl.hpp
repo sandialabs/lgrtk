@@ -1,7 +1,16 @@
 #pragma once
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#endif
+
 #include <Kokkos_Core.hpp>
 #include <Kokkos_View.hpp>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 #include <ArborX_Point.hpp>
 #include <ArborX_Predicates.hpp>
@@ -33,6 +42,10 @@ using device_sphere_view = Kokkos::View<ArborX::Sphere *, device_mem_space>;
 using device_nearest_query_view = Kokkos::View<ArborX::Nearest<ArborX::Point> *, device_mem_space>;
 using device_intersects_query_view = Kokkos::View<ArborX::Intersects<ArborX::Sphere> *, device_mem_space>;
 using device_int_view = Kokkos::View<int *, device_mem_space>;
+
+void initialize();
+
+void finalize();
 
 device_point_view create_arborx_nodes(const lgr::state &s);
 

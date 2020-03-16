@@ -128,9 +128,20 @@ void inflate_sphere_query_radii(device_intersects_query_view queries, double fac
   });
 }
 
+void initialize()
+{
+  Kokkos::initialize();
+}
+
+void finalize()
+{
+  Kokkos::finalize();
+}
+
 template void do_search(device_point_view nodes, device_nearest_query_view queries, device_int_view& indices, device_int_view& offsets);
 template void do_search(device_point_view nodes, device_intersects_query_view queries, device_int_view& indices, device_int_view& offsets);
 
 }
 }
 }
+
