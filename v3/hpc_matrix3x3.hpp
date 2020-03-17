@@ -556,8 +556,8 @@ log_iss(matrix3x3<T> const A)
   while (true) {
     auto const diff = norm_1(X - I);
     if (diff <= c15) {
-      auto p = 2; while(pade_coefficients<T>(p) <= diff && p < 16) {++p;};
-      auto q = 2; while(pade_coefficients<T>(q) <= diff / 2.0 && q < 16) {++q;};
+      auto p = 2; while(pade_coefficients<T>(p) <= diff && p < 16) {++p;}
+      auto q = 2; while(pade_coefficients<T>(q) <= diff / 2.0 && q < 16) {++q;}
       if ((2 * (p - q) / 3) < i || ++j == 2) {m = p + 1; break;}
     }
     std::tie(X, i) = sqrt_dbp(X); ++k;
