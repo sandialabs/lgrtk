@@ -4,7 +4,7 @@
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <cassert>
 
 namespace lgr {

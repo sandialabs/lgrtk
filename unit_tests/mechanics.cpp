@@ -11,7 +11,7 @@
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <otm_meshless.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <otm_util.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 

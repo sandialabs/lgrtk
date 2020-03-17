@@ -5,9 +5,9 @@
 #include <hpc_macros.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_exodus.hpp>
-#include <otm_input.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>

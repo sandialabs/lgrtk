@@ -35,6 +35,7 @@ class state {
   hpc::device_vector<hpc::basis_value<double>, point_node_index> N; // values of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N; // gradients of basis functions
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total; // deformation gradient since simulation start
+  hpc::device_array_vector<hpc::stress<double>, point_index> sigma_full; // Cauchy stress tensor (full)
   hpc::device_array_vector<hpc::symmetric_stress<double>, point_index> sigma; // Cauchy stress tensor (symm)
   hpc::device_array_vector<hpc::symmetric_velocity_gradient<double>, point_index> symm_grad_v; // symmetrized gradient of velocity
   hpc::device_vector<hpc::pressure<double>, point_index> p; // pressure at elements (output only!)
@@ -76,7 +77,19 @@ class state {
   hpc::time<double> max_stable_dt;
   hpc::adimensional<double> min_quality;
 
-    // For plasticity
+  // Exclusive OTM data structures
+  hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes; // OTM: Support for each point
+  hpc::device_range_sum<node_point_index, node_index> nodes_to_node_points; // OTM: Influence for each node
+  hpc::device_vector<node_index, point_node_index> point_nodes_to_nodes;
+  hpc::device_vector<point_index, node_point_index> node_points_to_points;
+  hpc::device_vector<point_node_index, node_point_index> node_points_to_point_nodes;
+  hpc::device_array_vector<hpc::momentum<double>, node_index> lm; // nodal linear momenta
+  hpc::device_array_vector<hpc::position<double>, point_index> xp; // current point positions
+  hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
+  hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
+  hpc::device_vector<hpc::energy_density<double>, point_node_index> potential_density; // Helmholtz energy density
+
+  // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start
   hpc::device_vector<hpc::temperature<double>, point_index> temp; // temperature
   hpc::device_vector<hpc::strain<double>, point_index> ep; // equivalent plastic strain
