@@ -17,14 +17,23 @@ if (LGR_ENABLE_UNIT_TESTS)
     set(LGR_UNIT_SOURCES ${LGR_UNIT_SOURCES} search.cpp)
   endif()
 
+  if (LGR_ENABLE_CUDA)
+    set_source_files_properties(${LGR_UNIT_SOURCES} PROPERTIES LANGUAGE CUDA)
+  endif()
+
   include(CTest)
 
   find_package(GTest REQUIRED)
   include(GoogleTest)
+
   add_executable(ut_lgr ${LGR_UNIT_SOURCES})
+  if (LGR_ENABLE_CUDA)
+    target_compile_definitions(ut_lgr PUBLIC -DLGR_ENABLE_CUDA)
+  endif()
   set_property(TARGET ut_lgr PROPERTY CXX_STANDARD "14")
   set_property(TARGET ut_lgr PROPERTY CXX_STANDARD_REQUIRED ON)
   set_property(TARGET ut_lgr PROPERTY CXX_EXTENSIONS OFF)
+
   gtest_discover_tests(ut_lgr)
   target_include_directories(ut_lgr PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> ${GTEST_INCLUDE_DIR})
   target_link_libraries(ut_lgr PRIVATE "lgrlib;${GTEST_LIBRARY};pthread")

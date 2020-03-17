@@ -8,7 +8,7 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Macros.hpp>
 #include <Kokkos_Pair.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
 #include <string>
 
@@ -128,9 +128,20 @@ void inflate_sphere_query_radii(device_intersects_query_view queries, double fac
   });
 }
 
+void initialize()
+{
+  Kokkos::initialize();
+}
+
+void finalize()
+{
+  Kokkos::finalize();
+}
+
 template void do_search(device_point_view nodes, device_nearest_query_view queries, device_int_view& indices, device_int_view& offsets);
 template void do_search(device_point_view nodes, device_intersects_query_view queries, device_int_view& indices, device_int_view& offsets);
 
 }
 }
 }
+

@@ -1,7 +1,10 @@
-#include <iostream>
 #include <gtest/gtest.h>
+#include <hpc_matrix3x3.hpp>
+#include <hpc_math.hpp>
 #include <j2/hardening.hpp>
 #include <otm_materials.hpp>
+#include <algorithm>
+#include <iostream>
 
 
 TEST(materials, neohookean_point_consistency)

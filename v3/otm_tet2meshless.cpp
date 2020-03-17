@@ -11,8 +11,8 @@
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_tetrahedron.hpp>
-#include <otm_input.hpp>
-#include <otm_state.hpp>
+#include <lgr_input.hpp>
+#include <lgr_state.hpp>
 #include <otm_meshing.hpp>
 #include <otm_tet2meshless.hpp>
 

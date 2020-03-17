@@ -4,12 +4,10 @@
 #include <hpc_index.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_vector.hpp>
-#include <Kokkos_Pair.hpp>
-#include <Kokkos_View.hpp>
 #include <lgr_exodus.hpp>
-#include <otm_input.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>
@@ -44,27 +42,34 @@ class arborx_search: public ::testing::Test
   }
 };
 
+namespace lgr_unit {
+
+template <typename index_type>
+void check_lgr_and_arborx_coords(const search::arborx::device_point_view arborx_coord,
+    const hpc::device_array_vector<hpc::position<double>, index_type>& lgr_coord,
+    const hpc::counting_range<index_type>& range) {
+  auto i_to_x = lgr_coord.cbegin();
+  auto check_func = DEVICE_TEST (index_type i)
+  {
+    auto&& lgr_i_coord = i_to_x[i].load();
+    auto&& arborx_i_coord = arborx_coord(hpc::weaken(i));
+    DEVICE_EXPECT_EQ(lgr_i_coord(0), arborx_i_coord[0]);
+    DEVICE_EXPECT_EQ(lgr_i_coord(1), arborx_i_coord[1]);
+    DEVICE_EXPECT_EQ(lgr_i_coord(2), arborx_i_coord[2]);
+  };
+  unit::test_for_each(hpc::device_policy(), range, check_func);
+}
+
+}
+
 TEST_F(arborx_search, canInitializeArborXNodesFromOTMNodes)
 {
   state s;
-
   tetrahedron_single_point(s);
-
   auto search_nodes = search::arborx::create_arborx_nodes(s);
+  EXPECT_EQ(search_nodes.extent(0), 4u);
 
-  EXPECT_EQ(search_nodes.extent(0), 4);
-
-  auto nodes_to_x = s.x.cbegin();
-  auto node_check_func = DEVICE_TEST(node_index node)
-  {
-    auto&& lgr_node_coord = nodes_to_x[node].load();
-    auto&& search_node_coord = search_nodes(hpc::weaken(node));
-    DEVICE_EXPECT_EQ(lgr_node_coord(0), search_node_coord[0]);
-    DEVICE_EXPECT_EQ(lgr_node_coord(1), search_node_coord[1]);
-    DEVICE_EXPECT_EQ(lgr_node_coord(2), search_node_coord[2]);
-  };
-
-  unit::test_for_each(hpc::device_policy(), s.nodes, node_check_func);
+  lgr_unit::check_lgr_and_arborx_coords(search_nodes, s.x, s.nodes);
 }
 
 TEST_F(arborx_search, canInitializeArborXPointsFromOTMPoints)
@@ -75,19 +80,32 @@ TEST_F(arborx_search, canInitializeArborXPointsFromOTMPoints)
 
   auto search_points = search::arborx::create_arborx_points(s);
 
-  EXPECT_EQ(search_points.extent(0), 1);
+  EXPECT_EQ(search_points.extent(0), 1u);
 
+  lgr_unit::check_lgr_and_arborx_coords(search_points, s.xp, s.points);
+}
+
+namespace lgr_unit {
+
+void check_arborx_spheres(const lgr::state &s, search::arborx::device_sphere_view search_spheres)
+{
   auto points_to_x = s.xp.cbegin();
-  auto pt_check_func = DEVICE_TEST(point_index point)
+  auto points_to_r = s.h_otm.cbegin();
+  auto pt_check_func = DEVICE_TEST (point_index point)
   {
     auto&& lgr_pt_coord = points_to_x[point].load();
-    auto&& search_pt_coord = search_points(hpc::weaken(point));
-    DEVICE_EXPECT_EQ(lgr_pt_coord(0), search_pt_coord[0]);
-    DEVICE_EXPECT_EQ(lgr_pt_coord(1), search_pt_coord[1]);
-    DEVICE_EXPECT_EQ(lgr_pt_coord(2), search_pt_coord[2]);
+    auto&& lgr_pt_h = points_to_r[point];
+    auto&& search_sphere = search_spheres(hpc::weaken(point));
+    auto&& sphere_coord = search_sphere.centroid();
+    auto&& sphere_radius = search_sphere.radius();
+    DEVICE_EXPECT_EQ(lgr_pt_coord(0), sphere_coord[0]);
+    DEVICE_EXPECT_EQ(lgr_pt_coord(1), sphere_coord[1]);
+    DEVICE_EXPECT_EQ(lgr_pt_coord(2), sphere_coord[2]);
+    DEVICE_EXPECT_EQ(lgr_pt_h, sphere_radius);
   };
-
   unit::test_for_each(hpc::device_policy(), s.points, pt_check_func);
+}
+
 }
 
 TEST_F(arborx_search, canInitializeArborXPointSpheresFromOTMPoints)
@@ -98,23 +116,35 @@ TEST_F(arborx_search, canInitializeArborXPointSpheresFromOTMPoints)
 
   auto search_points = search::arborx::create_arborx_point_spheres(s);
 
-  EXPECT_EQ(search_points.extent(0), 1);
+  EXPECT_EQ(search_points.extent(0), 1u);
 
-  auto points_to_x = s.xp.cbegin();
-  auto points_to_r = s.h_otm.cbegin();
+  lgr_unit::check_arborx_spheres(s, search_points);
+}
+
+namespace lgr_unit {
+
+void check_point_node_search_results(const lgr::state& s,
+    search::arborx::device_int_view indices,
+    search::arborx::device_int_view offsets,
+    search::arborx::device_point_view search_nodes) {
+  auto nodes_to_x = s.x.cbegin();
   auto pt_check_func = DEVICE_TEST(point_index point)
   {
-    auto&& lgr_pt_coord = points_to_x[point].load();
-    auto&& lgr_pt_h = points_to_r[point];
-    auto&& search_sphere = search_points(hpc::weaken(point));
-    auto&& sphere_coord = search_sphere.centroid();
-    auto&& sphere_radius = search_sphere.radius();
-    DEVICE_EXPECT_EQ(lgr_pt_coord(0), sphere_coord[0]);
-    DEVICE_EXPECT_EQ(lgr_pt_coord(1), sphere_coord[1]);
-    DEVICE_EXPECT_EQ(lgr_pt_coord(2), sphere_coord[2]);
-    DEVICE_EXPECT_EQ(lgr_pt_h, sphere_radius);
+    auto point_begin = offsets(hpc::weaken(point));
+    auto point_end = offsets(hpc::weaken(point)+1);
+    DEVICE_EXPECT_EQ(point_end - point_begin, 4);
+    for (auto j=point_begin; j<point_end; ++j)
+    {
+      auto const search_node_coord = search_nodes(indices(j));
+      auto const lgr_node_coord = nodes_to_x[indices(j)].load();
+      DEVICE_EXPECT_EQ(lgr_node_coord(0), search_node_coord[0]);
+      DEVICE_EXPECT_EQ(lgr_node_coord(1), search_node_coord[1]);
+      DEVICE_EXPECT_EQ(lgr_node_coord(2), search_node_coord[2]);
+    }
   };
   unit::test_for_each(hpc::device_policy(), s.points, pt_check_func);
+}
+
 }
 
 TEST_F(arborx_search, canDoNearestNodePointSearch)
@@ -133,27 +163,10 @@ TEST_F(arborx_search, canDoNearestNodePointSearch)
   search::arborx::do_search(search_nodes, queries, indices, offsets);
 
   int num_points = search_points.extent(0);
-  auto nodes_to_x = s.x.cbegin();
 
   EXPECT_EQ(num_points, 1);
 
-  auto pt_check_func = DEVICE_TEST(point_index point)
-  {
-    auto point_begin = offsets(hpc::weaken(point));
-    auto point_end = offsets(hpc::weaken(point)+1);
-    DEVICE_EXPECT_EQ(point_end - point_begin, 4);
-    for (auto j=point_begin; j<point_end; ++j)
-    {
-      auto search_node_coord = search_nodes(indices(j));
-      auto&& lgr_node_coord = nodes_to_x[indices(j)].load();
-      DEVICE_EXPECT_EQ(lgr_node_coord(0), search_node_coord[0]);
-      DEVICE_EXPECT_EQ(lgr_node_coord(1), search_node_coord[1]);
-      DEVICE_EXPECT_EQ(lgr_node_coord(2), search_node_coord[2]);
-
-    }
-  };
-
-  unit::test_for_each(hpc::device_policy(), s.points, pt_check_func);
+  lgr_unit::check_point_node_search_results(s, indices, offsets, search_nodes);
 }
 
 TEST_F(arborx_search, canDoNodeIntersectingSphereSearch)
@@ -170,27 +183,10 @@ TEST_F(arborx_search, canDoNodeIntersectingSphereSearch)
   search::arborx::do_search(search_nodes, queries, indices, offsets);
 
   int num_points = search_spheres.extent(0);
-  auto nodes_to_x = s.x.cbegin();
 
   EXPECT_EQ(num_points, 1);
 
-  auto pt_check_func = DEVICE_TEST(point_index point)
-  {
-    auto point_begin = offsets(hpc::weaken(point));
-    auto point_end = offsets(hpc::weaken(point)+1);
-    DEVICE_EXPECT_EQ(point_end - point_begin, 4);
-    for (auto j=point_begin; j<point_end; ++j)
-    {
-      auto search_node_coord = search_nodes(indices(j));
-      auto&& lgr_node_coord = nodes_to_x[indices(j)].load();
-      DEVICE_EXPECT_EQ(lgr_node_coord(0), search_node_coord[0]);
-      DEVICE_EXPECT_EQ(lgr_node_coord(1), search_node_coord[1]);
-      DEVICE_EXPECT_EQ(lgr_node_coord(2), search_node_coord[2]);
-
-    }
-  };
-
-  unit::test_for_each(hpc::device_policy(), s.points, pt_check_func);
+  lgr_unit::check_point_node_search_results(s, indices, offsets, search_nodes);
 }
 
 namespace {
@@ -312,6 +308,28 @@ TEST_F(arborx_search, canDoIterativeSphereIntersectSearchOnExodusMesh)
   // check_search_results(st, points_to_supported_nodes_before_search, 4);
 }
 
+namespace lgr_unit {
+
+void check_inverse_connectivity(const lgr::state& s, const int expected_num_pts_per_node)
+{
+  auto points_in_influence = s.nodes_to_node_points.cbegin();
+  auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
+  auto node_point_check_func = DEVICE_TEST(node_index const node)
+  {
+    auto node_points_range = points_in_influence[node];
+    DEVICE_EXPECT_EQ(expected_num_pts_per_node, node_points_range.size());
+    int ipt = 0;
+    for (auto node_point : node_points_range)
+    {
+      DEVICE_EXPECT_EQ(ipt, nodes_to_influenced_points[node_point]);
+      ++ipt;
+    }
+  };
+  unit::test_for_each(hpc::device_policy(), s.nodes, node_point_check_func);
+}
+
+}
+
 TEST_F(arborx_search, invertConnectivityForSingleTet)
 {
   state s;
@@ -319,17 +337,7 @@ TEST_F(arborx_search, invertConnectivityForSingleTet)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.nodes_to_node_points.cbegin();
-  auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
-  auto node_point_check_func = DEVICE_TEST(node_index const node) {
-    auto node_points_range = points_in_influence[node];
-    DEVICE_EXPECT_EQ(1, node_points_range.size());
-    for (auto node_point : node_points_range)
-    {
-      DEVICE_EXPECT_EQ(0, nodes_to_influenced_points[node_point]);
-    }
-  };
-  unit::test_for_each(hpc::device_policy(), s.nodes, node_point_check_func);
+  lgr_unit::check_inverse_connectivity(s, 1);
 }
 
 TEST_F(arborx_search, invertConnectivityForTwoTets)
@@ -339,16 +347,5 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
 
   invert_otm_point_node_relations(s);
 
-  auto points_in_influence = s.nodes_to_node_points.cbegin();
-  auto nodes_to_influenced_points = s.node_points_to_points.cbegin();
-  auto node_point_check_func = DEVICE_TEST(node_index const node) {
-    auto node_points_range = points_in_influence[node];
-    DEVICE_EXPECT_EQ(2, node_points_range.size());
-    for (auto i=0; i < 2; ++i)
-    {
-      auto node_point = node_points_range[i];
-      DEVICE_EXPECT_EQ(i, hpc::weaken(nodes_to_influenced_points[node_point]));
-    }
-  };
-  unit::test_for_each(hpc::device_policy(), s.nodes, node_point_check_func);
+  lgr_unit::check_inverse_connectivity(s, 2);
 }
