@@ -42,7 +42,6 @@ set(OTM_SOURCES
     otm_meshless.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
-    j2/hardening.cpp
     )
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
