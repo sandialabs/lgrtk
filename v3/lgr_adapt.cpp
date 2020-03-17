@@ -26,7 +26,7 @@ HPC_NOINLINE inline void update_bar_quality(state& s) {
    We also use the fact that we already have area computed and that basis
    gradient magnitudes relate to opposite edge lengths.
   */
-inline HPC_HOST_DEVICE hpc::dimensionless<double> triangle_quality(
+inline HPC_HOST_DEVICE hpc::adimensional<double> triangle_quality(
     hpc::array<hpc::basis_gradient<double>, 3> const grad_N,
     hpc::area<double> const area) noexcept {
   decltype(1.0 / hpc::area<double>()) sum_g_i_sq = 0.0;
@@ -39,7 +39,7 @@ inline HPC_HOST_DEVICE hpc::dimensionless<double> triangle_quality(
   return q;
 }
 
-inline HPC_HOST_DEVICE hpc::dimensionless<double> triangle_quality(hpc::array<hpc::position<double>, 3> const x) noexcept {
+inline HPC_HOST_DEVICE hpc::adimensional<double> triangle_quality(hpc::array<hpc::position<double>, 3> const x) noexcept {
   auto const area = triangle_area(x);
   if (area <= 0.0) return -1.0;
   return triangle_quality(triangle_basis_gradients(x, area), area);
@@ -120,13 +120,13 @@ void update_quality(input const& in, state& s) {
 }
 
 void update_min_quality(state& s) {
-  hpc::dimensionless<double> const init = std::numeric_limits<double>::max();
+  hpc::adimensional<double> const init = std::numeric_limits<double>::max();
   s.min_quality = hpc::transform_reduce(
       hpc::device_policy(),
       s.quality,
       init,
-      hpc::minimum<hpc::dimensionless<double>>(),
-      hpc::identity<hpc::dimensionless<double>>());
+      hpc::minimum<hpc::adimensional<double>>(),
+      hpc::identity<hpc::adimensional<double>>());
 }
 
 void initialize_h_adapt(state& s)
@@ -231,7 +231,7 @@ struct eval_cavity {
   hpc::array<element_index, max_shell_elements> shell_elements;
   hpc::array<hpc::array<int, nodes_per_element>, max_shell_elements> shell_elements_to_shell_nodes;
   hpc::array<material_index, max_shell_elements> shell_elements_to_materials;
-  hpc::array<hpc::dimensionless<double>, max_shell_elements> shell_element_qualities;
+  hpc::array<hpc::adimensional<double>, max_shell_elements> shell_element_qualities;
   hpc::array<int, max_shell_elements> shell_elements_to_node_in_element;
   hpc::array<hpc::position<double>, max_shell_nodes> shell_nodes_to_x;
   hpc::array<hpc::length<double>, max_shell_nodes> shell_nodes_to_h;
@@ -243,7 +243,7 @@ inline HPC_DEVICE void evaluate_triangle_swap(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
-    hpc::dimensionless<double>& best_improvement,
+    hpc::adimensional<double>& best_improvement,
     int& best_swap_edge_node
     ) {
   hpc::array<int, 2> loop_elements;
@@ -291,7 +291,7 @@ inline HPC_DEVICE void evaluate_triangle_swap(
   }
 }
 
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::dimensionless<double> measure_edge(
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::adimensional<double> measure_edge(
     hpc::length<double> const h_min,
     hpc::length<double> const h_max,
     hpc::length<double> const l) noexcept {
@@ -303,7 +303,7 @@ inline HPC_DEVICE void evaluate_triangle_split(
     int const center_node,
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
-    hpc::dimensionless<double>& longest_length,
+    hpc::adimensional<double>& longest_length,
     int& best_split_edge_node
     ) {
   constexpr double min_acceptable_quality = 0.2;
@@ -347,7 +347,7 @@ inline HPC_DEVICE void evaluate_triangle_collapse(
     int const edge_node,
     eval_cavity<3, max_shell_elements, max_shell_nodes> const c,
     material_set const boundary_materials,
-    hpc::dimensionless<double>& shortest_length,
+    hpc::adimensional<double>& shortest_length,
     int& best_collapse_edge_node
     ) {
   if (!c.shell_nodes_to_materials[edge_node].contains(c.shell_nodes_to_materials[center_node])) return;
@@ -439,11 +439,11 @@ HPC_NOINLINE inline void evaluate_triangle_adapt(input const& in, state const& s
       node_in_element_index const node_in_element = node_elements_to_node_in_element[node_element];
       c.shell_elements_to_node_in_element[shell_element] = hpc::weaken(node_in_element);
     }
-    hpc::dimensionless<double> best_swap_improvement = 0.0;
+    hpc::adimensional<double> best_swap_improvement = 0.0;
     int best_swap_edge_node = -1;
-    hpc::dimensionless<double> longest_split_edge = 0.0;
+    hpc::adimensional<double> longest_split_edge = 0.0;
     int best_split_edge_node = -1;
-    hpc::dimensionless<double> shortest_collapse_edge = 1.0;
+    hpc::adimensional<double> shortest_collapse_edge = 1.0;
     int best_collapse_edge_node = -1;
     for (int edge_node = 0; edge_node < c.num_shell_nodes; ++edge_node) {
       if (edge_node == center_node) continue;

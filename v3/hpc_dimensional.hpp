@@ -436,7 +436,7 @@ using quantity = T;
 #endif
 
 template <class T>
-using dimensionless = quantity<T, no_dimension>;
+using adimensional = quantity<T, no_dimension>;
 template <class T>
 using length = quantity<T, length_dimension>;
 template <class T>

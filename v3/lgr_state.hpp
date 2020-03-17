@@ -66,7 +66,7 @@ class state {
   hpc::host_vector<hpc::device_vector<dp_de_t, node_index>, material_index> dp_de_h; // nodal derivative of pressure with respect to energy, at constant density
   hpc::device_vector<material_index, element_index> material; // element material
   hpc::device_vector<material_set, node_index> nodal_materials; // nodal material set
-  hpc::device_vector<hpc::dimensionless<double>, element_index> quality; // inverse element quality
+  hpc::device_vector<hpc::adimensional<double>, element_index> quality; // inverse element quality
   hpc::device_vector<hpc::length<double>, node_index> h_adapt; // desired edge length
   hpc::host_vector<hpc::device_vector<node_index, int>, material_index> node_sets;
   hpc::host_vector<hpc::device_vector<element_index, int>, material_index> element_sets;
@@ -74,7 +74,7 @@ class state {
   hpc::time<double> dt = 0.0;
   hpc::time<double> dt_old = 0.0;
   hpc::time<double> max_stable_dt;
-  hpc::dimensionless<double> min_quality;
+  hpc::adimensional<double> min_quality;
 
     // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start
@@ -83,9 +83,9 @@ class state {
   hpc::device_vector<hpc::strain_rate<double>, point_index> ep_dot;  // rate of equivalent plastic strain
 
   // Hyper EP State dependent variables
-  hpc::device_vector<hpc::dimensionless<double>, point_index> dp; // scalar damage
-  hpc::device_vector<hpc::dimensionless<int>, point_index> localized; // localization flag
-  hpc::host_vector<hpc::device_vector<hpc::dimensionless<double>, node_index>, material_index> ep_h;
+  hpc::device_vector<hpc::adimensional<double>, point_index> dp; // scalar damage
+  hpc::device_vector<hpc::adimensional<int>, point_index> localized; // localization flag
+  hpc::host_vector<hpc::device_vector<hpc::adimensional<double>, node_index>, material_index> ep_h;
 };
 
 class input;
