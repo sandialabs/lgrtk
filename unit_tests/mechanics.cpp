@@ -80,7 +80,7 @@ TEST(mechanics, lumped_mass_3)
 namespace lgr_unit {
 
 double compute_sigma_error(const lgr::state& s) {
-  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_sigma = s.sigma_full.cbegin();
   auto get_error = [=] HPC_DEVICE (lgr::point_index const point) {
     auto const s = points_to_sigma[point].load();
     return s(0,0)+s(0,1)+s(0,2)+s(1,0)+s(1,1)+s(1,2)+s(2,0)+s(2,1)+s(2,2);
@@ -125,7 +125,7 @@ TEST(mechanics, hex_translation)
   s.b.resize(num_points);
 
   s.F_total.resize(num_points);
-  s.sigma.resize(num_points);
+  s.sigma_full.resize(num_points);
   s.K.resize(num_points);
   s.G.resize(num_points);
   s.potential_density.resize(num_points);
@@ -164,7 +164,7 @@ TEST(mechanics, hex_translation)
   };
   hpc::for_each(hpc::device_policy(), s.points, print_F);
 
-  auto const points_to_sigma = s.sigma.cbegin();
+  auto const points_to_sigma = s.sigma_full.cbegin();
   auto const points_to_K = s.K.cbegin();
   auto const points_to_G = s.G.cbegin();
   auto print_sigma = [=] HPC_HOST (lgr::point_index const point) {
