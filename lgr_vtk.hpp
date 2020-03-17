@@ -30,10 +30,10 @@ class captured_state {
     hpc::pinned_array_vector<hpc::heat_flux<double>, point_index> q;
     hpc::pinned_vector<hpc::pressure<double>, point_index> p_prime;
     hpc::pinned_vector<hpc::time<double>, point_index> element_dt;
-    hpc::pinned_vector<hpc::dimensionless<double>, element_index> quality;
+    hpc::pinned_vector<hpc::adimensional<double>, element_index> quality;
     hpc::pinned_vector<material_index, element_index> material;
 #if 0
-    hpc::host_vector<hpc::pinned_vector<hpc::dimensionless<double>, node_index>, material_index> ep_h;
+    hpc::host_vector<hpc::pinned_vector<hpc::adimensional<double>, node_index>, material_index> ep_h;
 #endif
 };
 

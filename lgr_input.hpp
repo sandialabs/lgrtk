@@ -91,10 +91,10 @@ class input {
 
   // Variational J2
   hpc::host_vector<hpc::pressure<double>, material_index> Y0;
-  hpc::host_vector<hpc::dimensionless<double>, material_index> n;
+  hpc::host_vector<hpc::adimensional<double>, material_index> n;
   hpc::host_vector<hpc::strain<double>, material_index> eps0;
   hpc::host_vector<hpc::pressure<double>, material_index> Svis0;
-  hpc::host_vector<hpc::dimensionless<double>, material_index> m;
+  hpc::host_vector<hpc::adimensional<double>, material_index> m;
   hpc::host_vector<hpc::strain_rate<double>, material_index> eps_dot0;
 
   // Damage
