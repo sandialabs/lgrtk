@@ -11,7 +11,7 @@
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 
 TEST(maxent, partition_unity_value_1)

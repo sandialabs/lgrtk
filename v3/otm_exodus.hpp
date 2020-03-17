@@ -13,8 +13,8 @@
 #include <lgr_exodus.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_input.hpp>
-#include <otm_state.hpp>
+#include <lgr_input.hpp>
+#include <lgr_state.hpp>
 #include <otm_util.hpp>
 #include <otm_tet2meshless.hpp>
 #include <cassert>

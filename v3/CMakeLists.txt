@@ -39,7 +39,6 @@ set(LGR_SOURCES
     )
 
 set(OTM_SOURCES
-    otm.cpp
     otm_meshless.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
@@ -58,11 +57,12 @@ option(LGR_ENABLE_SEARCH "Build support for meshfree search via ArborX" OFF)
 
 if (LGR_ENABLE_SEARCH)
   find_package(ArborX REQUIRED)
-  set(LGR_SOURCES ${LGR_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
+  set(OTM_SOURCES ${OTM_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
 endif()
 
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${OTM_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_library(lgrlib ${LGR_SOURCES} ${OTM_SOURCES})
@@ -90,6 +90,7 @@ endif()
 
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(lgr.cpp PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(otm.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_executable(lgr lgr.cpp)

@@ -11,7 +11,7 @@
 #include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>
-#include <otm_state.hpp>
+#include <lgr_state.hpp>
 #include <limits>
 
 namespace lgr {
