@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cmath>
 #include <iostream>
 
 #include <hpc_dimensional.hpp>
 #include <hpc_macros.hpp>
+#include <hpc_math.hpp>
 #include <hpc_matrix3x3.hpp>
 #include <hpc_symmetric3x3.hpp>
 #include <j2/hardening.hpp>
@@ -27,7 +27,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void neo_Hookean_point(hpc::deformation_gradie
   potential = 0.5*G*(Jm23*trace(B) - 3.0) + 0.5*K*(0.5*(J*J - 1.0) - log(J));
 }
 
-HPC_ALWAYS_INLINE HPC_HOST void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
     hpc::time<double> const dt, hpc::stress<double> &sigma, hpc::pressure<double> &Keff, hpc::pressure<double>& Geff,
     hpc::energy_density<double> &potential, hpc::deformation_gradient<double> &Fp, hpc::strain<double> &eqps)
 {
@@ -74,8 +74,7 @@ HPC_ALWAYS_INLINE HPC_HOST void variational_J2_point(hpc::deformation_gradient<d
       ++iters;
     }
     if (!converged) {
-      std::cerr << "variational J2 diverged" << std::endl;
-      throw;
+      HPC_ERROR_EXIT("variational J2 diverged" << std::endl);
       // TODO: handle non-convergence error
     }
     //std::cout << "variational J2 converged in " << iters << " iterations" << std::endl;
