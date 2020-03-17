@@ -1,11 +1,11 @@
 #include <cassert>
-#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
+#include <hpc_math.hpp>
 #include <lgr_exodus.hpp>
 #include <otm_exodus.hpp>
 #include <lgr_input.hpp>
