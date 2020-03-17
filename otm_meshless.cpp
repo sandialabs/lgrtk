@@ -69,7 +69,6 @@ void otm_initialize_grad_val_N(state& s) {
       mu += dmu;
       auto const error = hpc::norm(dmu) / hpc::norm(mu);
       converged = error <= eps;
-      HPC_TRACE("ERROR : " << error << "  EPS : " << eps << '\n');
       if (converged == true) {
         J = dRdmu;
         break;
@@ -435,11 +434,6 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   auto const points_per_element = point_index(4);
   in.otm_material_points_to_add_per_element = points_per_element;
 
-  hpc::host_vector<hpc::position<double>, point_node_index> tet_gauss_pts(4);
-  tet_gauss_pts[0] = { 0.1381966011250105, 0.1381966011250105, 0.1381966011250105 };
-  tet_gauss_pts[1] = { 0.5854101966249685, 0.1381966011250105, 0.1381966011250105 };
-  tet_gauss_pts[2] = { 0.1381966011250105, 0.5854101966249685, 0.1381966011250105 };
-  tet_gauss_pts[3] = { 0.1381966011250105, 0.1381966011250105, 0.5854101966249685 };
   lgr::tet_nodes_to_points point_interpolator(points_per_element);
   in.xp_transform = std::ref(point_interpolator);
 
