@@ -5,6 +5,7 @@
 
 int main(int ac, char* av[])
 {
+  HPC_TRAP_FPE();
   if (ac < 2) {
     HPC_ERROR_EXIT("File name of Exodus mesh required. None provided.");
   }
