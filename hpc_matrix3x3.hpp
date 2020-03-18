@@ -244,14 +244,14 @@ inner_product(matrix3x3<L> const left, matrix3x3<R> const right) noexcept {
 }
 
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST constexpr T
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
 norm(matrix3x3<T> const x) noexcept {
   return std::sqrt(inner_product(x, x));
 }
 
 // \return \f$ \max_{j \in {0,\cdots,N}}\Sigma_{i=0}^N |A_{ij}| \f$
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST constexpr T
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
 norm_1(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(1,0)) + std::abs(A(2,0));
   auto const v1 = std::abs(A(0,1)) + std::abs(A(1,1)) + std::abs(A(2,1));
@@ -261,7 +261,7 @@ norm_1(matrix3x3<T> const A) noexcept {
 
 // \return \f$ \max_{i \in {0,\cdots,N}}\Sigma_{j=0}^N |A_{ij}| \f$
 template <class T>
-HPC_ALWAYS_INLINE HPC_HOST constexpr T
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
 norm_infinity(matrix3x3<T> const A) noexcept {
   auto const v0 = std::abs(A(0,0)) + std::abs(A(0,1)) + std::abs(A(0,2));
   auto const v1 = std::abs(A(1,0)) + std::abs(A(1,1)) + std::abs(A(1,2));
@@ -270,7 +270,7 @@ norm_infinity(matrix3x3<T> const A) noexcept {
 }
 
 template <class T>
-HPC_HOST_DEVICE constexpr matrix3x3<T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
 transpose(matrix3x3<T> x) noexcept {
   return matrix3x3<T>(
       x(0, 0),
@@ -483,8 +483,8 @@ solve_full_pivot(matrix3x3<T> const A, vector3<T> b)
 
 // Matrix square root by product form of Denman-Beavers iteration.
 template <typename T>
-HPC_HOST constexpr auto
-sqrt_dbp(matrix3x3<T> const A)
+HPC_HOST_DEVICE constexpr auto
+sqrt_dbp(matrix3x3<T> const A, int& k)
 {
   auto const eps = machine_epsilon<T>();
   auto const tol = 0.5 * std::sqrt(3.0) * eps; // 3 is dim
@@ -493,7 +493,7 @@ sqrt_dbp(matrix3x3<T> const A)
   auto X = A;
   auto M = A;
   auto scale = true;
-  auto k = 0;
+  k = 0;
   while (k++ < max_iter) {
     if (scale == true) {
       auto const d = std::abs(det(M));
@@ -512,17 +512,16 @@ sqrt_dbp(matrix3x3<T> const A)
     scale = diff >= 0.01;
     if (error <= tol) break;
   }
-  return std::make_pair(X, k);
+  return X;
 }
 
 // Matrix square root
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 sqrt(matrix3x3<T> const A)
 {
-  auto X = A;
-  std::tie(X, std::ignore) = sqrt_dbp(A);
-  return X;
+  int i = 0;
+  return sqrt_dbp(A, i);
 }
 
 // Logarithmic map by Padé approximant and partial fractions
@@ -543,7 +542,7 @@ log_pade_pf(matrix3x3<T> const A, int const n)
 
 // Logarithmic map by inverse scaling and squaring and Padé approximants
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 log_iss(matrix3x3<T> const A)
 {
   auto const I = matrix3x3<T>::identity();
@@ -560,7 +559,7 @@ log_iss(matrix3x3<T> const A)
       auto q = 2; while(pade_coefficients<T>(q) <= diff / 2.0 && q < 16) {++q;}
       if ((2 * (p - q) / 3) < i || ++j == 2) {m = p + 1; break;}
     }
-    std::tie(X, i) = sqrt_dbp(X); ++k;
+    X = sqrt_dbp(X, i); ++k;
   }
   X = (1U << k) * log_pade_pf(X - I, m);
   return X;
@@ -568,18 +567,19 @@ log_iss(matrix3x3<T> const A)
 
 // Logarithmic map
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 log(matrix3x3<T> const A)
 {
   return log_iss(A);
 }
 
 template <typename T>
-HPC_HOST constexpr auto
-pade_polynomial_terms(matrix3x3<T> const& A, int const order) {
+HPC_HOST_DEVICE constexpr auto
+pade_polynomial_terms(matrix3x3<T> const& A, int const order,
+    matrix3x3<T>& U, matrix3x3<T>& V) {
   auto B = matrix3x3<T>::identity();
-  auto U = polynomial_coefficient<T>(order, 1) * B;
-  auto V = polynomial_coefficient<T>(order, 0) * B;
+  U = polynomial_coefficient<T>(order, 1) * B;
+  V = polynomial_coefficient<T>(order, 0) * B;
   auto const A2 = A * A;
   for (int i = 3; i <= order; i += 2) {
     B = B * A2;
@@ -589,7 +589,6 @@ pade_polynomial_terms(matrix3x3<T> const& A, int const order) {
     V += E;
   }
   U = A * U;
-  return std::make_pair(U, V);
 }
 
 // Compute a non-negative integer power of a tensor by binary manipulation.
@@ -630,7 +629,7 @@ binary_powering(matrix3x3<T> const& A, int const e) {
 // Exponential map by squaring and scaling and Padé approximants.
 // See algorithm 10.20 in Functions of Matrices, N.J. Higham, SIAM, 2008.
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 exp(matrix3x3<T> const& A) {
   auto B = matrix3x3<T>::identity();
   int const orders[] = {3, 5, 7, 9, 13};
@@ -643,7 +642,7 @@ exp(matrix3x3<T> const& A) {
     if (order < highest_order && norm < theta) {
       auto U = B;
       auto V = B;
-      std::tie(U, V) = pade_polynomial_terms(A, order);
+      pade_polynomial_terms(A, order, U, V);
       B = inverse(V - U) * (U + V);
       break;
     } else if (order == highest_order) {

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __CUDA_ARCH__
+#ifdef __CUDACC__
 #include <cuda_runtime.h>
 #else
 #include <cmath>
