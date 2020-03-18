@@ -80,9 +80,6 @@ void convert_tet_mesh_to_meshless(const input& in, state& st)
     mat_pts_to_h[point] = min_node_pt_dist;
   };
   hpc::for_each(hpc::device_policy(), st.points, h_min_func);
-
-  st.V.resize(num_points);
-  initialize_tetrahedron_V(st);
 }
 
 }

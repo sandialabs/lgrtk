@@ -64,8 +64,8 @@ tet_parametric_to_physical(hpc::array<hpc::position<double>, 4> const& xn,
 
 struct tet_nodes_to_points
 {
-  tet_nodes_to_points(point_index const pts_per_elem) :
-  points_per_element(hpc::weaken(pts_per_elem)){}
+  tet_nodes_to_points(int const pts_per_elem) :
+  points_per_element(pts_per_elem){}
 
   int points_per_element{1};
 
@@ -79,7 +79,7 @@ struct tet_nodes_to_points
     auto pt_nodes_to_nodes = point_nodes_to_nodes.cbegin();
     auto x_nodes = x.cbegin();
     auto x_points = xp.begin();
-    auto point_func = [=] HPC_DEVICE(const point_index point)
+    auto point_func = [=] HPC_DEVICE(point_index const point)
     {
       auto const point_nodes = pt_to_pt_nodes[point];
       hpc::array<hpc::position<double>, 4> x;

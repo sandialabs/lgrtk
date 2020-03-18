@@ -1,6 +1,7 @@
 #pragma once
 
 #include <hpc_array.hpp>
+#include <hpc_dimensional.hpp>
 #include <hpc_vector3.hpp>
 
 namespace lgr {
