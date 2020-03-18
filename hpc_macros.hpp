@@ -60,11 +60,11 @@
 #endif
 
 #ifdef __CUDACC__
-#define HPC_TRAP_FPE_IMPL(msg, ...)                                   \
+#define HPC_TRAP_FPE_IMPL(...)                                        \
   do {                                                                \
   } while (0)
 #else
-#define HPC_TRAP_FPE_IMPL(msg, ...)                                   \
+#define HPC_TRAP_FPE_IMPL(...)                                        \
   do {                                                                \
   _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);                         \
   _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);                 \
@@ -75,4 +75,4 @@
 
 #define HPC_TRACE(...) HPC_TRACE_IMPL(__VA_ARGS__, "")
 #define HPC_ERROR_EXIT(...) HPC_ERROR_EXIT_IMPL(__VA_ARGS__, "")
-#define HPC_TRAP_FPE(...) HPC_TRAP_FPE_IMPL(__VA_ARGS__, "")
+#define HPC_TRAP_FPE(...) HPC_TRAP_FPE_IMPL(__VA_ARGS__)
