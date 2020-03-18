@@ -159,7 +159,7 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateSingleMaterialPoint) {
   input in(mat, bnd);
   state st;
 
-  auto const points_per_element = point_index(1);
+  auto const points_per_element = 1;
   in.otm_material_points_to_add_per_element = points_per_element;
   lgr::tet_nodes_to_points point_interpolator(points_per_element);
   in.xp_transform = std::ref(point_interpolator);
@@ -185,7 +185,7 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateMaterialPoints) {
   input in(mat, bnd);
   state st;
 
-  auto const points_per_element = point_index(4);
+  auto const points_per_element = 4;
   in.otm_material_points_to_add_per_element = points_per_element;
   lgr::tet_nodes_to_points point_interpolator(points_per_element);
   in.xp_transform = std::ref(point_interpolator);

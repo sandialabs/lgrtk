@@ -11,6 +11,7 @@ void otm_initialize(input& in, state& s, std::string const& filename);
 void otm_initialize_state(input const& in, state& s);
 void otm_initialize_u(state& s);
 void otm_initialize_F(state& s);
+void otm_initialize_V(state& s);
 void otm_initialize_grad_val_N(state& s);
 void otm_update_nodal_internal_force(state& s);
 void otm_update_nodal_external_force(state& s);

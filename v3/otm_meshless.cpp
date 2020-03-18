@@ -6,6 +6,7 @@
 #include <hpc_execution.hpp>
 #include <hpc_vector3.hpp>
 #include <hpc_math.hpp>
+#include <lgr_element_specific_inline.hpp>
 #include <lgr_exodus.hpp>
 #include <otm_exodus.hpp>
 #include <lgr_input.hpp>
@@ -29,6 +30,30 @@ void otm_initialize_u(state& s)
 void otm_initialize_F(state& s)
 {
   hpc::fill(hpc::device_policy(), s.F_total, hpc::deformation_gradient<double>::identity());
+}
+
+void otm_initialize_V(state& s) {
+  auto const num_points = s.points.size();
+  s.V.resize(num_points);
+  auto const points_per_element = s.points_in_element.size();
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const point_to_V = s.V.begin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto point_nodes = points_to_point_nodes[point];
+    hpc::array<hpc::position<double>, 4> x;
+    assert(point_nodes.size() == 4);
+    for (auto i = 0; i < 4; ++i)
+    {
+      auto const node = point_nodes_to_nodes[point_nodes[i]];
+      x[i] = nodes_to_x[node].load();
+    }
+    auto const volume = tetrahedron_volume(x);
+    assert(volume > 0.0);
+    point_to_V[point] = volume / points_per_element;
+  };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 void otm_initialize_grad_val_N(state& s) {
@@ -98,7 +123,6 @@ void otm_initialize_grad_val_N(state& s) {
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
-
 inline void otm_assemble_internal_force(state& s)
 {
   auto const points_to_sigma = s.sigma_full.cbegin();
@@ -368,6 +392,8 @@ void otm_initialize_state(input const& in, state& s) {
   s.G.resize(num_points);
   s.potential_density.resize(num_points);
   s.c.resize(num_points);
+  s.Fp_total.resize(num_points);
+  s.ep.resize(num_points);
   s.element_f.resize(num_points * s.nodes_in_element.size());
   s.lm.resize(num_nodes);
   s.f.resize(num_nodes);
@@ -433,10 +459,10 @@ void otm_initialize_quantity(
 
 void otm_initialize(input& in, state& s, std::string const& filename)
 {
-  auto const points_per_element = point_index(4);
-  in.otm_material_points_to_add_per_element = points_per_element;
-
-  lgr::tet_nodes_to_points point_interpolator(points_per_element);
+  auto const points_in_element = 1;
+  s.points_in_element.resize(point_in_element_index(points_in_element));
+  in.otm_material_points_to_add_per_element = points_in_element;
+  lgr::tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
 
   auto const err_code = lgr::read_exodus_file(filename, in, s);
@@ -470,13 +496,13 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
   in.CFL = 0.1;
-  otm_initialize_state(in, s);
   lgr::convert_tet_mesh_to_meshless(in, s);
+  otm_initialize_state(in, s);
   auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
   otm_initialize_quantity(s.v, v0, s.nodes);
   auto const u0 = hpc::velocity<double>(0.0, 0.0, 0.0);
   otm_initialize_quantity(s.u, u0, s.nodes);
-#if 1
+#if 0
   {
   auto const nodes_to_x = s.x.cbegin();
   auto print_x = [=] HPC_DEVICE (lgr::node_index const node) {
@@ -500,11 +526,12 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   hpc::for_each(hpc::device_policy(), s.nodes, print_u);
   }
 #endif
-  lgr::otm_initialize_grad_val_N(s);
-  lgr::otm_lump_nodal_mass(s);
-  lgr::otm_initialize_F(s);
-  lgr::otm_update_reference(s);
-  lgr::otm_update_material_state(in, s, 0);
+  otm_initialize_V(s);
+  otm_initialize_grad_val_N(s);
+  otm_lump_nodal_mass(s);
+  otm_initialize_F(s);
+  otm_update_reference(s);
+  otm_update_material_state(in, s, 0);
 }
 
 void otm_run(std::string const& filename)
