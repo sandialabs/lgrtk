@@ -79,7 +79,7 @@ struct tet_nodes_to_points
     auto pt_nodes_to_nodes = point_nodes_to_nodes.cbegin();
     auto x_nodes = x.cbegin();
     auto x_points = xp.begin();
-    auto point_func = [=, *this] HPC_DEVICE(point_index const point)
+    auto point_func = [=, *this] HPC_DEVICE (point_index const point)
     {
       auto const point_nodes = pt_to_pt_nodes[point];
       hpc::array<hpc::position<double>, 4> x;

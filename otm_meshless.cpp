@@ -289,7 +289,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
   auto const eps_dot0 = in.eps_dot0[material];
   auto const is_neo_hookean = in.enable_neo_Hookean[material];
   auto const is_variational_J2 = in.enable_variational_J2[material];
-  auto functor = [=] HPC_HOST (point_index const point) {
+  auto functor = [=] HPC_DEVICE (point_index const point) {
       auto const F = points_to_F_total[point].load();
       auto sigma = hpc::stress<double>::zero();
       auto Keff = hpc::pressure<double>(0.0);
