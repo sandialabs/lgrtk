@@ -158,10 +158,10 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateSingleMaterialPoint) {
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.otm_material_points_to_add_per_element = 1;
 
-  hpc::pinned_vector<hpc::position<double>, point_node_index> tet_gauss_pts(1, { 0.25, 0.25, 0.25 });
-  tet_gauss_points_to_material_points point_interpolator(tet_gauss_pts);
+  auto const points_per_element = point_index(1);
+  in.otm_material_points_to_add_per_element = points_per_element;
+  lgr::tet_nodes_to_points point_interpolator(points_per_element);
   in.xp_transform = std::ref(point_interpolator);
 
   int err_code = read_exodus_file("tets.g", in, st);
@@ -184,14 +184,10 @@ TEST(exodus, convertTetMeshToMeshfreeInterpolateMaterialPoints) {
   material_index bnd(1);
   input in(mat, bnd);
   state st;
-  in.otm_material_points_to_add_per_element = 4;
 
-  hpc::pinned_vector<hpc::position<double>, point_node_index> tet_gauss_pts(4);
-  tet_gauss_pts[0] = { 0.1381966011250105, 0.1381966011250105, 0.1381966011250105 };
-  tet_gauss_pts[1] = { 0.5854101966249685, 0.1381966011250105, 0.1381966011250105 };
-  tet_gauss_pts[2] = { 0.1381966011250105, 0.5854101966249685, 0.1381966011250105 };
-  tet_gauss_pts[3] = { 0.1381966011250105, 0.1381966011250105, 0.5854101966249685 };
-  tet_gauss_points_to_material_points point_interpolator(tet_gauss_pts);
+  auto const points_per_element = point_index(4);
+  in.otm_material_points_to_add_per_element = points_per_element;
+  lgr::tet_nodes_to_points point_interpolator(points_per_element);
   in.xp_transform = std::ref(point_interpolator);
 
   int err_code = read_exodus_file("tets.g", in, st);
