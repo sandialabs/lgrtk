@@ -17,6 +17,7 @@
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
+#include <otm_materials.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
@@ -259,6 +260,43 @@ HPC_NOINLINE inline void neo_Hookean(input const& in, state& s, material_index c
     }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
+HPC_NOINLINE inline void variational_J2(input const& in, state& s, material_index const material) {
+  auto const dt = s.dt;
+  auto const points_to_F_total = s.F_total.cbegin();
+  auto const points_to_sigma = s.sigma.begin();
+  auto const points_to_K = s.K.begin();
+  auto const points_to_G = s.G.begin();
+  auto const points_to_Fp = s.Fp_total.begin();
+  auto const points_to_ep = s.ep.begin();
+  auto const K = in.K0[material];
+  auto const G = in.G0[material];
+  auto const Y0 = in.Y0[material];
+  auto const n = in.n[material];
+  auto const eps0 = in.eps0[material];
+  auto const Svis0 = in.Svis0[material];
+  auto const m = in.m[material];
+  auto const eps_dot0 = in.eps_dot0[material];
+  auto const elements_to_points = s.elements * s.points_in_element;
+  auto functor = [=] (element_index const element) {
+    for (auto const point : elements_to_points[element]) {
+      auto const F = points_to_F_total[point].load();
+      auto sigma_full = hpc::stress<double>::zero();
+      auto Keff = hpc::pressure<double>(0.0);
+      auto Geff = hpc::pressure<double>(0.0);
+      auto W = hpc::energy_density<double>(0.0);
+      j2::Properties props{K, G, Y0, n, eps0, Svis0, m, eps_dot0};
+      auto Fp = points_to_Fp[point].load();
+      auto ep = points_to_ep[point];
+      variational_J2_point(F, props, dt, sigma_full, Keff, Geff, W, Fp, ep);
+      auto const sigma = hpc::symmetric_stress<double>(sigma_full);
+      points_to_sigma[point] = sigma;
+      points_to_K[point] = Keff;
+      points_to_G[point] = Geff;
+    }
+  };
+  hpc::for_each(hpc::host_policy(), s.element_sets[material], functor);
 }
 
 #if defined(HYPER_EP)
@@ -630,6 +668,9 @@ HPC_NOINLINE inline void update_single_material_state(input const& in, state& s,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h) {
   if (in.enable_neo_Hookean[material]) {
     neo_Hookean(in, s, material);
+  }
+  if (in.enable_variational_J2[material]) {
+    variational_J2(in, s, material);
   }
 #if defined(HYPER_EP)
   else if (in.enable_hyper_ep[material]) {

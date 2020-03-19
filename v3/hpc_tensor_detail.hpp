@@ -28,28 +28,28 @@ scaling_squaring_theta(int const order) noexcept {
 
 // Polynomial coefficients for Padé approximants.
 template <typename T>
-HPC_HOST_DEVICE constexpr auto
+HPC_HOST_DEVICE constexpr T
 polynomial_coefficient(int const order, int const index) noexcept {
   assert(index <= order);
   T c = 0.0;
   switch (order) {
     case 3:
       {
-        T const b[] = {
+        constexpr const T b[] = {
           120.0, 60.0, 12.0, 1.0};
         c = b[index];
       }
       break;
     case 5:
       {
-        T const b[] = {
+        constexpr const T b[] = {
           30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0};
         c = b[index];
       }
       break;
     case 7:
       {
-        T const b[] = {
+        constexpr const T b[] = {
           17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0,
           56.0, 1.0};
         c = b[index];
@@ -57,7 +57,7 @@ polynomial_coefficient(int const order, int const index) noexcept {
       break;
     case 9:
       {
-        T const b[] = {
+        constexpr const T b[] = {
           17643225600.0, 8821612800.0, 2075673600.0, 302702400.0,
           30270240.0, 2162160.0, 110880.0, 3960.0, 90.0, 1.0};
         c = b[index];
@@ -65,7 +65,7 @@ polynomial_coefficient(int const order, int const index) noexcept {
       break;
     case 13:
       {
-        T const b[] = {
+        constexpr const T b[] = {
           64764752532480000.0, 32382376266240000.0, 7771770303897600.0,
           1187353796428800.0, 129060195264000.0, 10559470521600.0,
           670442572800.0, 33522128640.0, 1323241920.0, 40840800.0,

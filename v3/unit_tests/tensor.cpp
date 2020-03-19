@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <hpc_matrix3x3.hpp>
-#include <unit_tests/ut_util.hpp>
+#include <otm_util.hpp>
 
 using Real = double;
 using Tensor = hpc::matrix3x3<Real>;

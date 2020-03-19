@@ -1,17 +1,17 @@
 #pragma once
 
-#include <cmath>
 #include <iostream>
 
 #include <hpc_dimensional.hpp>
 #include <hpc_macros.hpp>
+#include <hpc_math.hpp>
 #include <hpc_matrix3x3.hpp>
 #include <hpc_symmetric3x3.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
 
-HPC_ALWAYS_INLINE HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, hpc::pressure<double> const K, hpc::pressure<double> const G,
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE void neo_Hookean_point(hpc::deformation_gradient<double> const &F, hpc::pressure<double> const K, hpc::pressure<double> const G,
     hpc::stress<double> &sigma, hpc::pressure<double> &Keff, hpc::pressure<double>& Geff, hpc::energy_density<double>& potential)
 {
   auto const J = determinant(F);
@@ -27,7 +27,7 @@ HPC_ALWAYS_INLINE HPC_DEVICE void neo_Hookean_point(hpc::deformation_gradient<do
   potential = 0.5*G*(Jm23*trace(B) - 3.0) + 0.5*K*(0.5*(J*J - 1.0) - log(J));
 }
 
-HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gradient<double> const &F, j2::Properties const props,
     hpc::time<double> const dt, hpc::stress<double> &sigma, hpc::pressure<double> &Keff, hpc::pressure<double>& Geff,
     hpc::energy_density<double> &potential, hpc::deformation_gradient<double> &Fp, hpc::strain<double> &eqps)
 {
@@ -52,8 +52,8 @@ HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient
     Np = 1.5*dev_M_tr/sigma_tr_eff;
   }
 
-  double S = j2::FlowStrength(props, eqps);
-  double const r0 = sigma_tr_eff - S;
+  double S0 = j2::FlowStrength(props, eqps);
+  double const r0 = sigma_tr_eff - S0;
   auto r = r0;
 
   double delta_eqps = 0;
@@ -74,8 +74,7 @@ HPC_ALWAYS_INLINE HPC_DEVICE void variational_J2_point(hpc::deformation_gradient
       ++iters;
     }
     if (!converged) {
-      std::cerr << "variational J2 diverged" << std::endl;
-      throw;
+      HPC_ERROR_EXIT("variational J2 diverged" << std::endl);
       // TODO: handle non-convergence error
     }
     //std::cout << "variational J2 converged in " << iters << " iterations" << std::endl;

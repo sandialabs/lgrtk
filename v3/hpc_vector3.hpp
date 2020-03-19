@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cmath>
 #include <hpc_macros.hpp>
 #include <hpc_array_traits.hpp>
 #include <hpc_index.hpp>
+#include <hpc_math.hpp>
 
 namespace hpc {
 

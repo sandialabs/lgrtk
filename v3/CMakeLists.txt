@@ -13,7 +13,7 @@ if (LGR_ENABLE_CUDA)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wall,-Wextra,-Werror,-Wno-noexcept-type --Werror cross-execution-space-call,deprecated-declarations --expt-extended-lambda")
 else()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Weverything -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
   endif()
   if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
@@ -36,33 +36,35 @@ set(LGR_SOURCES
     lgr_meshing.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
+    )
+
+set(OTM_SOURCES
     otm_meshless.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
-    j2/hardening.cpp
     )
 
 option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
 
 if (LGR_ENABLE_EXODUS)
   find_package(SEACASExodus REQUIRED)
-  set(LGR_SOURCES ${LGR_SOURCES} lgr_exodus.cpp)
   find_package(MPI REQUIRED)
+  set(LGR_SOURCES ${LGR_SOURCES} lgr_exodus.cpp)
 endif()
 
 option(LGR_ENABLE_SEARCH "Build support for meshfree search via ArborX" OFF)
 
 if (LGR_ENABLE_SEARCH)
   find_package(ArborX REQUIRED)
-  # find_package(Kokkos REQUIRED)
-  set(LGR_SOURCES ${LGR_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
+  set(OTM_SOURCES ${OTM_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
 endif()
 
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(${OTM_SOURCES} PROPERTIES LANGUAGE CUDA)
 endif()
 
-add_library(lgrlib ${LGR_SOURCES})
+add_library(lgrlib ${LGR_SOURCES} ${OTM_SOURCES})
 set_property(TARGET lgrlib PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgrlib PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgrlib PROPERTY CXX_EXTENSIONS OFF)
@@ -87,6 +89,7 @@ endif()
 
 if (LGR_ENABLE_CUDA)
   set_source_files_properties(lgr.cpp PROPERTIES LANGUAGE CUDA)
+  set_source_files_properties(otm.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
 add_executable(lgr lgr.cpp)
@@ -94,6 +97,12 @@ set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgr PROPERTY CXX_EXTENSIONS OFF)
 target_link_libraries(lgr lgrlib)
+
+add_executable(otm otm.cpp)
+set_property(TARGET otm PROPERTY CXX_STANDARD "14")
+set_property(TARGET otm PROPERTY CXX_STANDARD_REQUIRED ON)
+set_property(TARGET otm PROPERTY CXX_EXTENSIONS OFF)
+target_link_libraries(otm lgrlib)
 
 if (LGR_ENABLE_UNIT_TESTS)
   add_subdirectory(unit_tests)
