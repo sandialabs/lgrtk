@@ -320,6 +320,7 @@ void otm_update_nodal_position(state& s) {
   auto const nodes_to_lm = s.lm.cbegin();
   auto const nodes_to_x = s.x.begin();
   auto const nodes_to_u = s.u.begin();
+  auto const nodes_to_v = s.v.begin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const m = nodes_to_mass[node];
     auto const lm = nodes_to_lm[node].load();
@@ -329,6 +330,7 @@ void otm_update_nodal_position(state& s) {
     nodes_to_u[node] = disp;
     auto x_new = x_old + disp;
     nodes_to_x[node] = x_new;
+    nodes_to_v[node] = disp / dt;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -554,13 +556,21 @@ void otm_run(std::string const& filename)
       ++s.n;
     }
   }
-#if 0
+#if 1
+  HPC_TRACE("TIME : " << s.time << '\n');
   auto const nodes_to_x = s.x.cbegin();
   auto print_x = [=] HPC_HOST (lgr::node_index const node) {
     auto const x = nodes_to_x[node].load();
     HPC_TRACE("node: " << node << ", x:\n" << x);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, print_x);
+
+  auto const nodes_to_v = s.v.cbegin();
+  auto print_v = [=] HPC_HOST (lgr::node_index const node) {
+    auto const v = nodes_to_v[node].load();
+    HPC_TRACE("node: " << node << ", v:\n" << v);
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, print_v);
 
   auto const points_to_xp = s.xp.cbegin();
   auto print_xp = [=] HPC_HOST (lgr::point_index const point) {
