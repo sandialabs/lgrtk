@@ -37,7 +37,7 @@ TEST(mechanics, lumped_mass_1)
   lgr::state s;
 
   tetrahedron_single_point(s);
-  lgr::otm_lump_nodal_mass(s);
+  lgr::otm_update_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
@@ -52,7 +52,7 @@ TEST(mechanics, lumped_mass_2)
   lgr::state s;
 
   two_tetrahedra_two_points(s);
-  lgr::otm_lump_nodal_mass(s);
+  lgr::otm_update_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
@@ -67,7 +67,7 @@ TEST(mechanics, lumped_mass_3)
   lgr::state s;
 
   hexahedron_eight_points(s);
-  lgr::otm_lump_nodal_mass(s);
+  lgr::otm_update_nodal_mass(s);
 
   auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
@@ -112,7 +112,7 @@ TEST(mechanics, hex_translation)
   in.G0[0] = hpc::pressure<double>(1.0e+09);
 
   hexahedron_eight_points(s);
-  lgr::otm_lump_nodal_mass(s);
+  lgr::otm_update_nodal_mass(s);
 
   auto const num_points = s.points.size();
   auto const num_nodes = s.nodes.size();
@@ -130,51 +130,12 @@ TEST(mechanics, hex_translation)
   s.G.resize(num_points);
   s.potential_density.resize(num_points);
 
-  lgr::otm_initialize_u(s);
-  lgr::otm_initialize_F(s);
+  auto const I = hpc::deformation_gradient<double>::identity();
+  hpc::fill(hpc::device_policy(), s.F_total, I);
+
+  lgr::otm_initialize_displacement(s);
   lgr::otm_update_reference(s);
   lgr::otm_update_material_state(in, s, 0);
-
-#if 0
-  auto const nodes_to_x = s.x.cbegin();
-  auto print_x = [=] HPC_HOST (lgr::node_index const node) {
-    auto const x = nodes_to_x[node].load();
-    HPC_TRACE("node: " << node << ", x:\n" << x);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_x);
-
-  auto const points_to_xp = s.xp.cbegin();
-  auto print_xp = [=] HPC_HOST (lgr::point_index const point) {
-    auto const xp = points_to_xp[point].load();
-    HPC_TRACE("point: " << point << ", xp:\n" << xp);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_xp);
-
-  auto const nodes_to_u = s.u.cbegin();
-  auto print_u = [=] HPC_HOST (lgr::node_index const node) {
-    auto const u = nodes_to_u[node].load();
-    HPC_TRACE("node: " << node << ", u:\n" << u);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_u);
-
-  auto const points_to_F = s.F_total.cbegin();
-  auto print_F = [=] HPC_HOST (lgr::point_index const point) {
-    auto const F = points_to_F[point].load();
-    HPC_TRACE("point: " << point << ", F:\n" << F);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_F);
-
-  auto const points_to_sigma = s.sigma_full.cbegin();
-  auto const points_to_K = s.K.cbegin();
-  auto const points_to_G = s.G.cbegin();
-  auto print_sigma = [=] HPC_HOST (lgr::point_index const point) {
-    auto const sigma = points_to_sigma[point].load();
-    auto const K = points_to_K[point];
-    auto const G = points_to_G[point];
-    HPC_TRACE("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_sigma);
-#endif
 
   auto const error = lgr_unit::compute_sigma_error(s);
   auto const tol = 1.0e-06;
