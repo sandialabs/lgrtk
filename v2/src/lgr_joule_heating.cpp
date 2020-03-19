@@ -42,6 +42,7 @@ struct JouleHeating : public Model<Elem> {
   double z_total;
   bool diffuse_conductivity;
   double diffusion_length;
+  int diffusion_steps;
   bool compute_efield;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
@@ -77,11 +78,11 @@ struct JouleHeating : public Model<Elem> {
        // Nodal conductivity
        this->nodal_conductivity = sim.fields.define("nodal_sigma", "nodal conductivity", 1,
            NODES, false, sim.disc.covering_class_names());
-       sim.fields[this->nodal_conductivity].remap_type = RemapType::NODAL;
-       sim.fields[this->nodal_conductivity].default_value =
-           pl.get<std::string>("nodal conductivity", "0.0");
+       sim.fields[this->nodal_conductivity].remap_type = RemapType::NONE;
        // Diffusion length (required)
        diffusion_length = pl.get<double>("diffusion length");
+       // Diffusion sub-cycles
+       diffusion_steps = pl.get<int>("diffusion steps","1");
     }
     // Electric field
     if (compute_efield) {
@@ -170,7 +171,7 @@ struct JouleHeating : public Model<Elem> {
   void at_secondaries() override final {
     Omega_h::ScopedTimer timer("JouleHeating::at_secondaries");
     if (!this->constant_voltage_field) {
-       if (this->diffuse_conductivity) compute_diffused_conductivity();
+       if (this->diffuse_conductivity) diffused_conductivity_driver();
        assemble_normalized_voltage_system();
        solve_normalized_voltage_system();
     }
@@ -211,68 +212,101 @@ struct JouleHeating : public Model<Elem> {
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(v_functor));
   }
-  void compute_diffused_conductivity() {
+  void guess_nodal_conductivity() {
+      auto const points_to_conductivity = this->points_get(this->conductivity);
+      auto const nodes_to_nodal_conductivity = sim.set(this->nodal_conductivity);
+      
+      auto const verts_to_elems = sim.disc.mesh.ask_up(0, Elem::dim);
+      auto const points_to_weight = sim.get(sim.weight);
+      auto v_functor = OMEGA_H_LAMBDA(int const vert) {
+        auto const begin = verts_to_elems.a2ab[vert];
+        auto const end = verts_to_elems.a2ab[vert + 1];
+        double e_weight = 0.0;
+        double g_count = 0.0;
+        for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
+          auto const elem = verts_to_elems.ab2b[vert_elem];
+          auto const point = elem;
+          auto const weight = points_to_weight[point];
+          g_count += points_to_conductivity[point]*weight;
+          e_weight += weight;
+        }
+        nodes_to_nodal_conductivity[vert] = g_count/e_weight;
+      };
+      parallel_for(sim.disc.mesh.nverts(), std::move(v_functor));
+  }
+  void diffused_conductivity_driver() {
+      auto const tau_final = 1.0;
+      auto const lscale = this->diffusion_length;
+      auto const dnumber = lscale*lscale/(4.0*tau_final);
+      auto const nsteps = this->diffusion_steps;
+      auto const dtau = tau_final/nsteps;
+      for (int i=0;i<nsteps;++i) {
+        solve_diffused_conductivity(i, nsteps, dtau, dnumber);
+      }
+  }
+  void solve_diffused_conductivity(int const istep, int const nsteps, double const dtau, double const dnumber) {
     OMEGA_H_TIME_FUNCTION;
     // Compute nodal conductivity
-    auto const points_to_conductivity = this->points_get(this->conductivity);
-    Omega_h::Write<double> nodes_to_initial_nodal_conductivity(sim.disc.mesh.nverts());
-
-    auto const verts_to_elems = sim.disc.mesh.ask_up(0, Elem::dim);
-    auto v_functor = OMEGA_H_LAMBDA(int const vert) {
-      auto const begin = verts_to_elems.a2ab[vert];
-      auto const end = verts_to_elems.a2ab[vert + 1];
-      int const e_count = end-begin;
-      double g_count = 0.0;
-      for (auto vert_elem = begin; vert_elem < end; ++vert_elem) {
-        auto const elem = verts_to_elems.ab2b[vert_elem];
-        auto const point = elem;
-        g_count += points_to_conductivity[point];
-      }
-      nodes_to_initial_nodal_conductivity[vert] = g_count/e_count;
-    };
-    parallel_for(sim.disc.mesh.nverts(), std::move(v_functor));
+    if (istep == 0) guess_nodal_conductivity();
+    auto const nodes_to_nodal_conductivity = sim.getset(this->nodal_conductivity);
 
     // Setup diffusion number for each element
-    auto const lscale = this->diffusion_length;
-    auto const nsteps = 1;
-    auto const dtau = 1.0;
-    auto const dnumber = lscale*lscale/(4.0*dtau*nsteps);
+    auto const elems_to_visc_len = sim.get(sim.viscosity_length);
+    auto const h_min = Omega_h::get_min(elems_to_visc_len);
+    auto const dtaus = h_min*h_min/dnumber;
+    auto const dnumbers = (dtau >= dtaus) ? dnumber : dnumber * dtaus/dtau;
+    auto const slope = (dnumber - dnumbers)/nsteps;
+    auto const dnumbers_use = dnumbers + slope*(istep+1);
+    Omega_h::Write<double> diffnos(sim.disc.mesh.nelems(), dnumbers_use);
     Omega_h::Write<double> diffno(sim.disc.mesh.nelems(), dnumber);
 
-    // Compute matrix:
-    //    matrix = I + inv(M)*S
+    // Compute matrices for split diffusion system:
+    //   
+    //   A x = r, 
+    //
+    //   * A   : I + dt * M^-1 * S^*
+    //   * r   : B * x_0
+    //   * B   : I + dt * M^-1 * S^* - dt * M^-1 * S
+    //   * S   : Stiffness matrix using D
+    //   * S^* : Stiffness matrix using D^*
+    //   * D   : Actual system diffusion number by element
+    //   * D^* : Modified diffusion number for the grid
+    //
+    //   * Note the required implementation order of B then A,
+    //     so that A initially contains S^* and B iniitially 
+    //     contains S for minimal storage
     Global_FEM<Elem> gfem(sim);
-    matrix = gfem.stiffness(diffno);
+    auto const A = gfem.stiffness(diffnos);
+    auto const B = gfem.stiffness(diffno);
     auto const inv_mass = gfem.inv_lumped_mass();
-
     auto const verts_to_edges = sim.disc.mesh.ask_up(0, 1);
     auto row_functor = OMEGA_H_LAMBDA(int const row) {
-      auto const row_begin = matrix.rows_to_columns.a2ab[row];
+      auto const row_begin = A.rows_to_columns.a2ab[row];
       auto row_col = row_begin;
       auto const factor = dtau*inv_mass[row];
       // Diagonal terms
-      matrix.entries[row_col] = 1.0 + factor*matrix.entries[row_col];
+      B.entries[row_col] = 1.0 + factor*(A.entries[row_col] - B.entries[row_col]);
+      A.entries[row_col] = 1.0 + factor*A.entries[row_col];
+      // Off diagonal terms
       row_col++;
       auto const edge_begin = verts_to_edges.a2ab[row];
       auto const edge_end = verts_to_edges.a2ab[row + 1];
       for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
-        // Off diagonal terms
-        matrix.entries[row_col] = factor*matrix.entries[row_col];
+        B.entries[row_col] = factor*(A.entries[row_col] - B.entries[row_col]);
+        A.entries[row_col] = factor*A.entries[row_col];
         row_col++;
       }
     };
     parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
 
+    rhs = Omega_h::Write<double>(sim.disc.mesh.nverts(), 0.0);
+    matvec(B, nodes_to_nodal_conductivity, rhs);
+
     // Solve system:
-    //    matrix * x = rhs,
-    //
-    //    where:
-    //       x = diffused nodal conductivity
-    auto const nodes_to_nodal_conductivity = sim.getset(this->nodal_conductivity);
     double relative_out, absolute_out;
     auto const cg_it = (sim.step == 0) ? sim.disc.mesh.nverts() : cg_iterations;
     auto const niter = diagonal_preconditioned_conjugate_gradient(
-        matrix, nodes_to_initial_nodal_conductivity, nodes_to_nodal_conductivity, 
+        A, rhs, nodes_to_nodal_conductivity, 
         relative_tolerance, absolute_tolerance, cg_it,
         relative_out, absolute_out);
     OMEGA_H_CHECK(niter <= nodes_to_nodal_conductivity.size());
@@ -280,8 +314,7 @@ struct JouleHeating : public Model<Elem> {
     // Convert diffused nodal conductivity to diffused element conductivity
     // through averaging the nodes of each element
     auto const elems_to_nodes = sim.disc.ents_to_nodes(ELEMS);
-    auto const points_to_diffused_conductivity = 
-        this->points_set(this->diffused_conductivity);
+    auto const points_to_diffused_conductivity = this->points_set(diffused_conductivity);
     auto end_functor = OMEGA_H_LAMBDA(int const elem) {
        double value = 0.0;
        int count = 0;
