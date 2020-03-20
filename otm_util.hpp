@@ -1,8 +1,12 @@
 #pragma once
 
-#include <hpc_matrix3x3.hpp>
-#include <hpc_vector3.hpp>
+#include <iomanip>
 #include <iostream>
+
+#include <hpc_array_vector.hpp>
+#include <hpc_matrix3x3.hpp>
+#include <hpc_vector.hpp>
+#include <hpc_vector3.hpp>
 
 template <typename T>
 std::ostream &
@@ -23,4 +27,3 @@ operator<<(std::ostream & os, hpc::matrix3x3<T> const & A)
   os << std::setw(24) << A(2,0) << "," << std::setw(24) << A(2,1) << "," << std::setw(24) << A(2,2) << std::endl;
   return os;
 }
-

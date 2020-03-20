@@ -27,6 +27,17 @@ void otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
+void otm_initialize_velocity(state& s)
+{
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_v = s.v.begin();
+  auto const dt = hpc::time<double>(0.1);
+  auto functor = [=] HPC_DEVICE (point_index const node) {
+    nodes_to_v[node] = nodes_to_x[node].load() / dt;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 void otm_initialize_point_volume(state& s) {
   auto const num_points = s.points.size();
   s.V.resize(num_points);
@@ -113,7 +124,7 @@ void otm_update_shape_functions(state& s) {
       auto const Jinvr = hpc::solve_full_pivot(J, r);
       auto const NZ = point_nodes_to_N[point_node];
       point_nodes_to_N[point_node] = NZ / Z;
-      point_nodes_to_grad_N[point_node] = NZ * Jinvr;
+      point_nodes_to_grad_N[point_node] = -NZ * Jinvr;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
@@ -141,8 +152,9 @@ inline void otm_assemble_internal_force(state& s)
       auto const f = -(sigma * grad_N) * V;
       node_f = node_f + f;
     }
-    auto node_to_f = nodes_to_f[node].load();
-    node_to_f += node_f;
+    auto const f_old = nodes_to_f[node].load();
+    auto const f_new = f_old + node_f;
+    nodes_to_f[node] = f_new;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -173,8 +185,9 @@ inline void otm_assemble_external_force(state& s)
       auto const f = m * body_acce;
       node_f = node_f + f;
     }
-    auto node_to_f = nodes_to_f[node].load();
-    node_to_f += node_f;
+    auto const f_old = nodes_to_f[node].load();
+    auto const f_new = f_old + node_f;
+    nodes_to_f[node] = f_new;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -488,6 +501,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   hpc::fill(hpc::device_policy(), s.ep, ep0);
   hpc::fill(hpc::device_policy(), s.v, v0);
   hpc::fill(hpc::device_policy(), s.u, u0);
+  otm_initialize_velocity(s);
   otm_initialize_point_volume(s);
   otm_update_shape_functions(s);
 }
@@ -539,6 +553,56 @@ void otm_run(std::string const& filename)
       if (in.output_to_command_line) {
         std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
       }
+#if 1
+      {
+        HPC_TRACE("TIME : " << s.time << '\n');
+        auto const nodes_to_x = s.x.cbegin();
+        auto print_x = [=] HPC_HOST (lgr::node_index const node) {
+          auto const x = nodes_to_x[node].load();
+          HPC_TRACE("node: " << node << ", x:\n" << x);
+        };
+        hpc::for_each(hpc::device_policy(), s.nodes, print_x);
+
+        auto const nodes_to_v = s.v.cbegin();
+        auto print_v = [=] HPC_HOST (lgr::node_index const node) {
+          auto const v = nodes_to_v[node].load();
+          HPC_TRACE("node: " << node << ", v:\n" << v);
+        };
+        hpc::for_each(hpc::device_policy(), s.nodes, print_v);
+
+        auto const nodes_to_u = s.u.cbegin();
+        auto print_u = [=] HPC_HOST (lgr::node_index const node) {
+          auto const u = nodes_to_u[node].load();
+          HPC_TRACE("node: " << node << ", u:\n" << u);
+        };
+        hpc::for_each(hpc::device_policy(), s.nodes, print_u);
+
+        auto const points_to_xp = s.xp.cbegin();
+        auto print_xp = [=] HPC_HOST (lgr::point_index const point) {
+          auto const xp = points_to_xp[point].load();
+          HPC_TRACE("point: " << point << ", xp:\n" << xp);
+        };
+        hpc::for_each(hpc::device_policy(), s.points, print_xp);
+
+        auto const points_to_F = s.F_total.cbegin();
+        auto print_F = [=] HPC_HOST (lgr::point_index const point) {
+          auto const F = points_to_F[point].load();
+          HPC_TRACE("point: " << point << ", F:\n" << F);
+        };
+        hpc::for_each(hpc::device_policy(), s.points, print_F);
+
+        auto const points_to_sigma = s.sigma_full.cbegin();
+        auto const points_to_K = s.K.cbegin();
+        auto const points_to_G = s.G.cbegin();
+        auto print_sigma = [=] HPC_HOST (lgr::point_index const point) {
+          auto const sigma = points_to_sigma[point].load();
+          auto const K = points_to_K[point];
+          auto const G = points_to_G[point];
+          HPC_TRACE("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
+        };
+        hpc::for_each(hpc::device_policy(), s.points, print_sigma);
+      }
+#endif
       //output_file.capture(in, s);
       //output_file.write(in, file_output_index);
       ++file_output_index;
@@ -556,55 +620,6 @@ void otm_run(std::string const& filename)
       ++s.n;
     }
   }
-#if 1
-  HPC_TRACE("TIME : " << s.time << '\n');
-  auto const nodes_to_x = s.x.cbegin();
-  auto print_x = [=] HPC_HOST (lgr::node_index const node) {
-    auto const x = nodes_to_x[node].load();
-    HPC_TRACE("node: " << node << ", x:\n" << x);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_x);
-
-  auto const nodes_to_v = s.v.cbegin();
-  auto print_v = [=] HPC_HOST (lgr::node_index const node) {
-    auto const v = nodes_to_v[node].load();
-    HPC_TRACE("node: " << node << ", v:\n" << v);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_v);
-
-  auto const points_to_xp = s.xp.cbegin();
-  auto print_xp = [=] HPC_HOST (lgr::point_index const point) {
-    auto const xp = points_to_xp[point].load();
-    HPC_TRACE("point: " << point << ", xp:\n" << xp);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_xp);
-
-  auto const nodes_to_u = s.u.cbegin();
-  auto print_u = [=] HPC_HOST (lgr::node_index const node) {
-    auto const u = nodes_to_u[node].load();
-    HPC_TRACE("node: " << node << ", u:\n" << u);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_u);
-
-  auto const points_to_F = s.F_total.cbegin();
-  auto print_F = [=] HPC_HOST (lgr::point_index const point) {
-    auto const F = points_to_F[point].load();
-    HPC_TRACE("point: " << point << ", F:\n" << F);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_F);
-
-  auto const points_to_sigma = s.sigma_full.cbegin();
-  auto const points_to_K = s.K.cbegin();
-  auto const points_to_G = s.G.cbegin();
-  auto print_sigma = [=] HPC_HOST (lgr::point_index const point) {
-    auto const sigma = points_to_sigma[point].load();
-    auto const K = points_to_K[point];
-    auto const G = points_to_G[point];
-    HPC_TRACE("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_sigma);
-#endif
-
 }
 
 } // namespace lgr
