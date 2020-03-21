@@ -57,20 +57,58 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
   auto r = r0;
 
   double delta_eqps = 0;
-  double const tolerance = 1e-10;
-  if (r > tolerance) {
+  double const residual_tolerance = 1e-10;
+  double const deqps_tolerance = 1e-10;
+  if (r > residual_tolerance) {
     constexpr int max_iters = 8;
     int iters = 0;
+    double merit_old = 1.0;
+    double merit_new = 1.0;
+
     bool converged = false;
     while (!converged) {
       if (iters == max_iters) break;
+      bool ls_is_finished = false;
+      double delta_eqps0 = delta_eqps;
+      merit_old = r*r;
       double H = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
       double dr = -3.0*G - H;
-      double corr = -r/dr;
-      delta_eqps += corr;
+      double correction = -r/dr;
+
+      // line search
+      double alpha = 1.0;
+      int line_search_iterations = 0;
+      double const backtrack_factor = 0.1;
+      double const decrease_factor = 1e-5;
+      while (!ls_is_finished) {
+        if (line_search_iterations == 20) {
+          // line search has failed to satisfactorily improve newton step
+          // just take the full newton step and hope for the best
+          alpha = 1;
+          break;
+        }
+        ++line_search_iterations;
+        delta_eqps = delta_eqps0 + alpha*correction;
+        if (delta_eqps < 0) delta_eqps = 0;
+        double Yeq = j2::FlowStrength(props, eqps + delta_eqps);
+        double Yvis = j2::ViscoplasticStress(props, delta_eqps, dt);
+        double residual = sigma_tr_eff - 3.0*G*delta_eqps - (Yeq + Yvis);
+        merit_new = residual*residual;
+        double decrease_tol = 1.0 - 2.0*alpha*decrease_factor;
+        if (merit_new <= decrease_tol*merit_old) {
+          merit_old = merit_new;
+          ls_is_finished = true;
+        } else {
+          double alpha_old = alpha;
+          alpha = alpha_old*alpha_old*merit_old/(merit_new-merit_old+2.0*alpha_old*merit_old);
+          if (backtrack_factor*alpha_old > alpha) {
+            alpha = backtrack_factor*alpha_old;
+          }
+        }
+      }
       double S = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
       r = sigma_tr_eff - 3.0*G*delta_eqps - S;
-      converged = std::abs(r/r0) < tolerance;
+      converged = (std::abs(r/r0) < residual_tolerance) || (delta_eqps < deqps_tolerance);
       ++iters;
     }
     if (!converged) {
