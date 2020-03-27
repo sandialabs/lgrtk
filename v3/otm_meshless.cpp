@@ -4,8 +4,8 @@
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
-#include <hpc_vector3.hpp>
 #include <hpc_math.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_exodus.hpp>
 #include <otm_exodus.hpp>
@@ -31,9 +31,11 @@ void otm_initialize_velocity(state& s)
 {
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_v = s.v.begin();
-  auto const dt = hpc::time<double>(0.1);
+  auto const top_vel = hpc::speed<double>(10.0);
   auto functor = [=] HPC_DEVICE (point_index const node) {
-    nodes_to_v[node] = nodes_to_x[node].load() / dt;
+    auto const x = nodes_to_x[node].load();
+    auto const vz = top_vel * x(2);
+    nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -346,6 +348,24 @@ void otm_update_nodal_position(state& s) {
     nodes_to_v[node] = disp / dt;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  otm_apply_dirichlet_bcs(s);
+}
+
+void otm_apply_dirichlet_bcs(state& s) {
+  auto const eps = hpc::length<double>(0.0001);
+  auto const vtop = hpc::speed<double>(10.0);
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_v = s.v.begin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const x = nodes_to_x[node].load();
+    auto v = nodes_to_v[node].load();
+    if (std::abs(x(0)) <= eps) v(0) = 0.0;
+    if (std::abs(x(1)) <= eps) v(1) = 0.0;
+    if (std::abs(x(2)) <= eps) v(2) = 0.0;
+    if (std::abs(x(2) - 1.0) <= eps) v(2) = vtop;
+    nodes_to_v[node] = v;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 void otm_update_point_position(state& s)
@@ -467,7 +487,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   auto const E = hpc::pressure<double>(200.0e09);
   auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0 = hpc::pressure<double>(1.0e+09);
+  auto const Y0 = hpc::pressure<double>(1.0e+64);
   auto const n = hpc::adimensional<double>(4.0);
   auto const eps0 = hpc::strain<double>(1.0e-02);
   auto const Svis0 = hpc::pressure<double>(Y0);
@@ -485,10 +505,10 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   in.Svis0[body] = Svis0;
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
-  in.CFL = 0.1;
+  in.CFL =1.0;
   lgr::convert_tet_mesh_to_meshless(in, s);
-  s.dt = hpc::time<double>(1.0e-05);
-  s.dt_old = hpc::time<double>(1.0e-05);
+  s.dt = hpc::time<double>(1.0e-06);
+  s.dt_old = hpc::time<double>(1.0e-06);
   s.time = hpc::time<double>(0.0);
   otm_initialize_state(in, s);
   auto const I = hpc::deformation_gradient<double>::identity();
@@ -509,7 +529,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
 void otm_update_time_step(state& s)
 {
   // TODO: Constant for now
-  s.max_stable_dt = hpc::time<double>(1.0e-05);
+  s.max_stable_dt = hpc::time<double>(1.0e-06);
 }
 
 void otm_update_time(input const& in, state& s)
