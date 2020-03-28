@@ -386,6 +386,7 @@ void otm_update_point_position(state& s)
     }
     auto xp = points_to_xp[point].load();
     xp += up;
+    points_to_xp[point] = xp;
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
@@ -396,11 +397,11 @@ void otm_initialize_state(input const& in, state& s) {
   auto const num_elements = s.elements.size();
   auto const num_materials = in.materials.size();
   auto const support_size = s.points_to_point_nodes.size();
-  HPC_TRACE("NUM NODES     : " << num_nodes << '\n');
-  HPC_TRACE("NUM POINTS    : " << num_points << '\n');
-  HPC_TRACE("NUM ELEMENTS  : " << num_elements << '\n');
-  HPC_TRACE("NUM MATERIALS : " << num_materials << '\n');
-  HPC_TRACE("SUPPORT SIZE  : " << support_size << '\n');
+  HPC_DUMP("NUM NODES     : " << num_nodes << '\n');
+  HPC_DUMP("NUM POINTS    : " << num_points << '\n');
+  HPC_DUMP("NUM ELEMENTS  : " << num_elements << '\n');
+  HPC_DUMP("NUM MATERIALS : " << num_materials << '\n');
+  HPC_DUMP("SUPPORT SIZE  : " << support_size << '\n');
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
@@ -483,7 +484,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   in.end_time = 0.001;
   in.num_file_outputs = 100;
   auto const rho = hpc::density<double>(7.8e+03);
-  auto const nu = hpc::adimensional<double>(0.25);
+  auto const nu = hpc::adimensional<double>(0.00);
   auto const E = hpc::pressure<double>(200.0e09);
   auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
@@ -571,43 +572,43 @@ void otm_run(std::string const& filename)
   while (s.time < in.end_time) {
     if (num_file_outputs) {
       if (in.output_to_command_line) {
-        std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
+        std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
       }
 #if 1
       {
-        HPC_TRACE("TIME : " << s.time << '\n');
+        HPC_DUMP("TIME : " << s.time << '\n');
         auto const nodes_to_x = s.x.cbegin();
         auto print_x = [=] HPC_DEVICE (lgr::node_index const node) {
           auto const x = nodes_to_x[node].load();
-          HPC_TRACE("node: " << node << ", x:\n" << x);
+          HPC_DUMP("node: " << node << ", x:" << x);
         };
         hpc::for_each(hpc::device_policy(), s.nodes, print_x);
 
         auto const nodes_to_v = s.v.cbegin();
         auto print_v = [=] HPC_DEVICE (lgr::node_index const node) {
           auto const v = nodes_to_v[node].load();
-          HPC_TRACE("node: " << node << ", v:\n" << v);
+          HPC_DUMP("node: " << node << ", v:" << v);
         };
         hpc::for_each(hpc::device_policy(), s.nodes, print_v);
 
         auto const nodes_to_u = s.u.cbegin();
         auto print_u = [=] HPC_DEVICE (lgr::node_index const node) {
           auto const u = nodes_to_u[node].load();
-          HPC_TRACE("node: " << node << ", u:\n" << u);
+          HPC_DUMP("node: " << node << ", u:" << u);
         };
         hpc::for_each(hpc::device_policy(), s.nodes, print_u);
 
         auto const points_to_xp = s.xp.cbegin();
         auto print_xp = [=] HPC_DEVICE (lgr::point_index const point) {
           auto const xp = points_to_xp[point].load();
-          HPC_TRACE("point: " << point << ", xp:\n" << xp);
+          HPC_DUMP("point: " << point << ", xp:" << xp);
         };
         hpc::for_each(hpc::device_policy(), s.points, print_xp);
 
         auto const points_to_F = s.F_total.cbegin();
         auto print_F = [=] HPC_DEVICE (lgr::point_index const point) {
           auto const F = points_to_F[point].load();
-          HPC_TRACE("point: " << point << ", F:\n" << F);
+          HPC_DUMP("point: " << point << ", F:\n" << F);
         };
         hpc::for_each(hpc::device_policy(), s.points, print_F);
 
@@ -618,7 +619,7 @@ void otm_run(std::string const& filename)
           auto const sigma = points_to_sigma[point].load();
           auto const K = points_to_K[point];
           auto const G = points_to_G[point];
-          HPC_TRACE("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
+          HPC_DUMP("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
         };
         hpc::for_each(hpc::device_policy(), s.points, print_sigma);
       }

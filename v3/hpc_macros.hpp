@@ -41,6 +41,17 @@
 #endif
 
 #ifdef __CUDACC__
+#define HPC_DUMP_IMPL(msg)                                            \
+  do {                                                                \
+  } while (0)
+#else
+#define HPC_DUMP_IMPL(msg)                                            \
+  do {                                                                \
+    std::cout << msg;                                                 \
+  } while (0)
+#endif
+
+#ifdef __CUDACC__
 #define HPC_ERROR_EXIT_IMPL(msg)                                      \
   do {                                                                \
   } while (0)
@@ -68,5 +79,6 @@
 #endif
 
 #define HPC_TRACE(...) HPC_TRACE_IMPL(__VA_ARGS__)
+#define HPC_DUMP(...) HPC_DUMP_IMPL(__VA_ARGS__)
 #define HPC_ERROR_EXIT(...) HPC_ERROR_EXIT_IMPL(__VA_ARGS__)
 #define HPC_TRAP_FPE(...) HPC_TRAP_FPE_IMPL(__VA_ARGS__)
