@@ -1,7 +1,9 @@
 #pragma once
 
 #include <hpc_array_vector.hpp>
+#include <hpc_matrix3x3.hpp>
 #include <hpc_range.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_print.hpp>
@@ -43,6 +45,29 @@ inline void write_vtk_points(std::ostream &stream,
   for (auto ref : x)
   {
     stream << hpc::vector3<double>(ref.load()) << "\n";
+  }
+}
+
+template<class Quantity, class Index>
+inline void write_vtk_full_tensors(std::ostream &stream, std::string const &name,
+    hpc::pinned_array_vector<hpc::matrix3x3<Quantity>, Index> const &tensor)
+{
+  stream << "SCALARS " << name << " double 9\n";
+  stream << "LOOKUP_TABLE default\n";
+  for (auto const ref : tensor)
+  {
+    stream << hpc::matrix3x3<double>(ref.load()) << "\n";
+  }
+}
+
+template<class Quantity, class Index>
+inline void write_vtk_sym_tensors(std::ostream &stream, char const *name,
+    hpc::pinned_array_vector<hpc::symmetric3x3<Quantity>, Index> const &tensor)
+{
+  stream << "TENSORS " << name << " double\n";
+  for (auto const ref : tensor)
+  {
+    stream << hpc::symmetric3x3<double>(ref.load()) << "\n";
   }
 }
 

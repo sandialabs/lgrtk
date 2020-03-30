@@ -8,21 +8,6 @@
 
 namespace lgr {
 
-struct otm_host_pinned_state {
-  hpc::counting_range<node_index> nodes{node_index(0)};
-  hpc::counting_range<point_index> points{point_index(0)};
-
-  hpc::pinned_array_vector<hpc::position<double>, node_index> x;
-  hpc::pinned_array_vector<hpc::position<double>, point_index> xp;
-
-  hpc::pinned_vector<node_index, point_node_index> point_nodes_to_nodes;
-  hpc::pinned_vector<point_index, node_point_index> node_points_to_points;
-  hpc::pinned_vector<point_node_index, node_point_index> node_points_to_point_nodes;
-
-  hpc::pinned_vector<hpc::volume<double>, point_index> V;
-  hpc::pinned_vector<hpc::density<double>, point_index> rho;
-};
-
 template<typename state_type>
 inline void resize_state_arrays(state_type &state, const node_index num_nodes,
     const point_index num_points)
@@ -37,5 +22,17 @@ inline void resize_state_arrays(state_type &state, const node_index num_nodes,
   state.V.resize(num_points);
   state.rho.resize(num_points);
 }
+
+struct otm_host_pinned_state {
+  hpc::pinned_array_vector<hpc::position<double>, node_index> x;
+  hpc::pinned_array_vector<hpc::position<double>, point_index> xp;
+
+  hpc::pinned_vector<node_index, point_node_index> point_nodes_to_nodes;
+  hpc::pinned_vector<point_index, node_point_index> node_points_to_points;
+  hpc::pinned_vector<point_node_index, node_point_index> node_points_to_point_nodes;
+
+  hpc::pinned_vector<hpc::volume<double>, point_index> V;
+  hpc::pinned_vector<hpc::density<double>, point_index> rho;
+};
 
 }

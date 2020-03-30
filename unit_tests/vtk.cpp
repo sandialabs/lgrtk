@@ -18,7 +18,16 @@ TEST(vtk, canPrintOtmStateToFile) {
   ASSERT_EQ(writer.host_s.points.size(), s.points.size());
 
   ASSERT_EQ(writer.host_s.x.size(), s.x.size());
+  ASSERT_EQ(writer.host_s.u.size(), s.u.size());
+  ASSERT_EQ(writer.host_s.v.size(), s.v.size());
+  ASSERT_EQ(writer.host_s.mass.size(), s.mass.size());
+
   ASSERT_EQ(writer.host_s.xp.size(), s.xp.size());
+  ASSERT_EQ(writer.host_s.rho.size(), s.V.size());
+  ASSERT_EQ(writer.host_s.sigma.size(), s.sigma_full.size());
+  ASSERT_EQ(writer.host_s.F_total.size(), s.F_total.size());
+  ASSERT_EQ(writer.host_s.G.size(), s.G.size());
+  ASSERT_EQ(writer.host_s.K.size(), s.K.size());
 
   writer.write(0);
 }
