@@ -1,30 +1,19 @@
-#include <sstream>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-
-#include <lgr_vtk.hpp>
-#include <lgr_print.hpp>
+#include <hpc_algorithm.hpp>
+#include <hpc_execution.hpp>
+#include <hpc_index.hpp>
+#include <hpc_range.hpp>
+#include <hpc_vector.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
+#include <lgr_vtk.hpp>
+#include <lgr_vtk_util.hpp>
+#include <cassert>
+#include <fstream>
+#include <iomanip>
+#include <sstream>
 
 namespace lgr {
-
-static void start_vtk_file(std::ostream& stream) {
-  stream << "# vtk DataFile Version 3.0\n";
-  stream << "vtk output\n";
-  stream << "ASCII\n";
-  stream << "DATASET UNSTRUCTURED_GRID\n";
-}
-
-template <class Quantity, class Index>
-static void write_vtk_points(std::ostream& stream,
-    hpc::pinned_array_vector<hpc::vector3<Quantity>, Index> const& x) {
-  stream << "POINTS " << x.size() << " double\n";
-  for (auto ref : x) {
-    stream << hpc::vector3<double>(ref.load()) << "\n";
-  }
-}
 
 static void write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s) {
   stream << "CELLS " << s.elements.size() << " " << s.elements.size() * (s.nodes_in_element.size() + 1) << "\n";
@@ -48,20 +37,6 @@ static void write_vtk_cells(std::ostream& stream, input const& in, captured_stat
   }
   for (element_index i(0); i < s.elements.size(); ++i) {
     stream << cell_type << "\n";
-  }
-}
-
-static void write_vtk_point_data(std::ostream& stream, captured_state const& s) {
-  stream << "POINT_DATA " << s.nodes.size() << "\n";
-}
-
-template <class Quantity, class Index>
-static void write_vtk_scalars(std::ostream& stream, std::string const& name,
-    hpc::pinned_vector<Quantity, Index> const& vec) {
-  stream << "SCALARS " << name << " double 1\n";
-  stream << "LOOKUP_TABLE default\n";
-  for (Quantity const val : vec) {
-    stream << double(val) << "\n";
   }
 }
 
@@ -104,15 +79,6 @@ static void write_vtk_vectors(std::ostream& stream, char const* name,
       auto const p = elements_to_points[e][qp];
       stream << hpc::vector3<double>(vec.begin()[p].load()) << "\n";
     }
-  }
-}
-
-template <class Quantity, class Index>
-static void write_vtk_vectors(std::ostream& stream, char const* name,
-    hpc::pinned_array_vector<hpc::vector3<Quantity>, Index> const& vec) {
-  stream << "VECTORS " << name << " double\n";
-  for (auto const ref : vec) {
-    stream << hpc::vector3<double>(ref.load()) << "\n";
   }
 }
 
@@ -195,16 +161,13 @@ void file_writer::write(
     input const& in,
     int const file_output_index
     ) {
-  std::stringstream filename_stream;
-  filename_stream << prefix << "_" << file_output_index << ".vtk";
-  auto const filename = filename_stream.str();
-  std::ofstream stream(filename.c_str());
-  stream << std::scientific << std::setprecision(17);
-  start_vtk_file(stream);
+  auto stream = make_vtk_output_stream(prefix, file_output_index);
+
+  start_vtk_unstructured_grid_file(stream);
   write_vtk_points(stream, captured.x);
   write_vtk_cells(stream, in, captured);
   //POINTS
-  write_vtk_point_data(stream, captured);
+  write_vtk_point_data(stream, captured.nodes);
   assert(captured.x.size() == captured.nodes.size());
   write_vtk_vectors(stream, "position", captured.x);
   assert(captured.v.size() == captured.nodes.size());

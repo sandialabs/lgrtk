@@ -18,6 +18,7 @@
 #include <otm_tet2meshless.hpp>
 #include <otm_util.hpp>
 #include <j2/hardening.hpp>
+#include <otm_vtk.hpp>
 
 namespace lgr {
 
@@ -589,6 +590,7 @@ void otm_run(std::string const& filename)
   input in(num_materials, num_boundaries);
   state s;
   otm_initialize(in, s, filename);
+  lgr::otm_file_writer output_file(in.name);
 #if 0
   {
     for (auto node = 0; node < s.nodal_materials.size(); ++node) {
@@ -658,8 +660,8 @@ void otm_run(std::string const& filename)
         hpc::for_each(hpc::device_policy(), s.points, print_sigma);
       }
 #endif
-      //output_file.capture(in, s);
-      //output_file.write(in, file_output_index);
+      output_file.capture(s);
+      output_file.write(file_output_index);
       ++file_output_index;
       ++file_period_index;
       s.next_file_output_time = double(file_period_index) * file_output_period;
