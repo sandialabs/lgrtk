@@ -1,3 +1,4 @@
+#include <bitset>
 #include <cassert>
 #include <iomanip>
 #include <iostream>
@@ -6,18 +7,27 @@
 #include <hpc_execution.hpp>
 #include <hpc_math.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_domain.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_exodus.hpp>
-#include <otm_exodus.hpp>
 #include <lgr_input.hpp>
+#include <lgr_state.hpp>
+#include <otm_exodus.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
-#include <lgr_state.hpp>
 #include <otm_tet2meshless.hpp>
 #include <otm_util.hpp>
 #include <j2/hardening.hpp>
 
 namespace lgr {
+
+void otm_mark_boundary_domains(input const& in, state& s)
+{
+  for (auto const boundary : in.boundaries) {
+    auto const& domain = in.domains[boundary];
+    domain->mark(s.x, boundary, &s.nodal_materials);
+  }
+}
 
 void otm_initialize_displacement(state& s)
 {
@@ -327,6 +337,11 @@ void otm_update_nodal_momentum(state& s) {
 }
 
 void otm_update_nodal_position(state& s) {
+  // TODO: Generalize application of DBCs
+  constexpr material_set x_min(1);
+  constexpr material_set y_min(3);
+  constexpr material_set z_min(5);
+  constexpr material_set z_max(6);
   auto const dt = s.dt;
   auto const dt_old = s.dt_old;
   auto const dt_avg = 0.5 * (dt + dt_old);
@@ -336,34 +351,23 @@ void otm_update_nodal_position(state& s) {
   auto const nodes_to_x = s.x.begin();
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
+  auto const nodes_to_domain = s.nodal_materials.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const m = nodes_to_mass[node];
     auto const lm = nodes_to_lm[node].load();
     auto const f = nodes_to_f[node].load();
-    auto const disp = (dt / m) * (lm + dt_avg * f);
+    auto disp = (dt / m) * (lm + dt_avg * f);
+    auto velo = disp / dt;
+    auto const domain_set = nodes_to_domain[node];
+    if (domain_set.contains(x_min)) { disp(0) = 0.0; velo(0) = 0.0;}
+    if (domain_set.contains(y_min)) { disp(1) = 0.0; velo(1) = 0.0;}
+    if (domain_set.contains(z_min)) { disp(2) = 0.0; velo(2) = 0.0;}
+    if (domain_set.contains(z_max)) { disp(2) = 10.0 * dt; velo(2) = 10.0;}
     auto x_old = nodes_to_x[node].load();
     nodes_to_u[node] = disp;
     auto x_new = x_old + disp;
     nodes_to_x[node] = x_new;
-    nodes_to_v[node] = disp / dt;
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
-  otm_apply_dirichlet_bcs(s);
-}
-
-void otm_apply_dirichlet_bcs(state& s) {
-  auto const eps = hpc::length<double>(0.0001);
-  auto const vtop = hpc::speed<double>(10.0);
-  auto const nodes_to_x = s.x.cbegin();
-  auto const nodes_to_v = s.v.begin();
-  auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto const x = nodes_to_x[node].load();
-    auto v = nodes_to_v[node].load();
-    if (std::abs(x(0)) <= eps) v(0) = 0.0;
-    if (std::abs(x(1)) <= eps) v(1) = 0.0;
-    if (std::abs(x(2)) <= eps) v(2) = 0.0;
-    if (std::abs(x(2) - 1.0) <= eps) v(2) = vtop;
-    nodes_to_v[node] = v;
+    nodes_to_v[node] = velo;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -465,6 +469,7 @@ void otm_initialize_state(input const& in, state& s) {
     s.quality.resize(num_elements);
     s.h_adapt.resize(num_nodes);
   }
+  s.nodal_materials.resize(num_nodes);
 }
 
 void otm_initialize(input& in, state& s, std::string const& filename)
@@ -495,6 +500,12 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   auto const m = hpc::adimensional<double>(2.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
   constexpr material_index body(0);
+  constexpr material_index x_min(1);
+  constexpr material_index x_max(2);
+  constexpr material_index y_min(3);
+  constexpr material_index y_max(4);
+  constexpr material_index z_min(5);
+  constexpr material_index z_max(6);
   in.materials = hpc::counting_range<material_index>(1);
   in.enable_variational_J2[body] = true;
   in.rho0[body] = rho;
@@ -512,6 +523,17 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   s.dt_old = hpc::time<double>(1.0e-06);
   s.time = hpc::time<double>(0.0);
   otm_initialize_state(in, s);
+  auto const tol = hpc::length<double>(1.0e-02);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, tol);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, 1.0}, tol);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, 1.0}, tol);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
   auto const I = hpc::deformation_gradient<double>::identity();
   auto const ep0 = hpc::strain<double>(0.0);
   auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
@@ -522,9 +544,13 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   hpc::fill(hpc::device_policy(), s.ep, ep0);
   hpc::fill(hpc::device_policy(), s.v, v0);
   hpc::fill(hpc::device_policy(), s.u, u0);
+  otm_mark_boundary_domains(in, s);
   otm_initialize_velocity(s);
   otm_initialize_point_volume(s);
   otm_update_shape_functions(s);
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
+  }
 }
 
 void otm_update_time_step(state& s)
@@ -558,11 +584,19 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_run(std::string const& filename)
 {
-  material_index mat(1);
-  material_index bnd(1);
-  input in(mat, bnd);
+  material_index num_materials(1);
+  material_index num_boundaries(6);
+  input in(num_materials, num_boundaries);
   state s;
   otm_initialize(in, s, filename);
+#if 0
+  {
+    for (auto node = 0; node < s.nodal_materials.size(); ++node) {
+      std::bitset<64> bits(std::uint64_t(s.nodal_materials[node]));
+      HPC_DUMP("NODE : " << node << ", MATERIAL SET : " << bits << '\n');
+    }
+  }
+#endif
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
   auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
