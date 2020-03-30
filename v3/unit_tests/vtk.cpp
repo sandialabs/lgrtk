@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <lgr_input.hpp>
 #include <lgr_state.hpp>
 #include <otm_meshless.hpp>
 #include <otm_vtk.hpp>
@@ -6,9 +7,12 @@
 
 TEST(vtk, canPrintOtmStateToFile) {
   lgr::state s;
+  using MI = lgr::material_index;
+  lgr::input in(MI(0), MI(0));
 
   tetrahedron_single_point(s);
   lgr::otm_update_nodal_mass(s);
+  lgr::otm_initialize_state(in, s);
 
   lgr::otm_file_writer writer("tetrahedron_single_point");
 
