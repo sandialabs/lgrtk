@@ -4,16 +4,19 @@
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
+#include <hpc_functional.hpp>
 #include <hpc_macros.hpp>
+#include <hpc_matrix3x3.hpp>
 #include <hpc_numeric.hpp>
 #include <hpc_range.hpp>
+#include <hpc_transform_reduce.hpp>
 #include <hpc_vector.hpp>
-#include <hpc_vector3.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <otm_meshless.hpp>
 #include <lgr_state.hpp>
-#include <otm_util.hpp>
+#include <otm_meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
+#include <hpc_math.hpp>
 
 namespace lgr_unit {
 
