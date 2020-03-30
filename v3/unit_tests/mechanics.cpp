@@ -121,6 +121,7 @@ TEST(mechanics, hex_translation)
   s.v.resize(num_nodes);
   s.lm.resize(num_nodes);
   s.f.resize(num_nodes);
+  s.nodal_materials.resize(num_nodes);
 
   s.b.resize(num_points);
 
