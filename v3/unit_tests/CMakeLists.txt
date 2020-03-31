@@ -7,6 +7,7 @@ if (LGR_ENABLE_UNIT_TESTS)
     maxent.cpp
     mechanics.cpp
     materials.cpp
+    vtk.cpp
     ut_main.cpp)
 
   if (LGR_ENABLE_EXODUS)

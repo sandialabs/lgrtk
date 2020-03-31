@@ -29,7 +29,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE int popcount(unsigned long long x) noexcept {
 }
 
 class material_set {
-  std::uint64_t bits;
+  std::uint64_t bits{0};
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr material_set(std::uint64_t const bits_in) noexcept : bits(bits_in) {}
 public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr material_set(material_index const material) noexcept : bits(std::uint64_t(1) << hpc::weaken(material)) {}

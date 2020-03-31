@@ -1,45 +1,21 @@
 #pragma once
 
+#include <hpc_algorithm.hpp>
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
+#include <hpc_execution.hpp>
+#include <hpc_macros.hpp>
+#include <hpc_matrix3x3.hpp>
 #include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
-#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
+#include <otm_host_pinned_state.hpp>
 #include <otm_meshless.hpp>
-
-namespace lgr {
-
-struct temp_host_pinned_state {
-  hpc::pinned_array_vector<hpc::position<double>, node_index> x;
-  hpc::pinned_array_vector<hpc::position<double>, point_index> xp;
-
-  hpc::pinned_vector<node_index, point_node_index> point_nodes_to_nodes;
-  hpc::pinned_vector<point_index, node_point_index> node_points_to_points;
-  hpc::pinned_vector<point_node_index, node_point_index> node_points_to_point_nodes;
-
-  hpc::pinned_vector<hpc::volume<double>, point_index> V;
-  hpc::pinned_vector<hpc::density<double>, point_index> rho;
-};
-
-template<typename state_type>
-inline void resize_state_arrays(state_type &state, const node_index num_nodes,
-    const point_index num_points)
-{
-  state.x.resize(num_nodes);
-  state.xp.resize(num_points);
-
-  state.point_nodes_to_nodes.resize(num_points * num_nodes);
-  state.node_points_to_points.resize(num_nodes * num_points);
-  state.node_points_to_point_nodes.resize(num_nodes * num_points);
-
-  state.V.resize(num_points);
-  state.rho.resize(num_points);
-}
-
-}
+#include <hpc_math.hpp>
 
 inline void
 tetrahedron_single_point(lgr::state& s)
@@ -49,7 +25,7 @@ tetrahedron_single_point(lgr::state& s)
   auto const num_nodes = NI(4);
   auto const num_points = PI(1);
 
-  lgr::temp_host_pinned_state host_s;
+  lgr::otm_host_pinned_state host_s;
 
   lgr::resize_state_arrays(s, num_nodes, num_points);
   lgr::resize_state_arrays(host_s, num_nodes, num_points);
@@ -102,7 +78,7 @@ tetrahedron_single_point(lgr::state& s)
   node_points_to_point_nodes[NPI(3)] = PNI(3);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
-  lgr::otm_initialize_grad_val_N(s);
+  lgr::otm_update_shape_functions(s);
 
   s.mass.resize(num_nodes);
 
@@ -118,7 +94,7 @@ two_tetrahedra_two_points(lgr::state& s)
   auto const num_nodes = NI(5);
   auto const num_points = PI(2);
 
-  lgr::temp_host_pinned_state host_s;
+  lgr::otm_host_pinned_state host_s;
 
   lgr::resize_state_arrays(s, num_nodes, num_points);
   lgr::resize_state_arrays(host_s, num_nodes, num_points);
@@ -192,7 +168,7 @@ two_tetrahedra_two_points(lgr::state& s)
   node_points_to_point_nodes[NPI(9)] = PNI(4);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
-  lgr::otm_initialize_grad_val_N(s);
+  lgr::otm_update_shape_functions(s);
 
   s.mass.resize(num_nodes);
 
@@ -225,7 +201,7 @@ hexahedron_eight_points(lgr::state& s)
   auto const num_nodes = NI(8);
   auto const num_points = PI(8);
 
-  lgr::temp_host_pinned_state host_s;
+  lgr::otm_host_pinned_state host_s;
 
   lgr::resize_state_arrays(s, num_nodes, num_points);
   lgr::resize_state_arrays(host_s, num_nodes, num_points);
@@ -290,7 +266,7 @@ hexahedron_eight_points(lgr::state& s)
   }
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
-  lgr::otm_initialize_grad_val_N(s);
+  lgr::otm_update_shape_functions(s);
 
   s.mass.resize(num_nodes);
 
