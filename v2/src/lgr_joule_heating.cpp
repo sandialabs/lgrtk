@@ -41,8 +41,15 @@ struct JouleHeating : public Model<Elem> {
   double z_thickness;
   double z_total;
   bool diffuse_conductivity;
+  bool split_diffusion;
+  bool local_split;;
+  bool diffusion_bounds_check;;
+  bool explicit_diffusion = false;
   double diffusion_length;
+  double theta;
   int diffusion_steps;
+  double relative_diffusion_tolerance;
+  double absolute_diffusion_tolerance;
   bool compute_efield;
   JouleHeating(Simulation& sim_in, Omega_h::InputMap& pl)
       : Model<Elem>(sim_in, pl) {
@@ -83,6 +90,22 @@ struct JouleHeating : public Model<Elem> {
        diffusion_length = pl.get<double>("diffusion length");
        // Diffusion sub-cycles
        diffusion_steps = pl.get<int>("diffusion steps","1");
+       // solver tolerances
+       relative_diffusion_tolerance = pl.get<double>("relative diffusion tolerance", "1.0e-24");
+       absolute_diffusion_tolerance = pl.get<double>("absolute diffusion tolerance", "1.0e-10");
+       // solver control
+       split_diffusion = pl.get<bool>("split diffusion","false");
+       diffusion_bounds_check = pl.get<bool>("diffusion bounds check","false");
+       if (split_diffusion) {
+          local_split = pl.get<bool>("local split", "false");
+       } else {
+          explicit_diffusion = pl.get<bool>("explicit diffusion","false");
+          if (explicit_diffusion) {
+             theta = 0.0;
+          } else {
+             theta = pl.get<double>("theta","0.5");
+          }
+       }
     }
     // Electric field
     if (compute_efield) {
@@ -234,82 +257,159 @@ struct JouleHeating : public Model<Elem> {
       };
       parallel_for(sim.disc.mesh.nverts(), std::move(v_functor));
   }
+  void check_for_oob_conductivity() {
+    auto const points_to_conductivity = this->points_get(this->conductivity);
+    auto const lower_bound = Omega_h::get_min(points_to_conductivity.data);
+    auto const upper_bound = Omega_h::get_max(points_to_conductivity.data);
+    auto const nodes_to_nodal_conductivity = sim.get(this->nodal_conductivity);
+    auto const min_value = Omega_h::get_min(nodes_to_nodal_conductivity);
+    auto const max_value = Omega_h::get_max(nodes_to_nodal_conductivity);
+    OMEGA_H_CHECK(min_value >= lower_bound);
+    OMEGA_H_CHECK(max_value <= upper_bound);
+  }
   void diffused_conductivity_driver() {
       auto const tau_final = 1.0;
       auto const lscale = this->diffusion_length;
-      auto const dnumber = lscale*lscale/(4.0*tau_final);
+      auto const dnumber = lscale*lscale/tau_final;
       auto const nsteps = this->diffusion_steps;
       auto const dtau = tau_final/nsteps;
-      for (int i=0;i<nsteps;++i) {
-        solve_diffused_conductivity(i, nsteps, dtau, dnumber);
+      for (int i=1;i<=nsteps;++i) {
+        solve_diffused_conductivity(i, dtau, dnumber);
       }
+      if (diffusion_bounds_check) check_for_oob_conductivity();
   }
-  void solve_diffused_conductivity(int const istep, int const nsteps, double const dtau, double const dnumber) {
+  Omega_h::Write<double> diffusion_number(const double dnumber) {
+    Omega_h::Write<double> diffno(sim.disc.mesh.nelems(), dnumber);
+    return diffno;
+  }
+  Omega_h::Write<double> diffusion_number_split(int const istep, double const dtau, double const dnumber) {
+    auto const elems_to_len = sim.get(sim.time_step_length);
+    Omega_h::Write<double> diffno;
+    if (!local_split) {
+       auto const lengths = Omega_h::get_max(elems_to_len);
+       auto const dtaus = lengths*lengths/dnumber;
+       auto const dnumbers = (dtau >= dtaus) ? dnumber : dnumber * dtaus/dtau;
+       auto const slope = (dnumber - dnumbers)/dtaus;
+       auto const dnumber_split = dnumbers + slope*(istep-1)*dtau;
+       diffno = diffusion_number(dnumber_split);
+    } else {
+       diffno = Omega_h::Write<double>(sim.disc.mesh.nelems());
+       auto functor = OMEGA_H_LAMBDA(int const elem) {
+           auto const lengths = elems_to_len[elem];
+           auto const dtaus = lengths*lengths/dnumber;
+           auto const dnumbers = (dtau >= dtaus) ? dnumber : dnumber * dtaus/dtau;
+           auto const slope = (dnumber - dnumbers)/dtaus;
+           auto const dnumber_split = dnumbers + slope*(istep-1)*dtau;
+           diffno[elem] = dnumber_split;
+       };
+       parallel_for(sim.disc.mesh.nelems(), std::move(functor));
+    }
+    return diffno;
+  }
+  void solve_diffused_conductivity(int const istep, double const dtau, double const dnumber) {
     OMEGA_H_TIME_FUNCTION;
     // Compute nodal conductivity
-    if (istep == 0) guess_nodal_conductivity();
+    if (istep == 1) guess_nodal_conductivity();
     auto const nodes_to_nodal_conductivity = sim.getset(this->nodal_conductivity);
 
     // Setup diffusion number for each element
-    auto const elems_to_visc_len = sim.get(sim.viscosity_length);
-    auto const h_min = Omega_h::get_min(elems_to_visc_len);
-    auto const dtaus = h_min*h_min/dnumber;
-    auto const dnumbers = (dtau >= dtaus) ? dnumber : dnumber * dtaus/dtau;
-    auto const slope = (dnumber - dnumbers)/nsteps;
-    auto const dnumbers_use = dnumbers + slope*(istep+1);
-    Omega_h::Write<double> diffnos(sim.disc.mesh.nelems(), dnumbers_use);
-    Omega_h::Write<double> diffno(sim.disc.mesh.nelems(), dnumber);
+    Omega_h::Write<double> diffno = diffusion_number(dnumber);
 
-    // Compute matrices for split diffusion system:
-    //   
-    //   A x = r, 
-    //
-    //   * A   : I + dt * M^-1 * S^*
-    //   * r   : B * x_0
-    //   * B   : I + dt * M^-1 * S^* - dt * M^-1 * S
-    //   * S   : Stiffness matrix using D
-    //   * S^* : Stiffness matrix using D^*
-    //   * D   : Actual system diffusion number by element
-    //   * D^* : Modified diffusion number for the grid
-    //
-    //   * Note the required implementation order of B then A,
-    //     so that A initially contains S^* and B iniitially 
-    //     contains S for minimal storage
+    // Begin setup of A matrix (see formulations below)
     Global_FEM<Elem> gfem(sim);
-    auto const A = gfem.stiffness(diffnos);
-    auto const B = gfem.stiffness(diffno);
     auto const inv_mass = gfem.inv_lumped_mass();
     auto const verts_to_edges = sim.disc.mesh.ask_up(0, 1);
-    auto row_functor = OMEGA_H_LAMBDA(int const row) {
-      auto const row_begin = A.rows_to_columns.a2ab[row];
-      auto row_col = row_begin;
-      auto const factor = dtau*inv_mass[row];
-      // Diagonal terms
-      B.entries[row_col] = 1.0 + factor*(A.entries[row_col] - B.entries[row_col]);
-      A.entries[row_col] = 1.0 + factor*A.entries[row_col];
-      // Off diagonal terms
-      row_col++;
-      auto const edge_begin = verts_to_edges.a2ab[row];
-      auto const edge_end = verts_to_edges.a2ab[row + 1];
-      for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
-        B.entries[row_col] = factor*(A.entries[row_col] - B.entries[row_col]);
-        A.entries[row_col] = factor*A.entries[row_col];
-        row_col++;
-      }
-    };
-    parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
+    if (!split_diffusion) {
+       matrix = gfem.stiffness(diffno);
+    } else {
+      Omega_h::Write<double> diffnos = diffusion_number_split(istep, dtau, dnumber);
+      matrix = gfem.stiffness(diffnos);
+    }
+    auto const A = matrix;
+    Omega_h::Write<double> r(sim.disc.mesh.nverts());
 
-    rhs = Omega_h::Write<double>(sim.disc.mesh.nverts(), 0.0);
-    matvec(B, nodes_to_nodal_conductivity, rhs);
+    if (!split_diffusion) {
+      // Compute matrices for normal diffusion system:
+      //   
+      //   A x = r, 
+      //
+      //   * A   : I + dt * M^-1 * S
+      //   * r   : x_0
+      //   * S   : Stiffness matrix using D
+      //   * D   : Actual system diffusion number by element
+      auto const theta_factor = this->theta;
+      auto const B = gfem.stiffness(diffno);
+      auto row_functor = OMEGA_H_LAMBDA(int const row) {
+        auto const row_begin = A.rows_to_columns.a2ab[row];
+        auto row_col = row_begin;
+        auto const factor = dtau*inv_mass[row];
+        auto const afactor = theta_factor*factor;
+        auto const bfactor = (1.0-theta_factor)*factor;
+        // Diagonal terms
+        A.entries[row_col] = 1.0 + afactor*A.entries[row_col];
+        B.entries[row_col] = 1.0 - bfactor*B.entries[row_col];
+        // Off diagonal terms
+        row_col++;
+        auto const edge_begin = verts_to_edges.a2ab[row];
+        auto const edge_end = verts_to_edges.a2ab[row + 1];
+        for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
+          A.entries[row_col] =  afactor*A.entries[row_col];
+          B.entries[row_col] = -bfactor*B.entries[row_col];
+          row_col++;
+        }
+      };
+      parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
+      matvec(B, nodes_to_nodal_conductivity, r);
+    } else {
+      // Compute matrices for split diffusion system:
+      //   
+      //   A x = r, 
+      //
+      //   * A   : I + dt * M^-1 * S^*
+      //   * r   : B * x_0
+      //   * B   : I + dt * M^-1 * S^* - dt * M^-1 * S
+      //   * S   : Stiffness matrix using D
+      //   * S^* : Stiffness matrix using D^*
+      //   * D   : Actual system diffusion number by element
+      //   * D^* : Modified diffusion number for the grid
+      //
+      //   * Note the required implementation order of B then A,
+      //     so that A initially contains S^* and B iniitially 
+      //     contains S for minimal storage
+      auto const B = gfem.stiffness(diffno);
+      auto row_functor = OMEGA_H_LAMBDA(int const row) {
+        auto const row_begin = A.rows_to_columns.a2ab[row];
+        auto row_col = row_begin;
+        auto const factor = dtau*inv_mass[row];
+        // Diagonal terms
+        B.entries[row_col] = 1.0 + factor*(A.entries[row_col] - B.entries[row_col]);
+        A.entries[row_col] = 1.0 + factor*A.entries[row_col];
+        // Off diagonal terms
+        row_col++;
+        auto const edge_begin = verts_to_edges.a2ab[row];
+        auto const edge_end = verts_to_edges.a2ab[row + 1];
+        for (auto vert_edge = edge_begin; vert_edge < edge_end; ++vert_edge) {
+          B.entries[row_col] = factor*(A.entries[row_col] - B.entries[row_col]);
+          A.entries[row_col] = factor*A.entries[row_col];
+          row_col++;
+        }
+      };
+      parallel_for(sim.disc.mesh.nverts(), std::move(row_functor));
+      matvec(B, nodes_to_nodal_conductivity, r);
+    }
 
     // Solve system:
-    double relative_out, absolute_out;
-    auto const cg_it = (sim.step == 0) ? sim.disc.mesh.nverts() : cg_iterations;
-    auto const niter = diagonal_preconditioned_conjugate_gradient(
-        A, rhs, nodes_to_nodal_conductivity, 
-        relative_tolerance, absolute_tolerance, cg_it,
-        relative_out, absolute_out);
-    OMEGA_H_CHECK(niter <= nodes_to_nodal_conductivity.size());
+    if (explicit_diffusion) {
+      Omega_h::copy_into(read(r), nodes_to_nodal_conductivity); 
+    } else {
+      double relative_out, absolute_out;
+      auto const cg_it = (sim.step == 0) ? sim.disc.mesh.nverts() : cg_iterations;
+      auto const niter = diagonal_preconditioned_conjugate_gradient(
+          A, r, nodes_to_nodal_conductivity, 
+          relative_diffusion_tolerance, absolute_diffusion_tolerance, cg_it,
+          relative_out, absolute_out);
+      OMEGA_H_CHECK(niter <= nodes_to_nodal_conductivity.size());
+    }
 
     // Convert diffused nodal conductivity to diffused element conductivity
     // through averaging the nodes of each element
