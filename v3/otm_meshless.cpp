@@ -358,12 +358,12 @@ void otm_update_nodal_position(state& s) {
     auto const lm = nodes_to_lm[node].load();
     auto const f = nodes_to_f[node].load();
     auto disp = (dt / m) * (lm + dt_avg * f);
-    auto velo = disp / dt;
     auto const domain_set = nodes_to_domain[node];
-    if (domain_set.contains(x_min)) { disp(0) = 0.0; velo(0) = 0.0;}
-    if (domain_set.contains(y_min)) { disp(1) = 0.0; velo(1) = 0.0;}
-    if (domain_set.contains(z_min)) { disp(2) = 0.0; velo(2) = 0.0;}
-    if (domain_set.contains(z_max)) { disp(2) = 10.0 * dt; velo(2) = 10.0;}
+    if (domain_set.contains(x_min)) { disp(0) = 0.0;}
+    if (domain_set.contains(y_min)) { disp(1) = 0.0;}
+    if (domain_set.contains(z_min)) { disp(2) = 0.0;}
+    if (domain_set.contains(z_max)) { disp(2) = 10.0 * dt;}
+    auto const velo = disp / dt;
     auto x_old = nodes_to_x[node].load();
     nodes_to_u[node] = disp;
     auto x_new = x_old + disp;
