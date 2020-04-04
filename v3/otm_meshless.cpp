@@ -477,8 +477,8 @@ void otm_initialize_state(input const& in, state& s) {
     s.h_adapt.resize(num_nodes);
   }
   s.nodal_materials.resize(num_nodes);
-  s.prescribed_v.resize(num_boundaries);
-  s.prescribed_dof.resize(num_boundaries);
+  s.prescribed_v.resize(num_boundaries + num_materials);
+  s.prescribed_dof.resize(num_boundaries + num_materials);
 }
 
 void otm_initialize(input& in, state& s, std::string const& filename)
