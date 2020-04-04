@@ -566,6 +566,7 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   for (auto material : in.materials) {
     otm_update_material_state(in, s, material);
   }
+  otm_update_nodal_mass(s);
 }
 
 void otm_update_time_step(state& s)
