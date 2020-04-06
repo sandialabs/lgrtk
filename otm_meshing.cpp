@@ -4,6 +4,7 @@
 #include <hpc_macros.hpp>
 #include <hpc_numeric.hpp>
 #include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <otm_meshing_sort.hpp>
