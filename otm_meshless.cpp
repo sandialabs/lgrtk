@@ -12,7 +12,7 @@
 #include <lgr_exodus.hpp>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
-#include <otm_exodus.hpp>
+#include <otm_tetrahedron_util.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
 #include <otm_tet2meshless.hpp>

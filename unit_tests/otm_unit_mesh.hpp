@@ -5,17 +5,25 @@
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
-#include <hpc_matrix3x3.hpp>
 #include <hpc_range.hpp>
 #include <hpc_range_sum.hpp>
-#include <hpc_symmetric3x3.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_domain.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
+#include <lgr_meshing.hpp>
 #include <lgr_state.hpp>
 #include <otm_host_pinned_state.hpp>
 #include <otm_meshless.hpp>
+#include <otm_tet2meshless.hpp>
+#include <otm_tetrahedron_util.hpp>
+#include <algorithm>
 #include <hpc_math.hpp>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 inline void
 tetrahedron_single_point(lgr::state& s)
@@ -306,4 +314,53 @@ inline void compute_material_points_as_element_centroids(
     x_points[point] = avg_coord;
   };
   hpc::for_each(hpc::device_policy(), points, point_func);
+}
+
+HPC_NOINLINE inline void elastic_wave_four_points_per_tetrahedron(lgr::state& s)
+{
+  using MI = lgr::material_index;
+  constexpr MI x_boundary(1);
+  constexpr MI y_boundary(2);
+  constexpr MI z_boundary(3);
+  lgr::input in(MI(1), MI(3));
+  in.name = "elastic_wave_3d";
+  in.element = lgr::TETRAHEDRON;
+  in.elements_along_x = 1000;
+  in.elements_along_y = 1;
+  in.y_domain_size = 1.0e-3;
+  in.elements_along_z = 1;
+  in.z_domain_size = 1.0e-3;
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  static constexpr double eps = 1.0e-10;
+  auto x_domain = std::make_unique<lgr::union_domain>();
+  x_domain->add(lgr::epsilon_around_plane_domain( { x_axis, 0.0 }, eps));
+  x_domain->add(lgr::epsilon_around_plane_domain( { x_axis, in.x_domain_size }, eps));
+  in.domains[x_boundary] = std::move(x_domain);
+  in.zero_acceleration_conditions.push_back( { x_boundary, x_axis });
+  auto y_domain = std::make_unique<lgr::union_domain>();
+  y_domain->add(lgr::epsilon_around_plane_domain( { y_axis, 0.0 }, eps));
+  y_domain->add(lgr::epsilon_around_plane_domain( { y_axis, in.y_domain_size }, eps));
+  in.domains[y_boundary] = std::move(y_domain);
+  in.zero_acceleration_conditions.push_back( { y_boundary, y_axis });
+  auto z_domain = std::make_unique<lgr::union_domain>();
+  z_domain->add(lgr::epsilon_around_plane_domain( { z_axis, 0.0 }, eps));
+  z_domain->add(lgr::epsilon_around_plane_domain( { z_axis, in.z_domain_size }, eps));
+  in.domains[z_boundary] = std::move(z_domain);
+  in.zero_acceleration_conditions.push_back( { z_boundary, z_axis });
+
+  build_mesh(in, s);
+  if (in.x_transform)
+    in.x_transform(&s.x);
+  resize_state(in, s);
+
+  auto const points_in_element = 4;
+  using PEI = lgr::point_in_element_index;
+  s.points_in_element.resize(PEI(points_in_element));
+  in.otm_material_points_to_add_per_element = points_in_element;
+  lgr::tet_nodes_to_points point_interpolator(points_in_element);
+  in.xp_transform = std::ref(point_interpolator);
+
+  convert_tet_mesh_to_meshless(in, s);
 }
