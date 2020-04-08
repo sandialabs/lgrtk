@@ -1,19 +1,26 @@
 #include <gtest/gtest.h>
-#include <hpc_algorithm.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_index.hpp>
-#include <hpc_macros.hpp>
+#include <hpc_range.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
+#include <hpc_vector3.hpp>
 #include <lgr_exodus.hpp>
 #include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 #include <otm_arborx_search_impl.hpp>
+#include <otm_distance.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>
+#include <otm_search_util.hpp>
 #include <otm_tet2meshless.hpp>
-#include <unit_tests/unit_device_util.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
+#include <unit_tests/unit_device_util.hpp>
+#include <unit_tests/unit_otm_distance_util.hpp>
+#include <functional>
 
 using namespace lgr;
 
@@ -348,4 +355,58 @@ TEST_F(arborx_search, invertConnectivityForTwoTets)
   invert_otm_point_node_relations(s);
 
   lgr_unit::check_inverse_connectivity(s, 2);
+}
+
+using distances_search = arborx_search;
+
+TEST_F(distances_search, can_compute_nearest_and_farthest_node_to_node_from_search)
+{
+  state s;
+  tetrahedron_single_point(s);
+
+  search_util::node_neighbors n;
+  search::do_otm_node_nearest_node_search(s, n, 10);
+
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+
+  check_single_tetrahedron_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+}
+
+TEST_F(distances_search, can_compute_nearest_and_farthest_point_to_point_from_search)
+{
+  state s;
+  two_tetrahedra_two_points(s);
+
+  search_util::point_neighbors n;
+  search::do_otm_point_nearest_point_search(s, n, 10);
+
+  hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
+
+  check_two_tetrahedron_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
+}
+
+TEST_F(distances_search, performance_test_node_to_node_distances_from_search)
+{
+  state s;
+  elastic_wave_four_points_per_tetrahedron(s);
+
+  search_util::node_neighbors n;
+  search::do_otm_node_nearest_node_search(s, n, 10);
+
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+}
+
+TEST_F(distances_search, performance_test_point_to_point_distances_from_search)
+{
+  state s;
+  elastic_wave_four_points_per_tetrahedron(s);
+
+  search_util::point_neighbors n;
+  search::do_otm_point_nearest_point_search(s, n, 10);
+
+  hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 }

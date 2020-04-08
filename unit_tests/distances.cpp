@@ -1,39 +1,23 @@
-#include <gtest/gtest.h>
-#include <hpc_algorithm.hpp>
-#include <hpc_array.hpp>
-#include <hpc_array_vector.hpp>
 #include <hpc_atomic.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
+#include <hpc_index.hpp>
 #include <hpc_macros.hpp>
-#include <hpc_numeric.hpp>
+#include <hpc_range.hpp>
 #include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
-#include <hpc_vector3.hpp>
-#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
-#include <lgr_meshing.hpp>
 #include <lgr_state.hpp>
-#include <otm_exodus.hpp>
-#include <otm_tet2meshless.hpp>
-#include <unit_tests/unit_device_util.hpp>
+#include <otm_distance.hpp>
+#include <otm_search_util.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
+#include <unit_tests/unit_device_util.hpp>
+
+#include <gtest/gtest.h>
+#include <unit_tests/unit_otm_distance_util.hpp>
 
 using namespace lgr;
-
-template<typename Index>
-struct connected_neighbors
-{
-  hpc::device_range_sum<Index> entities_to_neighbor_ordinals;
-  hpc::device_vector<Index, Index> entities_to_neighbors;
-
-  void resize(const hpc::device_vector<int, Index>& counts)
-  {
-    auto const total_neighbors = hpc::reduce(hpc::device_policy(), counts, 0);
-    entities_to_neighbor_ordinals.assign_sizes(counts);
-    entities_to_neighbors.resize(total_neighbors);
-  }
-};
+using namespace lgr::search_util;
 
 namespace
 {
@@ -44,7 +28,7 @@ void compute_connected_neighbors(const hpc::counting_range<Index1>& indices1,
     const hpc::device_vector<Index2, Idx1to2>& index2_ordinal_to_index2,
     const hpc::device_range_sum<Idx2to1, Index2>& index2_to_index1_ordinal,
     const hpc::device_vector<Index1, Idx2to1>& index1_ordinal_to_index1,
-    connected_neighbors<Index1>& n)
+    nearest_neighbors<Index1>& n)
 {
   auto idx1_to_idx2ord = index1_to_index2_ordinal.cbegin();
   auto idx2ord_to_idx2 = index2_ordinal_to_index2.cbegin();
@@ -154,35 +138,7 @@ void compute_connected_neighbors(const hpc::counting_range<Index1>& indices1,
   n.resize(unique_counts);
 }
 
-template<typename Index>
-void compute_connected_neighbor_squared_distances(const hpc::counting_range<Index> &indices,
-    const hpc::device_array_vector<hpc::position<double>, Index> &positions,
-    const connected_neighbors<Index> &n,
-    hpc::device_vector<hpc::length<double>, Index> &squared_distances)
-{
-  auto x = positions.cbegin();
-  auto total_neighbors = n.entities_to_neighbors.size();
-  squared_distances.resize(total_neighbors);
-  auto neighbor_ranges = n.entities_to_neighbor_ordinals.cbegin();
-  auto neighbors = n.entities_to_neighbors.cbegin();
-  auto distances = squared_distances.begin();
-  auto distance_func = [=] HPC_DEVICE (const node_index i)
-  {
-    auto x_i = x[i].load();
-    for (auto neighbor_ord : neighbor_ranges[i])
-    {
-      auto neighbor = neighbors[neighbor_ord];
-      auto x_neighbor = x[neighbor].load();
-      distances[neighbor_ord] = hpc::norm_squared(x_i - x_neighbor);
-    }
-  };
-  hpc::for_each(hpc::device_policy(), indices, distance_func);
 }
-
-}
-
-using node_neighbors = connected_neighbors<node_index>;
-using point_neighbors = connected_neighbors<point_index>;
 
 void compute_node_node_neighbors(const lgr::state &s, node_neighbors &n)
 {
@@ -190,53 +146,10 @@ void compute_node_node_neighbors(const lgr::state &s, node_neighbors &n)
       s.points_to_point_nodes, s.point_nodes_to_nodes, n);
 }
 
-void compute_node_neighbor_squared_distances(const state &s, const node_neighbors &n,
-    hpc::device_vector<hpc::length<double>, node_index> &nodes_to_neighbor_squared_distances)
-{
-  compute_connected_neighbor_squared_distances(s.nodes, s.x, n,
-      nodes_to_neighbor_squared_distances);
-}
-
 void compute_point_point_neighbors(const lgr::state &s, point_neighbors &n)
 {
   compute_connected_neighbors(s.points, s.points_to_point_nodes, s.point_nodes_to_nodes,
       s.nodes_to_node_points, s.node_points_to_points, n);
-}
-
-void compute_point_neighbor_squared_distances(const state &s, const point_neighbors &n,
-    hpc::device_vector<hpc::length<double>, point_index> &points_to_neighbor_squared_distances)
-{
-  compute_connected_neighbor_squared_distances(s.points, s.xp, n,
-      points_to_neighbor_squared_distances);
-}
-
-void check_single_tetrahedron_node_neighbor_squared_distances(const state &s,
-    const node_neighbors &n,
-    hpc::device_vector<hpc::length<double>, node_index> &nodes_to_neighbor_squared_distances)
-{
-  ASSERT_EQ(nodes_to_neighbor_squared_distances.size(), 12);
-
-  auto n2n_distances = nodes_to_neighbor_squared_distances.cbegin();
-  auto n2n_neighbors = n.entities_to_neighbor_ordinals.cbegin();
-  auto check_func = DEVICE_TEST (node_index node)
-  {
-    constexpr hpc::length<double> expected[4][3]
-    {
-      { 1.0, 1.0, 1.0},
-      { 1.0, 2.0, 2.0},
-      { 1.0, 2.0, 2.0},
-      { 1.0, 2.0, 2.0}
-    };
-    auto node_neighbors = n2n_neighbors[node];
-    DEVICE_ASSERT_EQ(node_neighbors.size(), 3);
-    for (int i=0; i<3; ++i)
-    {
-      auto const expected_dist = expected[hpc::weaken(node)][i];
-      auto const node_to_node_dist = n2n_distances[node_neighbors[i]];
-      DEVICE_EXPECT_EQ(expected_dist, node_to_node_dist);
-    }
-  };
-  unit::test_for_each(hpc::device_policy(), s.nodes, check_func);
 }
 
 TEST(distances, can_compute_nearest_and_farthest_node_to_node)
@@ -253,31 +166,6 @@ TEST(distances, can_compute_nearest_and_farthest_node_to_node)
   check_single_tetrahedron_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }
 
-void check_two_tetrahedron_point_neighbor_squared_distances(const state &s,
-    const point_neighbors &n,
-    hpc::device_vector<hpc::length<double>, point_index> &pts_to_neighbor_squared_distances)
-{
-  ASSERT_EQ(pts_to_neighbor_squared_distances.size(), 2);
-
-  auto p2p_distances = pts_to_neighbor_squared_distances.cbegin();
-  auto p2p_neighbors = n.entities_to_neighbor_ordinals.cbegin();
-  auto check_func =
-  DEVICE_TEST (point_index pt)
-  {
-    constexpr hpc::length<double> expected[2][1]
-    {
-      { 0.1875},
-      { 0.1875}
-    };
-    auto pt_neighbors = p2p_neighbors[pt];
-    DEVICE_ASSERT_EQ(pt_neighbors.size(), 1);
-    auto const expected_dist = expected[hpc::weaken(pt)][0];
-    auto const node_to_node_dist = p2p_distances[pt_neighbors[0]];
-    DEVICE_EXPECT_EQ(expected_dist, node_to_node_dist);
-  };
-  unit::test_for_each(hpc::device_policy(), s.points, check_func);
-}
-
 TEST(distances, can_compute_nearest_and_farthest_point_to_point)
 {
   state s;
@@ -286,77 +174,16 @@ TEST(distances, can_compute_nearest_and_farthest_point_to_point)
   point_neighbors n;
   compute_point_point_neighbors(s, n);
 
-  hpc::device_vector<hpc::length<double>, point_index> nodes_to_neighbor_squared_distances;
-  compute_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+  hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
+  compute_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 
-  check_two_tetrahedron_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
-}
-
-namespace {
-
-struct elastic_wave_mesher
-{
-private:
-  HPC_NOINLINE void build_meshless_state(state& s) const
-  {
-    constexpr material_index x_boundary(1);
-    constexpr material_index y_boundary(2);
-    constexpr material_index z_boundary(3);
-    input in(material_index(1), material_index(3));
-    in.name = "elastic_wave_3d";
-    in.element = TETRAHEDRON;
-    in.elements_along_x = 1000;
-    in.elements_along_y = 1;
-    in.y_domain_size = 1.0e-3;
-    in.elements_along_z = 1;
-    in.z_domain_size = 1.0e-3;
-    static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
-    static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
-    static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
-    static constexpr double eps = 1.0e-10;
-    auto x_domain = std::make_unique<union_domain>();
-    x_domain->add(epsilon_around_plane_domain( { x_axis, 0.0 }, eps));
-    x_domain->add(epsilon_around_plane_domain( { x_axis, in.x_domain_size }, eps));
-    in.domains[x_boundary] = std::move(x_domain);
-    in.zero_acceleration_conditions.push_back( { x_boundary, x_axis });
-    auto y_domain = std::make_unique<union_domain>();
-    y_domain->add(epsilon_around_plane_domain( { y_axis, 0.0 }, eps));
-    y_domain->add(epsilon_around_plane_domain( { y_axis, in.y_domain_size }, eps));
-    in.domains[y_boundary] = std::move(y_domain);
-    in.zero_acceleration_conditions.push_back( { y_boundary, y_axis });
-    auto z_domain = std::make_unique<union_domain>();
-    z_domain->add(epsilon_around_plane_domain( { z_axis, 0.0 }, eps));
-    z_domain->add(epsilon_around_plane_domain( { z_axis, in.z_domain_size }, eps));
-    in.domains[z_boundary] = std::move(z_domain);
-    in.zero_acceleration_conditions.push_back( { z_boundary, z_axis });
-
-    build_mesh(in, s);
-    if (in.x_transform) in.x_transform(&s.x);
-    resize_state(in, s);
-
-    auto const points_in_element = 4;
-    s.points_in_element.resize(point_in_element_index(points_in_element));
-    in.otm_material_points_to_add_per_element = points_in_element;
-    lgr::tet_nodes_to_points point_interpolator(points_in_element);
-    in.xp_transform = std::ref(point_interpolator);
-
-    convert_tet_mesh_to_meshless(in, s);
-  }
-
-public:
-  HPC_NOINLINE void build_meshless(state& s) const
-  {
-    build_meshless_state(s);
-  }
-};
-
+  check_two_tetrahedron_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 }
 
 TEST(distances, performance_test_node_to_node_distances)
 {
-  elastic_wave_mesher mesher;
   state s;
-  mesher.build_meshless(s);
+  elastic_wave_four_points_per_tetrahedron(s);
 
   node_neighbors n;
   compute_node_node_neighbors(s, n);
@@ -367,9 +194,8 @@ TEST(distances, performance_test_node_to_node_distances)
 
 TEST(distances, performance_test_point_to_point_distances)
 {
-  elastic_wave_mesher mesher;
   state s;
-  mesher.build_meshless(s);
+  elastic_wave_four_points_per_tetrahedron(s);
 
   node_neighbors n;
   compute_point_point_neighbors(s, n);
