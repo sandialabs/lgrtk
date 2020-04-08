@@ -34,4 +34,7 @@ TEST(vtk, canPrintOtmStateToFile) {
   ASSERT_EQ(writer.host_s.K.size(), s.K.size());
 
   writer.write(0);
+
+  unlink("tetrahedron_single_point_nodes_0.vtk");
+  unlink("tetrahedron_single_point_points_0.vtk");
 }
