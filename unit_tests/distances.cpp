@@ -10,8 +10,12 @@
 #include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
+#include <lgr_meshing.hpp>
 #include <lgr_state.hpp>
+#include <otm_exodus.hpp>
+#include <otm_tet2meshless.hpp>
 #include <unit_tests/unit_device_util.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 
@@ -286,4 +290,90 @@ TEST(distances, can_compute_nearest_and_farthest_point_to_point)
   compute_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 
   check_two_tetrahedron_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+}
+
+namespace {
+
+struct elastic_wave_mesher
+{
+private:
+  HPC_NOINLINE void build_meshless_state(state& s) const
+  {
+    constexpr material_index x_boundary(1);
+    constexpr material_index y_boundary(2);
+    constexpr material_index z_boundary(3);
+    input in(material_index(1), material_index(3));
+    in.name = "elastic_wave_3d";
+    in.element = TETRAHEDRON;
+    in.elements_along_x = 1000;
+    in.elements_along_y = 1;
+    in.y_domain_size = 1.0e-3;
+    in.elements_along_z = 1;
+    in.z_domain_size = 1.0e-3;
+    static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+    static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+    static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+    static constexpr double eps = 1.0e-10;
+    auto x_domain = std::make_unique<union_domain>();
+    x_domain->add(epsilon_around_plane_domain( { x_axis, 0.0 }, eps));
+    x_domain->add(epsilon_around_plane_domain( { x_axis, in.x_domain_size }, eps));
+    in.domains[x_boundary] = std::move(x_domain);
+    in.zero_acceleration_conditions.push_back( { x_boundary, x_axis });
+    auto y_domain = std::make_unique<union_domain>();
+    y_domain->add(epsilon_around_plane_domain( { y_axis, 0.0 }, eps));
+    y_domain->add(epsilon_around_plane_domain( { y_axis, in.y_domain_size }, eps));
+    in.domains[y_boundary] = std::move(y_domain);
+    in.zero_acceleration_conditions.push_back( { y_boundary, y_axis });
+    auto z_domain = std::make_unique<union_domain>();
+    z_domain->add(epsilon_around_plane_domain( { z_axis, 0.0 }, eps));
+    z_domain->add(epsilon_around_plane_domain( { z_axis, in.z_domain_size }, eps));
+    in.domains[z_boundary] = std::move(z_domain);
+    in.zero_acceleration_conditions.push_back( { z_boundary, z_axis });
+
+    build_mesh(in, s);
+    if (in.x_transform) in.x_transform(&s.x);
+    resize_state(in, s);
+
+    auto const points_in_element = 4;
+    s.points_in_element.resize(point_in_element_index(points_in_element));
+    in.otm_material_points_to_add_per_element = points_in_element;
+    lgr::tet_nodes_to_points point_interpolator(points_in_element);
+    in.xp_transform = std::ref(point_interpolator);
+
+    convert_tet_mesh_to_meshless(in, s);
+  }
+
+public:
+  HPC_NOINLINE void build_meshless(state& s) const
+  {
+    build_meshless_state(s);
+  }
+};
+
+}
+
+TEST(distances, performance_test_node_to_node_distances)
+{
+  elastic_wave_mesher mesher;
+  state s;
+  mesher.build_meshless(s);
+
+  node_neighbors n;
+  compute_node_node_neighbors(s, n);
+
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+}
+
+TEST(distances, performance_test_point_to_point_distances)
+{
+  elastic_wave_mesher mesher;
+  state s;
+  mesher.build_meshless(s);
+
+  node_neighbors n;
+  compute_point_point_neighbors(s, n);
+
+  hpc::device_vector<hpc::length<double>, point_index> nodes_to_neighbor_squared_distances;
+  compute_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }
