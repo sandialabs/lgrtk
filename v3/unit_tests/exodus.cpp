@@ -7,7 +7,7 @@
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_exodus.hpp>
-#include <otm_exodus.hpp>
+#include <otm_tetrahedron_util.hpp>
 #include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>

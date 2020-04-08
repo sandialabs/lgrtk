@@ -40,6 +40,7 @@ set(LGR_SOURCES
 
 set(OTM_SOURCES
     otm_meshless.cpp
+    otm_distance.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
     otm_vtk.cpp
