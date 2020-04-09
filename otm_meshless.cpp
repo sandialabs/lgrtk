@@ -408,11 +408,6 @@ void otm_initialize_state(input const& in, state& s) {
   auto const num_materials = in.materials.size();
   auto const num_boundaries = in.boundaries.size();
   auto const support_size = s.points_to_point_nodes.size();
-  HPC_DUMP("NUM NODES     : " << num_nodes << '\n');
-  HPC_DUMP("NUM POINTS    : " << num_points << '\n');
-  HPC_DUMP("NUM ELEMENTS  : " << num_elements << '\n');
-  HPC_DUMP("NUM MATERIALS : " << num_materials << '\n');
-  HPC_DUMP("SUPPORT SIZE  : " << support_size << '\n');
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
