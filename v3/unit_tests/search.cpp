@@ -382,7 +382,7 @@ TEST_F(distances_search, can_compute_nearest_and_farthest_point_to_point_from_se
   search::do_otm_point_nearest_point_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
-  compute_node_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
+  compute_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 
   check_two_tetrahedron_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 }
@@ -408,5 +408,5 @@ TEST_F(distances_search, performance_test_point_to_point_distances_from_search)
   search::do_otm_point_nearest_point_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
-  compute_node_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
+  compute_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 }

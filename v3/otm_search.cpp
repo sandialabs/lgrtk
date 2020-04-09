@@ -71,6 +71,43 @@ HPC_NOINLINE void size_and_fill_lgr_data_structures(
   hpc::for_each(hpc::device_policy(), search_indices, fill_func);
 }
 
+template<typename IndexType, typename IndexOrdinalType>
+HPC_NOINLINE void size_and_fill_lgr_data_structures_from_symmetric_search(
+    const hpc::counting_range<IndexType> &search_indices, const arborx::device_int_view &indices,
+    const arborx::device_int_view &offsets, hpc::device_vector<int, IndexType> &search_counts,
+    hpc::device_range_sum<IndexOrdinalType, IndexType> &search_result_ranges,
+    hpc::device_vector<IndexType, IndexOrdinalType> &search_results)
+{
+  // this version filters search indices from the results where index == result, which implies
+  // that a node or point found itself in the search.
+
+  auto counts = search_counts.begin();
+  auto count_func = [=] HPC_DEVICE (IndexType point)
+  {
+    counts[point] -= 1;
+  };
+  hpc::for_each(hpc::device_policy(), search_indices, count_func);
+
+  search_result_ranges.assign_sizes(search_counts);
+  auto new_results_size = hpc::reduce(hpc::device_policy(), search_counts, 0);
+  search_results.resize(new_results_size);
+
+  auto points_results_ranges = search_result_ranges.cbegin();
+  auto points_to_results = search_results.begin();
+  auto fill_func = [=] HPC_DEVICE (IndexType point)
+  {
+    auto const point_results_range = points_results_ranges[point];
+    auto non_self_result_index = offsets(hpc::weaken(point));
+    for (auto result : point_results_range)
+    {
+      if (indices(non_self_result_index) == point) ++non_self_result_index;
+      points_to_results[result] = IndexType(indices(non_self_result_index));
+      ++non_self_result_index;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), search_indices, fill_func);
+}
+
 template<typename QueryViewType, typename Index1, typename Index2, typename Index1to2Ordinal>
 HPC_NOINLINE void do_search_and_fill_lgr_data_structures(
     const arborx::device_point_view &search_points, const QueryViewType &queries,
@@ -143,7 +180,11 @@ HPC_NOINLINE void do_otm_node_nearest_node_search(const lgr::state &s,
   auto search_points = arborx::create_arborx_nodes(s);
   auto queries = arborx::make_nearest_node_queries(search_points, max_nodes_per_node);
 
-  do_search_and_fill_lgr_data_structures(search_points, queries, s.nodes,
+  hpc::device_vector<int, point_index> counts(s.nodes.size());
+  arborx::device_int_view offsets("offsets", 0);
+  arborx::device_int_view indices("indices", 0);
+  do_search_and_fill_counts(search_points, queries, s.nodes, offsets, indices, counts);
+  size_and_fill_lgr_data_structures_from_symmetric_search(s.nodes, indices, offsets, counts,
       n.entities_to_neighbor_ordinals, n.entities_to_neighbors);
 }
 
@@ -153,7 +194,11 @@ HPC_NOINLINE void do_otm_point_nearest_point_search(const lgr::state &s,
   auto search_points = arborx::create_arborx_points(s);
   auto queries = arborx::make_nearest_node_queries(search_points, max_points_per_point);
 
-  do_search_and_fill_lgr_data_structures(search_points, queries, s.points,
+  hpc::device_vector<int, point_index> counts(s.points.size());
+  arborx::device_int_view offsets("offsets", 0);
+  arborx::device_int_view indices("indices", 0);
+  do_search_and_fill_counts(search_points, queries, s.points, offsets, indices, counts);
+  size_and_fill_lgr_data_structures_from_symmetric_search(s.points, indices, offsets, counts,
       n.entities_to_neighbor_ordinals, n.entities_to_neighbors);
 }
 
