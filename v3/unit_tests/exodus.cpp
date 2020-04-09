@@ -12,6 +12,7 @@
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 #include <otm_tet2meshless.hpp>
+#include <unit_tests/otm_unit_mesh.hpp>
 #include <unit_tests/unit_device_util.hpp>
 
 using namespace lgr;
@@ -39,32 +40,6 @@ TEST(exodus, readSimpleFile)
 
   EXPECT_EQ(st.nodes.size(), nodes_size_type(12));
   EXPECT_EQ(st.elements.size(), elems_size_type(12));
-}
-
-void compute_material_points_as_element_centroids(hpc::counting_range<point_index> const points,
-    hpc::device_range_sum<point_node_index, point_index> const &points_to_point_nodes,
-    hpc::device_vector<node_index, point_node_index> const &point_nodes_to_nodes,
-    hpc::device_array_vector<hpc::position<double>, node_index> const &x,
-    hpc::device_array_vector<hpc::position<double>, point_index> &xp)
-{
-  auto pt_to_pt_nodes = points_to_point_nodes.cbegin();
-  auto pt_nodes_to_nodes = point_nodes_to_nodes.cbegin();
-  auto x_nodes = x.cbegin();
-  auto x_points = xp.begin();
-  auto point_func = [=] HPC_DEVICE(const point_index point)
-  {
-    auto const point_nodes = pt_to_pt_nodes[point];
-    hpc::position<double> avg_coord(0., 0., 0.);
-    for (auto&& point_node : point_nodes)
-    {
-      auto const node = pt_nodes_to_nodes[point_node];
-      avg_coord += x_nodes[node].load();
-    }
-    avg_coord /= point_nodes.size();
-
-    x_points[point] = avg_coord;
-  };
-  hpc::for_each(hpc::device_policy(), points, point_func);
 }
 
 hpc::device_vector<node_index, point_node_index> collect_points_to_nodes_from_elements(const state &st)
