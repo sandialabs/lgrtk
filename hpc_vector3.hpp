@@ -176,4 +176,10 @@ abs(vector3<T> const v) noexcept {
   return vector3<T>(std::abs(v(0)), std::abs(v(1)), std::abs(v(2)));
 }
 
+template <typename T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
+normalize(vector3<T> const v) noexcept {
+  return v / norm(v);
+}
+
 }
