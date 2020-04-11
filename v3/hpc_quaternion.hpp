@@ -37,7 +37,7 @@ public:
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion z_axis() noexcept { return quaternion(0.0, 0.0, 0.0, 1.0); }
 };
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator+(quaternion<T> const left, quaternion<T> const right) noexcept {
   return quaternion<T>(
@@ -47,20 +47,20 @@ operator+(quaternion<T> const left, quaternion<T> const right) noexcept {
       left(3) + right(3));
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<T>&
 operator+=(quaternion<T>& left, quaternion<T> const right) noexcept {
   left = left + right;
   return left;
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(quaternion<T> const x) noexcept {
   return quaternion<T>(-x(0), -x(1), -x(2), -x(3));
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(quaternion<T> const left, quaternion<T> const right) noexcept {
   return quaternion<T>(
@@ -70,14 +70,14 @@ operator-(quaternion<T> const left, quaternion<T> const right) noexcept {
       left(3) - right(3));
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<T>&
 operator-=(quaternion<T>& left, quaternion<T> const right) noexcept {
   left = left - right;
   return left;
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 inner_product(quaternion<L> const left, quaternion<R> const right) noexcept {
   return
@@ -87,13 +87,13 @@ inner_product(quaternion<L> const left, quaternion<R> const right) noexcept {
       left(3) * right(3);
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(quaternion<L> const left, quaternion<R> const right) noexcept {
   return inner_product(left, right);
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(quaternion<L> const left, R const right) noexcept {
   return quaternion<decltype(L() * R())>(
@@ -103,20 +103,20 @@ operator*(quaternion<L> const left, R const right) noexcept {
       left(3) * right);
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<L>&
 operator*=(quaternion<L>& left, R const right) noexcept {
   left = left * right;
   return left;
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(L const left, quaternion<R> const right) noexcept {
   return right * left;
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator/(quaternion<L> const left, R const right) noexcept {
   auto const factor = 1.0 / right;
@@ -127,26 +127,26 @@ operator/(quaternion<L> const left, R const right) noexcept {
       left(3) * factor);
 }
 
-template <class L, class R>
+template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<L>&
 operator/=(quaternion<L>& left, R const right) noexcept {
   left = left / right;
   return left;
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 norm_squared(quaternion<T> const v) noexcept {
   return (v * v);
 }
 
-template <class T>
+template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE T norm(quaternion<T> const v) noexcept {
   using std::sqrt;
   return sqrt(norm_squared(v));
 }
 
-template <class T>
+template <typename T>
 class array_traits<quaternion<T>> {
   public:
   using value_type = T;
@@ -172,7 +172,8 @@ class array_traits<quaternion<T>> {
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 abs(quaternion<T> const v) noexcept {
-  return quaternion<T>(std::abs(v(0)), std::abs(v(1)), std::abs(v(2)), std::abs(v(3)));
+  using std::abs;
+  return quaternion<T>(abs(v(0)), abs(v(1)), abs(v(2)), abs(v(3)));
 }
 
 template <typename T>
@@ -269,8 +270,8 @@ rotation_vector_from_quaternion(quaternion<T> const q) noexcept {
   constexpr auto e = std::sqrt(hpc::machine_epsilon<double>());
   auto const vnorm = 2.0 * (qvnorm < s ? std::asin(qvnorm) : std::acos(qs));
   auto const coef = qvnorm < e ? 2.0 : vnorm / qvnorm;
-  auto const a = coef * qv;
-  return a;
+  auto const w = coef * qv;
+  return w;
 }
 
 // In the algebra of rotations one often comes across functions that
@@ -296,10 +297,10 @@ Psi(T const x) noexcept {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-quaternion_from_rotation_vector(vector3<T> const v) noexcept {
-  auto const halfnorm = 0.5 * norm(v);
+quaternion_from_rotation_vector(vector3<T> const w) noexcept {
+  auto const halfnorm = 0.5 * norm(w);
   auto const factor = 0.5 * Psi(halfnorm);
-  auto const q = quaternion<T>(std::cos(halfnorm), factor * v(0), factor * v(1), factor * v(2));
+  auto const q = quaternion<T>(std::cos(halfnorm), factor * w(0), factor * w(1), factor * w(2));
   return q;
 }
 
