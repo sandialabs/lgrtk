@@ -266,8 +266,8 @@ rotation_vector_from_quaternion(quaternion<T> const q) noexcept {
   auto const qs = qq(0);
   auto const qv = vector3<T>(qq(1), qq(2), qq(3));
   auto const qvnorm = norm(qv);
-  constexpr auto s = std::sqrt(0.5);
-  constexpr auto e = std::sqrt(hpc::machine_epsilon<double>());
+  auto const s = std::sqrt(0.5);
+  auto const e = std::sqrt(hpc::machine_epsilon<double>());
   auto const vnorm = 2.0 * (qvnorm < s ? std::asin(qvnorm) : std::acos(qs));
   auto const coef = qvnorm < e ? 2.0 : vnorm / qvnorm;
   auto const w = coef * qv;
@@ -289,8 +289,8 @@ template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 Psi(T const x) noexcept {
   auto const y = std::abs(x);
-  constexpr auto e2 = std::sqrt(hpc::machine_epsilon<double>());
-  constexpr auto e4 = std::sqrt(e2);
+  auto const e2 = std::sqrt(hpc::machine_epsilon<double>());
+  auto const e4 = std::sqrt(e2);
   auto const psi = y > e4 ? std::sin(y) / y : (y > e2 ? 1.0 - y * y / 6.0 : 1.0);
   return psi;
 }
