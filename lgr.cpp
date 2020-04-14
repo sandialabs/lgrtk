@@ -848,6 +848,75 @@ void twisting_composite_column_J2() {
   run(in);
 }
 
+HPC_NOINLINE void flyer_target_J2();
+void flyer_target_J2() {
+  constexpr material_index flyer(0);
+  constexpr material_index target(1);
+  constexpr material_index num_materials(2);
+  constexpr material_index num_boundaries(0);
+  input in(num_materials, num_boundaries);
+  in.name = "flyer_target J2 plasticity";
+  in.element = COMPOSITE_TETRAHEDRON;
+  in.end_time = 5.0e-06;
+  in.num_file_outputs = 50;
+  double const rho{8.96e+03};
+  double const nu{0.343};
+  double const E{110.0e09};
+  double const K{E / (3.0 * (1.0 - 2.0 * nu))};
+  double const G{E / (2.0 * (1.0 + nu))};
+  double const Y0{358.8e+06};
+  double const n{4.0};
+  double const eps0{1e-2};
+  double const Svis0{Y0};
+  double const m{2.0};
+  double const eps_dot0{1e-1};
+  in.enable_variational_J2[flyer] = true;
+  in.rho0[flyer] = rho;
+  in.K0[flyer] = K;
+  in.G0[flyer] = G;
+  in.Y0[flyer] = Y0;
+  in.n[flyer] = n;
+  in.eps0[flyer] = eps0;
+  in.Svis0[flyer] = Svis0;
+  in.m[flyer] = m;
+  in.eps_dot0[flyer] = eps_dot0;
+  in.enable_variational_J2[target] = true;
+  in.rho0[target] = rho;
+  in.K0[target] = K;
+  in.G0[target] = G;
+  in.Y0[target] = Y0;
+  in.n[target] = n;
+  in.eps0[target] = eps0;
+  in.Svis0[target] = Svis0;
+  in.m[target] = m;
+  in.eps_dot0[target] = eps_dot0;
+  // Some of the mesh dimensions to set initial velocity
+  auto const flyer_radius = 0.2 * 0.0254;
+  auto const eps = flyer_radius / 1000.0;
+  auto flyer_v = [=] (
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const r = std::sqrt(x(0) * x(0) + x(1) * x(1));
+      auto v = hpc::velocity<double>(0.0, 0.0, 0.0);
+      if (r < flyer_radius + eps) {
+        v(2) = x(2) < eps ? 2200.0 : 242.0;
+      }
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+  in.initial_v = flyer_v;
+  in.enable_J_averaging = true;
+  in.CFL = 0.1;
+  std::string const filename = "flyer-target.g";
+  run(in, filename);
+}
+
 HPC_NOINLINE void Noh_3D();
 void Noh_3D() {
   constexpr material_index gas(0);
@@ -1117,9 +1186,10 @@ int main() {
   if ((0)) lgr::composite_Noh_3D();
   if ((0)) lgr::spinning_composite_cube();
   if ((0)) lgr::twisting_composite_column();
-  if ((1)) lgr::twisting_composite_column_J2();
+  if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
+  if ((1)) lgr::flyer_target_J2();
 //run_for_average();
 }
 

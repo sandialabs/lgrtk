@@ -3,17 +3,18 @@
 #include <iomanip>
 #include <iostream>  // DEBUGGING
 
-#include <lgr_state.hpp>
-#include <lgr_physics.hpp>
-#include <hpc_symmetric3x3.hpp>
 #include <hpc_macros.hpp>
-#include <lgr_print.hpp>
-#include <lgr_vtk.hpp>
-#include <lgr_element_specific.hpp>
-#include <lgr_meshing.hpp>
-#include <lgr_input.hpp>
-#include <lgr_stabilized.hpp>
+#include <hpc_symmetric3x3.hpp>
 #include <lgr_adapt.hpp>
+#include <lgr_element_specific.hpp>
+#include <lgr_exodus.hpp>
+#include <lgr_input.hpp>
+#include <lgr_meshing.hpp>
+#include <lgr_physics.hpp>
+#include <lgr_print.hpp>
+#include <lgr_stabilized.hpp>
+#include <lgr_state.hpp>
+#include <lgr_vtk.hpp>
 #if defined(HYPER_EP)
 #include <lgr_hyper_ep/model.hpp>
 #endif
@@ -907,12 +908,19 @@ HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) 
   }
 }
 
-void run(input const& in) {
+void run(input const& in, std::string const& filename) {
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
   auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
   state s;
-  build_mesh(in, s);
+  if (filename == "") {
+    build_mesh(in, s);
+  } else {
+    auto const err_code = lgr::read_exodus_file(filename, in, s);
+    if (err_code != 0) {
+      HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+    }
+  }
   if (in.x_transform) in.x_transform(&s.x);
   resize_state(in, s);
   assign_element_materials(in, s);
