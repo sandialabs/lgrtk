@@ -2,9 +2,8 @@
 #include <hpc_macros.hpp>
 #include <otm_distance.hpp>
 
-using namespace lgr::search_util;
-
 namespace lgr {
+namespace search_util {
 
 template<typename Index>
 void compute_connected_neighbor_squared_distances(const hpc::counting_range<Index> &indices,
@@ -45,4 +44,5 @@ void compute_connected_neighbor_squared_distances(const hpc::counting_range<poin
     hpc::device_vector<hpc::length<double>, point_index> &squared_distances);
 #endif
 
+}
 }

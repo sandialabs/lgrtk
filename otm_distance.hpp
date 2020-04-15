@@ -9,6 +9,7 @@
 #include <otm_search_util.hpp>
 
 namespace lgr {
+namespace search_util {
 
 template<typename Index>
 void compute_connected_neighbor_squared_distances(const hpc::counting_range<Index> &indices,
@@ -32,5 +33,6 @@ inline void compute_point_neighbor_squared_distances(const state &s,
       points_to_neighbor_squared_distances);
 }
 
+}
 }
 

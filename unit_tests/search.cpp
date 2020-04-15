@@ -23,6 +23,7 @@
 #include <functional>
 
 using namespace lgr;
+using namespace lgr::search_util;
 
 struct arborx_testing_singleton {
 public:
@@ -364,7 +365,7 @@ TEST_F(distances_search, can_compute_nearest_and_farthest_node_to_node_from_sear
   state s;
   tetrahedron_single_point(s);
 
-  search_util::node_neighbors n;
+  node_neighbors n;
   search::do_otm_node_nearest_node_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
@@ -378,7 +379,7 @@ TEST_F(distances_search, can_compute_nearest_and_farthest_point_to_point_from_se
   state s;
   two_tetrahedra_two_points(s);
 
-  search_util::point_neighbors n;
+  point_neighbors n;
   search::do_otm_point_nearest_point_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
@@ -392,7 +393,7 @@ TEST_F(distances_search, performance_test_node_to_node_distances_from_search)
   state s;
   elastic_wave_four_points_per_tetrahedron(s);
 
-  search_util::node_neighbors n;
+  node_neighbors n;
   search::do_otm_node_nearest_node_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
@@ -404,7 +405,7 @@ TEST_F(distances_search, performance_test_point_to_point_distances_from_search)
   state s;
   elastic_wave_four_points_per_tetrahedron(s);
 
-  search_util::point_neighbors n;
+  point_neighbors n;
   search::do_otm_point_nearest_point_search(s, n, 10);
 
   hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
