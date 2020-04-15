@@ -11,10 +11,14 @@
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_exodus.hpp>
 #include <lgr_input.hpp>
+#include <lgr_physics_util.hpp>
 #include <lgr_state.hpp>
 #include <otm_tetrahedron_util.hpp>
+#include <otm_distance.hpp>
 #include <otm_materials.hpp>
 #include <otm_meshless.hpp>
+#include <otm_search_util.hpp>
+#include <otm_search.hpp>
 #include <otm_tet2meshless.hpp>
 #include <otm_util.hpp>
 #include <j2/hardening.hpp>
@@ -427,6 +431,7 @@ void otm_initialize_state(input const& in, state& s) {
   s.f.resize(num_nodes);
   s.rho.resize(num_points);
   s.b.resize(num_points);
+  s.nearest_neighbor_dist.resize(num_points);
   s.material_mass.resize(num_materials);
   for (auto& mm : s.material_mass) mm.resize(num_nodes);
   s.mass.resize(num_nodes);
@@ -564,10 +569,56 @@ void otm_initialize(input& in, state& s, std::string const& filename)
   otm_update_nodal_mass(s);
 }
 
+HPC_NOINLINE inline void compute_min_neighbor_dist(state& s) {
+  search_util::point_neighbors n;
+  search::do_otm_point_nearest_point_search(s, n, 1);
+  search_util::compute_point_neighbor_squared_distances(s, n, s.nearest_neighbor_dist);
+  assert( s.nearest_neighbor_dist.size() == s.points.size() );
+  auto const nearest_neighbors = n.entities_to_neighbors.cbegin();
+  auto const neighbor_distances = s.nearest_neighbor_dist.begin();
+  auto dist_func = [=] HPC_DEVICE (point_index const point) {
+                     auto const neighbor = nearest_neighbors[point];
+                     if (point < neighbor)
+                     {
+                       auto const dist = std::sqrt(neighbor_distances[point]);
+                       neighbor_distances[point] = dist;
+                       neighbor_distances[neighbor] = dist;
+                     }
+                   };
+  hpc::for_each(hpc::device_policy(), s.points, dist_func);
+}
+
+HPC_NOINLINE inline void update_point_dt(state& s) {
+  compute_min_neighbor_dist(s);
+  auto const points_to_c = s.c.cbegin();
+  auto const points_to_dt = s.element_dt.begin();
+  auto const points_to_neighbor_dist = s.nearest_neighbor_dist.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+                   auto const h_min = points_to_neighbor_dist[point];
+                   auto const c = points_to_c[point];
+                   auto const dt = h_min / c;
+                   assert(dt > 0.0);
+                   points_to_dt[point] = dt;
+                 };
+  hpc::for_each(hpc::device_policy(), s.points, functor);
+}
+
+HPC_NOINLINE inline void find_max_stable_point_dt(state& s)
+{
+  hpc::time<double> const init(std::numeric_limits<double>::max());
+  s.max_stable_dt = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.element_dt,
+      init,
+      hpc::minimum<hpc::time<double>>(),
+      hpc::identity<hpc::time<double>>());
+}
+
 void otm_update_time_step(state& s)
 {
-  // TODO: Constant for now
-  s.max_stable_dt = hpc::time<double>(1.0e-06);
+  update_c(s);
+  update_point_dt(s);
+  find_max_stable_point_dt(s);
 }
 
 void otm_update_time(input const& in, state& s)
@@ -595,6 +646,7 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_run(std::string const& filename)
 {
+  lgr::search::initialize_otm_search();
   material_index num_materials(1);
   material_index num_boundaries(4);
   input in(num_materials, num_boundaries);
@@ -687,6 +739,7 @@ void otm_run(std::string const& filename)
       ++s.n;
     }
   }
+  lgr::search::finalize_otm_search();
 }
 
 } // namespace lgr
