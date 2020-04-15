@@ -178,7 +178,7 @@ HPC_NOINLINE void do_otm_node_nearest_node_search(const lgr::state &s,
     nearest_neighbors<node_index> &n, int max_nodes_per_node)
 {
   auto search_points = arborx::create_arborx_nodes(s);
-  auto queries = arborx::make_nearest_node_queries(search_points, max_nodes_per_node);
+  auto queries = arborx::make_nearest_node_queries(search_points, max_nodes_per_node + 1);
 
   hpc::device_vector<int, point_index> counts(s.nodes.size());
   arborx::device_int_view offsets("offsets", 0);
@@ -192,7 +192,7 @@ HPC_NOINLINE void do_otm_point_nearest_point_search(const lgr::state &s,
     nearest_neighbors<point_index> &n, int max_points_per_point)
 {
   auto search_points = arborx::create_arborx_points(s);
-  auto queries = arborx::make_nearest_node_queries(search_points, max_points_per_point);
+  auto queries = arborx::make_nearest_node_queries(search_points, max_points_per_point + 1);
 
   hpc::device_vector<int, point_index> counts(s.points.size());
   arborx::device_int_view offsets("offsets", 0);
