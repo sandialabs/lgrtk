@@ -23,4 +23,16 @@ HPC_NOINLINE inline void update_c(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
+HPC_NOINLINE inline void find_max_stable_dt(state& s)
+{
+  hpc::time<double> const init(std::numeric_limits<double>::max());
+  s.max_stable_dt = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.element_dt,
+      init,
+      hpc::minimum<hpc::time<double>>(),
+      hpc::identity<hpc::time<double>>());
+  assert(s.max_stable_dt < 1.0);
+}
+
 }
