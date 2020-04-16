@@ -603,22 +603,11 @@ HPC_NOINLINE inline void update_point_dt(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-HPC_NOINLINE inline void find_max_stable_point_dt(state& s)
-{
-  hpc::time<double> const init(std::numeric_limits<double>::max());
-  s.max_stable_dt = hpc::transform_reduce(
-      hpc::device_policy(),
-      s.element_dt,
-      init,
-      hpc::minimum<hpc::time<double>>(),
-      hpc::identity<hpc::time<double>>());
-}
-
 void otm_update_time_step(state& s)
 {
   update_c(s);
   update_point_dt(s);
-  find_max_stable_point_dt(s);
+  find_max_stable_dt(s);
 }
 
 void otm_update_time(input const& in, state& s)
