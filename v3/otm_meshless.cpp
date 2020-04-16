@@ -352,30 +352,30 @@ void otm_update_nodal_position(state& s) {
   auto const boundary_indices = s.boundaries;
   auto const boundary_to_prescribed_v = s.prescribed_v.cbegin();
   auto const boundary_to_prescribed_dof = s.prescribed_dof.cbegin();
-  auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto const m = nodes_to_mass[node];
-    auto const lm = nodes_to_lm[node].load();
-    auto const f = nodes_to_f[node].load();
-    auto disp = (dt / m) * (lm + dt_avg * f);
-    auto const domain_set = nodes_to_domain[node];
-    for (auto boundary_index : boundary_indices) {
-      material_set const boundary(boundary_index);
+  for (auto boundary_index : boundary_indices) {
+    material_set const boundary(boundary_index);
+    auto const v = boundary_to_prescribed_v[boundary_index].load();
+    auto const dof = boundary_to_prescribed_dof[boundary_index].load();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto const m = nodes_to_mass[node];
+      auto const lm = nodes_to_lm[node].load();
+      auto const f = nodes_to_f[node].load();
+      auto disp = (dt / m) * (lm + dt_avg * f);
+      auto const domain_set = nodes_to_domain[node];
       if (domain_set.contains(boundary)) {
-        auto const v = boundary_to_prescribed_v[boundary_index].load();
-        auto const dof = boundary_to_prescribed_dof[boundary_index].load();
         if (dof(0) == 1) {disp(0) = v(0) * dt;}
         if (dof(1) == 1) {disp(1) = v(1) * dt;}
         if (dof(2) == 1) {disp(2) = v(2) * dt;}
       }
-    }
-    auto const velo = disp / dt;
-    auto x_old = nodes_to_x[node].load();
-    nodes_to_u[node] = disp;
-    auto x_new = x_old + disp;
-    nodes_to_x[node] = x_new;
-    nodes_to_v[node] = velo;
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+      auto const velo = disp / dt;
+      auto x_old = nodes_to_x[node].load();
+      nodes_to_u[node] = disp;
+      auto x_new = x_old + disp;
+      nodes_to_x[node] = x_new;
+      nodes_to_v[node] = velo;
+    };
+    hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  }
 }
 
 void otm_update_point_position(state& s)

@@ -88,8 +88,8 @@ class state {
   hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
   hpc::device_vector<hpc::energy_density<double>, point_node_index> potential_density; // Helmholtz energy density
-  hpc::device_array_vector<hpc::velocity<double>, material_index> prescribed_v;
-  hpc::device_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
+  hpc::host_array_vector<hpc::velocity<double>, material_index> prescribed_v;
+  hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
   hpc::counting_range<material_index> boundaries{material_index(0)}; // Copied from input structure
 
   // For plasticity
