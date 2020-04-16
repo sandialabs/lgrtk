@@ -17,7 +17,7 @@ void compute_connected_neighbor_squared_distances(const hpc::counting_range<Inde
   auto neighbor_ranges = n.entities_to_neighbor_ordinals.cbegin();
   auto neighbors = n.entities_to_neighbors.cbegin();
   auto distances = squared_distances.begin();
-  auto distance_func = [=] HPC_DEVICE (const node_index i)
+  auto distance_func = [=] HPC_DEVICE (const Index i)
   {
     auto x_i = x[i].load();
     for (auto neighbor_ord : neighbor_ranges[i])
