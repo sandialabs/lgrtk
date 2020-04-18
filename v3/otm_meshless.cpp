@@ -43,14 +43,16 @@ void otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
-void otm_initialize_velocity(state& s)
+void otm_uniaxial_patch_test_ics(state& s)
 {
   auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
   auto const top_vel = hpc::speed<double>(10.0);
   auto functor = [=] HPC_DEVICE (point_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
+    nodes_to_u[node] = hpc::position<double>(0.0, 0.0, 0.0);
     nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -356,30 +358,30 @@ void otm_update_nodal_position(state& s) {
   auto const boundary_indices = s.boundaries;
   auto const boundary_to_prescribed_v = s.prescribed_v.cbegin();
   auto const boundary_to_prescribed_dof = s.prescribed_dof.cbegin();
-  for (auto boundary_index : boundary_indices) {
-    material_set const boundary(boundary_index);
-    auto const v = boundary_to_prescribed_v[boundary_index].load();
-    auto const dof = boundary_to_prescribed_dof[boundary_index].load();
-    auto functor = [=] HPC_DEVICE (node_index const node) {
-      auto const m = nodes_to_mass[node];
-      auto const lm = nodes_to_lm[node].load();
-      auto const f = nodes_to_f[node].load();
-      auto disp = (dt / m) * (lm + dt_avg * f);
-      auto const domain_set = nodes_to_domain[node];
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const m = nodes_to_mass[node];
+    auto const lm = nodes_to_lm[node].load();
+    auto const f = nodes_to_f[node].load();
+    auto disp = (dt / m) * (lm + dt_avg * f);
+    auto const domain_set = nodes_to_domain[node];
+    for (auto boundary_index : boundary_indices) {
+      material_set const boundary(boundary_index);
       if (domain_set.contains(boundary)) {
+        auto const v = boundary_to_prescribed_v[boundary_index].load();
+        auto const dof = boundary_to_prescribed_dof[boundary_index].load();
         if (dof(0) == 1) {disp(0) = v(0) * dt;}
         if (dof(1) == 1) {disp(1) = v(1) * dt;}
         if (dof(2) == 1) {disp(2) = v(2) * dt;}
       }
-      auto const velo = disp / dt;
-      auto x_old = nodes_to_x[node].load();
-      nodes_to_u[node] = disp;
-      auto x_new = x_old + disp;
-      nodes_to_x[node] = x_new;
-      nodes_to_v[node] = velo;
-    };
-    hpc::for_each(hpc::device_policy(), s.nodes, functor);
-  }
+    }
+    auto const velo = disp / dt;
+    auto x_old = nodes_to_x[node].load();
+    nodes_to_u[node] = disp;
+    auto x_new = x_old + disp;
+    nodes_to_x[node] = x_new;
+    nodes_to_v[node] = velo;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
 void otm_update_point_position(state& s)
@@ -405,7 +407,7 @@ void otm_update_point_position(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-void otm_initialize_state(input const& in, state& s) {
+void otm_allocate_state(input const& in, state& s) {
   auto const num_points = s.points.size();
   auto const num_nodes = s.nodes.size();
   auto const num_elements = s.elements.size();
@@ -481,86 +483,9 @@ void otm_initialize_state(input const& in, state& s) {
   s.prescribed_dof.resize(num_boundaries + num_materials);
 }
 
-void otm_initialize(input& in, state& s, std::string const& filename)
+void otm_initialize(input& in, state& s)
 {
-  auto const points_in_element = 1;
-  s.points_in_element.resize(point_in_element_index(points_in_element));
-  in.otm_material_points_to_add_per_element = points_in_element;
-  lgr::tet_nodes_to_points point_interpolator(points_in_element);
-  in.xp_transform = std::ref(point_interpolator);
-
-  auto const err_code = lgr::read_exodus_file(filename, in, s);
-  if (err_code != 0) {
-    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
-  }
-
-  in.name = "OTM";
-  in.end_time = 0.001;
-  in.num_file_outputs = 100;
-  auto const rho = hpc::density<double>(7.8e+03);
-  auto const nu = hpc::adimensional<double>(0.00);
-  auto const E = hpc::pressure<double>(200.0e09);
-  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
-  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0 = hpc::pressure<double>(1.0e+64);
-  auto const n = hpc::adimensional<double>(4.0);
-  auto const eps0 = hpc::strain<double>(1.0e-02);
-  auto const Svis0 = hpc::pressure<double>(Y0);
-  auto const m = hpc::adimensional<double>(2.0);
-  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
-  constexpr material_index body(0);
-  constexpr material_index x_min(1);
-  constexpr material_index y_min(2);
-  constexpr material_index z_min(3);
-  constexpr material_index z_max(4);
-  in.materials = hpc::counting_range<material_index>(1);
-  in.enable_variational_J2[body] = true;
-  in.rho0[body] = rho;
-  in.K0[body] = K;
-  in.G0[body] = G;
-  in.Y0[body] = Y0;
-  in.n[body] = n;
-  in.eps0[body] = eps0;
-  in.Svis0[body] = Svis0;
-  in.m[body] = m;
-  in.eps_dot0[body] = eps_dot0;
-  in.CFL =1.0;
-  lgr::convert_tet_mesh_to_meshless(in, s);
-  s.dt = hpc::time<double>(1.0e-06);
-  s.dt_old = hpc::time<double>(1.0e-06);
-  s.time = hpc::time<double>(0.0);
-  otm_initialize_state(in, s);
-  auto const tol = hpc::length<double>(1.0e-04);
-  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
-  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
-  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, tol);
-  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
-  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
-  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
-  s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
-  s.prescribed_v[x_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[x_min] = hpc::vector3<int>(1, 0, 0);
-  s.prescribed_v[y_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[y_min] = hpc::vector3<int>(0, 1, 0);
-  s.prescribed_v[z_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[z_min] = hpc::vector3<int>(0, 0, 1);
-  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, 10.0);
-  s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
-  auto const I = hpc::deformation_gradient<double>::identity();
-  auto const ep0 = hpc::strain<double>(0.0);
-  auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
-  auto const u0 = hpc::displacement<double>(0.0, 0.0, 0.0);
-  hpc::fill(hpc::device_policy(), s.rho, rho);
-  hpc::fill(hpc::device_policy(), s.F_total, I);
-  hpc::fill(hpc::device_policy(), s.Fp_total, I);
-  hpc::fill(hpc::device_policy(), s.ep, ep0);
-  hpc::fill(hpc::device_policy(), s.v, v0);
-  hpc::fill(hpc::device_policy(), s.u, u0);
   otm_mark_boundary_domains(in, s);
-  otm_initialize_velocity(s);
   otm_initialize_point_volume(s);
   otm_update_shape_functions(s);
   for (auto material : in.materials) {
@@ -612,7 +537,11 @@ void otm_update_time_step(state& s)
 
 void otm_update_time(input const& in, state& s)
 {
-  otm_update_time_step(s);
+  if (in.use_constant_dt == true) {
+    s.max_stable_dt = s.dt = in.constant_dt;
+  } else {
+    otm_update_time_step(s);
+  }
   auto const old_time = s.time;
   auto const new_time = std::min(s.next_file_output_time, old_time + (s.max_stable_dt * in.CFL));
   s.time = new_time;
@@ -633,23 +562,10 @@ void otm_time_integrator_step(input const& in, state& s)
   otm_update_time(in, s);
 }
 
-void otm_run(std::string const& filename)
+void otm_run(input const& in, state& s)
 {
   lgr::search::initialize_otm_search();
-  material_index num_materials(1);
-  material_index num_boundaries(4);
-  input in(num_materials, num_boundaries);
-  state s;
-  otm_initialize(in, s, filename);
   lgr::otm_file_writer output_file(in.name);
-#if 0
-  {
-    for (auto node = 0; node < s.nodal_materials.size(); ++node) {
-      std::bitset<64> bits(std::uint64_t(s.nodal_materials[node]));
-      HPC_DUMP("NODE : " << node << ", MATERIAL SET : " << bits << '\n');
-    }
-  }
-#endif
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_outputs = in.num_file_outputs;
   auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
@@ -729,6 +645,91 @@ void otm_run(std::string const& filename)
     }
   }
   lgr::search::finalize_otm_search();
+}
+
+void otm_j2_uniaxial_patch_test()
+{
+  material_index num_materials(1);
+  material_index num_boundaries(4);
+  input in(num_materials, num_boundaries);
+  state s;
+  std::string const filename{"cube.g"};
+  auto const points_in_element = 1;
+  s.points_in_element.resize(point_in_element_index(points_in_element));
+  in.otm_material_points_to_add_per_element = points_in_element;
+  lgr::tet_nodes_to_points point_interpolator(points_in_element);
+  in.xp_transform = std::ref(point_interpolator);
+  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+  }
+  in.name = "OTM";
+  in.end_time = 0.001;
+  in.num_file_outputs = 100;
+  auto const rho = hpc::density<double>(7.8e+03);
+  auto const nu = hpc::adimensional<double>(0.00);
+  auto const E = hpc::pressure<double>(200.0e09);
+  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0 = hpc::pressure<double>(1.0e+64);
+  auto const n = hpc::adimensional<double>(4.0);
+  auto const eps0 = hpc::strain<double>(1.0e-02);
+  auto const Svis0 = hpc::pressure<double>(Y0);
+  auto const m = hpc::adimensional<double>(2.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  constexpr material_index body(0);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index z_min(3);
+  constexpr material_index z_max(4);
+  in.materials = hpc::counting_range<material_index>(1);
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  in.CFL = 1.0;
+  in.use_constant_dt = true;
+  in.constant_dt = hpc::time<double>(1.0e-06);
+  auto const tol = hpc::length<double>(1.0e-04);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, tol);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
+  lgr::convert_tet_mesh_to_meshless(in, s);
+  s.dt = in.constant_dt;
+  s.dt_old = in.constant_dt;
+  s.time = hpc::time<double>(0.0);
+  s.max_stable_dt = in.constant_dt;
+  otm_allocate_state(in, s);
+  auto const I = hpc::deformation_gradient<double>::identity();
+  auto const ep0 = hpc::strain<double>(0.0);
+  hpc::fill(hpc::device_policy(), s.rho, rho);
+  hpc::fill(hpc::device_policy(), s.F_total, I);
+  hpc::fill(hpc::device_policy(), s.Fp_total, I);
+  hpc::fill(hpc::device_policy(), s.ep, ep0);
+  otm_uniaxial_patch_test_ics(s);
+  otm_initialize(in, s);
+  s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
+  s.prescribed_v[x_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[x_min] = hpc::vector3<int>(1, 0, 0);
+  s.prescribed_v[y_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[y_min] = hpc::vector3<int>(0, 1, 0);
+  s.prescribed_v[z_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[z_min] = hpc::vector3<int>(0, 0, 1);
+  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, 10.0);
+  s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
+  otm_run(in, s);
 }
 
 } // namespace lgr

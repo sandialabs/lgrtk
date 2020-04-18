@@ -48,6 +48,8 @@ class input {
   hpc::counting_range<material_index> boundaries;
   hpc::time<double> end_time{0.0};
   double CFL = 0.9;
+  bool use_constant_dt{false};
+  hpc::time<double> constant_dt{0.0};
   int num_file_outputs{0};
   int elements_along_x = 0;
   hpc::length<double> x_domain_size = 1.0;
