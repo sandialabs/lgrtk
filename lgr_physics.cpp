@@ -882,8 +882,8 @@ HPC_NOINLINE inline void common_initialization_part2(input const& in, state& s) 
 
 void run(input const& in, std::string const& filename) {
   std::cout << std::scientific << std::setprecision(17);
-  auto const num_file_outputs = in.num_file_outputs;
-  auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
+  auto const num_file_output_periods = in.num_file_output_periods;
+  auto const file_output_period = num_file_output_periods ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
   state s;
   if (filename == "") {
     build_mesh(in, s);
@@ -926,11 +926,11 @@ void run(input const& in, std::string const& filename) {
   common_initialization_part2(in, s);
   if (in.enable_adapt) initialize_h_adapt(s);
   file_writer output_file(in.name);
-  s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
+  s.next_file_output_time = num_file_output_periods ? 0.0 : in.end_time;
   int file_output_index = 0;
   int file_period_index = 0;
   while (s.time < in.end_time) {
-    if (num_file_outputs) {
+    if (num_file_output_periods) {
       if (in.output_to_command_line) {
         std::cout << "outputting file n " << file_output_index << " time " << double(s.time) << "\n";
       }
@@ -959,7 +959,7 @@ void run(input const& in, std::string const& filename) {
       ++s.n;
     }
   }
-  if (num_file_outputs) {
+  if (num_file_output_periods) {
     if (in.output_to_command_line) {
       std::cout << "outputting last file n " << file_output_index << " time " << double(s.time) << "\n";
     }
