@@ -54,7 +54,7 @@ void elastic_wave() {
   in.name = "elastic_wave";
   in.element = BAR;
   in.end_time = 4.0e-3;
-  in.num_file_outputs = 200;
+  in.num_file_output_periods = 200;
   in.elements_along_x = 1000;
   in.rho0[body] = 1000.0;
   in.enable_neo_Hookean[body] = true;
@@ -82,7 +82,7 @@ void gas_expansion() {
   in.name = "gas_expansion";
   in.element = BAR;
   in.end_time = 10.0;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 160;
   in.rho0[gas] = 1.0;
   in.enable_ideal_gas[gas] = true;
@@ -101,7 +101,7 @@ void spinning_square() {
   in.name = "spinning_square";
   in.element = TRIANGLE;
   in.end_time = 1.0e-2;
-  in.num_file_outputs = 400;
+  in.num_file_output_periods = 400;
   in.elements_along_x = 1;
   in.x_domain_size = 1.0;
   in.elements_along_y = 1;
@@ -156,7 +156,7 @@ void Cooks_membrane() {
   in.name = "Cooks_membrane";
   in.element = TRIANGLE;
   in.end_time = 40.0;
-  in.num_file_outputs = 200;
+  in.num_file_output_periods = 200;
   in.elements_along_x = 8;
   in.x_domain_size = 1.0;
   in.elements_along_y = 8;
@@ -191,7 +191,7 @@ void HPC_NOINLINE swinging_plate() {
   input in(nmaterials, nboundaries);
   in.name = "swinging_plate";
   in.element = TRIANGLE;
-  in.num_file_outputs = 200;
+  in.num_file_output_periods = 200;
   in.elements_along_x = 8;
   in.x_domain_size = 2.0;
   in.elements_along_y = 8;
@@ -250,7 +250,7 @@ void spinning_cube() {
   in.name = "spinning_cube";
   in.element = TETRAHEDRON;
   in.end_time = 1.0e-2;
-  in.num_file_outputs = 400;
+  in.num_file_output_periods = 400;
   in.elements_along_x = 1;
   in.x_domain_size = 1.0;
   in.elements_along_y = 1;
@@ -278,7 +278,7 @@ void elastic_wave_2d() {
   in.name = "elastic_wave_2d";
   in.element = TRIANGLE;
   in.end_time = 2.0e-3;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 1000;
   in.elements_along_y = 1;
   in.y_domain_size = 1.0e-3;
@@ -315,7 +315,7 @@ void elastic_wave_3d() {
   in.name = "elastic_wave_3d";
   in.element = TETRAHEDRON;
   in.end_time = 2.0e-3;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 1000;
   in.elements_along_y = 1;
   in.y_domain_size = 1.0e-3;
@@ -352,12 +352,12 @@ HPC_NOINLINE void twisting_column_ep(
   double const end_time,
   bool const plastic,
   bool const output_to_command_line=false,
-  int const num_file_outputs=-1);
+  int const num_file_output_periods=-1);
 void twisting_column_ep(
   double const end_time,
   bool const plastic,
   bool const output_to_command_line,
-  int const num_file_outputs)
+  int const num_file_output_periods)
 {
   constexpr material_index body(0);
   constexpr material_index nmaterials(1);
@@ -368,10 +368,10 @@ void twisting_column_ep(
   if (plastic) in.name += "_ep";
   in.element = TETRAHEDRON;
   in.end_time = end_time;
-  if (num_file_outputs == -1)
-      in.num_file_outputs = static_cast<int>(end_time / .001);
+  if (num_file_output_periods == -1)
+      in.num_file_output_periods = static_cast<int>(end_time / .001);
   else
-      in.num_file_outputs = num_file_outputs;
+      in.num_file_output_periods = num_file_output_periods;
   in.output_to_command_line = output_to_command_line;
   in.elements_along_x = 9;
   in.x_domain_size = 1.0;
@@ -482,7 +482,7 @@ void swinging_cube(bool stabilize) {
   in.name = "swinging_cube";
   }
   in.element = TETRAHEDRON;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 8;
   in.x_domain_size = 2.0;
   in.elements_along_y = 8;
@@ -554,7 +554,7 @@ void twisting_column() {
   in.name = "twisting_column";
   in.element = TETRAHEDRON;
   in.end_time = 0.1;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 3;
   in.x_domain_size = 1.0;
   in.elements_along_y = 18;
@@ -611,7 +611,7 @@ void Noh_1D() {
   in.name = "Noh_1D";
   in.element = BAR;
   in.end_time = 0.6;
-  in.num_file_outputs = 60;
+  in.num_file_output_periods = 60;
   in.elements_along_x = 44;
   in.x_domain_size = 1.1;
   in.rho0[gas] = 1.0;
@@ -664,7 +664,7 @@ HPC_NOINLINE inline void Noh_2D(bool nodal_energy, bool p_prime ) {
   }
   in.element = TRIANGLE;
   in.end_time = 0.6;
-  in.num_file_outputs = 60;
+  in.num_file_output_periods = 60;
   in.elements_along_x = 34;
   in.x_domain_size = 0.85;
   in.elements_along_y = 34;
@@ -713,7 +713,7 @@ void spinning_composite_cube() {
   in.name = "spinning_composite_cube";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 1.0e-2;
-  in.num_file_outputs = 400;
+  in.num_file_output_periods = 400;
   in.elements_along_x = 1;
   in.x_domain_size = 1.0;
   in.elements_along_y = 1;
@@ -740,7 +740,7 @@ void twisting_composite_column() {
   in.name = "twisting_composite_column";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
-  in.num_file_outputs = 100;
+  in.num_file_output_periods = 100;
   in.elements_along_x = 3;
   in.x_domain_size = 1.0;
   in.elements_along_y = 18;
@@ -793,7 +793,7 @@ void twisting_composite_column_J2() {
   in.name = "twisting_composite_column J2 plasticity";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.1;
-  in.num_file_outputs = 1000;
+  in.num_file_output_periods = 1000;
   in.elements_along_x = 3;
   in.x_domain_size = 1.0;
   in.elements_along_y = 18;
@@ -858,7 +858,7 @@ void flyer_target_J2() {
   in.name = "flyer_target J2 plasticity";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 5.0e-06;
-  in.num_file_outputs = 50;
+  in.num_file_output_periods = 50;
   double const rho{8.96e+03};
   double const nu{0.343};
   double const E{110.0e09};
@@ -929,7 +929,7 @@ void Noh_3D() {
   in.name = "Noh_3D";
   in.element = TETRAHEDRON;
   in.end_time = 0.6;
-  in.num_file_outputs = 10;
+  in.num_file_output_periods = 10;
   in.elements_along_x = 20;
   in.x_domain_size = 0.9;
   in.elements_along_y = 20;
@@ -985,7 +985,7 @@ void composite_Noh_3D() {
   in.name = "composite_Noh_3D";
   in.element = COMPOSITE_TETRAHEDRON;
   in.end_time = 0.6;
-  in.num_file_outputs = 10;
+  in.num_file_output_periods = 10;
   in.elements_along_x = 20;
   in.x_domain_size = 0.9;
   in.elements_along_y = 20;
@@ -1042,7 +1042,7 @@ void Sod_1D() {
   in.name = "Sod_1D";
   in.element = BAR;
   in.end_time = 0.14;
-  in.num_file_outputs = 14;
+  in.num_file_output_periods = 14;
   in.elements_along_x = 100;
   in.x_domain_size = 1.0;
   in.rho0[left] = 1.0;
@@ -1089,7 +1089,7 @@ void triple_point() {
   in.name = "triple_point";
   in.element = TRIANGLE;
   in.end_time = 6.0;
-  in.num_file_outputs = 60;
+  in.num_file_output_periods = 60;
   in.elements_along_x = 56;
   in.x_domain_size = 7.0;
   in.elements_along_y = 24;
