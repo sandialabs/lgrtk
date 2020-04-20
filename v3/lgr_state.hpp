@@ -17,8 +17,8 @@ static_assert(std::is_same<dp_de_t, hpc::density<double>>::value, "dp_de should 
 
 class state {
   public:
-  int n = 0;
-  hpc::time<double> time = 0.0;
+  int n{0};
+  hpc::time<double> time{0.0};
   hpc::counting_range<element_index> elements{element_index(0)};
   hpc::counting_range<node_in_element_index> nodes_in_element{node_in_element_index(0)};
   hpc::counting_range<node_index> nodes{node_index(0)};
@@ -78,6 +78,7 @@ class state {
   hpc::adimensional<double> min_quality;
 
   // Exclusive OTM data structures
+  int num_time_steps{0}; // For constant time steps
   hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes; // OTM: Support for each point
   hpc::device_range_sum<node_point_index, node_index> nodes_to_node_points; // OTM: Influence for each node
   hpc::device_vector<node_index, point_node_index> point_nodes_to_nodes;

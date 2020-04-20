@@ -43,12 +43,12 @@ void otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
-void otm_uniaxial_patch_test_ics(state& s)
+void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity)
 {
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const top_vel = hpc::speed<double>(10.0);
+  auto const top_vel = top_velocity;
   auto functor = [=] HPC_DEVICE (point_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
@@ -537,16 +537,20 @@ void otm_update_time_step(state& s)
 
 void otm_update_time(input const& in, state& s)
 {
+  s.dt_old = s.dt;
   if (in.use_constant_dt == true) {
-    s.max_stable_dt = s.dt = in.constant_dt;
+    auto const fp_n = static_cast<double>(s.n);
+    auto const fp_np1 = static_cast<double>(s.n + 1);
+    auto const fp_N = static_cast<double>(s.num_time_steps);
+    auto const old_time = fp_n / fp_N * in.end_time;
+    auto const new_time = fp_np1 / fp_N * in.end_time;
+    s.max_stable_dt = s.dt = new_time - old_time;
+    s.time = new_time;
   } else {
     otm_update_time_step(s);
+    s.dt = s.max_stable_dt * in.CFL;
+    s.time += s.dt;
   }
-  auto const old_time = s.time;
-  auto const new_time = std::min(s.next_file_output_time, old_time + (s.max_stable_dt * in.CFL));
-  s.time = new_time;
-  s.dt_old = s.dt;
-  s.dt = new_time - old_time;
 }
 
 void otm_time_integrator_step(input const& in, state& s)
@@ -620,24 +624,46 @@ void otm_run(input const& in, state& s)
   auto const num_file_output_periods = in.num_file_output_periods;
   auto const file_output_period = num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
   auto file_output_index = 0;
-  s.next_file_output_time = num_file_output_periods != 0 ? 0.0 : in.end_time;
-  while (s.time < in.end_time) {
-    if (num_file_output_periods != 0) {
+  if (in.use_constant_dt == true) {
+    auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
+    for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
       if (in.output_to_command_line == true) {
-        std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
       }
-      if (in.debug_output == true) {
-        otm_debug_output(s);
+      auto const do_output = s.n % num_time_steps_between_output == 0;
+      if (do_output == true) {
+        if (in.output_to_command_line == true) {
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+        }
+        if (in.debug_output == true) {
+          otm_debug_output(s);
+        }
+        output_file.capture(s);
+        output_file.write(file_output_index);
+        ++file_output_index;
       }
-      output_file.capture(s);
-      output_file.write(file_output_index);
-      ++file_output_index;
-      s.next_file_output_time = double(file_output_index) * file_output_period;
-      s.next_file_output_time = std::min(s.next_file_output_time, in.end_time);
+      if (s.n >= s.num_time_steps) continue;
+      otm_time_integrator_step(in, s);
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+      }
     }
-    while (s.time < s.next_file_output_time) {
+  } else {
+    while (s.time <= in.end_time) {
       if (in.output_to_command_line == true) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.max_stable_dt) << "\n";
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+      }
+      auto const do_output = s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time);
+      if (do_output == true) {
+        if (in.output_to_command_line == true) {
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+        }
+        if (in.debug_output == true) {
+          otm_debug_output(s);
+        }
+        output_file.capture(s);
+        output_file.write(file_output_index);
+        ++file_output_index;
+        s.next_file_output_time = double(file_output_index) * file_output_period;
       }
       otm_time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
@@ -648,7 +674,20 @@ void otm_run(input const& in, state& s)
   lgr::search::finalize_otm_search();
 }
 
-void otm_j2_uniaxial_patch_test()
+hpc::stress<double> otm_compute_stress_average(state const& s)
+{
+  auto num_points = s.points.size();
+  auto points_to_sigma_full = s.sigma_full.cbegin();
+  auto functor = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const sigma = points_to_sigma_full[point].load();
+    return sigma;
+  };
+  hpc::stress<double> init(0, 0, 0, 0, 0, 0, 0, 0, 0);
+  auto const sigma_sum = hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::stress<double> >(), functor);
+  return sigma_sum / num_points;
+}
+
+bool otm_j2_uniaxial_patch_test()
 {
   material_index num_materials(1);
   material_index num_boundaries(4);
@@ -665,7 +704,7 @@ void otm_j2_uniaxial_patch_test()
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
   in.name = "OTM";
-  in.end_time = 0.001;
+  in.end_time = 1.0e-03;
   in.num_file_output_periods = 100;
   in.debug_output = true;
   auto const rho = hpc::density<double>(7.8e+03);
@@ -712,7 +751,9 @@ void otm_j2_uniaxial_patch_test()
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);
   s.max_stable_dt = in.constant_dt;
+  s.num_time_steps = static_cast<int>(std::round(in.end_time / in.constant_dt));
   otm_allocate_state(in, s);
+  auto const top_velocity = hpc::speed<double>(10.0);
   s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
   s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
   s.prescribed_v[x_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
@@ -721,7 +762,7 @@ void otm_j2_uniaxial_patch_test()
   s.prescribed_dof[y_min] = hpc::vector3<int>(0, 1, 0);
   s.prescribed_v[z_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
   s.prescribed_dof[z_min] = hpc::vector3<int>(0, 0, 1);
-  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, 10.0);
+  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, top_velocity);
   s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
   auto const I = hpc::deformation_gradient<double>::identity();
   auto const ep0 = hpc::strain<double>(0.0);
@@ -729,9 +770,24 @@ void otm_j2_uniaxial_patch_test()
   hpc::fill(hpc::device_policy(), s.F_total, I);
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
-  otm_uniaxial_patch_test_ics(s);
+  otm_uniaxial_patch_test_ics(s, top_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
+  auto const top_displacement = top_velocity * s.time;
+  auto const F33 = hpc::strain<double>(1.0 + top_displacement / hpc::length<double>(1.0));
+  auto const F = hpc::deformation_gradient<double>(1, 0, 0, 0, 1, 0, 0, 0, F33);
+  auto const J = hpc::determinant(F);
+  auto const C = hpc::transpose(F) * F;
+  auto const e = 0.5 * hpc::log(C);
+  // Not true in general, but this is uniaxial deformation
+  auto sigma_gold = (E / J) * e;
+  auto const sigma_avg = otm_compute_stress_average(s);
+  auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
+  auto const tol_sigma = 1.0e-12;
+  otm_debug_output(s);
+  HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
+  HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
+  return error_sigma <= tol_sigma;
 }
 
 } // namespace lgr

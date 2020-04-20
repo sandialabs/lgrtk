@@ -145,3 +145,9 @@ TEST(mechanics, hex_translation)
   auto const tol = 1.0e-06;
   ASSERT_LE(error, tol);
 }
+
+TEST(mechanics, unixial_tension)
+{
+  auto const pass = lgr::otm_j2_uniaxial_patch_test();
+  ASSERT_EQ(pass, true);
+}

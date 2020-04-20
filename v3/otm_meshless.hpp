@@ -26,5 +26,5 @@ void otm_time_integrator_step(input const& in, state& s);
 void otm_update_material_state(input const& in, state& s, material_index const material);
 void otm_run(input const& in, state& s);
 void otm_debug_output(state& s);
-void otm_j2_uniaxial_patch_test();
+bool otm_j2_uniaxial_patch_test();
 }
