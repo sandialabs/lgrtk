@@ -48,7 +48,7 @@ void otm_initialize_velocity(state& s)
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_v = s.v.begin();
   auto const top_vel = hpc::speed<double>(10.0);
-  auto functor = [=] HPC_DEVICE (point_index const node) {
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
     nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
