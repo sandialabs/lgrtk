@@ -374,6 +374,20 @@ TEST_F(distances_search, can_compute_nearest_and_farthest_node_to_node_from_sear
   check_single_tetrahedron_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }
 
+TEST_F(distances_search, search_with_single_node_always_returns_nearest_node)
+{
+  state s;
+  tetrahedron_single_point(s);
+
+  node_neighbors n;
+  search::do_otm_node_nearest_node_search(s, n, 1);
+
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
+
+  check_single_tetrahedron_nearest_node_squared_distance(s, n, nodes_to_neighbor_squared_distances);
+}
+
 TEST_F(distances_search, can_compute_nearest_and_farthest_point_to_point_from_search)
 {
   state s;
