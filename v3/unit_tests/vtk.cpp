@@ -12,7 +12,7 @@ TEST(vtk, canPrintOtmStateToFile) {
 
   tetrahedron_single_point(s);
   lgr::otm_update_nodal_mass(s);
-  lgr::otm_initialize_state(in, s);
+  lgr::otm_allocate_state(in, s);
 
   lgr::otm_file_writer writer("tetrahedron_single_point");
 

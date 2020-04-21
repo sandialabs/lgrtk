@@ -58,7 +58,7 @@ TEST(maxent, partition_unity_value_3)
 
 namespace lgr_unit {
 
-double compute_basis_gradient_error(const lgr::state& s) {
+double compute_basis_gradient_error(lgr::state const& s) {
   auto num_points = s.points.size();
   auto const nodes_to_grad_N = s.grad_N.begin();
   auto const supports = s.points_to_point_nodes.cbegin();

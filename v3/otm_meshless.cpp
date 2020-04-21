@@ -43,14 +43,16 @@ void otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
-void otm_initialize_velocity(state& s)
+void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity)
 {
   auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const top_vel = hpc::speed<double>(10.0);
+  auto const top_vel = top_velocity;
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
+    nodes_to_u[node] = hpc::position<double>(0.0, 0.0, 0.0);
     nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -423,7 +425,7 @@ void otm_update_point_position(state& s)
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
-void otm_initialize_state(input const& in, state& s) {
+void otm_allocate_state(input const& in, state& s) {
   auto const num_points = s.points.size();
   auto const num_nodes = s.nodes.size();
   auto const num_elements = s.elements.size();
@@ -499,87 +501,10 @@ void otm_initialize_state(input const& in, state& s) {
   s.prescribed_dof.resize(num_boundaries + num_materials);
 }
 
-void otm_initialize(input& in, state& s, std::string const& filename)
+void otm_initialize(input& in, state& s)
 {
-  auto const points_in_element = 1;
-  s.points_in_element.resize(point_in_element_index(points_in_element));
-  in.otm_material_points_to_add_per_element = points_in_element;
-  lgr::tet_nodes_to_points point_interpolator(points_in_element);
-  in.xp_transform = std::ref(point_interpolator);
-
-  auto const err_code = lgr::read_exodus_file(filename, in, s);
-  if (err_code != 0) {
-    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
-  }
-
-  in.name = "OTM";
-  in.end_time = 0.001;
-  in.num_file_outputs = 100;
-  auto const rho = hpc::density<double>(7.8e+03);
-  auto const nu = hpc::adimensional<double>(0.00);
-  auto const E = hpc::pressure<double>(200.0e09);
-  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
-  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0 = hpc::pressure<double>(1.0e+64);
-  auto const n = hpc::adimensional<double>(4.0);
-  auto const eps0 = hpc::strain<double>(1.0e-02);
-  auto const Svis0 = hpc::pressure<double>(Y0);
-  auto const m = hpc::adimensional<double>(2.0);
-  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
-  constexpr material_index body(0);
-  constexpr material_index x_min(1);
-  constexpr material_index y_min(2);
-  constexpr material_index z_min(3);
-  constexpr material_index z_max(4);
-  in.materials = hpc::counting_range<material_index>(1);
-  in.enable_variational_J2[body] = true;
-  in.rho0[body] = rho;
-  in.K0[body] = K;
-  in.G0[body] = G;
-  in.Y0[body] = Y0;
-  in.n[body] = n;
-  in.eps0[body] = eps0;
-  in.Svis0[body] = Svis0;
-  in.m[body] = m;
-  in.eps_dot0[body] = eps_dot0;
-  in.CFL =1.0;
-  lgr::convert_tet_mesh_to_meshless(in, s);
-  s.dt = hpc::time<double>(1.0e-06);
-  s.dt_old = hpc::time<double>(1.0e-06);
-  s.time = hpc::time<double>(0.0);
-  otm_initialize_state(in, s);
-  auto const tol = hpc::length<double>(1.0e-04);
-  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
-  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
-  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
-  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
-  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, tol);
-  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
-  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
-  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
-  s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
-  s.prescribed_v[x_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[x_min] = hpc::vector3<int>(1, 0, 0);
-  s.prescribed_v[y_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[y_min] = hpc::vector3<int>(0, 1, 0);
-  s.prescribed_v[z_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
-  s.prescribed_dof[z_min] = hpc::vector3<int>(0, 0, 1);
-  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, 10.0);
-  s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
-  auto const I = hpc::deformation_gradient<double>::identity();
-  auto const ep0 = hpc::strain<double>(0.0);
-  auto const v0 = hpc::velocity<double>(0.0, 10.0, 0.0);
-  auto const u0 = hpc::displacement<double>(0.0, 0.0, 0.0);
-  hpc::fill(hpc::device_policy(), s.rho, rho);
-  hpc::fill(hpc::device_policy(), s.F_total, I);
-  hpc::fill(hpc::device_policy(), s.Fp_total, I);
-  hpc::fill(hpc::device_policy(), s.ep, ep0);
-  hpc::fill(hpc::device_policy(), s.v, v0);
-  hpc::fill(hpc::device_policy(), s.u, u0);
   otm_mark_boundary_domains(in, s);
   collect_node_sets(in, s);
-  otm_initialize_velocity(s);
   otm_initialize_point_volume(s);
   otm_update_shape_functions(s);
   for (auto material : in.materials) {
@@ -626,12 +551,20 @@ void otm_update_time_step(state& s)
 
 void otm_update_time(input const& in, state& s)
 {
-  otm_update_time_step(s);
-  auto const old_time = s.time;
-  auto const new_time = std::min(s.next_file_output_time, old_time + (s.max_stable_dt * in.CFL));
-  s.time = new_time;
   s.dt_old = s.dt;
-  s.dt = new_time - old_time;
+  if (in.use_constant_dt == true) {
+    auto const fp_n = static_cast<double>(s.n);
+    auto const fp_np1 = static_cast<double>(s.n + 1);
+    auto const fp_N = static_cast<double>(s.num_time_steps);
+    auto const old_time = fp_n / fp_N * in.end_time;
+    auto const new_time = fp_np1 / fp_N * in.end_time;
+    s.max_stable_dt = s.dt = new_time - old_time;
+    s.time = new_time;
+  } else {
+    otm_update_time_step(s);
+    s.dt = s.max_stable_dt * in.CFL;
+    s.time += s.dt;
+  }
 }
 
 void otm_time_integrator_step(input const& in, state& s)
@@ -647,94 +580,104 @@ void otm_time_integrator_step(input const& in, state& s)
   otm_update_time(in, s);
 }
 
-void otm_run(std::string const& filename)
+void otm_debug_output(state& s)
+{
+  HPC_DUMP("TIME : " << s.time << '\n');
+  auto const nodes_to_x = s.x.cbegin();
+  auto print_x = [=] HPC_DEVICE (lgr::node_index const node) {
+    auto const x = nodes_to_x[node].load();
+    HPC_DUMP("node: " << node << ", x:" << x);
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, print_x);
+
+  auto const nodes_to_v = s.v.cbegin();
+  auto print_v = [=] HPC_DEVICE (lgr::node_index const node) {
+    auto const v = nodes_to_v[node].load();
+    HPC_DUMP("node: " << node << ", v:" << v);
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, print_v);
+
+  auto const nodes_to_u = s.u.cbegin();
+  auto print_u = [=] HPC_DEVICE (lgr::node_index const node) {
+    auto const u = nodes_to_u[node].load();
+    HPC_DUMP("node: " << node << ", u:" << u);
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, print_u);
+
+  auto const points_to_xp = s.xp.cbegin();
+  auto print_xp = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const xp = points_to_xp[point].load();
+    HPC_DUMP("point: " << point << ", xp:" << xp);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, print_xp);
+
+  auto const points_to_F = s.F_total.cbegin();
+  auto print_F = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const F = points_to_F[point].load();
+    HPC_DUMP("point: " << point << ", F:\n" << F);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, print_F);
+
+  auto const points_to_sigma = s.sigma_full.cbegin();
+  auto const points_to_K = s.K.cbegin();
+  auto const points_to_G = s.G.cbegin();
+  auto print_sigma = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const sigma = points_to_sigma[point].load();
+    auto const K = points_to_K[point];
+    auto const G = points_to_G[point];
+    HPC_DUMP("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
+  };
+  hpc::for_each(hpc::device_policy(), s.points, print_sigma);
+}
+
+void otm_run(input const& in, state& s)
 {
   lgr::search::initialize_otm_search();
-  material_index num_materials(1);
-  material_index num_boundaries(4);
-  input in(num_materials, num_boundaries);
-  state s;
-  otm_initialize(in, s, filename);
   lgr::otm_file_writer output_file(in.name);
-#if 0
-  {
-    for (auto node = 0; node < s.nodal_materials.size(); ++node) {
-      std::bitset<64> bits(std::uint64_t(s.nodal_materials[node]));
-      HPC_DUMP("NODE : " << node << ", MATERIAL SET : " << bits << '\n');
-    }
-  }
-#endif
   std::cout << std::scientific << std::setprecision(17);
-  auto const num_file_outputs = in.num_file_outputs;
-  auto const file_output_period = num_file_outputs ? in.end_time / double(num_file_outputs) : hpc::time<double>(0.0);
-  auto file_output_index{0};
-  auto file_period_index{0};
-  s.next_file_output_time = num_file_outputs ? 0.0 : in.end_time;
-  while (s.time < in.end_time) {
-    if (num_file_outputs) {
-      if (in.output_to_command_line) {
-        std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+  auto const num_file_output_periods = in.num_file_output_periods;
+  auto const file_output_period = num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
+  auto file_output_index = 0;
+  if (in.use_constant_dt == true) {
+    auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
+    for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
+      if (in.output_to_command_line == true) {
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
       }
-#if 1
-      {
-        HPC_DUMP("TIME : " << s.time << '\n');
-        auto const nodes_to_x = s.x.cbegin();
-        auto print_x = [=] HPC_DEVICE (lgr::node_index const node) {
-          auto const x = nodes_to_x[node].load();
-          HPC_DUMP("node: " << node << ", x:" << x);
-        };
-        hpc::for_each(hpc::device_policy(), s.nodes, print_x);
-
-        auto const nodes_to_v = s.v.cbegin();
-        auto print_v = [=] HPC_DEVICE (lgr::node_index const node) {
-          auto const v = nodes_to_v[node].load();
-          HPC_DUMP("node: " << node << ", v:" << v);
-        };
-        hpc::for_each(hpc::device_policy(), s.nodes, print_v);
-
-        auto const nodes_to_u = s.u.cbegin();
-        auto print_u = [=] HPC_DEVICE (lgr::node_index const node) {
-          auto const u = nodes_to_u[node].load();
-          HPC_DUMP("node: " << node << ", u:" << u);
-        };
-        hpc::for_each(hpc::device_policy(), s.nodes, print_u);
-
-        auto const points_to_xp = s.xp.cbegin();
-        auto print_xp = [=] HPC_DEVICE (lgr::point_index const point) {
-          auto const xp = points_to_xp[point].load();
-          HPC_DUMP("point: " << point << ", xp:" << xp);
-        };
-        hpc::for_each(hpc::device_policy(), s.points, print_xp);
-
-        auto const points_to_F = s.F_total.cbegin();
-        auto print_F = [=] HPC_DEVICE (lgr::point_index const point) {
-          auto const F = points_to_F[point].load();
-          HPC_DUMP("point: " << point << ", F:\n" << F);
-        };
-        hpc::for_each(hpc::device_policy(), s.points, print_F);
-
-        auto const points_to_sigma = s.sigma_full.cbegin();
-        auto const points_to_K = s.K.cbegin();
-        auto const points_to_G = s.G.cbegin();
-        auto print_sigma = [=] HPC_DEVICE (lgr::point_index const point) {
-          auto const sigma = points_to_sigma[point].load();
-          auto const K = points_to_K[point];
-          auto const G = points_to_G[point];
-          HPC_DUMP("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
-        };
-        hpc::for_each(hpc::device_policy(), s.points, print_sigma);
+      auto const do_output = s.n % num_time_steps_between_output == 0;
+      if (do_output == true) {
+        if (in.output_to_command_line == true) {
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+        }
+        if (in.debug_output == true) {
+          otm_debug_output(s);
+        }
+        output_file.capture(s);
+        output_file.write(file_output_index);
+        ++file_output_index;
       }
-#endif
-      output_file.capture(s);
-      output_file.write(file_output_index);
-      ++file_output_index;
-      ++file_period_index;
-      s.next_file_output_time = double(file_period_index) * file_output_period;
-      s.next_file_output_time = std::min(s.next_file_output_time, in.end_time);
+      if (s.n >= s.num_time_steps) continue;
+      otm_time_integrator_step(in, s);
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+      }
     }
-    while (s.time < s.next_file_output_time) {
-      if (in.output_to_command_line) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.max_stable_dt) << "\n";
+  } else {
+    while (s.time <= in.end_time) {
+      if (in.output_to_command_line == true) {
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+      }
+      auto const do_output = s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time);
+      if (do_output == true) {
+        if (in.output_to_command_line == true) {
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
+        }
+        if (in.debug_output == true) {
+          otm_debug_output(s);
+        }
+        output_file.capture(s);
+        output_file.write(file_output_index);
+        ++file_output_index;
+        s.next_file_output_time = double(file_output_index) * file_output_period;
       }
       otm_time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
@@ -743,6 +686,122 @@ void otm_run(std::string const& filename)
     }
   }
   lgr::search::finalize_otm_search();
+}
+
+hpc::stress<double> otm_compute_stress_average(state const& s)
+{
+  auto num_points = s.points.size();
+  auto points_to_sigma_full = s.sigma_full.cbegin();
+  auto functor = [=] HPC_DEVICE (lgr::point_index const point) {
+    auto const sigma = points_to_sigma_full[point].load();
+    return sigma;
+  };
+  hpc::stress<double> init(0, 0, 0, 0, 0, 0, 0, 0, 0);
+  auto const sigma_sum = hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::stress<double> >(), functor);
+  return sigma_sum / num_points;
+}
+
+bool otm_j2_uniaxial_patch_test()
+{
+  material_index num_materials(1);
+  material_index num_boundaries(4);
+  input in(num_materials, num_boundaries);
+  state s;
+  std::string const filename{"cube.g"};
+  auto const points_in_element = 1;
+  s.points_in_element.resize(point_in_element_index(points_in_element));
+  in.otm_material_points_to_add_per_element = points_in_element;
+  lgr::tet_nodes_to_points point_interpolator(points_in_element);
+  in.xp_transform = std::ref(point_interpolator);
+  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+  }
+  in.name = "OTM";
+  in.end_time = 1.0e-03;
+  in.num_file_output_periods = 100;
+  in.debug_output = true;
+  auto const rho = hpc::density<double>(7.8e+03);
+  auto const nu = hpc::adimensional<double>(0.00);
+  auto const E = hpc::pressure<double>(200.0e09);
+  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0 = hpc::pressure<double>(1.0e+64);
+  auto const n = hpc::adimensional<double>(4.0);
+  auto const eps0 = hpc::strain<double>(1.0e-02);
+  auto const Svis0 = hpc::pressure<double>(Y0);
+  auto const m = hpc::adimensional<double>(2.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  constexpr material_index body(0);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index z_min(3);
+  constexpr material_index z_max(4);
+  in.materials = hpc::counting_range<material_index>(1);
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  in.CFL = 1.0;
+  in.use_constant_dt = true;
+  in.constant_dt = hpc::time<double>(1.0e-06);
+  auto const tol = hpc::length<double>(1.0e-04);
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, tol);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
+  lgr::convert_tet_mesh_to_meshless(in, s);
+  s.dt = in.constant_dt;
+  s.dt_old = in.constant_dt;
+  s.time = hpc::time<double>(0.0);
+  s.max_stable_dt = in.constant_dt;
+  s.num_time_steps = static_cast<int>(std::round(in.end_time / in.constant_dt));
+  otm_allocate_state(in, s);
+  auto const top_velocity = hpc::speed<double>(10.0);
+  s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
+  s.prescribed_v[x_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[x_min] = hpc::vector3<int>(1, 0, 0);
+  s.prescribed_v[y_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[y_min] = hpc::vector3<int>(0, 1, 0);
+  s.prescribed_v[z_min] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[z_min] = hpc::vector3<int>(0, 0, 1);
+  s.prescribed_v[z_max] = hpc::velocity<double>(0.0, 0.0, top_velocity);
+  s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
+  auto const I = hpc::deformation_gradient<double>::identity();
+  auto const ep0 = hpc::strain<double>(0.0);
+  hpc::fill(hpc::device_policy(), s.rho, rho);
+  hpc::fill(hpc::device_policy(), s.F_total, I);
+  hpc::fill(hpc::device_policy(), s.Fp_total, I);
+  hpc::fill(hpc::device_policy(), s.ep, ep0);
+  otm_uniaxial_patch_test_ics(s, top_velocity);
+  otm_initialize(in, s);
+  otm_run(in, s);
+  auto const top_displacement = top_velocity * s.time;
+  auto const F33 = hpc::strain<double>(1.0 + top_displacement / hpc::length<double>(1.0));
+  auto const F = hpc::deformation_gradient<double>(1, 0, 0, 0, 1, 0, 0, 0, F33);
+  auto const J = hpc::determinant(F);
+  auto const C = hpc::transpose(F) * F;
+  auto const e = 0.5 * hpc::log(C);
+  // Not true in general, but this is uniaxial deformation
+  auto sigma_gold = (E / J) * e;
+  auto const sigma_avg = otm_compute_stress_average(s);
+  auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
+  auto const tol_sigma = 1.0e-12;
+  otm_debug_output(s);
+  HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
+  HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
+  return error_sigma <= tol_sigma;
 }
 
 } // namespace lgr

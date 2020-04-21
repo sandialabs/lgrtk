@@ -42,4 +42,5 @@ if (LGR_ENABLE_UNIT_TESTS)
   target_link_libraries(ut_lgr PRIVATE "lgrlib;${GTEST_LIBRARY};pthread")
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tets.g ${CMAKE_CURRENT_BINARY_DIR}/tets.g COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cube.g ${CMAKE_CURRENT_BINARY_DIR}/cube.g COPYONLY)
 endif()
