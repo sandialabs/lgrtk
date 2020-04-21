@@ -48,8 +48,8 @@ void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const top_vel = top_velocity;
-  auto functor = [=] HPC_DEVICE (point_index const node) {
+  auto const top_vel = hpc::speed<double>(10.0);
+  auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
     nodes_to_u[node] = hpc::position<double>(0.0, 0.0, 0.0);
@@ -263,7 +263,7 @@ void otm_update_reference(state& s) {
       auto const node = point_nodes_to_nodes[point_node];
       auto const u = nodes_to_u[node].load();
       auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
-      F_incr = F_incr + outer_product(u, old_grad_N);
+      F_incr += outer_product(u, old_grad_N);
     }
     // TODO: Verify this is also true for OTM
     auto const F_inverse_transpose = transpose(inverse(F_incr));
@@ -344,6 +344,32 @@ void otm_update_nodal_momentum(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
+inline void otm_enforce_boundary_conditions(state &s)
+{
+  auto const dt = s.dt;
+  auto const boundary_indices = s.boundaries;
+  auto const boundary_to_prescribed_v = s.prescribed_v.cbegin();
+  auto const boundary_to_prescribed_dof = s.prescribed_dof.cbegin();
+  auto const nodes_to_u = s.u.begin();
+  for (auto boundary_index : boundary_indices)
+  {
+    auto const v = boundary_to_prescribed_v[boundary_index].load();
+    auto const dof = boundary_to_prescribed_dof[boundary_index].load();
+    auto functor = [=] HPC_DEVICE (node_index const node)
+    {
+      auto disp = nodes_to_u[node].load();
+      if (dof(0) == 1)
+      { disp(0) = v(0) * dt;}
+      if (dof(1) == 1)
+      { disp(1) = v(1) * dt;}
+      if (dof(2) == 1)
+      { disp(2) = v(2) * dt;}
+      nodes_to_u[node] = disp;
+    };
+    hpc::for_each(hpc::device_policy(), s.node_sets[boundary_index], functor);
+  }
+}
+
 void otm_update_nodal_position(state& s) {
   auto const dt = s.dt;
   auto const dt_old = s.dt_old;
@@ -354,34 +380,26 @@ void otm_update_nodal_position(state& s) {
   auto const nodes_to_x = s.x.begin();
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const nodes_to_domain = s.nodal_materials.cbegin();
-  auto const boundary_indices = s.boundaries;
-  auto const boundary_to_prescribed_v = s.prescribed_v.cbegin();
-  auto const boundary_to_prescribed_dof = s.prescribed_dof.cbegin();
-  auto functor = [=] HPC_DEVICE (node_index const node) {
+  auto disp_functor = [=] HPC_DEVICE (node_index const node) {
     auto const m = nodes_to_mass[node];
     auto const lm = nodes_to_lm[node].load();
     auto const f = nodes_to_f[node].load();
     auto disp = (dt / m) * (lm + dt_avg * f);
-    auto const domain_set = nodes_to_domain[node];
-    for (auto boundary_index : boundary_indices) {
-      material_set const boundary(boundary_index);
-      if (domain_set.contains(boundary)) {
-        auto const v = boundary_to_prescribed_v[boundary_index].load();
-        auto const dof = boundary_to_prescribed_dof[boundary_index].load();
-        if (dof(0) == 1) {disp(0) = v(0) * dt;}
-        if (dof(1) == 1) {disp(1) = v(1) * dt;}
-        if (dof(2) == 1) {disp(2) = v(2) * dt;}
-      }
-    }
-    auto const velo = disp / dt;
-    auto x_old = nodes_to_x[node].load();
     nodes_to_u[node] = disp;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, disp_functor);
+
+  otm_enforce_boundary_conditions(s);
+
+  auto coord_vel_update_functor = [=] HPC_DEVICE (node_index const node) {
+    auto disp = nodes_to_u[node].load();
+    auto const velo = disp / dt;
+    nodes_to_v[node] = velo;
+    auto x_old = nodes_to_x[node].load();
     auto x_new = x_old + disp;
     nodes_to_x[node] = x_new;
-    nodes_to_v[node] = velo;
   };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  hpc::for_each(hpc::device_policy(), s.nodes, coord_vel_update_functor);
 }
 
 void otm_update_point_position(state& s)
@@ -497,19 +515,14 @@ void otm_initialize(input& in, state& s)
 HPC_NOINLINE inline void compute_min_neighbor_dist(state& s) {
   search_util::point_neighbors n;
   search::do_otm_point_nearest_point_search(s, n, 1);
+  hpc::fill(hpc::device_policy(), s.nearest_neighbor_dist, -1.0);
   search_util::compute_point_neighbor_squared_distances(s, n, s.nearest_neighbor_dist);
   assert( s.nearest_neighbor_dist.size() == s.points.size() );
-  auto const nearest_neighbors = n.entities_to_neighbors.cbegin();
   auto const neighbor_distances = s.nearest_neighbor_dist.begin();
   auto dist_func = [=] HPC_DEVICE (point_index const point) {
-                     auto const neighbor = nearest_neighbors[point];
-                     if (point < neighbor)
-                     {
-                       auto const dist = std::sqrt(neighbor_distances[point]);
-                       neighbor_distances[point] = dist;
-                       neighbor_distances[neighbor] = dist;
-                     }
-                   };
+    auto const dist = std::sqrt(neighbor_distances[point]);
+    neighbor_distances[point] = dist;
+  };
   hpc::for_each(hpc::device_policy(), s.points, dist_func);
 }
 
