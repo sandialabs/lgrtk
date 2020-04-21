@@ -48,7 +48,7 @@ void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const top_vel = hpc::speed<double>(10.0);
+  auto const top_vel = top_velocity;
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const x = nodes_to_x[node].load();
     auto const vz = top_vel * x(2);
