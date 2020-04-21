@@ -504,6 +504,7 @@ void otm_allocate_state(input const& in, state& s) {
 void otm_initialize(input& in, state& s)
 {
   otm_mark_boundary_domains(in, s);
+  collect_node_sets(in, s);
   otm_initialize_point_volume(s);
   otm_update_shape_functions(s);
   for (auto material : in.materials) {
