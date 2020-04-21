@@ -1,7 +1,7 @@
 #include <cassert>
 #include <string>
 #include <hpc_macros.hpp>
-#include <otm_meshless.hpp>
+#include <otm_apps.hpp>
 
 int main()
 {
