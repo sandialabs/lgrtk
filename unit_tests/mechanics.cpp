@@ -148,6 +148,6 @@ TEST(mechanics, hex_translation)
 
 TEST(mechanics, unixial_tension)
 {
-  auto const pass = lgr::otm_j2_uniaxial_patch_test();
+  auto const pass = lgr::otm_j2_nu_zero_patch_test();
   ASSERT_EQ(pass, true);
 }
