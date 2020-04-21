@@ -43,7 +43,7 @@ void otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
-void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity)
+void otm_nu_zero_patch_test_ics(state& s, hpc::speed<double> const top_velocity)
 {
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
@@ -644,7 +644,7 @@ void otm_run(input const& in, state& s)
       if (in.output_to_command_line == true) {
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
       }
-      auto const do_output = s.n % num_time_steps_between_output == 0;
+      auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
         if (in.output_to_command_line == true) {
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
@@ -666,7 +666,7 @@ void otm_run(input const& in, state& s)
       if (in.output_to_command_line == true) {
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
       }
-      auto const do_output = s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time);
+      auto const do_output = in.do_output == true && (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
         if (in.output_to_command_line == true) {
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
@@ -701,7 +701,7 @@ hpc::stress<double> otm_compute_stress_average(state const& s)
   return sigma_sum / num_points;
 }
 
-bool otm_j2_uniaxial_patch_test()
+bool otm_j2_nu_zero_patch_test()
 {
   material_index num_materials(1);
   material_index num_boundaries(4);
@@ -720,6 +720,7 @@ bool otm_j2_uniaxial_patch_test()
   in.name = "OTM";
   in.end_time = 1.0e-03;
   in.num_file_output_periods = 100;
+  in.do_output = false;
   in.debug_output = true;
   auto const rho = hpc::density<double>(7.8e+03);
   auto const nu = hpc::adimensional<double>(0.00);
@@ -784,7 +785,7 @@ bool otm_j2_uniaxial_patch_test()
   hpc::fill(hpc::device_policy(), s.F_total, I);
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
-  otm_uniaxial_patch_test_ics(s, top_velocity);
+  otm_nu_zero_patch_test_ics(s, top_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
   auto const top_displacement = top_velocity * s.time;
@@ -793,7 +794,7 @@ bool otm_j2_uniaxial_patch_test()
   auto const J = hpc::determinant(F);
   auto const C = hpc::transpose(F) * F;
   auto const e = 0.5 * hpc::log(C);
-  // Not true in general, but this is uniaxial deformation
+  // Not true in general, but this is nu_zero deformation
   auto sigma_gold = (E / J) * e;
   auto const sigma_avg = otm_compute_stress_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
