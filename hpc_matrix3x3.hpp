@@ -319,7 +319,7 @@ det(matrix3x3<Scalar> const A) noexcept {
 template <class T>
 HPC_HOST_DEVICE constexpr auto
 inverse(matrix3x3<T> const x) {
-  return inverse_full_pivot(x);
+  return inverse_fast(x);
 }
 
 template <class T>
