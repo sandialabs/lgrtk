@@ -315,10 +315,10 @@ bool otm_cylindrical_flyer()
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
   in.name = "cylindrical-flyer";
-  in.end_time = 1.0e-05;
-  in.num_file_output_periods = 1;
+  in.end_time = 1.0e-04;
+  in.num_file_output_periods = 100;
   in.do_output = true;
-  in.debug_output = true;
+  in.debug_output = false;
   auto const rho = hpc::density<double>(8.96e+03);
   auto const nu = hpc::adimensional<double>(0.343);
   auto const E = hpc::pressure<double>(110.0e09);
@@ -352,6 +352,7 @@ bool otm_cylindrical_flyer()
   s.time = hpc::time<double>(0.0);
   s.max_stable_dt = in.constant_dt;
   s.num_time_steps = static_cast<int>(std::round(in.end_time / in.constant_dt));
+  s.use_contact = true;
   otm_allocate_state(in, s);
   s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
   s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
