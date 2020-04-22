@@ -58,6 +58,7 @@ class input {
   int elements_along_z{0};
   hpc::length<double> z_domain_size{1.0};
   int otm_material_points_to_add_per_element{1};
+  bool do_output{true};
   bool output_to_command_line{true};
   bool debug_output{false};
   hpc::host_vector<hpc::density<double>, material_index> rho0;

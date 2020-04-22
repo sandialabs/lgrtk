@@ -6,6 +6,7 @@
 #include <hpc_execution.hpp>
 #include <hpc_functional.hpp>
 #include <hpc_macros.hpp>
+#include <hpc_math.hpp>
 #include <hpc_matrix3x3.hpp>
 #include <hpc_numeric.hpp>
 #include <hpc_range.hpp>
@@ -14,9 +15,9 @@
 #include <lgr_input.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
+#include <otm_apps.hpp>
 #include <otm_meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
-#include <hpc_math.hpp>
 
 namespace lgr_unit {
 
@@ -148,6 +149,6 @@ TEST(mechanics, hex_translation)
 
 TEST(mechanics, unixial_tension)
 {
-  auto const pass = lgr::otm_j2_uniaxial_patch_test();
+  auto const pass = lgr::otm_j2_nu_zero_patch_test();
   ASSERT_EQ(pass, true);
 }
