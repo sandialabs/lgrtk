@@ -68,6 +68,19 @@ void otm_uniaxial_patch_test_ics(state& s, hpc::speed<double> const top_velocity
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
+void otm_cylindrical_flyer_ics(state& s, hpc::speed<double> const init_velocity)
+{
+  auto const nodes_to_u = s.u.begin();
+  auto const nodes_to_v = s.v.begin();
+  auto const init_vel = init_velocity;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const vz = init_vel;
+    nodes_to_u[node] = hpc::position<double>(0.0, 0.0, 0.0);
+    nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 bool otm_j2_nu_zero_patch_test()
 {
   material_index num_materials(1);
@@ -166,7 +179,6 @@ bool otm_j2_nu_zero_patch_test()
   auto const sigma_avg = otm_compute_stress_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
   auto const tol_sigma = 1.0e-12;
-  otm_debug_output(s);
   HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
   HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
   return error_sigma <= tol_sigma;
@@ -285,6 +297,77 @@ bool otm_j2_uniaxial_patch_test()
   HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
   HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
   return error_sigma <= tol_sigma;
+}
+
+bool otm_cylindrical_flyer()
+{
+  material_index num_materials(1);
+  material_index num_boundaries(0);
+  input in(num_materials, num_boundaries);
+  state s;
+  std::string const filename{"cylinder.g"};
+  auto const points_in_element = 1;
+  s.points_in_element.resize(point_in_element_index(points_in_element));
+  in.otm_material_points_to_add_per_element = points_in_element;
+  tet_nodes_to_points point_interpolator(points_in_element);
+  in.xp_transform = std::ref(point_interpolator);
+  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+  }
+  in.name = "cylindrical-flyer";
+  in.end_time = 1.0e-03;
+  in.num_file_output_periods = 100;
+  in.do_output = true;
+  in.debug_output = true;
+  auto const rho = hpc::density<double>(8.96e+03);
+  auto const nu = hpc::adimensional<double>(0.343);
+  auto const E = hpc::pressure<double>(110.0e09);
+  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0 = hpc::pressure<double>(358.8e+06);
+  auto const n = hpc::adimensional<double>(4.0);
+  auto const eps0 = hpc::strain<double>(1.0e-02);
+  auto const Svis0 = hpc::pressure<double>(Y0);
+  auto const m = hpc::adimensional<double>(2.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  constexpr material_index body(0);
+  in.materials = hpc::counting_range<material_index>(1);
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  in.CFL = 1.0;
+  in.use_constant_dt = true;
+  in.constant_dt = hpc::time<double>(1.0e-06);
+  in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
+  lgr::convert_tet_mesh_to_meshless(in, s);
+  s.dt = in.constant_dt;
+  s.dt_old = in.constant_dt;
+  s.time = hpc::time<double>(0.0);
+  s.max_stable_dt = in.constant_dt;
+  s.num_time_steps = static_cast<int>(std::round(in.end_time / in.constant_dt));
+  otm_allocate_state(in, s);
+  s.prescribed_v[body] = hpc::velocity<double>(0.0, 0.0, 0.0);
+  s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
+  auto const I = hpc::deformation_gradient<double>::identity();
+  auto const ep0 = hpc::strain<double>(0.0);
+  hpc::fill(hpc::device_policy(), s.rho, rho);
+  hpc::fill(hpc::device_policy(), s.F_total, I);
+  hpc::fill(hpc::device_policy(), s.Fp_total, I);
+  hpc::fill(hpc::device_policy(), s.ep, ep0);
+  auto const init_velocity = hpc::speed<double>(227.0);
+  otm_cylindrical_flyer_ics(s, init_velocity);
+  otm_initialize(in, s);
+  otm_run(in, s);
+  otm_debug_output(s);
+  return true;
 }
 
 } // namespace lgr
