@@ -85,7 +85,7 @@ void otm_update_shape_functions(state& s) {
     // Newton's algorithm
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
-    auto const eps = 1024 * hpc::machine_epsilon<double>();
+    auto const eps = 512 * hpc::machine_epsilon<double>();
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
     auto const max_iter = 16;

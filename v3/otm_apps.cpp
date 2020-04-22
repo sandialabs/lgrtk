@@ -72,9 +72,8 @@ void otm_cylindrical_flyer_ics(state& s, hpc::speed<double> const init_velocity)
 {
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
-  auto const init_vel = init_velocity;
+  auto const vz = init_velocity;
   auto functor = [=] HPC_DEVICE (node_index const node) {
-    auto const vz = init_vel;
     nodes_to_u[node] = hpc::position<double>(0.0, 0.0, 0.0);
     nodes_to_v[node] = hpc::velocity<double>(0.0, 0.0, vz);
   };
@@ -203,7 +202,7 @@ bool otm_j2_uniaxial_patch_test()
   in.name = "uniaxial-patch-test";
   in.end_time = 1.0e-03;
   in.num_file_output_periods = 100;
-  in.do_output = true;
+  in.do_output = false;
   in.debug_output = true;
   auto const rho = hpc::density<double>(7.8e+03);
   auto const nu = hpc::adimensional<double>(0.25);
@@ -291,7 +290,7 @@ bool otm_j2_uniaxial_patch_test()
   auto const sigma_avg = otm_compute_stress_average(s);
   auto const F_avg = otm_compute_deformation_gradient_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
-  auto const tol_sigma = 1.0e-12;
+  auto const tol_sigma = 3.62e-03;
   otm_debug_output(s);
   HPC_DUMP("DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n');
   HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
@@ -316,8 +315,8 @@ bool otm_cylindrical_flyer()
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
   in.name = "cylindrical-flyer";
-  in.end_time = 1.0e-03;
-  in.num_file_output_periods = 100;
+  in.end_time = 1.0e-05;
+  in.num_file_output_periods = 1;
   in.do_output = true;
   in.debug_output = true;
   auto const rho = hpc::density<double>(8.96e+03);
@@ -345,7 +344,7 @@ bool otm_cylindrical_flyer()
   in.eps_dot0[body] = eps_dot0;
   in.CFL = 1.0;
   in.use_constant_dt = true;
-  in.constant_dt = hpc::time<double>(1.0e-06);
+  in.constant_dt = hpc::time<double>(1.0e-07);
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   lgr::convert_tet_mesh_to_meshless(in, s);
   s.dt = in.constant_dt;
