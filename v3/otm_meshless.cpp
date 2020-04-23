@@ -77,6 +77,7 @@ void otm_update_shape_functions(state& s) {
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_h = s.h_otm.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto const eps = s.maxent_tolerance;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
     auto const h = points_to_h[point];
@@ -85,7 +86,6 @@ void otm_update_shape_functions(state& s) {
     // Newton's algorithm
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
-    auto const eps = 1024 * hpc::machine_epsilon<double>();
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
     auto const max_iter = 16;
@@ -356,6 +356,23 @@ inline void otm_enforce_boundary_conditions(state &s)
   }
 }
 
+inline void otm_enforce_contact_constraints(state &s)
+{
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.begin();
+  auto functor = [=] HPC_DEVICE (node_index const node)
+  {
+    auto x = nodes_to_x[node].load();
+    auto u = nodes_to_u[node].load();
+    auto z = x(2);
+    if (z >= 0.0) {
+      u(2) = 0.0;
+    }
+    nodes_to_u[node] = u;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 void otm_update_nodal_position(state& s) {
   auto const dt = s.dt;
   auto const dt_old = s.dt_old;
@@ -376,6 +393,9 @@ void otm_update_nodal_position(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, disp_functor);
 
   otm_enforce_boundary_conditions(s);
+  if (s.use_contact == true) {
+    otm_enforce_contact_constraints(s);
+  }
 
   auto coord_vel_update_functor = [=] HPC_DEVICE (node_index const node) {
     auto disp = nodes_to_u[node].load();
