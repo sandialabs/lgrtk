@@ -2,6 +2,7 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
+#include <fstream>
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
@@ -559,6 +560,19 @@ HPC_NOINLINE inline void compute_min_neighbor_dist(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, dist_func);
 }
 
+HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(state& s) {
+  auto const nodes_to_lm = s.lm.begin();
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const m = nodes_to_mass[node];
+    auto const lm = nodes_to_lm[node].load();
+    return 0.5*hpc::norm_squared(lm)/m;
+  };
+  hpc::energy<double> init(0);
+  auto const T = hpc::transform_reduce(hpc::device_policy(), s.nodes, init, hpc::plus<hpc::energy<double> >(), functor);
+  return T;
+}
+
 HPC_NOINLINE inline void update_point_dt(state& s) {
   compute_min_neighbor_dist(s);
   auto const points_to_c = s.c.cbegin();
@@ -616,6 +630,8 @@ void otm_run(input const& in, state& s)
 {
   lgr::search::initialize_otm_search();
   lgr::otm_file_writer output_file(in.name);
+  std::ofstream energy_file("energy_output.txt");
+  energy_file << "time " << "KE" << std::endl;
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_output_periods = in.num_file_output_periods;
   auto const file_output_period = num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
@@ -647,6 +663,8 @@ void otm_run(input const& in, state& s)
     while (s.time <= in.end_time) {
       if (in.output_to_command_line == true) {
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+        auto KE = compute_kinetic_energy(s);
+        energy_file << s.time << " " << KE << std::endl;
       }
       auto const do_output = in.do_output == true && (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
