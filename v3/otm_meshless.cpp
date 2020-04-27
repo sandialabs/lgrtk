@@ -608,7 +608,7 @@ void otm_time_integrator_step(input const& in, state& s)
   for (auto material : in.materials) {
     otm_update_material_state(in, s, material);
   }
-  otm_update_shape_functions(s);
+  //otm_update_shape_functions(s);
   otm_update_time(in, s);
 }
 
