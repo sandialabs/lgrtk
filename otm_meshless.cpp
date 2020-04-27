@@ -391,7 +391,7 @@ inline void otm_enforce_contact_constraints(state &s)
     auto x = nodes_to_x[node].load();
     auto u = nodes_to_u[node].load();
     auto z = x(2);
-    if (z >= 0.0) {
+    if (z >= -0.01) {
       u(2) = 0.0;
     }
     nodes_to_u[node] = u;
