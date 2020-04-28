@@ -437,7 +437,7 @@ void otm_allocate_state(input const& in, state& s) {
   auto const num_elements = s.elements.size();
   auto const num_materials = in.materials.size();
   auto const num_boundaries = in.boundaries.size();
-  auto const support_size = s.points_to_point_nodes.size();
+  auto const support_size = s.nodes_in_element.size();
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
