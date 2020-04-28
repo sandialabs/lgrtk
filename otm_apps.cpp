@@ -324,11 +324,12 @@ bool otm_cylindrical_flyer()
   auto const E = hpc::pressure<double>(110.0e09);
   auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0 = hpc::pressure<double>(358.8e+06);
-  auto const n = hpc::adimensional<double>(4.0);
-  auto const eps0 = hpc::strain<double>(1.0e-02);
-  auto const Svis0 = hpc::pressure<double>(Y0);
-  auto const m = hpc::adimensional<double>(2.0);
+  auto const Y0 = hpc::pressure<double>(400.0e+06);
+  auto const n = hpc::adimensional<double>(1.0);
+  auto const H0 = hpc::pressure<double>(100.0e6);
+  auto const eps0 = hpc::strain<double>(Y0 / H0);
+  auto const Svis0 = hpc::pressure<double>(0.0);
+  auto const m = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
   constexpr material_index body(0);
   in.materials = hpc::counting_range<material_index>(1);
@@ -343,7 +344,7 @@ bool otm_cylindrical_flyer()
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
   in.CFL = 1.0;
-  in.use_constant_dt = true;
+  in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   lgr::convert_tet_mesh_to_meshless(in, s);
