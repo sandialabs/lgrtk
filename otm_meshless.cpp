@@ -572,6 +572,19 @@ HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(state& s) {
   return T;
 }
 
+HPC_NOINLINE inline hpc::energy<double> compute_free_energy(const state& s) {
+  auto const points_to_potential_density = s.potential_density.cbegin();
+  auto const points_to_volume = s.V.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const psi = points_to_potential_density[point];
+    auto const dV = points_to_volume[point];
+    return psi*dV;
+  };
+  hpc::energy<double> init(0);
+  auto const F = hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::energy<double> >(), functor);
+  return F;
+}
+
 HPC_NOINLINE inline void update_point_dt(state& s) {
   compute_min_neighbor_dist(s);
   auto const points_to_c = s.c.cbegin();
@@ -630,7 +643,7 @@ void otm_run(input const& in, state& s)
   lgr::search::initialize_otm_search();
   lgr::otm_file_writer output_file(in.name);
   std::ofstream energy_file("energy_output.txt");
-  energy_file << "time " << "KE" << std::endl;
+  energy_file << "#time " << "KE" << std::endl;
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_output_periods = in.num_file_output_periods;
   auto const file_output_period = num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
@@ -663,7 +676,8 @@ void otm_run(input const& in, state& s)
       if (in.output_to_command_line == true) {
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
         auto KE = compute_kinetic_energy(s);
-        energy_file << s.time << " " << KE << std::endl;
+        auto SE = compute_free_energy(s);
+        energy_file << s.time << " " << KE << " " << SE << std::endl;
       }
       auto const do_output = in.do_output == true && (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
