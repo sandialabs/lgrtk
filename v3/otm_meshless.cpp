@@ -559,8 +559,8 @@ HPC_NOINLINE inline void compute_min_neighbor_dist(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, dist_func);
 }
 
-HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(state& s) {
-  auto const nodes_to_lm = s.lm.begin();
+HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(const state& s) {
+  auto const nodes_to_lm = s.lm.cbegin();
   auto const nodes_to_mass = s.mass.cbegin();
   auto functor = [=] HPC_DEVICE (node_index const node) {
     auto const m = nodes_to_mass[node];
