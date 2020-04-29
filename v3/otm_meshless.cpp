@@ -89,8 +89,10 @@ void otm_update_shape_functions(state& s) {
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
+    int iter = 0;
     auto const max_iter = 16;
-    for (auto iter = 0; iter < max_iter; ++iter) {
+    while (!converged) {
+      assert(iter < max_iter);
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -106,13 +108,10 @@ void otm_update_shape_functions(state& s) {
       auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
       auto const error = hpc::norm(dmu) / hpc::norm(mu);
-      converged = error <= eps;
-      if (converged == true) {
-        J = dRdmu;
-        break;
-      }
+      converged = (error <= eps);
+      J = dRdmu;
+      ++iter;
     }
-    assert(converged == true);
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
