@@ -93,7 +93,7 @@ class state {
   hpc::host_array_vector<hpc::velocity<double>, material_index> prescribed_v;
   hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
   hpc::counting_range<material_index> boundaries{material_index(0)}; // Copied from input structure
-  hpc::adimensional<double> maxent_tolerance{1024 * hpc::machine_epsilon<double>()};
+  hpc::adimensional<double> maxent_tolerance{8192 * hpc::machine_epsilon<double>()};
   bool use_contact{false};
 
   // For plasticity
