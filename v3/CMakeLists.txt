@@ -51,7 +51,6 @@ option(LGR_ENABLE_EXODUS "Build the Exodus reader" OFF)
 
 if (LGR_ENABLE_EXODUS)
   find_package(SEACASExodus REQUIRED)
-  find_package(MPI REQUIRED)
   set(LGR_SOURCES ${LGR_SOURCES} lgr_exodus.cpp)
 endif()
 
