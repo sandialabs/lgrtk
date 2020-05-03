@@ -627,10 +627,10 @@ void otm_run(input const& in, state& s)
         if (in.output_to_command_line == true) {
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
+        output_file.capture(s);
         if (in.debug_output == true) {
           output_file.to_console();
         }
-        output_file.capture(s);
         output_file.write(file_output_index);
         ++file_output_index;
         s.next_file_output_time = double(file_output_index) * file_output_period;
