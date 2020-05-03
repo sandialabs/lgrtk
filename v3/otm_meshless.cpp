@@ -586,56 +586,6 @@ void otm_time_integrator_step(input const& in, state& s)
   otm_update_time(in, s);
 }
 
-void otm_debug_output(state& s)
-{
-  HPC_DUMP("TIME : " << s.time << '\n');
-  auto const nodes_to_x = s.x.cbegin();
-  auto print_x = [=] HPC_DEVICE (lgr::node_index const node) {
-    auto const x = nodes_to_x[node].load();
-    HPC_DUMP("node: " << node << ", x:" << x);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_x);
-
-  auto const nodes_to_v = s.v.cbegin();
-  auto print_v = [=] HPC_DEVICE (lgr::node_index const node) {
-    auto const v = nodes_to_v[node].load();
-    HPC_DUMP("node: " << node << ", v:" << v);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_v);
-
-  auto const nodes_to_u = s.u.cbegin();
-  auto print_u = [=] HPC_DEVICE (lgr::node_index const node) {
-    auto const u = nodes_to_u[node].load();
-    HPC_DUMP("node: " << node << ", u:" << u);
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, print_u);
-
-  auto const points_to_xp = s.xp.cbegin();
-  auto print_xp = [=] HPC_DEVICE (lgr::point_index const point) {
-    auto const xp = points_to_xp[point].load();
-    HPC_DUMP("point: " << point << ", xp:" << xp);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_xp);
-
-  auto const points_to_F = s.F_total.cbegin();
-  auto print_F = [=] HPC_DEVICE (lgr::point_index const point) {
-    auto const F = points_to_F[point].load();
-    HPC_DUMP("point: " << point << ", F:\n" << F);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_F);
-
-  auto const points_to_sigma = s.sigma_full.cbegin();
-  auto const points_to_K = s.K.cbegin();
-  auto const points_to_G = s.G.cbegin();
-  auto print_sigma = [=] HPC_DEVICE (lgr::point_index const point) {
-    auto const sigma = points_to_sigma[point].load();
-    auto const K = points_to_K[point];
-    auto const G = points_to_G[point];
-    HPC_DUMP("point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma);
-  };
-  hpc::for_each(hpc::device_policy(), s.points, print_sigma);
-}
-
 void otm_run(input const& in, state& s)
 {
   lgr::search::initialize_otm_search();
@@ -655,10 +605,10 @@ void otm_run(input const& in, state& s)
         if (in.output_to_command_line == true) {
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
-        if (in.debug_output == true) {
-          otm_debug_output(s);
-        }
         output_file.capture(s);
+        if (in.debug_output == true) {
+          output_file.to_console();
+        }
         output_file.write(file_output_index);
         ++file_output_index;
       }
@@ -678,7 +628,7 @@ void otm_run(input const& in, state& s)
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
         if (in.debug_output == true) {
-          otm_debug_output(s);
+          output_file.to_console();
         }
         output_file.capture(s);
         output_file.write(file_output_index);

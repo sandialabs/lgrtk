@@ -14,6 +14,7 @@ namespace lgr {
 void otm_file_writer::capture(state const& s) {
   host_s.nodes = s.nodes;
   host_s.points = s.points;
+  host_s.time = s.time;
 
   auto num_points = s.points.size();
   auto num_nodes = s.nodes.size();
@@ -69,6 +70,57 @@ void otm_file_writer::write(int const file_output_index) {
   write_vtk_scalars(point_stream, "G", host_s.G);
   write_vtk_scalars(point_stream, "K", host_s.K);
   point_stream.close();
+}
+
+void otm_file_writer::to_console()
+{
+  std::cout << "TIME : " << host_s.time << '\n';
+  auto const nodes_to_x = host_s.x.cbegin();
+  auto print_x = [=] HPC_HOST (lgr::node_index const node) {
+    auto const x = nodes_to_x[node].load();
+    std::cout << "node: " << node << ", x:" << x << '\n';
+  };
+  hpc::for_each(hpc::host_policy(), host_s.nodes, print_x);
+
+  auto const nodes_to_v = host_s.v.cbegin();
+  auto print_v = [=] HPC_HOST (lgr::node_index const node) {
+    auto const v = nodes_to_v[node].load();
+    std::cout << "node: " << node << ", v:" << v << '\n';
+  };
+  hpc::for_each(hpc::host_policy(), host_s.nodes, print_v);
+
+  auto const nodes_to_u = host_s.u.cbegin();
+  auto print_u = [=] HPC_HOST (lgr::node_index const node) {
+    auto const u = nodes_to_u[node].load();
+    std::cout << "node: " << node << ", u:" << u << '\n';
+  };
+  hpc::for_each(hpc::host_policy(), host_s.nodes, print_u);
+
+  auto const points_to_xp = host_s.xp.cbegin();
+  auto print_xp = [=] HPC_HOST (lgr::point_index const point) {
+    auto const xp = points_to_xp[point].load();
+    std::cout << "point: " << point << ", xp:" << xp << '\n';
+  };
+  hpc::for_each(hpc::host_policy(), host_s.points, print_xp);
+
+  auto const points_to_F = host_s.F_total.cbegin();
+  auto print_F = [=] HPC_HOST (lgr::point_index const point) {
+    auto const F = points_to_F[point].load();
+    std::cout << "point: " << point << ", F:\n" << F;
+  };
+  hpc::for_each(hpc::host_policy(), host_s.points, print_F);
+
+  auto const points_to_sigma = host_s.sigma.cbegin();
+  auto const points_to_K = host_s.K.cbegin();
+  auto const points_to_G = host_s.G.cbegin();
+  auto print_sigma = [=] HPC_HOST (lgr::point_index const point) {
+    auto const sigma = points_to_sigma[point].load();
+    auto const K = points_to_K[point];
+    auto const G = points_to_G[point];
+    std::cout << "point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma;
+  };
+  hpc::for_each(hpc::host_policy(), host_s.points, print_sigma);
+
 }
 
 }
