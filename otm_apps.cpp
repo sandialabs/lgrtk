@@ -99,7 +99,7 @@ bool otm_j2_nu_zero_patch_test()
   in.name = "nu-zero-patch-test";
   in.end_time = 1.0e-03;
   in.num_file_output_periods = 100;
-  in.do_output = false;
+  in.do_output = true;
   in.debug_output = true;
   auto const rho = hpc::density<double>(7.8e+03);
   auto const nu = hpc::adimensional<double>(0.00);
@@ -178,8 +178,8 @@ bool otm_j2_nu_zero_patch_test()
   auto const sigma_avg = otm_compute_stress_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
   auto const tol_sigma = 1.0e-12;
-  HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
-  HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
+  std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
+  std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
   return error_sigma <= tol_sigma;
 }
 
@@ -291,10 +291,9 @@ bool otm_j2_uniaxial_patch_test()
   auto const F_avg = otm_compute_deformation_gradient_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
   auto const tol_sigma = 3.62e-03;
-  otm_debug_output(s);
-  HPC_DUMP("DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n');
-  HPC_DUMP("STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n');
-  HPC_DUMP("STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n');
+  std::cout << "DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n';
+  std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
+  std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
   return error_sigma <= tol_sigma;
 }
 
@@ -367,7 +366,6 @@ bool otm_cylindrical_flyer()
   otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
-  otm_debug_output(s);
   return true;
 }
 
