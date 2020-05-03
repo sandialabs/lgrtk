@@ -18,7 +18,11 @@ void otm_file_writer::capture(state const& s) {
 
   auto num_points = s.points.size();
   auto num_nodes = s.nodes.size();
-  lgr::resize_state_arrays(host_s, num_nodes, num_points);
+
+  host_s.x.resize(num_nodes);
+  host_s.xp.resize(num_points);
+  host_s.V.resize(num_points);
+  host_s.rho.resize(num_points);
 
   hpc::copy(s.x, host_s.x);
   hpc::copy(s.xp, host_s.xp);
