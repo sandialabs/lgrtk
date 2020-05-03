@@ -314,7 +314,7 @@ void otm_update_material_state(input const& in, state& s, material_index const m
       points_to_G[point] = Geff;
       points_to_W[point] = W;
   };
-  hpc::for_each(hpc::host_policy(), s.points, functor);
+  hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
 void otm_update_nodal_momentum(state& s) {
