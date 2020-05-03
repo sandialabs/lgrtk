@@ -13,7 +13,7 @@ hpc::stress<double> otm_compute_stress_average(state const& s)
 {
   auto num_points = s.points.size();
   auto points_to_sigma_full = s.sigma_full.cbegin();
-  auto functor = [=] HPC_DEVICE (lgr::point_index const point) {
+  auto functor = [=] HPC_DEVICE (point_index const point) {
     auto const sigma = points_to_sigma_full[point].load();
     return sigma;
   };
@@ -26,7 +26,7 @@ hpc::deformation_gradient<double> otm_compute_deformation_gradient_average(state
 {
   auto num_points = s.points.size();
   auto points_to_F = s.F_total.cbegin();
-  auto functor = [=] HPC_DEVICE (lgr::point_index const point) {
+  auto functor = [=] HPC_DEVICE (point_index const point) {
     auto const F = points_to_F[point].load();
     return F;
   };
@@ -92,7 +92,7 @@ bool otm_j2_nu_zero_patch_test()
   in.otm_material_points_to_add_per_element = points_in_element;
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
-  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
@@ -140,7 +140,7 @@ bool otm_j2_nu_zero_patch_test()
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
   in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
   in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
-  lgr::convert_tet_mesh_to_meshless(in, s);
+  convert_tet_mesh_to_meshless(in, s);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);
@@ -195,7 +195,7 @@ bool otm_j2_uniaxial_patch_test()
   in.otm_material_points_to_add_per_element = points_in_element;
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
-  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
@@ -243,7 +243,7 @@ bool otm_j2_uniaxial_patch_test()
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, tol);
   in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, tol);
   in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, tol);
-  lgr::convert_tet_mesh_to_meshless(in, s);
+  convert_tet_mesh_to_meshless(in, s);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);
@@ -309,7 +309,7 @@ bool otm_cylindrical_flyer()
   in.otm_material_points_to_add_per_element = points_in_element;
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
-  auto const err_code = lgr::read_exodus_file(filename, in, s);
+  auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
     HPC_ERROR_EXIT("Reading Exodus file : " << filename);
   }
@@ -346,7 +346,7 @@ bool otm_cylindrical_flyer()
   in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
-  lgr::convert_tet_mesh_to_meshless(in, s);
+  convert_tet_mesh_to_meshless(in, s);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);
