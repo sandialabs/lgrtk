@@ -198,14 +198,38 @@ inline void otm_assemble_external_force(state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
+inline void otm_assemble_contact_force(state& s)
+{
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto const nodes_to_f = s.f.begin();
+  auto const penalty_coeff = s.contact_penalty_coeff;
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto node_f = hpc::force<double>::zero();
+    auto const x = nodes_to_x[node].load();
+    auto const m = nodes_to_mass[node];
+    auto const z = x(2);
+    if (z > 0.0) {
+      node_f(2) = -penalty_coeff * m * z;
+    }
+    auto const f_old = nodes_to_f[node].load();
+    auto const f_new = f_old + node_f;
+    nodes_to_f[node] = f_new;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 void otm_update_nodal_force(state& s) {
   hpc::fill(hpc::device_policy(), s.f, hpc::force<double>::zero());
   otm_assemble_internal_force(s);
   otm_assemble_external_force(s);
+  if (s.use_penalty_contact == true) {
+    otm_assemble_contact_force(s);
+  }
 }
 
 void otm_update_nodal_mass(state& s) {
-  auto const node_to_mass = s.mass.begin();
+  auto const nodes_to_mass = s.mass.begin();
   auto const points_to_rho = s.rho.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const nodes_to_node_points = s.nodes_to_node_points.cbegin();
@@ -227,7 +251,7 @@ void otm_update_nodal_mass(state& s) {
       auto const m = N * rho * V;
       node_m += m;
     }
-    node_to_mass[node] += node_m;
+    nodes_to_mass[node] += node_m;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
@@ -393,7 +417,7 @@ void otm_update_nodal_position(state& s) {
   hpc::for_each(hpc::device_policy(), s.nodes, disp_functor);
 
   otm_enforce_boundary_conditions(s);
-  if (s.use_contact == true) {
+  if (s.use_displacement_contact == true) {
     otm_enforce_contact_constraints(s);
   }
 

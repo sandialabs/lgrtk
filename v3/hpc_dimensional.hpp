@@ -134,6 +134,8 @@ using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_di
 using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
 using stress_gradient_dimension = divide_dimensions_t<stress_dimension, length_dimension>;
 using pressure_gradient_dimension = stress_gradient_dimension;
+using strain_rate_rate_dimension = divide_dimensions_t<strain_rate_dimension, time_dimension>;
+
 
 #ifdef HPC_ENABLE_DIMENSIONAL_ANALYSIS
 
@@ -467,6 +469,8 @@ template <class T>
 using strain = quantity<T, strain_dimension>;
 template <class T>
 using strain_rate = quantity<T, strain_rate_dimension>;
+template <class T>
+using strain_rate_rate = quantity<T, strain_rate_rate_dimension>;
 template <class T>
 using deformation_gradient = matrix3x3<quantity<T, strain_dimension>>;
 template <class T>
