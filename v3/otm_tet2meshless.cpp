@@ -22,7 +22,7 @@ void convert_tet_mesh_to_meshless(const input& in, state& st)
 {
   auto const num_points = st.elements.size() * in.otm_material_points_to_add_per_element;
   st.points.resize(num_points);
-  auto const num_nodes_in_support = st.nodes_in_element.size();
+  auto const num_nodes_in_support = st.use_custom_initial_support_size == true ? st.initial_support_size : st.nodes_in_element.size();
   st.point_nodes_to_nodes.resize(num_points * num_nodes_in_support);
   st.xp.resize(num_points);
   st.h_otm.resize(num_points);

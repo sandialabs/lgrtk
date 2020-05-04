@@ -94,7 +94,11 @@ class state {
   hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
   hpc::counting_range<material_index> boundaries{material_index(0)}; // Copied from input structure
   hpc::adimensional<double> maxent_tolerance{8192 * hpc::machine_epsilon<double>()};
-  bool use_contact{false};
+  hpc::strain_rate_rate<double> contact_penalty_coeff{0.0};
+  bool use_displacement_contact{false};
+  bool use_penalty_contact{false};
+  bool use_custom_initial_support_size{false};
+  node_in_element_index initial_support_size{0};
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start

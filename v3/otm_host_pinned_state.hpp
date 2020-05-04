@@ -9,8 +9,8 @@
 namespace lgr {
 
 template<typename state_type>
-inline void resize_state_arrays(state_type &state, const node_index num_nodes,
-    const point_index num_points)
+inline void resize_state_arrays(state_type &state, node_index const num_nodes,
+    point_index const num_points)
 {
   state.x.resize(num_nodes);
   state.xp.resize(num_points);
