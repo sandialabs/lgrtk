@@ -16,8 +16,8 @@ void otm_file_writer::capture(state const& s) {
   host_s.points = s.points;
   host_s.time = s.time;
 
-  auto num_points = s.points.size();
-  auto num_nodes = s.nodes.size();
+  auto const num_points = s.points.size();
+  auto const num_nodes = s.nodes.size();
 
   host_s.x.resize(num_nodes);
   host_s.xp.resize(num_points);
@@ -44,6 +44,22 @@ void otm_file_writer::capture(state const& s) {
   hpc::copy(s.G, host_s.G);
   host_s.K.resize(num_points);
   hpc::copy(s.K, host_s.K);
+
+  auto const Fp_size = s.Fp_total.size();
+  if (Fp_size > 0) {
+    host_s.Fp_total.resize(Fp_size);
+    hpc::copy(s.Fp_total, host_s.Fp_total);
+  }
+  auto const ep_size = s.ep.size();
+  if (ep_size > 0) {
+    host_s.ep.resize(ep_size);
+    hpc::copy(s.ep, host_s.ep);
+  }
+  auto const ep_dot_size = s.ep_dot.size();
+  if (ep_dot_size > 0) {
+    host_s.ep_dot.resize(ep_dot_size);
+    hpc::copy(s.ep_dot, host_s.ep_dot);
+  }
 }
 
 void otm_file_writer::write(int const file_output_index) {
@@ -73,6 +89,15 @@ void otm_file_writer::write(int const file_output_index) {
   write_vtk_full_tensors(point_stream, "deformation_gradient", host_s.F_total);
   write_vtk_scalars(point_stream, "G", host_s.G);
   write_vtk_scalars(point_stream, "K", host_s.K);
+  if (host_s.Fp_total.size() > 0) {
+    write_vtk_full_tensors(point_stream, "plastic_deformation_gradient", host_s.Fp_total);
+  }
+  if (host_s.ep.size() > 0) {
+    write_vtk_scalars(point_stream, "ep", host_s.ep);
+  }
+  if (host_s.ep_dot.size() > 0) {
+    write_vtk_scalars(point_stream, "ep_dot", host_s.ep_dot);
+  }
   point_stream.close();
 }
 

@@ -332,6 +332,8 @@ void otm_update_material_state(input const& in, state& s, material_index const m
         auto Fp = points_to_Fp[point].load();
         auto ep = points_to_ep[point];
         variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp, ep);
+        points_to_Fp[point] = Fp;
+        points_to_ep[point] = ep;
       }
       points_to_sigma[point] = sigma;
       points_to_K[point] = Keff;
