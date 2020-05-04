@@ -99,7 +99,7 @@ bool otm_j2_nu_zero_patch_test()
   in.name = "nu-zero-patch-test";
   in.end_time = 1.0e-03;
   in.num_file_output_periods = 100;
-  in.do_output = true;
+  in.do_output = false;
   in.debug_output = true;
   auto const rho = hpc::density<double>(7.8e+03);
   auto const nu = hpc::adimensional<double>(0.00);
