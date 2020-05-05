@@ -685,6 +685,23 @@ HPC_NOINLINE inline void update_a_from_material_state(input const& in, state& s)
   }
 }
 
+HPC_NOINLINE inline void enforce_contact_constraints(state &s)
+{
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.begin();
+  auto functor = [=] HPC_DEVICE (node_index const node)
+  {
+    auto x = nodes_to_x[node].load();
+    auto u = nodes_to_u[node].load();
+    auto z = x(2);
+    if (z >= 0.0) {
+      u(2) = 0.0;
+    }
+    nodes_to_u[node] = u;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
 HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, state& s) {
   hpc::fill(hpc::device_policy(), s.u, hpc::displacement<double>(0.0, 0.0, 0.0));
   hpc::device_array_vector<hpc::velocity<double>, node_index> old_v(s.nodes.size());
@@ -730,6 +747,9 @@ HPC_NOINLINE inline void midpoint_predictor_corrector_step(input const& in, stat
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
+    if (s.use_displacement_contact == true) {
+      enforce_contact_constraints(s);
+    }
     if (last_pc) {
       update_v(s, s.dt, old_v);
     }
@@ -894,6 +914,7 @@ void run(input const& in, std::string const& filename) {
     }
   }
   if (in.x_transform) in.x_transform(&s.x);
+  s.use_displacement_contact = in.use_contact;
   resize_state(in, s);
   assign_element_materials(in, s);
   compute_nodal_materials(in, s);

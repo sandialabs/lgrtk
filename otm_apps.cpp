@@ -299,8 +299,9 @@ bool otm_j2_uniaxial_patch_test()
 
 bool otm_cylindrical_flyer()
 {
-  material_index num_materials(1);
-  material_index num_boundaries(0);
+  constexpr material_index body(0);
+  constexpr material_index num_materials(1);
+  constexpr material_index num_boundaries(0);
   input in(num_materials, num_boundaries);
   state s;
   std::string const filename{"cylinder.g"};
@@ -332,7 +333,6 @@ bool otm_cylindrical_flyer()
   auto const Svis0 = hpc::pressure<double>(0.0);
   auto const m = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
-  constexpr material_index body(0);
   in.materials = hpc::counting_range<material_index>(1);
   in.enable_variational_J2[body] = true;
   in.rho0[body] = rho;
