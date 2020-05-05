@@ -88,8 +88,10 @@ void otm_update_shape_functions(state& s) {
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
+    int iter = 0;
     auto const max_iter = 16;
-    for (auto iter = 0; iter < max_iter; ++iter) {
+    while (converged == false) {
+      if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -105,13 +107,10 @@ void otm_update_shape_functions(state& s) {
       auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
       auto const error = hpc::norm(dmu) / hpc::norm(mu);
-      converged = error <= eps;
-      if (converged == true) {
-        J = dRdmu;
-        break;
-      }
+      converged = (error <= eps);
+      J = dRdmu;
+      ++iter;
     }
-    assert(converged == true);
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
@@ -559,6 +558,32 @@ HPC_NOINLINE inline void compute_min_neighbor_dist(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, dist_func);
 }
 
+HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(const state& s) {
+  auto const nodes_to_lm = s.lm.cbegin();
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto functor = [=] HPC_DEVICE (node_index const node) {
+    auto const m = nodes_to_mass[node];
+    auto const lm = nodes_to_lm[node].load();
+    return 0.5*hpc::norm_squared(lm)/m;
+  };
+  hpc::energy<double> init(0);
+  auto const T = hpc::transform_reduce(hpc::device_policy(), s.nodes, init, hpc::plus<hpc::energy<double> >(), functor);
+  return T;
+}
+
+HPC_NOINLINE inline hpc::energy<double> compute_free_energy(const state& s) {
+  auto const points_to_potential_density = s.potential_density.cbegin();
+  auto const points_to_volume = s.V.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    auto const psi = points_to_potential_density[point];
+    auto const dV = points_to_volume[point];
+    return psi*dV;
+  };
+  hpc::energy<double> init(0);
+  auto const F = hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::energy<double> >(), functor);
+  return F;
+}
+
 HPC_NOINLINE inline void update_point_dt(state& s) {
   compute_min_neighbor_dist(s);
   auto const points_to_c = s.c.cbegin();
@@ -624,7 +649,10 @@ void otm_run(input const& in, state& s)
     auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
     for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
       if (in.output_to_command_line == true) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+        auto const KE = compute_kinetic_energy(s);
+        auto const SE = compute_free_energy(s);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
+        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
@@ -646,7 +674,10 @@ void otm_run(input const& in, state& s)
   } else {
     while (s.time <= in.end_time) {
       if (in.output_to_command_line == true) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+        auto const KE = compute_kinetic_energy(s);
+        auto const SE = compute_free_energy(s);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
+        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
