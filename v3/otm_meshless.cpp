@@ -2,7 +2,6 @@
 #include <cassert>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 #include <hpc_algorithm.hpp>
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
@@ -91,8 +90,8 @@ void otm_update_shape_functions(state& s) {
     auto J = jacobian::zero();
     int iter = 0;
     auto const max_iter = 16;
-    while (!converged) {
-      assert(iter < max_iter);
+    while (converged == false) {
+      if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -391,7 +390,7 @@ inline void otm_enforce_contact_constraints(state &s)
     auto x = nodes_to_x[node].load();
     auto u = nodes_to_u[node].load();
     auto z = x(2);
-    if (z >= -0.01) {
+    if (z >= 0.0) {
       u(2) = 0.0;
     }
     nodes_to_u[node] = u;
@@ -642,8 +641,6 @@ void otm_run(input const& in, state& s)
 {
   lgr::search::initialize_otm_search();
   lgr::otm_file_writer output_file(in.name);
-  std::ofstream energy_file("energy_output.txt");
-  energy_file << "#time " << "KE" << std::endl;
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_output_periods = in.num_file_output_periods;
   auto const file_output_period = num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
@@ -652,7 +649,10 @@ void otm_run(input const& in, state& s)
     auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
     for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
       if (in.output_to_command_line == true) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
+        auto const KE = compute_kinetic_energy(s);
+        auto const SE = compute_free_energy(s);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
+        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
@@ -674,10 +674,10 @@ void otm_run(input const& in, state& s)
   } else {
     while (s.time <= in.end_time) {
       if (in.output_to_command_line == true) {
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt) << "\n";
-        auto KE = compute_kinetic_energy(s);
-        auto SE = compute_free_energy(s);
-        energy_file << s.time << " " << KE << " " << SE << std::endl;
+        auto const KE = compute_kinetic_energy(s);
+        auto const SE = compute_free_energy(s);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
+        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
