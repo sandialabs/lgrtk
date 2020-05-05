@@ -918,6 +918,57 @@ void flyer_target_J2() {
   run(in, filename);
 }
 
+HPC_NOINLINE void cylindrical_flyer();
+void cylindrical_flyer() {
+  constexpr material_index body(0);
+  constexpr material_index num_materials(1);
+  constexpr material_index num_boundaries(0);
+  input in(num_materials, num_boundaries);
+  std::string const filename{"cylinder-ct.g"};
+  in.name = "cylindrical-flyer";
+  in.element = COMPOSITE_TETRAHEDRON;
+  in.end_time = 1.0e-04;
+  in.num_file_output_periods = 100;
+  auto const rho = hpc::density<double>(8.96e+03);
+  auto const nu = hpc::adimensional<double>(0.343);
+  auto const E = hpc::pressure<double>(110.0e09);
+  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0 = hpc::pressure<double>(400.0e+06);
+  auto const n = hpc::adimensional<double>(1.0);
+  auto const H0 = hpc::pressure<double>(100.0e6);
+  auto const eps0 = hpc::strain<double>(Y0 / H0);
+  auto const Svis0 = hpc::pressure<double>(0.0);
+  auto const m = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  in.enable_variational_J2[body] = true;
+  in.rho0[body] = rho;
+  in.K0[body] = K;
+  in.G0[body] = G;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;
+  auto const_v = [=] (
+    hpc::counting_range<node_index> const nodes,
+    hpc::device_array_vector<hpc::position<double>, node_index> const&,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_v = v_vector->begin();
+    auto functor = [=] HPC_DEVICE (node_index const node) {
+      auto v = hpc::velocity<double>(0.0, 0.0, 227.0);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+  in.initial_v = const_v;
+  in.enable_J_averaging = true;
+  in.CFL = 0.1;
+  in.use_contact = true;
+  run(in, filename);
+}
+
 HPC_NOINLINE void Noh_3D();
 void Noh_3D() {
   constexpr material_index gas(0);
@@ -1190,7 +1241,8 @@ int main() {
   if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((1)) lgr::flyer_target_J2();
+  if ((0)) lgr::flyer_target_J2();
+  if ((1)) lgr::cylindrical_flyer();
 //run_for_average();
 }
 

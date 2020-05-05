@@ -49,6 +49,7 @@ class input {
   hpc::time<double> end_time{0.0};
   double CFL{0.9};
   bool use_constant_dt{false};
+  bool use_contact{false};
   hpc::time<double> constant_dt{0.0};
   int num_file_output_periods{0};
   int elements_along_x{0};
