@@ -88,7 +88,7 @@ void otm_update_shape_functions(state& s) {
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
-    int iter = 0;
+    auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
       if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");

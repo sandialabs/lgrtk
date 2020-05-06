@@ -34,10 +34,10 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
   auto const J = determinant(F);
   auto const Jm13 = 1.0 / std::cbrt(J);
   auto const Jm23 = Jm13 * Jm13;
-  double const logJ = std::log(J);
+  auto const logJ = std::log(J);
 
-  double const& K = props.K;
-  double const& G = props.G;
+  auto const& K = props.K;
+  auto const& G = props.G;
 
   auto const We_vol = 0.5*K*logJ*logJ;
   auto const p = K*logJ/J;
@@ -46,40 +46,40 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
   auto dev_Ce_tr = Jm23*hpc::transpose(Fe_tr)*Fe_tr;
   auto dev_Ee_tr = 0.5*hpc::log(dev_Ce_tr);
   auto const dev_M_tr = 2.0*G*dev_Ee_tr;
-  double const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
+  auto const sigma_tr_eff = std::sqrt(1.5)*hpc::norm(dev_M_tr);
   auto Np = hpc::matrix3x3<double>::zero();
   if (sigma_tr_eff > 0) {
     Np = 1.5*dev_M_tr/sigma_tr_eff;
   }
 
-  double S0 = j2::FlowStrength(props, eqps);
-  double const r0 = sigma_tr_eff - S0;
+  auto S0 = j2::FlowStrength(props, eqps);
+  auto const r0 = sigma_tr_eff - S0;
   auto r = r0;
 
-  double delta_eqps = 0;
-  double const residual_tolerance = 1e-10;
-  double const deqps_tolerance = 1e-10;
+  auto delta_eqps = 0.0;
+  auto const residual_tolerance = 1e-10;
+  auto const deqps_tolerance = 1e-10;
   if (r > residual_tolerance) {
-    constexpr int max_iters = 8;
-    int iters = 0;
-    double merit_old = 1.0;
-    double merit_new = 1.0;
+    constexpr auto max_iters = 8;
+    auto iters = 0;
+    auto merit_old = 1.0;
+    auto merit_new = 1.0;
 
-    bool converged = false;
+    auto converged = false;
     while (!converged) {
       if (iters == max_iters) break;
-      bool ls_is_finished = false;
-      double delta_eqps0 = delta_eqps;
+      auto ls_is_finished = false;
+      auto delta_eqps0 = delta_eqps;
       merit_old = r*r;
-      double H = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
-      double dr = -3.0*G - H;
-      double correction = -r/dr;
+      auto H = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
+      auto dr = -3.0*G - H;
+      auto correction = -r/dr;
 
       // line search
-      double alpha = 1.0;
-      int line_search_iterations = 0;
-      double const backtrack_factor = 0.1;
-      double const decrease_factor = 1e-5;
+      auto alpha = 1.0;
+      auto line_search_iterations = 0;
+      auto const backtrack_factor = 0.1;
+      auto const decrease_factor = 1e-5;
       while (!ls_is_finished) {
         if (line_search_iterations == 20) {
           // line search has failed to satisfactorily improve newton step
@@ -90,23 +90,23 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
         ++line_search_iterations;
         delta_eqps = delta_eqps0 + alpha*correction;
         if (delta_eqps < 0) delta_eqps = 0;
-        double Yeq = j2::FlowStrength(props, eqps + delta_eqps);
-        double Yvis = j2::ViscoplasticStress(props, delta_eqps, dt);
-        double residual = sigma_tr_eff - 3.0*G*delta_eqps - (Yeq + Yvis);
+        auto Yeq = j2::FlowStrength(props, eqps + delta_eqps);
+        auto Yvis = j2::ViscoplasticStress(props, delta_eqps, dt);
+        auto residual = sigma_tr_eff - 3.0*G*delta_eqps - (Yeq + Yvis);
         merit_new = residual*residual;
-        double decrease_tol = 1.0 - 2.0*alpha*decrease_factor;
+        auto decrease_tol = 1.0 - 2.0*alpha*decrease_factor;
         if (merit_new <= decrease_tol*merit_old) {
           merit_old = merit_new;
           ls_is_finished = true;
         } else {
-          double alpha_old = alpha;
+          auto alpha_old = alpha;
           alpha = alpha_old*alpha_old*merit_old/(merit_new-merit_old+2.0*alpha_old*merit_old);
           if (backtrack_factor*alpha_old > alpha) {
             alpha = backtrack_factor*alpha_old;
           }
         }
       }
-      double S = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
+      auto S = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
       r = sigma_tr_eff - 3.0*G*delta_eqps - S;
       converged = (std::abs(r/r0) < residual_tolerance) || (delta_eqps < deqps_tolerance);
       ++iters;
@@ -136,4 +136,3 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
 }
 
 }
-
