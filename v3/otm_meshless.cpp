@@ -501,10 +501,11 @@ void otm_allocate_state(input const& in, state& s) {
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
-  auto total_support_size = 0;
-  for (auto p = 0; p < s.points_to_point_nodes.size(); ++p) {
-    total_support_size += s.points_to_point_nodes[p].size();
-  }
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    return points_to_point_nodes[point].size();
+  };
+  auto const total_support_size = hpc::transform_reduce(hpc::device_policy(), s.points, 0, hpc::plus<int>(), functor);
   s.grad_N.resize(total_support_size);
   s.N.resize(total_support_size);
   s.F_total.resize(num_points);
