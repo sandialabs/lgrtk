@@ -121,11 +121,12 @@ void otm_update_shape_functions(state& s) {
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
-    int iter = 0;
+    auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
-      //if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");
-      assert(iter < max_iter);
+      if (iter >= max_iter) {
+        HPC_ERROR_EXIT("Exceeded maximum iterations.");
+      }
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -496,12 +497,21 @@ void otm_allocate_state(input const& in, state& s) {
   auto const num_elements = s.elements.size();
   auto const num_materials = in.materials.size();
   auto const num_boundaries = in.boundaries.size();
-  auto const support_size = s.nodes_in_element.size();
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
-  s.grad_N.resize(num_points * support_size);
-  s.N.resize(num_points * support_size);
+  if (s.points_to_point_nodes.size() == 0) {
+    auto const support_size = s.nodes_in_element.size();
+    s.grad_N.resize(num_points * support_size);
+    s.N.resize(num_points * support_size);
+  } else {
+    auto total_support_size = 0;
+    for (auto p = 0; p < s.points_to_point_nodes.size(); ++p) {
+      total_support_size += s.points_to_point_nodes[p].size();
+    }
+    s.grad_N.resize(total_support_size);
+    s.N.resize(total_support_size);
+  }
   s.F_total.resize(num_points);
   s.sigma_full.resize(num_points);
   s.symm_grad_v.resize(num_points);
