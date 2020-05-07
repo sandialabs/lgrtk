@@ -4,6 +4,7 @@ project(LGR VERSION 3.0.0 LANGUAGES CXX)
 
 option(LGR_ENABLE_CUDA "Build GPU support" OFF)
 option(LGR_ENABLE_UNIT_TESTS "Enable unit tests" ON)
+option(LGR_ENABLE_EFENCE "Build with ElectricFence support" OFF)
 
 if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
@@ -99,18 +100,24 @@ if (LGR_ENABLE_CUDA)
   set_source_files_properties(otm.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
+set(LGR_LIBRARIES lgrlib)
+if (LGR_ENABLE_EFENCE)
+  set(LGR_LIBRARIES ${LGR_LIBRARIES}";efence")
+endif()
+
+
 add_executable(lgr lgr.cpp)
 set_property(TARGET lgr PROPERTY CXX_STANDARD "14")
 set_property(TARGET lgr PROPERTY CXX_STANDARD_REQUIRED ON)
 set_property(TARGET lgr PROPERTY CXX_EXTENSIONS OFF)
-target_link_libraries(lgr lgrlib)
+target_link_libraries(lgr ${LGR_LIBRARIES})
 
 if (LGR_ENABLE_SEARCH)
   add_executable(otm otm.cpp)
   set_property(TARGET otm PROPERTY CXX_STANDARD "14")
   set_property(TARGET otm PROPERTY CXX_STANDARD_REQUIRED ON)
   set_property(TARGET otm PROPERTY CXX_EXTENSIONS OFF)
-  target_link_libraries(otm lgrlib)
+  target_link_libraries(otm ${LGR_LIBRARIES})
 endif()
 
 if (LGR_ENABLE_UNIT_TESTS)

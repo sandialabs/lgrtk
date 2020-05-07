@@ -22,7 +22,7 @@ void convert_tet_mesh_to_meshless(const input& in, state& st)
 {
   auto const num_points = st.elements.size() * in.otm_material_points_to_add_per_element;
   st.points.resize(num_points);
-  auto const num_nodes_in_support = st.use_custom_initial_support_size == true ? st.initial_support_size : st.nodes_in_element.size();
+  auto const num_nodes_in_support = st.nodes_in_element.size();
   st.point_nodes_to_nodes.resize(num_points * num_nodes_in_support);
   st.xp.resize(num_points);
   st.h_otm.resize(num_points);
@@ -65,21 +65,29 @@ void convert_tet_mesh_to_meshless(const input& in, state& st)
     in.xp_transform(st.points, st.points_to_point_nodes, st.point_nodes_to_nodes, st.x, st.xp);
   }
 
-  auto const mat_pts_to_x = st.xp.begin();
-  auto const mat_pts_to_h = st.h_otm.begin();
-  auto const nodes_to_x = st.x.cbegin();
-  auto h_min_func = [=] HPC_DEVICE (point_index const point)
-  {
-    auto min_node_pt_dist = 1.0 / hpc::machine_epsilon<double>();
-    for (auto n : nodes_in_support[point])
-    {
-      auto node = support_nodes_to_nodes[n];
-      auto node_pt_dist = hpc::norm(nodes_to_x[node].load() - mat_pts_to_x[point].load());
-      min_node_pt_dist = hpc::min(min_node_pt_dist, node_pt_dist);
-    }
-    mat_pts_to_h[point] = min_node_pt_dist;
-  };
-  hpc::for_each(hpc::device_policy(), st.points, h_min_func);
+  otm_update_h(st);
 }
+
+void otm_update_h(state& st)
+{
+    auto const mat_pts_to_x = st.xp.begin();
+    auto const mat_pts_to_h = st.h_otm.begin();
+    auto const nodes_to_x = st.x.cbegin();
+    auto const nodes_in_support = st.points_to_point_nodes.cbegin();
+    auto const support_nodes_to_nodes = st.point_nodes_to_nodes.cbegin();
+    auto h_min_func = [=] HPC_DEVICE (point_index const point)
+    {
+      auto min_node_pt_dist = 1.0 / hpc::machine_epsilon<double>();
+      for (auto n : nodes_in_support[point])
+      {
+        auto node = support_nodes_to_nodes[n];
+        auto node_pt_dist = hpc::norm(nodes_to_x[node].load() - mat_pts_to_x[point].load());
+        min_node_pt_dist = hpc::min(min_node_pt_dist, node_pt_dist);
+      }
+      mat_pts_to_h[point] = min_node_pt_dist;
+    };
+    hpc::for_each(hpc::device_policy(), st.points, h_min_func);
+}
+
 
 }
