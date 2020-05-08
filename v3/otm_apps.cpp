@@ -6,6 +6,7 @@
 #include <otm_tet2meshless.hpp>
 #include <otm_tetrahedron_util.hpp>
 #include <otm_util.hpp>
+#include <otm_search.hpp>
 
 namespace lgr {
 
@@ -82,6 +83,7 @@ void otm_cylindrical_flyer_ics(state& s, hpc::speed<double> const init_velocity)
 
 bool otm_j2_nu_zero_patch_test()
 {
+  lgr::search::initialize_otm_search();
   material_index num_materials(1);
   material_index num_boundaries(4);
   input in(num_materials, num_boundaries);
@@ -180,11 +182,13 @@ bool otm_j2_nu_zero_patch_test()
   auto const tol_sigma = 1.0e-12;
   std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
+  lgr::search::finalize_otm_search();
   return error_sigma <= tol_sigma;
 }
 
 bool otm_j2_uniaxial_patch_test()
 {
+  lgr::search::initialize_otm_search();
   material_index num_materials(1);
   material_index num_boundaries(4);
   input in(num_materials, num_boundaries);
@@ -294,11 +298,13 @@ bool otm_j2_uniaxial_patch_test()
   std::cout << "DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n';
   std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
+  lgr::search::finalize_otm_search();
   return error_sigma <= tol_sigma;
 }
 
 bool otm_cylindrical_flyer()
 {
+  lgr::search::initialize_otm_search();
   constexpr material_index body(0);
   constexpr material_index num_materials(1);
   constexpr material_index num_boundaries(0);
@@ -306,9 +312,9 @@ bool otm_cylindrical_flyer()
   state s;
   std::string const filename{"cylinder.g"};
   auto const points_in_element = 1;
-  s.points_in_element.resize(point_in_element_index(points_in_element));
-  s.use_custom_initial_support_size = true;
-  s.initial_support_size = node_in_element_index(4);
+  //s.points_in_element.resize(point_in_element_index(points_in_element));
+  //s.use_custom_initial_support_size = true;
+  //s.initial_support_size = node_in_element_index(4);
   in.otm_material_points_to_add_per_element = points_in_element;
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
@@ -349,6 +355,8 @@ bool otm_cylindrical_flyer()
   in.constant_dt = hpc::time<double>(1.0e-07);
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   convert_tet_mesh_to_meshless(in, s);
+  // make support wider than 1 element
+  search::do_otm_iterative_point_support_search(s, 4);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);
@@ -369,6 +377,7 @@ bool otm_cylindrical_flyer()
   otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
+  lgr::search::finalize_otm_search();
   return true;
 }
 
