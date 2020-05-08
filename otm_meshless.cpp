@@ -44,7 +44,7 @@ void otm_initialize_displacement(state& s)
 }
 
 
-void otm_initialize_point_volume(state& s) {
+void otm_initialize_point_volume_1(state& s) {
   auto const num_points = s.points.size();
   s.V.resize(num_points);
   auto const points_per_element = s.points_in_element.size();
@@ -68,7 +68,40 @@ void otm_initialize_point_volume(state& s) {
   hpc::for_each(hpc::device_policy(), s.points, functor);
 }
 
+void otm_initialize_point_volume(state& s) {
+  auto const num_points = s.points.size();
+  s.V.resize(num_points);
+  auto const points_per_element = s.points_in_element.size();
+  auto const nodes_to_x = s.x.cbegin();
+  auto const point_to_V = s.V.begin();
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
+  auto const points_in_element = hpc::make_counting_range(points_per_element);
+  auto const elements_to_points = s.elements * points_in_element;
+  auto func = [=] HPC_DEVICE (element_index const element)
+  {
+    auto const cur_elem_points = elements_to_points[element];
+    auto const element_nodes = elements_to_element_nodes[element];
+    hpc::array<hpc::position<double>, 4> x;
+    assert(element_nodes.size() == 4);
+    for (auto i = 0; i < 4; ++i)
+    {
+      auto const node = element_nodes_to_nodes[element_nodes[i]];
+      x[i] = nodes_to_x[node].load();
+    }
+    auto const volume = tetrahedron_volume(x);
+    assert(volume > 0.0);
+    for (auto element_point : points_in_element)
+    {
+      auto const point = cur_elem_points[element_point];
+      point_to_V[point] = volume / points_per_element;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.elements, func);
+}
+
 void otm_update_shape_functions(state& s) {
+  //otm_update_h(s);
   hpc::adimensional<double> gamma(1.5);
   auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
@@ -81,7 +114,7 @@ void otm_update_shape_functions(state& s) {
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
     auto const h = points_to_h[point];
-    auto const beta = gamma / h / h;
+    auto const beta = gamma / (h * h);
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
     auto converged = false;
@@ -91,7 +124,10 @@ void otm_update_shape_functions(state& s) {
     auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
-      if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");
+      assert(iter < max_iter);
+      if (iter >= max_iter) {
+        HPC_ERROR_EXIT("Exceeded maximum iterations.");
+      }
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -462,12 +498,16 @@ void otm_allocate_state(input const& in, state& s) {
   auto const num_elements = s.elements.size();
   auto const num_materials = in.materials.size();
   auto const num_boundaries = in.boundaries.size();
-  auto const support_size = s.nodes_in_element.size();
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
   s.V.resize(num_points);
-  s.grad_N.resize(num_points * support_size);
-  s.N.resize(num_points * support_size);
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto functor = [=] HPC_DEVICE (point_index const point) {
+    return points_to_point_nodes[point].size();
+  };
+  auto const total_support_size = hpc::transform_reduce(hpc::device_policy(), s.points, 0, hpc::plus<int>(), functor);
+  s.grad_N.resize(total_support_size);
+  s.N.resize(total_support_size);
   s.F_total.resize(num_points);
   s.sigma_full.resize(num_points);
   s.symm_grad_v.resize(num_points);
@@ -639,7 +679,6 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_run(input const& in, state& s)
 {
-  lgr::search::initialize_otm_search();
   lgr::otm_file_writer output_file(in.name);
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_output_periods = in.num_file_output_periods;
@@ -698,6 +737,5 @@ void otm_run(input const& in, state& s)
       ++s.n;
     }
   }
-  lgr::search::finalize_otm_search();
 }
 } // namespace lgr
