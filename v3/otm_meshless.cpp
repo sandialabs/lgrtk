@@ -124,10 +124,7 @@ void otm_update_shape_functions(state& s) {
     auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
-      assert(iter < max_iter);
-      if (iter >= max_iter) {
-        HPC_ERROR_EXIT("Exceeded maximum iterations.");
-      }
+      HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
