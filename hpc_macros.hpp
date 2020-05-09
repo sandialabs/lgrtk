@@ -58,8 +58,8 @@
 #define HPC_ERROR_EXIT_IMPL(msg)                                       \
   do {                                                                 \
     printf("%s ********** HPC_ERROR at ");                             \
-    printf("%s +%d\n%s\n", __FILE__, __LINE__);                        \
-    asm("trap;");                                                      \
+    printf("%s +%d", __FILE__, __LINE__);                              \
+    assert(0);                                                         \
   } while (0)
 #else
 #define HPC_ERROR_EXIT_IMPL(msg)                                       \
@@ -90,7 +90,7 @@
     if (!(cond)) {                                                     \
       printf("%s ********** HPC_ASSERT failed at ", #cond);            \
       printf("%s +%d\n%s\n", __FILE__, __LINE__, msg);                 \
-      asm("trap;");                                                    \
+      assert(0);                                                       \
     }                                                                  \
   } while (0)
 #else
