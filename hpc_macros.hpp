@@ -58,7 +58,7 @@
 #define HPC_ERROR_EXIT_IMPL(msg)                                       \
   do {                                                                 \
     printf("%s ********** HPC_ERROR at ");                             \
-    printf("%s +%d\n%s\n", __FILE__, __LINE__, msg);                   \
+    printf("%s +%d\n%s\n", __FILE__, __LINE__);                        \
     asm("trap;");                                                      \
   } while (0)
 #else
