@@ -10,16 +10,20 @@ namespace lgr {
 
 struct maxent_interpolator
 {
-  maxent_interpolator(double const gamma_, double const h_, double const eps_) :
+  maxent_interpolator(
+      double const gamma_ = 1.5,
+      double const h_ = 1.0,
+      double const eps_ = 8192 * hpc::machine_epsilon<double>()) :
   gamma(gamma_), h(h_), eps(eps_) {}
 
-  double gamma{1.0};
+  double gamma{1.5};
   double h{1.0};
   double eps{8192 * hpc::machine_epsilon<double>()};
 
-  void operator()(hpc::position<double> const & target,
-      hpc::device_array_vector<hpc::position<double>, node_point_index> const &sources,
-      hpc::device_vector<hpc::basis_value<double>, node_point_index> &N) const
+  template <typename Index>
+  void operator()(hpc::device_array_vector<hpc::position<double>, Index> const & sources,
+      hpc::position<double> const & target,
+      hpc::device_vector<hpc::basis_value<double>, Index> & N) const
   {
     auto const beta = gamma / h / h;
     auto converged = false;
@@ -29,11 +33,11 @@ struct maxent_interpolator
     auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
-      if (iter >= max_iter) HPC_ERROR_EXIT("Exceeded maximum iterations.");
+      HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
-      for (auto & source : sources) {
-        auto const r = source - target;
+      for (auto && source : sources) {
+        auto const r = source.load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -42,10 +46,27 @@ struct maxent_interpolator
       }
       auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
       mu += dmu;
-      auto const error = hpc::norm(dmu) / hpc::norm(mu);
+      auto const nmu = hpc::norm(mu);
+      auto const ndmu = hpc::norm(dmu);
+      auto const error = nmu > hpc::machine_epsilon<double>() ? ndmu / nmu : ndmu;
       converged = (error <= eps);
       J = dRdmu;
       ++iter;
+    }
+    N.resize(sources.size());
+    auto Z = 0.0;
+    auto i = 0;
+    for (auto && source : sources) {
+      auto const r = source.load() - target;
+      auto const rr = hpc::inner_product(r, r);
+      auto const mur = hpc::inner_product(mu, r);
+      auto const boltzmann_factor = std::exp(-mur - beta * rr);
+      Z += boltzmann_factor;
+      N[i] = boltzmann_factor;
+      ++i;
+    }
+    for (auto & NZ : N) {
+      NZ /= Z;
     }
   }
 };
