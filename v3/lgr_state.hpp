@@ -102,6 +102,7 @@ class state {
   bool use_penalty_contact{false};
   hpc::length<double> min_point_neighbor_dist;
   hpc::length<double> min_node_neighbor_dist;
+  double otm_beta{0}; // shape function locality parameter. should have dimensions of L^-2
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start
