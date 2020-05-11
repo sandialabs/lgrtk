@@ -20,7 +20,7 @@ if (LGR_ENABLE_UNIT_TESTS)
     set(LGR_UNIT_SOURCES ${LGR_UNIT_SOURCES} search.cpp)
   endif()
 
-  if (LGR_ENABLE_CUDA)
+  if (LGR_ENABLE_CUDA AND NOT LGR_USE_NVCC_WRAPPER)
     set_source_files_properties(${LGR_UNIT_SOURCES} PROPERTIES LANGUAGE CUDA)
   endif()
 
