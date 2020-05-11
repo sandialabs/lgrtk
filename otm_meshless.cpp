@@ -659,7 +659,7 @@ void otm_set_beta(double gamma, state& s)
                                      hpc::minimum<hpc::length<double>>(),
                                      hpc::identity<hpc::length<double>>()
                                      );
-   s.otm_beta = gamma / (hmin * hmin);
+   s.otm_beta = gamma / (4.0*hmin * 4.0*hmin);
 }
 
 void otm_run(input const& in, state& s)
