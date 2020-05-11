@@ -347,7 +347,7 @@ bool otm_cylindrical_flyer()
   in.CFL = 0.2;
   in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
-  in.otm_gamma = 0.25;
+  in.otm_gamma = 1.5;
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   convert_tet_mesh_to_meshless(in, s);
   // make support wider than 1 element
