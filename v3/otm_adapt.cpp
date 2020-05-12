@@ -14,11 +14,12 @@ void otm_populate_new_nodes(state & s,
 {
   hpc::counting_range<node_index> source_range(begin_src, end_src);
   hpc::counting_range<node_index> target_range(begin_target, end_target);
+  hpc::device_vector<hpc::basis_value<double>, node_index> NZ(source_range.size());
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
+  auto const index_to_NZ = NZ.begin();
   auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
     auto const target = nodes_to_x[node].load();
-    hpc::device_vector<hpc::basis_value<double>, node_index> N;
     auto const gamma = 1.5;
     auto const h = 1.0;
     auto const eps = 8192 * hpc::machine_epsilon<double>();
@@ -50,7 +51,6 @@ void otm_populate_new_nodes(state & s,
       J = dRdmu;
       ++iter;
     }
-    N.resize(source_range.size());
     auto Z = 0.0;
     auto i = 0;
     for (auto && source_index : source_range) {
@@ -59,17 +59,15 @@ void otm_populate_new_nodes(state & s,
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
       Z += boltzmann_factor;
-      N[i] = boltzmann_factor;
+      index_to_NZ[i] = boltzmann_factor;
       ++i;
-    }
-    for (auto & NZ : N) {
-      NZ /= Z;
     }
     i = 0;
     auto node_u = hpc::displacement<double>::zero();
     for (auto && source_index : source_range) {
       auto const u = nodes_to_x[source_index].load();
-      node_u = node_u + N[i] * u;
+      auto const N = index_to_NZ[i] / Z;
+      node_u = node_u + N * u;
       ++i;
     }
     nodes_to_u[node] = node_u;
