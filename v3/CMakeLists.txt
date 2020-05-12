@@ -6,8 +6,8 @@ option(LGR_ENABLE_CUDA "Build GPU support" OFF)
 option(LGR_ENABLE_UNIT_TESTS "Enable unit tests" ON)
 option(LGR_ENABLE_EFENCE "Build with ElectricFence support" OFF)
 
-set(LGR_USE_NVCC_WRAPPER BOOL OFF)
-set(LGR_EXTRA_NVCC_WRAPPER_FLAGS STRING "")
+set(LGR_USE_NVCC_WRAPPER OFF)
+set(LGR_EXTRA_NVCC_WRAPPER_FLAGS "")
 
 if (LGR_ENABLE_CUDA)
   enable_language(CUDA)
