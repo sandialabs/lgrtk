@@ -23,9 +23,8 @@ TEST(map, maxenx_interpolation)
   lgr::otm_host_pinned_state host_s;
   auto const num_nodes_old = s.nodes.size();
   auto const num_nodes_new = num_nodes_old + 1;
-  host_s.x.resize(num_nodes_old);
-  hpc::copy(s.x, host_s.x);
   host_s.x.resize(num_nodes_new);
+  hpc::copy(s.x, host_s.x);
   s.x.resize(num_nodes_new);
   s.u.resize(num_nodes_new);
   host_s.x[num_nodes_new - 1] = hpc::position<double>(0,  0,  0);
