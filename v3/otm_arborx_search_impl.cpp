@@ -131,12 +131,14 @@ void inflate_sphere_query_radii(device_intersects_query_view queries, double fac
 
 void initialize()
 {
-  Kokkos::initialize();
+  if (!Kokkos::is_initialized())
+    Kokkos::initialize();
 }
 
 void finalize()
 {
-  Kokkos::finalize();
+  if (Kokkos::is_initialized())
+    Kokkos::finalize();
 }
 
 template void do_search(const device_point_view &nodes, const device_nearest_query_view &queries,
