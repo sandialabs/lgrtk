@@ -9,12 +9,16 @@
 #define DEVICE_TEST(a) [=] HPC_DEVICE(a, int& num_fails)
 #define DEVICE_ASSERT_EQ(a, b) if (a != b) { ++num_fails; return; }
 #define DEVICE_EXPECT_EQ(a, b) if (a != b) { ++num_fails; }
+#define DEVICE_ASSERT_NE(a, b) if (a == b) { ++num_fails; return; }
+#define DEVICE_EXPECT_NE(a, b) if (a == b) { ++num_fails; }
 #define DEVICE_EXPECT_TRUE(a) if (!a) { ++num_fails; }
 #define DEVICE_EXPECT_FALSE(a) if (a) { ++num_fails; }
 #else
 #define DEVICE_TEST(a) [=] HPC_DEVICE(a)
 #define DEVICE_ASSERT_EQ(a, b) ASSERT_EQ(a, b)
 #define DEVICE_EXPECT_EQ(a, b) EXPECT_EQ(a, b)
+#define DEVICE_ASSERT_NE(a, b) ASSERT_NE(a, b)
+#define DEVICE_EXPECT_NE(a, b) EXPECT_NE(a, b)
 #define DEVICE_EXPECT_TRUE(a) EXPECT_TRUE(a)
 #define DEVICE_EXPECT_FALSE(a) EXPECT_FALSE(a)
 #endif
@@ -51,7 +55,7 @@ private:
 }
 
 template<typename PolicyType, class Range, class FuncType>
-HPC_NOINLINE void test_for_each(PolicyType policy, Range const range, const FuncType func)
+HPC_NOINLINE void test_for_each(PolicyType policy, Range const& range, const FuncType func)
 {
   int init(0);
   auto num_test_failures = hpc::transform_reduce(policy, range, init, hpc::plus<int>(),
