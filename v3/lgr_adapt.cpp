@@ -1,3 +1,4 @@
+#include <hpc_functional.hpp>
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>

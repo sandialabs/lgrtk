@@ -55,6 +55,7 @@ set(LGR_SOURCES
     )
 
 set(OTM_SOURCES
+    otm_adapt.cpp
     otm_apps.cpp
     otm_meshless.cpp
     otm_distance.cpp
