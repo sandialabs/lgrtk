@@ -69,6 +69,7 @@ struct maxent_interpolator
 enum adapt_op {
   NONE,
   SPLIT,
+  COLLAPSE,
 };
 
 struct otm_adapt_state {
