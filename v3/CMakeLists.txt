@@ -60,6 +60,7 @@ set(OTM_SOURCES
     otm_distance.cpp
     otm_meshing.cpp
     otm_meshless.cpp
+    otm_search.cpp
     otm_tet2meshless.cpp
     otm_vtk.cpp
     )
