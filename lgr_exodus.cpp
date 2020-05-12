@@ -3,18 +3,20 @@
 #include <lgr_meshing.hpp>
 #include <lgr_input.hpp>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wreserved-id-macro"
-#endif
-
-#include <exodusII.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
+#ifdef LGR_ENABLE_EXODUS
+#  ifdef __clang__
+#    pragma clang diagnostic push
+#    pragma clang diagnostic ignored "-Wreserved-id-macro"
+#  endif
+#  include <exodusII.h>
+#  ifdef __clang__
+#    pragma clang diagnostic pop
+#  endif
 #endif
 
 namespace lgr {
+
+#ifdef LGR_ENABLE_EXODUS
 
 int read_exodus_file(std::string const& filepath, input const& in, state& s) {
   int comp_ws = int(sizeof(double));
@@ -114,5 +116,14 @@ int read_exodus_file(std::string const& filepath, input const& in, state& s) {
   propagate_connectivity(s);
   return exodus_error_code;
 }
+
+#else
+
+int read_exodus_file(std::string const&, input const&, state&) {
+  throw std::runtime_error("Exodus not enabled! Rebuild with LGR_ENABLE_EXODUS=ON");
+  return -1;
+}
+
+#endif
 
 }

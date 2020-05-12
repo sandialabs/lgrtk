@@ -18,6 +18,7 @@
 #include <otm_search_util.hpp>
 #include <otm_tet2meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
+#include <unit_tests/unit_arborx_testing_util.hpp>
 #include <unit_tests/unit_device_util.hpp>
 #include <unit_tests/unit_otm_distance_util.hpp>
 #include <functional>
@@ -25,28 +26,11 @@
 using namespace lgr;
 using namespace lgr::search_util;
 
-struct arborx_testing_singleton {
-public:
-  static arborx_testing_singleton& instance() {
-    static arborx_testing_singleton s;
-    return s;
-  }
-
-  ~arborx_testing_singleton() {
-    search::finalize_otm_search();
-  }
-
-private:
-  arborx_testing_singleton() {
-    search::initialize_otm_search();
-  }
-};
-
 class arborx_search: public ::testing::Test
 {
   void SetUp() override
   {
-    arborx_testing_singleton::instance();
+    lgr_unit::arborx_testing_singleton::instance();
   }
 };
 

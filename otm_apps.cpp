@@ -83,7 +83,6 @@ void otm_cylindrical_flyer_ics(state& s, hpc::speed<double> const init_velocity)
 
 bool otm_j2_nu_zero_patch_test()
 {
-  lgr::search::initialize_otm_search();
   material_index num_materials(1);
   material_index num_boundaries(4);
   input in(num_materials, num_boundaries);
@@ -182,13 +181,11 @@ bool otm_j2_nu_zero_patch_test()
   auto const tol_sigma = 1.0e-12;
   std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
-  lgr::search::finalize_otm_search();
   return error_sigma <= tol_sigma;
 }
 
 bool otm_j2_uniaxial_patch_test()
 {
-  lgr::search::initialize_otm_search();
   material_index num_materials(1);
   material_index num_boundaries(4);
   input in(num_materials, num_boundaries);
@@ -298,13 +295,11 @@ bool otm_j2_uniaxial_patch_test()
   std::cout << "DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n';
   std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
-  lgr::search::finalize_otm_search();
   return error_sigma <= tol_sigma;
 }
 
 bool otm_cylindrical_flyer()
 {
-  lgr::search::initialize_otm_search();
   constexpr material_index body(0);
   constexpr material_index num_materials(1);
   constexpr material_index num_boundaries(0);
@@ -374,8 +369,17 @@ bool otm_cylindrical_flyer()
   otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
-  lgr::search::finalize_otm_search();
   return true;
+}
+
+otm_scope::otm_scope()
+{
+  search::initialize_otm_search();
+}
+
+otm_scope::~otm_scope()
+{
+  search::finalize_otm_search();
 }
 
 } // namespace lgr
