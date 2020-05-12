@@ -1,36 +1,27 @@
-#pragma once
-
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_mesh_indices.hpp>
+#include <otm_adapt.hpp>
 #include <lgr_state.hpp>
 
 namespace lgr {
 
 void otm_populate_new_nodes(state & s,
     node_index begin_src, node_index end_src,
-    node_index begin_target, node_index end_target);
-
-struct maxent_interpolator
+    node_index begin_target, node_index end_target)
 {
-  maxent_interpolator(
-      double const gamma_ = 1.5,
-      double const h_ = 1.0,
-      double const eps_ = 8192 * hpc::machine_epsilon<double>()) :
-  gamma(gamma_), h(h_), eps(eps_) {}
-
-  double gamma{1.5};
-  double h{1.0};
-  double eps{8192 * hpc::machine_epsilon<double>()};
-
-  template <typename Index>
-  void operator()(hpc::device_array_vector<hpc::position<double>, Index> const & sources,
-      hpc::counting_range<Index> source_range,
-      hpc::position<double> const & target,
-      hpc::device_vector<hpc::basis_value<double>, Index> & N) const
-  {
+  hpc::counting_range<node_index> source_range(begin_src, end_src);
+  hpc::counting_range<node_index> target_range(begin_target, end_target);
+  auto const nodes_to_x = s.x.cbegin();
+  auto const nodes_to_u = s.u.begin();
+  auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
+    auto const target = nodes_to_x[node].load();
+    hpc::device_vector<hpc::basis_value<double>, node_index> N;
+    auto const gamma = 1.5;
+    auto const h = 1.0;
+    auto const eps = 8192 * hpc::machine_epsilon<double>();
     auto const beta = gamma / h / h;
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
@@ -43,7 +34,7 @@ struct maxent_interpolator
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
       for (auto && source_index : source_range) {
-        auto const r = sources[source_index].load() - target;
+        auto const r = nodes_to_x[source_index].load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -63,7 +54,7 @@ struct maxent_interpolator
     auto Z = 0.0;
     auto i = 0;
     for (auto && source_index : source_range) {
-      auto const r = sources[source_index].load() - target;
+      auto const r = nodes_to_x[source_index].load() - target;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -74,8 +65,17 @@ struct maxent_interpolator
     for (auto & NZ : N) {
       NZ /= Z;
     }
-  }
-};
+    i = 0;
+    auto node_u = hpc::displacement<double>::zero();
+    for (auto && source_index : source_range) {
+      auto const u = nodes_to_x[source_index].load();
+      node_u = node_u + N[i] * u;
+      ++i;
+    }
+    nodes_to_u[node] = node_u;
+  };
+  hpc::for_each(hpc::device_policy(), target_range, maxent_interpolator);
+}
 
 } // namespace lgr
 
