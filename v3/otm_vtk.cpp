@@ -44,6 +44,8 @@ void otm_file_writer::capture(state const& s) {
   hpc::copy(s.G, host_s.G);
   host_s.K.resize(num_points);
   hpc::copy(s.K, host_s.K);
+  host_s.potential_density.resize(num_points);
+  hpc::copy(s.potential_density, host_s.potential_density);
 
   auto const Fp_size = s.Fp_total.size();
   if (Fp_size > 0) {
@@ -89,6 +91,7 @@ void otm_file_writer::write(int const file_output_index) {
   write_vtk_full_tensors(point_stream, "deformation_gradient", host_s.F_total);
   write_vtk_scalars(point_stream, "G", host_s.G);
   write_vtk_scalars(point_stream, "K", host_s.K);
+  write_vtk_scalars(point_stream, "potential_density", host_s.potential_density);
   if (host_s.Fp_total.size() > 0) {
     write_vtk_full_tensors(point_stream, "plastic_deformation_gradient", host_s.Fp_total);
   }
