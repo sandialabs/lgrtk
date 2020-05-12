@@ -1,35 +1,40 @@
 #include <gtest/gtest.h>
-#include <hpc_matrix3x3.hpp>
-#include <hpc_transform_reduce.hpp>
+#include <hpc_algorithm.hpp>
+#include <hpc_array_traits.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
+#include <hpc_execution.hpp>
+#include <hpc_functional.hpp>
+#include <hpc_macros.hpp>
+#include <hpc_numeric.hpp>
+#include <hpc_range.hpp>
+#include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
+#include <lgr_mesh_indices.hpp>
+#include <lgr_state.hpp>
 #include <otm_adapt.hpp>
 #include <otm_util.hpp>
+#include <unit_tests/otm_unit_mesh.hpp>
 
 TEST(map, maxenx_interpolation)
 {
-  hpc::device_array_vector<hpc::position<double>, lgr::node_index> src_pos;
-  auto const num_sources = lgr::node_index(8);
-  auto const sources = hpc::make_counting_range(num_sources);
-  src_pos.resize(num_sources);
-  src_pos[0] = hpc::position<double>(-1, -1, -1);
-  src_pos[1] = hpc::position<double>( 1, -1, -1);
-  src_pos[2] = hpc::position<double>( 1,  1, -1);
-  src_pos[3] = hpc::position<double>(-1,  1, -1);
-  src_pos[4] = hpc::position<double>(-1, -1,  1);
-  src_pos[5] = hpc::position<double>( 1, -1,  1);
-  src_pos[6] = hpc::position<double>( 1,  1,  1);
-  src_pos[7] = hpc::position<double>(-1,  1,  1);
-  auto const tgt_pos = hpc::position<double>(0,  0,  0);
-  hpc::device_vector<hpc::basis_value<double>, lgr::node_index> N;
-  lgr::maxent_interpolator interpolator;
-  interpolator(src_pos, tgt_pos, N);
-  auto const source_to_N = N.cbegin();
-  auto functor = [=] HPC_DEVICE (lgr::node_index const src) {
-    auto const e = source_to_N[src] - 0.125;
-    return e * e;;
-  };
-  auto const e2 = hpc::transform_reduce(hpc::device_policy(), sources, 0, hpc::plus<int>(), functor);
-  auto const error = std::sqrt(e2);
+  lgr::state s;
+  hexahedron_eight_points(s);
+  lgr::otm_host_pinned_state host_s;
+  auto const num_nodes_old = s.nodes.size();
+  auto const num_nodes_new = num_nodes_old + 1;
+  host_s.x.resize(num_nodes_old);
+  hpc::copy(s.x, host_s.x);
+  host_s.x.resize(num_nodes_new);
+  s.x.resize(num_nodes_new);
+  s.u.resize(num_nodes_new);
+  host_s.x[num_nodes_new - 1] = hpc::position<double>(0,  0,  0);
+  hpc::copy(host_s.x, s.x);
+  hpc::copy(host_s.x, s.u);
+  otm_populate_new_nodes(s, 0, num_nodes_old, num_nodes_old, num_nodes_new);
+  hpc::copy(s.u, host_s.x);
+  auto const new_u = host_s.x[num_nodes_new - 1].load();
+  auto const error = hpc::norm(new_u);
   auto const eps = hpc::machine_epsilon<double>();
   ASSERT_LE(error, eps);
 }

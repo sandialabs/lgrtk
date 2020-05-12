@@ -22,29 +22,30 @@ else()
 endif()
 
 set(LGR_SOURCES
-    lgr_state.cpp
-    lgr_vtk.cpp
-    lgr_domain.cpp
-    lgr_physics.cpp
-    lgr_bar.cpp
-    lgr_triangle.cpp
-    lgr_tetrahedron.cpp
-    lgr_element_specific.cpp
-    lgr_composite_nodal_mass.cpp
-    lgr_composite_h_min.cpp
-    lgr_composite_gradient.cpp
-    lgr_composite_tetrahedron.cpp
-    lgr_meshing.cpp
-    lgr_stabilized.cpp
     lgr_adapt.cpp
+    lgr_bar.cpp
+    lgr_composite_gradient.cpp
+    lgr_composite_h_min.cpp
+    lgr_composite_nodal_mass.cpp
+    lgr_composite_tetrahedron.cpp
+    lgr_domain.cpp
+    lgr_element_specific.cpp
+    lgr_meshing.cpp
+    lgr_physics.cpp
+    lgr_stabilized.cpp
+    lgr_state.cpp
+    lgr_tetrahedron.cpp
+    lgr_triangle.cpp
+    lgr_vtk.cpp
     )
 
 set(OTM_SOURCES
+    otm_adapt.cpp
     otm_apps.cpp
-    otm_meshless.cpp
     otm_distance.cpp
-    otm_tet2meshless.cpp
     otm_meshing.cpp
+    otm_meshless.cpp
+    otm_tet2meshless.cpp
     otm_vtk.cpp
     )
 
