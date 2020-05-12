@@ -310,18 +310,6 @@ determinant(matrix3x3<Scalar> const x) noexcept {
          (a * f * h);
 }
 
-template <typename Scalar>
-HPC_HOST_DEVICE constexpr auto
-det(matrix3x3<Scalar> const A) noexcept {
-  return determinant(A);
-}
-
-template <class T>
-HPC_HOST_DEVICE constexpr auto
-inverse(matrix3x3<T> const x) {
-  return inverse_fast(x);
-}
-
 template <class T>
 HPC_HOST_DEVICE constexpr auto
 inverse_fast(matrix3x3<T> const x) {
@@ -346,6 +334,18 @@ inverse_fast(matrix3x3<T> const x) {
   using num_t    = matrix3x3<std::remove_const_t<decltype(A)>>;
   auto const num = num_t(A, D, G, B, E, H, C, F, I);
   return num / determinant(x);
+}
+
+template <typename Scalar>
+HPC_HOST_DEVICE constexpr auto
+det(matrix3x3<Scalar> const A) noexcept {
+  return determinant(A);
+}
+
+template <class T>
+HPC_HOST_DEVICE constexpr auto
+inverse(matrix3x3<T> const x) {
+  return inverse_fast(x);
 }
 
 // Logarithm by Gregory series. Convergence guaranteed for symmetric A

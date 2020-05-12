@@ -6,12 +6,22 @@ option(LGR_ENABLE_CUDA "Build GPU support" OFF)
 option(LGR_ENABLE_UNIT_TESTS "Enable unit tests" ON)
 option(LGR_ENABLE_EFENCE "Build with ElectricFence support" OFF)
 
-if (LGR_ENABLE_CUDA)
-  enable_language(CUDA)
-endif()
+set(LGR_USE_NVCC_WRAPPER INTERNAL BOOL OFF)
+set(LGR_EXTRA_NVCC_WRAPPER_FLAGS INTERNAL STRING )
 
 if (LGR_ENABLE_CUDA)
+  enable_language(CUDA)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --compiler-options -Wall,-Wextra,-Werror,-Wno-noexcept-type --Werror cross-execution-space-call,deprecated-declarations --expt-extended-lambda")
+  if (CMAKE_CXX_COMPILER MATCHES ".*nvcc_wrapper")
+    message(STATUS "Detected nvcc_wrapper as C++/CUDA compiler")
+    set(LGR_EXTRA_NVCC_WRAPPER_FLAGS "-Wall -Wextra -Werror -Wno-noexcept-type -Wno-cross-execution-space-call -Wno-deprecated-declarations")
+    set(LGR_USE_NVCC_WRAPPER ON)
+    if (NOT LGR_ENABLE_SEARCH)
+      find_package(Kokkos REQUIRED)
+      set (CMAKE_CXX_FLAGS "${Kokkos_CXX_FLAGS}")
+      message(STATUS "Using Kokkos_CXX_FLAGS: ${Kokkos_CXX_FLAGS}")
+    endif()
+  endif()
 else()
   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded -Wno-float-equal")
@@ -37,12 +47,14 @@ set(LGR_SOURCES
     lgr_meshing.cpp
     lgr_stabilized.cpp
     lgr_adapt.cpp
+    lgr_exodus.cpp
     )
 
 set(OTM_SOURCES
     otm_apps.cpp
     otm_meshless.cpp
     otm_distance.cpp
+    otm_search.cpp
     otm_tet2meshless.cpp
     otm_meshing.cpp
     otm_vtk.cpp
@@ -56,19 +68,22 @@ if (LGR_ENABLE_EXODUS)
   if (EXODUS_HAS_MPI)
     find_package(MPI REQUIRED)
   endif()
-  set(LGR_SOURCES ${LGR_SOURCES} lgr_exodus.cpp)
 endif()
 
 option(LGR_ENABLE_SEARCH "Build support for meshfree search via ArborX" OFF)
 
 if (LGR_ENABLE_SEARCH)
   find_package(ArborX REQUIRED)
-  set(OTM_SOURCES ${OTM_SOURCES} otm_search.cpp otm_arborx_search_impl.cpp)
+  set(OTM_SOURCES ${OTM_SOURCES} otm_arborx_search_impl.cpp)
 endif()
 
-if (LGR_ENABLE_CUDA)
+if (LGR_ENABLE_CUDA AND NOT LGR_USE_NVCC_WRAPPER)
   set_source_files_properties(${LGR_SOURCES} PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(${OTM_SOURCES} PROPERTIES LANGUAGE CUDA)
+endif()
+
+if (LGR_ENABLE_CUDA AND (LGR_USE_NVCC_WRAPPER OR CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LGR_EXTRA_NVCC_WRAPPER_FLAGS}")
 endif()
 
 add_library(lgrlib ${LGR_SOURCES} ${OTM_SOURCES})
@@ -90,12 +105,14 @@ if (LGR_ENABLE_EXODUS)
 endif()
 
 if (LGR_ENABLE_SEARCH)
+  message(STATUS "Inherited C++/CUDA compiler options from ArborX: ${Kokkos_CXX_FLAGS}")
   # target_include_directories(lgrlib PUBLIC "${Kokkos_INCLUDE_DIRS}")
   # target_include_directories(lgrlib PUBLIC "${Kokkos_TPL_INCLUDE_DIRS}")
   target_link_libraries(lgrlib PUBLIC ArborX::ArborX)
+  target_compile_definitions(lgrlib PUBLIC -DLGR_ENABLE_SEARCH)
 endif()
 
-if (LGR_ENABLE_CUDA)
+if (LGR_ENABLE_CUDA AND NOT LGR_USE_NVCC_WRAPPER)
   set_source_files_properties(lgr.cpp PROPERTIES LANGUAGE CUDA)
   set_source_files_properties(otm.cpp PROPERTIES LANGUAGE CUDA)
 endif()

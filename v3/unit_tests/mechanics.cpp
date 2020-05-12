@@ -18,6 +18,15 @@
 #include <otm_apps.hpp>
 #include <otm_meshless.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
+#include <unit_tests/unit_arborx_testing_util.hpp>
+
+class mechanics : public ::testing::Test
+{
+  void SetUp() override
+  {
+    lgr_unit::arborx_testing_singleton::instance();
+  }
+};
 
 namespace lgr_unit {
 
@@ -36,7 +45,7 @@ double compute_total_mass(const lgr::state &s)
 
 }
 
-TEST(mechanics, lumped_mass_1)
+TEST_F(mechanics, lumped_mass_1)
 {
   lgr::state s;
 
@@ -51,7 +60,7 @@ TEST(mechanics, lumped_mass_1)
   ASSERT_LE(error, eps);
 }
 
-TEST(mechanics, lumped_mass_2)
+TEST_F(mechanics, lumped_mass_2)
 {
   lgr::state s;
 
@@ -66,7 +75,7 @@ TEST(mechanics, lumped_mass_2)
   ASSERT_LE(error, eps);
 }
 
-TEST(mechanics, lumped_mass_3)
+TEST_F(mechanics, lumped_mass_3)
 {
   lgr::state s;
 
@@ -96,7 +105,7 @@ double compute_sigma_error(const lgr::state& s) {
 
 }
 
-TEST(mechanics, hex_translation)
+TEST_F(mechanics, hex_translation)
 {
   lgr::state s;
 
@@ -148,13 +157,13 @@ TEST(mechanics, hex_translation)
 }
 
 
-TEST(mechanics, zero_nu_tension)
+TEST_F(mechanics, zero_nu_tension)
 {
   auto const pass = lgr::otm_j2_nu_zero_patch_test();
   ASSERT_EQ(pass, true);
 }
 
-TEST(mechanics, unixial_tension)
+TEST_F(mechanics, uniaxial_tension)
 {
   auto const pass = lgr::otm_j2_uniaxial_patch_test();
   ASSERT_EQ(pass, true);

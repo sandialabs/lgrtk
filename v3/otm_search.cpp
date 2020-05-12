@@ -6,7 +6,6 @@
 #include <hpc_vector.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
-#include <otm_arborx_search_impl.hpp>
 #include <otm_meshing.hpp>
 #include <otm_search.hpp>
 #include <otm_search_util.hpp>
@@ -14,8 +13,14 @@
 
 using namespace lgr::search_util;
 
+#ifdef LGR_ENABLE_SEARCH
+#  include <otm_arborx_search_impl.hpp>
+#endif
+
 namespace lgr {
 namespace search {
+
+#ifdef LGR_ENABLE_SEARCH
 
 void initialize_otm_search()
 {
@@ -201,6 +206,49 @@ HPC_NOINLINE void do_otm_point_nearest_point_search(const lgr::state &s,
   size_and_fill_lgr_data_structures_from_symmetric_search(s.points, indices, offsets, counts,
       n.entities_to_neighbor_ordinals, n.entities_to_neighbors);
 }
+
+#else // ! LGR_ENABLE_SEARCH
+
+namespace {
+
+HPC_NOINLINE void search_not_enabled_error() {
+  throw std::runtime_error("ArborX search not enabled! Rebuild with LGR_ENABLE_SEARCH=ON.");
+}
+
+}
+
+void initialize_otm_search()
+{
+  search_not_enabled_error();
+}
+
+void finalize_otm_search()
+{
+  search_not_enabled_error();
+}
+
+HPC_NOINLINE void do_otm_point_nearest_node_search(lgr::state &, int)
+{
+  search_not_enabled_error();
+}
+
+void do_otm_iterative_point_support_search(lgr::state &, int)
+{
+  search_not_enabled_error();
+}
+
+HPC_NOINLINE void do_otm_node_nearest_node_search(const lgr::state&, nearest_neighbors<node_index>&,
+    int)
+{
+  search_not_enabled_error();
+}
+
+HPC_NOINLINE void do_otm_point_nearest_point_search(const lgr::state&, nearest_neighbors<point_index>&, int)
+{
+  search_not_enabled_error();
+}
+
+#endif
 
 }
 }
