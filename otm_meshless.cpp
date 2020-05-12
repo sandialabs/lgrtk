@@ -652,14 +652,12 @@ void otm_time_integrator_step(input const& in, state& s)
 void otm_set_beta(double gamma, state& s)
 {
    compute_min_neighbor_dist(s);
-   hpc::length<double> const init(std::numeric_limits<double>::max());
-   auto hmin = hpc::transform_reduce(hpc::device_policy(),
-                                     s.nearest_neighbor_dist,
-                                     init,
-                                     hpc::minimum<hpc::length<double>>(),
-                                     hpc::identity<hpc::length<double>>()
-                                     );
-   s.otm_beta = gamma / (4.0*hmin * 4.0*hmin);
+   hpc::length<double> init{0};
+   auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_neighbor_dist,
+                                  init, hpc::maximum<hpc::length<double>>(),
+                                  hpc::identity<hpc::length<double>>());
+   h *= 2.0;
+   s.otm_beta = gamma / (h * h);
 }
 
 void otm_run(input const& in, state& s)
