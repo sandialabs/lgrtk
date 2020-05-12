@@ -499,7 +499,6 @@ HPC_NOINLINE inline void choose_triangle_adapt(state const& s, adapt_state& a)
     if (op == cavity_op::NONE) {
       return;
     }
-    node_index const target_node = nodes_to_other_nodes[node];
     double const criteria = nodes_to_criteria[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
@@ -535,6 +534,7 @@ HPC_NOINLINE inline void choose_triangle_adapt(state const& s, adapt_state& a)
     } else if (op == cavity_op::COLLAPSE) {
       edge_element_count = element_index(0);
     }
+    node_index const target_node = nodes_to_other_nodes[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];

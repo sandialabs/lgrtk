@@ -75,6 +75,50 @@ HPC_NOINLINE inline void evaluate_point_adapt(const state& s, otm_adapt_state& a
   fill_adapt_op_and_other_entities(n, s.points, min_dist, a.point_criteria, a.other_point, a.point_op);
 }
 
+template <typename Index>
+HPC_NOINLINE inline void choose_adapt(const hpc::counting_range<Index>& range,
+    const hpc::device_vector<Index, Index>& other_entity,
+    hpc::device_vector<adapt_op, Index>& entity_ops,
+    hpc::device_vector<Index, Index>& counts) {
+  hpc::fill(hpc::device_policy(), counts, Index(1));
+  auto others = other_entity.cbegin();
+  auto ops = entity_ops.begin();
+  auto new_counts = counts.begin();
+  auto func = [=] HPC_DEVICE (const Index i)
+  {
+    auto op = ops[i];
+    if (op == adapt_op::NONE) return;
+    auto target = others[i];
+    auto target_of_target = others[target];
+    if (target_of_target == i && target < i)
+    {
+      // symmetric nearest neighbor relation
+      ops[i] = adapt_op::NONE;
+      return;
+    }
+    Index entity_count(-100);
+    if (op == adapt_op::SPLIT)
+    {
+      entity_count = Index(2);
+    } else if (op == adapt_op::COLLAPSE)
+    {
+      entity_count = Index(0);
+    }
+    new_counts[i] = entity_count;
+  };
+  hpc::for_each(hpc::device_policy(), range, func);
+}
+
+HPC_NOINLINE inline void choose_node_adapt(const state& s, otm_adapt_state &a)
+{
+  choose_adapt(s.nodes, a.other_node, a.node_op, a.node_counts);
+}
+
+HPC_NOINLINE inline void choose_point_adapt(const state& s, otm_adapt_state &a)
+{
+  choose_adapt(s.points, a.other_point, a.point_op, a.point_counts);
+}
+
 }
 
 TEST_F(adapt, can_create_otm_adapt_state_from_lgr_state)
@@ -106,7 +150,7 @@ HPC_NOINLINE inline void expect_all_points_are_adaptivity_candidates(const otm_a
   unit::test_for_each(hpc::device_policy(), s.points, check_func);
 }
 
-TEST_F(adapt, can_compute_node_nearest_node_neighbor_distances_as_adapt_criteria)
+TEST_F(adapt, can_compute_node_nearest_node_neighbor_distances_as_criteria)
 {
   state s;
   tetrahedron_single_point(s);
@@ -122,7 +166,7 @@ TEST_F(adapt, can_compute_node_nearest_node_neighbor_distances_as_adapt_criteria
   expect_all_nodes_are_adaptivity_candidates(a, s);
 }
 
-TEST_F(adapt, can_compute_point_nearest_point_neighbor_distances_as_adapt_criteria)
+TEST_F(adapt, can_compute_point_nearest_point_neighbor_distances_as_criteria)
 {
   state s;
   two_tetrahedra_two_points(s);
@@ -136,4 +180,68 @@ TEST_F(adapt, can_compute_point_nearest_point_neighbor_distances_as_adapt_criter
   EXPECT_EQ(a.other_point.size(), a.point_counts.size());
 
   expect_all_points_are_adaptivity_candidates(a, s);
+}
+
+template <typename Index>
+HPC_NOINLINE inline void check_choose_adapt_for_all_split(const hpc::counting_range<Index>& range,
+    const hpc::device_vector<Index, Index>& other_entity,
+    const hpc::device_vector<adapt_op, Index>& entity_ops,
+    const hpc::device_vector<Index, Index>& counts)
+{
+  auto ops = entity_ops.cbegin();
+  auto others = other_entity.cbegin();
+  auto new_counts = counts.cbegin();
+  auto check_func = DEVICE_TEST (const Index n) {
+    auto op = ops[n];
+    auto target = others[n];
+    auto count = new_counts[n];
+    auto target_of_target = others[target];
+    if (target_of_target == n && target < n)
+    {
+      DEVICE_EXPECT_EQ(op, adapt_op::NONE);
+      DEVICE_EXPECT_EQ(count, Index(1));
+    } else {
+      DEVICE_EXPECT_EQ(op, adapt_op::SPLIT);
+      DEVICE_EXPECT_EQ(count, Index(2));
+    }
+  };
+  unit::test_for_each(hpc::device_policy(), range, check_func);
+}
+
+HPC_NOINLINE inline void check_choose_node_adapt_for_all_split(const state& s, const otm_adapt_state& a)
+{
+  check_choose_adapt_for_all_split(s.nodes, a.other_node, a.node_op, a.node_counts);
+}
+
+HPC_NOINLINE inline void check_choose_point_adapt_for_all_split(const state& s, const otm_adapt_state& a)
+{
+  check_choose_adapt_for_all_split(s.points, a.other_point, a.point_op, a.point_counts);
+}
+
+TEST_F(adapt, can_choose_correct_node_adaptivity_based_on_nearest_neighbor)
+{
+  state s;
+  tetrahedron_single_point(s);
+
+  otm_adapt_state a(s);
+
+  constexpr hpc::length<double> min_dist(0.1);
+  evaluate_node_adapt(s, a, min_dist);
+  choose_node_adapt(s, a);
+
+  check_choose_node_adapt_for_all_split(s, a);
+}
+
+TEST_F(adapt, can_choose_correct_point_adaptivity_based_on_nearest_neighbor)
+{
+  state s;
+  two_tetrahedra_two_points(s);
+
+  otm_adapt_state a(s);
+
+  constexpr hpc::length<double> min_dist(0.1);
+  evaluate_point_adapt(s, a, min_dist);
+  choose_point_adapt(s, a);
+
+  check_choose_point_adapt_for_all_split(s, a);
 }
