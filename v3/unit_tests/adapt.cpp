@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <hpc_algorithm.hpp>
+#include <gtest/internal/gtest-internal.h>
 #include <hpc_array.hpp>
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
@@ -8,20 +8,19 @@
 #include <hpc_macros.hpp>
 #include <hpc_numeric.hpp>
 #include <hpc_range.hpp>
-#include <hpc_transform_reduce.hpp>
+#include <hpc_range_sum.hpp>
 #include <hpc_vector.hpp>
 #include <lgr_adapt_util.hpp>
 #include <lgr_mesh_indices.hpp>
 #include <lgr_state.hpp>
 #include <otm_adapt.hpp>
-#include <otm_distance.hpp>
-#include <otm_meshing.hpp>
+#include <otm_adapt_util.hpp>
+#include <otm_meshless.hpp>
 #include <otm_search.hpp>
-#include <otm_search_util.hpp>
+#include <otm_vtk.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 #include <unit_tests/unit_arborx_testing_util.hpp>
 #include <unit_tests/unit_device_util.hpp>
-#include <cassert>
 
 using namespace lgr;
 using namespace lgr::search_util;
@@ -33,136 +32,6 @@ class adapt: public ::testing::Test
     lgr_unit::arborx_testing_singleton::instance();
   }
 };
-
-namespace {
-
-template<typename Index>
-HPC_NOINLINE inline void evaluate_adapt(const nearest_neighbors<Index> &n,
-    const hpc::counting_range<Index> &range,
-    const hpc::length<double> nearest_criterion,
-    const hpc::device_vector<hpc::length<double>, Index>& criteria,
-    hpc::device_vector<Index, Index> &other_entities,
-    hpc::device_vector<adapt_op, Index>& adapt_ops)
-{
-  auto others = other_entities.begin();
-  auto ops = adapt_ops.begin();
-  auto neighbor_ords = n.entities_to_neighbor_ordinals.cbegin();
-  auto neighbors = n.entities_to_neighbors.cbegin();
-  auto crit = criteria.cbegin();
-  auto func = [=] HPC_DEVICE (const Index i)
-  {
-    if (crit[i] > nearest_criterion)
-    {
-      auto neighbor_range = neighbor_ords[i];
-      assert(neighbor_range.size() == 1);
-      others[i] = neighbors[neighbor_range[0]];
-      ops[i] = adapt_op::SPLIT;
-    } else
-    {
-      others[i] = Index(-1);
-      ops[i] = adapt_op::NONE;
-    }
-  };
-  hpc::for_each(hpc::device_policy(), range, func);
-}
-
-HPC_NOINLINE inline void evaluate_node_adapt(const state& s, otm_adapt_state& a,
-    const hpc::length<double> min_dist)
-{
-  node_neighbors n;
-  search::do_otm_node_nearest_node_search(s, n, 1);
-  compute_node_neighbor_squared_distances(s, n, a.node_criteria);
-  evaluate_adapt(n, s.nodes, min_dist, a.node_criteria, a.other_node, a.node_op);
-}
-
-HPC_NOINLINE inline void evaluate_point_adapt(const state& s, otm_adapt_state& a,
-    const hpc::length<double> min_dist)
-{
-  point_neighbors n;
-  search::do_otm_point_nearest_point_search(s, n, 1);
-  compute_point_neighbor_squared_distances(s, n, a.point_criteria);
-  evaluate_adapt(n, s.points, min_dist, a.point_criteria, a.other_point, a.point_op);
-}
-
-template <typename Index>
-HPC_NOINLINE inline void choose_adapt(const hpc::counting_range<Index>& range,
-    const hpc::device_vector<Index, Index>& other_entity,
-    hpc::device_vector<adapt_op, Index>& entity_ops,
-    hpc::device_vector<Index, Index>& counts) {
-  hpc::fill(hpc::device_policy(), counts, Index(1));
-  auto others = other_entity.cbegin();
-  auto ops = entity_ops.begin();
-  auto new_counts = counts.begin();
-  auto func = [=] HPC_DEVICE (const Index i)
-  {
-    auto op = ops[i];
-    if (op == adapt_op::NONE) return;
-    auto target = others[i];
-    auto target_of_target = others[target];
-    if (target_of_target == i && target < i)
-    {
-      // symmetric nearest neighbor relation
-      ops[i] = adapt_op::NONE;
-      return;
-    }
-    Index entity_count(-100);
-    if (op == adapt_op::SPLIT)
-    {
-      entity_count = Index(2);
-    } else if (op == adapt_op::COLLAPSE)
-    {
-      entity_count = Index(0);
-    }
-    new_counts[i] = entity_count;
-  };
-  hpc::for_each(hpc::device_policy(), range, func);
-}
-
-HPC_NOINLINE inline void choose_node_adapt(const state& s, otm_adapt_state &a)
-{
-  choose_adapt(s.nodes, a.other_node, a.node_op, a.node_counts);
-}
-
-HPC_NOINLINE inline void choose_point_adapt(const state& s, otm_adapt_state &a)
-{
-  choose_adapt(s.points, a.other_point, a.point_op, a.point_counts);
-}
-
-HPC_NOINLINE inline void apply_node_adapt(const state& s, otm_adapt_state &a)
-{
-  hpc::fill(hpc::device_policy(), a.new_nodes_are_same, true);
-  auto const nodes_to_op = a.node_op.cbegin();
-  auto const nodes_to_other_nodes = a.other_node.cbegin();
-  auto old_to_new_nodes = a.old_nodes_to_new_nodes.begin();
-  auto new_nodes_are_same = a.new_nodes_are_same.begin();
-  auto interpolate_from_nodes = a.interpolate_from_nodes.begin();
-  auto func = [=] HPC_DEVICE (node_index const node)
-  {
-    auto op = nodes_to_op[node];
-    if (op == adapt_op::NONE) return;
-    auto const target = nodes_to_other_nodes[node];
-    if (op == adapt_op::SPLIT)
-    {
-      auto const new_node = old_to_new_nodes[node];
-      auto const split_node = new_node + node_index(1);
-      new_nodes_are_same[split_node] = false;
-      hpc::array<node_index, 2, int> interpolate_from;
-      interpolate_from[0] = node;
-      interpolate_from[1] = target;
-      interpolate_from_nodes[split_node] = interpolate_from;
-    }
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, func);
-}
-
-template<class Range>
-HPC_NOINLINE inline void interpolate_nodal_data(const otm_adapt_state &a, Range &data)
-{
-  interpolate_data(a.new_nodes, a.new_nodes_to_old_nodes, a.new_nodes_are_same,
-      a.interpolate_from_nodes, data);
-}
-
-}
 
 TEST_F(adapt, can_create_otm_adapt_state_from_lgr_state)
 {
@@ -289,15 +158,6 @@ TEST_F(adapt, can_choose_correct_point_adaptivity_based_on_nearest_neighbor)
   check_choose_point_adapt_for_all_split(s, a);
 }
 
-template<typename Index>
-HPC_NOINLINE inline int get_num_chosen_for_adapt(const hpc::device_vector<adapt_op, Index> &ops)
-{
-  auto const num_chosen = hpc::transform_reduce(hpc::device_policy(), ops, int(0), hpc::plus<int>(),
-      [] HPC_DEVICE (adapt_op const op)
-      { return op == adapt_op::NONE ? 0 : 1;});
-  return num_chosen;
-}
-
 HPC_NOINLINE inline void check_point_node_connectivities_after_single_tet_node_adapt(const state& s)
 {
   ASSERT_EQ(s.nodes.size(), 7);
@@ -324,6 +184,7 @@ HPC_NOINLINE inline void check_point_node_connectivities_after_single_tet_node_a
     for (auto const point_node : point_nodes)
     {
       auto const node = point_nodes_to_nodes[point_node];
+      DEVICE_ASSERT_LT(node, node_index(7));
       node_connect_found[node] = true;
     }
     for (const bool found : node_connect_found)
@@ -363,4 +224,93 @@ TEST_F(adapt, can_apply_node_adaptivity)
   search::do_otm_iterative_point_support_search(s, 4);
 
   check_point_node_connectivities_after_single_tet_node_adapt(s);
+}
+
+HPC_NOINLINE inline void check_point_node_connectivities_after_two_tet_point_adapt(const state& s)
+{
+  ASSERT_EQ(s.nodes.size(), 5);
+  auto const nodes_to_node_points = s.nodes_to_node_points.cbegin();
+  auto const node_points_to_points = s.node_points_to_points.cbegin();
+  auto node_check_func = DEVICE_TEST (const node_index n) {
+    hpc::array<bool, 3, point_index> node_point_found {};
+    auto node_points = nodes_to_node_points[n];
+    DEVICE_ASSERT_EQ(node_points.size(), 3);
+    for (auto node_point : node_points)
+    {
+      auto const point = node_points_to_points[node_point];
+      DEVICE_ASSERT_LT(point, point_index(3));
+      node_point_found[point] = true;
+    }
+    for (const bool found : node_point_found)
+    {
+      DEVICE_EXPECT_TRUE(found);
+    }
+  };
+  unit::test_for_each(hpc::device_policy(), s.nodes, node_check_func);
+
+  ASSERT_EQ(s.points.size(), 3);
+  auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
+  auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
+  auto point_check_func = DEVICE_TEST (const point_index p) {
+    hpc::array<bool, 5, node_index> node_connect_found {};
+    auto const point_nodes = points_to_point_nodes[p];
+    DEVICE_ASSERT_EQ(point_nodes.size(), 5);
+    for (auto const point_node : point_nodes)
+    {
+      auto const node = point_nodes_to_nodes[point_node];
+      DEVICE_ASSERT_LT(node, node_index(5));
+      node_connect_found[node] = true;
+    }
+    for (const bool found : node_connect_found)
+    {
+      DEVICE_EXPECT_TRUE(found);
+    }
+  };
+  unit::test_for_each(hpc::device_policy(), s.points, point_check_func);
+}
+
+TEST_F(adapt, can_apply_point_adaptivity)
+{
+  state s;
+  two_tetrahedra_two_points(s);
+
+  otm_adapt_state a(s);
+
+  constexpr hpc::length<double> max_allowable_neighbor_dist(0.1);
+  evaluate_point_adapt(s, a, max_allowable_neighbor_dist);
+  choose_point_adapt(s, a);
+  auto const num_chosen = get_num_chosen_for_adapt(a.point_op);
+  ASSERT_EQ(num_chosen, 1);
+
+  auto const num_new_points = hpc::reduce(hpc::device_policy(), a.point_counts, point_index(0));
+  ASSERT_EQ(num_new_points, 3);
+
+  hpc::offset_scan(hpc::device_policy(), a.point_counts, a.old_points_to_new_points);
+  a.new_points.resize(num_new_points);
+  a.new_points_to_old_points.resize(num_new_points);
+  a.new_points_are_same.resize(num_new_points);
+  a.interpolate_from_points.resize(num_new_points);
+  project(s.points, a.old_points_to_new_points, a.new_points_to_old_points);
+
+  apply_point_adapt(s, a);
+  interpolate_point_data(a, s.xp);
+  interpolate_point_data(a, s.h_otm); // TODO: what to do? search depends on length...
+  s.points = a.new_points;
+  search::do_otm_iterative_point_support_search(s, 5);
+
+  check_point_node_connectivities_after_two_tet_point_adapt(s);
+}
+
+TEST_F(adapt, performance_test_adapt)
+{
+  state s;
+  elastic_wave_four_points_per_tetrahedron(s);
+
+  input in(0, 0);
+
+  in.enable_adapt = true;
+  in.max_node_neighbor_distance = 1.0e-6;
+  in.max_point_neighbor_distance = 1.0e-8;
+
+  EXPECT_TRUE(otm_adapt(in, s));
 }
