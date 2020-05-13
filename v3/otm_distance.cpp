@@ -1,6 +1,8 @@
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
 #include <otm_distance.hpp>
+#include <hpc_array_vector.hpp>
+#include <hpc_dimensional.hpp>
 
 namespace lgr {
 namespace search_util {

@@ -170,7 +170,7 @@ void do_otm_iterative_point_support_search(lgr::state &s, int min_support_nodes_
     do_search_and_fill_counts(search_nodes, queries, s.points, offsets, indices, counts);
 
     min_nodes_in_support_over_all_points = reduce_min(hpc::device_policy(), counts,
-        std::numeric_limits<int>::max());
+        hpc::numeric_limits<int>::max());
   }
 
   size_and_fill_lgr_data_structures(s.points, indices, counts, s.points_to_point_nodes,
