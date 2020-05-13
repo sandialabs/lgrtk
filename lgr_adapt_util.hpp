@@ -1,9 +1,11 @@
 #pragma once
 
+#include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
+#include <hpc_array_vector.hpp>
 
 namespace lgr {
 
@@ -31,6 +33,8 @@ HPC_NOINLINE void interpolate_data(const hpc::counting_range<Index> &new_entitie
     const hpc::device_array_vector<hpc::array<Index, 2, int>, Index> &interpolate_from_entities,
     Range &data)
 {
+  static_assert(std::is_same<Index, typename Range::size_type>::value,
+      "data range incompatible with Index");
   using value_type = typename Range::value_type;
   Range new_data(new_entities.size());
   auto const old_nodes_to_data = data.cbegin();

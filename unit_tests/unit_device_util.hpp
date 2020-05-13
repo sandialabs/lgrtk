@@ -11,6 +11,10 @@
 #define DEVICE_EXPECT_EQ(a, b) if (a != b) { ++num_fails; }
 #define DEVICE_ASSERT_NE(a, b) if (a == b) { ++num_fails; return; }
 #define DEVICE_EXPECT_NE(a, b) if (a == b) { ++num_fails; }
+#define DEVICE_ASSERT_GT(a, b) if (a <= b) { ++num_fails; return; }
+#define DEVICE_EXPECT_GT(a, b) if (a <= b) { ++num_fails; }
+#define DEVICE_ASSERT_LT(a, b) if (a >= b) { ++num_fails; return; }
+#define DEVICE_EXPECT_LT(a, b) if (a >= b) { ++num_fails; }
 #define DEVICE_EXPECT_TRUE(a) if (!a) { ++num_fails; }
 #define DEVICE_EXPECT_FALSE(a) if (a) { ++num_fails; }
 #else
@@ -19,6 +23,10 @@
 #define DEVICE_EXPECT_EQ(a, b) EXPECT_EQ(a, b)
 #define DEVICE_ASSERT_NE(a, b) ASSERT_NE(a, b)
 #define DEVICE_EXPECT_NE(a, b) EXPECT_NE(a, b)
+#define DEVICE_ASSERT_GT(a, b) ASSERT_GT(a, b)
+#define DEVICE_EXPECT_GT(a, b) EXPECT_GT(a, b)
+#define DEVICE_ASSERT_LT(a, b) ASSERT_LT(a, b)
+#define DEVICE_EXPECT_LT(a, b) EXPECT_LT(a, b)
 #define DEVICE_EXPECT_TRUE(a) EXPECT_TRUE(a)
 #define DEVICE_EXPECT_FALSE(a) EXPECT_FALSE(a)
 #endif

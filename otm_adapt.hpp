@@ -66,6 +66,8 @@ struct maxent_interpolator
 
 #endif
 
+bool otm_adapt(const input& in, state& s);
+
 enum adapt_op {
   NONE,
   SPLIT,

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <hpc_transform_reduce.hpp>
+#include <hpc_algorithm.hpp>
+#include <hpc_functional.hpp>
+#include <hpc_range.hpp>
 
 #ifdef HPC_CUDA
 #include <thrust/execution_policy.h>
