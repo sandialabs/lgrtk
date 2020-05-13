@@ -13,5 +13,9 @@ void otm_populate_new_nodes(state & s,
     node_index begin_src, node_index end_src,
     node_index begin_target, node_index end_target);
 
+void otm_populate_new_points(state & s,
+    point_index begin_src, point_index end_src,
+    point_index begin_target, point_index end_target);
+
 } // namespace lgr
 
