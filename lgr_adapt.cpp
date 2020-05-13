@@ -1,9 +1,11 @@
+#include <hpc_functional.hpp>
 #include <lgr_state.hpp>
 #include <lgr_input.hpp>
 #include <lgr_adapt.hpp>
 #include <lgr_element_specific_inline.hpp>
 #include <lgr_print.hpp>
 #include <lgr_meshing.hpp>
+#include <lgr_adapt_util.hpp>
 
 #include <iostream>
 #include <iomanip>
@@ -498,7 +500,6 @@ HPC_NOINLINE inline void choose_triangle_adapt(state const& s, adapt_state& a)
     if (op == cavity_op::NONE) {
       return;
     }
-    node_index const target_node = nodes_to_other_nodes[node];
     double const criteria = nodes_to_criteria[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
@@ -534,6 +535,7 @@ HPC_NOINLINE inline void choose_triangle_adapt(state const& s, adapt_state& a)
     } else if (op == cavity_op::COLLAPSE) {
       edge_element_count = element_index(0);
     }
+    node_index const target_node = nodes_to_other_nodes[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element = node_elements_to_elements[node_element];
       auto const element_nodes = elements_to_element_nodes[element];
@@ -724,23 +726,6 @@ HPC_NOINLINE inline void apply_triangle_adapt(state const& s, adapt_state& a)
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }
 
-template <class Index>
-HPC_NOINLINE void project(
-    hpc::counting_range<Index> const old_things,
-    hpc::device_vector<Index, Index> const& old_things_to_new_things_in,
-    hpc::device_vector<Index, Index>& new_things_to_old_things_in) {
-  auto const old_things_to_new_things = old_things_to_new_things_in.cbegin();
-  auto const new_things_to_old_things = new_things_to_old_things_in.begin();
-  auto functor = [=] HPC_DEVICE (Index const old_thing) {
-    Index first = old_things_to_new_things[old_thing];
-    Index const last = old_things_to_new_things[old_thing + Index(1)];
-    for (; first < last; ++first) {
-      new_things_to_old_things[first] = old_thing;
-    }
-  };
-  hpc::for_each(hpc::device_policy(), old_things, functor);
-}
-
 HPC_NOINLINE inline void transfer_same_connectivity(state const& s, adapt_state& a) {
   auto const new_elements_to_element_nodes = a.new_elements * s.nodes_in_element;
   auto const old_elements_to_element_nodes = s.elements * s.nodes_in_element;
@@ -831,29 +816,10 @@ HPC_NOINLINE inline void transfer_nodal_energy(input const& in, adapt_state cons
 }
 
 template <class Range>
-HPC_NOINLINE void interpolate_nodal_data(adapt_state const& a, Range& data) {
-  using value_type = typename Range::value_type;
-  Range new_data(a.new_nodes.size());
-  auto const old_nodes_to_data = data.cbegin();
-  auto const new_nodes_to_data = new_data.begin();
-  auto const new_nodes_to_old_nodes = a.new_nodes_to_old_nodes.cbegin();
-  auto const new_nodes_are_same = a.new_nodes_are_same.cbegin();
-  auto const interpolate_from = a.interpolate_from.cbegin();
-  auto functor = [=] HPC_DEVICE (node_index const new_node) {
-    if (new_nodes_are_same[new_node]) {
-      node_index const old_node = new_nodes_to_old_nodes[new_node];
-      new_nodes_to_data[new_node] = value_type(old_nodes_to_data[old_node]);
-    } else {
-      auto const pair = interpolate_from[new_node].load();
-      node_index const left = pair[0];
-      node_index const right = pair[1];
-      new_nodes_to_data[new_node] = 0.5 * (
-          value_type(old_nodes_to_data[left])
-        + value_type(old_nodes_to_data[right]));
-    }
-  };
-  hpc::for_each(hpc::device_policy(), a.new_nodes, functor);
-  data = std::move(new_data);
+HPC_NOINLINE void interpolate_nodal_data(adapt_state const &a, Range &data)
+{
+  interpolate_data(a.new_nodes, a.new_nodes_to_old_nodes, a.new_nodes_are_same, a.interpolate_from,
+      data);
 }
 
 bool adapt(input const& in, state& s) {
