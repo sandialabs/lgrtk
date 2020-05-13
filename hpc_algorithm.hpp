@@ -70,7 +70,7 @@ HPC_NOINLINE void copy(cuda_policy, FromRange const& from, ToRange& to) {
   auto const first = from.begin();
   auto const d_first = to.begin();
   auto functor = [=] HPC_DEVICE (typename FromRange::size_type const i) {
-    d_first[i] = FromRange::value_type(first[i]);
+    d_first[i] = typename FromRange::value_type(first[i]);
   };
   int n = int(from.size());
   thrust::counting_iterator<int> new_first(0);
