@@ -750,6 +750,12 @@ void otm_run(input const& in, state& s)
       if (s.n >= s.num_time_steps) continue;
       otm_time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
+        for (int i=0; i<4; ++i)
+        {
+          otm_adapt(in, s);
+          update_min_nearest_neighbor_distances(s);
+          otm_allocate_state(in, s);
+        }
       }
     }
   } else {
