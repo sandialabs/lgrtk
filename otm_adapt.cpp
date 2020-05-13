@@ -220,7 +220,7 @@ void resize_and_project_adapt_data(const hpc::counting_range<Index> &old_range,
   project(old_range, old_to_new, new_to_old);
 }
 
-}
+} // anonymous namespace
 
 bool otm_adapt(const input& in, state& s)
 {
@@ -258,4 +258,4 @@ bool otm_adapt(const input& in, state& s)
   return true;
 }
 
-}
+} // namespace lgr
