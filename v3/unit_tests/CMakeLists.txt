@@ -3,6 +3,7 @@ option(LGR_ENABLE_UNIT_TESTS "Build support for unit tests" ON)
 
 if (LGR_ENABLE_UNIT_TESTS)
   set(LGR_UNIT_SOURCES
+    adapt.cpp
     distances.cpp
     materials.cpp
     maxent.cpp

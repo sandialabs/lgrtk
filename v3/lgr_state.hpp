@@ -88,7 +88,8 @@ class state {
   hpc::device_array_vector<hpc::position<double>, point_index> xp; // current point positions
   hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
-  hpc::device_vector<hpc::length<double>, point_index> nearest_neighbor_dist; // distance to nearest point neighbor
+  hpc::device_vector<hpc::length<double>, point_index> nearest_point_neighbor_dist; // distance to nearest point neighbor
+  hpc::device_vector<hpc::length<double>, point_index> nearest_node_neighbor_dist; // distance to nearest point neighbor
   hpc::device_vector<hpc::energy_density<double>, point_node_index> potential_density; // Helmholtz energy density
   hpc::host_array_vector<hpc::velocity<double>, material_index> prescribed_v;
   hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
@@ -99,6 +100,8 @@ class state {
   bool use_penalty_contact{false};
   bool use_custom_initial_support_size{false};
   node_in_element_index initial_support_size{0};
+  hpc::length<double> min_point_neighbor_dist;
+  hpc::length<double> min_node_neighbor_dist;
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start

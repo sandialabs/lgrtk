@@ -5,7 +5,6 @@
 #include <hpc_vector.hpp>
 #include <lgr_mesh_indices.hpp>
 
-
 namespace lgr {
 namespace search_util {
 

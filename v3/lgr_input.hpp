@@ -129,6 +129,8 @@ class input {
   bool enable_e_averaging = false;
   bool enable_p_averaging = false;
   bool enable_adapt = false;
+  hpc::length<double> max_node_neighbor_distance {1.0};
+  hpc::length<double> max_point_neighbor_distance {1.0};
   std::function<
     void(hpc::counting_range<node_index> const,
         hpc::device_array_vector<hpc::position<double>, node_index> const&,
