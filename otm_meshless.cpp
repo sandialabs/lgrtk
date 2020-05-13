@@ -23,6 +23,7 @@
 #include <otm_util.hpp>
 #include <j2/hardening.hpp>
 #include <otm_vtk.hpp>
+#include <otm_adapt.hpp>
 
 namespace lgr {
 
