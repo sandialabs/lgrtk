@@ -62,4 +62,3 @@ struct otm_adapt_state {
 };
 
 } // namespace lgr
-
