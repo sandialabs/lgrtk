@@ -90,6 +90,10 @@ void otm_populate_new_points(state & s,
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
+  auto const points_to_rho = s.rho.begin();
+  auto const points_to_ep = s.ep.begin();
+  auto const points_to_ep_dot = s.ep_dot.begin();
+  auto const points_to_b = s.b.begin();
   auto const index_to_NZ = NZ.begin();
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const target = points_to_xp[point].load();
@@ -138,19 +142,34 @@ void otm_populate_new_points(state & s,
     i = 0;
     auto point_K = hpc::pressure<double>(0.0);
     auto point_G = hpc::pressure<double>(0.0);
+    auto point_rho = hpc::density<double>(0.0);
+    auto point_ep = hpc::strain<double>(0.0);
+    auto point_ep_dot = hpc::strain_rate<double>(0.0);
+    auto point_b = hpc::acceleration<double>::zero();
     for (auto && source_index : source_range) {
-      auto const u = points_to_K[source_index];
-      auto const v = points_to_G[source_index];
+      auto const K = points_to_K[source_index];
+      auto const G = points_to_G[source_index];
+      auto const rho = points_to_rho[source_index];
+      auto const ep = points_to_ep[source_index];
+      auto const ep_dot = points_to_ep_dot[source_index];
+      auto const b = points_to_b[source_index].load();
       auto const N = index_to_NZ[i] / Z;
-      point_K = point_K + N * u;
-      point_G = point_G + N * v;
+      point_K = point_K + N * K;
+      point_G = point_G + N * G;
+      point_rho = point_rho + N * rho;
+      point_ep = point_ep + N * ep;
+      point_ep_dot = point_ep_dot + N * ep_dot;
+      point_b = point_b + N * b;
       ++i;
     }
     points_to_K[point] = point_K;
     points_to_G[point] = point_G;
+    points_to_rho[point] = point_rho;
+    points_to_ep[point] = point_ep;
+    points_to_ep_dot[point] = point_ep_dot;
+    points_to_b[point] = point_b;
   };
   hpc::for_each(hpc::device_policy(), target_range, maxent_interpolator);
 }
 
 } // namespace lgr
-
