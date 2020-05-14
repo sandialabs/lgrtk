@@ -29,7 +29,7 @@ tet_parametric_to_physical(hpc::array<hpc::position<double>, 4> const& xn,
   switch (points_per_element)
   {
   default:
-    HPC_ERROR_EXIT("Invalid number of integration points : " << points_per_element << '\n');
+    HPC_ERROR_EXIT("Invalid number of integration points");
     break;
   case 1:
     xp = 0.25 * (xn[0] + xn[1] + xn[2] + xn[3]);
@@ -38,7 +38,7 @@ tet_parametric_to_physical(hpc::array<hpc::position<double>, 4> const& xn,
     switch (ip)
     {
     default:
-      HPC_ERROR_EXIT("Invalid integration point index : " << ip << '\n');
+      HPC_ERROR_EXIT("Invalid integration point index");
       break;
     case 0:
       xp = wa * xn[0] + wb * (xn[1] + xn[2] + xn[3]);

@@ -112,7 +112,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE void variational_J2_point(hpc::deformation_gra
       ++iters;
     }
     if (!converged) {
-      HPC_ERROR_EXIT("variational J2 diverged" << std::endl);
+      HPC_ERROR_EXIT("variational J2 diverged\n");
       // TODO: handle non-convergence error
     }
     //std::cout << "variational J2 converged in " << iters << " iterations" << std::endl;

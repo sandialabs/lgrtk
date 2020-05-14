@@ -15,6 +15,7 @@
 #include <lgr_state.hpp>
 #include <otm_adapt.hpp>
 #include <otm_adapt_util.hpp>
+#include <otm_distance_util.hpp>
 #include <otm_meshless.hpp>
 #include <otm_search.hpp>
 #include <otm_vtk.hpp>
@@ -32,6 +33,20 @@ class adapt: public ::testing::Test
     lgr_unit::arborx_testing_singleton::instance();
   }
 };
+
+namespace {
+
+inline void set_up_node_and_point_data_for_adapt(state& s) {
+  s.nearest_node_neighbor.resize(s.nodes.size());
+  s.nearest_node_neighbor_dist.resize(s.nodes.size());
+  s.nearest_point_neighbor.resize(s.points.size());
+  s.nearest_point_neighbor_dist.resize(s.points.size());
+
+  otm_update_nearest_node_neighbor_distances(s);
+  otm_update_nearest_point_neighbor_distances(s);
+}
+
+}
 
 TEST_F(adapt, can_create_otm_adapt_state_from_lgr_state)
 {
@@ -67,6 +82,8 @@ TEST_F(adapt, can_compute_node_nearest_node_neighbor_distances_as_criteria)
   state s;
   tetrahedron_single_point(s);
 
+  set_up_node_and_point_data_for_adapt(s);
+
   otm_adapt_state a(s);
 
   constexpr hpc::length<double> min_dist(0.1);
@@ -82,6 +99,8 @@ TEST_F(adapt, can_compute_point_nearest_point_neighbor_distances_as_criteria)
 {
   state s;
   two_tetrahedra_two_points(s);
+
+  set_up_node_and_point_data_for_adapt(s);
 
   otm_adapt_state a(s);
 
@@ -135,6 +154,8 @@ TEST_F(adapt, can_choose_correct_node_adaptivity_based_on_nearest_neighbor)
   state s;
   tetrahedron_single_point(s);
 
+  set_up_node_and_point_data_for_adapt(s);
+
   otm_adapt_state a(s);
 
   constexpr hpc::length<double> min_dist(0.1);
@@ -148,6 +169,8 @@ TEST_F(adapt, can_choose_correct_point_adaptivity_based_on_nearest_neighbor)
 {
   state s;
   two_tetrahedra_two_points(s);
+
+  set_up_node_and_point_data_for_adapt(s);
 
   otm_adapt_state a(s);
 
@@ -199,6 +222,8 @@ TEST_F(adapt, can_apply_node_adaptivity)
 {
   state s;
   tetrahedron_single_point(s);
+
+  set_up_node_and_point_data_for_adapt(s);
 
   otm_adapt_state a(s);
 
@@ -274,6 +299,8 @@ TEST_F(adapt, can_apply_point_adaptivity)
   state s;
   two_tetrahedra_two_points(s);
 
+  set_up_node_and_point_data_for_adapt(s);
+
   otm_adapt_state a(s);
 
   constexpr hpc::length<double> max_allowable_neighbor_dist(0.1);
@@ -305,6 +332,8 @@ TEST_F(adapt, performance_test_adapt)
 {
   state s;
   elastic_wave_four_points_per_tetrahedron(s);
+
+  set_up_node_and_point_data_for_adapt(s);
 
   input in(0, 0);
 

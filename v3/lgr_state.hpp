@@ -88,7 +88,9 @@ class state {
   hpc::device_array_vector<hpc::position<double>, point_index> xp; // current point positions
   hpc::device_array_vector<hpc::acceleration<double>, point_index> b; // acceleration corresponding to body force, mostly for weight
   hpc::device_vector<hpc::length<double>, point_index> h_otm; // characteristic length, used for max-ent functions
+  hpc::device_vector<point_index, point_index> nearest_point_neighbor; // nearest point neighbor
   hpc::device_vector<hpc::length<double>, point_index> nearest_point_neighbor_dist; // distance to nearest point neighbor
+  hpc::device_vector<node_index, node_index> nearest_node_neighbor; // nearest point neighbor
   hpc::device_vector<hpc::length<double>, point_index> nearest_node_neighbor_dist; // distance to nearest point neighbor
   hpc::device_vector<hpc::energy_density<double>, point_node_index> potential_density; // Helmholtz energy density
   hpc::host_array_vector<hpc::velocity<double>, material_index> prescribed_v;

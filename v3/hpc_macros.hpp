@@ -57,8 +57,8 @@
 #ifdef __CUDACC__
 #define HPC_ERROR_EXIT_IMPL(msg)                                       \
   do {                                                                 \
-    printf("%s ********** HPC_ERROR at ");                             \
-    printf("%s +%d", __FILE__, __LINE__);                              \
+    printf("********** HPC_ERROR at ");                                \
+    printf("%s:%d\n  %s", __FILE__, __LINE__, msg);                    \
     assert(0);                                                         \
   } while (0)
 #else

@@ -95,7 +95,7 @@ bool otm_j2_nu_zero_patch_test()
   in.xp_transform = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
-    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+    HPC_ERROR_EXIT("Error reading Exodus file : cube.g");
   }
   in.name = "nu-zero-patch-test";
   in.end_time = 1.0e-03;
@@ -198,7 +198,7 @@ bool otm_j2_uniaxial_patch_test()
   in.xp_transform = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
-    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+    HPC_ERROR_EXIT("Error reading Exodus file : cube.g");
   }
   in.name = "uniaxial-patch-test";
   in.end_time = 1.0e-03;
@@ -312,7 +312,7 @@ bool otm_cylindrical_flyer()
   in.xp_transform = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
   if (err_code != 0) {
-    HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+    HPC_ERROR_EXIT("Error reading Exodus file : cylinder.g");
   }
   in.name = "cylindrical-flyer";
   in.end_time = 1.0e-04;
