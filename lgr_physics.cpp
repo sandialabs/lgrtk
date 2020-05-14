@@ -910,7 +910,8 @@ void run(input const& in, std::string const& filename) {
   } else {
     auto const err_code = lgr::read_exodus_file(filename, in, s);
     if (err_code != 0) {
-      HPC_ERROR_EXIT("Reading Exodus file : " << filename);
+      std::string const error_msg = "Error reading Exodus file : " + filename;
+      HPC_ERROR_EXIT(error_msg.c_str());
     }
   }
   if (in.x_transform) in.x_transform(&s.x);
