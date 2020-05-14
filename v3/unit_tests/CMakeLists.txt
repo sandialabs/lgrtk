@@ -5,6 +5,7 @@ if (LGR_ENABLE_UNIT_TESTS)
   set(LGR_UNIT_SOURCES
     adapt.cpp
     distances.cpp
+    map.cpp
     materials.cpp
     maxent.cpp
     mechanics.cpp

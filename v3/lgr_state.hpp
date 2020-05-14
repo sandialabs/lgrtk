@@ -98,8 +98,6 @@ class state {
   hpc::strain_rate_rate<double> contact_penalty_coeff{0.0};
   bool use_displacement_contact{false};
   bool use_penalty_contact{false};
-  bool use_custom_initial_support_size{false};
-  node_in_element_index initial_support_size{0};
   hpc::length<double> min_point_neighbor_dist;
   hpc::length<double> min_node_neighbor_dist;
 

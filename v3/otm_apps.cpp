@@ -307,9 +307,6 @@ bool otm_cylindrical_flyer()
   state s;
   std::string const filename{"cylinder.g"};
   auto const points_in_element = 1;
-  //s.points_in_element.resize(point_in_element_index(points_in_element));
-  //s.use_custom_initial_support_size = true;
-  //s.initial_support_size = node_in_element_index(4);
   in.otm_material_points_to_add_per_element = points_in_element;
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform = std::ref(point_interpolator);
