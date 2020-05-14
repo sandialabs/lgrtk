@@ -6,6 +6,7 @@
 #include <hpc_array.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_math.hpp>
+#include <hpc_transform_reduce.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_domain.hpp>
 #include <lgr_element_specific_inline.hpp>
@@ -24,6 +25,7 @@
 #include <j2/hardening.hpp>
 #include <otm_vtk.hpp>
 #include <otm_adapt.hpp>
+#include <otm_distance_util.hpp>
 
 namespace lgr {
 
@@ -515,52 +517,23 @@ void otm_allocate_state(input const& in, state& s) {
   s.c.resize(num_points);
   s.Fp_total.resize(num_points);
   s.ep.resize(num_points);
-  s.element_f.resize(num_points * s.nodes_in_element.size());
   s.lm.resize(num_nodes);
   s.f.resize(num_nodes);
   s.rho.resize(num_points);
   s.b.resize(num_points);
-  s.nearest_point_neighbor_dist.resize(num_points);
-  if (in.enable_adapt) s.nearest_node_neighbor_dist.resize(num_nodes);
-  s.material_mass.resize(num_materials);
-  for (auto& mm : s.material_mass) mm.resize(num_nodes);
+  s.element_dt.resize(num_points);
+  if (!in.use_constant_dt || in.enable_adapt)
+  {
+    s.nearest_point_neighbor_dist.resize(num_points);
+    s.nearest_point_neighbor.resize(num_points);
+  }
+  if (in.enable_adapt)
+  {
+    s.nearest_node_neighbor_dist.resize(num_nodes);
+    s.nearest_node_neighbor.resize(num_nodes);
+  }
   s.mass.resize(num_nodes);
   s.a.resize(num_nodes);
-  s.h_min.resize(num_elements);
-  if (in.enable_viscosity) {
-    s.h_art.resize(num_elements);
-  }
-  s.nu_art.resize(num_points);
-  s.element_dt.resize(num_points);
-  s.p_h.resize(num_materials);
-  s.p_h_dot.resize(num_materials);
-  s.e_h.resize(num_materials);
-  s.e_h_dot.resize(num_materials);
-  s.rho_h.resize(num_materials);
-  s.K_h.resize(num_materials);
-  s.dp_de_h.resize(num_materials);
-  s.temp.resize(num_materials);
-  for (auto const material : in.materials) {
-    if (in.enable_nodal_pressure[material]) {
-      s.p_h[material].resize(num_nodes);
-      s.p_h_dot[material].resize(num_nodes);
-      s.v_prime.resize(num_points);
-      s.W.resize(num_points * s.nodes_in_element.size());
-    }
-    if (in.enable_nodal_energy[material]) {
-      s.p_h[material].resize(num_nodes);
-      s.e_h[material].resize(num_nodes);
-      s.e_h_dot[material].resize(num_nodes);
-      s.rho_h[material].resize(num_nodes);
-      s.K_h[material].resize(num_nodes);
-      s.q.resize(num_points);
-      s.W.resize(num_points * s.nodes_in_element.size());
-      s.dp_de_h[material].resize(num_nodes);
-      if (in.enable_p_prime[material]) {
-        s.p_prime.resize(num_points);
-      }
-    }
-  }
   s.material.resize(num_elements);
   s.nodal_materials.resize(num_nodes);
   s.prescribed_v.resize(num_boundaries + num_materials);
@@ -577,51 +550,6 @@ void otm_initialize(input& in, state& s)
     otm_update_material_state(in, s, material);
   }
   otm_update_nodal_mass(s);
-}
-
-namespace {
-
-template <typename Index>
-HPC_NOINLINE inline void compute_sqrt_nearest_neighbor_distances(const hpc::counting_range<Index>& range,
-    hpc::device_vector<hpc::length<double>, Index>& dists)
-{
-  assert( dists.size() == range.size() );
-  auto const neighbor_distances = dists.begin();
-  auto dist_func = [=] HPC_DEVICE (Index const i) {
-    auto const dist = std::sqrt(neighbor_distances[i]);
-    neighbor_distances[i] = dist;
-  };
-  hpc::for_each(hpc::device_policy(), range, dist_func);
-}
-
-}
-
-HPC_NOINLINE inline void update_nearest_point_neighbor_distances(state& s) {
-  search_util::point_neighbors n;
-  search::do_otm_point_nearest_point_search(s, n, 1);
-  hpc::fill(hpc::device_policy(), s.nearest_point_neighbor_dist, -1.0);
-  search_util::compute_point_neighbor_squared_distances(s, n, s.nearest_point_neighbor_dist);
-  compute_sqrt_nearest_neighbor_distances(s.points, s.nearest_point_neighbor_dist);
-}
-
-HPC_NOINLINE inline void update_nearest_node_neighbor_distances(state& s) {
-  search_util::node_neighbors n;
-  search::do_otm_node_nearest_node_search(s, n, 1);
-  hpc::fill(hpc::device_policy(), s.nearest_node_neighbor_dist, -1.0);
-  search_util::compute_node_neighbor_squared_distances(s, n, s.nearest_node_neighbor_dist);
-  compute_sqrt_nearest_neighbor_distances(s.nodes, s.nearest_node_neighbor_dist);
-}
-
-HPC_NOINLINE inline void update_min_nearest_neighbor_distances(state &s)
-{
-  // TODO compute a relative change in distance as a metric...average?
-  hpc::length<double> const init = std::numeric_limits<double>::max();
-  s.min_node_neighbor_dist = hpc::transform_reduce(hpc::device_policy(),
-      s.nearest_node_neighbor_dist, init, hpc::minimum<hpc::length<double>>(),
-      hpc::identity<hpc::length<double>>());
-  s.min_point_neighbor_dist = hpc::transform_reduce(hpc::device_policy(),
-      s.nearest_point_neighbor_dist, init, hpc::minimum<hpc::length<double>>(),
-      hpc::identity<hpc::length<double>>());
 }
 
 HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(const state& s) {
@@ -651,7 +579,6 @@ HPC_NOINLINE inline hpc::energy<double> compute_free_energy(const state& s) {
 }
 
 HPC_NOINLINE inline void update_point_dt(state& s) {
-  update_nearest_point_neighbor_distances(s);
   auto const points_to_c = s.c.cbegin();
   auto const points_to_dt = s.element_dt.begin();
   auto const points_to_neighbor_dist = s.nearest_point_neighbor_dist.cbegin();
@@ -672,9 +599,24 @@ void otm_update_time_step(state& s)
   find_max_stable_dt(s);
 }
 
+void
+otm_update_neighbor_distances(input const& in, state& s)
+{
+  if (!in.use_constant_dt || in.enable_adapt)
+  {
+    otm_update_nearest_point_neighbor_distances(s);
+  }
+  if (in.enable_adapt)
+  {
+    otm_update_nearest_node_neighbor_distances(s);
+    otm_update_min_nearest_neighbor_distances(s);
+  }
+}
+
 void otm_update_time(input const& in, state& s)
 {
   s.dt_old = s.dt;
+  otm_update_neighbor_distances(in, s);
   if (in.use_constant_dt == true)
   {
     auto const fp_n = static_cast<double>(s.n);
@@ -689,17 +631,6 @@ void otm_update_time(input const& in, state& s)
     otm_update_time_step(s);
     s.dt = s.max_stable_dt * in.CFL;
     s.time += s.dt;
-  }
-}
-
-void
-otm_update_neighbor_distances(input const& in, state& s)
-{
-  if (in.enable_adapt)
-  {
-    if (in.use_constant_dt) update_nearest_point_neighbor_distances(s);
-    update_nearest_node_neighbor_distances(s);
-    update_min_nearest_neighbor_distances(s);
   }
 }
 
@@ -751,7 +682,7 @@ void otm_run(input const& in, state& s)
         for (int i=0; i<4; ++i)
         {
           otm_adapt(in, s);
-          update_min_nearest_neighbor_distances(s);
+          otm_update_min_nearest_neighbor_distances(s);
           otm_allocate_state(in, s);
         }
       }

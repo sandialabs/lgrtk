@@ -17,26 +17,26 @@
 namespace lgr {
 
 template<typename Index>
-HPC_NOINLINE inline void evaluate_adapt(const search_util::nearest_neighbors<Index> &n,
-    const hpc::counting_range<Index> &range,
-    const hpc::length<double> nearest_criterion,
-    const hpc::device_vector<hpc::length<double>, Index>& criteria,
+HPC_NOINLINE inline void evaluate_adapt(
+    const hpc::device_vector<hpc::length<double>, Index> &nearest_neighbor_dists,
+    const hpc::device_vector<Index, Index> &nearest_neighbors,
+    const hpc::counting_range<Index> &range, const hpc::length<double> nearest_criterion,
+    hpc::device_vector<hpc::length<double>, Index> &criteria,
     hpc::device_vector<Index, Index> &other_entities,
-    hpc::device_vector<adapt_op, Index>& adapt_ops)
+    hpc::device_vector<adapt_op, Index> &adapt_ops)
 {
   assert(criteria.size() == range.size());
   auto others = other_entities.begin();
   auto ops = adapt_ops.begin();
-  auto neighbor_ords = n.entities_to_neighbor_ordinals.cbegin();
-  auto neighbors = n.entities_to_neighbors.cbegin();
-  auto crit = criteria.cbegin();
+  auto neighbors = nearest_neighbors.cbegin();
+  auto neighbor_dists = nearest_neighbor_dists.cbegin();
+  auto crit = criteria.begin();
   auto func = [=] HPC_DEVICE (const Index i)
   {
+    crit[i] = neighbor_dists[i];
     if (crit[i] > nearest_criterion)
     {
-      auto neighbor_range = neighbor_ords[i];
-      assert(neighbor_range.size() == 1);
-      others[i] = neighbors[neighbor_range[0]];
+      others[i] = neighbors[i];
       ops[i] = adapt_op::SPLIT;
     } else
     {
@@ -47,22 +47,21 @@ HPC_NOINLINE inline void evaluate_adapt(const search_util::nearest_neighbors<Ind
   hpc::for_each(hpc::device_policy(), range, func);
 }
 
-HPC_NOINLINE inline void evaluate_node_adapt(const state& s, otm_adapt_state& a,
+HPC_NOINLINE inline void evaluate_node_adapt(const state &s, otm_adapt_state &a,
     const hpc::length<double> min_dist)
 {
-  search_util::node_neighbors n;
-  search::do_otm_node_nearest_node_search(s, n, 1);
-  compute_node_neighbor_squared_distances(s, n, a.node_criteria);
-  evaluate_adapt(n, s.nodes, min_dist, a.node_criteria, a.other_node, a.node_op);
+  evaluate_adapt(s.nearest_node_neighbor_dist, s.nearest_node_neighbor, s.nodes, min_dist,
+      a.node_criteria, a.other_node, a.node_op);
 }
 
-HPC_NOINLINE inline void evaluate_point_adapt(const state& s, otm_adapt_state& a,
+HPC_NOINLINE inline void evaluate_point_adapt(const state &s, otm_adapt_state &a,
     const hpc::length<double> min_dist)
 {
   search_util::point_neighbors n;
   search::do_otm_point_nearest_point_search(s, n, 1);
   compute_point_neighbor_squared_distances(s, n, a.point_criteria);
-  evaluate_adapt(n, s.points, min_dist, a.point_criteria, a.other_point, a.point_op);
+  evaluate_adapt(s.nearest_point_neighbor_dist, s.nearest_point_neighbor, s.points, min_dist,
+      a.point_criteria, a.other_point, a.point_op);
 }
 
 template <typename Index>
