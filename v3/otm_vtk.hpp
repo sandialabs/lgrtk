@@ -28,6 +28,7 @@ struct otm_host_pinned_output_state : public otm_host_pinned_state {
   hpc::pinned_vector<hpc::pressure<double>, point_index> G;
   hpc::pinned_vector<hpc::strain<double>, point_index> ep;
   hpc::pinned_vector<hpc::strain_rate<double>, point_index> ep_dot;
+  hpc::pinned_vector<hpc::energy_density<double>, point_index> potential_density;
 };
 
 class otm_file_writer
