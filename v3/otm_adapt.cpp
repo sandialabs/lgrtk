@@ -77,8 +77,8 @@ void otm_populate_new_nodes(state & s,
       auto const u = nodes_to_u[source_index].load();
       auto const v = nodes_to_v[source_index].load();
       auto const N = index_to_NZ[i] / Z;
-      node_u = node_u + N * u;
-      node_v = node_v + N * v;
+      node_u += N * u;
+      node_v += N * v;
       ++i;
     }
     nodes_to_u[node] = node_u;
@@ -101,6 +101,7 @@ void otm_populate_new_points(state & s,
   auto const points_to_ep = s.ep.begin();
   auto const points_to_ep_dot = s.ep_dot.begin();
   auto const points_to_b = s.b.begin();
+  auto const points_to_V = s.V.begin();
   auto const index_to_NZ = NZ.begin();
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const target = points_to_xp[point].load();
@@ -153,6 +154,7 @@ void otm_populate_new_points(state & s,
     auto point_ep = hpc::strain<double>(0.0);
     auto point_ep_dot = hpc::strain_rate<double>(0.0);
     auto point_b = hpc::acceleration<double>::zero();
+    auto point_V = hpc::volume<double>(0.0);
     for (auto && source_index : source_range) {
       auto const K = points_to_K[source_index];
       auto const G = points_to_G[source_index];
@@ -161,12 +163,15 @@ void otm_populate_new_points(state & s,
       auto const ep_dot = points_to_ep_dot[source_index];
       auto const b = points_to_b[source_index].load();
       auto const N = index_to_NZ[i] / Z;
-      point_K = point_K + N * K;
-      point_G = point_G + N * G;
-      point_rho = point_rho + N * rho;
-      point_ep = point_ep + N * ep;
-      point_ep_dot = point_ep_dot + N * ep_dot;
-      point_b = point_b + N * b;
+      auto const dV = points_to_V[source_index] * N / (1.0 + N);
+      point_K += N * K;
+      point_G += N * G;
+      point_rho += N * rho;
+      point_ep += N * ep;
+      point_ep_dot += N * ep_dot;
+      point_b += N * b;
+      point_V += dV;
+      points_to_V[source_index] -= dV;
       ++i;
     }
     points_to_K[point] = point_K;
@@ -175,6 +180,7 @@ void otm_populate_new_points(state & s,
     points_to_ep[point] = point_ep;
     points_to_ep_dot[point] = point_ep_dot;
     points_to_b[point] = point_b;
+    points_to_V[point] = point_V;
   };
   hpc::for_each(hpc::device_policy(), target_range, maxent_interpolator);
 }
