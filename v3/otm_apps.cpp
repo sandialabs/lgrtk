@@ -132,6 +132,7 @@ bool otm_j2_nu_zero_patch_test()
   in.CFL = 1.0;
   in.use_constant_dt = true;
   in.constant_dt = hpc::time<double>(1.0e-06);
+  in.otm_gamma = 1.5;
   auto const tol = hpc::length<double>(1.0e-04);
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
@@ -234,6 +235,7 @@ bool otm_j2_uniaxial_patch_test()
   in.eps_dot0[body] = eps_dot0;
   in.CFL = 1.0;
   in.use_constant_dt = true;
+  in.otm_gamma = 1.5;
   in.constant_dt = hpc::time<double>(1.0e-06);
   auto const tol = hpc::length<double>(1.0e-04);
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
@@ -342,9 +344,10 @@ bool otm_cylindrical_flyer()
   in.Svis0[body] = Svis0;
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
-  in.CFL = 1.0;
+  in.CFL = 0.1;
   in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
+  in.otm_gamma = 1.5;
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   convert_tet_mesh_to_meshless(in, s);
   // make support wider than 1 element
