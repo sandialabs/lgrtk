@@ -651,13 +651,15 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_set_beta(double gamma, state& s)
 {
-   compute_min_neighbor_dist(s);
-   hpc::length<double> init{0};
-   auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_neighbor_dist,
-                                  init, hpc::maximum<hpc::length<double>>(),
-                                  hpc::identity<hpc::length<double>>());
-   h *= 2.0;
-   s.otm_beta = gamma / (h * h);
+  s.nearest_point_neighbor.resize(s.points.size());
+  s.nearest_point_neighbor_dist.resize(s.points.size());
+  otm_update_nearest_point_neighbor_distances(s);
+  hpc::length<double> init{0};
+  auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_point_neighbor_dist,
+                                 init, hpc::maximum<hpc::length<double>>(),
+                                 hpc::identity<hpc::length<double>>());
+  h *= 4.0;
+  s.otm_beta = gamma / (h * h);
 }
 
 void otm_run(input const& in, state& s)

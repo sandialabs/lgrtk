@@ -344,7 +344,7 @@ bool otm_cylindrical_flyer()
   in.Svis0[body] = Svis0;
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
-  in.CFL = 0.2;
+  in.CFL = 0.1;
   in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
   in.otm_gamma = 1.5;
