@@ -21,6 +21,34 @@ class state;
 
 namespace lgr {
 
+template <typename T, typename I>
+void
+align_rotation_vectors(hpc::device_array_vector<T, I> & v)
+{
+  auto const n = v.size();
+  assert(n >= 2);
+  auto const alpha = 0.8;
+  auto const pi = std::acos(-1.0);
+  auto const v0 = v[0].load();
+  auto s = hpc::norm(v0);
+  for (auto i = 1; i < n; ++i) {
+    auto const vi = v[i].load();
+    auto const ni = hpc::norm(vi);
+    auto const dot = hpc::inner_product(v0, vi);
+    if (dot <= -alpha * pi * pi) {
+      v[i] = vi - (2.0 * pi / ni) * vi;
+    }
+    s += ni;
+  }
+  if (s > n * pi) {
+    for (auto i = 0; i < n; ++i) {
+      auto const vi = v[i].load();
+      auto const ni = hpc::norm(vi);
+      v[i] = vi - (2.0 * pi / ni) * vi;
+    }
+  }
+}
+
 void otm_populate_new_nodes(state & s,
     node_index begin_src, node_index end_src,
     node_index begin_target, node_index end_target);
