@@ -86,6 +86,10 @@ tetrahedron_single_point(lgr::state& s)
   node_points_to_point_nodes[NPI(3)] = PNI(3);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
+  double const gamma_otm = 1.5;
+  double const h = 1.0;
+  s.otm_beta = gamma_otm / (h * h);
+
   lgr::otm_update_shape_functions(s);
 
   s.mass.resize(num_nodes);
@@ -175,6 +179,10 @@ two_tetrahedra_two_points(lgr::state& s)
   node_points_to_point_nodes[NPI(8)] = PNI(4);
   node_points_to_point_nodes[NPI(9)] = PNI(4);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
+
+  double const gamma_otm = 1.5;
+  double const h = 1.0;
+  s.otm_beta = gamma_otm / (h * h);
 
   lgr::otm_update_shape_functions(s);
 

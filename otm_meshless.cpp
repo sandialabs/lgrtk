@@ -104,20 +104,20 @@ void otm_initialize_point_volume(state& s) {
 }
 
 void otm_update_shape_functions(state& s) {
-  //otm_update_h(s);
-  hpc::adimensional<double> gamma(1.5);
+  auto beta = s.otm_beta;
   auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xp = s.xp.cbegin();
-  auto const points_to_h = s.h_otm.cbegin();
+  //otm_update_h(s);
+  //auto const points_to_h = s.h_otm.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const eps = s.maxent_tolerance;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
-    auto const h = points_to_h[point];
-    auto const beta = gamma / (h * h);
+    //auto const h = points_to_h[point];
+    //auto const beta = gamma / (h * h);
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
     auto converged = false;
@@ -545,6 +545,7 @@ void otm_initialize(input& in, state& s)
   otm_mark_boundary_domains(in, s);
   collect_node_sets(in, s);
   otm_initialize_point_volume(s);
+  otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
   for (auto material : in.materials) {
     otm_update_material_state(in, s, material);
@@ -646,6 +647,19 @@ void otm_time_integrator_step(input const& in, state& s)
   otm_update_shape_functions(s);
   otm_update_time(in, s);
   otm_update_neighbor_distances(in, s);
+}
+
+void otm_set_beta(double gamma, state& s)
+{
+  s.nearest_point_neighbor.resize(s.points.size());
+  s.nearest_point_neighbor_dist.resize(s.points.size());
+  otm_update_nearest_point_neighbor_distances(s);
+  hpc::length<double> init{0};
+  auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_point_neighbor_dist,
+                                 init, hpc::maximum<hpc::length<double>>(),
+                                 hpc::identity<hpc::length<double>>());
+  h *= 4.0;
+  s.otm_beta = gamma / (h * h);
 }
 
 void otm_run(input const& in, state& s)
