@@ -70,7 +70,7 @@ TEST(map, maxent_populate_nodes)
   resize_preserve(s.x, num_nodes_new);
   resize_preserve(s.u, num_nodes_new);
   resize_preserve(s.v, num_nodes_new);
-  otm_populate_new_nodes(s, 0, num_nodes_old, num_nodes_old, num_nodes_new);
+  lgr::otm_populate_new_nodes(s, 0, num_nodes_old, num_nodes_old, num_nodes_new);
   hpc::pinned_array_vector<hpc::position<double>, lgr::node_index> u(num_nodes_new);
   hpc::pinned_array_vector<hpc::position<double>, lgr::node_index> v(num_nodes_new);
   hpc::copy(s.u, u);
@@ -117,7 +117,7 @@ TEST(map, maxent_populate_points)
   resize_preserve(s.ep_dot, num_points_new);
   resize_preserve(s.b, num_points_new);
   resize_preserve(s.V, num_points_new);
-  otm_populate_new_points(s, 0, num_points_old, num_points_old, num_points_new);
+  lgr::otm_populate_new_points(s, 0, num_points_old, num_points_old, num_points_new);
   hpc::pinned_array_vector<hpc::position<double>, lgr::point_index> xp(num_points_new);
   hpc::pinned_vector<hpc::pressure<double>, lgr::point_index> K(num_points_new);
   hpc::pinned_vector<hpc::pressure<double>, lgr::point_index> G(num_points_new);
@@ -148,4 +148,21 @@ TEST(map, maxent_populate_points)
   ASSERT_LE(error_ep_dot, eps);
   ASSERT_LE(error_b, eps);
   ASSERT_LE(error_V, eps);
+}
+
+TEST(map, align_rotation_vectors)
+{
+  auto const pi = std::acos(-1.0);
+  auto const eps = hpc::machine_epsilon<double>();
+  auto const delta = 8192 * eps;
+  auto const num_vectors = 2;
+  hpc::pinned_array_vector<hpc::vector3<double>, int> host_rvs(num_vectors);
+  host_rvs[0] = hpc::vector3<double>(pi - delta, 0.0, 0.0);
+  host_rvs[1] = hpc::vector3<double>(delta - pi, 0.0, 0.0);
+  hpc::device_array_vector<hpc::vector3<double>, int> device_rvs(num_vectors);
+  hpc::copy(host_rvs, device_rvs);
+  lgr::align_rotation_vectors(device_rvs);
+  hpc::copy(device_rvs, host_rvs);
+  auto const error = std::abs(hpc::norm(host_rvs[1].load()) / (pi + delta) - 1.0);
+  ASSERT_LE(error, eps);
 }
