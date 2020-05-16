@@ -58,6 +58,7 @@ TEST(map, maxent_populate_nodes)
 {
   lgr::state s;
   hexahedron_eight_points(s);
+  s.otm_beta = 1.5;
   auto const num_nodes_old = s.nodes.size();
   auto const num_nodes_new = num_nodes_old + 1;
   auto const u0 = hpc::position<double>(12.0e-06,  4.0e-06,  3.0e-06);
@@ -85,6 +86,7 @@ TEST(map, maxent_populate_points)
 {
   lgr::state s;
   hexahedron_eight_points(s);
+  s.otm_beta = 1.5;
   auto const num_points_old = s.points.size();
   auto const num_points_new = num_points_old + 1;
   auto const K0 = hpc::pressure<double>(2.0e+09);
