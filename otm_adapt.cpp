@@ -26,12 +26,10 @@ void otm_populate_new_nodes(state & s,
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
   auto const index_to_NZ = NZ.begin();
+  auto const eps = s.maxent_tolerance;
+  auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
     auto const target = nodes_to_x[node].load();
-    auto const gamma = 1.5;
-    auto const h = 1.0;
-    auto const eps = 8192 * hpc::machine_epsilon<double>();
-    auto const beta = gamma / h / h;
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
@@ -103,12 +101,10 @@ void otm_populate_new_points(state & s,
   auto const points_to_b = s.b.begin();
   auto const points_to_V = s.V.begin();
   auto const index_to_NZ = NZ.begin();
+  auto const eps = s.maxent_tolerance;
+  auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const target = points_to_xp[point].load();
-    auto const gamma = 1.5;
-    auto const h = 1.0;
-    auto const eps = 8192 * hpc::machine_epsilon<double>();
-    auto const beta = gamma / h / h;
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
