@@ -27,25 +27,31 @@ align_rotation_vectors(hpc::device_array_vector<T, I> & v)
 {
   auto const n = v.size();
   assert(n >= 2);
+  hpc::counting_range<I> range(0, n);
+  hpc::device_vector<double, I> norms(n);
   auto const alpha = 0.8;
   auto const pi = std::acos(-1.0);
-  auto const v0 = v[0].load();
-  auto s = hpc::norm(v0);
-  for (auto i = 1; i < n; ++i) {
-    auto const vi = v[i].load();
+  auto const index_to_v = v.begin();
+  auto const index_to_norm = norms.begin();
+  auto align_functor = [=] HPC_DEVICE (I const index) {
+    auto const v0 = index_to_v[0].load();
+    auto const vi = index_to_v[index].load();
     auto const ni = hpc::norm(vi);
     auto const dot = hpc::inner_product(v0, vi);
     if (dot <= -alpha * pi * pi) {
-      v[i] = vi - (2.0 * pi / ni) * vi;
+      index_to_v[index] = vi - (2.0 * pi / ni) * vi;
     }
-    s += ni;
-  }
-  if (s > n * pi) {
-    for (auto i = 0; i < n; ++i) {
-      auto const vi = v[i].load();
-      auto const ni = hpc::norm(vi);
-      v[i] = vi - (2.0 * pi / ni) * vi;
-    }
+    index_to_norm[index] = ni;
+  };
+  hpc::for_each(hpc::device_policy(), range, align_functor);
+  auto normalize_functor = [=] HPC_DEVICE (I const index) {
+    auto const vi = index_to_v[index].load();
+    auto const ni = index_to_norm[index];
+    index_to_v[index] = vi - (2.0 * pi / ni) * vi;
+  };
+  auto const sum_norms = hpc::reduce(hpc::device_policy(), norms, 0.0);
+  if (sum_norms > n * pi) {
+    hpc::for_each(hpc::device_policy(), range, normalize_functor);
   }
 }
 
