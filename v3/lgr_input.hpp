@@ -76,6 +76,9 @@ class input {
   hpc::host_vector<bool, material_index> enable_p_prime;
   hpc::host_vector<double, material_index> c_tau;
 
+  // OTM interpolation
+  hpc::adimensional<double> otm_gamma{1.0}; // shape function locality parameter
+
   // Inputs for the hyper elastic-plastic model
 #if defined(HYPER_EP)
   hpc::host_vector<hyper_ep::Elastic, material_index> elastic;

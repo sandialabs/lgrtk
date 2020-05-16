@@ -24,5 +24,6 @@ void otm_update_nodal_momentum(state& s);
 void otm_update_time(input const& in, state& s);
 void otm_time_integrator_step(input const& in, state& s);
 void otm_update_material_state(input const& in, state& s, material_index const material);
+void otm_set_beta(double gamma, state& s);
 void otm_run(input const& in, state& s);
 }
