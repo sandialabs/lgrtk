@@ -101,6 +101,11 @@ TEST(map, maxent_populate_points)
   auto const R0 = hpc::rotation_tensor_from_rotation_vector(r0);
   auto const U0 = hpc::exp(u0);
   auto const F0 = R0 * U0;
+  auto const rp0 = hpc::vector3<double>(0.1, 0.2, 0.3);
+  auto const up0 = hpc::matrix3x3<double>(-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1);
+  auto const Rp0 = hpc::rotation_tensor_from_rotation_vector(rp0);
+  auto const Up0 = hpc::exp(up0);
+  auto const Fp0 = Rp0 * Up0;
   s.K.resize(num_points_old);
   s.G.resize(num_points_old);
   s.rho.resize(num_points_old);
@@ -109,6 +114,7 @@ TEST(map, maxent_populate_points)
   s.b.resize(num_points_old);
   s.V.resize(num_points_old);
   s.F_total.resize(num_points_old);
+  s.Fp_total.resize(num_points_old);
   hpc::fill(hpc::device_policy(), s.K, K0);
   hpc::fill(hpc::device_policy(), s.G, G0);
   hpc::fill(hpc::device_policy(), s.rho, rho0);
@@ -116,6 +122,7 @@ TEST(map, maxent_populate_points)
   hpc::fill(hpc::device_policy(), s.ep_dot, ep_dot0);
   hpc::fill(hpc::device_policy(), s.b, b0);
   hpc::fill(hpc::device_policy(), s.F_total, F0);
+  hpc::fill(hpc::device_policy(), s.Fp_total, Fp0);
   resize_preserve(s.xp, num_points_new);
   resize_preserve(s.K, num_points_new);
   resize_preserve(s.G, num_points_new);
@@ -125,6 +132,7 @@ TEST(map, maxent_populate_points)
   resize_preserve(s.b, num_points_new);
   resize_preserve(s.V, num_points_new);
   resize_preserve(s.F_total, num_points_new);
+  resize_preserve(s.Fp_total, num_points_new);
   lgr::otm_populate_new_points(s, 0, num_points_old, num_points_old, num_points_new);
   hpc::pinned_array_vector<hpc::position<double>, lgr::point_index> xp(num_points_new);
   hpc::pinned_vector<hpc::pressure<double>, lgr::point_index> K(num_points_new);
@@ -135,6 +143,7 @@ TEST(map, maxent_populate_points)
   hpc::pinned_array_vector<hpc::acceleration<double>, lgr::point_index> b(num_points_new);
   hpc::pinned_vector<hpc::volume<double>, lgr::point_index> V(num_points_new);
   hpc::pinned_array_vector<hpc::deformation_gradient<double>, lgr::point_index> F(num_points_new);
+  hpc::pinned_array_vector<hpc::deformation_gradient<double>, lgr::point_index> Fp(num_points_new);
   hpc::copy(s.K, K);
   hpc::copy(s.G, G);
   hpc::copy(s.rho, rho);
@@ -143,6 +152,7 @@ TEST(map, maxent_populate_points)
   hpc::copy(s.b, b);
   hpc::copy(s.V, V);
   hpc::copy(s.F_total, F);
+  hpc::copy(s.Fp_total, Fp);
   auto const error_K = std::abs(K[num_points_new - 1] / K0 - 1.0);
   auto const error_G = std::abs(G[num_points_new - 1] / G0 - 1.0);
   auto const error_rho = std::abs(rho[num_points_new - 1] / rho0 - 1.0);
@@ -151,6 +161,7 @@ TEST(map, maxent_populate_points)
   auto const error_b = hpc::norm(b[num_points_new - 1].load() - b0) / hpc::norm(b0);
   auto const error_V = std::abs(num_points_new * V[num_points_new - 1] / V0 - 1.0);
   auto const error_F = hpc::norm(F[num_points_new - 1].load() - F0) / hpc::norm(F0);
+  auto const error_Fp = hpc::norm(Fp[num_points_new - 1].load() - Fp0) / hpc::norm(Fp0);
   auto const eps = hpc::machine_epsilon<double>();
   ASSERT_LE(error_K, eps);
   ASSERT_LE(error_G, eps);
@@ -160,6 +171,7 @@ TEST(map, maxent_populate_points)
   ASSERT_LE(error_b, eps);
   ASSERT_LE(error_V, eps);
   ASSERT_LE(error_F, 4 * eps);
+  ASSERT_LE(error_Fp, eps);
 }
 
 TEST(map, align_rotation_vectors)

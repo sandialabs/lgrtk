@@ -120,6 +120,8 @@ void otm_populate_new_points(state & s,
   hpc::device_vector<hpc::basis_value<double>, point_index> NZ(source_size);
   hpc::device_array_vector<hpc::vector3<double>, point_index> r(source_size);
   hpc::device_array_vector<hpc::matrix3x3<double>, point_index>  u(source_size);
+  hpc::device_array_vector<hpc::vector3<double>, point_index> rp(source_size);
+  hpc::device_array_vector<hpc::matrix3x3<double>, point_index>  up(source_size);
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
@@ -130,9 +132,13 @@ void otm_populate_new_points(state & s,
   auto const points_to_V = s.V.begin();
   auto const points_to_F = s.F_total.begin();
   polar_lie_decompose(s.F_total, r, u, source_range);
+  auto const points_to_Fp = s.Fp_total.begin();
+  polar_lie_decompose(s.Fp_total, rp, up, source_range);
   auto const index_to_NZ = NZ.begin();
   auto const index_to_r = r.cbegin();
   auto const index_to_u = u.cbegin();
+  auto const index_to_rp = rp.cbegin();
+  auto const index_to_up = up.cbegin();
   auto const eps = s.maxent_tolerance;
   auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
@@ -185,6 +191,8 @@ void otm_populate_new_points(state & s,
     auto point_V = hpc::volume<double>(0.0);
     auto index_r = hpc::vector3<double>::zero();
     auto index_u = hpc::matrix3x3<double>::zero();
+    auto index_rp = hpc::vector3<double>::zero();
+    auto index_up = hpc::matrix3x3<double>::zero();
     for (auto && source_index : source_range) {
       auto const K = points_to_K[source_index];
       auto const G = points_to_G[source_index];
@@ -196,6 +204,8 @@ void otm_populate_new_points(state & s,
       auto const dV = points_to_V[source_index] * N / (1.0 + N);
       auto const rotation_vector = index_to_r[i].load();
       auto const log_stretch = index_to_u[i].load();
+      auto const rotation_vector_plastic = index_to_rp[i].load();
+      auto const log_stretch_plastic = index_to_up[i].load();
       point_K += N * K;
       point_G += N * G;
       point_rho += N * rho;
@@ -206,6 +216,8 @@ void otm_populate_new_points(state & s,
       points_to_V[source_index] -= dV;
       index_r += N * rotation_vector;
       index_u += N * log_stretch;
+      index_rp += N * rotation_vector_plastic;
+      index_up += N * log_stretch_plastic;
       ++i;
     }
     points_to_K[point] = point_K;
@@ -219,6 +231,10 @@ void otm_populate_new_points(state & s,
     auto const U = hpc::exp(index_u);
     auto const def_grad = R * U;
     points_to_F[point] = def_grad;
+    auto const Rp = hpc::rotation_tensor_from_rotation_vector(index_rp);
+    auto const Up = hpc::exp(index_up);
+    auto const def_grad_plastic = Rp * Up;
+    points_to_Fp[point] = def_grad_plastic;
   };
   hpc::for_each(hpc::device_policy(), target_range, maxent_interpolator);
 }
