@@ -691,7 +691,7 @@ exp(matrix3x3<T> const& A) {
 
 // Exponential map by Taylor series, radius of convergence is infinity
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 exp_taylor(matrix3x3<T> const& A) {
   auto const max_iter = 1024;
   auto const tol = machine_epsilon<T>();
@@ -717,7 +717,7 @@ exp_taylor(matrix3x3<T> const& A) {
 // The rotation/reflection obtained through this projection is
 // the orthogonal component of the real polar decomposition
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 polar_rotation(matrix3x3<T> const A)
 {
   auto const dim = 3;

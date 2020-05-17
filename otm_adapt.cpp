@@ -34,8 +34,8 @@ void polar_lie_decompose(
     auto const F = points_to_F[point].load();
     auto const R = polar_rotation(F);
     auto const U = symm(transpose(R) * F);
-    auto const rotation_vector = hpc::rotation_vector_from_rotation_tensor(R);
-    auto const log_stretch = hpc::log(U);
+    auto const rotation_vector = rotation_vector_from_rotation_tensor(R);
+    auto const log_stretch = log(U);
     index_to_r[index] = rotation_vector;
     index_to_u[index] = log_stretch;
   };
