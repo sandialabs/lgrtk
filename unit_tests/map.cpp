@@ -166,3 +166,41 @@ TEST(map, align_rotation_vectors)
   auto const error = std::abs(hpc::norm(host_rvs[1].load()) / (pi + delta) - 1.0);
   ASSERT_LE(error, eps);
 }
+
+TEST(map, polar_lie_decompose)
+{
+  auto const range_begin = lgr::point_index(0);
+  auto const range_end = lgr::point_index(2);
+  hpc::counting_range<lgr::point_index> range(range_begin, range_end);
+  hpc::pinned_array_vector<hpc::matrix3x3<double>, lgr::point_index> host_F(range_end);
+  hpc::device_array_vector<hpc::matrix3x3<double>, lgr::point_index> F(range_end);
+  hpc::device_array_vector<hpc::vector3<double>, lgr::point_index> r(range_end);
+  hpc::device_array_vector<hpc::matrix3x3<double>, lgr::point_index> u(range_end);
+  auto const r1 = hpc::vector3<double>(0.1, 0.2, 0.3);
+  auto const r2 = hpc::vector3<double>(0.4, 0.5, 0.6);
+  auto const u1 = hpc::matrix3x3<double>(-0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1);
+  auto const u2 = hpc::matrix3x3<double>(1.5, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.5);
+  auto const R1 = hpc::rotation_tensor_from_rotation_vector(r1);
+  auto const R2 = hpc::rotation_tensor_from_rotation_vector(r2);
+  auto const U1 = hpc::exp(u1);
+  auto const U2 = hpc::exp(u2);
+  auto const F1 = R1 * U1;
+  auto const F2 = R2 * U2;
+  host_F[0] = F1;
+  host_F[1] = F2;
+  hpc::copy(host_F, F);
+  lgr::polar_lie_decompose(F, r, u, range);
+  hpc::pinned_array_vector<hpc::vector3<double>, lgr::point_index> host_r(range_end);
+  hpc::pinned_array_vector<hpc::matrix3x3<double>, lgr::point_index> host_u(range_end);
+  hpc::copy(r, host_r);
+  hpc::copy(u, host_u);
+  auto const eps = 2 * hpc::machine_epsilon<double>();
+  auto const error_r1 = hpc::norm(host_r[0].load() - r1) / hpc::norm(r1);
+  auto const error_r2 = hpc::norm(host_r[1].load() - r2) / hpc::norm(r2);
+  auto const error_u1 = hpc::norm(host_u[0].load() - u1) / hpc::norm(u1);
+  auto const error_u2 = hpc::norm(host_u[1].load() - u2) / hpc::norm(u2);
+  ASSERT_LE(error_r1, 2 * eps);
+  ASSERT_LE(error_r2, eps);
+  ASSERT_LE(error_u1, 15 * eps);
+  ASSERT_LE(error_u2, 5 * eps);
+}

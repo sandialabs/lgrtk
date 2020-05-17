@@ -2,6 +2,7 @@
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_numeric.hpp>
+#include <hpc_quaternion.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_adapt_util.hpp>
@@ -14,6 +15,33 @@
 #include <iostream>
 
 namespace lgr {
+
+void polar_lie_decompose(
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> const & F,
+    hpc::device_array_vector<hpc::vector3<double>, point_index> & r,
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> & u,
+    hpc::counting_range<point_index> const & source_range)
+{
+  auto const source_size = source_range.size();
+  r.resize(source_size);
+  u.resize(source_size);
+  auto const points_to_F = F.cbegin();
+  auto const index_to_r = r.begin();
+  auto const index_to_u = u.begin();
+  auto const point_offset = *(source_range.begin());
+  auto polar_lie = [=] HPC_DEVICE (point_index const point) {
+    auto const index = point - point_offset;
+    auto const F = points_to_F[point].load();
+    auto const R = polar_rotation(F);
+    auto const U = symm(transpose(R) * F);
+    auto const rotation_vector = hpc::rotation_vector_from_rotation_tensor(R);
+    auto const log_stretch = hpc::log(U);
+    index_to_r[index] = rotation_vector;
+    index_to_u[index] = log_stretch;
+  };
+  hpc::for_each(hpc::device_policy(), source_range, polar_lie);
+  align_rotation_vectors(r);
+}
 
 void otm_populate_new_nodes(state & s,
     node_index begin_src, node_index end_src,

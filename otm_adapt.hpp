@@ -21,6 +21,12 @@ class state;
 
 namespace lgr {
 
+void polar_lie_decompose(
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> const & F,
+    hpc::device_array_vector<hpc::vector3<double>, point_index> & r,
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> & u,
+    hpc::counting_range<point_index> const & source_range);
+
 template <typename T, typename I>
 void
 align_rotation_vectors(hpc::device_array_vector<T, I> & v)
