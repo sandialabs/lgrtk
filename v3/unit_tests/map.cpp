@@ -171,7 +171,7 @@ TEST(map, maxent_populate_points)
   ASSERT_LE(error_b, eps);
   ASSERT_LE(error_V, eps);
   ASSERT_LE(error_F, 4 * eps);
-  ASSERT_LE(error_Fp, eps);
+  ASSERT_LE(error_Fp, 2 * eps);
 }
 
 TEST(map, align_rotation_vectors)
