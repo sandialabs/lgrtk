@@ -22,9 +22,6 @@ void polar_lie_decompose(
     hpc::device_array_vector<hpc::matrix3x3<double>, point_index> & u,
     hpc::counting_range<point_index> const & source_range)
 {
-  auto const source_size = source_range.size();
-  r.resize(source_size);
-  u.resize(source_size);
   auto const points_to_F = F.cbegin();
   auto const index_to_r = r.begin();
   auto const index_to_u = u.begin();
