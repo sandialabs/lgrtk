@@ -720,7 +720,7 @@ template <typename T>
 HPC_HOST_DEVICE constexpr auto
 polar_rotation(matrix3x3<T> const& A)
 {
-  auto const dim = 3;
+  auto const dim = 3.0;
   auto scale = true;
   auto const tol_scale = 0.01;
   auto const tol_conv = std::sqrt(dim) * machine_epsilon<T>();
