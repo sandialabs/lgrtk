@@ -125,7 +125,7 @@ endif()
 
 set(LGR_LIBRARIES lgrlib)
 if (LGR_ENABLE_EFENCE)
-  set(LGR_LIBRARIES ${LGR_LIBRARIES}";efence")
+  set(LGR_LIBRARIES ${LGR_LIBRARIES} efence)
 endif()
 
 
