@@ -372,17 +372,17 @@ bool otm_cylindrical_flyer()
   otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
   hpc::length<double> init{0};
-  auto h_node_max = hpc::transform_reduce(
+  auto const h_node_max = hpc::transform_reduce(
       hpc::device_policy(), s.nearest_node_neighbor_dist,
       init, hpc::maximum<hpc::length<double>>(),
       hpc::identity<hpc::length<double>>());
-  auto h_point_max = hpc::transform_reduce(
+  auto const h_point_max = hpc::transform_reduce(
       hpc::device_policy(), s.nearest_point_neighbor_dist,
       init, hpc::maximum<hpc::length<double>>(),
       hpc::identity<hpc::length<double>>());
   in.enable_adapt = true;
-  in.max_node_neighbor_distance = 2.0 * h_node_max;
-  in.max_point_neighbor_distance = 2.0 * h_point_max;
+  in.max_node_neighbor_distance = h_node_max;
+  in.max_point_neighbor_distance = h_point_max;
   otm_run(in, s);
   return true;
 }
