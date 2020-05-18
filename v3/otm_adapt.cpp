@@ -1,3 +1,4 @@
+#include <hpc_array.hpp>
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
@@ -65,8 +66,8 @@ void otm_populate_new_nodes(state & s,
       HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
-      for (auto && source_index : source_range) {
-        auto const r = nodes_to_x[source_index].load() - target;
+      for (auto && source_node : source_range) {
+        auto const r = nodes_to_x[source_node].load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -84,8 +85,8 @@ void otm_populate_new_nodes(state & s,
     }
     auto Z = 0.0;
     auto i = 0;
-    for (auto && source_index : source_range) {
-      auto const r = nodes_to_x[source_index].load() - target;
+    for (auto && source_node : source_range) {
+      auto const r = nodes_to_x[source_node].load() - target;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -96,9 +97,9 @@ void otm_populate_new_nodes(state & s,
     i = 0;
     auto node_u = hpc::displacement<double>::zero();
     auto node_v = hpc::velocity<double>::zero();
-    for (auto && source_index : source_range) {
-      auto const u = nodes_to_u[source_index].load();
-      auto const v = nodes_to_v[source_index].load();
+    for (auto && source_node : source_range) {
+      auto const u = nodes_to_u[source_node].load();
+      auto const v = nodes_to_v[source_node].load();
       auto const N = index_to_NZ[i] / Z;
       node_u += N * u;
       node_v += N * v;
@@ -153,8 +154,8 @@ void otm_populate_new_points(state & s,
       HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
-      for (auto && source_index : source_range) {
-        auto const r = points_to_xp[source_index].load() - target;
+      for (auto && source_point : source_range) {
+        auto const r = points_to_xp[source_point].load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -172,8 +173,8 @@ void otm_populate_new_points(state & s,
     }
     auto Z = 0.0;
     auto i = 0;
-    for (auto && source_index : source_range) {
-      auto const r = points_to_xp[source_index].load() - target;
+    for (auto && source_point : source_range) {
+      auto const r = points_to_xp[source_point].load() - target;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -193,15 +194,15 @@ void otm_populate_new_points(state & s,
     auto index_u = hpc::matrix3x3<double>::zero();
     auto index_rp = hpc::vector3<double>::zero();
     auto index_up = hpc::matrix3x3<double>::zero();
-    for (auto && source_index : source_range) {
-      auto const K = points_to_K[source_index];
-      auto const G = points_to_G[source_index];
-      auto const rho = points_to_rho[source_index];
-      auto const ep = points_to_ep[source_index];
-      auto const ep_dot = points_to_ep_dot[source_index];
-      auto const b = points_to_b[source_index].load();
+    for (auto && source_point : source_range) {
+      auto const K = points_to_K[source_point];
+      auto const G = points_to_G[source_point];
+      auto const rho = points_to_rho[source_point];
+      auto const ep = points_to_ep[source_point];
+      auto const ep_dot = points_to_ep_dot[source_point];
+      auto const b = points_to_b[source_point].load();
       auto const N = index_to_NZ[i] / Z;
-      auto const dV = points_to_V[source_index] * N / (1.0 + N);
+      auto const dV = points_to_V[source_point] * N / (1.0 + N);
       auto const rotation_vector = index_to_r[i].load();
       auto const log_stretch = index_to_u[i].load();
       auto const rotation_vector_plastic = index_to_rp[i].load();
@@ -213,7 +214,7 @@ void otm_populate_new_points(state & s,
       point_ep_dot += N * ep_dot;
       point_b += N * b;
       point_V += dV;
-      points_to_V[source_index] -= dV;
+      points_to_V[source_point] -= dV;
       index_r += N * rotation_vector;
       index_u += N * log_stretch;
       index_rp += N * rotation_vector_plastic;
