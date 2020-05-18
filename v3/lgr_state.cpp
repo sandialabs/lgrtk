@@ -9,6 +9,7 @@ namespace lgr {
 void resize_state(input const& in, state& s) {
   s.u.resize(s.nodes.size());
   s.v.resize(s.nodes.size());
+  s.b.resize(s.nodes.size());
   s.V.resize(s.points.size());
   s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
   s.F_total.resize(s.points.size());

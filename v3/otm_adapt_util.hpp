@@ -177,5 +177,12 @@ HPC_NOINLINE inline void interpolate_point_data(const otm_adapt_state &a, Range 
       a.interpolate_from_points, data);
 }
 
+template<class Range>
+HPC_NOINLINE inline void distribute_point_data(const otm_adapt_state &a, Range &data)
+{
+  distribute_data(a.new_points, a.new_points_to_old_points, a.new_points_are_same,
+      a.interpolate_from_points, data);
+}
+
 }
 

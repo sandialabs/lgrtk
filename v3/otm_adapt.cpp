@@ -309,8 +309,19 @@ bool otm_adapt(const input& in, state& s)
   apply_node_adapt(s, a);
   apply_point_adapt(s, a);
   interpolate_nodal_data(a, s.x);
+  interpolate_nodal_data(a, s.u);
+  interpolate_nodal_data(a, s.v);
   interpolate_point_data(a, s.xp);
   interpolate_point_data(a, s.h_otm);
+  interpolate_point_data(a, s.K);
+  interpolate_point_data(a, s.G);
+  interpolate_point_data(a, s.rho);
+  interpolate_point_data(a, s.ep);
+  interpolate_point_data(a, s.ep_dot);
+  interpolate_point_data(a, s.b);
+  interpolate_point_data(a, s.F_total);
+  interpolate_point_data(a, s.Fp_total);
+  distribute_point_data(a, s.V);
   s.nodes = a.new_nodes;
   s.points = a.new_points;
 
