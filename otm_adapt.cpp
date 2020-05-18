@@ -317,7 +317,6 @@ bool otm_adapt(const input& in, state& s)
   interpolate_point_data(a, s.G);
   interpolate_point_data(a, s.rho);
   interpolate_point_data(a, s.ep);
-  interpolate_point_data(a, s.ep_dot);
   interpolate_point_data(a, s.b);
   interpolate_point_data(a, s.F_total);
   interpolate_point_data(a, s.Fp_total);

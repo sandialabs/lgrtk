@@ -509,13 +509,13 @@ void otm_allocate_state(input const& in, state& s) {
   s.grad_N.resize(total_support_size);
   s.N.resize(total_support_size);
   s.F_total.resize(num_points);
+  s.Fp_total.resize(num_points);
   s.sigma_full.resize(num_points);
   s.symm_grad_v.resize(num_points);
   s.K.resize(num_points);
   s.G.resize(num_points);
   s.potential_density.resize(num_points);
   s.c.resize(num_points);
-  s.Fp_total.resize(num_points);
   s.ep.resize(num_points);
   s.lm.resize(num_nodes);
   s.f.resize(num_nodes);

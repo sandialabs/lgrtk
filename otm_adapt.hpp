@@ -156,9 +156,9 @@ void otm_populate_new_points_linear(
   auto const points_to_F = s.F_total.begin();
   auto const points_to_Fp = s.Fp_total.begin();
   auto const index_to_NZ = NZ.begin();
-  auto const index_to_r = r.cbegin();
+  auto const index_to_r = r.begin();
   auto const index_to_u = u.cbegin();
-  auto const index_to_rp = rp.cbegin();
+  auto const index_to_rp = rp.begin();
   auto const index_to_up = up.cbegin();
   auto const eps = s.maxent_tolerance;
   auto const beta = s.otm_beta;
