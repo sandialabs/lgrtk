@@ -522,35 +522,16 @@ void otm_allocate_state(input const& in, state& s) {
   s.rho.resize(num_points);
   s.b.resize(num_points);
   s.element_dt.resize(num_points);
-  if (!in.use_constant_dt || in.enable_adapt)
-  {
-    s.nearest_point_neighbor_dist.resize(num_points);
-    s.nearest_point_neighbor.resize(num_points);
-  }
-  if (in.enable_adapt)
-  {
-    s.nearest_node_neighbor_dist.resize(num_nodes);
-    s.nearest_node_neighbor.resize(num_nodes);
-  }
+  s.nearest_point_neighbor_dist.resize(num_points);
+  s.nearest_point_neighbor.resize(num_points);
+  s.nearest_node_neighbor_dist.resize(num_nodes);
+  s.nearest_node_neighbor.resize(num_nodes);
   s.mass.resize(num_nodes);
   s.a.resize(num_nodes);
   s.material.resize(num_elements);
   s.nodal_materials.resize(num_nodes);
   s.prescribed_v.resize(num_boundaries + num_materials);
   s.prescribed_dof.resize(num_boundaries + num_materials);
-}
-
-void otm_initialize(input& in, state& s)
-{
-  otm_mark_boundary_domains(in, s);
-  collect_node_sets(in, s);
-  otm_initialize_point_volume(s);
-  otm_set_beta(in.otm_gamma, s);
-  otm_update_shape_functions(s);
-  for (auto material : in.materials) {
-    otm_update_material_state(in, s, material);
-  }
-  otm_update_nodal_mass(s);
 }
 
 HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(const state& s) {
@@ -601,17 +582,25 @@ void otm_update_time_step(state& s)
 }
 
 void
-otm_update_neighbor_distances(input const& in, state& s)
+otm_update_neighbor_distances(input const&, state& s)
 {
-  if (!in.use_constant_dt || in.enable_adapt)
-  {
-    otm_update_nearest_point_neighbor_distances(s);
+  otm_update_nearest_point_neighbor_distances(s);
+  otm_update_nearest_node_neighbor_distances(s);
+  otm_update_min_nearest_neighbor_distances(s);
+}
+
+void otm_initialize(input& in, state& s)
+{
+  otm_mark_boundary_domains(in, s);
+  collect_node_sets(in, s);
+  otm_update_neighbor_distances(in, s);
+  otm_initialize_point_volume(s);
+  otm_set_beta(in.otm_gamma, s);
+  otm_update_shape_functions(s);
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
   }
-  if (in.enable_adapt)
-  {
-    otm_update_nearest_node_neighbor_distances(s);
-    otm_update_min_nearest_neighbor_distances(s);
-  }
+  otm_update_nodal_mass(s);
 }
 
 void otm_update_time(input const& in, state& s)
@@ -651,9 +640,6 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_set_beta(double gamma, state& s)
 {
-  s.nearest_point_neighbor.resize(s.points.size());
-  s.nearest_point_neighbor_dist.resize(s.points.size());
-  otm_update_nearest_point_neighbor_distances(s);
   hpc::length<double> init{0};
   auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_point_neighbor_dist,
                                  init, hpc::maximum<hpc::length<double>>(),
