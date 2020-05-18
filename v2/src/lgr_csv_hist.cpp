@@ -18,8 +18,10 @@ struct CsvHist : public Response {
       scalars.push_back(scalars_in.get<std::string>(i));
     }
     path = pl.get<std::string>("path", "lgr_out.csv");
+    auto write_units = pl.get<bool>("units","false");
     stream.open(path.c_str(),std::ios_base::out);
     OMEGA_H_CHECK(stream.is_open());
+    // Headers
     std::stringstream header_stream;
     for (std::size_t i = 0; i < scalars.size(); ++i) {
       if (i) header_stream << ",";
@@ -28,6 +30,18 @@ struct CsvHist : public Response {
     header_stream << '\n';
     auto header_string = header_stream.str();
     stream.write(header_string.data(), std::streamsize(header_string.length()));
+    // Units placeholder (for now show "ND" for not defined)
+    if (write_units) {
+      std::stringstream unit_stream;
+      for (std::size_t i = 0; i < scalars.size(); ++i) {
+        if (i) unit_stream << ",";
+        unit_stream << "ND";
+      }
+      unit_stream << '\n';
+      auto unit_string = unit_stream.str();
+      stream.write(unit_string.data(), std::streamsize(unit_string.length()));
+    }
+    // Close
     stream.close();
   }
   void respond() override final {
