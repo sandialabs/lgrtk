@@ -22,7 +22,7 @@ struct CsvHist : public Response {
     OMEGA_H_CHECK(stream.is_open());
     std::stringstream header_stream;
     for (std::size_t i = 0; i < scalars.size(); ++i) {
-      if (i) header_stream << ", ";
+      if (i) header_stream << ",";
       header_stream << scalars[i];
     }
     header_stream << '\n';
@@ -35,7 +35,7 @@ struct CsvHist : public Response {
     std::stringstream step_stream;
     step_stream << std::scientific << std::setprecision(17);
     for (std::size_t i = 0; i < scalars.size(); ++i) {
-      if (i) step_stream << ", ";
+      if (i) step_stream << ",";
       auto val = sim.scalars.ask_value(scalars[i]);
       step_stream << val;
     }
