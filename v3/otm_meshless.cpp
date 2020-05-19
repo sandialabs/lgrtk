@@ -110,14 +110,10 @@ void otm_update_shape_functions(state& s) {
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xp = s.xp.cbegin();
-  //otm_update_h(s);
-  //auto const points_to_h = s.h_otm.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const eps = s.maxent_tolerance;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
-    //auto const h = points_to_h[point];
-    //auto const beta = gamma / (h * h);
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
     auto converged = false;
@@ -323,8 +319,8 @@ void otm_update_reference(state& s) {
     auto const J = determinant(F_incr);
     assert(J > 0.0);
     auto const old_V = points_to_V[point];
+    assert(old_V > 0.0);
     auto const new_V = J * old_V;
-    assert(new_V > 0.0);
     points_to_V[point] = new_V;
     auto const old_rho = points_to_rho[point];
     auto const new_rho = old_rho / J;
@@ -509,48 +505,29 @@ void otm_allocate_state(input const& in, state& s) {
   s.grad_N.resize(total_support_size);
   s.N.resize(total_support_size);
   s.F_total.resize(num_points);
+  s.Fp_total.resize(num_points);
   s.sigma_full.resize(num_points);
   s.symm_grad_v.resize(num_points);
   s.K.resize(num_points);
   s.G.resize(num_points);
   s.potential_density.resize(num_points);
   s.c.resize(num_points);
-  s.Fp_total.resize(num_points);
   s.ep.resize(num_points);
   s.lm.resize(num_nodes);
   s.f.resize(num_nodes);
   s.rho.resize(num_points);
   s.b.resize(num_points);
   s.element_dt.resize(num_points);
-  if (!in.use_constant_dt || in.enable_adapt)
-  {
-    s.nearest_point_neighbor_dist.resize(num_points);
-    s.nearest_point_neighbor.resize(num_points);
-  }
-  if (in.enable_adapt)
-  {
-    s.nearest_node_neighbor_dist.resize(num_nodes);
-    s.nearest_node_neighbor.resize(num_nodes);
-  }
+  s.nearest_point_neighbor_dist.resize(num_points);
+  s.nearest_point_neighbor.resize(num_points);
+  s.nearest_node_neighbor_dist.resize(num_nodes);
+  s.nearest_node_neighbor.resize(num_nodes);
   s.mass.resize(num_nodes);
   s.a.resize(num_nodes);
   s.material.resize(num_elements);
   s.nodal_materials.resize(num_nodes);
   s.prescribed_v.resize(num_boundaries + num_materials);
   s.prescribed_dof.resize(num_boundaries + num_materials);
-}
-
-void otm_initialize(input& in, state& s)
-{
-  otm_mark_boundary_domains(in, s);
-  collect_node_sets(in, s);
-  otm_initialize_point_volume(s);
-  otm_set_beta(in.otm_gamma, s);
-  otm_update_shape_functions(s);
-  for (auto material : in.materials) {
-    otm_update_material_state(in, s, material);
-  }
-  otm_update_nodal_mass(s);
 }
 
 HPC_NOINLINE inline hpc::energy<double> compute_kinetic_energy(const state& s) {
@@ -601,17 +578,25 @@ void otm_update_time_step(state& s)
 }
 
 void
-otm_update_neighbor_distances(input const& in, state& s)
+otm_update_neighbor_distances(input const&, state& s)
 {
-  if (!in.use_constant_dt || in.enable_adapt)
-  {
-    otm_update_nearest_point_neighbor_distances(s);
+  otm_update_nearest_point_neighbor_distances(s);
+  otm_update_nearest_node_neighbor_distances(s);
+  otm_update_min_nearest_neighbor_distances(s);
+}
+
+void otm_initialize(input& in, state& s)
+{
+  otm_mark_boundary_domains(in, s);
+  collect_node_sets(in, s);
+  otm_update_neighbor_distances(in, s);
+  otm_initialize_point_volume(s);
+  otm_set_beta(in.otm_gamma, s);
+  otm_update_shape_functions(s);
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
   }
-  if (in.enable_adapt)
-  {
-    otm_update_nearest_node_neighbor_distances(s);
-    otm_update_min_nearest_neighbor_distances(s);
-  }
+  otm_update_nodal_mass(s);
 }
 
 void otm_update_time(input const& in, state& s)
@@ -651,9 +636,6 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_set_beta(double gamma, state& s)
 {
-  s.nearest_point_neighbor.resize(s.points.size());
-  s.nearest_point_neighbor_dist.resize(s.points.size());
-  otm_update_nearest_point_neighbor_distances(s);
   hpc::length<double> init{0};
   auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_point_neighbor_dist,
                                  init, hpc::maximum<hpc::length<double>>(),
@@ -691,15 +673,16 @@ void otm_run(input const& in, state& s)
         ++file_output_index;
       }
       if (s.n >= s.num_time_steps) continue;
-      otm_time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
-        for (int i=0; i<4; ++i)
-        {
-          otm_adapt(in, s);
-          otm_update_min_nearest_neighbor_distances(s);
-          otm_allocate_state(in, s);
+        otm_adapt(in, s);
+        otm_update_min_nearest_neighbor_distances(s);
+        otm_allocate_state(in, s);
+        otm_update_shape_functions(s);
+        for (auto material : in.materials) {
+          otm_update_material_state(in, s, material);
         }
       }
+      otm_time_integrator_step(in, s);
     }
   } else {
     while (s.time <= in.end_time) {
@@ -722,9 +705,16 @@ void otm_run(input const& in, state& s)
         ++file_output_index;
         s.next_file_output_time = double(file_output_index) * file_output_period;
       }
-      otm_time_integrator_step(in, s);
       if (in.enable_adapt && (s.n % 10 == 0)) {
+        otm_adapt(in, s);
+        otm_update_min_nearest_neighbor_distances(s);
+        otm_allocate_state(in, s);
+        otm_update_shape_functions(s);
+        for (auto material : in.materials) {
+          otm_update_material_state(in, s, material);
+        }
       }
+      otm_time_integrator_step(in, s);
       ++s.n;
     }
   }

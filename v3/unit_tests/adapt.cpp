@@ -337,6 +337,8 @@ TEST_F(adapt, performance_test_adapt)
 
   input in(0, 0);
 
+  otm_allocate_state(in, s);
+
   in.enable_adapt = true;
   in.max_node_neighbor_distance = 1.0e-6;
   in.max_point_neighbor_distance = 1.0e-8;

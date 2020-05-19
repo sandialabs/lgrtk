@@ -351,7 +351,7 @@ inverse(matrix3x3<T> const x) {
 // Logarithm by Gregory series. Convergence guaranteed for symmetric A
 template <typename T>
 HPC_HOST constexpr auto
-log_gregory(matrix3x3<T> const A)
+log_gregory(matrix3x3<T> const& A)
 {
   auto const max_iter  = 8192;
   auto const tol       = machine_epsilon<T>();
@@ -378,7 +378,7 @@ log_gregory(matrix3x3<T> const A)
 // calculations.
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-inverse_full_pivot(matrix3x3<T> const A)
+inverse_full_pivot(matrix3x3<T> const& A)
 {
   auto S = A;
   auto B = matrix3x3<T>::identity();
@@ -433,7 +433,7 @@ inverse_full_pivot(matrix3x3<T> const A)
 // calculations.
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-solve_full_pivot(matrix3x3<T> const A, vector3<T> b)
+solve_full_pivot(matrix3x3<T> const& A, vector3<T> const& b)
 {
   auto S = A;
   auto B = b;
@@ -485,7 +485,7 @@ solve_full_pivot(matrix3x3<T> const A, vector3<T> b)
 // Matrix square root by product form of Denman-Beavers iteration.
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-sqrt_dbp(matrix3x3<T> const A, int& k)
+sqrt_dbp(matrix3x3<T> const& A, int& k)
 {
   auto const eps = machine_epsilon<T>();
   auto const tol = 0.5 * std::sqrt(3.0) * eps; // 3 is dim
@@ -519,7 +519,7 @@ sqrt_dbp(matrix3x3<T> const A, int& k)
 // Matrix square root
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-sqrt(matrix3x3<T> const A)
+sqrt(matrix3x3<T> const& A)
 {
   int i = 0;
   return sqrt_dbp(A, i);
@@ -528,7 +528,7 @@ sqrt(matrix3x3<T> const A)
 // Logarithmic map by Padé approximant and partial fractions
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-log_pade_pf(matrix3x3<T> const A, int const n)
+log_pade_pf(matrix3x3<T> const& A, int const n)
 {
   auto const I = matrix3x3<T>::identity();
   auto X = 0.0 * A;
@@ -544,7 +544,7 @@ log_pade_pf(matrix3x3<T> const A, int const n)
 // Logarithmic map by inverse scaling and squaring and Padé approximants
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-log_iss(matrix3x3<T> const A)
+log_iss(matrix3x3<T> const& A)
 {
   auto const I = matrix3x3<T>::identity();
   auto const c15 = pade_coefficients<T>(15);
@@ -569,7 +569,7 @@ log_iss(matrix3x3<T> const A)
 // Logarithmic map
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-log(matrix3x3<T> const A)
+log(matrix3x3<T> const& A)
 {
   return log_iss(A);
 }
@@ -691,7 +691,7 @@ exp(matrix3x3<T> const& A) {
 
 // Exponential map by Taylor series, radius of convergence is infinity
 template <typename T>
-HPC_HOST constexpr auto
+HPC_HOST_DEVICE constexpr auto
 exp_taylor(matrix3x3<T> const& A) {
   auto const max_iter = 1024;
   auto const tol = machine_epsilon<T>();
@@ -717,10 +717,10 @@ exp_taylor(matrix3x3<T> const& A) {
 // The rotation/reflection obtained through this projection is
 // the orthogonal component of the real polar decomposition
 template <typename T>
-HPC_HOST constexpr auto
-polar_rotation(matrix3x3<T> const A)
+HPC_HOST_DEVICE constexpr auto
+polar_rotation(matrix3x3<T> const& A)
 {
-  auto const dim = 3;
+  auto const dim = 3.0;
   auto scale = true;
   auto const tol_scale = 0.01;
   auto const tol_conv = std::sqrt(dim) * machine_epsilon<T>();
@@ -892,7 +892,7 @@ class array_traits<matrix3x3<T>> {
 //
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
-bch(matrix3x3<T> const x, matrix3x3<T> const y) noexcept {
+bch(matrix3x3<T> const& x, matrix3x3<T> const& y) noexcept {
   auto const z1 = x+y;
 
   auto const z2 = 0.5*(x*y - y*x);

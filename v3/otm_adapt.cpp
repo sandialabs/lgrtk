@@ -1,7 +1,9 @@
+#include <hpc_array.hpp>
 #include <hpc_array_vector.hpp>
 #include <hpc_dimensional.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_numeric.hpp>
+#include <hpc_quaternion.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
 #include <lgr_adapt_util.hpp>
@@ -15,6 +17,30 @@
 
 namespace lgr {
 
+void polar_lie_decompose(
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> const & F,
+    hpc::device_array_vector<hpc::vector3<double>, point_index> & r,
+    hpc::device_array_vector<hpc::matrix3x3<double>, point_index> & u,
+    hpc::counting_range<point_index> const & source_range)
+{
+  auto const points_to_F = F.cbegin();
+  auto const index_to_r = r.begin();
+  auto const index_to_u = u.begin();
+  auto const point_offset = *(source_range.begin());
+  auto polar_lie = [=] HPC_DEVICE (point_index const point) {
+    auto const index = point - point_offset;
+    auto const F = points_to_F[point].load();
+    auto const R = hpc::polar_rotation(F);
+    auto const U = hpc::symm(hpc::transpose(R) * F);
+    auto const rotation_vector = hpc::rotation_vector_from_rotation_tensor(R);
+    auto const log_stretch = hpc::log(U);
+    index_to_r[index] = rotation_vector;
+    index_to_u[index] = log_stretch;
+  };
+  hpc::for_each(hpc::device_policy(), source_range, polar_lie);
+  align_rotation_vectors(r);
+}
+
 void otm_populate_new_nodes(state & s,
     node_index begin_src, node_index end_src,
     node_index begin_target, node_index end_target)
@@ -26,12 +52,10 @@ void otm_populate_new_nodes(state & s,
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
   auto const index_to_NZ = NZ.begin();
+  auto const eps = s.maxent_tolerance;
+  auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
     auto const target = nodes_to_x[node].load();
-    auto const gamma = 1.5;
-    auto const h = 1.0;
-    auto const eps = 8192 * hpc::machine_epsilon<double>();
-    auto const beta = gamma / h / h;
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
@@ -42,8 +66,8 @@ void otm_populate_new_nodes(state & s,
       HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
-      for (auto && source_index : source_range) {
-        auto const r = nodes_to_x[source_index].load() - target;
+      for (auto && source_node : source_range) {
+        auto const r = nodes_to_x[source_node].load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -61,8 +85,8 @@ void otm_populate_new_nodes(state & s,
     }
     auto Z = 0.0;
     auto i = 0;
-    for (auto && source_index : source_range) {
-      auto const r = nodes_to_x[source_index].load() - target;
+    for (auto && source_node : source_range) {
+      auto const r = nodes_to_x[source_node].load() - target;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -73,12 +97,12 @@ void otm_populate_new_nodes(state & s,
     i = 0;
     auto node_u = hpc::displacement<double>::zero();
     auto node_v = hpc::velocity<double>::zero();
-    for (auto && source_index : source_range) {
-      auto const u = nodes_to_u[source_index].load();
-      auto const v = nodes_to_v[source_index].load();
+    for (auto && source_node : source_range) {
+      auto const u = nodes_to_u[source_node].load();
+      auto const v = nodes_to_v[source_node].load();
       auto const N = index_to_NZ[i] / Z;
-      node_u = node_u + N * u;
-      node_v = node_v + N * v;
+      node_u += N * u;
+      node_v += N * v;
       ++i;
     }
     nodes_to_u[node] = node_u;
@@ -93,7 +117,12 @@ void otm_populate_new_points(state & s,
 {
   hpc::counting_range<point_index> source_range(begin_src, end_src);
   hpc::counting_range<point_index> target_range(begin_target, end_target);
-  hpc::device_vector<hpc::basis_value<double>, point_index> NZ(source_range.size());
+  auto const source_size = source_range.size();
+  hpc::device_vector<hpc::basis_value<double>, point_index> NZ(source_size);
+  hpc::device_array_vector<hpc::vector3<double>, point_index> r(source_size);
+  hpc::device_array_vector<hpc::matrix3x3<double>, point_index>  u(source_size);
+  hpc::device_array_vector<hpc::vector3<double>, point_index> rp(source_size);
+  hpc::device_array_vector<hpc::matrix3x3<double>, point_index>  up(source_size);
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_K = s.K.begin();
   auto const points_to_G = s.G.begin();
@@ -101,13 +130,20 @@ void otm_populate_new_points(state & s,
   auto const points_to_ep = s.ep.begin();
   auto const points_to_ep_dot = s.ep_dot.begin();
   auto const points_to_b = s.b.begin();
+  auto const points_to_V = s.V.begin();
+  auto const points_to_F = s.F_total.begin();
+  polar_lie_decompose(s.F_total, r, u, source_range);
+  auto const points_to_Fp = s.Fp_total.begin();
+  polar_lie_decompose(s.Fp_total, rp, up, source_range);
   auto const index_to_NZ = NZ.begin();
+  auto const index_to_r = r.cbegin();
+  auto const index_to_u = u.cbegin();
+  auto const index_to_rp = rp.cbegin();
+  auto const index_to_up = up.cbegin();
+  auto const eps = s.maxent_tolerance;
+  auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const target = points_to_xp[point].load();
-    auto const gamma = 1.5;
-    auto const h = 1.0;
-    auto const eps = 8192 * hpc::machine_epsilon<double>();
-    auto const beta = gamma / h / h;
     auto converged = false;
     hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
@@ -118,8 +154,8 @@ void otm_populate_new_points(state & s,
       HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       hpc::position<double> R(0.0, 0.0, 0.0);
       auto dRdmu = jacobian::zero();
-      for (auto && source_index : source_range) {
-        auto const r = points_to_xp[source_index].load() - target;
+      for (auto && source_point : source_range) {
+        auto const r = points_to_xp[source_point].load() - target;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -137,8 +173,8 @@ void otm_populate_new_points(state & s,
     }
     auto Z = 0.0;
     auto i = 0;
-    for (auto && source_index : source_range) {
-      auto const r = points_to_xp[source_index].load() - target;
+    for (auto && source_point : source_range) {
+      auto const r = points_to_xp[source_point].load() - target;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
       auto const boltzmann_factor = std::exp(-mur - beta * rr);
@@ -153,20 +189,36 @@ void otm_populate_new_points(state & s,
     auto point_ep = hpc::strain<double>(0.0);
     auto point_ep_dot = hpc::strain_rate<double>(0.0);
     auto point_b = hpc::acceleration<double>::zero();
-    for (auto && source_index : source_range) {
-      auto const K = points_to_K[source_index];
-      auto const G = points_to_G[source_index];
-      auto const rho = points_to_rho[source_index];
-      auto const ep = points_to_ep[source_index];
-      auto const ep_dot = points_to_ep_dot[source_index];
-      auto const b = points_to_b[source_index].load();
+    auto point_V = hpc::volume<double>(0.0);
+    auto index_r = hpc::vector3<double>::zero();
+    auto index_u = hpc::matrix3x3<double>::zero();
+    auto index_rp = hpc::vector3<double>::zero();
+    auto index_up = hpc::matrix3x3<double>::zero();
+    for (auto && source_point : source_range) {
+      auto const K = points_to_K[source_point];
+      auto const G = points_to_G[source_point];
+      auto const rho = points_to_rho[source_point];
+      auto const ep = points_to_ep[source_point];
+      auto const ep_dot = points_to_ep_dot[source_point];
+      auto const b = points_to_b[source_point].load();
       auto const N = index_to_NZ[i] / Z;
-      point_K = point_K + N * K;
-      point_G = point_G + N * G;
-      point_rho = point_rho + N * rho;
-      point_ep = point_ep + N * ep;
-      point_ep_dot = point_ep_dot + N * ep_dot;
-      point_b = point_b + N * b;
+      auto const dV = points_to_V[source_point] * N / (1.0 + N);
+      auto const rotation_vector = index_to_r[i].load();
+      auto const log_stretch = index_to_u[i].load();
+      auto const rotation_vector_plastic = index_to_rp[i].load();
+      auto const log_stretch_plastic = index_to_up[i].load();
+      point_K += N * K;
+      point_G += N * G;
+      point_rho += N * rho;
+      point_ep += N * ep;
+      point_ep_dot += N * ep_dot;
+      point_b += N * b;
+      point_V += dV;
+      points_to_V[source_point] -= dV;
+      index_r += N * rotation_vector;
+      index_u += N * log_stretch;
+      index_rp += N * rotation_vector_plastic;
+      index_up += N * log_stretch_plastic;
       ++i;
     }
     points_to_K[point] = point_K;
@@ -175,6 +227,15 @@ void otm_populate_new_points(state & s,
     points_to_ep[point] = point_ep;
     points_to_ep_dot[point] = point_ep_dot;
     points_to_b[point] = point_b;
+    points_to_V[point] = point_V;
+    auto const R = hpc::rotation_tensor_from_rotation_vector(index_r);
+    auto const U = hpc::exp(index_u);
+    auto const def_grad = R * U;
+    points_to_F[point] = def_grad;
+    auto const Rp = hpc::rotation_tensor_from_rotation_vector(index_rp);
+    auto const Up = hpc::exp(index_up);
+    auto const def_grad_plastic = Rp * Up;
+    points_to_Fp[point] = def_grad_plastic;
   };
   hpc::for_each(hpc::device_policy(), target_range, maxent_interpolator);
 }
@@ -248,8 +309,18 @@ bool otm_adapt(const input& in, state& s)
   apply_node_adapt(s, a);
   apply_point_adapt(s, a);
   interpolate_nodal_data(a, s.x);
+  interpolate_nodal_data(a, s.u);
+  interpolate_nodal_data(a, s.v);
   interpolate_point_data(a, s.xp);
   interpolate_point_data(a, s.h_otm);
+  interpolate_point_data(a, s.K);
+  interpolate_point_data(a, s.G);
+  interpolate_point_data(a, s.rho);
+  interpolate_point_data(a, s.ep);
+  interpolate_point_data(a, s.b);
+  interpolate_point_data(a, s.F_total);
+  interpolate_point_data(a, s.Fp_total);
+  distribute_point_data(a, s.V);
   s.nodes = a.new_nodes;
   s.points = a.new_points;
 

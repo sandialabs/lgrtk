@@ -117,7 +117,8 @@ using volume_dimension = multiply_dimensions_t<area_dimension, length_dimension>
 using basis_dimension = no_dimension;
 using strain_dimension = divide_dimensions_t<length_dimension, length_dimension>;
 using strain_rate_dimension = divide_dimensions_t<strain_dimension, time_dimension>;
-using gradient_dimension = divide_dimensions_t<no_dimension, length_dimension>;
+using inverse_length_dimension = divide_dimensions_t<no_dimension, length_dimension>;
+using inverse_area_dimension = divide_dimensions_t<no_dimension, area_dimension>;
 using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
 using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
 using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
@@ -464,7 +465,9 @@ using acceleration = vector3<quantity<T, acceleration_dimension>>;
 template <class T>
 using basis_value = quantity<T, basis_dimension>;
 template <class T>
-using basis_gradient = vector3<quantity<T, gradient_dimension>>;
+using basis_gradient = vector3<quantity<T, inverse_length_dimension>>;
+template <class T>
+using inverse_area = quantity<T, inverse_area_dimension>;
 template <class T>
 using strain = quantity<T, strain_dimension>;
 template <class T>
