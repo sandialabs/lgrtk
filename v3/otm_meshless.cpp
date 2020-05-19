@@ -110,14 +110,10 @@ void otm_update_shape_functions(state& s) {
   auto const point_nodes_to_N = s.N.begin();
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xp = s.xp.cbegin();
-  //otm_update_h(s);
-  //auto const points_to_h = s.h_otm.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const eps = s.maxent_tolerance;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
-    //auto const h = points_to_h[point];
-    //auto const beta = gamma / (h * h);
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
     auto converged = false;
@@ -323,8 +319,8 @@ void otm_update_reference(state& s) {
     auto const J = determinant(F_incr);
     assert(J > 0.0);
     auto const old_V = points_to_V[point];
+    assert(old_V > 0.0);
     auto const new_V = J * old_V;
-    assert(new_V > 0.0);
     points_to_V[point] = new_V;
     auto const old_rho = points_to_rho[point];
     auto const new_rho = old_rho / J;
@@ -681,6 +677,10 @@ void otm_run(input const& in, state& s)
         otm_adapt(in, s);
         otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
+        otm_update_shape_functions(s);
+        for (auto material : in.materials) {
+          otm_update_material_state(in, s, material);
+        }
       }
       otm_time_integrator_step(in, s);
     }
@@ -709,6 +709,10 @@ void otm_run(input const& in, state& s)
         otm_adapt(in, s);
         otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
+        otm_update_shape_functions(s);
+        for (auto material : in.materials) {
+          otm_update_material_state(in, s, material);
+        }
       }
       otm_time_integrator_step(in, s);
       ++s.n;
