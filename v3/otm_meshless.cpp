@@ -675,8 +675,6 @@ void otm_run(input const& in, state& s)
       if (s.n >= s.num_time_steps) continue;
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        search::do_otm_iterative_point_support_search(s, s.requested_support_size);
-        //otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
         otm_update_shape_functions(s);
         for (auto material : in.materials) {
@@ -708,8 +706,6 @@ void otm_run(input const& in, state& s)
       }
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        search::do_otm_iterative_point_support_search(s, s.requested_support_size);
-        //otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
         otm_update_shape_functions(s);
         for (auto material : in.materials) {

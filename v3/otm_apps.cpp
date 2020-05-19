@@ -333,6 +333,7 @@ bool otm_cylindrical_flyer()
   auto const Svis0 = hpc::pressure<double>(0.0);
   auto const m = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  in.minimum_support_size = 8;
   in.materials = hpc::counting_range<material_index>(1);
   in.enable_variational_J2[body] = true;
   in.rho0[body] = rho;
@@ -352,7 +353,7 @@ bool otm_cylindrical_flyer()
   convert_tet_mesh_to_meshless(in, s);
   s.requested_support_size = 16;
   // make support wider than 1 element
-  search::do_otm_iterative_point_support_search(s, s.requested_support_size);
+  search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);

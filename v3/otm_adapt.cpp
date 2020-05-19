@@ -324,7 +324,7 @@ bool otm_adapt(const input& in, state& s)
   s.nodes = a.new_nodes;
   s.points = a.new_points;
 
-  search::do_otm_iterative_point_support_search(s, 4);
+  search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
 
   return true;
 }
