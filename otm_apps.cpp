@@ -351,8 +351,6 @@ bool otm_cylindrical_flyer()
   in.otm_gamma = 1.5;
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   convert_tet_mesh_to_meshless(in, s);
-  s.requested_support_size = 16;
-  // make support wider than 1 element
   search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
