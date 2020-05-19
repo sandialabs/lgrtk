@@ -117,14 +117,14 @@ void otm_update_shape_functions(state& s) {
     auto const xp = points_to_xp[point].load();
     // Newton's algorithm
     auto converged = false;
-    hpc::basis_gradient<double> mu(0.0, 0.0, 0.0);
+    auto mu = hpc::basis_gradient<double>::zero();
     using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto J = jacobian::zero();
     auto iter = 0;
     auto const max_iter = 16;
     while (converged == false) {
       HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
-      hpc::position<double> R(0.0, 0.0, 0.0);
+      auto R = hpc::position<double>::zero();
       auto dRdmu = jacobian::zero();
       for (auto point_node : point_nodes) {
         auto const node = point_nodes_to_nodes[point_node];
@@ -675,7 +675,8 @@ void otm_run(input const& in, state& s)
       if (s.n >= s.num_time_steps) continue;
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        otm_update_min_nearest_neighbor_distances(s);
+        search::do_otm_iterative_point_support_search(s, s.requested_support_size);
+        //otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
         otm_update_shape_functions(s);
         for (auto material : in.materials) {
@@ -707,7 +708,8 @@ void otm_run(input const& in, state& s)
       }
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        otm_update_min_nearest_neighbor_distances(s);
+        search::do_otm_iterative_point_support_search(s, s.requested_support_size);
+        //otm_update_min_nearest_neighbor_distances(s);
         otm_allocate_state(in, s);
         otm_update_shape_functions(s);
         for (auto material : in.materials) {
