@@ -352,6 +352,7 @@ bool otm_cylindrical_flyer()
   in.domains[body] = std::make_unique<clipped_domain<all_space>>(all_space{});
   convert_tet_mesh_to_meshless(in, s);
   search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
+  s.otm_gamma = in.otm_gamma;
   s.dt = in.constant_dt;
   s.dt_old = in.constant_dt;
   s.time = hpc::time<double>(0.0);

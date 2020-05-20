@@ -104,7 +104,11 @@ void otm_initialize_point_volume(state& s) {
 }
 
 void otm_update_shape_functions(state& s) {
-  auto beta = s.otm_beta;
+  auto const beta = s.otm_beta;
+#if 0
+  auto const gamma = s.otm_gamma;
+  auto const h_otm = std::sqrt(gamma / beta);
+#endif
   auto const point_nodes_to_nodes = s.point_nodes_to_nodes.cbegin();
   auto const nodes_to_x = s.x.cbegin();
   auto const point_nodes_to_N = s.N.begin();
@@ -142,6 +146,62 @@ void otm_update_shape_functions(state& s) {
       converged = (error <= eps);
       J = dRdmu;
       ++iter;
+#if 0
+      if (iter >= max_iter) {
+        auto min_dist = hpc::length<double>(std::numeric_limits<double>::max());
+        auto max_dist = hpc::length<double>(std::numeric_limits<double>::min());
+        for (auto point_node : point_nodes) {
+          auto const node = point_nodes_to_nodes[point_node];
+          auto const xn = nodes_to_x[node].load();
+          auto const r = xn - xp;
+          auto const d = hpc::norm(r);
+          min_dist = std::min(min_dist, d);
+          max_dist = std::max(max_dist, d);
+        }
+        std::cout <<"********************" << '\n';
+        std::cout <<"**** beta    : " << beta << '\n';
+        std::cout <<"**** gamma   : " << gamma << '\n';
+        std::cout <<"**** h_otm   : " << h_otm << '\n';
+        std::cout <<"**** point   : " << point << '\n';
+        std::cout <<"**** xp      : " << xp << '\n';
+        std::cout <<"**** pt nodes: " << point_nodes.size() << '\n';
+        std::cout <<"**** min_dist: " << min_dist << '\n';
+        std::cout <<"**** max_dist: " << max_dist << '\n';
+        std::cout <<"--------------------" << '\n';
+        R = hpc::position<double>::zero();
+        dRdmu = jacobian::zero();
+        for (auto point_node : point_nodes) {
+          auto const node = point_nodes_to_nodes[point_node];
+          auto const xn = nodes_to_x[node].load();
+          auto const r = xn - xp;
+          auto const rr = hpc::inner_product(r, r);
+          auto const mur = hpc::inner_product(mu, r);
+          auto const boltzmann_factor = std::exp(-mur - beta * rr);
+          R += r * boltzmann_factor;
+          dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
+          std::cout <<"**** node    : " << node << '\n';
+          std::cout <<"**** xn      : " << xn << '\n';
+          std::cout <<"**** r       : " << r << '\n';
+          std::cout <<"**** |r|     : " << hpc::norm(r) << '\n';
+          std::cout <<"**** rr      : " << rr << '\n';
+          std::cout <<"**** mur     : " << mur << '\n';
+          std::cout <<"**** bf      : " << boltzmann_factor << '\n';
+          std::cout <<"**** d R     : " << R << '\n';
+          std::cout <<"**** d dRdmu : " << dRdmu << '\n';
+        }
+        auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
+        mu += dmu;
+        auto const error = hpc::norm(dmu) / hpc::norm(mu);
+        std::cout <<"--------------------" << '\n';
+        std::cout <<"**** R       : " << R << '\n';
+        std::cout <<"**** dRdmu   : " << dRdmu << '\n';
+        std::cout <<"**** dmu     : " << dmu << '\n';
+        std::cout <<"**** mu      : " << mu << '\n';
+        std::cout <<"**** error   : " << error << '\n';
+        std::cout <<"********************" << std::endl;
+        abort();
+      }
+#endif
     }
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
@@ -636,12 +696,12 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_set_beta(double gamma, state& s)
 {
-  hpc::length<double> init{0};
-  auto h = hpc::transform_reduce(hpc::device_policy(), s.nearest_point_neighbor_dist,
+  auto const init = hpc::length<double>(0.0);
+  auto const h = hpc::transform_reduce(hpc::device_policy(), s.nearest_node_neighbor_dist,
                                  init, hpc::maximum<hpc::length<double>>(),
                                  hpc::identity<hpc::length<double>>());
-  h *= 4.0;
-  s.otm_beta = gamma / (h * h);
+  auto const beta = gamma / (h * h);
+  s.otm_beta = beta;
 }
 
 void otm_run(input const& in, state& s)
@@ -675,11 +735,6 @@ void otm_run(input const& in, state& s)
       if (s.n >= s.num_time_steps) continue;
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        otm_allocate_state(in, s);
-        otm_update_shape_functions(s);
-        for (auto material : in.materials) {
-          otm_update_material_state(in, s, material);
-        }
       }
       otm_time_integrator_step(in, s);
     }
@@ -706,11 +761,6 @@ void otm_run(input const& in, state& s)
       }
       if (in.enable_adapt && (s.n % 10 == 0)) {
         otm_adapt(in, s);
-        otm_allocate_state(in, s);
-        otm_update_shape_functions(s);
-        for (auto material : in.materials) {
-          otm_update_material_state(in, s, material);
-        }
       }
       otm_time_integrator_step(in, s);
       ++s.n;
