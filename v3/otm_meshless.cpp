@@ -657,6 +657,7 @@ void otm_initialize(input& in, state& s)
     otm_update_material_state(in, s, material);
   }
   otm_update_nodal_mass(s);
+  otm_update_nodal_momentum(s);
 }
 
 void otm_update_time(input const& in, state& s)
