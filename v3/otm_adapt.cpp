@@ -12,6 +12,7 @@
 #include <lgr_state.hpp>
 #include <otm_adapt.hpp>
 #include <otm_adapt_util.hpp>
+#include <otm_meshless.hpp>
 #include <otm_search.hpp>
 #include <iostream>
 
@@ -324,7 +325,13 @@ bool otm_adapt(const input& in, state& s)
   s.nodes = a.new_nodes;
   s.points = a.new_points;
 
-  search::do_otm_iterative_point_support_search(s, 4);
+  search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
+  otm_allocate_state(in, s);
+  otm_set_beta(in.otm_gamma, s);
+  otm_update_shape_functions(s);
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
+  }
 
   return true;
 }
