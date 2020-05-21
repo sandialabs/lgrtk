@@ -333,7 +333,7 @@ bool otm_cylindrical_flyer()
   auto const Svis0 = hpc::pressure<double>(0.0);
   auto const m = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
-  in.minimum_support_size = 16;
+  in.minimum_support_size = 12;
   in.materials = hpc::counting_range<material_index>(1);
   in.enable_variational_J2[body] = true;
   in.rho0[body] = rho;
@@ -345,7 +345,7 @@ bool otm_cylindrical_flyer()
   in.Svis0[body] = Svis0;
   in.m[body] = m;
   in.eps_dot0[body] = eps_dot0;
-  in.CFL = 0.1;
+  in.CFL = 1.0;
   in.use_constant_dt = false;
   in.constant_dt = hpc::time<double>(1.0e-07);
   in.otm_gamma = 1.5;
