@@ -73,7 +73,7 @@ void otm_populate_new_nodes_linear(
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
   auto const index_to_NZ = NZ.begin();
-  auto const eps = s.maxent_tolerance;
+  auto const eps = s.maxent_desired_tolerance;
   auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
     auto const source_range = nodes_to_source_nodes[node].load();
@@ -160,7 +160,7 @@ void otm_populate_new_points_linear(
   auto const index_to_u = u.cbegin();
   auto const index_to_rp = rp.begin();
   auto const index_to_up = up.cbegin();
-  auto const eps = s.maxent_tolerance;
+  auto const eps = s.maxent_desired_tolerance;
   auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const source_range = points_to_source_points[point].load();

@@ -105,7 +105,7 @@ void otm_initialize_point_volume(state& s) {
 
 void otm_update_shape_functions(state& s) {
   auto const beta = s.otm_beta;
-#if 0
+#if 1
   auto const gamma = s.otm_gamma;
   auto const h_otm = std::sqrt(gamma / beta);
 #endif
@@ -115,7 +115,8 @@ void otm_update_shape_functions(state& s) {
   auto const point_nodes_to_grad_N = s.grad_N.begin();
   auto const points_to_xp = s.xp.cbegin();
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
-  auto const eps = s.maxent_tolerance;
+  auto const eps = s.maxent_desired_tolerance;
+  auto const delta = s.maxent_acceptable_tolerance;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
     auto const xp = points_to_xp[point].load();
@@ -126,10 +127,12 @@ void otm_update_shape_functions(state& s) {
     auto J = jacobian::zero();
     auto iter = 0;
     auto const max_iter = 16;
+    auto R0 = hpc::position<double>::zero();
+    auto norm_R0 = 0.0;
     while (converged == false) {
-      HPC_ASSERT(iter < max_iter, "Exceeded maximum iterations");
       auto R = hpc::position<double>::zero();
       auto dRdmu = jacobian::zero();
+      auto Z = 0.0;
       for (auto point_node : point_nodes) {
         auto const node = point_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
@@ -137,17 +140,66 @@ void otm_update_shape_functions(state& s) {
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
         auto const boltzmann_factor = std::exp(-mur - beta * rr);
+        Z += boltzmann_factor;
         R += r * boltzmann_factor;
         dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
       }
+      if (iter == 0) {
+        R0 = R;
+        norm_R0 = hpc::norm(R0);
+      }
       auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
-      mu += dmu;
-      auto const error = hpc::norm(dmu) / hpc::norm(mu);
-      converged = (error <= eps);
+      // line search
+      auto alpha = 1.0;
+#if 1
+      auto const backtrack_factor = 0.618;
+      auto const decrease_factor = 0.99;
+      auto line_search_iterations = 0;
+      auto const newton_step_decrease = hpc::inner_product(-R, dmu);
+      auto line_search_complete = (newton_step_decrease < 0.0);
+      while (line_search_complete == false) {
+        if (line_search_iterations == 20) {
+          std::cout << "**** LINE SEARCH FAILED\n";
+          alpha = 1.0;
+          break;
+        }
+        auto const merit_function = Z;
+        auto const trial_mu = mu + alpha * dmu;
+        auto trial_Z = 0.0;
+        for (auto point_node : point_nodes) {
+          auto const node = point_nodes_to_nodes[point_node];
+          auto const xn = nodes_to_x[node].load();
+          auto const r = xn - xp;
+          auto const rr = hpc::inner_product(r, r);
+          auto const mur = hpc::inner_product(trial_mu, r);
+          auto const boltzmann_factor = std::exp(-mur - beta * rr);
+          trial_Z += boltzmann_factor;
+        }
+        auto const trial_merit_function = trial_Z;
+        auto const decrease = merit_function - trial_merit_function;
+        if (decrease < decrease_factor * alpha * newton_step_decrease) {
+          alpha = backtrack_factor * alpha;
+          ++line_search_iterations;
+        } else {
+          line_search_complete = true;
+        }
+      }
+#endif
+      mu += (alpha * dmu);
+      auto const norm_mu = hpc::norm(mu);
+      auto const error_solution = norm_mu > 0.0 ? hpc::norm(dmu) / norm_mu : hpc::norm(dmu);
+      auto const error_residual = norm_R0 > 0.0 ? hpc::norm(R) / norm_R0 : hpc::norm(R);
+      auto const converged_residual = norm_R0 == 0.0 || error_residual <= eps;
+      auto const accepted_residual = norm_R0 == 0.0 || error_residual <= delta;
+      auto const converged_solution = error_solution <= eps;
+      auto const accepted_solution = error_solution <= delta;
+      converged = converged_solution || converged_residual;
+      auto const accepted = accepted_solution || accepted_residual;
       J = dRdmu;
-      ++iter;
-#if 0
-      if (iter >= max_iter) {
+#if 1
+      if (converged == false && iter >= max_iter && accepted == true) break;
+      if (converged == false && iter >= max_iter) {
+        mu -= (alpha * dmu);
         auto min_dist = hpc::length<double>(std::numeric_limits<double>::max());
         auto max_dist = hpc::length<double>(std::numeric_limits<double>::min());
         for (auto point_node : point_nodes) {
@@ -159,14 +211,14 @@ void otm_update_shape_functions(state& s) {
           max_dist = std::max(max_dist, d);
         }
         std::cout <<"********************" << '\n';
-        std::cout <<"**** beta    : " << beta << '\n';
-        std::cout <<"**** gamma   : " << gamma << '\n';
-        std::cout <<"**** h_otm   : " << h_otm << '\n';
-        std::cout <<"**** point   : " << point << '\n';
-        std::cout <<"**** xp      : " << xp << '\n';
-        std::cout <<"**** pt nodes: " << point_nodes.size() << '\n';
-        std::cout <<"**** min_dist: " << min_dist << '\n';
-        std::cout <<"**** max_dist: " << max_dist << '\n';
+        std::cout <<"**** beta     : " << beta << '\n';
+        std::cout <<"**** gamma    : " << gamma << '\n';
+        std::cout <<"**** h_otm    : " << h_otm << '\n';
+        std::cout <<"**** point    : " << point << '\n';
+        std::cout <<"**** xp       : " << xp << '\n';
+        std::cout <<"**** pt nodes : " << point_nodes.size() << '\n';
+        std::cout <<"**** min_dist : " << min_dist << '\n';
+        std::cout <<"**** max_dist : " << max_dist << '\n';
         std::cout <<"--------------------" << '\n';
         R = hpc::position<double>::zero();
         dRdmu = jacobian::zero();
@@ -179,29 +231,33 @@ void otm_update_shape_functions(state& s) {
           auto const boltzmann_factor = std::exp(-mur - beta * rr);
           R += r * boltzmann_factor;
           dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
-          std::cout <<"**** node    : " << node << '\n';
-          std::cout <<"**** xn      : " << xn << '\n';
-          std::cout <<"**** r       : " << r << '\n';
-          std::cout <<"**** |r|     : " << hpc::norm(r) << '\n';
-          std::cout <<"**** rr      : " << rr << '\n';
-          std::cout <<"**** mur     : " << mur << '\n';
-          std::cout <<"**** bf      : " << boltzmann_factor << '\n';
-          std::cout <<"**** d R     : " << R << '\n';
-          std::cout <<"**** d dRdmu : " << dRdmu << '\n';
+          std::cout <<"**** node     : " << node << '\n';
+          std::cout <<"**** xn       : " << xn << '\n';
+          std::cout <<"**** r        : " << r << '\n';
+          std::cout <<"**** |r|      : " << hpc::norm(r) << '\n';
+          std::cout <<"**** rr       : " << rr << '\n';
+          std::cout <<"**** mur      : " << mur << '\n';
+          std::cout <<"**** bf       : " << boltzmann_factor << '\n';
+          std::cout <<"**** d R      : " << R << '\n';
+          std::cout <<"**** d dRdmu  : " << dRdmu << '\n';
         }
-        auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
-        mu += dmu;
-        auto const error = hpc::norm(dmu) / hpc::norm(mu);
         std::cout <<"--------------------" << '\n';
-        std::cout <<"**** R       : " << R << '\n';
-        std::cout <<"**** dRdmu   : " << dRdmu << '\n';
-        std::cout <<"**** dmu     : " << dmu << '\n';
-        std::cout <<"**** mu      : " << mu << '\n';
-        std::cout <<"**** error   : " << error << '\n';
+        std::cout <<"**** R0       : " << R0 << '\n';
+        std::cout <<"**** R        : " << R << '\n';
+        std::cout <<"**** |R0|     : " << hpc::norm(R0) << '\n';
+        std::cout <<"**** |R|      : " << hpc::norm(R) << '\n';
+        std::cout <<"**** |R|/|R0| : " << hpc::norm(R) / hpc::norm(R0) << '\n';
+        std::cout <<"**** dRdmu    : " << dRdmu << '\n';
+        std::cout <<"**** alpha    : " << alpha << '\n';
+        std::cout <<"**** dmu      : " << dmu << '\n';
+        std::cout <<"**** mu       : " << mu << '\n';
+        std::cout <<"**** error mu : " << error_solution << '\n';
+        std::cout <<"**** error R  : " << error_residual << '\n';
         std::cout <<"********************" << std::endl;
-        abort();
+        HPC_ERROR_EXIT("Exceeded maximum iterations");
       }
 #endif
+      ++iter;
     }
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
@@ -638,7 +694,7 @@ void otm_update_time_step(state& s)
 }
 
 void
-otm_update_neighbor_distances(input const&, state& s)
+otm_update_neighbor_distances(state& s)
 {
   otm_update_nearest_point_neighbor_distances(s);
   otm_update_nearest_node_neighbor_distances(s);
@@ -649,7 +705,7 @@ void otm_initialize(input& in, state& s)
 {
   otm_mark_boundary_domains(in, s);
   collect_node_sets(in, s);
-  otm_update_neighbor_distances(in, s);
+  otm_update_neighbor_distances(s);
   otm_initialize_point_volume(s);
   otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
@@ -663,7 +719,7 @@ void otm_initialize(input& in, state& s)
 void otm_update_time(input const& in, state& s)
 {
   s.dt_old = s.dt;
-  otm_update_neighbor_distances(in, s);
+  otm_update_neighbor_distances(s);
   if (in.use_constant_dt == true)
   {
     auto const fp_n = static_cast<double>(s.n);
@@ -692,17 +748,20 @@ void otm_time_integrator_step(input const& in, state& s)
   }
   otm_update_shape_functions(s);
   otm_update_time(in, s);
-  otm_update_neighbor_distances(in, s);
+  otm_update_neighbor_distances(s);
 }
 
 void otm_set_beta(double gamma, state& s)
 {
-  auto const init = hpc::length<double>(0.0);
-  auto const h = hpc::transform_reduce(hpc::device_policy(), s.nearest_node_neighbor_dist,
-                                 init, hpc::maximum<hpc::length<double>>(),
+  auto const init = hpc::length<double>(std::numeric_limits<double>::max());
+  auto const h = 16.0 * hpc::transform_reduce(hpc::device_policy(), s.nearest_node_neighbor_dist,
+                                 init, hpc::minimum<hpc::length<double>>(),
                                  hpc::identity<hpc::length<double>>());
   auto const beta = gamma / (h * h);
   s.otm_beta = beta;
+  std::cout <<"**** beta    : " << beta << '\n';
+  std::cout <<"**** gamma   : " << gamma << '\n';
+  std::cout <<"**** h_otm   : " << h << '\n';
 }
 
 void otm_run(input const& in, state& s)

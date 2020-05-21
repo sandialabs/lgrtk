@@ -12,6 +12,7 @@
 #include <lgr_state.hpp>
 #include <otm_adapt.hpp>
 #include <otm_adapt_util.hpp>
+#include <otm_distance_util.hpp>
 #include <otm_meshless.hpp>
 #include <otm_search.hpp>
 #include <iostream>
@@ -53,7 +54,7 @@ void otm_populate_new_nodes(state & s,
   auto const nodes_to_u = s.u.begin();
   auto const nodes_to_v = s.v.begin();
   auto const index_to_NZ = NZ.begin();
-  auto const eps = s.maxent_tolerance;
+  auto const eps = s.maxent_desired_tolerance;
   auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (node_index const node) {
     auto const target = nodes_to_x[node].load();
@@ -141,7 +142,7 @@ void otm_populate_new_points(state & s,
   auto const index_to_u = u.cbegin();
   auto const index_to_rp = rp.cbegin();
   auto const index_to_up = up.cbegin();
-  auto const eps = s.maxent_tolerance;
+  auto const eps = s.maxent_desired_tolerance;
   auto const beta = s.otm_beta;
   auto maxent_interpolator = [=] HPC_DEVICE (point_index const point) {
     auto const target = points_to_xp[point].load();
@@ -324,8 +325,12 @@ bool otm_adapt(const input& in, state& s)
   distribute_point_data(a, s.V);
   s.nodes = a.new_nodes;
   s.points = a.new_points;
-
+  s.nearest_node_neighbor.resize(s.nodes.size());
+  s.nearest_node_neighbor_dist.resize(s.nodes.size());
+  s.nearest_point_neighbor.resize(s.points.size());
+  s.nearest_point_neighbor_dist.resize(s.points.size());
   search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
+  otm_update_neighbor_distances(s);
   otm_allocate_state(in, s);
   otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
