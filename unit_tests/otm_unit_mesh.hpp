@@ -362,10 +362,6 @@ HPC_NOINLINE inline void elastic_wave_four_points_per_tetrahedron(lgr::state& s)
   if (in.x_transform)
     in.x_transform(&s.x);
   resize_state(in, s);
-  auto const b0 = hpc::acceleration<double>::zero();
-  hpc::fill(hpc::device_policy(), s.b, b0);
-  auto const Fp0 = hpc::deformation_gradient<double>::identity();
-  hpc::fill(hpc::device_policy(), s.Fp_total, Fp0);
 
   auto const points_in_element = 4;
   using PEI = lgr::point_in_element_index;

@@ -318,10 +318,10 @@ bool otm_adapt(const input& in, state& s)
   interpolate_point_data(a, s.K);
   interpolate_point_data(a, s.G);
   interpolate_point_data(a, s.rho);
-  interpolate_point_data(a, s.ep);
+  if (s.ep.size() > 0) interpolate_point_data(a, s.ep);
   interpolate_point_data(a, s.b);
-  interpolate_point_data(a, s.F_total);
-  interpolate_point_data(a, s.Fp_total);
+  lie_interpolate_point_data(a, s.F_total);
+  if (s.Fp_total.size() > 0) lie_interpolate_point_data(a, s.Fp_total);
   distribute_point_data(a, s.V);
   s.nodes = a.new_nodes;
   s.points = a.new_points;

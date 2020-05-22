@@ -85,7 +85,7 @@ TEST(maxent, partition_unity_gradient_1)
   tetrahedron_single_point(s);
 
   auto const error = lgr_unit::compute_basis_gradient_error(s);
-  auto const eps = hpc::machine_epsilon<double>();
+  auto const eps = 2 * hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }

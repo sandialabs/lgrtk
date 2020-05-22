@@ -338,6 +338,12 @@ TEST_F(adapt, performance_test_adapt)
   input in(0, 0);
 
   otm_allocate_state(in, s);
+  auto const b0 = hpc::acceleration<double>::zero();
+  hpc::fill(hpc::device_policy(), s.b, b0);
+  auto const F0 = hpc::deformation_gradient<double>::identity();
+  hpc::fill(hpc::device_policy(), s.F_total, F0);
+  auto const Fp0 = hpc::deformation_gradient<double>::identity();
+  hpc::fill(hpc::device_policy(), s.Fp_total, Fp0);
 
   in.enable_adapt = true;
   in.max_node_neighbor_distance = 1.0e-6;
