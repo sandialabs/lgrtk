@@ -162,10 +162,12 @@ bool otm_j2_nu_zero_patch_test()
   s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
   auto const I = hpc::deformation_gradient<double>::identity();
   auto const ep0 = hpc::strain<double>(0.0);
+  auto const b0 = hpc::acceleration<double>::zero();
   hpc::fill(hpc::device_policy(), s.rho, rho);
   hpc::fill(hpc::device_policy(), s.F_total, I);
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
+  hpc::fill(hpc::device_policy(), s.b, b0);
   otm_nu_zero_patch_test_ics(s, top_velocity);
   otm_initialize(in, s);
   otm_run(in, s);
@@ -267,10 +269,12 @@ bool otm_j2_uniaxial_patch_test()
   s.prescribed_dof[z_max] = hpc::vector3<int>(0, 0, 1);
   auto const I = hpc::deformation_gradient<double>::identity();
   auto const ep0 = hpc::strain<double>(0.0);
+  auto const b0 = hpc::acceleration<double>::zero();
   hpc::fill(hpc::device_policy(), s.rho, rho);
   hpc::fill(hpc::device_policy(), s.F_total, I);
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
+  hpc::fill(hpc::device_policy(), s.b, b0);
   otm_uniaxial_patch_test_ics(s, top_velocity, nu);
   otm_initialize(in, s);
   otm_run(in, s);
@@ -365,10 +369,12 @@ bool otm_cylindrical_flyer()
   s.prescribed_dof[body] = hpc::vector3<int>(0, 0, 0);
   auto const I = hpc::deformation_gradient<double>::identity();
   auto const ep0 = hpc::strain<double>(0.0);
+  auto const b0 = hpc::acceleration<double>::zero();
   hpc::fill(hpc::device_policy(), s.rho, rho);
   hpc::fill(hpc::device_policy(), s.F_total, I);
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
+  hpc::fill(hpc::device_policy(), s.b, b0);
   auto const init_velocity = hpc::speed<double>(227.0);
   otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
