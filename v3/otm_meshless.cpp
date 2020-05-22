@@ -105,7 +105,7 @@ void otm_initialize_point_volume(state& s) {
 
 void otm_update_shape_functions(state& s) {
   auto const beta = s.otm_beta;
-#if 1
+#if 0
   auto const gamma = s.otm_gamma;
   auto const h_otm = std::sqrt(gamma / beta);
 #endif
