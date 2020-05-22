@@ -152,14 +152,13 @@ void otm_update_shape_functions(state& s) {
       // line search
       auto alpha = 1.0;
 #if 1
-      auto const backtrack_factor = 0.618;
-      auto const decrease_factor = 0.99;
+      auto const backtrack_factor = 0.1;
+      auto const decrease_factor = 1.0e-04;
       auto line_search_iterations = 0;
       auto const newton_step_decrease = hpc::inner_product(-R, dmu);
       auto line_search_complete = (newton_step_decrease < 0.0);
       while (line_search_complete == false) {
         if (line_search_iterations == 20) {
-          std::cout << "**** LINE SEARCH FAILED\n";
           alpha = 1.0;
           break;
         }
@@ -196,9 +195,9 @@ void otm_update_shape_functions(state& s) {
       converged = converged_solution || converged_residual;
       auto const accepted = accepted_solution || accepted_residual;
       J = dRdmu;
-#if 1
       if (converged == false && iter >= max_iter && accepted == true) break;
       if (converged == false && iter >= max_iter) {
+#if 0
         mu -= (alpha * dmu);
         auto min_dist = hpc::length<double>(std::numeric_limits<double>::max());
         auto max_dist = hpc::length<double>(std::numeric_limits<double>::min());
@@ -254,9 +253,9 @@ void otm_update_shape_functions(state& s) {
         std::cout <<"**** error mu : " << error_solution << '\n';
         std::cout <<"**** error R  : " << error_residual << '\n';
         std::cout <<"********************" << std::endl;
+#endif
         HPC_ERROR_EXIT("Exceeded maximum iterations");
       }
-#endif
       ++iter;
     }
     auto Z = 0.0;
@@ -753,10 +752,7 @@ void otm_time_integrator_step(input const& in, state& s)
 
 void otm_set_beta(double gamma, state& s)
 {
-  auto const init = hpc::length<double>(std::numeric_limits<double>::max());
-  auto const h = 16.0 * hpc::transform_reduce(hpc::device_policy(), s.nearest_node_neighbor_dist,
-                                 init, hpc::minimum<hpc::length<double>>(),
-                                 hpc::identity<hpc::length<double>>());
+  auto const h = 16.0 * s.min_point_neighbor_dist;
   auto const beta = gamma / (h * h);
   s.otm_beta = beta;
   std::cout <<"**** beta    : " << beta << '\n';
