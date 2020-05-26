@@ -103,9 +103,11 @@ void otm_initialize_point_volume(state& s) {
   hpc::for_each(hpc::device_policy(), s.elements, func);
 }
 
+#define DEBUG_MAXENT 0
+
 void otm_update_shape_functions(state& s) {
   auto const beta = s.otm_beta;
-#if 0
+#if DEBUG_MAXENT
   auto const gamma = s.otm_gamma;
   auto const h_otm = std::sqrt(gamma / beta);
 #endif
@@ -130,51 +132,54 @@ void otm_update_shape_functions(state& s) {
     auto R0 = hpc::position<double>::zero();
     auto norm_R0 = 0.0;
     while (converged == false) {
-      auto R = hpc::position<double>::zero();
-      auto dRdmu = jacobian::zero();
       auto Z = 0.0;
+      auto dZdmu = hpc::position<double>::zero();
+      auto ddZddmu = jacobian::zero();
       for (auto point_node : point_nodes) {
         auto const node = point_nodes_to_nodes[point_node];
         auto const xn = nodes_to_x[node].load();
-        auto const r = xn - xp;
+        auto const r = xp - xn;
         auto const rr = hpc::inner_product(r, r);
         auto const mur = hpc::inner_product(mu, r);
-        auto const boltzmann_factor = std::exp(-mur - beta * rr);
+        auto const boltzmann_factor = std::exp(mur - beta * rr);
         Z += boltzmann_factor;
-        R += r * boltzmann_factor;
-        dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
+        dZdmu += boltzmann_factor * r;
+        ddZddmu += boltzmann_factor * hpc::outer_product(r, r);
       }
+      auto const z = std::log(Z);
+      auto const dzdmu = dZdmu / Z;
+      auto const ddzddmu = ddZddmu / Z - hpc::outer_product(dzdmu, dzdmu);
       if (iter == 0) {
-        R0 = R;
+        R0 = dzdmu;
         norm_R0 = hpc::norm(R0);
       }
-      auto const dmu = -hpc::solve_full_pivot(dRdmu, R);
+      auto const dmu = -hpc::solve_full_pivot(ddzddmu, dzdmu);
       // line search
       auto alpha = 1.0;
 #if 1
       auto const backtrack_factor = 0.1;
       auto const decrease_factor = 1.0e-04;
       auto line_search_iterations = 0;
-      auto const newton_step_decrease = hpc::inner_product(-R, dmu);
+      auto const newton_step_decrease = hpc::inner_product(dzdmu, dmu);
       auto line_search_complete = (newton_step_decrease < 0.0);
       while (line_search_complete == false) {
         if (line_search_iterations == 20) {
           alpha = 1.0;
           break;
         }
-        auto const merit_function = Z;
+        auto const merit_function = z;
         auto const trial_mu = mu + alpha * dmu;
         auto trial_Z = 0.0;
         for (auto point_node : point_nodes) {
           auto const node = point_nodes_to_nodes[point_node];
           auto const xn = nodes_to_x[node].load();
-          auto const r = xn - xp;
+          auto const r = xp - xn;
           auto const rr = hpc::inner_product(r, r);
           auto const mur = hpc::inner_product(trial_mu, r);
-          auto const boltzmann_factor = std::exp(-mur - beta * rr);
+          auto const boltzmann_factor = std::exp(mur - beta * rr);
           trial_Z += boltzmann_factor;
         }
-        auto const trial_merit_function = trial_Z;
+        auto const trial_merit_function = std::log(trial_Z);
         auto const decrease = merit_function - trial_merit_function;
         if (decrease < decrease_factor * alpha * newton_step_decrease) {
           alpha = backtrack_factor * alpha;
@@ -187,17 +192,17 @@ void otm_update_shape_functions(state& s) {
       mu += (alpha * dmu);
       auto const norm_mu = hpc::norm(mu);
       auto const error_solution = norm_mu > 0.0 ? hpc::norm(dmu) / norm_mu : hpc::norm(dmu);
-      auto const error_residual = norm_R0 > 0.0 ? hpc::norm(R) / norm_R0 : hpc::norm(R);
+      auto const error_residual = norm_R0 > 0.0 ? hpc::norm(dzdmu) / norm_R0 : hpc::norm(dzdmu);
       auto const converged_residual = norm_R0 == 0.0 || error_residual <= eps;
       auto const accepted_residual = norm_R0 == 0.0 || error_residual <= delta;
       auto const converged_solution = error_solution <= eps;
       auto const accepted_solution = error_solution <= delta;
       converged = converged_solution || converged_residual;
       auto const accepted = accepted_solution || accepted_residual;
-      J = dRdmu;
+      J = ddzddmu;
       if (converged == false && iter >= max_iter && accepted == true) break;
       if (converged == false && iter >= max_iter) {
-#if 0
+#if DEBUG_MAXENT
         mu -= (alpha * dmu);
         auto min_dist = hpc::length<double>(std::numeric_limits<double>::max());
         auto max_dist = hpc::length<double>(std::numeric_limits<double>::min());
@@ -219,17 +224,19 @@ void otm_update_shape_functions(state& s) {
         std::cout <<"**** min_dist : " << min_dist << '\n';
         std::cout <<"**** max_dist : " << max_dist << '\n';
         std::cout <<"--------------------" << '\n';
-        R = hpc::position<double>::zero();
-        dRdmu = jacobian::zero();
+        Z = 0.0;
+        dZdmu = hpc::position<double>::zero();
+        ddZddmu = jacobian::zero();
         for (auto point_node : point_nodes) {
           auto const node = point_nodes_to_nodes[point_node];
           auto const xn = nodes_to_x[node].load();
-          auto const r = xn - xp;
+          auto const r = xp - xn;
           auto const rr = hpc::inner_product(r, r);
           auto const mur = hpc::inner_product(mu, r);
-          auto const boltzmann_factor = std::exp(-mur - beta * rr);
-          R += r * boltzmann_factor;
-          dRdmu -= boltzmann_factor * hpc::outer_product(r, r);
+          auto const boltzmann_factor = std::exp(mur - beta * rr);
+          Z += boltzmann_factor;
+          dZdmu += r * boltzmann_factor;
+          ddZddmu += boltzmann_factor * hpc::outer_product(r, r);
           std::cout <<"**** node     : " << node << '\n';
           std::cout <<"**** xn       : " << xn << '\n';
           std::cout <<"**** r        : " << r << '\n';
@@ -237,16 +244,21 @@ void otm_update_shape_functions(state& s) {
           std::cout <<"**** rr       : " << rr << '\n';
           std::cout <<"**** mur      : " << mur << '\n';
           std::cout <<"**** bf       : " << boltzmann_factor << '\n';
-          std::cout <<"**** d R      : " << R << '\n';
-          std::cout <<"**** d dRdmu  : " << dRdmu << '\n';
+          std::cout <<"**** Z        : " << Z << '\n';
+          std::cout <<"**** dZdmu    : " << dZdmu << '\n';
+          std::cout <<"**** ddZddmu  : " << ddZddmu << '\n';
         }
+        auto const z = std::log(Z);
+        auto const dzdmu = dZdmu / Z;
+        auto const ddzddmu = ddZddmu / Z - hpc::outer_product(dZdmu, dZdmu) / (Z * Z);
         std::cout <<"--------------------" << '\n';
+        std::cout <<"**** z        : " << z << '\n';
+        std::cout <<"**** dzdmu    : " << dzdmu << '\n';
+        std::cout <<"**** ddzddmu  : " << ddzddmu << '\n';
         std::cout <<"**** R0       : " << R0 << '\n';
-        std::cout <<"**** R        : " << R << '\n';
         std::cout <<"**** |R0|     : " << hpc::norm(R0) << '\n';
-        std::cout <<"**** |R|      : " << hpc::norm(R) << '\n';
-        std::cout <<"**** |R|/|R0| : " << hpc::norm(R) / hpc::norm(R0) << '\n';
-        std::cout <<"**** dRdmu    : " << dRdmu << '\n';
+        std::cout <<"**** |R|      : " << hpc::norm(dzdmu) << '\n';
+        std::cout <<"**** |R|/|R0| : " << hpc::norm(dzdmu) / hpc::norm(R0) << '\n';
         std::cout <<"**** alpha    : " << alpha << '\n';
         std::cout <<"**** dmu      : " << dmu << '\n';
         std::cout <<"**** mu       : " << mu << '\n';
@@ -262,21 +274,21 @@ void otm_update_shape_functions(state& s) {
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
-      auto const r = xn - xp;
+      auto const r = xp - xn;
       auto const rr = hpc::inner_product(r, r);
       auto const mur = hpc::inner_product(mu, r);
-      auto const boltzmann_factor = std::exp(-mur - beta * rr);
+      auto const boltzmann_factor = std::exp(mur - beta * rr);
       Z += boltzmann_factor;
       point_nodes_to_N[point_node] = boltzmann_factor;
     }
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
       auto const xn = nodes_to_x[node].load();
-      auto const r = xn - xp;
-      auto const Jinvr = hpc::solve_full_pivot(J, r);
-      auto const NZ = point_nodes_to_N[point_node];
-      point_nodes_to_N[point_node] = NZ / Z;
-      point_nodes_to_grad_N[point_node] = -NZ * Jinvr;
+      auto const r = xp - xn;
+      auto const boltzmann_factor = point_nodes_to_N[point_node];
+      auto const N = boltzmann_factor / Z;
+      point_nodes_to_N[point_node] = N;
+      point_nodes_to_grad_N[point_node] = -N * hpc::solve_full_pivot(J, r);
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
