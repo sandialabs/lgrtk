@@ -180,9 +180,11 @@ bool otm_j2_nu_zero_patch_test()
   // Not true in general, but this is nu_zero deformation
   auto sigma_gold = (E / J) * e;
   auto const sigma_avg = otm_compute_stress_average(s);
+  auto const F_avg = otm_compute_deformation_gradient_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
   auto const tol_sigma = 1.0e-12;
-  std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
+  std::cout << "DEF GRAD GOLD:\n" << F << "\nDEF GRAD AVERAGE:\n" << F_avg << '\n';
+  std::cout << "STRESS GOLD:\n" << sigma_gold << "\nSTRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
   return error_sigma <= tol_sigma;
 }
@@ -298,8 +300,8 @@ bool otm_j2_uniaxial_patch_test()
   auto const F_avg = otm_compute_deformation_gradient_average(s);
   auto const error_sigma = hpc::norm(sigma_avg - sigma_gold) / hpc::norm(sigma_gold);
   auto const tol_sigma = 3.62e-03;
-  std::cout << "DEF GRAD GOLD:\n" << F << "DEF GRAD AVERAGE:\n" << F_avg << '\n';
-  std::cout << "STRESS GOLD:\n" << sigma_gold << "STRESS AVERAGE:\n" << sigma_avg << '\n';
+  std::cout << "DEF GRAD GOLD:\n" << F << "\nDEF GRAD AVERAGE:\n" << F_avg << '\n';
+  std::cout << "STRESS GOLD:\n" << sigma_gold << "\nSTRESS AVERAGE:\n" << sigma_avg << '\n';
   std::cout << "STRESS ERROR: " << error_sigma << ", STRESS TOLERANCE: " << tol_sigma << '\n';
   return error_sigma <= tol_sigma;
 }
