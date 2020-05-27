@@ -106,7 +106,7 @@ class state {
   hpc::inverse_area<double> otm_beta{0}; // shape function locality parameter.
   hpc::adimensional<double> otm_gamma{0};
   bool use_maxent_log_objective{false}; // Use Z or log Z as objective for maxtent functions
-  bool use_maxent_line_search{true};
+  bool use_maxent_line_search{false};
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start
