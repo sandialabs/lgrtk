@@ -108,6 +108,21 @@ operator+(L left, matrix3x3<R> right) noexcept {
 
 template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
+operator-(matrix3x3<T> const A) noexcept {
+  return matrix3x3<T>(
+      - A(0, 0),
+      - A(0, 1),
+      - A(0, 2),
+      - A(1, 0),
+      - A(1, 1),
+      - A(1, 2),
+      - A(2, 0),
+      - A(2, 1),
+      - A(2, 2));
+}
+
+template <class T>
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(matrix3x3<T> left, matrix3x3<T> right) noexcept {
   return matrix3x3<T>(
       left(0, 0) - right(0, 0),

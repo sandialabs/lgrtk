@@ -97,7 +97,7 @@ class state {
   hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
   hpc::counting_range<material_index> boundaries{material_index(0)}; // Copied from input structure
   hpc::adimensional<double> maxent_desired_tolerance{1.0e-10};
-  hpc::adimensional<double> maxent_acceptable_tolerance{1.0e-02};
+  hpc::adimensional<double> maxent_acceptable_tolerance{1.0e-05};
   hpc::strain_rate_rate<double> contact_penalty_coeff{0.0};
   bool use_displacement_contact{false};
   bool use_penalty_contact{false};
@@ -105,6 +105,8 @@ class state {
   hpc::length<double> min_node_neighbor_dist;
   hpc::inverse_area<double> otm_beta{0}; // shape function locality parameter.
   hpc::adimensional<double> otm_gamma{0};
+  bool use_maxent_log_objective{false}; // Use Z or log Z as objective for maxtent functions
+  bool use_maxent_line_search{true};
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total; // plastic deformation gradient since simulation start

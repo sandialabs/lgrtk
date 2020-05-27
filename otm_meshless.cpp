@@ -119,6 +119,8 @@ void otm_update_shape_functions(state& s) {
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
   auto const eps = s.maxent_desired_tolerance;
   auto const delta = s.maxent_acceptable_tolerance;
+  auto const use_log = s.use_maxent_log_objective;
+  auto const use_line_search = s.use_maxent_line_search;
   auto functor = [=] HPC_DEVICE (point_index const point) {
     auto point_nodes = points_to_point_nodes[point];
     auto const xp = points_to_xp[point].load();
@@ -132,7 +134,7 @@ void otm_update_shape_functions(state& s) {
     auto R0 = hpc::position<double>::zero();
     auto norm_R0 = 0.0;
     while (converged == false) {
-      auto Z = 0.0;
+      auto Z = hpc::adimensional<double>(0.0);
       auto dZdmu = hpc::position<double>::zero();
       auto ddZddmu = jacobian::zero();
       for (auto point_node : point_nodes) {
@@ -146,60 +148,59 @@ void otm_update_shape_functions(state& s) {
         dZdmu += boltzmann_factor * r;
         ddZddmu += boltzmann_factor * hpc::outer_product(r, r);
       }
-      auto const z = std::log(Z);
-      auto const dzdmu = dZdmu / Z;
-      auto const ddzddmu = ddZddmu / Z - hpc::outer_product(dzdmu, dzdmu);
+      auto const f = use_log == true ? std::log(Z) : Z;
+      auto const dfdmu = use_log == true ? dZdmu / Z : dZdmu;
+      auto const ddfddmu = use_log == true ? ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) : ddZddmu;
       if (iter == 0) {
-        R0 = dzdmu;
+        R0 = dfdmu;
         norm_R0 = hpc::norm(R0);
       }
-      auto const dmu = -hpc::solve_full_pivot(ddzddmu, dzdmu);
-      // line search
+      auto const dmu = -hpc::solve_full_pivot(ddfddmu, dfdmu);
       auto alpha = 1.0;
-#if 1
-      auto const backtrack_factor = 0.1;
-      auto const decrease_factor = 1.0e-04;
-      auto line_search_iterations = 0;
-      auto const newton_step_decrease = hpc::inner_product(dzdmu, dmu);
-      auto line_search_complete = (newton_step_decrease < 0.0);
-      while (line_search_complete == false) {
-        if (line_search_iterations == 20) {
-          alpha = 1.0;
-          break;
-        }
-        auto const merit_function = z;
-        auto const trial_mu = mu + alpha * dmu;
-        auto trial_Z = 0.0;
-        for (auto point_node : point_nodes) {
-          auto const node = point_nodes_to_nodes[point_node];
-          auto const xn = nodes_to_x[node].load();
-          auto const r = xp - xn;
-          auto const rr = hpc::inner_product(r, r);
-          auto const mur = hpc::inner_product(trial_mu, r);
-          auto const boltzmann_factor = std::exp(mur - beta * rr);
-          trial_Z += boltzmann_factor;
-        }
-        auto const trial_merit_function = std::log(trial_Z);
-        auto const decrease = merit_function - trial_merit_function;
-        if (decrease < decrease_factor * alpha * newton_step_decrease) {
-          alpha = backtrack_factor * alpha;
-          ++line_search_iterations;
-        } else {
-          line_search_complete = true;
+      if (use_line_search == true) {
+        auto const contraction_factor = 0.5;
+        auto const change_factor = 0.0001;
+        auto const step_change = hpc::inner_product(dfdmu, dmu);
+        auto line_search_iterations = 0;
+        auto line_search_complete = (step_change >= 0.0);
+        while (line_search_complete == false) {
+          if (line_search_iterations == 20) {
+            alpha = 1.0;
+            break;
+          }
+          auto const function = f;
+          auto const trial_mu = mu + alpha * dmu;
+          auto trial_Z = 0.0;
+          for (auto point_node : point_nodes) {
+            auto const node = point_nodes_to_nodes[point_node];
+            auto const xn = nodes_to_x[node].load();
+            auto const r = xp - xn;
+            auto const rr = hpc::inner_product(r, r);
+            auto const mur = hpc::inner_product(trial_mu, r);
+            auto const boltzmann_factor = std::exp(mur - beta * rr);
+            trial_Z += boltzmann_factor;
+          }
+          auto const trial_function = use_log == true ? std::log(trial_Z) : trial_Z;
+          if (trial_function > function + change_factor * alpha * step_change) {
+            alpha = contraction_factor * alpha;
+            ++line_search_iterations;
+          } else {
+            line_search_complete = true;
+          }
         }
       }
-#endif
       mu += (alpha * dmu);
       auto const norm_mu = hpc::norm(mu);
-      auto const error_solution = norm_mu > 0.0 ? hpc::norm(dmu) / norm_mu : hpc::norm(dmu);
-      auto const error_residual = norm_R0 > 0.0 ? hpc::norm(dzdmu) / norm_R0 : hpc::norm(dzdmu);
+      auto const norm_dmu = hpc::norm(dmu);
+      auto const error_solution = norm_mu > 0.0 ? norm_dmu / norm_mu : norm_dmu;
+      auto const error_residual = norm_R0 > 0.0 ? hpc::norm(dfdmu) / norm_R0 : hpc::norm(dfdmu);
       auto const converged_residual = norm_R0 == 0.0 || error_residual <= eps;
       auto const accepted_residual = norm_R0 == 0.0 || error_residual <= delta;
       auto const converged_solution = error_solution <= eps;
       auto const accepted_solution = error_solution <= delta;
       converged = converged_solution || converged_residual;
       auto const accepted = accepted_solution || accepted_residual;
-      J = ddzddmu;
+      J = ddfddmu;
       if (converged == false && iter >= max_iter && accepted == true) break;
       if (converged == false && iter >= max_iter) {
 #if DEBUG_MAXENT
@@ -248,17 +249,17 @@ void otm_update_shape_functions(state& s) {
           std::cout <<"**** dZdmu    : " << dZdmu << '\n';
           std::cout <<"**** ddZddmu  : " << ddZddmu << '\n';
         }
-        auto const z = std::log(Z);
-        auto const dzdmu = dZdmu / Z;
-        auto const ddzddmu = ddZddmu / Z - hpc::outer_product(dZdmu, dZdmu) / (Z * Z);
+        auto const f = use_log == true ? std::log(Z) : Z;
+        auto const dfdmu = use_log == true ? dZdmu / Z : dZdmu;
+        auto const ddfddmu = use_log == true ? ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) : ddZddmu;
         std::cout <<"--------------------" << '\n';
-        std::cout <<"**** z        : " << z << '\n';
-        std::cout <<"**** dzdmu    : " << dzdmu << '\n';
-        std::cout <<"**** ddzddmu  : " << ddzddmu << '\n';
+        std::cout <<"**** z        : " << f << '\n';
+        std::cout <<"**** dfdmu    : " << dfdmu << '\n';
+        std::cout <<"**** ddfddmu  : " << ddfddmu << '\n';
         std::cout <<"**** R0       : " << R0 << '\n';
         std::cout <<"**** |R0|     : " << hpc::norm(R0) << '\n';
-        std::cout <<"**** |R|      : " << hpc::norm(dzdmu) << '\n';
-        std::cout <<"**** |R|/|R0| : " << hpc::norm(dzdmu) / hpc::norm(R0) << '\n';
+        std::cout <<"**** |R|      : " << hpc::norm(dfdmu) << '\n';
+        std::cout <<"**** |R|/|R0| : " << hpc::norm(dfdmu) / hpc::norm(R0) << '\n';
         std::cout <<"**** alpha    : " << alpha << '\n';
         std::cout <<"**** dmu      : " << dmu << '\n';
         std::cout <<"**** mu       : " << mu << '\n';
@@ -270,6 +271,7 @@ void otm_update_shape_functions(state& s) {
       }
       ++iter;
     }
+    auto const Jinv = hpc::inverse_full_pivot(J);
     auto Z = 0.0;
     for (auto point_node : point_nodes) {
       auto const node = point_nodes_to_nodes[point_node];
@@ -288,7 +290,8 @@ void otm_update_shape_functions(state& s) {
       auto const boltzmann_factor = point_nodes_to_N[point_node];
       auto const N = boltzmann_factor / Z;
       point_nodes_to_N[point_node] = N;
-      point_nodes_to_grad_N[point_node] = -N * hpc::solve_full_pivot(J, r);
+      auto const dNdx = use_log == true ? -N * Jinv * r : -N * Z * Jinv * r;
+      point_nodes_to_grad_N[point_node] = dNdx;
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
