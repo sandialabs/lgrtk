@@ -269,7 +269,7 @@ HPC_NOINLINE inline void variational_J2(input const& in, state& s, material_inde
       points_to_G[point] = Geff;
     }
   };
-  hpc::for_each(hpc::host_policy(), s.element_sets[material], functor);
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
 #if defined(HYPER_EP)
