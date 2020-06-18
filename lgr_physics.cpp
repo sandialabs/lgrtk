@@ -252,7 +252,7 @@ HPC_NOINLINE inline void variational_J2(input const& in, state& s, material_inde
   auto const m = in.m[material];
   auto const eps_dot0 = in.eps_dot0[material];
   auto const elements_to_points = s.elements * s.points_in_element;
-  auto functor = [=] (element_index const element) {
+  auto functor = [=] HPC_DEVICE (element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto const F = points_to_F_total[point].load();
       auto sigma_full = hpc::stress<double>::zero();
