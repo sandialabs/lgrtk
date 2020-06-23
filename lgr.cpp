@@ -924,9 +924,9 @@ void cylindrical_flyer() {
   constexpr material_index num_materials(1);
   constexpr material_index num_boundaries(0);
   input in(num_materials, num_boundaries);
-  std::string const filename{"cylinder-ct.g"};
+  std::string const filename{"cylinder.g"};
   in.name = "cylindrical-flyer";
-  in.element = COMPOSITE_TETRAHEDRON;
+  in.element = TETRAHEDRON;
   in.end_time = 1.0e-04;
   in.num_file_output_periods = 100;
   auto const rho = hpc::density<double>(8.96e+03);
@@ -963,7 +963,8 @@ void cylindrical_flyer() {
     hpc::for_each(hpc::device_policy(), nodes, functor);
   };
   in.initial_v = const_v;
-  in.enable_J_averaging = true;
+  in.enable_nodal_pressure[body] = true;
+  in.c_tau[body] = 0.5;
   in.CFL = 0.1;
   in.use_contact = true;
   run(in, filename);
