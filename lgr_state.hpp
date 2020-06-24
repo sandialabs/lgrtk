@@ -77,6 +77,10 @@ class state {
   hpc::time<double> max_stable_dt;
   hpc::adimensional<double> min_quality;
 
+  // Composite tet stabilization
+  bool use_comptet_stabilization{false};
+  hpc::device_vector<hpc::adimensional<double>, point_index> JavgJ;
+
   // Exclusive OTM data structures
   int num_time_steps{0}; // For constant time steps
   hpc::device_range_sum<point_node_index, point_index> points_to_point_nodes; // OTM: Support for each point

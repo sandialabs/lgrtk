@@ -13,6 +13,10 @@ void resize_state(input const& in, state& s) {
   s.V.resize(s.points.size());
   s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
   s.F_total.resize(s.points.size());
+  s.use_comptet_stabilization = in.enable_comptet_stabilization;
+  if (s.use_comptet_stabilization == true) {
+    s.JavgJ.resize(s.points.size());
+  }
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
   auto have_nodal_pressure_or_energy = [&] (material_index const material) {

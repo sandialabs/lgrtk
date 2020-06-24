@@ -133,6 +133,7 @@ class input {
   bool enable_e_averaging = false;
   bool enable_p_averaging = false;
   bool enable_adapt = false;
+  bool enable_comptet_stabilization = false;
   hpc::length<double> max_node_neighbor_distance {1.0};
   hpc::length<double> max_point_neighbor_distance {1.0};
   std::function<

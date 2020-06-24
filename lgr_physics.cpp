@@ -385,8 +385,17 @@ HPC_NOINLINE inline void ideal_gas(input const& in, state& s, material_index con
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
+HPC_NOINLINE inline hpc::pressure<double> kappa_prime(hpc::pressure<double> const mu, hpc::adimensional<double> const x)
+{
+  return 200.0 * mu * std::log(x) / x;
+}
+
+
 HPC_NOINLINE inline void update_element_force(state& s)
 {
+  auto const comptet_stabilize = s.use_comptet_stabilization;
+  auto const points_to_K = s.K.cbegin();
+  auto const points_to_JavgJ = s.JavgJ.cbegin();
   auto const points_to_sigma = s.sigma.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const point_nodes_to_grad_N = s.grad_N.cbegin();
@@ -398,8 +407,15 @@ HPC_NOINLINE inline void update_element_force(state& s)
     auto const point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
-      auto const f = -(sigma * grad_N) * V;
-      point_nodes_to_f[point_node] = f;
+      if (comptet_stabilize == true) {
+        auto const JavgJ = points_to_JavgJ[point];
+        auto const K = points_to_K[point];
+        auto const f = -((sigma  - kappa_prime(K, JavgJ) * hpc::symmetric_stress<double>::identity()) * grad_N) * V;
+        point_nodes_to_f[point_node] = f;
+      } else {
+        auto const f = -(sigma * grad_N) * V;
+        point_nodes_to_f[point_node] = f;
+      }
     }
   };
   hpc::for_each(hpc::device_policy(), s.points, functor);
@@ -543,8 +559,10 @@ HPC_NOINLINE inline void apply_viscosity(input const& in, state& s) {
 }
 
 HPC_NOINLINE inline void volume_average_J(state& s) {
+  auto const comptet_stabilize = s.use_comptet_stabilization;
   auto const points_to_V = s.V.cbegin();
   auto const points_to_F = s.F_total.begin();
+  auto const points_to_JavgJ = s.JavgJ.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
   auto functor = [=] HPC_DEVICE (element_index const element) {
     hpc::volume<double> total_V0 = 0.0;
@@ -562,6 +580,7 @@ HPC_NOINLINE inline void volume_average_J(state& s) {
       auto const old_F = points_to_F[point].load();
       auto const old_J = determinant(old_F);
       auto const new_F = cbrt(average_J / old_J) * old_F;
+      if (comptet_stabilize == true) points_to_JavgJ[point] = average_J / old_J;
       points_to_F[point] = new_F;
     }
   };
@@ -613,6 +632,9 @@ HPC_NOINLINE inline void volume_average_e(state& s) {
 }
 
 HPC_NOINLINE inline void volume_average_p(state& s) {
+  auto const comptet_stabilize = s.use_comptet_stabilization;
+  auto const points_to_K = s.K.cbegin();
+  auto const points_to_JavgJ = s.JavgJ.cbegin();
   auto const points_to_V = s.V.cbegin();
   auto const points_to_sigma = s.sigma.begin();
   auto const elements_to_points = s.elements * s.points_in_element;
@@ -623,7 +645,13 @@ HPC_NOINLINE inline void volume_average_p(state& s) {
       auto const sigma = points_to_sigma[point].load();
       auto const p = -(1.0 / 3.0) * trace(sigma);
       auto const V = points_to_V[point];
-      p_integral += V * p;
+      if (comptet_stabilize == true) {
+        auto const JavgJ = points_to_JavgJ[point];
+        auto const K = points_to_K[point];
+        p_integral += V * (p - kappa_prime(K, JavgJ));
+      } else {
+        p_integral += V * p;
+      }
       total_V += V;
     }
     auto const average_p = p_integral / total_V;
@@ -942,6 +970,9 @@ void run(input const& in, std::string const& filename) {
     hpc::fill(hpc::device_policy(), s.ep_dot, double(0.0));
     hpc::fill(hpc::device_policy(), s.dp, double(0.0));
     hpc::fill(hpc::device_policy(), s.localized, int(0));
+    if (s.use_comptet_stabilization == true) {
+      hpc::fill(hpc::device_policy(), s.JavgJ, double(1.0));
+    }
   }
 
   common_initialization_part1(in, s);
