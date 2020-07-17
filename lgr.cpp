@@ -379,58 +379,27 @@ void twisting_column_ep(
   in.y_domain_size = 6.0;
   in.elements_along_z = 9;
   in.z_domain_size = 1.0;
-  double const rho = 1.1e3;
+  auto const rho = hpc::density<double>(1.1e+03);
+  auto const nu = hpc::adimensional<double>(0.499);
+  auto const E = hpc::pressure<double>(17.0e06);
+  auto const K = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0 = hpc::pressure<double>(1.0e+64);
+  auto const n = hpc::adimensional<double>(4.0);
+  auto const eps0 = hpc::strain<double>(1.0e-02);
+  auto const Svis0 = hpc::pressure<double>(Y0);
+  auto const m = hpc::adimensional<double>(2.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  in.enable_variational_J2[body] = true;
   in.rho0[body] = rho;
-  in.enable_hyper_ep[body] = true;
-  double const nu = 0.499;  //499;
-  double const E = 1.70e+07; // 2.10e+11;
-  double const K = E / (3.0 * (1.0 - 2.0 * nu));
-  double const G = E / (2.0 * (1.0 + nu));
   in.K0[body] = K;
   in.G0[body] = G;
-
-#if defined(HYPER_EP)
-  in.elastic[body] = hyper_ep::Elastic::NEO_HOOKEAN;
-#endif
-  in.E[body] = E;
-  in.nu[body] = nu;
-
-#if defined(HYPER_EP)
-  in.hardening[body] = hyper_ep::Hardening::JOHNSON_COOK;
-#endif
-  in.A[body] = 1000.0e+02;
-  in.B[body] = 100.0e+02;
-  in.n[body] = 0.32;
-  in.C1[body] = 293.0;
-  in.C2[body] = 1.0e+40;
-  in.C3[body] = 0.0;
-  in.C4[body] = 0.0;
-  in.eps_dot0[body] = 0.0;
-
-  if (!plastic)
-  {
-    in.A[body] *= 1.0e+60;
-#if defined(HYPER_EP)
-    in.hardening[body] = hyper_ep::Hardening::NONE;
-#endif
-  }
-
-#if defined(HYPER_EP)
-  in.damage[body] = hyper_ep::Damage::NONE;
-#endif
-  in.allow_no_tension[body] = false;
-  in.allow_no_shear[body] = false;
-  in.set_stress_to_zero[body] = false;
-  in.D1[body] = 0.0;
-  in.D2[body] = 0.0;
-  in.D3[body] = 0.0;
-  in.D4[body] = 0.0;
-  in.D5[body] = 0.0;
-  in.D6[body] = 0.0;
-  in.D7[body] = 0.0;
-  in.D8[body] = 0.0;
-  in.DC[body] = 0.0;
-  in.eps_f_min[body] = 0.0;
+  in.Y0[body] = Y0;
+  in.n[body] = n;
+  in.eps0[body] = eps0;
+  in.Svis0[body] = Svis0;
+  in.m[body] = m;
+  in.eps_dot0[body] = eps_dot0;  in.CFL = 1.0;
 
   const double amplitude =  100.0;
   auto twisting_column_v = [=] (

@@ -117,11 +117,6 @@ class state {
   hpc::device_vector<hpc::temperature<double>, point_index> temp; // temperature
   hpc::device_vector<hpc::strain<double>, point_index> ep; // equivalent plastic strain
   hpc::device_vector<hpc::strain_rate<double>, point_index> ep_dot;  // rate of equivalent plastic strain
-
-  // Hyper EP State dependent variables
-  hpc::device_vector<hpc::adimensional<double>, point_index> dp; // scalar damage
-  hpc::device_vector<hpc::adimensional<int>, point_index> localized; // localization flag
-  hpc::host_vector<hpc::device_vector<hpc::adimensional<double>, node_index>, material_index> ep_h;
 };
 
 class input;
