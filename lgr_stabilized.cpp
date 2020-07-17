@@ -103,7 +103,7 @@ HPC_NOINLINE inline void update_v_prime(input const& in, state& s, material_inde
       }
       a = a * N;
       auto const rho = points_to_rho[point];
-      auto const v_prime = -(tau / rho) * (rho * a + grad_p);
+      auto const v_prime = (tau / rho) * (grad_p - rho * a);
       points_to_v_prime[point] = v_prime;
     }
   };
@@ -120,8 +120,7 @@ HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_inde
   auto const element_nodes_to_nodes = s.elements_to_nodes.cbegin();
   auto const points_to_symm_grad_v = s.symm_grad_v.cbegin();
   auto const points_to_dt = s.element_dt.cbegin();
-  auto const points_to_rho = s.rho.cbegin();
-  auto const points_to_c = s.c.cbegin();
+  auto const points_to_K = s.K.cbegin();
   auto const nodes_to_p_h = s.p_h[material].cbegin();
   auto const nodes_to_old_p_h = old_p_h_vector.cbegin();
   auto const points_to_p_prime = s.p_prime.begin();
@@ -148,9 +147,8 @@ HPC_NOINLINE inline void update_p_prime(input const& in, state& s, material_inde
         }
         p_dot = (p - old_p) / dt;
       }
-      auto const rho = points_to_rho[point];
-      auto const c = points_to_c[point];
-      auto const p_prime = - tau * ( p_dot + rho * c * c * div_v );
+      auto const K = points_to_K[point];
+      auto const p_prime = tau * (p_dot - K * div_v);
       points_to_p_prime[point] = p_prime;
     }
   };
