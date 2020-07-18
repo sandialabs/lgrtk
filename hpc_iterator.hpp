@@ -103,7 +103,7 @@ class pointer_iterator
   }
 #ifndef HPC_CHECK_BOUNDS
   HPC_ALWAYS_INLINE
-      HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T*, T*) noexcept
+  HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T*, T*) noexcept
       : m_pointer(pointer_in)
   {
   }

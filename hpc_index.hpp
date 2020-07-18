@@ -33,7 +33,7 @@ class index
   HPC_ALWAYS_INLINE
   index(index const&) noexcept = default;
   HPC_ALWAYS_INLINE
-                    index(index&&) noexcept = default;
+  index(index&&) noexcept = default;
   HPC_ALWAYS_INLINE index&
                     operator=(index const&) noexcept = default;
   HPC_ALWAYS_INLINE index&

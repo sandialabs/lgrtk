@@ -31,7 +31,7 @@ class quaternion
   HPC_ALWAYS_INLINE
   quaternion() noexcept = default;
   HPC_ALWAYS_INLINE
-                    quaternion(quaternion<scalar_type> const&) noexcept = default;
+  quaternion(quaternion<scalar_type> const&) noexcept = default;
   HPC_ALWAYS_INLINE quaternion&
                     operator=(quaternion<scalar_type> const&) noexcept = default;
   template <class S2>

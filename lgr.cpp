@@ -1057,6 +1057,8 @@ taylor_stabilized_tet()
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"cylinder.g"};
   in.name                        = "taylor_stabilized-tet";
+  in.CFL                         = 0.1;
+  in.use_contact                 = true;
   in.element                     = TETRAHEDRON;
   in.end_time                    = 1.0e-04;
   in.num_file_output_periods     = 1000;
@@ -1064,7 +1066,7 @@ taylor_stabilized_tet()
   in.enable_p_averaging          = false;
   in.enable_p_prime[body]        = true;
   in.enable_nodal_pressure[body] = true;
-  in.c_tau[body]                 = 0.5;
+  in.c_tau[body]                 = 0.1;
   auto const rho                 = hpc::density<double>(8.96e+03);
   auto const nu                  = hpc::adimensional<double>(0.343);
   auto const E                   = hpc::pressure<double>(110.0e09);
@@ -1099,9 +1101,7 @@ taylor_stabilized_tet()
         };
         hpc::for_each(hpc::device_policy(), nodes, functor);
       };
-  in.initial_v   = const_v;
-  in.CFL         = 0.1;
-  in.use_contact = true;
+  in.initial_v = const_v;
   run(in, filename);
 }
 
@@ -1378,6 +1378,7 @@ run_for_average()
 int
 main()
 {
+  HPC_TRAP_FPE();
   if ((0)) lgr::elastic_wave();
   if ((0)) lgr::gas_expansion();
   if ((0)) lgr::spinning_square();

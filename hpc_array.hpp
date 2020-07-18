@@ -33,7 +33,7 @@ class array
   HPC_ALWAYS_INLINE
   array(array&& other) noexcept = default;
   HPC_ALWAYS_INLINE
-                    array(array const&) noexcept = default;
+  array(array const&) noexcept = default;
   HPC_ALWAYS_INLINE array&
                     operator=(array const&) noexcept = default;
   HPC_ALWAYS_INLINE array&

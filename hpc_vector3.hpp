@@ -32,7 +32,7 @@ class vector3
   HPC_ALWAYS_INLINE
   vector3() noexcept = default;
   HPC_ALWAYS_INLINE
-                    vector3(vector3<scalar_type> const&) noexcept = default;
+  vector3(vector3<scalar_type> const&) noexcept = default;
   HPC_ALWAYS_INLINE vector3&
                     operator=(vector3<scalar_type> const&) noexcept = default;
   template <class S2>

@@ -33,12 +33,12 @@ class array_vector_reference
   }
   // movable
   HPC_ALWAYS_INLINE
-                    array_vector_reference(array_vector_reference&&) = default;
+  array_vector_reference(array_vector_reference&&) = default;
   HPC_ALWAYS_INLINE array_vector_reference&
                     operator=(array_vector_reference&&) = default;
   // not copyable
   HPC_HOST_DEVICE
-                                             array_vector_reference(array_vector_reference const&) = delete;
+  array_vector_reference(array_vector_reference const&) = delete;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit operator T() const noexcept
   {
     return ::hpc::array_traits<T>::load(m_iterator);
@@ -91,12 +91,12 @@ class array_vector_reference<T const, L, O>
   }
   // movable
   HPC_ALWAYS_INLINE
-                    array_vector_reference(array_vector_reference&&) = default;
+  array_vector_reference(array_vector_reference&&) = default;
   HPC_ALWAYS_INLINE array_vector_reference&
                     operator=(array_vector_reference&&) = default;
   // not copyable
   HPC_HOST_DEVICE
-                                             array_vector_reference(array_vector_reference const&) = delete;
+  array_vector_reference(array_vector_reference const&) = delete;
   HPC_HOST_DEVICE                            array_vector_reference&
                                              operator=(array_vector_reference const&) = delete;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit operator T() const noexcept
