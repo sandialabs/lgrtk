@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include <hpc_algorithm.hpp>
 #include <hpc_array_traits.hpp>
 #include <hpc_array_vector.hpp>
@@ -22,7 +23,8 @@
 
 class mechanics : public ::testing::Test
 {
-  void SetUp() override
+  void
+  SetUp() override
   {
     lgr_unit::arborx_testing_singleton::instance();
   }
@@ -30,20 +32,22 @@ class mechanics : public ::testing::Test
 
 namespace lgr_unit {
 
-double compute_total_mass(const lgr::state &s)
+double
+compute_total_mass(const lgr::state& s)
 {
   auto const rho = s.rho.cbegin();
-  auto const V = s.V.cbegin();
-  auto mass_func = [=] HPC_DEVICE (lgr::point_index p)
-  {
-    return rho[p] * V[p];
-  };
+  auto const V   = s.V.cbegin();
+  auto mass_func = [=] HPC_DEVICE(lgr::point_index p) { return rho[p] * V[p]; };
   double init_mass = 0.0;
-  return hpc::transform_reduce(hpc::device_policy(), s.points, init_mass, hpc::plus<double>(),
+  return hpc::transform_reduce(
+      hpc::device_policy(),
+      s.points,
+      init_mass,
+      hpc::plus<double>(),
       mass_func);
 }
 
-}
+}  // namespace lgr_unit
 
 TEST_F(mechanics, lumped_mass_1)
 {
@@ -52,10 +56,10 @@ TEST_F(mechanics, lumped_mass_1)
   tetrahedron_single_point(s);
   lgr::otm_update_nodal_mass(s);
 
-  auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
+  auto const mass          = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
-  auto const error = std::abs(mass / expected_mass - 1.0);
-  auto const eps = hpc::machine_epsilon<double>();
+  auto const error         = std::abs(mass / expected_mass - 1.0);
+  auto const eps           = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -67,10 +71,10 @@ TEST_F(mechanics, lumped_mass_2)
   two_tetrahedra_two_points(s);
   lgr::otm_update_nodal_mass(s);
 
-  auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
+  auto const mass          = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
-  auto const error = std::abs(mass / expected_mass - 1.0);
-  auto const eps = hpc::machine_epsilon<double>();
+  auto const error         = std::abs(mass / expected_mass - 1.0);
+  auto const eps           = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -82,34 +86,38 @@ TEST_F(mechanics, lumped_mass_3)
   hexahedron_eight_points(s);
   lgr::otm_update_nodal_mass(s);
 
-  auto const mass = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
+  auto const mass          = hpc::reduce(hpc::device_policy(), s.mass, 0.0);
   auto const expected_mass = lgr_unit::compute_total_mass(s);
-  auto const error = std::abs(mass / expected_mass - 1.0);
-  auto const eps = hpc::machine_epsilon<double>();
+  auto const error         = std::abs(mass / expected_mass - 1.0);
+  auto const eps           = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
 
 namespace lgr_unit {
 
-double compute_sigma_error(const lgr::state& s) {
+double
+compute_sigma_error(const lgr::state& s)
+{
   auto const points_to_sigma = s.sigma_full.cbegin();
-  auto get_error = [=] HPC_DEVICE (lgr::point_index const point) {
+  auto       get_error       = [=] HPC_DEVICE(lgr::point_index const point) {
     auto const s = points_to_sigma[point].load();
-    return s(0,0)+s(0,1)+s(0,2)+s(1,0)+s(1,1)+s(1,2)+s(2,0)+s(2,1)+s(2,2);
+    return s(0, 0) + s(0, 1) + s(0, 2) + s(1, 0) + s(1, 1) + s(1, 2) + s(2, 0) +
+           s(2, 1) + s(2, 2);
   };
-  auto error = hpc::transform_reduce(hpc::device_policy(), s.points, 0.0, hpc::plus<double>(), get_error);
+  auto error = hpc::transform_reduce(
+      hpc::device_policy(), s.points, 0.0, hpc::plus<double>(), get_error);
   error /= (9 * s.points.size());
   return error;
 }
 
-}
+}  // namespace lgr_unit
 
 TEST_F(mechanics, hex_translation)
 {
   lgr::state s;
 
-  lgr::material_index const num_materials = 1;
+  lgr::material_index const num_materials  = 1;
   lgr::material_index const num_boundaries = 0;
 
   lgr::input in(num_materials, num_boundaries);
@@ -119,16 +127,16 @@ TEST_F(mechanics, hex_translation)
   in.K0.resize(num_materials);
   in.G0.resize(num_materials);
 
-  in.enable_neo_Hookean[0] = true;
+  in.enable_neo_Hookean[0]    = true;
   in.enable_variational_J2[0] = false;
-  in.K0[0] = hpc::pressure<double>(1.0e+09);
-  in.G0[0] = hpc::pressure<double>(1.0e+09);
+  in.K0[0]                    = hpc::pressure<double>(1.0e+09);
+  in.G0[0]                    = hpc::pressure<double>(1.0e+09);
 
   hexahedron_eight_points(s);
   lgr::otm_update_nodal_mass(s);
 
   auto const num_points = s.points.size();
-  auto const num_nodes = s.nodes.size();
+  auto const num_nodes  = s.nodes.size();
 
   s.u.resize(num_nodes);
   s.v.resize(num_nodes);
@@ -152,10 +160,9 @@ TEST_F(mechanics, hex_translation)
   lgr::otm_update_material_state(in, s, 0);
 
   auto const error = lgr_unit::compute_sigma_error(s);
-  auto const tol = 1.0e-06;
+  auto const tol   = 1.0e-06;
   ASSERT_LE(error, tol);
 }
-
 
 TEST_F(mechanics, zero_nu_tension)
 {

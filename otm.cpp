@@ -1,9 +1,10 @@
 #include <cassert>
-#include <string>
 #include <hpc_macros.hpp>
 #include <otm_apps.hpp>
+#include <string>
 
-int main()
+int
+main()
 {
   HPC_TRAP_FPE();
   lgr::otm_scope scope;

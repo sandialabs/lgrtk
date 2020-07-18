@@ -1,8 +1,8 @@
 #pragma once
 
-#include <hpc_macros.hpp>
 #include <hpc_array_traits.hpp>
 #include <hpc_index.hpp>
+#include <hpc_macros.hpp>
 #include <hpc_math.hpp>
 #include <hpc_matrix3x3.hpp>
 
@@ -11,35 +11,79 @@ namespace hpc {
 using axis_index = hpc::index<axis_tag, int>;
 
 template <typename Scalar>
-class quaternion {
-public:
+class quaternion
+{
+ public:
   using scalar_type = Scalar;
-private:
+
+ private:
   scalar_type raw[4];
-public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quaternion(Scalar const w, Scalar const x, Scalar const y, Scalar const z) noexcept
-    :raw{w, x, y, z}
+
+ public:
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quaternion(
+      Scalar const w,
+      Scalar const x,
+      Scalar const y,
+      Scalar const z) noexcept
+      : raw{w, x, y, z}
   {
   }
-  HPC_ALWAYS_INLINE quaternion() noexcept = default;
-  HPC_ALWAYS_INLINE quaternion(quaternion<scalar_type> const&) noexcept = default;
-  HPC_ALWAYS_INLINE quaternion& operator=(quaternion<scalar_type> const&) noexcept = default;
+  HPC_ALWAYS_INLINE
+  quaternion() noexcept = default;
+  HPC_ALWAYS_INLINE
+                    quaternion(quaternion<scalar_type> const&) noexcept = default;
+  HPC_ALWAYS_INLINE quaternion&
+                    operator=(quaternion<scalar_type> const&) noexcept = default;
   template <class S2>
   HPC_ALWAYS_INLINE explicit quaternion(quaternion<S2> const& other) noexcept
-    :quaternion(scalar_type(other(0)), scalar_type(other(1)), scalar_type(other(2)), scalar_type(other(3)))
-  {}
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type operator()(axis_index const i) const noexcept { return raw[weaken(i)]; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE scalar_type& operator()(axis_index const i) noexcept { return raw[weaken(i)]; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion zero() noexcept { return quaternion(0.0, 0.0, 0.0, 0.0); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion w_axis() noexcept { return quaternion(1.0, 0.0, 0.0, 0.0); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion x_axis() noexcept { return quaternion(0.0, 1.0, 0.0, 0.0); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion y_axis() noexcept { return quaternion(0.0, 0.0, 1.0, 0.0); }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion z_axis() noexcept { return quaternion(0.0, 0.0, 0.0, 1.0); }
+      : quaternion(
+            scalar_type(other(0)),
+            scalar_type(other(1)),
+            scalar_type(other(2)),
+            scalar_type(other(3)))
+  {
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type
+  operator()(axis_index const i) const noexcept
+  {
+    return raw[weaken(i)];
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE scalar_type&
+                                    operator()(axis_index const i) noexcept
+  {
+    return raw[weaken(i)];
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion
+  zero() noexcept
+  {
+    return quaternion(0.0, 0.0, 0.0, 0.0);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion
+  w_axis() noexcept
+  {
+    return quaternion(1.0, 0.0, 0.0, 0.0);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion
+  x_axis() noexcept
+  {
+    return quaternion(0.0, 1.0, 0.0, 0.0);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion
+  y_axis() noexcept
+  {
+    return quaternion(0.0, 0.0, 1.0, 0.0);
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static constexpr quaternion
+  z_axis() noexcept
+  {
+    return quaternion(0.0, 0.0, 0.0, 1.0);
+  }
 };
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator+(quaternion<T> const left, quaternion<T> const right) noexcept {
+operator+(quaternion<T> const left, quaternion<T> const right) noexcept
+{
   return quaternion<T>(
       left(0) + right(0),
       left(1) + right(1),
@@ -49,20 +93,23 @@ operator+(quaternion<T> const left, quaternion<T> const right) noexcept {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<T>&
-operator+=(quaternion<T>& left, quaternion<T> const right) noexcept {
+                                  operator+=(quaternion<T>& left, quaternion<T> const right) noexcept
+{
   left = left + right;
   return left;
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator-(quaternion<T> const x) noexcept {
+operator-(quaternion<T> const x) noexcept
+{
   return quaternion<T>(-x(0), -x(1), -x(2), -x(3));
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator-(quaternion<T> const left, quaternion<T> const right) noexcept {
+operator-(quaternion<T> const left, quaternion<T> const right) noexcept
+{
   return quaternion<T>(
       left(0) - right(0),
       left(1) - right(1),
@@ -72,96 +119,103 @@ operator-(quaternion<T> const left, quaternion<T> const right) noexcept {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<T>&
-operator-=(quaternion<T>& left, quaternion<T> const right) noexcept {
+                                  operator-=(quaternion<T>& left, quaternion<T> const right) noexcept
+{
   left = left - right;
   return left;
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-inner_product(quaternion<L> const left, quaternion<R> const right) noexcept {
-  return
-      left(0) * right(0) +
-      left(1) * right(1) +
-      left(2) * right(2) +
-      left(3) * right(3);
+inner_product(quaternion<L> const left, quaternion<R> const right) noexcept
+{
+  return left(0) * right(0) + left(1) * right(1) + left(2) * right(2) +
+         left(3) * right(3);
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator*(quaternion<L> const left, quaternion<R> const right) noexcept {
+operator*(quaternion<L> const left, quaternion<R> const right) noexcept
+{
   return inner_product(left, right);
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator*(quaternion<L> const left, R const right) noexcept {
+operator*(quaternion<L> const left, R const right) noexcept
+{
   return quaternion<decltype(L() * R())>(
-      left(0) * right,
-      left(1) * right,
-      left(2) * right,
-      left(3) * right);
+      left(0) * right, left(1) * right, left(2) * right, left(3) * right);
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<L>&
-operator*=(quaternion<L>& left, R const right) noexcept {
+                                  operator*=(quaternion<L>& left, R const right) noexcept
+{
   left = left * right;
   return left;
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator*(L const left, quaternion<R> const right) noexcept {
+operator*(L const left, quaternion<R> const right) noexcept
+{
   return right * left;
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-operator/(quaternion<L> const left, R const right) noexcept {
+operator/(quaternion<L> const left, R const right) noexcept
+{
   auto const factor = 1.0 / right;
   return quaternion<decltype(L() / R())>(
-      left(0) * factor,
-      left(1) * factor,
-      left(2) * factor,
-      left(3) * factor);
+      left(0) * factor, left(1) * factor, left(2) * factor, left(3) * factor);
 }
 
 template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quaternion<L>&
-operator/=(quaternion<L>& left, R const right) noexcept {
+                                  operator/=(quaternion<L>& left, R const right) noexcept
+{
   left = left / right;
   return left;
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-norm_squared(quaternion<T> const v) noexcept {
+norm_squared(quaternion<T> const v) noexcept
+{
   return (v * v);
 }
 
 template <typename T>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE T norm(quaternion<T> const v) noexcept {
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE T
+norm(quaternion<T> const v) noexcept
+{
   using std::sqrt;
   return sqrt(norm_squared(v));
 }
 
 template <typename T>
-class array_traits<quaternion<T>> {
-  public:
+class array_traits<quaternion<T>>
+{
+ public:
   using value_type = T;
-  using size_type = axis_index;
-  HPC_HOST_DEVICE static constexpr size_type size() noexcept { return 4; }
-  template <class Iterator>
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static quaternion<T> load(Iterator const it) noexcept {
-    return quaternion<T>(
-        it[0],
-        it[1],
-        it[2],
-        it[3]);
+  using size_type  = axis_index;
+  HPC_HOST_DEVICE static constexpr size_type
+  size() noexcept
+  {
+    return 4;
   }
   template <class Iterator>
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static void store(Iterator const it, quaternion<T> const& value) noexcept {
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static quaternion<T>
+                    load(Iterator const it) noexcept
+  {
+    return quaternion<T>(it[0], it[1], it[2], it[3]);
+  }
+  template <class Iterator>
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE static void
+  store(Iterator const it, quaternion<T> const& value) noexcept
+  {
     it[0] = value(0);
     it[1] = value(1);
     it[2] = value(2);
@@ -171,14 +225,16 @@ class array_traits<quaternion<T>> {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-abs(quaternion<T> const v) noexcept {
+abs(quaternion<T> const v) noexcept
+{
   using std::abs;
   return quaternion<T>(abs(v(0)), abs(v(1)), abs(v(2)), abs(v(3)));
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-normalize(quaternion<T> const v) noexcept {
+normalize(quaternion<T> const v) noexcept
+{
   return v / norm(v);
 }
 
@@ -190,11 +246,12 @@ normalize(quaternion<T> const v) noexcept {
 //   tensors that may not be exactly orthogonal
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-quaternion_from_rotation_tensor(matrix3x3<T> const R) noexcept {
-  auto const trR = trace(R);
-  auto maxm = trR;
-  auto maxi = 3;
-  auto q = quaternion<T>(0.0, 0.0, 0.0, 0.0);
+quaternion_from_rotation_tensor(matrix3x3<T> const R) noexcept
+{
+  auto const trR  = trace(R);
+  auto       maxm = trR;
+  auto       maxi = 3;
+  auto       q    = quaternion<T>(0.0, 0.0, 0.0, 0.0);
   for (auto i = 0; i < 3; ++i) {
     if (R(i, i) > maxm) {
       maxm = R(i, i);
@@ -261,16 +318,17 @@ quaternion_from_rotation_tensor(matrix3x3<T> const R) noexcept {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-rotation_vector_from_quaternion(quaternion<T> const q) noexcept {
-  auto const qq = q(0) >= 0 ? q : -q;
-  auto const qs = qq(0);
-  auto const qv = vector3<T>(qq(1), qq(2), qq(3));
+rotation_vector_from_quaternion(quaternion<T> const q) noexcept
+{
+  auto const qq     = q(0) >= 0 ? q : -q;
+  auto const qs     = qq(0);
+  auto const qv     = vector3<T>(qq(1), qq(2), qq(3));
   auto const qvnorm = norm(qv);
-  auto const s = std::sqrt(0.5);
-  auto const e = std::sqrt(hpc::machine_epsilon<double>());
-  auto const vnorm = 2.0 * (qvnorm < s ? std::asin(qvnorm) : std::acos(qs));
-  auto const coef = qvnorm < e ? 2.0 : vnorm / qvnorm;
-  auto const w = coef * qv;
+  auto const s      = std::sqrt(0.5);
+  auto const e      = std::sqrt(hpc::machine_epsilon<double>());
+  auto const vnorm  = 2.0 * (qvnorm < s ? std::asin(qvnorm) : std::acos(qs));
+  auto const coef   = qvnorm < e ? 2.0 : vnorm / qvnorm;
+  auto const w      = coef * qv;
   return w;
 }
 
@@ -287,36 +345,43 @@ rotation_vector_from_quaternion(quaternion<T> const q) noexcept {
 // Ψ     sin(x)/x           0    1.0(-x^2/6)     (6*EPS)^.5      (120*EPS)^.25
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-Psi(T const x) noexcept {
-  auto const y = std::abs(x);
+Psi(T const x) noexcept
+{
+  auto const y  = std::abs(x);
   auto const e2 = std::sqrt(hpc::machine_epsilon<double>());
   auto const e4 = std::sqrt(e2);
-  auto const psi = y > e4 ? std::sin(y) / y : (y > e2 ? 1.0 - y * y / 6.0 : 1.0);
+  auto const psi =
+      y > e4 ? std::sin(y) / y : (y > e2 ? 1.0 - y * y / 6.0 : 1.0);
   return psi;
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-quaternion_from_rotation_vector(vector3<T> const w) noexcept {
+quaternion_from_rotation_vector(vector3<T> const w) noexcept
+{
   auto const halfnorm = 0.5 * norm(w);
-  auto const factor = 0.5 * Psi(halfnorm);
-  auto const q = quaternion<T>(std::cos(halfnorm), factor * w(0), factor * w(1), factor * w(2));
+  auto const factor   = 0.5 * Psi(halfnorm);
+  auto const q        = quaternion<T>(
+      std::cos(halfnorm), factor * w(0), factor * w(1), factor * w(2));
   return q;
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-rotation_tensor_from_quaternion(quaternion<T> const q) noexcept {
+rotation_tensor_from_quaternion(quaternion<T> const q) noexcept
+{
   auto const qs = q(0);
   auto const qv = vector3<T>(q(1), q(2), q(3));
-  auto const I = matrix3x3<T>::identity();
-  auto const R = 2.0 * outer_product(qv, qv) + 2.0 * qs * check(qv) + (2.0 * qs * qs - 1.0) * I;
+  auto const I  = matrix3x3<T>::identity();
+  auto const R  = 2.0 * outer_product(qv, qv) + 2.0 * qs * check(qv) +
+                 (2.0 * qs * qs - 1.0) * I;
   return R;
 }
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-rotation_vector_from_rotation_tensor(matrix3x3<T> const R) noexcept {
+rotation_vector_from_rotation_tensor(matrix3x3<T> const R) noexcept
+{
   auto const q = quaternion_from_rotation_tensor(R);
   auto const w = rotation_vector_from_quaternion(q);
   return w;
@@ -324,10 +389,11 @@ rotation_vector_from_rotation_tensor(matrix3x3<T> const R) noexcept {
 
 template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
-rotation_tensor_from_rotation_vector(vector3<T> const w) noexcept {
+rotation_tensor_from_rotation_vector(vector3<T> const w) noexcept
+{
   auto const q = quaternion_from_rotation_vector(w);
   auto const R = rotation_tensor_from_quaternion(q);
   return R;
 }
 
-} // namespace hpc
+}  // namespace hpc

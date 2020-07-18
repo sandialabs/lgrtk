@@ -1,11 +1,13 @@
 #include <gtest/gtest.h>
+
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
 #include <otm_meshless.hpp>
 #include <otm_vtk.hpp>
 #include <unit_tests/otm_unit_mesh.hpp>
 
-TEST(vtk, canPrintOtmStateToFile) {
+TEST(vtk, canPrintOtmStateToFile)
+{
   lgr::state s;
   using MI = lgr::material_index;
   lgr::input in(MI(0), MI(0));

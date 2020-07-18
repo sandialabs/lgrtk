@@ -1,24 +1,27 @@
+#include <cassert>
+#include <fstream>
 #include <hpc_algorithm.hpp>
 #include <hpc_execution.hpp>
 #include <hpc_index.hpp>
 #include <hpc_range.hpp>
 #include <hpc_vector.hpp>
 #include <hpc_vector3.hpp>
+#include <iomanip>
 #include <lgr_input.hpp>
 #include <lgr_state.hpp>
 #include <lgr_vtk.hpp>
 #include <lgr_vtk_util.hpp>
-#include <cassert>
-#include <fstream>
-#include <iomanip>
 #include <sstream>
 
 namespace lgr {
 
-static void write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s) {
-  stream << "CELLS " << s.elements.size() << " " << s.elements.size() * (s.nodes_in_element.size() + 1) << "\n";
+static void
+write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s)
+{
+  stream << "CELLS " << s.elements.size() << " "
+         << s.elements.size() * (s.nodes_in_element.size() + 1) << "\n";
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
-  auto const element_nodes_to_nodes = s.element_nodes_to_nodes.cbegin();
+  auto const element_nodes_to_nodes    = s.element_nodes_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
     stream << s.nodes_in_element.size();
     for (auto const element_node : element_nodes) {
@@ -40,23 +43,31 @@ static void write_vtk_cells(std::ostream& stream, input const& in, captured_stat
   }
 }
 
-static void write_vtk_materials(std::ostream& stream,
-    hpc::pinned_vector<material_index, element_index> const& vec) {
+static void
+write_vtk_materials(
+    std::ostream&                                            stream,
+    hpc::pinned_vector<material_index, element_index> const& vec)
+{
   stream << "SCALARS material int 1\n";
   stream << "LOOKUP_TABLE default\n";
-  for (material_index const val : vec) {
-    stream << val << "\n";
-  }
+  for (material_index const val : vec) { stream << val << "\n"; }
 }
 
 template <class Quantity>
-static void write_vtk_scalars(std::ostream& stream, char const* name,
-    hpc::counting_range<element_index> const elements,
+static void
+write_vtk_scalars(
+    std::ostream&                                     stream,
+    char const*                                       name,
+    hpc::counting_range<element_index> const          elements,
     hpc::counting_range<point_in_element_index> const points_in_element,
-    hpc::pinned_vector<Quantity, point_index> const& vec) {
+    hpc::pinned_vector<Quantity, point_index> const&  vec)
+{
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
+    std::string suffix =
+        (points_in_element.size() == 1) ?
+            "" :
+            (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "SCALARS " << name << suffix << " double 1\n";
     stream << "LOOKUP_TABLE default\n";
     for (auto const e : elements) {
@@ -67,13 +78,20 @@ static void write_vtk_scalars(std::ostream& stream, char const* name,
 }
 
 template <class Quantity>
-static void write_vtk_vectors(std::ostream& stream, char const* name,
-    hpc::counting_range<element_index> const elements,
+static void
+write_vtk_vectors(
+    std::ostream&                                     stream,
+    char const*                                       name,
+    hpc::counting_range<element_index> const          elements,
     hpc::counting_range<point_in_element_index> const points_in_element,
-    hpc::pinned_array_vector<hpc::vector3<Quantity>, point_index> const& vec) {
+    hpc::pinned_array_vector<hpc::vector3<Quantity>, point_index> const& vec)
+{
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
+    std::string suffix =
+        (points_in_element.size() == 1) ?
+            "" :
+            (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
@@ -82,14 +100,18 @@ static void write_vtk_vectors(std::ostream& stream, char const* name,
   }
 }
 
-static void write_vtk_cell_data(std::ostream& stream, captured_state const& s) {
+static void
+write_vtk_cell_data(std::ostream& stream, captured_state const& s)
+{
   stream << "CELL_DATA " << s.elements.size() << "\n";
 }
 
-void file_writer::capture(input const& in, state const& s) {
-  captured.nodes = s.nodes;
-  captured.elements = s.elements;
-  captured.nodes_in_element = s.nodes_in_element;
+void
+file_writer::capture(input const& in, state const& s)
+{
+  captured.nodes             = s.nodes;
+  captured.elements          = s.elements;
+  captured.nodes_in_element  = s.nodes_in_element;
   captured.points_in_element = s.points_in_element;
   captured.element_nodes_to_nodes.resize(s.elements_to_nodes.size());
   hpc::copy(s.elements_to_nodes, captured.element_nodes_to_nodes);
@@ -101,7 +123,8 @@ void file_writer::capture(input const& in, state const& s) {
   captured.e_h.resize(s.e_h.size());
   captured.rho_h.resize(s.rho_h.size());
   for (material_index const material : in.materials) {
-    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
+    if (in.enable_nodal_pressure[material] ||
+        in.enable_nodal_energy[material]) {
       captured.p_h[material].resize(s.p_h[material].size());
       hpc::copy(s.p_h[material], captured.p_h[material]);
     }
@@ -120,10 +143,12 @@ void file_writer::capture(input const& in, state const& s) {
     captured.h_adapt.resize(s.h_adapt.size());
     hpc::copy(s.h_adapt, captured.h_adapt);
   }
-  auto have_nodal_pressure_or_energy = [&] (material_index const material) {
-    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
+  auto have_nodal_pressure_or_energy = [&](material_index const material) {
+    return in.enable_nodal_pressure[material] ||
+           in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+  if (!hpc::all_of(
+          hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     captured.p.resize(s.p.size());
     hpc::copy(s.p, captured.p);
   }
@@ -151,23 +176,23 @@ void file_writer::capture(input const& in, state const& s) {
   hpc::copy(s.material, captured.material);
 }
 
-void file_writer::write(
-    input const& in,
-    int const file_output_index
-    ) {
+void
+file_writer::write(input const& in, int const file_output_index)
+{
   auto stream = make_vtk_output_stream(prefix, file_output_index);
 
   start_vtk_unstructured_grid_file(stream);
   write_vtk_points(stream, captured.x);
   write_vtk_cells(stream, in, captured);
-  //POINTS
+  // POINTS
   write_vtk_point_data(stream, captured.nodes);
   assert(captured.x.size() == captured.nodes.size());
   write_vtk_vectors(stream, "position", captured.x);
   assert(captured.v.size() == captured.nodes.size());
   write_vtk_vectors(stream, "velocity", captured.v);
   for (material_index const material : in.materials) {
-    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
+    if (in.enable_nodal_pressure[material] ||
+        in.enable_nodal_energy[material]) {
       std::stringstream name_stream;
       name_stream << "nodal_pressure_" << material;
       auto name = name_stream.str();
@@ -195,25 +220,53 @@ void file_writer::write(
     assert(captured.h_adapt.size() == captured.nodes.size());
     write_vtk_scalars(stream, "h", captured.h_adapt);
   }
-  //CELLS
+  // CELLS
   write_vtk_cell_data(stream, captured);
-  auto have_nodal_pressure_or_energy = [&] (material_index const material) {
-    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
+  auto have_nodal_pressure_or_energy = [&](material_index const material) {
+    return in.enable_nodal_pressure[material] ||
+           in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
-    write_vtk_scalars(stream, "pressure", captured.elements, captured.points_in_element, captured.p);
+  if (!hpc::all_of(
+          hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+    write_vtk_scalars(
+        stream,
+        "pressure",
+        captured.elements,
+        captured.points_in_element,
+        captured.p);
   }
   if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
-    write_vtk_scalars(stream, "energy", captured.elements, captured.points_in_element, captured.e);
-    write_vtk_scalars(stream, "density", captured.elements, captured.points_in_element, captured.rho);
+    write_vtk_scalars(
+        stream,
+        "energy",
+        captured.elements,
+        captured.points_in_element,
+        captured.e);
+    write_vtk_scalars(
+        stream,
+        "density",
+        captured.elements,
+        captured.points_in_element,
+        captured.rho);
   }
   if (hpc::any_of(hpc::serial_policy(), in.enable_nodal_energy)) {
-    write_vtk_vectors(stream, "q", captured.elements, captured.points_in_element, captured.q);
+    write_vtk_vectors(
+        stream, "q", captured.elements, captured.points_in_element, captured.q);
     if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
-      write_vtk_scalars(stream, "p_prime", captured.elements, captured.points_in_element, captured.p_prime);
+      write_vtk_scalars(
+          stream,
+          "p_prime",
+          captured.elements,
+          captured.points_in_element,
+          captured.p_prime);
     }
   }
-  write_vtk_scalars(stream, "time_step", captured.elements, captured.points_in_element, captured.element_dt);
+  write_vtk_scalars(
+      stream,
+      "time_step",
+      captured.elements,
+      captured.points_in_element,
+      captured.element_dt);
   if (in.enable_adapt) {
     write_vtk_scalars(stream, "quality", captured.quality);
   }
@@ -221,4 +274,4 @@ void file_writer::write(
   stream.close();
 }
 
-}
+}  // namespace lgr

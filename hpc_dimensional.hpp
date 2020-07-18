@@ -1,35 +1,36 @@
 #pragma once
 
-#include <hpc_vector3.hpp>
 #include <hpc_matrix3x3.hpp>
 #include <hpc_symmetric3x3.hpp>
+#include <hpc_vector3.hpp>
 
 namespace hpc {
 
-template
-  <int LengthPower
-  ,int MassPower
-  ,int TimePower
-  ,int CurrentPower
-  ,int TemperaturePower
-  ,int AmountPower
-  ,int IntensityPower
-  >
-class dimension {
-  public:
-  static constexpr int length_power = LengthPower;
-  static constexpr int mass_power = MassPower;
-  static constexpr int time_power = TimePower;
-  static constexpr int current_power = CurrentPower;
+template <
+    int LengthPower,
+    int MassPower,
+    int TimePower,
+    int CurrentPower,
+    int TemperaturePower,
+    int AmountPower,
+    int IntensityPower>
+class dimension
+{
+ public:
+  static constexpr int length_power      = LengthPower;
+  static constexpr int mass_power        = MassPower;
+  static constexpr int time_power        = TimePower;
+  static constexpr int current_power     = CurrentPower;
   static constexpr int temperature_power = TemperaturePower;
-  static constexpr int amount_power = AmountPower;
-  static constexpr int intensity_power = IntensityPower;
+  static constexpr int amount_power      = AmountPower;
+  static constexpr int intensity_power   = IntensityPower;
 };
 
 template <class left, class right>
-class multiply_dimensions {
-  public:
-    using type = dimension<
+class multiply_dimensions
+{
+ public:
+  using type = dimension<
       left::length_power + right::length_power,
       left::mass_power + right::mass_power,
       left::time_power + right::time_power,
@@ -43,9 +44,10 @@ template <class left, class right>
 using multiply_dimensions_t = typename multiply_dimensions<left, right>::type;
 
 template <class left, class right>
-class divide_dimensions {
-  public:
-    using type = dimension<
+class divide_dimensions
+{
+ public:
+  using type = dimension<
       left::length_power - right::length_power,
       left::mass_power - right::mass_power,
       left::time_power - right::time_power,
@@ -59,16 +61,32 @@ template <class left, class right>
 using divide_dimensions_t = typename divide_dimensions<left, right>::type;
 
 template <class dim, int factor>
-class root_dimension {
-  static_assert(dim::length_power % factor == 0, "length power not evenly divisible");
-  static_assert(dim::mass_power % factor == 0, "mass power not evenly divisible");
-  static_assert(dim::time_power % factor == 0, "time power not evenly divisible");
-  static_assert(dim::current_power % factor == 0, "current power not evenly divisible");
-  static_assert(dim::temperature_power % factor == 0, "temperature power not evenly divisible");
-  static_assert(dim::amount_power % factor == 0, "amount power not evenly divisible");
-  static_assert(dim::intensity_power % factor == 0, "intensity power not evenly divisible");
-  public:
-    using type = dimension<
+class root_dimension
+{
+  static_assert(
+      dim::length_power % factor == 0,
+      "length power not evenly divisible");
+  static_assert(
+      dim::mass_power % factor == 0,
+      "mass power not evenly divisible");
+  static_assert(
+      dim::time_power % factor == 0,
+      "time power not evenly divisible");
+  static_assert(
+      dim::current_power % factor == 0,
+      "current power not evenly divisible");
+  static_assert(
+      dim::temperature_power % factor == 0,
+      "temperature power not evenly divisible");
+  static_assert(
+      dim::amount_power % factor == 0,
+      "amount power not evenly divisible");
+  static_assert(
+      dim::intensity_power % factor == 0,
+      "intensity power not evenly divisible");
+
+ public:
+  using type = dimension<
       dim::length_power / factor,
       dim::mass_power / factor,
       dim::time_power / factor,
@@ -82,9 +100,10 @@ template <class dim, int factor>
 using root_dimension_t = typename root_dimension<dim, factor>::type;
 
 template <class dim, int factor>
-class raise_dimension {
-  public:
-    using type = dimension<
+class raise_dimension
+{
+ public:
+  using type = dimension<
       dim::length_power * factor,
       dim::mass_power * factor,
       dim::time_power * factor,
@@ -97,61 +116,99 @@ class raise_dimension {
 template <class dim, int factor>
 using raise_dimension_t = typename raise_dimension<dim, factor>::type;
 
-using no_dimension = dimension<0, 0, 0, 0, 0, 0, 0>;
-using length_dimension = dimension<1, 0, 0, 0, 0, 0, 0>;
-using mass_dimension = dimension<0, 1, 0, 0, 0, 0, 0>;
-using time_dimension = dimension<0, 0, 1, 0, 0, 0, 0>;
-using current_dimension = dimension<0, 0, 0, 1, 0, 0, 0>;
+using no_dimension          = dimension<0, 0, 0, 0, 0, 0, 0>;
+using length_dimension      = dimension<1, 0, 0, 0, 0, 0, 0>;
+using mass_dimension        = dimension<0, 1, 0, 0, 0, 0, 0>;
+using time_dimension        = dimension<0, 0, 1, 0, 0, 0, 0>;
+using current_dimension     = dimension<0, 0, 0, 1, 0, 0, 0>;
 using temperature_dimension = dimension<0, 0, 0, 0, 1, 0, 0>;
-using amount_dimension = dimension<0, 0, 0, 0, 0, 1, 0>;
-using intensity_dimension = dimension<0, 0, 0, 0, 0, 0, 1>;
+using amount_dimension      = dimension<0, 0, 0, 0, 0, 1, 0>;
+using intensity_dimension   = dimension<0, 0, 0, 0, 0, 0, 1>;
 using speed_dimension = divide_dimensions_t<length_dimension, time_dimension>;
 using velocity_dimension = speed_dimension;
-using acceleration_dimension = divide_dimensions_t<speed_dimension, time_dimension>;
-using momentum_dimension = multiply_dimensions_t<mass_dimension, velocity_dimension>;
-using force_dimension = multiply_dimensions_t<mass_dimension, acceleration_dimension>;
-using area_dimension = multiply_dimensions_t<length_dimension, length_dimension>;
-using stress_dimension = divide_dimensions_t<force_dimension, area_dimension>;
+using acceleration_dimension =
+    divide_dimensions_t<speed_dimension, time_dimension>;
+using momentum_dimension =
+    multiply_dimensions_t<mass_dimension, velocity_dimension>;
+using force_dimension =
+    multiply_dimensions_t<mass_dimension, acceleration_dimension>;
+using area_dimension =
+    multiply_dimensions_t<length_dimension, length_dimension>;
+using stress_dimension   = divide_dimensions_t<force_dimension, area_dimension>;
 using pressure_dimension = stress_dimension;
-using volume_dimension = multiply_dimensions_t<area_dimension, length_dimension>;
+using volume_dimension =
+    multiply_dimensions_t<area_dimension, length_dimension>;
 using basis_dimension = no_dimension;
-using strain_dimension = divide_dimensions_t<length_dimension, length_dimension>;
-using strain_rate_dimension = divide_dimensions_t<strain_dimension, time_dimension>;
-using inverse_length_dimension = divide_dimensions_t<no_dimension, length_dimension>;
-using inverse_area_dimension = divide_dimensions_t<no_dimension, area_dimension>;
+using strain_dimension =
+    divide_dimensions_t<length_dimension, length_dimension>;
+using strain_rate_dimension =
+    divide_dimensions_t<strain_dimension, time_dimension>;
+using inverse_length_dimension =
+    divide_dimensions_t<no_dimension, length_dimension>;
+using inverse_area_dimension =
+    divide_dimensions_t<no_dimension, area_dimension>;
 using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
-using energy_dimension = multiply_dimensions_t<force_dimension, length_dimension>;
+using energy_dimension =
+    multiply_dimensions_t<force_dimension, length_dimension>;
 using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
-using specific_energy_dimension = divide_dimensions_t<energy_dimension, mass_dimension>;
-using specific_energy_rate_dimension = divide_dimensions_t<specific_energy_dimension, time_dimension>;
-using velocity_gradient_dimension = divide_dimensions_t<velocity_dimension, length_dimension>;
-using dynamic_viscosity_dimension = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
-using kinematic_viscosity_dimension = divide_dimensions_t<area_dimension, time_dimension>;
+using specific_energy_dimension =
+    divide_dimensions_t<energy_dimension, mass_dimension>;
+using specific_energy_rate_dimension =
+    divide_dimensions_t<specific_energy_dimension, time_dimension>;
+using velocity_gradient_dimension =
+    divide_dimensions_t<velocity_dimension, length_dimension>;
+using dynamic_viscosity_dimension =
+    divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
+using kinematic_viscosity_dimension =
+    divide_dimensions_t<area_dimension, time_dimension>;
 using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
-using heat_flux_dimension = divide_dimensions_t<power_dimension, area_dimension>;
-using stress_rate_dimension = divide_dimensions_t<stress_dimension, time_dimension>;
+using heat_flux_dimension =
+    divide_dimensions_t<power_dimension, area_dimension>;
+using stress_rate_dimension =
+    divide_dimensions_t<stress_dimension, time_dimension>;
 using pressure_rate_dimension = stress_rate_dimension;
-using energy_density_dimension = divide_dimensions_t<energy_dimension, volume_dimension>;
-using energy_density_rate_dimension = divide_dimensions_t<energy_density_dimension, time_dimension>;
-using stress_gradient_dimension = divide_dimensions_t<stress_dimension, length_dimension>;
+using energy_density_dimension =
+    divide_dimensions_t<energy_dimension, volume_dimension>;
+using energy_density_rate_dimension =
+    divide_dimensions_t<energy_density_dimension, time_dimension>;
+using stress_gradient_dimension =
+    divide_dimensions_t<stress_dimension, length_dimension>;
 using pressure_gradient_dimension = stress_gradient_dimension;
-using strain_rate_rate_dimension = divide_dimensions_t<strain_rate_dimension, time_dimension>;
-
+using strain_rate_rate_dimension =
+    divide_dimensions_t<strain_rate_dimension, time_dimension>;
 
 #ifdef HPC_ENABLE_DIMENSIONAL_ANALYSIS
 
 template <class T, class Dimension>
-class quantity {
+class quantity
+{
   T m_impl;
-  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept : m_impl(in) {}
-  HPC_ALWAYS_INLINE constexpr quantity() noexcept = default;
+
+ public:
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept
+      : m_impl(in)
+  {
+  }
+  HPC_ALWAYS_INLINE constexpr quantity() noexcept                   = default;
   HPC_ALWAYS_INLINE constexpr quantity(quantity const& in) noexcept = default;
-  HPC_ALWAYS_INLINE quantity& operator=(quantity const& in) noexcept = default;
+  HPC_ALWAYS_INLINE quantity&
+                    operator=(quantity const& in) noexcept = default;
   template <class Dimension2>
-  HPC_ALWAYS_INLINE constexpr explicit quantity(quantity<T, Dimension2> const& in) noexcept : quantity(T(in)) {}
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T() const noexcept { return m_impl; }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T get() const noexcept { return m_impl; }
+  HPC_ALWAYS_INLINE constexpr explicit quantity(
+      quantity<T, Dimension2> const& in) noexcept
+      : quantity(T(in))
+  {
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T()
+      const noexcept
+  {
+    return m_impl;
+  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
+  get() const noexcept
+  {
+    return m_impl;
+  }
 };
 
 template <class T, class D>
@@ -163,7 +220,7 @@ operator+(quantity<T, D> left, quantity<T, D> right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator+=(quantity<T, D>& left, quantity<T, D> right) noexcept
+                                  operator+=(quantity<T, D>& left, quantity<T, D> right) noexcept
 {
   left = left + right;
   return left;
@@ -178,7 +235,7 @@ operator+(quantity<T, D> left, T right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator+=(quantity<T, D>& left, T right) noexcept
+                                  operator+=(quantity<T, D>& left, T right) noexcept
 {
   left = left + right;
   return left;
@@ -193,7 +250,7 @@ operator+(T left, quantity<T, D> right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity<T, D>
-operator-(quantity<T, D> x) noexcept
+                  operator-(quantity<T, D> x) noexcept
 {
   return quantity<T, D>(-T(x));
 }
@@ -207,7 +264,7 @@ operator-(quantity<T, D> left, quantity<T, D> right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator-=(quantity<T, D>& left, quantity<T, D> right) noexcept
+                                  operator-=(quantity<T, D>& left, quantity<T, D> right) noexcept
 {
   left = left - right;
   return left;
@@ -222,7 +279,7 @@ operator-(quantity<T, D> left, T right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator-=(quantity<T, D>& left, T right) noexcept
+                                  operator-=(quantity<T, D>& left, T right) noexcept
 {
   left = left - right;
   return left;
@@ -244,7 +301,7 @@ operator*(quantity<T, LD> left, quantity<T, RD> right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator*=(quantity<T, D>& left, quantity<T, no_dimension> right) noexcept
+                                  operator*=(quantity<T, D>& left, quantity<T, no_dimension> right) noexcept
 {
   left = left * right;
   return left;
@@ -259,7 +316,7 @@ operator*(quantity<T, D> left, T right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, D>&
-operator*=(quantity<T, D>& left, T right) noexcept
+                                  operator*=(quantity<T, D>& left, T right) noexcept
 {
   left = left * right;
   return left;
@@ -281,7 +338,7 @@ operator/(quantity<T, LD> left, quantity<T, RD> right) noexcept
 
 template <class T, class LD, class RD>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, LD>&
-operator/=(quantity<T, LD>& left, quantity<T, RD> right) noexcept
+                                  operator/=(quantity<T, LD>& left, quantity<T, RD> right) noexcept
 {
   left = left / right;
   return left;
@@ -296,7 +353,7 @@ operator/(quantity<T, D> left, T right) noexcept
 
 template <class T, class LD, class RD>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE quantity<T, LD>&
-operator/=(quantity<T, LD>& left, T right) noexcept
+                                  operator/=(quantity<T, LD>& left, T right) noexcept
 {
   left = left / right;
   return left;
@@ -311,121 +368,141 @@ operator/(T left, quantity<T, D> right) noexcept
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator==(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator==(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) == T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator==(quantity<T, D> left, T right) noexcept {
+operator==(quantity<T, D> left, T right) noexcept
+{
   return T(left) == right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator==(T left, quantity<T, D> right) noexcept {
+operator==(T left, quantity<T, D> right) noexcept
+{
   return left == T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator!=(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator!=(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) != T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator!=(quantity<T, D> left, T right) noexcept {
+operator!=(quantity<T, D> left, T right) noexcept
+{
   return T(left) != right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator!=(T left, quantity<T, D> right) noexcept {
+operator!=(T left, quantity<T, D> right) noexcept
+{
   return left != T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator>(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) > T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>(quantity<T, D> left, T right) noexcept {
+operator>(quantity<T, D> left, T right) noexcept
+{
   return T(left) > right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>(T left, quantity<T, D> right) noexcept {
+operator>(T left, quantity<T, D> right) noexcept
+{
   return left > T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator<(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) < T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<(quantity<T, D> left, T right) noexcept {
+operator<(quantity<T, D> left, T right) noexcept
+{
   return T(left) < right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<(T left, quantity<T, D> right) noexcept {
+operator<(T left, quantity<T, D> right) noexcept
+{
   return left < T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>=(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator>=(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) >= T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>=(quantity<T, D> left, T right) noexcept {
+operator>=(quantity<T, D> left, T right) noexcept
+{
   return T(left) >= right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator>=(T left, quantity<T, D> right) noexcept {
+operator>=(T left, quantity<T, D> right) noexcept
+{
   return left >= T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<=(quantity<T, D> left, quantity<T, D> right) noexcept {
+operator<=(quantity<T, D> left, quantity<T, D> right) noexcept
+{
   return T(left) <= T(right);
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<=(quantity<T, D> left, T right) noexcept {
+operator<=(quantity<T, D> left, T right) noexcept
+{
   return T(left) <= right;
 }
 
 template <class T, class D>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
-operator<=(T left, quantity<T, D> right) noexcept {
+operator<=(T left, quantity<T, D> right) noexcept
+{
   return left <= T(right);
 }
 
 template <class T, class D>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto sqrt(quantity<T, D> x) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto
+sqrt(quantity<T, D> x) noexcept
 {
   using std::sqrt;
   return quantity<T, root_dimension_t<D, 2>>(sqrt(T(x)));
 }
 
 template <class T, class D>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto cbrt(quantity<T, D> x) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE auto
+cbrt(quantity<T, D> x) noexcept
 {
   using std::cbrt;
   return quantity<T, root_dimension_t<D, 3>>(cbrt(T(x)));
@@ -507,7 +584,8 @@ using kinematic_viscosity = quantity<T, kinematic_viscosity_dimension>;
 template <class T>
 using velocity_gradient = matrix3x3<quantity<T, velocity_gradient_dimension>>;
 template <class T>
-using symmetric_velocity_gradient = symmetric3x3<quantity<T, velocity_gradient_dimension>>;
+using symmetric_velocity_gradient =
+    symmetric3x3<quantity<T, velocity_gradient_dimension>>;
 template <class T>
 using heat_flux = vector3<quantity<T, heat_flux_dimension>>;
 template <class T>
@@ -519,4 +597,4 @@ using energy_density_rate = quantity<T, energy_density_rate_dimension>;
 template <class T>
 using pressure_gradient = vector3<quantity<T, pressure_gradient_dimension>>;
 
-}
+}  // namespace hpc
