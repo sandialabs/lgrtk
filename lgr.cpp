@@ -995,8 +995,10 @@ taylor_composite_tet()
   constexpr material_index num_materials(1);
   constexpr material_index num_boundaries(0);
   input                    in(num_materials, num_boundaries);
-  std::string const        filename{"cylinder.g"};
+  std::string const        filename{"cylinder-ct.g"};
   in.name                         = "taylor-composite-tet";
+  in.CFL                          = 0.1;
+  in.use_contact                  = true;
   in.element                      = COMPOSITE_TETRAHEDRON;
   in.end_time                     = 1.0e-04;
   in.num_file_output_periods      = 100;
@@ -1005,7 +1007,6 @@ taylor_composite_tet()
   in.enable_comptet_stabilization = true;
   in.enable_p_prime[body]         = false;
   in.enable_nodal_pressure[body]  = false;
-  in.c_tau[body]                  = 0.5;
   auto const rho                  = hpc::density<double>(8.96e+03);
   auto const nu                   = hpc::adimensional<double>(0.343);
   auto const E                    = hpc::pressure<double>(110.0e09);
@@ -1040,9 +1041,7 @@ taylor_composite_tet()
         };
         hpc::for_each(hpc::device_policy(), nodes, functor);
       };
-  in.initial_v   = const_v;
-  in.CFL         = 0.1;
-  in.use_contact = true;
+  in.initial_v = const_v;
   run(in, filename);
 }
 
@@ -1404,7 +1403,7 @@ main()
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
   if ((0)) lgr::flyer_target_J2();
-  if ((0)) lgr::taylor_composite_tet();
-  if ((1)) lgr::taylor_stabilized_tet();
+  if ((1)) lgr::taylor_composite_tet();
+  if ((0)) lgr::taylor_stabilized_tet();
   // run_for_average();
 }
