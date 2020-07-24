@@ -3,7 +3,6 @@
 #include <hpc_symmetric3x3.hpp>
 #include <iomanip>
 #include <iostream>
-#include <iostream>  // DEBUGGING
 #include <j2/hardening.hpp>
 #include <lgr_adapt.hpp>
 #include <lgr_element_specific.hpp>
