@@ -35,16 +35,11 @@ namespace lgr_unit {
 double
 compute_total_mass(const lgr::state& s)
 {
-  auto const rho = s.rho.cbegin();
-  auto const V   = s.V.cbegin();
-  auto mass_func = [=] HPC_DEVICE(lgr::point_index p) { return rho[p] * V[p]; };
-  double init_mass = 0.0;
-  return hpc::transform_reduce(
-      hpc::device_policy(),
-      s.points,
-      init_mass,
-      hpc::plus<double>(),
-      mass_func);
+  auto const rho       = s.rho.cbegin();
+  auto const V         = s.V.cbegin();
+  auto       mass_func = [=] HPC_DEVICE(lgr::point_index p) { return rho[p] * V[p]; };
+  double     init_mass = 0.0;
+  return hpc::transform_reduce(hpc::device_policy(), s.points, init_mass, hpc::plus<double>(), mass_func);
 }
 
 }  // namespace lgr_unit
@@ -102,11 +97,9 @@ compute_sigma_error(const lgr::state& s)
   auto const points_to_sigma = s.sigma_full.cbegin();
   auto       get_error       = [=] HPC_DEVICE(lgr::point_index const point) {
     auto const s = points_to_sigma[point].load();
-    return s(0, 0) + s(0, 1) + s(0, 2) + s(1, 0) + s(1, 1) + s(1, 2) + s(2, 0) +
-           s(2, 1) + s(2, 2);
+    return s(0, 0) + s(0, 1) + s(0, 2) + s(1, 0) + s(1, 1) + s(1, 2) + s(2, 0) + s(2, 1) + s(2, 2);
   };
-  auto error = hpc::transform_reduce(
-      hpc::device_policy(), s.points, 0.0, hpc::plus<double>(), get_error);
+  auto error = hpc::transform_reduce(hpc::device_policy(), s.points, 0.0, hpc::plus<double>(), get_error);
   error /= (9 * s.points.size());
   return error;
 }

@@ -210,18 +210,14 @@ get_subtet_proj_M(subtet_proj_t& sub_tet_int_proj_M) noexcept
 }
 
 HPC_NOINLINE HPC_HOST_DEVICE inline void
-get_M_inv(
-    hpc::array<double, 12> const& O_det,
-    matrix4x4<double>&            M_inv) noexcept
+get_M_inv(hpc::array<double, 12> const& O_det, matrix4x4<double>& M_inv) noexcept
 {
   auto          M = matrix4x4<double>::zero();
   subtet_proj_t sub_tet_int_proj_M;
   get_subtet_proj_M(sub_tet_int_proj_M);
   for (int tet = 0; tet < 12; ++tet) {
     for (int i = 0; i < 4; ++i) {
-      for (int j = 0; j < 4; ++j) {
-        M(i, j) += O_det[tet] * sub_tet_int_proj_M[tet](i, j);
-      }
+      for (int j = 0; j < 4; ++j) { M(i, j) += O_det[tet] * sub_tet_int_proj_M[tet](i, j); }
     }
   }
   M_inv = inverse(M);
@@ -242,8 +238,7 @@ get_SOL(
       for (int dim1 = 0; dim1 < 3; ++dim1) {
         for (int dim2 = 0; dim2 < 3; ++dim2) {
           for (int pt = 0; pt < 4; ++pt) {
-            SOL[pt][node](dim1) += O_det[tet] * S[tet][node](dim2) *
-                                   O_inv[tet](dim2, dim1) * subtet_int[tet][pt];
+            SOL[pt][node](dim1) += O_det[tet] * S[tet][node](dim2) * O_inv[tet](dim2, dim1) * subtet_int[tet][pt];
           }
         }
       }
@@ -280,10 +275,7 @@ get_basis_gradients(
       auto const lambda = get_barycentric(ref_points[pt]);
       for (int d = 0; d < 3; ++d) {
         for (int l1 = 0; l1 < 4; ++l1) {
-          for (int l2 = 0; l2 < 4; ++l2) {
-            grad_N[pt][node](d) +=
-                lambda[l1] * M_inv(l1, l2) * SOL[l2][node](d);
-          }
+          for (int l2 = 0; l2 < 4; ++l2) { grad_N[pt][node](d) += lambda[l1] * M_inv(l1, l2) * SOL[l2][node](d); }
         }
       }
     }
@@ -303,13 +295,12 @@ initialize_composite_tetrahedron_grad_N(state& s)
   auto const points_to_point_nodes     = s.points * s.nodes_in_element;
   auto const nodes_in_element          = s.nodes_in_element;
   auto const points_in_element         = s.points_in_element;
-  auto       functor = [=] HPC_DEVICE(element_index const element) {
-    auto const element_nodes = elements_to_element_nodes[element];
+  auto       functor                   = [=] HPC_DEVICE(element_index const element) {
+    auto const                           element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
-      auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[hpc::weaken(node_in_element)] =
-          hpc::vector3<double>(nodes_to_x[node].load());
+      auto const node                           = element_nodes_to_nodes[element_nodes[node_in_element]];
+      node_coords[hpc::weaken(node_in_element)] = hpc::vector3<double>(nodes_to_x[node].load());
     }
     hpc::array<hpc::array<hpc::vector3<double>, 10>, 4> grad_N;
     composite_tetrahedron::get_basis_gradients(node_coords, grad_N);
@@ -319,8 +310,7 @@ initialize_composite_tetrahedron_grad_N(state& s)
       auto const point_nodes = points_to_point_nodes[point];
       for (auto const a : nodes_in_element) {
         auto const point_node             = point_nodes[a];
-        point_nodes_to_grad_N[point_node] = hpc::basis_gradient<double>(
-            grad_N[hpc::weaken(qp)][hpc::weaken(a)]);
+        point_nodes_to_grad_N[point_node] = hpc::basis_gradient<double>(grad_N[hpc::weaken(qp)][hpc::weaken(a)]);
       }
     }
   };

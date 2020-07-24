@@ -45,21 +45,17 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::position<double>
 
 struct tet_nodes_to_points
 {
-  tet_nodes_to_points(int const pts_per_elem) : points_per_element(pts_per_elem)
-  {
-  }
+  tet_nodes_to_points(int const pts_per_elem) : points_per_element(pts_per_elem) {}
 
   int const points_per_element{1};
 
   void
   operator()(
-      hpc::counting_range<point_index> const points,
-      hpc::device_range_sum<point_node_index, point_index> const&
-          points_to_point_nodes,
-      hpc::device_vector<node_index, point_node_index> const&
-                                                                         point_nodes_to_nodes,
+      hpc::counting_range<point_index> const                             points,
+      hpc::device_range_sum<point_node_index, point_index> const&        points_to_point_nodes,
+      hpc::device_vector<node_index, point_node_index> const&            point_nodes_to_nodes,
       hpc::device_array_vector<hpc::position<double>, node_index> const& x,
-      hpc::device_array_vector<hpc::position<double>, point_index>& xp) const
+      hpc::device_array_vector<hpc::position<double>, point_index>&      xp) const
   {
     auto       pt_to_pt_nodes    = points_to_point_nodes.cbegin();
     auto       pt_nodes_to_nodes = point_nodes_to_nodes.cbegin();

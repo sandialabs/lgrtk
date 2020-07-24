@@ -79,12 +79,11 @@ tetrahedron_single_point(lgr::state& s)
   node_points_to_points[NPI(3)]    = PI(0);
   hpc::copy(host_s.node_points_to_points, s.node_points_to_points);
 
-  auto const node_points_to_point_nodes =
-      host_s.node_points_to_point_nodes.begin();
-  node_points_to_point_nodes[NPI(0)] = PNI(0);
-  node_points_to_point_nodes[NPI(1)] = PNI(1);
-  node_points_to_point_nodes[NPI(2)] = PNI(2);
-  node_points_to_point_nodes[NPI(3)] = PNI(3);
+  auto const node_points_to_point_nodes = host_s.node_points_to_point_nodes.begin();
+  node_points_to_point_nodes[NPI(0)]    = PNI(0);
+  node_points_to_point_nodes[NPI(1)]    = PNI(1);
+  node_points_to_point_nodes[NPI(2)]    = PNI(2);
+  node_points_to_point_nodes[NPI(3)]    = PNI(3);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
   double const gamma_otm = 1.5;
@@ -168,18 +167,17 @@ two_tetrahedra_two_points(lgr::state& s)
   node_points_to_points[NPI(9)]    = PI(1);
   hpc::copy(host_s.node_points_to_points, s.node_points_to_points);
 
-  auto const node_points_to_point_nodes =
-      host_s.node_points_to_point_nodes.begin();
-  node_points_to_point_nodes[NPI(0)] = PNI(0);
-  node_points_to_point_nodes[NPI(1)] = PNI(0);
-  node_points_to_point_nodes[NPI(2)] = PNI(1);
-  node_points_to_point_nodes[NPI(3)] = PNI(1);
-  node_points_to_point_nodes[NPI(4)] = PNI(2);
-  node_points_to_point_nodes[NPI(5)] = PNI(3);
-  node_points_to_point_nodes[NPI(6)] = PNI(3);
-  node_points_to_point_nodes[NPI(7)] = PNI(3);
-  node_points_to_point_nodes[NPI(8)] = PNI(4);
-  node_points_to_point_nodes[NPI(9)] = PNI(4);
+  auto const node_points_to_point_nodes = host_s.node_points_to_point_nodes.begin();
+  node_points_to_point_nodes[NPI(0)]    = PNI(0);
+  node_points_to_point_nodes[NPI(1)]    = PNI(0);
+  node_points_to_point_nodes[NPI(2)]    = PNI(1);
+  node_points_to_point_nodes[NPI(3)]    = PNI(1);
+  node_points_to_point_nodes[NPI(4)]    = PNI(2);
+  node_points_to_point_nodes[NPI(5)]    = PNI(3);
+  node_points_to_point_nodes[NPI(6)]    = PNI(3);
+  node_points_to_point_nodes[NPI(7)]    = PNI(3);
+  node_points_to_point_nodes[NPI(8)]    = PNI(4);
+  node_points_to_point_nodes[NPI(9)]    = PNI(4);
   hpc::copy(host_s.node_points_to_point_nodes, s.node_points_to_point_nodes);
 
   double const gamma_otm = 1.5;
@@ -277,8 +275,7 @@ hexahedron_eight_points(lgr::state& s)
   }
   hpc::copy(host_s.node_points_to_points, s.node_points_to_points);
 
-  auto const node_points_to_point_nodes =
-      host_s.node_points_to_point_nodes.begin();
+  auto const node_points_to_point_nodes = host_s.node_points_to_point_nodes.begin();
   for (auto i = 0; i < num_points * num_nodes; ++i) {
     auto const node_ordinal            = i / num_points;
     node_points_to_point_nodes[NPI(i)] = PNI(node_ordinal);
@@ -302,11 +299,9 @@ hexahedron_eight_points(lgr::state& s)
 
 inline void
 compute_material_points_as_element_centroids(
-    hpc::counting_range<lgr::point_index> const points,
-    hpc::device_range_sum<lgr::point_node_index, lgr::point_index> const&
-        points_to_point_nodes,
-    hpc::device_vector<lgr::node_index, lgr::point_node_index> const&
-                                                                            point_nodes_to_nodes,
+    hpc::counting_range<lgr::point_index> const                             points,
+    hpc::device_range_sum<lgr::point_node_index, lgr::point_index> const&   points_to_point_nodes,
+    hpc::device_vector<lgr::node_index, lgr::point_node_index> const&       point_nodes_to_nodes,
     hpc::device_array_vector<hpc::position<double>, lgr::node_index> const& x,
     hpc::device_array_vector<hpc::position<double>, lgr::point_index>&      xp)
 {
@@ -346,23 +341,20 @@ elastic_wave_four_points_per_tetrahedron(lgr::state& s)
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
-  static constexpr double               eps = 1.0e-10;
-  auto x_domain = std::make_unique<lgr::union_domain>();
+  static constexpr double               eps      = 1.0e-10;
+  auto                                  x_domain = std::make_unique<lgr::union_domain>();
   x_domain->add(lgr::epsilon_around_plane_domain({x_axis, 0.0}, eps));
-  x_domain->add(
-      lgr::epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
+  x_domain->add(lgr::epsilon_around_plane_domain({x_axis, in.x_domain_size}, eps));
   in.domains[x_boundary] = std::move(x_domain);
   in.zero_acceleration_conditions.push_back({x_boundary, x_axis});
   auto y_domain = std::make_unique<lgr::union_domain>();
   y_domain->add(lgr::epsilon_around_plane_domain({y_axis, 0.0}, eps));
-  y_domain->add(
-      lgr::epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
+  y_domain->add(lgr::epsilon_around_plane_domain({y_axis, in.y_domain_size}, eps));
   in.domains[y_boundary] = std::move(y_domain);
   in.zero_acceleration_conditions.push_back({y_boundary, y_axis});
   auto z_domain = std::make_unique<lgr::union_domain>();
   z_domain->add(lgr::epsilon_around_plane_domain({z_axis, 0.0}, eps));
-  z_domain->add(
-      lgr::epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps));
+  z_domain->add(lgr::epsilon_around_plane_domain({z_axis, in.z_domain_size}, eps));
   in.domains[z_boundary] = std::move(z_domain);
   in.zero_acceleration_conditions.push_back({z_boundary, z_axis});
 

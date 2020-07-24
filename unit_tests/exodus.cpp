@@ -47,11 +47,11 @@ TEST(exodus, readSimpleFile)
 hpc::device_vector<node_index, point_node_index>
 collect_points_to_nodes_from_elements(const state& st)
 {
-  const auto element_nodes_to_nodes    = st.elements_to_nodes.cbegin();
-  const auto elements_to_element_nodes = st.elements * st.nodes_in_element;
-  const auto elements_to_points        = st.elements * st.points_in_element;
-  const auto nodes_in_element          = st.nodes_in_element;
-  const auto points_in_element         = st.points_in_element;
+  const auto                                       element_nodes_to_nodes    = st.elements_to_nodes.cbegin();
+  const auto                                       elements_to_element_nodes = st.elements * st.nodes_in_element;
+  const auto                                       elements_to_points        = st.elements * st.points_in_element;
+  const auto                                       nodes_in_element          = st.nodes_in_element;
+  const auto                                       points_in_element         = st.points_in_element;
   hpc::device_vector<node_index, point_node_index> point_node_indices;
   point_node_indices.resize(st.points.size() * st.nodes_in_element.size());
   auto points_to_point_nodes = st.points * st.nodes_in_element;
@@ -63,7 +63,7 @@ collect_points_to_nodes_from_elements(const state& st)
       auto point       = element_points[point_ordinal];
       auto point_nodes = points_to_point_nodes[point];
       for (const auto node_ordinal : nodes_in_element) {
-        const auto node = element_nodes_to_nodes[element_nodes[node_ordinal]];
+        const auto node                          = element_nodes_to_nodes[element_nodes[node_ordinal]];
         const auto point_node                    = point_nodes[node_ordinal];
         points_to_nodes[hpc::weaken(point_node)] = node;
       }
@@ -76,16 +76,13 @@ collect_points_to_nodes_from_elements(const state& st)
 namespace lgr_unit {
 
 void
-check_connectivity_sizes(
-    const lgr::state&                st,
-    const nodes_in_support_size_type expected_num_support_nodes)
+check_connectivity_sizes(const lgr::state& st, const nodes_in_support_size_type expected_num_support_nodes)
 {
   auto support_nodes     = st.points_to_point_nodes.cbegin();
   auto check_points_func = DEVICE_TEST(point_index const point)
   {
     auto point_support_node_range = support_nodes[point];
-    DEVICE_EXPECT_EQ(
-        point_support_node_range.size(), expected_num_support_nodes);
+    DEVICE_EXPECT_EQ(point_support_node_range.size(), expected_num_support_nodes);
   };
   unit::test_for_each(hpc::device_policy(), st.points, check_points_func);
 }
@@ -102,8 +99,7 @@ check_meshfree_against_mesh_connectivities(const lgr::state& st)
   {
     auto point_support_nodes = supports[point];
     for (auto n : point_support_nodes) {
-      DEVICE_EXPECT_EQ(
-          expected_points_to_nodes[hpc::weaken(n)], support_nodes_to_nodes[n]);
+      DEVICE_EXPECT_EQ(expected_points_to_nodes[hpc::weaken(n)], support_nodes_to_nodes[n]);
     }
   };
   unit::test_for_each(hpc::device_policy(), st.points, pt_func);

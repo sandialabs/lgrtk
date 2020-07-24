@@ -87,12 +87,8 @@ HPC_NOINLINE void
 test_for_each(PolicyType policy, Range const& range, const FuncType func)
 {
   int  init(0);
-  auto num_test_failures = hpc::transform_reduce(
-      policy,
-      range,
-      init,
-      hpc::plus<int>(),
-      impl::device_test<FuncType, Range>(func));
+  auto num_test_failures =
+      hpc::transform_reduce(policy, range, init, hpc::plus<int>(), impl::device_test<FuncType, Range>(func));
   EXPECT_EQ(num_test_failures, 0);
 }
 

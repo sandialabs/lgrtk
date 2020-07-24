@@ -13,7 +13,7 @@ compute_connected_neighbor_squared_distances(
     const hpc::counting_range<Index>&                             indices,
     const hpc::device_array_vector<hpc::position<double>, Index>& positions,
     const nearest_neighbors<Index>&                               n,
-    hpc::device_vector<hpc::length<double>, Index>& squared_distances)
+    hpc::device_vector<hpc::length<double>, Index>&               squared_distances)
 {
   auto x               = positions.cbegin();
   auto total_neighbors = n.entities_to_neighbors.size();
@@ -34,20 +34,18 @@ compute_connected_neighbor_squared_distances(
 
 template void
 compute_connected_neighbor_squared_distances(
-    const hpc::counting_range<node_index>& indices,
-    const hpc::device_array_vector<hpc::position<double>, node_index>&
-                                                         positions,
-    const search_util::nearest_neighbors<node_index>&    n,
-    hpc::device_vector<hpc::length<double>, node_index>& squared_distances);
+    const hpc::counting_range<node_index>&                             indices,
+    const hpc::device_array_vector<hpc::position<double>, node_index>& positions,
+    const search_util::nearest_neighbors<node_index>&                  n,
+    hpc::device_vector<hpc::length<double>, node_index>&               squared_distances);
 
 #ifdef HPC_ENABLE_STRONG_INDICES
 template void
 compute_connected_neighbor_squared_distances(
-    const hpc::counting_range<point_index>& indices,
-    const hpc::device_array_vector<hpc::position<double>, point_index>&
-                                                          positions,
-    const search_util::nearest_neighbors<point_index>&    n,
-    hpc::device_vector<hpc::length<double>, point_index>& squared_distances);
+    const hpc::counting_range<point_index>&                             indices,
+    const hpc::device_array_vector<hpc::position<double>, point_index>& positions,
+    const search_util::nearest_neighbors<point_index>&                  n,
+    hpc::device_vector<hpc::length<double>, point_index>&               squared_distances);
 #endif
 
 }  // namespace search_util

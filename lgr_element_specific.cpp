@@ -26,9 +26,7 @@ initialize_grad_N(input const& in, state& s)
     case BAR: initialize_bar_grad_N(s); break;
     case TRIANGLE: initialize_triangle_grad_N(s); break;
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s); break;
-    case COMPOSITE_TETRAHEDRON:
-      initialize_composite_tetrahedron_grad_N(s);
-      break;
+    case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_grad_N(s); break;
   }
 }
 
@@ -39,11 +37,11 @@ update_h_min_height(input const&, state& s)
   auto const elements_to_h_min     = s.h_min.begin();
   auto const points_to_point_nodes = s.points * s.nodes_in_element;
   auto const elements_to_points    = s.elements * s.points_in_element;
-  auto       functor = [=] HPC_DEVICE(element_index const element) {
+  auto       functor               = [=] HPC_DEVICE(element_index const element) {
     constexpr point_in_element_index fp(0);
-    auto const                       point = elements_to_points[element][fp];
-    hpc::length<double> min_height  = hpc::numeric_limits<double>::max();
-    auto const          point_nodes = points_to_point_nodes[point];
+    auto const                       point       = elements_to_points[element][fp];
+    hpc::length<double>              min_height  = hpc::numeric_limits<double>::max();
+    auto const                       point_nodes = points_to_point_nodes[point];
     for (auto const point_node : point_nodes) {
       auto const grad_N = point_nodes_to_grad_N[point_node].load();
       auto const height = 1.0 / norm(grad_N);
@@ -107,15 +105,15 @@ update_nodal_mass_uniform(state& s, material_index const material)
   auto const points_to_rho             = s.rho.cbegin();
   auto const points_to_V               = s.V.cbegin();
   assert(s.material_mass[material].size() == s.nodes.size());
-  auto const nodes_to_m = s.material_mass[material].begin();
-  auto const N          = 1.0 / double(hpc::weaken(s.nodes_in_element.size()));
+  auto const nodes_to_m           = s.material_mass[material].begin();
+  auto const N                    = 1.0 / double(hpc::weaken(s.nodes_in_element.size()));
   auto const elements_to_points   = s.elements * s.points_in_element;
   auto const elements_to_material = s.material.cbegin();
   auto       functor              = [=] HPC_DEVICE(node_index const node) {
     hpc::mass<double> m(0.0);
     auto const        node_elements = nodes_to_node_elements[node];
     for (auto const node_element : node_elements) {
-      element_index const  element = node_elements_to_elements[node_element];
+      element_index const  element          = node_elements_to_elements[node_element];
       material_index const element_material = elements_to_material[element];
       if (element_material != material) continue;
       for (auto const point : elements_to_points[element]) {
@@ -137,9 +135,7 @@ update_nodal_mass(input const& in, state& s)
       case BAR:
       case TRIANGLE:
       case TETRAHEDRON: update_nodal_mass_uniform(s, material); break;
-      case COMPOSITE_TETRAHEDRON:
-        update_nodal_mass_composite_tetrahedron(s, material);
-        break;
+      case COMPOSITE_TETRAHEDRON: update_nodal_mass_composite_tetrahedron(s, material); break;
     }
   }
   hpc::fill(hpc::device_policy(), s.mass, hpc::mass<double>(0.0));

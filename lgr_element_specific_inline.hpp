@@ -19,9 +19,7 @@ tetrahedron_volume(hpc::array<hpc::position<double>, 4> const x)
 }
 
 HPC_HOST_DEVICE inline auto
-triangle_basis_gradients(
-    hpc::array<hpc::position<double>, 3> const x,
-    hpc::area<double> const                    area) noexcept
+triangle_basis_gradients(hpc::array<hpc::position<double>, 3> const x, hpc::area<double> const area) noexcept
 {
   hpc::displacement<double> edge_vectors[3];
   edge_vectors[0] = x[1] - x[0];
@@ -37,17 +35,15 @@ triangle_basis_gradients(
 }
 
 HPC_HOST_DEVICE inline auto
-tetrahedron_basis_gradients(
-    hpc::array<hpc::position<double>, 4> const x,
-    hpc::volume<double> const                  volume) noexcept
+tetrahedron_basis_gradients(hpc::array<hpc::position<double>, 4> const x, hpc::volume<double> const volume) noexcept
 {
   hpc::displacement<double> ev[5];
-  ev[0]             = x[1] - x[0];
-  ev[1]             = x[2] - x[0];
-  ev[2]             = x[3] - x[0];
-  ev[3]             = x[2] - x[1];
-  ev[4]             = x[3] - x[1];
-  auto const factor = (1.0 / 6.0) * (1.0 / volume);
+  ev[0]                                             = x[1] - x[0];
+  ev[1]                                             = x[2] - x[0];
+  ev[2]                                             = x[3] - x[0];
+  ev[3]                                             = x[2] - x[1];
+  ev[4]                                             = x[3] - x[1];
+  auto const                                 factor = (1.0 / 6.0) * (1.0 / volume);
   hpc::array<hpc::basis_gradient<double>, 4> grad_N;
   grad_N[0] = cross(ev[4], ev[3]) * factor;
   grad_N[1] = cross(ev[1], ev[2]) * factor;

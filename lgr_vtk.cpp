@@ -18,8 +18,7 @@ namespace lgr {
 static void
 write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s)
 {
-  stream << "CELLS " << s.elements.size() << " "
-         << s.elements.size() * (s.nodes_in_element.size() + 1) << "\n";
+  stream << "CELLS " << s.elements.size() << " " << s.elements.size() * (s.nodes_in_element.size() + 1) << "\n";
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes    = s.element_nodes_to_nodes.cbegin();
   for (auto const element_nodes : elements_to_element_nodes) {
@@ -38,15 +37,11 @@ write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s)
     case TETRAHEDRON: cell_type = 10; break;
     case COMPOSITE_TETRAHEDRON: cell_type = 24; break;
   }
-  for (element_index i(0); i < s.elements.size(); ++i) {
-    stream << cell_type << "\n";
-  }
+  for (element_index i(0); i < s.elements.size(); ++i) { stream << cell_type << "\n"; }
 }
 
 static void
-write_vtk_materials(
-    std::ostream&                                            stream,
-    hpc::pinned_vector<material_index, element_index> const& vec)
+write_vtk_materials(std::ostream& stream, hpc::pinned_vector<material_index, element_index> const& vec)
 {
   stream << "SCALARS material int 1\n";
   stream << "LOOKUP_TABLE default\n";
@@ -64,10 +59,7 @@ write_vtk_scalars(
 {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix =
-        (points_in_element.size() == 1) ?
-            "" :
-            (std::string("_") + std::to_string(hpc::weaken(qp)));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "SCALARS " << name << suffix << " double 1\n";
     stream << "LOOKUP_TABLE default\n";
     for (auto const e : elements) {
@@ -80,18 +72,15 @@ write_vtk_scalars(
 template <class Quantity>
 static void
 write_vtk_vectors(
-    std::ostream&                                     stream,
-    char const*                                       name,
-    hpc::counting_range<element_index> const          elements,
-    hpc::counting_range<point_in_element_index> const points_in_element,
+    std::ostream&                                                        stream,
+    char const*                                                          name,
+    hpc::counting_range<element_index> const                             elements,
+    hpc::counting_range<point_in_element_index> const                    points_in_element,
     hpc::pinned_array_vector<hpc::vector3<Quantity>, point_index> const& vec)
 {
   auto const elements_to_points = elements * points_in_element;
   for (auto const qp : points_in_element) {
-    std::string suffix =
-        (points_in_element.size() == 1) ?
-            "" :
-            (std::string("_") + std::to_string(hpc::weaken(qp)));
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
     stream << "VECTORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
@@ -123,8 +112,7 @@ file_writer::capture(input const& in, state const& s)
   captured.e_h.resize(s.e_h.size());
   captured.rho_h.resize(s.rho_h.size());
   for (material_index const material : in.materials) {
-    if (in.enable_nodal_pressure[material] ||
-        in.enable_nodal_energy[material]) {
+    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
       captured.p_h[material].resize(s.p_h[material].size());
       hpc::copy(s.p_h[material], captured.p_h[material]);
     }
@@ -144,11 +132,9 @@ file_writer::capture(input const& in, state const& s)
     hpc::copy(s.h_adapt, captured.h_adapt);
   }
   auto have_nodal_pressure_or_energy = [&](material_index const material) {
-    return in.enable_nodal_pressure[material] ||
-           in.enable_nodal_energy[material];
+    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(
-          hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     captured.p.resize(s.p.size());
     hpc::copy(s.p, captured.p);
   }
@@ -191,8 +177,7 @@ file_writer::write(input const& in, int const file_output_index)
   assert(captured.v.size() == captured.nodes.size());
   write_vtk_vectors(stream, "velocity", captured.v);
   for (material_index const material : in.materials) {
-    if (in.enable_nodal_pressure[material] ||
-        in.enable_nodal_energy[material]) {
+    if (in.enable_nodal_pressure[material] || in.enable_nodal_energy[material]) {
       std::stringstream name_stream;
       name_stream << "nodal_pressure_" << material;
       auto name = name_stream.str();
@@ -223,53 +208,23 @@ file_writer::write(input const& in, int const file_output_index)
   // CELLS
   write_vtk_cell_data(stream, captured);
   auto have_nodal_pressure_or_energy = [&](material_index const material) {
-    return in.enable_nodal_pressure[material] ||
-           in.enable_nodal_energy[material];
+    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(
-          hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
-    write_vtk_scalars(
-        stream,
-        "pressure",
-        captured.elements,
-        captured.points_in_element,
-        captured.p);
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+    write_vtk_scalars(stream, "pressure", captured.elements, captured.points_in_element, captured.p);
   }
   if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
-    write_vtk_scalars(
-        stream,
-        "energy",
-        captured.elements,
-        captured.points_in_element,
-        captured.e);
-    write_vtk_scalars(
-        stream,
-        "density",
-        captured.elements,
-        captured.points_in_element,
-        captured.rho);
+    write_vtk_scalars(stream, "energy", captured.elements, captured.points_in_element, captured.e);
+    write_vtk_scalars(stream, "density", captured.elements, captured.points_in_element, captured.rho);
   }
   if (hpc::any_of(hpc::serial_policy(), in.enable_nodal_energy)) {
-    write_vtk_vectors(
-        stream, "q", captured.elements, captured.points_in_element, captured.q);
+    write_vtk_vectors(stream, "q", captured.elements, captured.points_in_element, captured.q);
     if (hpc::any_of(hpc::serial_policy(), in.enable_p_prime)) {
-      write_vtk_scalars(
-          stream,
-          "p_prime",
-          captured.elements,
-          captured.points_in_element,
-          captured.p_prime);
+      write_vtk_scalars(stream, "p_prime", captured.elements, captured.points_in_element, captured.p_prime);
     }
   }
-  write_vtk_scalars(
-      stream,
-      "time_step",
-      captured.elements,
-      captured.points_in_element,
-      captured.element_dt);
-  if (in.enable_adapt) {
-    write_vtk_scalars(stream, "quality", captured.quality);
-  }
+  write_vtk_scalars(stream, "time_step", captured.elements, captured.points_in_element, captured.element_dt);
+  if (in.enable_adapt) { write_vtk_scalars(stream, "quality", captured.quality); }
   write_vtk_materials(stream, captured.material);
   stream.close();
 }

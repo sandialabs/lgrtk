@@ -19,14 +19,13 @@ namespace lgr {
 template <typename Index>
 HPC_NOINLINE inline void
 evaluate_adapt(
-    const hpc::device_vector<hpc::length<double>, Index>&
-                                                    nearest_neighbor_dists,
-    const hpc::device_vector<Index, Index>&         nearest_neighbors,
-    const hpc::counting_range<Index>&               range,
-    const hpc::length<double>                       nearest_criterion,
-    hpc::device_vector<hpc::length<double>, Index>& criteria,
-    hpc::device_vector<Index, Index>&               other_entities,
-    hpc::device_vector<adapt_op, Index>&            adapt_ops)
+    const hpc::device_vector<hpc::length<double>, Index>& nearest_neighbor_dists,
+    const hpc::device_vector<Index, Index>&               nearest_neighbors,
+    const hpc::counting_range<Index>&                     range,
+    const hpc::length<double>                             nearest_criterion,
+    hpc::device_vector<hpc::length<double>, Index>&       criteria,
+    hpc::device_vector<Index, Index>&                     other_entities,
+    hpc::device_vector<adapt_op, Index>&                  adapt_ops)
 {
   assert(criteria.size() == range.size());
   auto others         = other_entities.begin();
@@ -48,10 +47,7 @@ evaluate_adapt(
 }
 
 HPC_NOINLINE inline void
-evaluate_node_adapt(
-    const state&              s,
-    otm_adapt_state&          a,
-    const hpc::length<double> min_dist)
+evaluate_node_adapt(const state& s, otm_adapt_state& a, const hpc::length<double> min_dist)
 {
   evaluate_adapt(
       s.nearest_node_neighbor_dist,
@@ -64,10 +60,7 @@ evaluate_node_adapt(
 }
 
 HPC_NOINLINE inline void
-evaluate_point_adapt(
-    const state&              s,
-    otm_adapt_state&          a,
-    const hpc::length<double> min_dist)
+evaluate_point_adapt(const state& s, otm_adapt_state& a, const hpc::length<double> min_dist)
 {
   search_util::point_neighbors n;
   search::do_otm_point_nearest_point_search(s, n, 1);
@@ -131,12 +124,8 @@ template <typename Index>
 HPC_NOINLINE inline int
 get_num_chosen_for_adapt(const hpc::device_vector<adapt_op, Index>& ops)
 {
-  auto const num_chosen = hpc::transform_reduce(
-      hpc::device_policy(),
-      ops,
-      int(0),
-      hpc::plus<int>(),
-      [] HPC_DEVICE(adapt_op const op) {
+  auto const num_chosen =
+      hpc::transform_reduce(hpc::device_policy(), ops, int(0), hpc::plus<int>(), [] HPC_DEVICE(adapt_op const op) {
         return op == adapt_op::NONE ? 0 : 1;
       });
   return num_chosen;
@@ -145,13 +134,12 @@ get_num_chosen_for_adapt(const hpc::device_vector<adapt_op, Index>& ops)
 template <typename Index>
 HPC_NOINLINE inline void
 apply_adapt(
-    const hpc::counting_range<Index>&          range,
-    const hpc::device_vector<adapt_op, Index>& ops,
-    const hpc::device_vector<Index, Index>&    others,
-    hpc::device_vector<Index, Index>&          old_to_new,
-    hpc::device_vector<bool, Index>&           new_are_same,
-    hpc::device_array_vector<hpc::array<Index, 2, int>, Index>&
-        interpolate_from)
+    const hpc::counting_range<Index>&                           range,
+    const hpc::device_vector<adapt_op, Index>&                  ops,
+    const hpc::device_vector<Index, Index>&                     others,
+    hpc::device_vector<Index, Index>&                           old_to_new,
+    hpc::device_vector<bool, Index>&                            new_are_same,
+    hpc::device_array_vector<hpc::array<Index, 2, int>, Index>& interpolate_from)
 {
   hpc::fill(hpc::device_policy(), new_are_same, true);
   auto const entity_to_op              = ops.cbegin();
@@ -180,12 +168,7 @@ HPC_NOINLINE inline void
 apply_node_adapt(const state& s, otm_adapt_state& a)
 {
   apply_adapt(
-      s.nodes,
-      a.node_op,
-      a.other_node,
-      a.old_nodes_to_new_nodes,
-      a.new_nodes_are_same,
-      a.interpolate_from_nodes);
+      s.nodes, a.node_op, a.other_node, a.old_nodes_to_new_nodes, a.new_nodes_are_same, a.interpolate_from_nodes);
 }
 
 HPC_NOINLINE inline void
@@ -204,24 +187,14 @@ template <class Range>
 HPC_NOINLINE inline void
 interpolate_nodal_data(const otm_adapt_state& a, Range& data)
 {
-  interpolate_data(
-      a.new_nodes,
-      a.new_nodes_to_old_nodes,
-      a.new_nodes_are_same,
-      a.interpolate_from_nodes,
-      data);
+  interpolate_data(a.new_nodes, a.new_nodes_to_old_nodes, a.new_nodes_are_same, a.interpolate_from_nodes, data);
 }
 
 template <class Range>
 HPC_NOINLINE inline void
 interpolate_point_data(const otm_adapt_state& a, Range& data)
 {
-  interpolate_data(
-      a.new_points,
-      a.new_points_to_old_points,
-      a.new_points_are_same,
-      a.interpolate_from_points,
-      data);
+  interpolate_data(a.new_points, a.new_points_to_old_points, a.new_points_are_same, a.interpolate_from_points, data);
 }
 
 template <class Range>
@@ -229,23 +202,14 @@ HPC_NOINLINE inline void
 lie_interpolate_point_data(const otm_adapt_state& a, Range& data)
 {
   lie_interpolate_data(
-      a.new_points,
-      a.new_points_to_old_points,
-      a.new_points_are_same,
-      a.interpolate_from_points,
-      data);
+      a.new_points, a.new_points_to_old_points, a.new_points_are_same, a.interpolate_from_points, data);
 }
 
 template <class Range>
 HPC_NOINLINE inline void
 distribute_point_data(const otm_adapt_state& a, Range& data)
 {
-  distribute_data(
-      a.new_points,
-      a.new_points_to_old_points,
-      a.new_points_are_same,
-      a.interpolate_from_points,
-      data);
+  distribute_data(a.new_points, a.new_points_to_old_points, a.new_points_are_same, a.interpolate_from_points, data);
 }
 
 }  // namespace lgr

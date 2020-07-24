@@ -30,8 +30,7 @@ neo_Hookean_point(
   sigma           = 0.5 * K * (J - Jinv) + (G * Jm53) * devB;
   Keff            = 0.5 * K * (J + Jinv);
   Geff            = G;
-  potential       = 0.5 * G * (Jm23 * trace(B) - 3.0) +
-              0.5 * K * (0.5 * (J * J - 1.0) - log(J));
+  potential       = 0.5 * G * (Jm23 * trace(B) - 3.0) + 0.5 * K * (0.5 * (J * J - 1.0) - log(J));
 }
 
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
@@ -84,9 +83,8 @@ variational_J2_point(
       auto ls_is_finished = false;
       auto delta_eqps0    = delta_eqps;
       merit_old           = r * r;
-      auto H              = j2::HardeningRate(props, eqps + delta_eqps) +
-               j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
-      auto dr         = -3.0 * G - H;
+      auto H  = j2::HardeningRate(props, eqps + delta_eqps) + j2::ViscoplasticHardeningRate(props, delta_eqps, dt);
+      auto dr = -3.0 * G - H;
       auto correction = -r / dr;
 
       // line search
@@ -114,23 +112,17 @@ variational_J2_point(
           ls_is_finished = true;
         } else {
           auto alpha_old = alpha;
-          alpha          = alpha_old * alpha_old * merit_old /
-                  (merit_new - merit_old + 2.0 * alpha_old * merit_old);
-          if (backtrack_factor * alpha_old > alpha) {
-            alpha = backtrack_factor * alpha_old;
-          }
+          alpha          = alpha_old * alpha_old * merit_old / (merit_new - merit_old + 2.0 * alpha_old * merit_old);
+          if (backtrack_factor * alpha_old > alpha) { alpha = backtrack_factor * alpha_old; }
         }
       }
-      auto S = j2::FlowStrength(props, eqps + delta_eqps) +
-               j2::ViscoplasticStress(props, delta_eqps, dt);
+      auto S    = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);
       r         = sigma_tr_eff - 3.0 * G * delta_eqps - S;
-      converged = (std::abs(r / r0) < residual_tolerance) ||
-                  (delta_eqps < deqps_tolerance);
+      converged = (std::abs(r / r0) < residual_tolerance) || (delta_eqps < deqps_tolerance);
       ++iters;
     }
     if (!converged) {
-      HPC_DUMP(
-          "variational J2 did not converge to specified tolerance 1.0e-10\n");
+      HPC_DUMP("variational J2 did not converge to specified tolerance 1.0e-10\n");
       // TODO: handle non-convergence error
     }
     // std::cout << "variational J2 converged in " << iters << " iterations" <<
@@ -141,8 +133,8 @@ variational_J2_point(
   }
   auto Ee_correction = delta_eqps * Np;
   auto dev_Ee        = dev_Ee_tr - Ee_correction;
-  auto dev_sigma     = 1.0 / J * hpc::transpose(hpc::inverse(Fe_tr)) *
-                   (dev_M_tr - 2.0 * G * Ee_correction) * hpc::transpose(Fe_tr);
+  auto dev_sigma =
+      1.0 / J * hpc::transpose(hpc::inverse(Fe_tr)) * (dev_M_tr - 2.0 * G * Ee_correction) * hpc::transpose(Fe_tr);
 
   auto We_dev   = G * hpc::inner_product(dev_Ee, dev_Ee);
   auto psi_star = j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);

@@ -22,10 +22,7 @@ class vector3
   scalar_type raw[3];
 
  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr vector3(
-      Scalar const x,
-      Scalar const y,
-      Scalar const z) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr vector3(Scalar const x, Scalar const y, Scalar const z) noexcept
       : raw{x, y, z}
   {
   }
@@ -37,10 +34,7 @@ class vector3
                     operator=(vector3<scalar_type> const&) noexcept = default;
   template <class S2>
   HPC_ALWAYS_INLINE explicit vector3(vector3<S2> const& other) noexcept
-      : vector3(
-            scalar_type(other(0)),
-            scalar_type(other(1)),
-            scalar_type(other(2)))
+      : vector3(scalar_type(other(0)), scalar_type(other(1)), scalar_type(other(2)))
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type
@@ -130,8 +124,7 @@ template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(vector3<L> const left, R const right) noexcept
 {
-  return vector3<decltype(L() * R())>(
-      left(0) * right, left(1) * right, left(2) * right);
+  return vector3<decltype(L() * R())>(left(0) * right, left(1) * right, left(2) * right);
 }
 
 template <class L, class R>
@@ -154,8 +147,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator/(vector3<L> const left, R const right) noexcept
 {
   auto const factor = 1.0 / right;
-  return vector3<decltype(L() / R())>(
-      left(0) * factor, left(1) * factor, left(2) * factor);
+  return vector3<decltype(L() / R())>(left(0) * factor, left(1) * factor, left(2) * factor);
 }
 
 template <class L, class R>

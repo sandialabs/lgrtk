@@ -20,11 +20,8 @@ class quaternion
   scalar_type raw[4];
 
  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quaternion(
-      Scalar const w,
-      Scalar const x,
-      Scalar const y,
-      Scalar const z) noexcept
+  HPC_ALWAYS_INLINE
+      HPC_HOST_DEVICE constexpr quaternion(Scalar const w, Scalar const x, Scalar const y, Scalar const z) noexcept
       : raw{w, x, y, z}
   {
   }
@@ -36,11 +33,7 @@ class quaternion
                     operator=(quaternion<scalar_type> const&) noexcept = default;
   template <class S2>
   HPC_ALWAYS_INLINE explicit quaternion(quaternion<S2> const& other) noexcept
-      : quaternion(
-            scalar_type(other(0)),
-            scalar_type(other(1)),
-            scalar_type(other(2)),
-            scalar_type(other(3)))
+      : quaternion(scalar_type(other(0)), scalar_type(other(1)), scalar_type(other(2)), scalar_type(other(3)))
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr scalar_type
@@ -84,11 +77,7 @@ template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator+(quaternion<T> const left, quaternion<T> const right) noexcept
 {
-  return quaternion<T>(
-      left(0) + right(0),
-      left(1) + right(1),
-      left(2) + right(2),
-      left(3) + right(3));
+  return quaternion<T>(left(0) + right(0), left(1) + right(1), left(2) + right(2), left(3) + right(3));
 }
 
 template <typename T>
@@ -110,11 +99,7 @@ template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(quaternion<T> const left, quaternion<T> const right) noexcept
 {
-  return quaternion<T>(
-      left(0) - right(0),
-      left(1) - right(1),
-      left(2) - right(2),
-      left(3) - right(3));
+  return quaternion<T>(left(0) - right(0), left(1) - right(1), left(2) - right(2), left(3) - right(3));
 }
 
 template <typename T>
@@ -129,8 +114,7 @@ template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 inner_product(quaternion<L> const left, quaternion<R> const right) noexcept
 {
-  return left(0) * right(0) + left(1) * right(1) + left(2) * right(2) +
-         left(3) * right(3);
+  return left(0) * right(0) + left(1) * right(1) + left(2) * right(2) + left(3) * right(3);
 }
 
 template <typename L, typename R>
@@ -144,8 +128,7 @@ template <typename L, typename R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(quaternion<L> const left, R const right) noexcept
 {
-  return quaternion<decltype(L() * R())>(
-      left(0) * right, left(1) * right, left(2) * right, left(3) * right);
+  return quaternion<decltype(L() * R())>(left(0) * right, left(1) * right, left(2) * right, left(3) * right);
 }
 
 template <typename L, typename R>
@@ -168,8 +151,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator/(quaternion<L> const left, R const right) noexcept
 {
   auto const factor = 1.0 / right;
-  return quaternion<decltype(L() / R())>(
-      left(0) * factor, left(1) * factor, left(2) * factor, left(3) * factor);
+  return quaternion<decltype(L() / R())>(left(0) * factor, left(1) * factor, left(2) * factor, left(3) * factor);
 }
 
 template <typename L, typename R>
@@ -347,11 +329,10 @@ template <typename T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 Psi(T const x) noexcept
 {
-  auto const y  = std::abs(x);
-  auto const e2 = std::sqrt(hpc::machine_epsilon<double>());
-  auto const e4 = std::sqrt(e2);
-  auto const psi =
-      y > e4 ? std::sin(y) / y : (y > e2 ? 1.0 - y * y / 6.0 : 1.0);
+  auto const y   = std::abs(x);
+  auto const e2  = std::sqrt(hpc::machine_epsilon<double>());
+  auto const e4  = std::sqrt(e2);
+  auto const psi = y > e4 ? std::sin(y) / y : (y > e2 ? 1.0 - y * y / 6.0 : 1.0);
   return psi;
 }
 
@@ -361,8 +342,7 @@ quaternion_from_rotation_vector(vector3<T> const w) noexcept
 {
   auto const halfnorm = 0.5 * norm(w);
   auto const factor   = 0.5 * Psi(halfnorm);
-  auto const q        = quaternion<T>(
-      std::cos(halfnorm), factor * w(0), factor * w(1), factor * w(2));
+  auto const q        = quaternion<T>(std::cos(halfnorm), factor * w(0), factor * w(1), factor * w(2));
   return q;
 }
 
@@ -373,8 +353,7 @@ rotation_tensor_from_quaternion(quaternion<T> const q) noexcept
   auto const qs = q(0);
   auto const qv = vector3<T>(q(1), q(2), q(3));
   auto const I  = matrix3x3<T>::identity();
-  auto const R  = 2.0 * outer_product(qv, qv) + 2.0 * qs * check(qv) +
-                 (2.0 * qs * qs - 1.0) * I;
+  auto const R  = 2.0 * outer_product(qv, qv) + 2.0 * qs * check(qv) + (2.0 * qs * qs - 1.0) * I;
   return R;
 }
 

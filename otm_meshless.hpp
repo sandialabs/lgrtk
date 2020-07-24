@@ -24,10 +24,7 @@ otm_set_beta(double gamma, state& s);
 void
 otm_time_integrator_step(input const& in, state& s);
 void
-otm_update_material_state(
-    input const&         in,
-    state&               s,
-    material_index const material);
+otm_update_material_state(input const& in, state& s, material_index const material);
 void
 otm_update_neighbor_distances(state& s);
 void

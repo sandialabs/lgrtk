@@ -60,9 +60,7 @@ TEST_F(adapt, can_create_otm_adapt_state_from_lgr_state)
 }
 
 HPC_NOINLINE inline void
-expect_all_nodes_are_adaptivity_candidates(
-    const otm_adapt_state& a,
-    const state&           s)
+expect_all_nodes_are_adaptivity_candidates(const otm_adapt_state& a, const state& s)
 {
   auto ops        = a.node_op.cbegin();
   auto other      = a.other_node.cbegin();
@@ -75,9 +73,7 @@ expect_all_nodes_are_adaptivity_candidates(
 }
 
 HPC_NOINLINE inline void
-expect_all_points_are_adaptivity_candidates(
-    const otm_adapt_state& a,
-    const state&           s)
+expect_all_points_are_adaptivity_candidates(const otm_adapt_state& a, const state& s)
 {
   auto ops        = a.point_op.cbegin();
   auto other      = a.other_point.cbegin();
@@ -156,15 +152,13 @@ check_choose_adapt_for_all_split(
 HPC_NOINLINE inline void
 check_choose_node_adapt_for_all_split(const state& s, const otm_adapt_state& a)
 {
-  check_choose_adapt_for_all_split(
-      s.nodes, a.other_node, a.node_op, a.node_counts);
+  check_choose_adapt_for_all_split(s.nodes, a.other_node, a.node_op, a.node_counts);
 }
 
 HPC_NOINLINE inline void
 check_choose_point_adapt_for_all_split(const state& s, const otm_adapt_state& a)
 {
-  check_choose_adapt_for_all_split(
-      s.points, a.other_point, a.point_op, a.point_counts);
+  check_choose_adapt_for_all_split(s.points, a.other_point, a.point_op, a.point_counts);
 }
 
 TEST_F(adapt, can_choose_correct_node_adaptivity_based_on_nearest_neighbor)
@@ -229,9 +223,7 @@ check_point_node_connectivities_after_single_tet_node_adapt(const state& s)
       DEVICE_ASSERT_LT(node, node_index(7));
       node_connect_found[node] = true;
     }
-    for (const bool found : node_connect_found) {
-      DEVICE_EXPECT_EQ(found, true);
-    }
+    for (const bool found : node_connect_found) { DEVICE_EXPECT_EQ(found, true); }
   };
   unit::test_for_each(hpc::device_policy(), s.points, point_check_func);
 }
@@ -251,12 +243,10 @@ TEST_F(adapt, can_apply_node_adaptivity)
   auto const num_chosen = get_num_chosen_for_adapt(a.node_op);
   ASSERT_EQ(num_chosen, 3);
 
-  auto const num_new_nodes =
-      hpc::reduce(hpc::device_policy(), a.node_counts, node_index(0));
+  auto const num_new_nodes = hpc::reduce(hpc::device_policy(), a.node_counts, node_index(0));
   ASSERT_EQ(num_new_nodes, 7);
 
-  hpc::offset_scan(
-      hpc::device_policy(), a.node_counts, a.old_nodes_to_new_nodes);
+  hpc::offset_scan(hpc::device_policy(), a.node_counts, a.old_nodes_to_new_nodes);
   a.new_nodes.resize(num_new_nodes);
   a.new_nodes_to_old_nodes.resize(num_new_nodes);
   a.new_nodes_are_same.resize(num_new_nodes);
@@ -324,12 +314,10 @@ TEST_F(adapt, can_apply_point_adaptivity)
   auto const num_chosen = get_num_chosen_for_adapt(a.point_op);
   ASSERT_EQ(num_chosen, 1);
 
-  auto const num_new_points =
-      hpc::reduce(hpc::device_policy(), a.point_counts, point_index(0));
+  auto const num_new_points = hpc::reduce(hpc::device_policy(), a.point_counts, point_index(0));
   ASSERT_EQ(num_new_points, 3);
 
-  hpc::offset_scan(
-      hpc::device_policy(), a.point_counts, a.old_points_to_new_points);
+  hpc::offset_scan(hpc::device_policy(), a.point_counts, a.old_points_to_new_points);
   a.new_points.resize(num_new_points);
   a.new_points_to_old_points.resize(num_new_points);
   a.new_points_are_same.resize(num_new_points);
@@ -338,8 +326,7 @@ TEST_F(adapt, can_apply_point_adaptivity)
 
   apply_point_adapt(s, a);
   interpolate_point_data(a, s.xp);
-  interpolate_point_data(
-      a, s.h_otm);  // TODO: what to do? search depends on length...
+  interpolate_point_data(a, s.h_otm);  // TODO: what to do? search depends on length...
   s.points = a.new_points;
   search::do_otm_iterative_point_support_search(s, 5);
 

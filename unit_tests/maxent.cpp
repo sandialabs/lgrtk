@@ -23,8 +23,8 @@ TEST(maxent, partition_unity_value_1)
 
   auto         num_points = s.points.size();
   double const init       = -num_points;
-  auto const error = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
-  auto const eps   = hpc::machine_epsilon<double>();
+  auto const   error      = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
+  auto const   eps        = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -37,8 +37,8 @@ TEST(maxent, partition_unity_value_2)
 
   auto         num_points = s.points.size();
   double const init       = -num_points;
-  auto const error = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
-  auto const eps   = hpc::machine_epsilon<double>();
+  auto const   error      = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
+  auto const   eps        = hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -51,8 +51,8 @@ TEST(maxent, partition_unity_value_3)
 
   auto         num_points = s.points.size();
   double const init       = -num_points;
-  auto const error = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
-  auto const eps   = 3 * hpc::machine_epsilon<double>();
+  auto const   error      = hpc::reduce(hpc::device_policy(), s.N, init) / num_points;
+  auto const   eps        = 3 * hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -75,12 +75,8 @@ compute_basis_gradient_error(lgr::state const& s)
     return hpc::abs(s);
   };
   hpc::basis_gradient<double> init(0, 0, 0);
-  auto const                  errors = hpc::transform_reduce(
-      hpc::device_policy(),
-      s.points,
-      init,
-      hpc::plus<hpc::basis_gradient<double> >(),
-      functor);
+  auto const                  errors =
+      hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::basis_gradient<double> >(), functor);
   return hpc::norm(errors / num_points) / 3.;
 }
 
@@ -133,7 +129,7 @@ compute_linear_reproducibility_error(const lgr::state& s)
   auto const nodes_to_x            = s.x.begin();
   auto const supports              = s.points_to_point_nodes.cbegin();
   auto const points_to_point_nodes = s.point_nodes_to_nodes.cbegin();
-  auto       functor = [=] HPC_DEVICE(lgr::point_index const point) {
+  auto       functor               = [=] HPC_DEVICE(lgr::point_index const point) {
     auto const            support = supports[point];
     auto const            xp      = points_to_xp[point].load();
     hpc::position<double> x(0, 0, 0);
@@ -146,12 +142,8 @@ compute_linear_reproducibility_error(const lgr::state& s)
     return hpc::abs(x - xp);
   };
   hpc::position<double> init(0, 0, 0);
-  auto const            errors = hpc::transform_reduce(
-      hpc::device_policy(),
-      s.points,
-      init,
-      hpc::plus<hpc::position<double> >(),
-      functor);
+  auto const            errors =
+      hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::position<double> >(), functor);
   return hpc::norm(errors / (3 * num_points));
 }
 

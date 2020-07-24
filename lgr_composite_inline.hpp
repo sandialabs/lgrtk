@@ -507,20 +507,13 @@ get_gamma(gamma_t& gamma) noexcept
 }
 
 HPC_NOINLINE HPC_HOST_DEVICE inline void
-get_O(
-    hpc::array<hpc::vector3<double>, 10> const& x,
-    S_t const&                                  S,
-    O_t&                                        O) noexcept
+get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexcept
 {
-  for (int tet = 0; tet < 12; ++tet) {
-    O[tet] = hpc::matrix3x3<double>::zero();
-  }
+  for (int tet = 0; tet < 12; ++tet) { O[tet] = hpc::matrix3x3<double>::zero(); }
   for (int tet = 0; tet < 12; ++tet) {
     for (int node = 0; node < 10; ++node) {
       for (int dim1 = 0; dim1 < 3; ++dim1) {
-        for (int dim2 = 0; dim2 < 3; ++dim2) {
-          O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2);
-        }
+        for (int dim2 = 0; dim2 < 3; ++dim2) { O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2); }
       }
     }
   }

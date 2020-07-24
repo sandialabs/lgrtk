@@ -110,9 +110,8 @@ get_length(hpc::array<hpc::vector3<double>, 10> in) noexcept
 {
   hpc::array<hpc::vector3<double>, 11> node_coords_with_center;
   for (int i = 0; i < 10; ++i) node_coords_with_center[i] = in[i];
-  node_coords_with_center[10] =
-      (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
-  double min_length = hpc::numeric_limits<double>::max();
+  node_coords_with_center[10] = (in[4] + in[5] + in[6] + in[7] + in[8] + in[9]) / 6.0;
+  double min_length           = hpc::numeric_limits<double>::max();
   for (int tet = 0; tet < 12; ++tet) {
     auto const x      = get_subtet_coords(node_coords_with_center, tet);
     auto const length = get_tet_diameter(x);
@@ -132,15 +131,14 @@ update_composite_tetrahedron_h_min(state& s)
   auto const elements_to_h_min         = s.h_min.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const nodes_in_element          = s.nodes_in_element;
-  auto       functor = [=] HPC_DEVICE(element_index const element) {
-    auto const element_nodes = elements_to_element_nodes[element];
+  auto       functor                   = [=] HPC_DEVICE(element_index const element) {
+    auto const                           element_nodes = elements_to_element_nodes[element];
     hpc::array<hpc::vector3<double>, 10> node_coords;
     for (auto const node_in_element : nodes_in_element) {
-      auto const node = element_nodes_to_nodes[element_nodes[node_in_element]];
-      node_coords[hpc::weaken(node_in_element)] =
-          hpc::vector3<double>(nodes_to_x[node].load());
+      auto const node                           = element_nodes_to_nodes[element_nodes[node_in_element]];
+      node_coords[hpc::weaken(node_in_element)] = hpc::vector3<double>(nodes_to_x[node].load());
     }
-    auto const h_min = composite_tetrahedron::get_length(node_coords);
+    auto const h_min           = composite_tetrahedron::get_length(node_coords);
     elements_to_h_min[element] = h_min;
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);

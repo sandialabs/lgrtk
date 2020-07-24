@@ -20,22 +20,16 @@ resize_state(input const& in, state& s)
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
   auto have_nodal_pressure_or_energy = [&](material_index const material) {
-    return in.enable_nodal_pressure[material] ||
-           in.enable_nodal_energy[material];
+    return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(
-          hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
-    s.p.resize(s.points.size());
-  }
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) { s.p.resize(s.points.size()); }
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
   s.c.resize(s.points.size());
   s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
-  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
-    s.e.resize(s.points.size());
-  }
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) { s.e.resize(s.points.size()); }
   s.rho_e_dot.resize(s.points.size());
   {
     // Plasticity

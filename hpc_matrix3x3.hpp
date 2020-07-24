@@ -128,16 +128,7 @@ template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator-(matrix3x3<T> const A) noexcept
 {
-  return matrix3x3<T>(
-      -A(0, 0),
-      -A(0, 1),
-      -A(0, 2),
-      -A(1, 0),
-      -A(1, 1),
-      -A(1, 2),
-      -A(2, 0),
-      -A(2, 1),
-      -A(2, 2));
+  return matrix3x3<T>(-A(0, 0), -A(0, 1), -A(0, 2), -A(1, 0), -A(1, 1), -A(1, 2), -A(2, 0), -A(2, 1), -A(2, 2));
 }
 
 template <class T>
@@ -193,24 +184,15 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(matrix3x3<L> left, matrix3x3<R> right) noexcept
 {
   return matrix3x3<decltype(L() * R())>(
-      left(0, 0) * right(0, 0) + left(0, 1) * right(1, 0) +
-          left(0, 2) * right(2, 0),
-      left(0, 0) * right(0, 1) + left(0, 1) * right(1, 1) +
-          left(0, 2) * right(2, 1),
-      left(0, 0) * right(0, 2) + left(0, 1) * right(1, 2) +
-          left(0, 2) * right(2, 2),
-      left(1, 0) * right(0, 0) + left(1, 1) * right(1, 0) +
-          left(1, 2) * right(2, 0),
-      left(1, 0) * right(0, 1) + left(1, 1) * right(1, 1) +
-          left(1, 2) * right(2, 1),
-      left(1, 0) * right(0, 2) + left(1, 1) * right(1, 2) +
-          left(1, 2) * right(2, 2),
-      left(2, 0) * right(0, 0) + left(2, 1) * right(1, 0) +
-          left(2, 2) * right(2, 0),
-      left(2, 0) * right(0, 1) + left(2, 1) * right(1, 1) +
-          left(2, 2) * right(2, 1),
-      left(2, 0) * right(0, 2) + left(2, 1) * right(1, 2) +
-          left(2, 2) * right(2, 2));
+      left(0, 0) * right(0, 0) + left(0, 1) * right(1, 0) + left(0, 2) * right(2, 0),
+      left(0, 0) * right(0, 1) + left(0, 1) * right(1, 1) + left(0, 2) * right(2, 1),
+      left(0, 0) * right(0, 2) + left(0, 1) * right(1, 2) + left(0, 2) * right(2, 2),
+      left(1, 0) * right(0, 0) + left(1, 1) * right(1, 0) + left(1, 2) * right(2, 0),
+      left(1, 0) * right(0, 1) + left(1, 1) * right(1, 1) + left(1, 2) * right(2, 1),
+      left(1, 0) * right(0, 2) + left(1, 1) * right(1, 2) + left(1, 2) * right(2, 2),
+      left(2, 0) * right(0, 0) + left(2, 1) * right(1, 0) + left(2, 2) * right(2, 0),
+      left(2, 0) * right(0, 1) + left(2, 1) * right(1, 1) + left(2, 2) * right(2, 1),
+      left(2, 0) * right(0, 2) + left(2, 1) * right(1, 2) + left(2, 2) * right(2, 2));
 }
 
 template <class L, class R>
@@ -301,10 +283,8 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 inner_product(matrix3x3<L> const left, matrix3x3<R> const right) noexcept
 {
   return (
-      left(0, 0) * right(0, 0) + left(0, 1) * right(0, 1) +
-      left(0, 2) * right(0, 2) + left(1, 0) * right(1, 0) +
-      left(1, 1) * right(1, 1) + left(1, 2) * right(1, 2) +
-      left(2, 0) * right(2, 0) + left(2, 1) * right(2, 1) +
+      left(0, 0) * right(0, 0) + left(0, 1) * right(0, 1) + left(0, 2) * right(0, 2) + left(1, 0) * right(1, 0) +
+      left(1, 1) * right(1, 1) + left(1, 2) * right(1, 2) + left(2, 0) * right(2, 0) + left(2, 1) * right(2, 1) +
       left(2, 2) * right(2, 2));
 }
 
@@ -341,16 +321,7 @@ template <class T>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
                   transpose(matrix3x3<T> x) noexcept
 {
-  return matrix3x3<T>(
-      x(0, 0),
-      x(1, 0),
-      x(2, 0),
-      x(0, 1),
-      x(1, 1),
-      x(2, 1),
-      x(0, 2),
-      x(1, 2),
-      x(2, 2));
+  return matrix3x3<T>(x(0, 0), x(1, 0), x(2, 0), x(0, 1), x(1, 1), x(2, 1), x(0, 2), x(1, 2), x(2, 2));
 }
 
 template <class L, class R>
@@ -382,8 +353,7 @@ determinant(matrix3x3<Scalar> const x) noexcept
   Scalar const g = x(2, 0);
   Scalar const h = x(2, 1);
   Scalar const i = x(2, 2);
-  return (a * e * i) + (b * f * g) + (c * d * h) - (c * e * g) - (b * d * i) -
-         (a * f * h);
+  return (a * e * i) + (b * f * g) + (c * d * h) - (c * e * g) - (b * d * i) - (a * f * h);
 }
 
 template <class T>
@@ -657,11 +627,7 @@ log(matrix3x3<T> const& A)
 
 template <typename T>
 HPC_HOST_DEVICE constexpr auto
-pade_polynomial_terms(
-    matrix3x3<T> const& A,
-    int const           order,
-    matrix3x3<T>&       U,
-    matrix3x3<T>&       V)
+pade_polynomial_terms(matrix3x3<T> const& A, int const order, matrix3x3<T>& U, matrix3x3<T>& V)
 {
   auto B        = matrix3x3<T>::identity();
   U             = polynomial_coefficient<T>(order, 1) * B;
@@ -733,35 +699,31 @@ exp(matrix3x3<T> const& A)
       break;
     } else if (order == highest_order) {
       auto const theta_highest = scaling_squaring_theta<T>(order);
-      auto const signed_power =
-          static_cast<int>(std::ceil(std::log2(norm / theta_highest)));
-      auto const power_two =
-          signed_power > 0 ? static_cast<int>(signed_power) : 0;
-      auto scale = 1.0;
+      auto const signed_power  = static_cast<int>(std::ceil(std::log2(norm / theta_highest)));
+      auto const power_two     = signed_power > 0 ? static_cast<int>(signed_power) : 0;
+      auto       scale         = 1.0;
       for (int j = 0; j < power_two; ++j) { scale /= 2.0; }
-      auto const I   = matrix3x3<T>::identity();
-      auto const A1  = scale * A;
-      auto const A2  = A1 * A1;
-      auto const A4  = A2 * A2;
-      auto const A6  = A2 * A4;
-      auto const b0  = polynomial_coefficient<T>(order, 0);
-      auto const b1  = polynomial_coefficient<T>(order, 1);
-      auto const b2  = polynomial_coefficient<T>(order, 2);
-      auto const b3  = polynomial_coefficient<T>(order, 3);
-      auto const b4  = polynomial_coefficient<T>(order, 4);
-      auto const b5  = polynomial_coefficient<T>(order, 5);
-      auto const b6  = polynomial_coefficient<T>(order, 6);
-      auto const b7  = polynomial_coefficient<T>(order, 7);
-      auto const b8  = polynomial_coefficient<T>(order, 8);
-      auto const b9  = polynomial_coefficient<T>(order, 9);
-      auto const b10 = polynomial_coefficient<T>(order, 10);
-      auto const b11 = polynomial_coefficient<T>(order, 11);
-      auto const b12 = polynomial_coefficient<T>(order, 12);
-      auto const b13 = polynomial_coefficient<T>(order, 13);
-      auto const U   = A1 * ((A6 * (b13 * A6 + b11 * A4 + b9 * A2) + b7 * A6 +
-                            b5 * A4 + b3 * A2 + b1 * I));
-      auto const V = A6 * (b12 * A6 + b10 * A4 + b8 * A2) + b6 * A6 + b4 * A4 +
-                     b2 * A2 + b0 * I;
+      auto const I        = matrix3x3<T>::identity();
+      auto const A1       = scale * A;
+      auto const A2       = A1 * A1;
+      auto const A4       = A2 * A2;
+      auto const A6       = A2 * A4;
+      auto const b0       = polynomial_coefficient<T>(order, 0);
+      auto const b1       = polynomial_coefficient<T>(order, 1);
+      auto const b2       = polynomial_coefficient<T>(order, 2);
+      auto const b3       = polynomial_coefficient<T>(order, 3);
+      auto const b4       = polynomial_coefficient<T>(order, 4);
+      auto const b5       = polynomial_coefficient<T>(order, 5);
+      auto const b6       = polynomial_coefficient<T>(order, 6);
+      auto const b7       = polynomial_coefficient<T>(order, 7);
+      auto const b8       = polynomial_coefficient<T>(order, 8);
+      auto const b9       = polynomial_coefficient<T>(order, 9);
+      auto const b10      = polynomial_coefficient<T>(order, 10);
+      auto const b11      = polynomial_coefficient<T>(order, 11);
+      auto const b12      = polynomial_coefficient<T>(order, 12);
+      auto const b13      = polynomial_coefficient<T>(order, 13);
+      auto const U        = A1 * ((A6 * (b13 * A6 + b11 * A4 + b9 * A2) + b7 * A6 + b5 * A4 + b3 * A2 + b1 * I));
+      auto const V        = A6 * (b12 * A6 + b10 * A4 + b8 * A2) + b6 * A6 + b4 * A4 + b2 * A2 + b0 * I;
       auto const R        = inverse(V - U) * (U + V);
       auto const exponent = (1 << power_two);
       B                   = binary_powering(R, exponent);
@@ -821,10 +783,9 @@ polar_rotation(matrix3x3<T> const& A)
     auto const D     = Z - X;
     auto const delta = norm(D) / norm(Z);
     if (scale == true && delta < tol_scale) { scale = false; }
-    auto const end_iter = norm(D) <= std::sqrt(tol_conv) ||
-                          (delta > 0.5 * gamma && scale == false);
-    X     = Z;
-    gamma = delta;
+    auto const end_iter = norm(D) <= std::sqrt(tol_conv) || (delta > 0.5 * gamma && scale == false);
+    X                   = Z;
+    gamma               = delta;
     if (end_iter == true) { break; }
     num_iter++;
   }
@@ -933,8 +894,7 @@ class array_traits<matrix3x3<T>>
   HPC_HOST_DEVICE static matrix3x3<T>
   load(Iterator it) noexcept
   {
-    return matrix3x3<T>(
-        it[0], it[1], it[2], it[3], it[4], it[5], it[6], it[7], it[8]);
+    return matrix3x3<T>(it[0], it[1], it[2], it[3], it[4], it[5], it[6], it[7], it[8]);
   }
   template <class Iterator>
   HPC_HOST_DEVICE static void
@@ -982,232 +942,137 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr matrix3x3<T>
 
   auto const z2 = 0.5 * (x * y - y * x);
 
-  auto const z3 = x * x * y / 12 - x * y * x / 6 + x * y * y / 12 +
-                  y * x * x / 12 - y * x * y / 6 + y * y * x / 12;
+  auto const z3 = x * x * y / 12 - x * y * x / 6 + x * y * y / 12 + y * x * x / 12 - y * x * y / 6 + y * y * x / 12;
 
-  auto const z4 = x * x * y * y / 24 - x * y * x * y / 12 + y * x * y * x / 12 -
-                  y * y * x * x / 24;
+  auto const z4 = x * x * y * y / 24 - x * y * x * y / 12 + y * x * y * x / 12 - y * y * x * x / 24;
 
-  auto const z5 = -x * x * x * x * y / 720 + x * x * x * y * x / 180 +
-                  x * x * x * y * y / 180 - x * x * y * x * x / 120 -
-                  x * x * y * x * y / 120 - x * x * y * y * x / 120 +
-                  x * x * y * y * y / 180 + x * y * x * x * x / 180 -
-                  x * y * x * x * y / 120 + x * y * x * y * x / 30 -
-                  x * y * x * y * y / 120 - x * y * y * x * x / 120 -
-                  x * y * y * x * y / 120 + x * y * y * y * x / 180 -
-                  x * y * y * y * y / 720 - y * x * x * x * x / 720 +
-                  y * x * x * x * y / 180 - y * x * x * y * x / 120 -
-                  y * x * x * y * y / 120 - y * x * y * x * x / 120 +
-                  y * x * y * x * y / 30 - y * x * y * y * x / 120 +
-                  y * x * y * y * y / 180 + y * y * x * x * x / 180 -
-                  y * y * x * x * y / 120 - y * y * x * y * x / 120 -
-                  y * y * x * y * y / 120 + y * y * y * x * x / 180 +
-                  y * y * y * x * y / 180 - y * y * y * y * x / 720;
+  auto const z5 = -x * x * x * x * y / 720 + x * x * x * y * x / 180 + x * x * x * y * y / 180 -
+                  x * x * y * x * x / 120 - x * x * y * x * y / 120 - x * x * y * y * x / 120 +
+                  x * x * y * y * y / 180 + x * y * x * x * x / 180 - x * y * x * x * y / 120 + x * y * x * y * x / 30 -
+                  x * y * x * y * y / 120 - x * y * y * x * x / 120 - x * y * y * x * y / 120 +
+                  x * y * y * y * x / 180 - x * y * y * y * y / 720 - y * x * x * x * x / 720 +
+                  y * x * x * x * y / 180 - y * x * x * y * x / 120 - y * x * x * y * y / 120 -
+                  y * x * y * x * x / 120 + y * x * y * x * y / 30 - y * x * y * y * x / 120 + y * x * y * y * y / 180 +
+                  y * y * x * x * x / 180 - y * y * x * x * y / 120 - y * y * x * y * x / 120 -
+                  y * y * x * y * y / 120 + y * y * y * x * x / 180 + y * y * y * x * y / 180 - y * y * y * y * x / 720;
 
-  auto const z6 = -x * x * x * x * y * y / 1440 + x * x * x * y * x * y / 360 +
-                  x * x * x * y * y * y / 360 - x * x * y * x * x * y / 240 -
-                  x * x * y * x * y * y / 240 - x * x * y * y * x * y / 240 -
-                  x * x * y * y * y * y / 1440 + x * y * x * x * x * y / 360 -
-                  x * y * x * x * y * y / 240 + x * y * x * y * x * y / 60 +
-                  x * y * x * y * y * y / 360 - x * y * y * x * x * y / 240 -
-                  x * y * y * x * y * y / 240 + x * y * y * y * x * y / 360 -
-                  y * x * x * x * y * x / 360 + y * x * x * y * x * x / 240 +
-                  y * x * x * y * y * x / 240 - y * x * y * x * x * x / 360 -
-                  y * x * y * x * y * x / 60 + y * x * y * y * x * x / 240 -
-                  y * x * y * y * y * x / 360 + y * y * x * x * x * x / 1440 +
-                  y * y * x * x * y * x / 240 + y * y * x * y * x * x / 240 +
-                  y * y * x * y * y * x / 240 - y * y * y * x * x * x / 360 -
-                  y * y * y * x * y * x / 360 + y * y * y * y * x * x / 1440;
+  auto const z6 = -x * x * x * x * y * y / 1440 + x * x * x * y * x * y / 360 + x * x * x * y * y * y / 360 -
+                  x * x * y * x * x * y / 240 - x * x * y * x * y * y / 240 - x * x * y * y * x * y / 240 -
+                  x * x * y * y * y * y / 1440 + x * y * x * x * x * y / 360 - x * y * x * x * y * y / 240 +
+                  x * y * x * y * x * y / 60 + x * y * x * y * y * y / 360 - x * y * y * x * x * y / 240 -
+                  x * y * y * x * y * y / 240 + x * y * y * y * x * y / 360 - y * x * x * x * y * x / 360 +
+                  y * x * x * y * x * x / 240 + y * x * x * y * y * x / 240 - y * x * y * x * x * x / 360 -
+                  y * x * y * x * y * x / 60 + y * x * y * y * x * x / 240 - y * x * y * y * y * x / 360 +
+                  y * y * x * x * x * x / 1440 + y * y * x * x * y * x / 240 + y * y * x * y * x * x / 240 +
+                  y * y * x * y * y * x / 240 - y * y * y * x * x * x / 360 - y * y * y * x * y * x / 360 +
+                  y * y * y * y * x * x / 1440;
 
   auto const z7 =
-      x * x * x * x * x * x * y / 30240 - x * x * x * x * x * y * x / 5040 -
-      x * x * x * x * x * y * y / 5040 + x * x * x * x * y * x * x / 2016 +
-      x * x * x * x * y * x * y / 2016 + x * x * x * x * y * y * x / 2016 +
-      x * x * x * x * y * y * y / 3780 - x * x * x * y * x * x * x / 1512 -
-      x * x * x * y * x * x * y / 5040 - x * x * x * y * x * y * x / 630 -
-      x * x * x * y * x * y * y / 5040 - x * x * x * y * y * x * x / 5040 -
-      x * x * x * y * y * x * y / 5040 - x * x * x * y * y * y * x / 1512 +
-      x * x * x * y * y * y * y / 3780 + x * x * y * x * x * x * x / 2016 -
-      x * x * y * x * x * x * y / 5040 + x * x * y * x * x * y * x / 840 -
-      x * x * y * x * x * y * y / 1120 + x * x * y * x * y * x * x / 840 +
-      x * x * y * x * y * x * y / 840 + x * x * y * x * y * y * x / 840 -
-      x * x * y * x * y * y * y / 5040 - x * x * y * y * x * x * x / 5040 -
-      x * x * y * y * x * x * y / 1120 + x * x * y * y * x * y * x / 840 -
-      x * x * y * y * x * y * y / 1120 - x * x * y * y * y * x * x / 5040 -
-      x * x * y * y * y * x * y / 5040 + x * x * y * y * y * y * x / 2016 -
-      x * x * y * y * y * y * y / 5040 - x * y * x * x * x * x * x / 5040 +
-      x * y * x * x * x * x * y / 2016 - x * y * x * x * x * y * x / 630 -
-      x * y * x * x * x * y * y / 5040 + x * y * x * x * y * x * x / 840 +
-      x * y * x * x * y * x * y / 840 + x * y * x * x * y * y * x / 840 -
-      x * y * x * x * y * y * y / 5040 - x * y * x * y * x * x * x / 630 +
-      x * y * x * y * x * x * y / 840 - x * y * x * y * x * y * x / 140 +
-      x * y * x * y * x * y * y / 840 + x * y * x * y * y * x * x / 840 +
-      x * y * x * y * y * x * y / 840 - x * y * x * y * y * y * x / 630 +
-      x * y * x * y * y * y * y / 2016 + x * y * y * x * x * x * x / 2016 -
-      x * y * y * x * x * x * y / 5040 + x * y * y * x * x * y * x / 840 -
-      x * y * y * x * x * y * y / 1120 + x * y * y * x * y * x * x / 840 +
-      x * y * y * x * y * x * y / 840 + x * y * y * x * y * y * x / 840 -
-      x * y * y * x * y * y * y / 5040 - x * y * y * y * x * x * x / 1512 -
-      x * y * y * y * x * x * y / 5040 - x * y * y * y * x * y * x / 630 -
-      x * y * y * y * x * y * y / 5040 + x * y * y * y * y * x * x / 2016 +
-      x * y * y * y * y * x * y / 2016 - x * y * y * y * y * y * x / 5040 +
-      x * y * y * y * y * y * y / 30240 + y * x * x * x * x * x * x / 30240 -
-      y * x * x * x * x * x * y / 5040 + y * x * x * x * x * y * x / 2016 +
-      y * x * x * x * x * y * y / 2016 - y * x * x * x * y * x * x / 5040 -
-      y * x * x * x * y * x * y / 630 - y * x * x * x * y * y * x / 5040 -
-      y * x * x * x * y * y * y / 1512 - y * x * x * y * x * x * x / 5040 +
-      y * x * x * y * x * x * y / 840 + y * x * x * y * x * y * x / 840 +
-      y * x * x * y * x * y * y / 840 - y * x * x * y * y * x * x / 1120 +
-      y * x * x * y * y * x * y / 840 - y * x * x * y * y * y * x / 5040 +
-      y * x * x * y * y * y * y / 2016 + y * x * y * x * x * x * x / 2016 -
-      y * x * y * x * x * x * y / 630 + y * x * y * x * x * y * x / 840 +
-      y * x * y * x * x * y * y / 840 + y * x * y * x * y * x * x / 840 -
-      y * x * y * x * y * x * y / 140 + y * x * y * x * y * y * x / 840 -
-      y * x * y * x * y * y * y / 630 - y * x * y * y * x * x * x / 5040 +
-      y * x * y * y * x * x * y / 840 + y * x * y * y * x * y * x / 840 +
-      y * x * y * y * x * y * y / 840 - y * x * y * y * y * x * x / 5040 -
-      y * x * y * y * y * x * y / 630 + y * x * y * y * y * y * x / 2016 -
-      y * x * y * y * y * y * y / 5040 - y * y * x * x * x * x * x / 5040 +
-      y * y * x * x * x * x * y / 2016 - y * y * x * x * x * y * x / 5040 -
-      y * y * x * x * x * y * y / 5040 - y * y * x * x * y * x * x / 1120 +
-      y * y * x * x * y * x * y / 840 - y * y * x * x * y * y * x / 1120 -
-      y * y * x * x * y * y * y / 5040 - y * y * x * y * x * x * x / 5040 +
-      y * y * x * y * x * x * y / 840 + y * y * x * y * x * y * x / 840 +
-      y * y * x * y * x * y * y / 840 - y * y * x * y * y * x * x / 1120 +
-      y * y * x * y * y * x * y / 840 - y * y * x * y * y * y * x / 5040 +
-      y * y * x * y * y * y * y / 2016 + y * y * y * x * x * x * x / 3780 -
-      y * y * y * x * x * x * y / 1512 - y * y * y * x * x * y * x / 5040 -
-      y * y * y * x * x * y * y / 5040 - y * y * y * x * y * x * x / 5040 -
-      y * y * y * x * y * x * y / 630 - y * y * y * x * y * y * x / 5040 -
-      y * y * y * x * y * y * y / 1512 + y * y * y * y * x * x * x / 3780 +
-      y * y * y * y * x * x * y / 2016 + y * y * y * y * x * y * x / 2016 +
-      y * y * y * y * x * y * y / 2016 - y * y * y * y * y * x * x / 5040 -
-      y * y * y * y * y * x * y / 5040 + y * y * y * y * y * y * x / 30240;
+      x * x * x * x * x * x * y / 30240 - x * x * x * x * x * y * x / 5040 - x * x * x * x * x * y * y / 5040 +
+      x * x * x * x * y * x * x / 2016 + x * x * x * x * y * x * y / 2016 + x * x * x * x * y * y * x / 2016 +
+      x * x * x * x * y * y * y / 3780 - x * x * x * y * x * x * x / 1512 - x * x * x * y * x * x * y / 5040 -
+      x * x * x * y * x * y * x / 630 - x * x * x * y * x * y * y / 5040 - x * x * x * y * y * x * x / 5040 -
+      x * x * x * y * y * x * y / 5040 - x * x * x * y * y * y * x / 1512 + x * x * x * y * y * y * y / 3780 +
+      x * x * y * x * x * x * x / 2016 - x * x * y * x * x * x * y / 5040 + x * x * y * x * x * y * x / 840 -
+      x * x * y * x * x * y * y / 1120 + x * x * y * x * y * x * x / 840 + x * x * y * x * y * x * y / 840 +
+      x * x * y * x * y * y * x / 840 - x * x * y * x * y * y * y / 5040 - x * x * y * y * x * x * x / 5040 -
+      x * x * y * y * x * x * y / 1120 + x * x * y * y * x * y * x / 840 - x * x * y * y * x * y * y / 1120 -
+      x * x * y * y * y * x * x / 5040 - x * x * y * y * y * x * y / 5040 + x * x * y * y * y * y * x / 2016 -
+      x * x * y * y * y * y * y / 5040 - x * y * x * x * x * x * x / 5040 + x * y * x * x * x * x * y / 2016 -
+      x * y * x * x * x * y * x / 630 - x * y * x * x * x * y * y / 5040 + x * y * x * x * y * x * x / 840 +
+      x * y * x * x * y * x * y / 840 + x * y * x * x * y * y * x / 840 - x * y * x * x * y * y * y / 5040 -
+      x * y * x * y * x * x * x / 630 + x * y * x * y * x * x * y / 840 - x * y * x * y * x * y * x / 140 +
+      x * y * x * y * x * y * y / 840 + x * y * x * y * y * x * x / 840 + x * y * x * y * y * x * y / 840 -
+      x * y * x * y * y * y * x / 630 + x * y * x * y * y * y * y / 2016 + x * y * y * x * x * x * x / 2016 -
+      x * y * y * x * x * x * y / 5040 + x * y * y * x * x * y * x / 840 - x * y * y * x * x * y * y / 1120 +
+      x * y * y * x * y * x * x / 840 + x * y * y * x * y * x * y / 840 + x * y * y * x * y * y * x / 840 -
+      x * y * y * x * y * y * y / 5040 - x * y * y * y * x * x * x / 1512 - x * y * y * y * x * x * y / 5040 -
+      x * y * y * y * x * y * x / 630 - x * y * y * y * x * y * y / 5040 + x * y * y * y * y * x * x / 2016 +
+      x * y * y * y * y * x * y / 2016 - x * y * y * y * y * y * x / 5040 + x * y * y * y * y * y * y / 30240 +
+      y * x * x * x * x * x * x / 30240 - y * x * x * x * x * x * y / 5040 + y * x * x * x * x * y * x / 2016 +
+      y * x * x * x * x * y * y / 2016 - y * x * x * x * y * x * x / 5040 - y * x * x * x * y * x * y / 630 -
+      y * x * x * x * y * y * x / 5040 - y * x * x * x * y * y * y / 1512 - y * x * x * y * x * x * x / 5040 +
+      y * x * x * y * x * x * y / 840 + y * x * x * y * x * y * x / 840 + y * x * x * y * x * y * y / 840 -
+      y * x * x * y * y * x * x / 1120 + y * x * x * y * y * x * y / 840 - y * x * x * y * y * y * x / 5040 +
+      y * x * x * y * y * y * y / 2016 + y * x * y * x * x * x * x / 2016 - y * x * y * x * x * x * y / 630 +
+      y * x * y * x * x * y * x / 840 + y * x * y * x * x * y * y / 840 + y * x * y * x * y * x * x / 840 -
+      y * x * y * x * y * x * y / 140 + y * x * y * x * y * y * x / 840 - y * x * y * x * y * y * y / 630 -
+      y * x * y * y * x * x * x / 5040 + y * x * y * y * x * x * y / 840 + y * x * y * y * x * y * x / 840 +
+      y * x * y * y * x * y * y / 840 - y * x * y * y * y * x * x / 5040 - y * x * y * y * y * x * y / 630 +
+      y * x * y * y * y * y * x / 2016 - y * x * y * y * y * y * y / 5040 - y * y * x * x * x * x * x / 5040 +
+      y * y * x * x * x * x * y / 2016 - y * y * x * x * x * y * x / 5040 - y * y * x * x * x * y * y / 5040 -
+      y * y * x * x * y * x * x / 1120 + y * y * x * x * y * x * y / 840 - y * y * x * x * y * y * x / 1120 -
+      y * y * x * x * y * y * y / 5040 - y * y * x * y * x * x * x / 5040 + y * y * x * y * x * x * y / 840 +
+      y * y * x * y * x * y * x / 840 + y * y * x * y * x * y * y / 840 - y * y * x * y * y * x * x / 1120 +
+      y * y * x * y * y * x * y / 840 - y * y * x * y * y * y * x / 5040 + y * y * x * y * y * y * y / 2016 +
+      y * y * y * x * x * x * x / 3780 - y * y * y * x * x * x * y / 1512 - y * y * y * x * x * y * x / 5040 -
+      y * y * y * x * x * y * y / 5040 - y * y * y * x * y * x * x / 5040 - y * y * y * x * y * x * y / 630 -
+      y * y * y * x * y * y * x / 5040 - y * y * y * x * y * y * y / 1512 + y * y * y * y * x * x * x / 3780 +
+      y * y * y * y * x * x * y / 2016 + y * y * y * y * x * y * x / 2016 + y * y * y * y * x * y * y / 2016 -
+      y * y * y * y * y * x * x / 5040 - y * y * y * y * y * x * y / 5040 + y * y * y * y * y * y * x / 30240;
 
-  auto const z8 = x * x * x * x * x * x * y * y / 60480 -
-                  x * x * x * x * x * y * x * y / 10080 -
-                  x * x * x * x * x * y * y * y / 10080 +
-                  x * x * x * x * y * x * x * y / 4032 +
-                  x * x * x * x * y * x * y * y / 4032 +
-                  x * x * x * x * y * y * x * y / 4032 +
-                  23 * x * x * x * x * y * y * y * y / 120960 -
-                  x * x * x * y * x * x * x * y / 3024 -
-                  x * x * x * y * x * x * y * y / 10080 -
-                  x * x * x * y * x * y * x * y / 1260 -
-                  x * x * x * y * x * y * y * y / 3024 -
-                  x * x * x * y * y * x * x * y / 10080 -
-                  x * x * x * y * y * x * y * y / 10080 -
-                  x * x * x * y * y * y * x * y / 3024 -
-                  x * x * x * y * y * y * y * y / 10080 +
-                  x * x * y * x * x * x * x * y / 4032 -
-                  x * x * y * x * x * x * y * y / 10080 +
-                  x * x * y * x * x * y * x * y / 1680 -
-                  x * x * y * x * x * y * y * y / 10080 +
-                  x * x * y * x * y * x * x * y / 1680 +
-                  x * x * y * x * y * x * y * y / 1680 +
-                  x * x * y * x * y * y * x * y / 1680 +
-                  x * x * y * x * y * y * y * y / 4032 -
-                  x * x * y * y * x * x * x * y / 10080 -
-                  x * x * y * y * x * x * y * y / 2240 +
-                  x * x * y * y * x * y * x * y / 1680 -
-                  x * x * y * y * x * y * y * y / 10080 -
-                  x * x * y * y * y * x * x * y / 10080 -
-                  x * x * y * y * y * x * y * y / 10080 +
-                  x * x * y * y * y * y * x * y / 4032 +
-                  x * x * y * y * y * y * y * y / 60480 -
-                  x * y * x * x * x * x * x * y / 10080 +
-                  x * y * x * x * x * x * y * y / 4032 -
-                  x * y * x * x * x * y * x * y / 1260 -
-                  x * y * x * x * x * y * y * y / 3024 +
-                  x * y * x * x * y * x * x * y / 1680 +
-                  x * y * x * x * y * x * y * y / 1680 +
-                  x * y * x * x * y * y * x * y / 1680 +
-                  x * y * x * x * y * y * y * y / 4032 -
-                  x * y * x * y * x * x * x * y / 1260 +
-                  x * y * x * y * x * x * y * y / 1680 -
-                  x * y * x * y * x * y * x * y / 280 -
-                  x * y * x * y * x * y * y * y / 1260 +
-                  x * y * x * y * y * x * x * y / 1680 +
-                  x * y * x * y * y * x * y * y / 1680 -
-                  x * y * x * y * y * y * x * y / 1260 -
-                  x * y * x * y * y * y * y * y / 10080 +
-                  x * y * y * x * x * x * x * y / 4032 -
-                  x * y * y * x * x * x * y * y / 10080 +
-                  x * y * y * x * x * y * x * y / 1680 -
-                  x * y * y * x * x * y * y * y / 10080 +
-                  x * y * y * x * y * x * x * y / 1680 +
-                  x * y * y * x * y * x * y * y / 1680 +
-                  x * y * y * x * y * y * x * y / 1680 +
-                  x * y * y * x * y * y * y * y / 4032 -
-                  x * y * y * y * x * x * x * y / 3024 -
-                  x * y * y * y * x * x * y * y / 10080 -
-                  x * y * y * y * x * y * x * y / 1260 -
-                  x * y * y * y * x * y * y * y / 3024 +
-                  x * y * y * y * y * x * x * y / 4032 +
-                  x * y * y * y * y * x * y * y / 4032 -
-                  x * y * y * y * y * y * x * y / 10080 +
-                  y * x * x * x * x * x * y * x / 10080 -
-                  y * x * x * x * x * y * x * x / 4032 -
-                  y * x * x * x * x * y * y * x / 4032 +
-                  y * x * x * x * y * x * x * x / 3024 +
-                  y * x * x * x * y * x * y * x / 1260 +
-                  y * x * x * x * y * y * x * x / 10080 +
-                  y * x * x * x * y * y * y * x / 3024 -
-                  y * x * x * y * x * x * x * x / 4032 -
-                  y * x * x * y * x * x * y * x / 1680 -
-                  y * x * x * y * x * y * x * x / 1680 -
-                  y * x * x * y * x * y * y * x / 1680 +
-                  y * x * x * y * y * x * x * x / 10080 -
-                  y * x * x * y * y * x * y * x / 1680 +
-                  y * x * x * y * y * y * x * x / 10080 -
-                  y * x * x * y * y * y * y * x / 4032 +
-                  y * x * y * x * x * x * x * x / 10080 +
-                  y * x * y * x * x * x * y * x / 1260 -
-                  y * x * y * x * x * y * x * x / 1680 -
-                  y * x * y * x * x * y * y * x / 1680 +
-                  y * x * y * x * y * x * x * x / 1260 +
-                  y * x * y * x * y * x * y * x / 280 -
-                  y * x * y * x * y * y * x * x / 1680 +
-                  y * x * y * x * y * y * y * x / 1260 -
-                  y * x * y * y * x * x * x * x / 4032 -
-                  y * x * y * y * x * x * y * x / 1680 -
-                  y * x * y * y * x * y * x * x / 1680 -
-                  y * x * y * y * x * y * y * x / 1680 +
-                  y * x * y * y * y * x * x * x / 3024 +
-                  y * x * y * y * y * x * y * x / 1260 -
-                  y * x * y * y * y * y * x * x / 4032 +
-                  y * x * y * y * y * y * y * x / 10080 -
-                  y * y * x * x * x * x * x * x / 60480 -
-                  y * y * x * x * x * x * y * x / 4032 +
-                  y * y * x * x * x * y * x * x / 10080 +
-                  y * y * x * x * x * y * y * x / 10080 +
-                  y * y * x * x * y * x * x * x / 10080 -
-                  y * y * x * x * y * x * y * x / 1680 +
-                  y * y * x * x * y * y * x * x / 2240 +
-                  y * y * x * x * y * y * y * x / 10080 -
-                  y * y * x * y * x * x * x * x / 4032 -
-                  y * y * x * y * x * x * y * x / 1680 -
-                  y * y * x * y * x * y * x * x / 1680 -
-                  y * y * x * y * x * y * y * x / 1680 +
-                  y * y * x * y * y * x * x * x / 10080 -
-                  y * y * x * y * y * x * y * x / 1680 +
-                  y * y * x * y * y * y * x * x / 10080 -
-                  y * y * x * y * y * y * y * x / 4032 +
-                  y * y * y * x * x * x * x * x / 10080 +
-                  y * y * y * x * x * x * y * x / 3024 +
-                  y * y * y * x * x * y * x * x / 10080 +
-                  y * y * y * x * x * y * y * x / 10080 +
-                  y * y * y * x * y * x * x * x / 3024 +
-                  y * y * y * x * y * x * y * x / 1260 +
-                  y * y * y * x * y * y * x * x / 10080 +
-                  y * y * y * x * y * y * y * x / 3024 -
-                  23 * y * y * y * y * x * x * x * x / 120960 -
-                  y * y * y * y * x * x * y * x / 4032 -
-                  y * y * y * y * x * y * x * x / 4032 -
-                  y * y * y * y * x * y * y * x / 4032 +
-                  y * y * y * y * y * x * x * x / 10080 +
-                  y * y * y * y * y * x * y * x / 10080 -
-                  y * y * y * y * y * y * x * x / 60480;
+  auto const z8 = x * x * x * x * x * x * y * y / 60480 - x * x * x * x * x * y * x * y / 10080 -
+                  x * x * x * x * x * y * y * y / 10080 + x * x * x * x * y * x * x * y / 4032 +
+                  x * x * x * x * y * x * y * y / 4032 + x * x * x * x * y * y * x * y / 4032 +
+                  23 * x * x * x * x * y * y * y * y / 120960 - x * x * x * y * x * x * x * y / 3024 -
+                  x * x * x * y * x * x * y * y / 10080 - x * x * x * y * x * y * x * y / 1260 -
+                  x * x * x * y * x * y * y * y / 3024 - x * x * x * y * y * x * x * y / 10080 -
+                  x * x * x * y * y * x * y * y / 10080 - x * x * x * y * y * y * x * y / 3024 -
+                  x * x * x * y * y * y * y * y / 10080 + x * x * y * x * x * x * x * y / 4032 -
+                  x * x * y * x * x * x * y * y / 10080 + x * x * y * x * x * y * x * y / 1680 -
+                  x * x * y * x * x * y * y * y / 10080 + x * x * y * x * y * x * x * y / 1680 +
+                  x * x * y * x * y * x * y * y / 1680 + x * x * y * x * y * y * x * y / 1680 +
+                  x * x * y * x * y * y * y * y / 4032 - x * x * y * y * x * x * x * y / 10080 -
+                  x * x * y * y * x * x * y * y / 2240 + x * x * y * y * x * y * x * y / 1680 -
+                  x * x * y * y * x * y * y * y / 10080 - x * x * y * y * y * x * x * y / 10080 -
+                  x * x * y * y * y * x * y * y / 10080 + x * x * y * y * y * y * x * y / 4032 +
+                  x * x * y * y * y * y * y * y / 60480 - x * y * x * x * x * x * x * y / 10080 +
+                  x * y * x * x * x * x * y * y / 4032 - x * y * x * x * x * y * x * y / 1260 -
+                  x * y * x * x * x * y * y * y / 3024 + x * y * x * x * y * x * x * y / 1680 +
+                  x * y * x * x * y * x * y * y / 1680 + x * y * x * x * y * y * x * y / 1680 +
+                  x * y * x * x * y * y * y * y / 4032 - x * y * x * y * x * x * x * y / 1260 +
+                  x * y * x * y * x * x * y * y / 1680 - x * y * x * y * x * y * x * y / 280 -
+                  x * y * x * y * x * y * y * y / 1260 + x * y * x * y * y * x * x * y / 1680 +
+                  x * y * x * y * y * x * y * y / 1680 - x * y * x * y * y * y * x * y / 1260 -
+                  x * y * x * y * y * y * y * y / 10080 + x * y * y * x * x * x * x * y / 4032 -
+                  x * y * y * x * x * x * y * y / 10080 + x * y * y * x * x * y * x * y / 1680 -
+                  x * y * y * x * x * y * y * y / 10080 + x * y * y * x * y * x * x * y / 1680 +
+                  x * y * y * x * y * x * y * y / 1680 + x * y * y * x * y * y * x * y / 1680 +
+                  x * y * y * x * y * y * y * y / 4032 - x * y * y * y * x * x * x * y / 3024 -
+                  x * y * y * y * x * x * y * y / 10080 - x * y * y * y * x * y * x * y / 1260 -
+                  x * y * y * y * x * y * y * y / 3024 + x * y * y * y * y * x * x * y / 4032 +
+                  x * y * y * y * y * x * y * y / 4032 - x * y * y * y * y * y * x * y / 10080 +
+                  y * x * x * x * x * x * y * x / 10080 - y * x * x * x * x * y * x * x / 4032 -
+                  y * x * x * x * x * y * y * x / 4032 + y * x * x * x * y * x * x * x / 3024 +
+                  y * x * x * x * y * x * y * x / 1260 + y * x * x * x * y * y * x * x / 10080 +
+                  y * x * x * x * y * y * y * x / 3024 - y * x * x * y * x * x * x * x / 4032 -
+                  y * x * x * y * x * x * y * x / 1680 - y * x * x * y * x * y * x * x / 1680 -
+                  y * x * x * y * x * y * y * x / 1680 + y * x * x * y * y * x * x * x / 10080 -
+                  y * x * x * y * y * x * y * x / 1680 + y * x * x * y * y * y * x * x / 10080 -
+                  y * x * x * y * y * y * y * x / 4032 + y * x * y * x * x * x * x * x / 10080 +
+                  y * x * y * x * x * x * y * x / 1260 - y * x * y * x * x * y * x * x / 1680 -
+                  y * x * y * x * x * y * y * x / 1680 + y * x * y * x * y * x * x * x / 1260 +
+                  y * x * y * x * y * x * y * x / 280 - y * x * y * x * y * y * x * x / 1680 +
+                  y * x * y * x * y * y * y * x / 1260 - y * x * y * y * x * x * x * x / 4032 -
+                  y * x * y * y * x * x * y * x / 1680 - y * x * y * y * x * y * x * x / 1680 -
+                  y * x * y * y * x * y * y * x / 1680 + y * x * y * y * y * x * x * x / 3024 +
+                  y * x * y * y * y * x * y * x / 1260 - y * x * y * y * y * y * x * x / 4032 +
+                  y * x * y * y * y * y * y * x / 10080 - y * y * x * x * x * x * x * x / 60480 -
+                  y * y * x * x * x * x * y * x / 4032 + y * y * x * x * x * y * x * x / 10080 +
+                  y * y * x * x * x * y * y * x / 10080 + y * y * x * x * y * x * x * x / 10080 -
+                  y * y * x * x * y * x * y * x / 1680 + y * y * x * x * y * y * x * x / 2240 +
+                  y * y * x * x * y * y * y * x / 10080 - y * y * x * y * x * x * x * x / 4032 -
+                  y * y * x * y * x * x * y * x / 1680 - y * y * x * y * x * y * x * x / 1680 -
+                  y * y * x * y * x * y * y * x / 1680 + y * y * x * y * y * x * x * x / 10080 -
+                  y * y * x * y * y * x * y * x / 1680 + y * y * x * y * y * y * x * x / 10080 -
+                  y * y * x * y * y * y * y * x / 4032 + y * y * y * x * x * x * x * x / 10080 +
+                  y * y * y * x * x * x * y * x / 3024 + y * y * y * x * x * y * x * x / 10080 +
+                  y * y * y * x * x * y * y * x / 10080 + y * y * y * x * y * x * x * x / 3024 +
+                  y * y * y * x * y * x * y * x / 1260 + y * y * y * x * y * y * x * x / 10080 +
+                  y * y * y * x * y * y * y * x / 3024 - 23 * y * y * y * y * x * x * x * x / 120960 -
+                  y * y * y * y * x * x * y * x / 4032 - y * y * y * y * x * y * x * x / 4032 -
+                  y * y * y * y * x * y * y * x / 4032 + y * y * y * y * y * x * x * x / 10080 +
+                  y * y * y * y * y * x * y * x / 10080 - y * y * y * y * y * y * x * x / 60480;
 
   auto const z = z1 + z2 + z3 + z4 + z5 + z6 + z7 + z8;
 

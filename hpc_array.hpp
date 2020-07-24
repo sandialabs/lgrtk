@@ -13,10 +13,9 @@ class array
   T m_data[N];
 
  public:
-  using value_type = T;
-  using size_type  = Index;
-  using difference_type =
-      decltype(std::declval<Index>() - std::declval<Index>());
+  using value_type      = T;
+  using size_type       = Index;
+  using difference_type = decltype(std::declval<Index>() - std::declval<Index>());
   using reference       = value_type&;
   using const_reference = value_type const&;
   using pointer         = T*;

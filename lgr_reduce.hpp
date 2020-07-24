@@ -6,17 +6,11 @@ namespace lgr {
 
 template <class Range, class T, class BinaryOp, class UnaryOp>
 T
-transform_reduce(
-    Range const& range,
-    T            init,
-    BinaryOp     binary_op,
-    UnaryOp      unary_op)
+transform_reduce(Range const& range, T init, BinaryOp binary_op, UnaryOp unary_op)
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) {
-    init = binary_op(std::move(init), unary_op(*first));
-  }
+  for (; first != last; ++first) { init = binary_op(std::move(init), unary_op(*first)); }
   return init;
 }
 

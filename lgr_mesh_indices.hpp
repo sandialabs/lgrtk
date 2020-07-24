@@ -25,8 +25,8 @@ struct point_in_element_tag
 {
 };
 using point_in_element_index = hpc::index<point_in_element_tag, int>;
-using point_index        = decltype(element_index() * point_in_element_index());
-using element_node_index = decltype(element_index() * node_in_element_index());
+using point_index            = decltype(element_index() * point_in_element_index());
+using element_node_index     = decltype(element_index() * node_in_element_index());
 struct point_node_tag
 {
 };

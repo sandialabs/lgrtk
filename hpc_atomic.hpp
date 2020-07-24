@@ -17,11 +17,7 @@ class atomic_ref<int>
   value_type& m_ref;
 
  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit atomic_ref(
-      value_type& ref_in) noexcept
-      : m_ref(ref_in)
-  {
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit atomic_ref(value_type& ref_in) noexcept : m_ref(ref_in) {}
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE value_type
   operator++(int) const noexcept
   {

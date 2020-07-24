@@ -63,27 +63,13 @@ using divide_dimensions_t = typename divide_dimensions<left, right>::type;
 template <class dim, int factor>
 class root_dimension
 {
-  static_assert(
-      dim::length_power % factor == 0,
-      "length power not evenly divisible");
-  static_assert(
-      dim::mass_power % factor == 0,
-      "mass power not evenly divisible");
-  static_assert(
-      dim::time_power % factor == 0,
-      "time power not evenly divisible");
-  static_assert(
-      dim::current_power % factor == 0,
-      "current power not evenly divisible");
-  static_assert(
-      dim::temperature_power % factor == 0,
-      "temperature power not evenly divisible");
-  static_assert(
-      dim::amount_power % factor == 0,
-      "amount power not evenly divisible");
-  static_assert(
-      dim::intensity_power % factor == 0,
-      "intensity power not evenly divisible");
+  static_assert(dim::length_power % factor == 0, "length power not evenly divisible");
+  static_assert(dim::mass_power % factor == 0, "mass power not evenly divisible");
+  static_assert(dim::time_power % factor == 0, "time power not evenly divisible");
+  static_assert(dim::current_power % factor == 0, "current power not evenly divisible");
+  static_assert(dim::temperature_power % factor == 0, "temperature power not evenly divisible");
+  static_assert(dim::amount_power % factor == 0, "amount power not evenly divisible");
+  static_assert(dim::intensity_power % factor == 0, "intensity power not evenly divisible");
 
  public:
   using type = dimension<
@@ -116,66 +102,45 @@ class raise_dimension
 template <class dim, int factor>
 using raise_dimension_t = typename raise_dimension<dim, factor>::type;
 
-using no_dimension          = dimension<0, 0, 0, 0, 0, 0, 0>;
-using length_dimension      = dimension<1, 0, 0, 0, 0, 0, 0>;
-using mass_dimension        = dimension<0, 1, 0, 0, 0, 0, 0>;
-using time_dimension        = dimension<0, 0, 1, 0, 0, 0, 0>;
-using current_dimension     = dimension<0, 0, 0, 1, 0, 0, 0>;
-using temperature_dimension = dimension<0, 0, 0, 0, 1, 0, 0>;
-using amount_dimension      = dimension<0, 0, 0, 0, 0, 1, 0>;
-using intensity_dimension   = dimension<0, 0, 0, 0, 0, 0, 1>;
-using speed_dimension = divide_dimensions_t<length_dimension, time_dimension>;
-using velocity_dimension = speed_dimension;
-using acceleration_dimension =
-    divide_dimensions_t<speed_dimension, time_dimension>;
-using momentum_dimension =
-    multiply_dimensions_t<mass_dimension, velocity_dimension>;
-using force_dimension =
-    multiply_dimensions_t<mass_dimension, acceleration_dimension>;
-using area_dimension =
-    multiply_dimensions_t<length_dimension, length_dimension>;
-using stress_dimension   = divide_dimensions_t<force_dimension, area_dimension>;
-using pressure_dimension = stress_dimension;
-using volume_dimension =
-    multiply_dimensions_t<area_dimension, length_dimension>;
-using basis_dimension = no_dimension;
-using strain_dimension =
-    divide_dimensions_t<length_dimension, length_dimension>;
-using strain_rate_dimension =
-    divide_dimensions_t<strain_dimension, time_dimension>;
-using inverse_length_dimension =
-    divide_dimensions_t<no_dimension, length_dimension>;
-using inverse_area_dimension =
-    divide_dimensions_t<no_dimension, area_dimension>;
-using density_dimension = divide_dimensions_t<mass_dimension, volume_dimension>;
-using energy_dimension =
-    multiply_dimensions_t<force_dimension, length_dimension>;
-using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
-using specific_energy_dimension =
-    divide_dimensions_t<energy_dimension, mass_dimension>;
-using specific_energy_rate_dimension =
-    divide_dimensions_t<specific_energy_dimension, time_dimension>;
-using velocity_gradient_dimension =
-    divide_dimensions_t<velocity_dimension, length_dimension>;
-using dynamic_viscosity_dimension =
-    divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
-using kinematic_viscosity_dimension =
-    divide_dimensions_t<area_dimension, time_dimension>;
-using power_dimension = divide_dimensions_t<energy_dimension, time_dimension>;
-using heat_flux_dimension =
-    divide_dimensions_t<power_dimension, area_dimension>;
-using stress_rate_dimension =
-    divide_dimensions_t<stress_dimension, time_dimension>;
-using pressure_rate_dimension = stress_rate_dimension;
-using energy_density_dimension =
-    divide_dimensions_t<energy_dimension, volume_dimension>;
-using energy_density_rate_dimension =
-    divide_dimensions_t<energy_density_dimension, time_dimension>;
-using stress_gradient_dimension =
-    divide_dimensions_t<stress_dimension, length_dimension>;
-using pressure_gradient_dimension = stress_gradient_dimension;
-using strain_rate_rate_dimension =
-    divide_dimensions_t<strain_rate_dimension, time_dimension>;
+using no_dimension                   = dimension<0, 0, 0, 0, 0, 0, 0>;
+using length_dimension               = dimension<1, 0, 0, 0, 0, 0, 0>;
+using mass_dimension                 = dimension<0, 1, 0, 0, 0, 0, 0>;
+using time_dimension                 = dimension<0, 0, 1, 0, 0, 0, 0>;
+using current_dimension              = dimension<0, 0, 0, 1, 0, 0, 0>;
+using temperature_dimension          = dimension<0, 0, 0, 0, 1, 0, 0>;
+using amount_dimension               = dimension<0, 0, 0, 0, 0, 1, 0>;
+using intensity_dimension            = dimension<0, 0, 0, 0, 0, 0, 1>;
+using speed_dimension                = divide_dimensions_t<length_dimension, time_dimension>;
+using velocity_dimension             = speed_dimension;
+using acceleration_dimension         = divide_dimensions_t<speed_dimension, time_dimension>;
+using momentum_dimension             = multiply_dimensions_t<mass_dimension, velocity_dimension>;
+using force_dimension                = multiply_dimensions_t<mass_dimension, acceleration_dimension>;
+using area_dimension                 = multiply_dimensions_t<length_dimension, length_dimension>;
+using stress_dimension               = divide_dimensions_t<force_dimension, area_dimension>;
+using pressure_dimension             = stress_dimension;
+using volume_dimension               = multiply_dimensions_t<area_dimension, length_dimension>;
+using basis_dimension                = no_dimension;
+using strain_dimension               = divide_dimensions_t<length_dimension, length_dimension>;
+using strain_rate_dimension          = divide_dimensions_t<strain_dimension, time_dimension>;
+using inverse_length_dimension       = divide_dimensions_t<no_dimension, length_dimension>;
+using inverse_area_dimension         = divide_dimensions_t<no_dimension, area_dimension>;
+using density_dimension              = divide_dimensions_t<mass_dimension, volume_dimension>;
+using energy_dimension               = multiply_dimensions_t<force_dimension, length_dimension>;
+using power_dimension                = divide_dimensions_t<energy_dimension, time_dimension>;
+using specific_energy_dimension      = divide_dimensions_t<energy_dimension, mass_dimension>;
+using specific_energy_rate_dimension = divide_dimensions_t<specific_energy_dimension, time_dimension>;
+using velocity_gradient_dimension    = divide_dimensions_t<velocity_dimension, length_dimension>;
+using dynamic_viscosity_dimension    = divide_dimensions_t<pressure_dimension, velocity_gradient_dimension>;
+using kinematic_viscosity_dimension  = divide_dimensions_t<area_dimension, time_dimension>;
+using power_dimension                = divide_dimensions_t<energy_dimension, time_dimension>;
+using heat_flux_dimension            = divide_dimensions_t<power_dimension, area_dimension>;
+using stress_rate_dimension          = divide_dimensions_t<stress_dimension, time_dimension>;
+using pressure_rate_dimension        = stress_rate_dimension;
+using energy_density_dimension       = divide_dimensions_t<energy_dimension, volume_dimension>;
+using energy_density_rate_dimension  = divide_dimensions_t<energy_density_dimension, time_dimension>;
+using stress_gradient_dimension      = divide_dimensions_t<stress_dimension, length_dimension>;
+using pressure_gradient_dimension    = stress_gradient_dimension;
+using strain_rate_rate_dimension     = divide_dimensions_t<strain_rate_dimension, time_dimension>;
 
 #ifdef HPC_ENABLE_DIMENSIONAL_ANALYSIS
 
@@ -185,25 +150,16 @@ class quantity
   T m_impl;
 
  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept
-      : m_impl(in)
-  {
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept : m_impl(in) {}
   HPC_ALWAYS_INLINE constexpr quantity() noexcept                   = default;
   HPC_ALWAYS_INLINE constexpr quantity(quantity const& in) noexcept = default;
   HPC_ALWAYS_INLINE quantity&
                     operator=(quantity const& in) noexcept = default;
   template <class Dimension2>
-  HPC_ALWAYS_INLINE constexpr explicit quantity(
-      quantity<T, Dimension2> const& in) noexcept
-      : quantity(T(in))
+  HPC_ALWAYS_INLINE constexpr explicit quantity(quantity<T, Dimension2> const& in) noexcept : quantity(T(in))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T()
-      const noexcept
-  {
-    return m_impl;
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T() const noexcept { return m_impl; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
   get() const noexcept
   {
@@ -584,8 +540,7 @@ using kinematic_viscosity = quantity<T, kinematic_viscosity_dimension>;
 template <class T>
 using velocity_gradient = matrix3x3<quantity<T, velocity_gradient_dimension>>;
 template <class T>
-using symmetric_velocity_gradient =
-    symmetric3x3<quantity<T, velocity_gradient_dimension>>;
+using symmetric_velocity_gradient = symmetric3x3<quantity<T, velocity_gradient_dimension>>;
 template <class T>
 using heat_flux = vector3<quantity<T, heat_flux_dimension>>;
 template <class T>

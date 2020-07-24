@@ -62,9 +62,9 @@ compute_connected_neighbors(
       for (auto ord1 : idx2_to_idx1ord[idx2]) {
         auto neighbor = idx1ord_to_idx1[ord1];
         if (neighbor == i) continue;
-        auto      count               = hpc::atomic_ref<int>(counts[neighbor]);
-        int const offset              = count++;
-        auto      node_neighbor_range = neighbor_ranges[neighbor];
+        auto      count                        = hpc::atomic_ref<int>(counts[neighbor]);
+        int const offset                       = count++;
+        auto      node_neighbor_range          = neighbor_ranges[neighbor];
         neighbors[node_neighbor_range[offset]] = i;
       }
     }
@@ -73,16 +73,12 @@ compute_connected_neighbors(
 
   auto sort_func = [=] HPC_DEVICE(const Index1 i) {
     auto                        neighbor_range = neighbor_ranges[i];
-    hpc::counting_range<Index1> except_last(
-        neighbor_range.begin(), neighbor_range.end() - 1);
+    hpc::counting_range<Index1> except_last(neighbor_range.begin(), neighbor_range.end() - 1);
     for (auto neighbor_ordinal1 : except_last) {
       auto                        neighbor1    = neighbors[neighbor_ordinal1];
       Index1                      min_neighbor = neighbor1;
-      hpc::counting_range<Index1> remaining(
-          neighbor_ordinal1, neighbor_range.end());
-      for (auto neighbor_ordinal2 : remaining) {
-        min_neighbor = hpc::min(min_neighbor, neighbors[neighbor_ordinal2]);
-      }
+      hpc::counting_range<Index1> remaining(neighbor_ordinal1, neighbor_range.end());
+      for (auto neighbor_ordinal2 : remaining) { min_neighbor = hpc::min(min_neighbor, neighbors[neighbor_ordinal2]); }
       hpc::swap(neighbor1, min_neighbor);
     }
   };
@@ -94,14 +90,11 @@ compute_connected_neighbors(
   auto unique_func = [=] HPC_DEVICE(const Index1 i) {
     auto neighbor_range = neighbor_ranges[i];
     auto last_unique    = neighbor_range.begin();
-    auto except_first   = hpc::counting_range<Index1>(
-        neighbor_range.begin() + 1, neighbor_range.end());
+    auto except_first   = hpc::counting_range<Index1>(neighbor_range.begin() + 1, neighbor_range.end());
     for (auto neighbor_ordinal : except_first) {
       if (neighbors[neighbor_ordinal] != neighbors[*last_unique]) {
         ++last_unique;
-        if (*last_unique != neighbor_ordinal) {
-          neighbors[*last_unique] = std::move(neighbors[neighbor_ordinal]);
-        }
+        if (*last_unique != neighbor_ordinal) { neighbors[*last_unique] = std::move(neighbors[neighbor_ordinal]); }
       }
     }
     uq_counts[i] = ++last_unique - neighbor_range.begin();
@@ -118,14 +111,11 @@ compute_connected_neighbors(
     auto old_begin    = neighbors + old_host_counts[i - 1];
     auto new_begin    = neighbors + unique_host_counts[i - 1];
     auto unique_count = unique_host_counts[i];
-    auto to_range =
-        hpc::make_iterator_range(new_begin, new_begin + unique_count);
-    auto from_range =
-        hpc::make_iterator_range(old_begin, old_begin + unique_count);
+    auto to_range     = hpc::make_iterator_range(new_begin, new_begin + unique_count);
+    auto from_range   = hpc::make_iterator_range(old_begin, old_begin + unique_count);
     hpc::move(hpc::device_policy(), from_range, to_range);
   };
-  hpc::counting_range<Index1> all_but_first_index(
-      indices1.begin() + 1, indices1.end());
+  hpc::counting_range<Index1> all_but_first_index(indices1.begin() + 1, indices1.end());
   hpc::for_each(hpc::serial_policy(), all_but_first_index, resize_func);
 
   n.resize(unique_counts);
@@ -137,24 +127,14 @@ void
 compute_node_node_neighbors(const lgr::state& s, node_neighbors& n)
 {
   compute_connected_neighbors(
-      s.nodes,
-      s.nodes_to_node_points,
-      s.node_points_to_points,
-      s.points_to_point_nodes,
-      s.point_nodes_to_nodes,
-      n);
+      s.nodes, s.nodes_to_node_points, s.node_points_to_points, s.points_to_point_nodes, s.point_nodes_to_nodes, n);
 }
 
 void
 compute_point_point_neighbors(const lgr::state& s, point_neighbors& n)
 {
   compute_connected_neighbors(
-      s.points,
-      s.points_to_point_nodes,
-      s.point_nodes_to_nodes,
-      s.nodes_to_node_points,
-      s.node_points_to_points,
-      n);
+      s.points, s.points_to_point_nodes, s.point_nodes_to_nodes, s.nodes_to_node_points, s.node_points_to_points, n);
 }
 
 TEST(distances, can_compute_nearest_and_farthest_node_to_node)
@@ -165,13 +145,10 @@ TEST(distances, can_compute_nearest_and_farthest_node_to_node)
   node_neighbors n;
   compute_node_node_neighbors(s, n);
 
-  hpc::device_vector<hpc::length<double>, node_index>
-      nodes_to_neighbor_squared_distances;
-  compute_node_neighbor_squared_distances(
-      s, n, nodes_to_neighbor_squared_distances);
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 
-  check_single_tetrahedron_node_neighbor_squared_distances(
-      s, n, nodes_to_neighbor_squared_distances);
+  check_single_tetrahedron_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }
 
 TEST(distances, can_compute_nearest_and_farthest_point_to_point)
@@ -182,13 +159,10 @@ TEST(distances, can_compute_nearest_and_farthest_point_to_point)
   point_neighbors n;
   compute_point_point_neighbors(s, n);
 
-  hpc::device_vector<hpc::length<double>, point_index>
-      points_to_neighbor_squared_distances;
-  compute_point_neighbor_squared_distances(
-      s, n, points_to_neighbor_squared_distances);
+  hpc::device_vector<hpc::length<double>, point_index> points_to_neighbor_squared_distances;
+  compute_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 
-  check_two_tetrahedron_point_neighbor_squared_distances(
-      s, n, points_to_neighbor_squared_distances);
+  check_two_tetrahedron_point_neighbor_squared_distances(s, n, points_to_neighbor_squared_distances);
 }
 
 TEST(distances, performance_test_node_to_node_distances)
@@ -199,10 +173,8 @@ TEST(distances, performance_test_node_to_node_distances)
   node_neighbors n;
   compute_node_node_neighbors(s, n);
 
-  hpc::device_vector<hpc::length<double>, node_index>
-      nodes_to_neighbor_squared_distances;
-  compute_node_neighbor_squared_distances(
-      s, n, nodes_to_neighbor_squared_distances);
+  hpc::device_vector<hpc::length<double>, node_index> nodes_to_neighbor_squared_distances;
+  compute_node_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }
 
 TEST(distances, performance_test_point_to_point_distances)
@@ -213,8 +185,6 @@ TEST(distances, performance_test_point_to_point_distances)
   node_neighbors n;
   compute_point_point_neighbors(s, n);
 
-  hpc::device_vector<hpc::length<double>, point_index>
-      nodes_to_neighbor_squared_distances;
-  compute_point_neighbor_squared_distances(
-      s, n, nodes_to_neighbor_squared_distances);
+  hpc::device_vector<hpc::length<double>, point_index> nodes_to_neighbor_squared_distances;
+  compute_point_neighbor_squared_distances(s, n, nodes_to_neighbor_squared_distances);
 }

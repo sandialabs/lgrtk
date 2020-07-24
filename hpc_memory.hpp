@@ -127,10 +127,7 @@ uninitialized_default_construct(serial_policy, Range&& range)
   using range_type = std::decay_t<Range>;
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) {
-    ::new (static_cast<void*>(std::addressof(*first)))
-        typename range_type::value_type;
-  }
+  for (; first != last; ++first) { ::new (static_cast<void*>(std::addressof(*first))) typename range_type::value_type; }
 }
 
 #ifdef HPC_CUDA
@@ -169,9 +166,7 @@ destroy(serial_policy, Range&& range)
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) {
-    ::hpc::host_destroy_at(std::addressof(*first));
-  }
+  for (; first != last; ++first) { ::hpc::host_destroy_at(std::addressof(*first)); }
 }
 
 #ifdef HPC_CUDA
@@ -182,9 +177,7 @@ destroy(cuda_policy policy, Range&& range)
 {
   using range_type     = std::decay_t<Range>;
   using reference_type = typename range_type::reference;
-  auto functor         = [=] HPC_DEVICE(reference_type ref) {
-    ::hpc::device_destroy_at(&ref);
-  };
+  auto functor         = [=] HPC_DEVICE(reference_type ref) { ::hpc::device_destroy_at(&ref); };
   ::hpc::for_each(policy, range, functor);
 }
 

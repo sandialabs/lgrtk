@@ -114,11 +114,9 @@ move(cuda_policy policy, InputRange& input, OutputRange& output)
   using size_type         = typename InputRange::size_type;
   auto const input_begin  = input.begin();
   auto const output_begin = output.begin();
-  auto       functor      = [=] HPC_DEVICE(size_type const i) {
-    output_begin[i] = std::move(input_begin[i]);
-  };
-  auto size  = input.size();
-  auto range = ::hpc::counting_range<size_type>(size);
+  auto       functor      = [=] HPC_DEVICE(size_type const i) { output_begin[i] = std::move(input_begin[i]); };
+  auto       size         = input.size();
+  auto       range        = ::hpc::counting_range<size_type>(size);
   ::hpc::for_each(policy, range, functor);
 }
 

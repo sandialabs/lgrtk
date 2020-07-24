@@ -33,38 +33,19 @@ class vector
   using const_pointer    = typename allocator_traits::const_pointer;
   using iterator         = pointer_iterator<T, size_type>;
   using const_iterator   = pointer_iterator<T const, size_type>;
-  constexpr vector() noexcept
-      : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
-  {
-  }
-  vector(size_type count)
-      : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
-  {
-    resize(count);
-  }
-  vector(size_type count, value_type const& value)
-      : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
+  constexpr vector() noexcept : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0) {}
+  vector(size_type count) : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0) { resize(count); }
+  vector(size_type count, value_type const& value) : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
   {
     resize(count);
     ::hpc::fill(m_execution_policy, *this, value);
   }
-  constexpr vector(
-      allocator_type const&   allocator_in,
-      execution_policy const& exec_in) noexcept
-      : m_allocator(allocator_in),
-        m_execution_policy(exec_in),
-        m_data(nullptr),
-        m_size(0)
+  constexpr vector(allocator_type const& allocator_in, execution_policy const& exec_in) noexcept
+      : m_allocator(allocator_in), m_execution_policy(exec_in), m_data(nullptr), m_size(0)
   {
   }
-  vector(
-      size_type               count,
-      allocator_type const&   allocator_in,
-      execution_policy const& exec_in)
-      : m_allocator(allocator_in),
-        m_execution_policy(exec_in),
-        m_data(nullptr),
-        m_size(0)
+  vector(size_type count, allocator_type const& allocator_in, execution_policy const& exec_in)
+      : m_allocator(allocator_in), m_execution_policy(exec_in), m_data(nullptr), m_size(0)
   {
     resize(count);
   }
@@ -147,11 +128,8 @@ class vector
   clear()
   {
     if (m_data) {
-      if (!std::is_trivially_destructible<value_type>::value) {
-        ::hpc::destroy(m_execution_policy, *this);
-      }
-      allocator_traits::deallocate(
-          m_allocator, m_data, std::size_t(hpc::weaken(m_size)));
+      if (!std::is_trivially_destructible<value_type>::value) { ::hpc::destroy(m_execution_policy, *this); }
+      allocator_traits::deallocate(m_allocator, m_data, std::size_t(hpc::weaken(m_size)));
     }
     m_data = nullptr;
     m_size = size_type(0);
@@ -166,29 +144,23 @@ class vector
     }
     if (m_size == size_type(0)) {
       clear();
-      m_data =
-          allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
+      m_data = allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
       m_size = count;
       if (!std::is_trivially_constructible<T>::value) {
         ::hpc::uninitialized_default_construct(m_execution_policy, *this);
       }
       return;
     }
-    auto const mid = ::hpc::min(m_size, count);
-    auto const move_from_range =
-        ::hpc::make_iterator_range(begin(), begin() + mid);
-    auto const new_data =
-        allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
+    auto const     mid             = ::hpc::min(m_size, count);
+    auto const     move_from_range = ::hpc::make_iterator_range(begin(), begin() + mid);
+    auto const     new_data        = allocator_traits::allocate(m_allocator, std::size_t(weaken(count)));
     iterator const new_begin(new_data, new_data, new_data + count);
-    auto const     move_into_range =
-        ::hpc::make_iterator_range(new_begin, new_begin + mid);
+    auto const     move_into_range = ::hpc::make_iterator_range(new_begin, new_begin + mid);
     ::hpc::move(m_execution_policy, move_from_range, move_into_range);
     clear();
     if (!std::is_trivially_constructible<T>::value) {
-      auto const construct_range =
-          ::hpc::make_iterator_range(new_begin + mid, new_begin + count);
-      ::hpc::uninitialized_default_construct(
-          m_execution_policy, construct_range);
+      auto const construct_range = ::hpc::make_iterator_range(new_begin + mid, new_begin + count);
+      ::hpc::uninitialized_default_construct(m_execution_policy, construct_range);
     }
     m_data = new_data;
     m_size = count;
@@ -216,14 +188,11 @@ class vector
 };
 
 template <class T, class Index = std::ptrdiff_t>
-using host_vector =
-    vector<T, ::hpc::host_allocator<T>, ::hpc::host_policy, Index>;
+using host_vector = vector<T, ::hpc::host_allocator<T>, ::hpc::host_policy, Index>;
 template <class T, class Index = std::ptrdiff_t>
-using device_vector =
-    vector<T, ::hpc::device_allocator<T>, ::hpc::device_policy, Index>;
+using device_vector = vector<T, ::hpc::device_allocator<T>, ::hpc::device_policy, Index>;
 template <class T, class Index = std::ptrdiff_t>
-using pinned_vector =
-    vector<T, ::hpc::pinned_allocator<T>, ::hpc::host_policy, Index>;
+using pinned_vector = vector<T, ::hpc::pinned_allocator<T>, ::hpc::host_policy, Index>;
 
 template <class T, class A, class P, class I>
 void

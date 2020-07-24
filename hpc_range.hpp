@@ -16,15 +16,12 @@ class iterator_range<Iterator, std::input_iterator_tag>
   Iterator m_end;
 
  public:
-  using difference_type =
-      typename std::iterator_traits<Iterator>::difference_type;
-  using size_type  = difference_type;
-  using reference  = typename std::iterator_traits<Iterator>::reference;
-  using value_type = typename std::iterator_traits<Iterator>::value_type;
-  using iterator   = Iterator;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(
-      Iterator begin_in,
-      Iterator end_in) noexcept
+  using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+  using size_type       = difference_type;
+  using reference       = typename std::iterator_traits<Iterator>::reference;
+  using value_type      = typename std::iterator_traits<Iterator>::value_type;
+  using iterator        = Iterator;
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(Iterator begin_in, Iterator end_in) noexcept
       : m_begin(begin_in), m_end(end_in)
   {
   }
@@ -59,17 +56,14 @@ template <class Iterator>
 class iterator_range<Iterator, std::random_access_iterator_tag>
     : public ::hpc::impl::iterator_range<Iterator, std::input_iterator_tag>
 {
-  using base_type =
-      ::hpc::impl::iterator_range<Iterator, std::input_iterator_tag>;
+  using base_type = ::hpc::impl::iterator_range<Iterator, std::input_iterator_tag>;
 
  public:
   using difference_type = typename base_type::difference_type;
   using reference       = typename base_type::reference;
   using value_type      = typename base_type::value_type;
   using iterator        = typename base_type::iterator;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(
-      iterator begin_in,
-      iterator end_in) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(iterator begin_in, iterator end_in) noexcept
       : base_type(begin_in, end_in)
   {
   }
@@ -84,22 +78,16 @@ class iterator_range<Iterator, std::random_access_iterator_tag>
 
 template <class Iterator>
 class iterator_range
-    : public ::hpc::impl::iterator_range<
-          Iterator,
-          typename std::iterator_traits<Iterator>::iterator_category>
+    : public ::hpc::impl::iterator_range<Iterator, typename std::iterator_traits<Iterator>::iterator_category>
 {
-  using base_type = ::hpc::impl::iterator_range<
-      Iterator,
-      typename std::iterator_traits<Iterator>::iterator_category>;
+  using base_type = ::hpc::impl::iterator_range<Iterator, typename std::iterator_traits<Iterator>::iterator_category>;
 
  public:
   using difference_type = typename base_type::difference_type;
   using reference       = typename base_type::reference;
   using value_type      = typename base_type::value_type;
   using iterator        = typename base_type::iterator;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(
-      iterator begin_in,
-      iterator end_in) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr iterator_range(iterator begin_in, iterator end_in) noexcept
       : base_type(begin_in, end_in)
   {
   }
@@ -120,20 +108,15 @@ class counting_range : public iterator_range<counting_iterator<T>>
  public:
   using difference_type = typename base_type::difference_type;
   using iterator        = typename base_type::iterator;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(
-      T first,
-      T last) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(T first, T last) noexcept
       : counting_range(iterator(first), iterator(last))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_range(
-      difference_type size_in) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit counting_range(difference_type size_in) noexcept
       : counting_range(iterator(T(0)), iterator(T(0) + size_in))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(
-      iterator begin_in,
-      iterator end_in) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_range(iterator begin_in, iterator end_in) noexcept
       : base_type(begin_in, end_in)
   {
   }
@@ -179,11 +162,7 @@ class inner_iterator<Iterator, layout::right, OuterIndex, InnerIndex>
   using reference         = typename Iterator::reference;
   using pointer           = typename Iterator::pointer;
   using iterator_category = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit inner_iterator(
-      Iterator impl_in) noexcept
-      : m_begin(impl_in)
-  {
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit inner_iterator(Iterator impl_in) noexcept : m_begin(impl_in) {}
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
   operator==(inner_iterator const& other) const noexcept
   {
@@ -395,17 +374,14 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex>
   InnerIndex m_inner_size;
 
  public:
-  using inner_iterator_type =
-      inner_iterator<Iterator, layout::right, OuterIndex, InnerIndex>;
+  using inner_iterator_type   = inner_iterator<Iterator, layout::right, OuterIndex, InnerIndex>;
   using inner_difference_type = typename inner_iterator_type::difference_type;
   using value_type            = ::hpc::iterator_range<inner_iterator_type>;
   using difference_type       = OuterIndex;
   using reference             = value_type;
   using pointer               = value_type const*;
   using iterator_category     = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator(
-      Iterator const&   begin_in,
-      InnerIndex const& inner_size_in)
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator(Iterator const& begin_in, InnerIndex const& inner_size_in)
       : m_begin(begin_in), m_inner_size(inner_size_in)
   {
   }
@@ -422,9 +398,7 @@ class outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr reference
   operator*() const noexcept
   {
-    return reference(
-        inner_iterator_type(m_begin),
-        inner_iterator_type(m_begin + (difference_type(1) * m_inner_size)));
+    return reference(inner_iterator_type(m_begin), inner_iterator_type(m_begin + (difference_type(1) * m_inner_size)));
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator&
                                     operator++() noexcept
@@ -514,20 +488,17 @@ class outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex>
   InnerIndex m_inner_size;
 
  public:
-  using inner_iterator_type =
-      inner_iterator<Iterator, layout::left, OuterIndex, InnerIndex>;
-  using value_type        = ::hpc::iterator_range<inner_iterator_type>;
-  using difference_type   = OuterIndex;
-  using reference         = value_type;
-  using pointer           = value_type const*;
-  using iterator_category = std::random_access_iterator_tag;
+  using inner_iterator_type = inner_iterator<Iterator, layout::left, OuterIndex, InnerIndex>;
+  using value_type          = ::hpc::iterator_range<inner_iterator_type>;
+  using difference_type     = OuterIndex;
+  using reference           = value_type;
+  using pointer             = value_type const*;
+  using iterator_category   = std::random_access_iterator_tag;
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit outer_iterator(
       Iterator const&   begin_in,
       OuterIndex const& outer_size_in,
       InnerIndex const& inner_size_in)
-      : m_begin(begin_in),
-        m_outer_size(outer_size_in),
-        m_inner_size(inner_size_in)
+      : m_begin(begin_in), m_outer_size(outer_size_in), m_inner_size(inner_size_in)
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
@@ -545,8 +516,7 @@ class outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex>
   {
     return reference(
         inner_iterator_type(m_begin, m_outer_size),
-        inner_iterator_type(
-            m_begin + m_outer_size * m_inner_size, m_outer_size));
+        inner_iterator_type(m_begin + m_outer_size * m_inner_size, m_outer_size));
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE outer_iterator&
                                     operator++() noexcept
@@ -589,14 +559,12 @@ class outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator
   operator+(difference_type const n) const noexcept
   {
-    return outer_iterator(
-        m_begin + (n * InnerIndex(1)), m_outer_size, m_inner_size);
+    return outer_iterator(m_begin + (n * InnerIndex(1)), m_outer_size, m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr outer_iterator
   operator-(difference_type const n) const noexcept
   {
-    return outer_iterator(
-        m_begin - (n * InnerIndex(1)), m_outer_size, m_inner_size);
+    return outer_iterator(m_begin - (n * InnerIndex(1)), m_outer_size, m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr difference_type
   operator-(outer_iterator const& other) const noexcept
@@ -643,8 +611,7 @@ class range_product<Iterator, layout::right, OuterIndex, InnerIndex>
   InnerIndex m_inner_size;
 
  public:
-  using iterator = ::hpc::impl::
-      outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex>;
+  using iterator        = ::hpc::impl::outer_iterator<Iterator, layout::right, OuterIndex, InnerIndex>;
   using const_iterator  = iterator;
   using value_type      = typename iterator::value_type;
   using size_type       = OuterIndex;
@@ -657,9 +624,7 @@ class range_product<Iterator, layout::right, OuterIndex, InnerIndex>
       Iterator const& begin_in,
       OuterIndex      outer_size_in,
       InnerIndex      inner_size_in)
-      : m_begin(begin_in),
-        m_outer_size(outer_size_in),
-        m_inner_size(inner_size_in)
+      : m_begin(begin_in), m_outer_size(outer_size_in), m_inner_size(inner_size_in)
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_iterator
@@ -707,8 +672,7 @@ class range_product<Iterator, layout::left, OuterIndex, InnerIndex>
   InnerIndex m_inner_size;
 
  public:
-  using iterator = ::hpc::impl::
-      outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex>;
+  using iterator        = ::hpc::impl::outer_iterator<Iterator, layout::left, OuterIndex, InnerIndex>;
   using const_iterator  = iterator;
   using value_type      = typename iterator::value_type;
   using size_type       = OuterIndex;
@@ -721,9 +685,7 @@ class range_product<Iterator, layout::left, OuterIndex, InnerIndex>
       Iterator const& begin_in,
       OuterIndex      outer_size_in,
       InnerIndex      inner_size_in) noexcept
-      : m_begin(begin_in),
-        m_outer_size(outer_size_in),
-        m_inner_size(inner_size_in)
+      : m_begin(begin_in), m_outer_size(outer_size_in), m_inner_size(inner_size_in)
   {
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_iterator
@@ -739,14 +701,12 @@ class range_product<Iterator, layout::left, OuterIndex, InnerIndex>
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_iterator
   end() const noexcept
   {
-    return iterator(
-        m_begin + m_outer_size * InnerIndex(1), m_outer_size, m_inner_size);
+    return iterator(m_begin + m_outer_size * InnerIndex(1), m_outer_size, m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr const_iterator
   cend() const noexcept
   {
-    return iterator(
-        m_begin + m_outer_size * InnerIndex(1), m_outer_size, m_inner_size);
+    return iterator(m_begin + m_outer_size * InnerIndex(1), m_outer_size, m_inner_size);
   }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
   empty() const noexcept
@@ -768,24 +728,16 @@ class range_product<Iterator, layout::left, OuterIndex, InnerIndex>
 static constexpr layout host_layout   = layout::right;
 static constexpr layout device_layout = layout::right;
 
-template <
-    layout L = ::hpc::device_layout,
-    class O  = std::ptrdiff_t,
-    class I  = std::ptrdiff_t>
-using counting_product = ::hpc::
-    range_product<::hpc::counting_iterator<decltype(O() * I())>, L, O, I>;
+template <layout L = ::hpc::device_layout, class O = std::ptrdiff_t, class I = std::ptrdiff_t>
+using counting_product = ::hpc::range_product<::hpc::counting_iterator<decltype(O() * I())>, L, O, I>;
 
-template <
-    layout L = ::hpc::device_layout,
-    class O  = std::ptrdiff_t,
-    class I  = std::ptrdiff_t>
+template <layout L = ::hpc::device_layout, class O = std::ptrdiff_t, class I = std::ptrdiff_t>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 make_counting_product(O outer_count, I inner_count) noexcept
 {
   using product_index    = decltype(O() * I());
   using product_iterator = counting_iterator<product_index>;
-  return counting_product<L, O, I>(
-      product_iterator(product_index(0)), outer_count, inner_count);
+  return counting_product<L, O, I>(product_iterator(product_index(0)), outer_count, inner_count);
 }
 
 template <class O, class I>

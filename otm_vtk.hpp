@@ -22,17 +22,14 @@ struct otm_host_pinned_output_state : public otm_host_pinned_state
   hpc::pinned_array_vector<hpc::velocity<double>, node_index>     v;
   hpc::pinned_vector<hpc::mass<double>, node_index>               mass;
 
-  hpc::pinned_array_vector<hpc::deformation_gradient<double>, point_index>
-      F_total;
-  hpc::pinned_array_vector<hpc::deformation_gradient<double>, point_index>
-                                                             Fp_total;
-  hpc::pinned_array_vector<hpc::stress<double>, point_index> sigma;
-  hpc::pinned_vector<hpc::pressure<double>, point_index>     K;
-  hpc::pinned_vector<hpc::pressure<double>, point_index>     G;
-  hpc::pinned_vector<hpc::strain<double>, point_index>       ep;
-  hpc::pinned_vector<hpc::strain_rate<double>, point_index>  ep_dot;
-  hpc::pinned_vector<hpc::energy_density<double>, point_index>
-      potential_density;
+  hpc::pinned_array_vector<hpc::deformation_gradient<double>, point_index> F_total;
+  hpc::pinned_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total;
+  hpc::pinned_array_vector<hpc::stress<double>, point_index>               sigma;
+  hpc::pinned_vector<hpc::pressure<double>, point_index>                   K;
+  hpc::pinned_vector<hpc::pressure<double>, point_index>                   G;
+  hpc::pinned_vector<hpc::strain<double>, point_index>                     ep;
+  hpc::pinned_vector<hpc::strain_rate<double>, point_index>                ep_dot;
+  hpc::pinned_vector<hpc::energy_density<double>, point_index>             potential_density;
 };
 
 class otm_file_writer

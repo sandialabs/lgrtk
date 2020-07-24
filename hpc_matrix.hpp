@@ -16,20 +16,17 @@ template <
 class matrix
 {
  public:
-  using row_type    = RowIndex;
-  using column_type = ColumnIndex;
-  using nonzero_type =
-      decltype(std::declval<row_type>() * std::declval<column_type>());
-  using value_type = T;
+  using row_type     = RowIndex;
+  using column_type  = ColumnIndex;
+  using nonzero_type = decltype(std::declval<row_type>() * std::declval<column_type>());
+  using value_type   = T;
 
  private:
-  using data_type =
-      ::hpc::vector<value_type, Allocator, ExecutionPolicy, nonzero_type>;
+  using data_type           = ::hpc::vector<value_type, Allocator, ExecutionPolicy, nonzero_type>;
   using data_iterator       = typename data_type::iterator;
   using const_data_iterator = typename data_type::const_iterator;
-  using range_type = range_product<data_iterator, L, row_type, column_type>;
-  using const_range_type =
-      range_product<const_data_iterator, L, row_type, column_type>;
+  using range_type          = range_product<data_iterator, L, row_type, column_type>;
+  using const_range_type    = range_product<const_data_iterator, L, row_type, column_type>;
   vector<value_type, Allocator, ExecutionPolicy, nonzero_type> m_data;
   row_type                                                     m_rows;
   column_type                                                  m_columns;
@@ -57,14 +54,10 @@ class matrix
   using const_iterator   = typename const_range_type::const_iterator;
   constexpr matrix() noexcept : m_rows(0), m_columns(0) {}
   matrix(row_type row_count, column_type column_count)
-      : m_data(row_count * column_count),
-        m_rows(row_count),
-        m_columns(column_count)
+      : m_data(row_count * column_count), m_rows(row_count), m_columns(column_count)
   {
   }
-  constexpr matrix(
-      allocator_type const&   allocator_in,
-      execution_policy const& exec_in) noexcept
+  constexpr matrix(allocator_type const& allocator_in, execution_policy const& exec_in) noexcept
       : m_data(allocator_in, exec_in), m_rows(0), m_columns(0)
   {
   }
@@ -73,9 +66,7 @@ class matrix
       column_type             column_count,
       allocator_type const&   allocator_in,
       execution_policy const& exec_in)
-      : m_data(row_count * column_count, allocator_in, exec_in),
-        m_rows(row_count),
-        m_columns(column_count)
+      : m_data(row_count * column_count, allocator_in, exec_in), m_rows(row_count), m_columns(column_count)
   {
   }
   matrix(matrix&& other) noexcept = default;

@@ -15,10 +15,9 @@
 
 inline void
 check_single_tetrahedron_node_neighbor_squared_distances(
-    const lgr::state&                       s,
-    const lgr::search_util::node_neighbors& n,
-    hpc::device_vector<hpc::length<double>, lgr::node_index>&
-        nodes_to_neighbor_squared_distances)
+    const lgr::state&                                         s,
+    const lgr::search_util::node_neighbors&                   n,
+    hpc::device_vector<hpc::length<double>, lgr::node_index>& nodes_to_neighbor_squared_distances)
 {
   ASSERT_EQ(nodes_to_neighbor_squared_distances.size(), 12);
 
@@ -26,9 +25,8 @@ check_single_tetrahedron_node_neighbor_squared_distances(
   auto n2n_neighbors = n.entities_to_neighbor_ordinals.cbegin();
   auto check_func    = DEVICE_TEST(lgr::node_index node)
   {
-    constexpr hpc::length<double> expected[4][3]{
-        {1.0, 1.0, 1.0}, {1.0, 2.0, 2.0}, {1.0, 2.0, 2.0}, {1.0, 2.0, 2.0}};
-    auto node_neighbors = n2n_neighbors[node];
+    constexpr hpc::length<double> expected[4][3]{{1.0, 1.0, 1.0}, {1.0, 2.0, 2.0}, {1.0, 2.0, 2.0}, {1.0, 2.0, 2.0}};
+    auto                          node_neighbors = n2n_neighbors[node];
     DEVICE_ASSERT_EQ(node_neighbors.size(), 3);
     for (int i = 0; i < 3; ++i) {
       auto const expected_dist     = expected[hpc::weaken(node)][i];
@@ -41,10 +39,9 @@ check_single_tetrahedron_node_neighbor_squared_distances(
 
 inline void
 check_single_tetrahedron_nearest_node_squared_distance(
-    const lgr::state&                       s,
-    const lgr::search_util::node_neighbors& n,
-    hpc::device_vector<hpc::length<double>, lgr::node_index>&
-        nodes_to_neighbor_squared_distances)
+    const lgr::state&                                         s,
+    const lgr::search_util::node_neighbors&                   n,
+    hpc::device_vector<hpc::length<double>, lgr::node_index>& nodes_to_neighbor_squared_distances)
 {
   ASSERT_EQ(nodes_to_neighbor_squared_distances.size(), 4);
 
@@ -63,10 +60,9 @@ check_single_tetrahedron_nearest_node_squared_distance(
 
 inline void
 check_two_tetrahedron_point_neighbor_squared_distances(
-    const lgr::state&                        s,
-    const lgr::search_util::point_neighbors& n,
-    hpc::device_vector<hpc::length<double>, lgr::point_index>&
-        pts_to_neighbor_squared_distances)
+    const lgr::state&                                          s,
+    const lgr::search_util::point_neighbors&                   n,
+    hpc::device_vector<hpc::length<double>, lgr::point_index>& pts_to_neighbor_squared_distances)
 {
   ASSERT_EQ(pts_to_neighbor_squared_distances.size(), 2);
 

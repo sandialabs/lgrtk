@@ -62,7 +62,7 @@ HPC_NOINLINE T
 reduce(cuda_policy policy, Range const& range, T init)
 {
   using input_value_type = typename Range::value_type;
-  auto const unop = [] HPC_DEVICE(input_value_type const i) { return T(i); };
+  auto const unop        = [] HPC_DEVICE(input_value_type const i) { return T(i); };
   return hpc::transform_reduce(policy, range, init, hpc::plus<T>(), unop);
 }
 
@@ -114,11 +114,7 @@ transform_inclusive_scan(
 
 namespace impl {
 
-template <
-    class InputIterator,
-    class OutputIterator,
-    class BinaryOp,
-    class UnaryOp>
+template <class InputIterator, class OutputIterator, class BinaryOp, class UnaryOp>
 HPC_NOINLINE void
 transform_inclusive_scan(
     cuda_policy,
@@ -128,8 +124,7 @@ transform_inclusive_scan(
     BinaryOp       binary_op,
     UnaryOp        unary_op)
 {
-  thrust::transform_inclusive_scan(
-      thrust::device, first, last, d_first, unary_op, binary_op);
+  thrust::transform_inclusive_scan(thrust::device, first, last, d_first, unary_op, binary_op);
 }
 
 template <class T, class Index, class UnaryOp>
@@ -146,13 +141,7 @@ transform_inclusive_scan(
   ::thrust::counting_iterator<int> new_first(int(first - old_zero));
   ::thrust::counting_iterator<int> new_last(int(last - old_zero));
   T*                               new_d_first = &(*d_first);
-  thrust::transform_inclusive_scan(
-      thrust::device,
-      new_first,
-      new_last,
-      new_d_first,
-      unary_op,
-      thrust::plus<T>());
+  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<T>());
 }
 
 template <class TStored, class TResult, class Index, class UnaryOp>
@@ -169,13 +158,7 @@ transform_inclusive_scan(
   TStored* const new_first   = &(*first);
   TStored* const new_last    = new_first + size;
   TResult* const new_d_first = &(*d_first);
-  thrust::transform_inclusive_scan(
-      thrust::device,
-      new_first,
-      new_last,
-      new_d_first,
-      unary_op,
-      thrust::plus<TResult>());
+  thrust::transform_inclusive_scan(thrust::device, new_first, new_last, new_d_first, unary_op, thrust::plus<TResult>());
 }
 
 }  // namespace impl
@@ -189,18 +172,14 @@ transform_inclusive_scan(
     BinaryOp          binary_op,
     UnaryOp           unary_op)
 {
-  ::hpc::impl::transform_inclusive_scan(
-      policy, input.begin(), input.end(), output.begin(), binary_op, unary_op);
+  ::hpc::impl::transform_inclusive_scan(policy, input.begin(), input.end(), output.begin(), binary_op, unary_op);
 }
 
 #endif
 
 template <class ExecutionPolicy, class InputRange, class OutputRange>
 void
-offset_scan(
-    ExecutionPolicy   policy,
-    InputRange const& input,
-    OutputRange&      output)
+offset_scan(ExecutionPolicy policy, InputRange const& input, OutputRange& output)
 {
   auto       it    = output.begin();
   auto const first = it;
@@ -213,11 +192,7 @@ offset_scan(
   auto const end  = output.end();
   auto const rest = iterator_range<decltype(it)>(second, end);
   ::hpc::transform_inclusive_scan(
-      policy,
-      input,
-      rest,
-      ::hpc::plus<output_value_type>(),
-      ::hpc::cast<output_value_type, input_value_type>());
+      policy, input, rest, ::hpc::plus<output_value_type>(), ::hpc::cast<output_value_type, input_value_type>());
 }
 
 }  // namespace hpc

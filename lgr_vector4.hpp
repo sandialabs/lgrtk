@@ -45,8 +45,7 @@ template <typename Scalar>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr Scalar
 inner_product(vector4<Scalar> const left, vector4<Scalar> const right) noexcept
 {
-  return left(0) * right(0) + left(1) * right(1) + left(2) * right(2) +
-         left(3) * right(3);
+  return left(0) * right(0) + left(1) * right(1) + left(2) * right(2) + left(3) * right(3);
 }
 
 template <typename Scalar>

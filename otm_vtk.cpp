@@ -69,10 +69,8 @@ otm_file_writer::capture(state const& s)
 void
 otm_file_writer::write(int const file_output_index)
 {
-  auto node_stream =
-      make_vtk_output_stream(prefix + "_nodes", file_output_index);
-  auto point_stream =
-      make_vtk_output_stream(prefix + "_points", file_output_index);
+  auto node_stream  = make_vtk_output_stream(prefix + "_nodes", file_output_index);
+  auto point_stream = make_vtk_output_stream(prefix + "_points", file_output_index);
 
   start_vtk_unstructured_grid_file(node_stream);
   // POINTS (nodes)
@@ -97,18 +95,12 @@ otm_file_writer::write(int const file_output_index)
   write_vtk_full_tensors(point_stream, "deformation_gradient", host_s.F_total);
   write_vtk_scalars(point_stream, "G", host_s.G);
   write_vtk_scalars(point_stream, "K", host_s.K);
-  write_vtk_scalars(
-      point_stream, "potential_density", host_s.potential_density);
+  write_vtk_scalars(point_stream, "potential_density", host_s.potential_density);
   if (host_s.Fp_total.size() > 0) {
-    write_vtk_full_tensors(
-        point_stream, "plastic_deformation_gradient", host_s.Fp_total);
+    write_vtk_full_tensors(point_stream, "plastic_deformation_gradient", host_s.Fp_total);
   }
-  if (host_s.ep.size() > 0) {
-    write_vtk_scalars(point_stream, "ep", host_s.ep);
-  }
-  if (host_s.ep_dot.size() > 0) {
-    write_vtk_scalars(point_stream, "ep_dot", host_s.ep_dot);
-  }
+  if (host_s.ep.size() > 0) { write_vtk_scalars(point_stream, "ep", host_s.ep); }
+  if (host_s.ep_dot.size() > 0) { write_vtk_scalars(point_stream, "ep_dot", host_s.ep_dot); }
   point_stream.close();
 }
 
@@ -158,9 +150,7 @@ otm_file_writer::to_console()
     auto const sigma = points_to_sigma[point].load();
     auto const K     = points_to_K[point];
     auto const G     = points_to_G[point];
-    std::cout << "point: " << point << ", K: " << K << ", G: " << G
-              << ", sigma:\n"
-              << sigma;
+    std::cout << "point: " << point << ", K: " << K << ", G: " << G << ", sigma:\n" << sigma;
   };
   hpc::for_each(hpc::host_policy(), host_s.points, print_sigma);
 }

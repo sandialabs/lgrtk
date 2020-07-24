@@ -61,10 +61,8 @@ otm_update_nearest_point_neighbor_distances(state& s)
 
   if (n.entities_to_neighbors.empty()) return;
 
-  search_util::compute_point_neighbor_squared_distances(
-      s, n, s.nearest_point_neighbor_dist);
-  compute_sqrt_nearest_neighbor_distances(
-      s.points, s.nearest_point_neighbor_dist);
+  search_util::compute_point_neighbor_squared_distances(s, n, s.nearest_point_neighbor_dist);
+  compute_sqrt_nearest_neighbor_distances(s.points, s.nearest_point_neighbor_dist);
   fill_nearest_neighbors(s.points, n, s.nearest_point_neighbor);
 }
 
@@ -78,10 +76,8 @@ otm_update_nearest_node_neighbor_distances(state& s)
 
   if (n.entities_to_neighbors.empty()) return;
 
-  search_util::compute_node_neighbor_squared_distances(
-      s, n, s.nearest_node_neighbor_dist);
-  compute_sqrt_nearest_neighbor_distances(
-      s.nodes, s.nearest_node_neighbor_dist);
+  search_util::compute_node_neighbor_squared_distances(s, n, s.nearest_node_neighbor_dist);
+  compute_sqrt_nearest_neighbor_distances(s.nodes, s.nearest_node_neighbor_dist);
   fill_nearest_neighbors(s.nodes, n, s.nearest_node_neighbor);
 }
 

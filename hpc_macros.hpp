@@ -76,13 +76,11 @@
   do {                         \
   } while (0)
 #else
-#define HPC_TRAP_FPE_IMPL(...)                                        \
-  do {                                                                \
-    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);                       \
-    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);               \
-    _MM_SET_EXCEPTION_MASK(                                           \
-        _MM_GET_EXCEPTION_MASK() &                                    \
-        ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO | _MM_MASK_OVERFLOW)); \
+#define HPC_TRAP_FPE_IMPL(...)                                                                                      \
+  do {                                                                                                              \
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);                                                                     \
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);                                                             \
+    _MM_SET_EXCEPTION_MASK(_MM_GET_EXCEPTION_MASK() & ~(_MM_MASK_INVALID | _MM_MASK_DIV_ZERO | _MM_MASK_OVERFLOW)); \
   } while (0)
 #endif
 

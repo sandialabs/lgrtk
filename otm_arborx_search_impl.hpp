@@ -39,14 +39,12 @@ using device_mem_space = Kokkos::CudaSpace;
 #else
 using device_mem_space = device_exec_space::memory_space;
 #endif
-using device_type        = Kokkos::Device<device_exec_space, device_mem_space>;
-using device_point_view  = Kokkos::View<ArborX::Point*, device_type>;
-using device_sphere_view = Kokkos::View<ArborX::Sphere*, device_type>;
-using device_nearest_query_view =
-    Kokkos::View<ArborX::Nearest<ArborX::Point>*, device_type>;
-using device_intersects_query_view =
-    Kokkos::View<ArborX::Intersects<ArborX::Sphere>*, device_type>;
-using device_int_view = Kokkos::View<int*, device_type>;
+using device_type                  = Kokkos::Device<device_exec_space, device_mem_space>;
+using device_point_view            = Kokkos::View<ArborX::Point*, device_type>;
+using device_sphere_view           = Kokkos::View<ArborX::Sphere*, device_type>;
+using device_nearest_query_view    = Kokkos::View<ArborX::Nearest<ArborX::Point>*, device_type>;
+using device_intersects_query_view = Kokkos::View<ArborX::Intersects<ArborX::Sphere>*, device_type>;
+using device_int_view              = Kokkos::View<int*, device_type>;
 
 void
 initialize();
@@ -64,9 +62,7 @@ device_sphere_view
 create_arborx_point_spheres(const lgr::state& s);
 
 device_nearest_query_view
-make_nearest_node_queries(
-    const device_point_view& points,
-    const int                num_nodes_to_find);
+make_nearest_node_queries(const device_point_view& points, const int num_nodes_to_find);
 
 device_intersects_query_view
 make_intersect_sphere_queries(const device_sphere_view& point_spheres);

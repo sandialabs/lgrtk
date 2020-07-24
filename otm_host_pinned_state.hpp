@@ -10,10 +10,7 @@ namespace lgr {
 
 template <typename state_type>
 inline void
-resize_state_arrays(
-    state_type&       state,
-    node_index const  num_nodes,
-    point_index const num_points)
+resize_state_arrays(state_type& state, node_index const num_nodes, point_index const num_points)
 {
   state.x.resize(num_nodes);
   state.xp.resize(num_points);
@@ -31,10 +28,9 @@ struct otm_host_pinned_state
   hpc::pinned_array_vector<hpc::position<double>, node_index>  x;
   hpc::pinned_array_vector<hpc::position<double>, point_index> xp;
 
-  hpc::pinned_vector<node_index, point_node_index>  point_nodes_to_nodes;
-  hpc::pinned_vector<point_index, node_point_index> node_points_to_points;
-  hpc::pinned_vector<point_node_index, node_point_index>
-      node_points_to_point_nodes;
+  hpc::pinned_vector<node_index, point_node_index>       point_nodes_to_nodes;
+  hpc::pinned_vector<point_index, node_point_index>      node_points_to_points;
+  hpc::pinned_vector<point_node_index, node_point_index> node_points_to_point_nodes;
 
   hpc::pinned_vector<hpc::volume<double>, point_index>  V;
   hpc::pinned_vector<hpc::density<double>, point_index> rho;

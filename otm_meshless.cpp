@@ -59,7 +59,7 @@ otm_initialize_point_volume_1(state& s)
   auto const nodes_to_x            = s.x.cbegin();
   auto const point_to_V            = s.V.begin();
   auto       functor               = [=] HPC_DEVICE(point_index const point) {
-    auto point_nodes = points_to_point_nodes[point];
+    auto                                 point_nodes = points_to_point_nodes[point];
     hpc::array<hpc::position<double>, 4> x;
     assert(point_nodes.size() == 4);
     for (auto i = 0; i < 4; ++i) {
@@ -83,11 +83,11 @@ otm_initialize_point_volume(state& s)
   auto const point_to_V                = s.V.begin();
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const element_nodes_to_nodes    = s.elements_to_nodes.cbegin();
-  auto const points_in_element  = hpc::make_counting_range(points_per_element);
-  auto const elements_to_points = s.elements * points_in_element;
-  auto       func               = [=] HPC_DEVICE(element_index const element) {
-    auto const cur_elem_points = elements_to_points[element];
-    auto const element_nodes   = elements_to_element_nodes[element];
+  auto const points_in_element         = hpc::make_counting_range(points_per_element);
+  auto const elements_to_points        = s.elements * points_in_element;
+  auto       func                      = [=] HPC_DEVICE(element_index const element) {
+    auto const                           cur_elem_points = elements_to_points[element];
+    auto const                           element_nodes   = elements_to_element_nodes[element];
     hpc::array<hpc::position<double>, 4> x;
     assert(element_nodes.size() == 4);
     for (auto i = 0; i < 4; ++i) {
@@ -128,9 +128,9 @@ otm_update_shape_functions(state& s)
     auto       point_nodes = points_to_point_nodes[point];
     auto const xp          = points_to_xp[point].load();
     // Newton's algorithm
-    auto converged = false;
-    auto mu        = hpc::basis_gradient<double>::zero();
-    using jacobian = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
+    auto converged      = false;
+    auto mu             = hpc::basis_gradient<double>::zero();
+    using jacobian      = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto       J        = jacobian::zero();
     auto       iter     = 0;
     auto const max_iter = 16;
@@ -153,9 +153,7 @@ otm_update_shape_functions(state& s)
       }
       auto const f       = use_log == true ? std::log(Z) : Z;
       auto const dfdmu   = use_log == true ? dZdmu / Z : dZdmu;
-      auto const ddfddmu = use_log == true ?
-                               ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) :
-                               ddZddmu;
+      auto const ddfddmu = use_log == true ? ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) : ddZddmu;
       if (iter == 0) {
         R0      = dfdmu;
         norm_R0 = hpc::norm(R0);
@@ -163,9 +161,9 @@ otm_update_shape_functions(state& s)
       auto const dmu   = -hpc::solve_full_pivot(ddfddmu, dfdmu);
       auto       alpha = 1.0;
       if (use_line_search == true) {
-        auto const contraction_factor = 0.5;
-        auto const change_factor      = 0.0001;
-        auto const step_change        = hpc::inner_product(dfdmu, dmu);
+        auto const contraction_factor     = 0.5;
+        auto const change_factor          = 0.0001;
+        auto const step_change            = hpc::inner_product(dfdmu, dmu);
         auto       line_search_iterations = 0;
         auto       line_search_complete   = (step_change >= 0.0);
         while (line_search_complete == false) {
@@ -177,16 +175,15 @@ otm_update_shape_functions(state& s)
           auto const trial_mu = mu + alpha * dmu;
           auto       trial_Z  = 0.0;
           for (auto point_node : point_nodes) {
-            auto const node = point_nodes_to_nodes[point_node];
-            auto const xn   = nodes_to_x[node].load();
-            auto const r    = xp - xn;
-            auto const rr   = hpc::inner_product(r, r);
-            auto const mur  = hpc::inner_product(trial_mu, r);
+            auto const node             = point_nodes_to_nodes[point_node];
+            auto const xn               = nodes_to_x[node].load();
+            auto const r                = xp - xn;
+            auto const rr               = hpc::inner_product(r, r);
+            auto const mur              = hpc::inner_product(trial_mu, r);
             auto const boltzmann_factor = std::exp(mur - beta * rr);
             trial_Z += boltzmann_factor;
           }
-          auto const trial_function =
-              use_log == true ? std::log(trial_Z) : trial_Z;
+          auto const trial_function = use_log == true ? std::log(trial_Z) : trial_Z;
           if (trial_function > function + change_factor * alpha * step_change) {
             alpha = contraction_factor * alpha;
             ++line_search_iterations;
@@ -196,18 +193,17 @@ otm_update_shape_functions(state& s)
         }
       }
       mu += (alpha * dmu);
-      auto const norm_mu        = hpc::norm(mu);
-      auto const norm_dmu       = hpc::norm(dmu);
-      auto const error_solution = norm_mu > 0.0 ? norm_dmu / norm_mu : norm_dmu;
-      auto const error_residual =
-          norm_R0 > 0.0 ? hpc::norm(dfdmu) / norm_R0 : hpc::norm(dfdmu);
+      auto const norm_mu            = hpc::norm(mu);
+      auto const norm_dmu           = hpc::norm(dmu);
+      auto const error_solution     = norm_mu > 0.0 ? norm_dmu / norm_mu : norm_dmu;
+      auto const error_residual     = norm_R0 > 0.0 ? hpc::norm(dfdmu) / norm_R0 : hpc::norm(dfdmu);
       auto const converged_residual = norm_R0 == 0.0 || error_residual <= eps;
-      auto const accepted_residual = norm_R0 == 0.0 || error_residual <= delta;
+      auto const accepted_residual  = norm_R0 == 0.0 || error_residual <= delta;
       auto const converged_solution = error_solution <= eps;
       auto const accepted_solution  = error_solution <= delta;
-      converged           = converged_solution || converged_residual;
-      auto const accepted = accepted_solution || accepted_residual;
-      J                   = ddfddmu;
+      converged                     = converged_solution || converged_residual;
+      auto const accepted           = accepted_solution || accepted_residual;
+      J                             = ddfddmu;
       if (converged == false && iter >= max_iter && accepted == true) break;
       if (converged == false && iter >= max_iter) {
 #if DEBUG_MAXENT
@@ -256,11 +252,9 @@ otm_update_shape_functions(state& s)
           std::cout << "**** dZdmu    : " << dZdmu << '\n';
           std::cout << "**** ddZddmu  : " << ddZddmu << '\n';
         }
-        auto const f     = use_log == true ? std::log(Z) : Z;
-        auto const dfdmu = use_log == true ? dZdmu / Z : dZdmu;
-        auto const ddfddmu =
-            use_log == true ? ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) :
-                              ddZddmu;
+        auto const f       = use_log == true ? std::log(Z) : Z;
+        auto const dfdmu   = use_log == true ? dZdmu / Z : dZdmu;
+        auto const ddfddmu = use_log == true ? ddZddmu / Z - hpc::outer_product(dfdmu, dfdmu) : ddZddmu;
         std::cout << "--------------------" << '\n';
         std::cout << "**** z        : " << f << '\n';
         std::cout << "**** dfdmu    : " << dfdmu << '\n';
@@ -268,8 +262,7 @@ otm_update_shape_functions(state& s)
         std::cout << "**** R0       : " << R0 << '\n';
         std::cout << "**** |R0|     : " << hpc::norm(R0) << '\n';
         std::cout << "**** |R|      : " << hpc::norm(dfdmu) << '\n';
-        std::cout << "**** |R|/|R0| : " << hpc::norm(dfdmu) / hpc::norm(R0)
-                  << '\n';
+        std::cout << "**** |R|/|R0| : " << hpc::norm(dfdmu) / hpc::norm(R0) << '\n';
         std::cout << "**** alpha    : " << alpha << '\n';
         std::cout << "**** dmu      : " << dmu << '\n';
         std::cout << "**** mu       : " << mu << '\n';
@@ -294,13 +287,13 @@ otm_update_shape_functions(state& s)
       point_nodes_to_N[point_node] = boltzmann_factor;
     }
     for (auto point_node : point_nodes) {
-      auto const node              = point_nodes_to_nodes[point_node];
-      auto const xn                = nodes_to_x[node].load();
-      auto const r                 = xp - xn;
-      auto const boltzmann_factor  = point_nodes_to_N[point_node];
-      auto const N                 = boltzmann_factor / Z;
-      point_nodes_to_N[point_node] = N;
-      auto const dNdx = use_log == true ? -N * Jinv * r : -N * Z * Jinv * r;
+      auto const node                   = point_nodes_to_nodes[point_node];
+      auto const xn                     = nodes_to_x[node].load();
+      auto const r                      = xp - xn;
+      auto const boltzmann_factor       = point_nodes_to_N[point_node];
+      auto const N                      = boltzmann_factor / Z;
+      point_nodes_to_N[point_node]      = N;
+      auto const dNdx                   = use_log == true ? -N * Jinv * r : -N * Z * Jinv * r;
       point_nodes_to_grad_N[point_node] = dNdx;
     }
   };
@@ -317,7 +310,7 @@ otm_assemble_internal_force(state& s)
   auto const node_points_to_points      = s.node_points_to_points.cbegin();
   auto const nodes_to_node_points       = s.nodes_to_node_points.cbegin();
   auto const node_points_to_point_nodes = s.node_points_to_point_nodes.cbegin();
-  auto       functor = [=] HPC_DEVICE(node_index const node) {
+  auto       functor                    = [=] HPC_DEVICE(node_index const node) {
     auto       node_f      = hpc::force<double>::zero();
     auto const node_points = nodes_to_node_points[node];
     for (auto const node_point : node_points) {
@@ -325,11 +318,10 @@ otm_assemble_internal_force(state& s)
       auto const sigma       = points_to_sigma[point].load();
       auto const V           = points_to_V[point];
       auto const point_nodes = points_to_point_nodes[point];
-      auto const point_node =
-          point_nodes[node_points_to_point_nodes[node_point]];
-      auto const grad_N = point_nodes_to_grad_N[point_node].load();
-      auto const f      = -(sigma * grad_N) * V;
-      node_f            = node_f + f;
+      auto const point_node  = point_nodes[node_points_to_point_nodes[node_point]];
+      auto const grad_N      = point_nodes_to_grad_N[point_node].load();
+      auto const f           = -(sigma * grad_N) * V;
+      node_f                 = node_f + f;
     }
     auto const f_old = nodes_to_f[node].load();
     auto const f_new = f_old + node_f;
@@ -350,7 +342,7 @@ otm_assemble_external_force(state& s)
   auto const node_points_to_points      = s.node_points_to_points.cbegin();
   auto const nodes_to_node_points       = s.nodes_to_node_points.cbegin();
   auto const node_points_to_point_nodes = s.node_points_to_point_nodes.cbegin();
-  auto       functor = [=] HPC_DEVICE(node_index const node) {
+  auto       functor                    = [=] HPC_DEVICE(node_index const node) {
     auto       node_f      = hpc::force<double>::zero();
     auto const node_points = nodes_to_node_points[node];
     for (auto const node_point : node_points) {
@@ -359,12 +351,11 @@ otm_assemble_external_force(state& s)
       auto const V           = points_to_V[point];
       auto const rho         = points_to_rho[point];
       auto const point_nodes = points_to_point_nodes[point];
-      auto const point_node =
-          point_nodes[node_points_to_point_nodes[node_point]];
-      auto const N = point_nodes_to_N[point_node];
-      auto const m = N * rho * V;
-      auto const f = m * body_acce;
-      node_f       = node_f + f;
+      auto const point_node  = point_nodes[node_points_to_point_nodes[node_point]];
+      auto const N           = point_nodes_to_N[point_node];
+      auto const m           = N * rho * V;
+      auto const f           = m * body_acce;
+      node_f                 = node_f + f;
     }
     auto const f_old = nodes_to_f[node].load();
     auto const f_new = f_old + node_f;
@@ -422,10 +413,9 @@ otm_update_nodal_mass(state& s)
       auto const V           = points_to_V[point];
       auto const rho         = points_to_rho[point];
       auto const point_nodes = points_to_point_nodes[point];
-      auto const point_node =
-          point_nodes[node_points_to_point_nodes[node_point]];
-      auto const N = point_nodes_to_N[point_node];
-      auto const m = N * rho * V;
+      auto const point_node  = point_nodes[node_points_to_point_nodes[node_point]];
+      auto const N           = point_nodes_to_N[point_node];
+      auto const m           = N * rho * V;
       node_m += m;
     }
     nodes_to_mass[node] += node_m;
@@ -447,7 +437,7 @@ otm_update_reference(state& s)
   auto const points_to_rho         = s.rho.begin();
   auto       functor               = [=] HPC_DEVICE(point_index const point) {
     auto const point_nodes = points_to_point_nodes[point];
-    auto       F_incr = hpc::deformation_gradient<double>::identity();
+    auto       F_incr      = hpc::deformation_gradient<double>::identity();
     for (auto point_node : point_nodes) {
       auto const node       = point_nodes_to_nodes[point_node];
       auto const u          = nodes_to_u[node].load();
@@ -457,8 +447,8 @@ otm_update_reference(state& s)
     // TODO: Verify this is also true for OTM
     auto const F_inverse_transpose = transpose(inverse(F_incr));
     for (auto const point_node : point_nodes) {
-      auto const old_grad_N = point_nodes_to_grad_N[point_node].load();
-      auto const new_grad_N = F_inverse_transpose * old_grad_N;
+      auto const old_grad_N             = point_nodes_to_grad_N[point_node].load();
+      auto const new_grad_N             = F_inverse_transpose * old_grad_N;
       point_nodes_to_grad_N[point_node] = new_grad_N;
     }
     auto const old_F_total   = points_to_F_total[point].load();
@@ -478,10 +468,7 @@ otm_update_reference(state& s)
 }
 
 void
-otm_update_material_state(
-    input const&         in,
-    state&               s,
-    material_index const material)
+otm_update_material_state(input const& in, state& s, material_index const material)
 {
   auto const dt                = s.dt;
   auto const points_to_F_total = s.F_total.cbegin();
@@ -507,9 +494,7 @@ otm_update_material_state(
     auto       Keff  = hpc::pressure<double>(0.0);
     auto       Geff  = hpc::pressure<double>(0.0);
     auto       W     = hpc::energy_density<double>(0.0);
-    if (is_neo_hookean == true) {
-      neo_Hookean_point(F, K, G, sigma, Keff, Geff, W);
-    }
+    if (is_neo_hookean == true) { neo_Hookean_point(F, K, G, sigma, Keff, Geff, W); }
     if (is_variational_J2 == true) {
       j2::Properties props{K, G, Y0, n, eps0, Svis0, m, eps_dot0};
       auto           Fp = points_to_Fp[point].load();
@@ -600,9 +585,7 @@ otm_update_nodal_position(state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, disp_functor);
 
   otm_enforce_boundary_conditions(s);
-  if (s.use_displacement_contact == true) {
-    otm_enforce_contact_constraints(s);
-  }
+  if (s.use_displacement_contact == true) { otm_enforce_contact_constraints(s); }
 
   auto coord_vel_update_functor = [=] HPC_DEVICE(node_index const node) {
     auto       disp  = nodes_to_u[node].load();
@@ -651,11 +634,8 @@ otm_allocate_state(input const& in, state& s)
   s.v.resize(num_nodes);
   s.V.resize(num_points);
   auto const points_to_point_nodes = s.points_to_point_nodes.cbegin();
-  auto       functor               = [=] HPC_DEVICE(point_index const point) {
-    return points_to_point_nodes[point].size();
-  };
-  auto const total_support_size = hpc::transform_reduce(
-      hpc::device_policy(), s.points, 0, hpc::plus<int>(), functor);
+  auto       functor = [=] HPC_DEVICE(point_index const point) { return points_to_point_nodes[point].size(); };
+  auto const total_support_size = hpc::transform_reduce(hpc::device_policy(), s.points, 0, hpc::plus<int>(), functor);
   s.grad_N.resize(total_support_size);
   s.N.resize(total_support_size);
   s.F_total.resize(num_points);
@@ -695,12 +675,7 @@ compute_kinetic_energy(const state& s)
     return 0.5 * hpc::norm_squared(lm) / m;
   };
   hpc::energy<double> init(0);
-  auto const          T = hpc::transform_reduce(
-      hpc::device_policy(),
-      s.nodes,
-      init,
-      hpc::plus<hpc::energy<double>>(),
-      functor);
+  auto const T = hpc::transform_reduce(hpc::device_policy(), s.nodes, init, hpc::plus<hpc::energy<double>>(), functor);
   return T;
 }
 
@@ -709,18 +684,13 @@ compute_free_energy(const state& s)
 {
   auto const points_to_potential_density = s.potential_density.cbegin();
   auto const points_to_volume            = s.V.cbegin();
-  auto       functor = [=] HPC_DEVICE(point_index const point) {
+  auto       functor                     = [=] HPC_DEVICE(point_index const point) {
     auto const psi = points_to_potential_density[point];
     auto const dV  = points_to_volume[point];
     return psi * dV;
   };
   hpc::energy<double> init(0);
-  auto const          F = hpc::transform_reduce(
-      hpc::device_policy(),
-      s.points,
-      init,
-      hpc::plus<hpc::energy<double>>(),
-      functor);
+  auto const F = hpc::transform_reduce(hpc::device_policy(), s.points, init, hpc::plus<hpc::energy<double>>(), functor);
   return F;
 }
 
@@ -765,9 +735,7 @@ otm_initialize(input& in, state& s)
   otm_initialize_point_volume(s);
   otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
-  for (auto material : in.materials) {
-    otm_update_material_state(in, s, material);
-  }
+  for (auto material : in.materials) { otm_update_material_state(in, s, material); }
   otm_update_nodal_mass(s);
   otm_update_nodal_momentum(s);
 }
@@ -799,9 +767,7 @@ otm_time_integrator_step(input const& in, state& s)
   otm_update_nodal_momentum(s);
   otm_update_nodal_force(s);
   otm_update_reference(s);
-  for (auto material : in.materials) {
-    otm_update_material_state(in, s, material);
-  }
+  for (auto material : in.materials) { otm_update_material_state(in, s, material); }
   otm_update_shape_functions(s);
   otm_update_time(in, s);
   otm_update_neighbor_distances(s);
@@ -825,27 +791,21 @@ otm_run(input const& in, state& s)
   std::cout << std::scientific << std::setprecision(17);
   auto const num_file_output_periods = in.num_file_output_periods;
   auto const file_output_period =
-      num_file_output_periods != 0 ?
-          in.end_time / double(num_file_output_periods) :
-          hpc::time<double>(0.0);
+      num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
   auto file_output_index = 0;
   if (in.use_constant_dt == true) {
-    auto const num_time_steps_between_output =
-        static_cast<int>(std::round(file_output_period / in.constant_dt));
+    auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
     for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
       if (in.output_to_command_line == true) {
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt "
-                  << double(s.dt);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
         std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
-      auto const do_output =
-          in.do_output == true && (s.n % num_time_steps_between_output == 0);
+      auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
         if (in.output_to_command_line == true) {
-          std::cout << "outputting file " << file_output_index << " time "
-                    << double(s.time) << "\n";
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
         output_file.capture(s);
         if (in.debug_output == true) { output_file.to_console(); }
@@ -861,25 +821,21 @@ otm_run(input const& in, state& s)
       if (in.output_to_command_line == true) {
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
-        std::cout << "step " << s.n << " time " << double(s.time) << " dt "
-                  << double(s.dt);
+        std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
         std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
       }
       auto const do_output =
           in.do_output == true &&
-          (s.time == hpc::time<double>(0.0) ||
-           (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
+          (s.time == hpc::time<double>(0.0) || (num_file_output_periods != 0 && s.time >= s.next_file_output_time));
       if (do_output == true) {
         if (in.output_to_command_line == true) {
-          std::cout << "outputting file " << file_output_index << " time "
-                    << double(s.time) << "\n";
+          std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
         output_file.capture(s);
         if (in.debug_output == true) { output_file.to_console(); }
         output_file.write(file_output_index);
         ++file_output_index;
-        s.next_file_output_time =
-            double(file_output_index) * file_output_period;
+        s.next_file_output_time = double(file_output_index) * file_output_period;
       }
       if (in.enable_adapt && (s.n % 10 == 0)) { otm_adapt(in, s); }
       otm_time_integrator_step(in, s);

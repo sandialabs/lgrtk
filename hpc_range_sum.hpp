@@ -19,8 +19,7 @@ class range_sum_iterator
   using reference         = value_type;
   using pointer           = value_type const*;
   using iterator_category = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr range_sum_iterator(
-      TargetIndex const* ptr_in) noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr range_sum_iterator(TargetIndex const* ptr_in) noexcept
       : m_ptr(ptr_in)
   {
   }
@@ -119,15 +118,10 @@ class range_sum_iterator
   }
 };
 
-template <
-    class TargetIndex,
-    class Allocator,
-    class ExecutionPolicy,
-    class SourceIndex>
+template <class TargetIndex, class Allocator, class ExecutionPolicy, class SourceIndex>
 class range_sum
 {
-  using vector_type =
-      ::hpc::vector<TargetIndex, Allocator, ExecutionPolicy, SourceIndex>;
+  using vector_type = ::hpc::vector<TargetIndex, Allocator, ExecutionPolicy, SourceIndex>;
   vector_type m_vector;
 
  public:
@@ -148,17 +142,12 @@ class range_sum
   {
     assign_sizes(range_sizes);
   }
-  constexpr range_sum(
-      allocator_type const&   allocator_in,
-      execution_policy const& policy_in) noexcept
+  constexpr range_sum(allocator_type const& allocator_in, execution_policy const& policy_in) noexcept
       : m_vector(allocator_in, policy_in)
   {
   }
   template <class RangeSizes>
-  range_sum(
-      RangeSizes const&       range_sizes,
-      allocator_type const&   allocator_in,
-      execution_policy const& policy_in)
+  range_sum(RangeSizes const& range_sizes, allocator_type const& allocator_in, execution_policy const& policy_in)
       : m_vector(allocator_in, policy_in)
   {
     assign_sizes(range_sizes);
@@ -212,17 +201,14 @@ class range_sum
     auto       it    = m_vector.begin();
     auto const first = it;
     ++it;
-    auto const second      = it;
-    auto const first_range = ::hpc::iterator_range<decltype(it)>(first, second);
+    auto const second        = it;
+    auto const first_range   = ::hpc::iterator_range<decltype(it)>(first, second);
     using subrange_size_type = typename RangeSizes::value_type;
     ::hpc::fill(get_execution_policy(), first_range, TargetIndex(0));
     auto const end  = m_vector.end();
     auto const rest = iterator_range<decltype(it)>(second, end);
-    auto const unop = [] HPC_HOST_DEVICE(subrange_size_type const i) {
-      return TargetIndex(std::ptrdiff_t(i));
-    };
-    ::hpc::transform_inclusive_scan(
-        get_execution_policy(), sizes, rest, ::hpc::plus<TargetIndex>(), unop);
+    auto const unop = [] HPC_HOST_DEVICE(subrange_size_type const i) { return TargetIndex(std::ptrdiff_t(i)); };
+    ::hpc::transform_inclusive_scan(get_execution_policy(), sizes, rest, ::hpc::plus<TargetIndex>(), unop);
   }
   allocator_type
   get_allocator() const noexcept
@@ -237,13 +223,10 @@ class range_sum
 };
 
 template <class T = std::ptrdiff_t, class S = std::ptrdiff_t>
-using host_range_sum =
-    range_sum<T, ::hpc::host_allocator<T>, ::hpc::host_policy, S>;
+using host_range_sum = range_sum<T, ::hpc::host_allocator<T>, ::hpc::host_policy, S>;
 template <class T = std::ptrdiff_t, class S = std::ptrdiff_t>
-using device_range_sum =
-    range_sum<T, ::hpc::device_allocator<T>, ::hpc::device_policy, S>;
+using device_range_sum = range_sum<T, ::hpc::device_allocator<T>, ::hpc::device_policy, S>;
 template <class T = std::ptrdiff_t, class S = std::ptrdiff_t>
-using pinned_range_sum =
-    range_sum<T, ::hpc::pinned_allocator<T>, ::hpc::host_policy, S>;
+using pinned_range_sum = range_sum<T, ::hpc::pinned_allocator<T>, ::hpc::host_policy, S>;
 
 }  // namespace hpc

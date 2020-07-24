@@ -44,8 +44,7 @@ TEST(materials, neohookean_point_consistency)
       P_h(i, j) = (Wp - Wm) / (2.0 * h);
     }
   }
-  hpc::matrix3x3<double> sigma_h(
-      1.0 / hpc::determinant(F) * P_h * hpc::transpose(F));
+  hpc::matrix3x3<double> sigma_h(1.0 / hpc::determinant(F) * P_h * hpc::transpose(F));
 
   auto       error = hpc::norm(sigma - sigma_h) / hpc::norm(sigma_h);
   auto const eps   = 10.0 * h * h;
@@ -65,14 +64,7 @@ TEST(materials, J2_point_consistency)
   double const              m{2.0};
   double const              eps_dot0{1e-1};
   lgr::j2::Properties const props{
-      .K        = K,
-      .G        = G,
-      .Y0       = Y0,
-      .n        = n,
-      .eps0     = eps0,
-      .Svis0    = Svis0,
-      .m        = m,
-      .eps_dot0 = eps_dot0};
+      .K = K, .G = G, .Y0 = Y0, .n = n, .eps0 = eps0, .Svis0 = Svis0, .m = m, .eps_dot0 = eps_dot0};
 
   double dt = 1.0;
 
@@ -105,8 +97,7 @@ TEST(materials, J2_point_consistency)
 
   hpc::matrix3x3<double> Fp_new{Fp};
   double                 eqps_new{eqps};
-  lgr::variational_J2_point(
-      F, props, dt, sigma, Keff, Geff, W, Fp_new, eqps_new);
+  lgr::variational_J2_point(F, props, dt, sigma, Keff, Geff, W, Fp_new, eqps_new);
 
   auto   P_h(hpc::matrix3x3<double>::zero());
   auto   stress_dummy(hpc::matrix3x3<double>::zero());
@@ -117,22 +108,19 @@ TEST(materials, J2_point_consistency)
       F(i, j) += h;
       hpc::matrix3x3<double> Fp_dummy{Fp};
       double                 eqps_dummy{eqps};
-      lgr::variational_J2_point(
-          F, props, dt, stress_dummy, Keff, Geff, Wp, Fp_dummy, eqps_dummy);
+      lgr::variational_J2_point(F, props, dt, stress_dummy, Keff, Geff, Wp, Fp_dummy, eqps_dummy);
 
       F(i, j) -= 2.0 * h;
       Fp_dummy   = Fp;
       eqps_dummy = eqps;
-      lgr::variational_J2_point(
-          F, props, dt, stress_dummy, Keff, Geff, Wm, Fp_dummy, eqps_dummy);
+      lgr::variational_J2_point(F, props, dt, stress_dummy, Keff, Geff, Wm, Fp_dummy, eqps_dummy);
 
       F(i, j) += h;
 
       P_h(i, j) = (Wp - Wm) / (2.0 * h);
     }
   }
-  hpc::matrix3x3<double> sigma_h(
-      1.0 / hpc::determinant(F) * P_h * hpc::transpose(F));
+  hpc::matrix3x3<double> sigma_h(1.0 / hpc::determinant(F) * P_h * hpc::transpose(F));
 
   auto       error = hpc::norm(sigma - sigma_h) / hpc::norm(sigma_h);
   auto const tol   = 5e3 * h * h;
@@ -151,14 +139,7 @@ TEST(materials, power_law_hardening)
   double const              m{1.0};
   double const              eps_dot0{1e-3};
   lgr::j2::Properties const props{
-      .K        = K,
-      .G        = G,
-      .Y0       = Y0,
-      .n        = n,
-      .eps0     = eps0,
-      .Svis0    = Svis0,
-      .m        = m,
-      .eps_dot0 = eps_dot0};
+      .K = K, .G = G, .Y0 = Y0, .n = n, .eps0 = eps0, .Svis0 = Svis0, .m = m, .eps_dot0 = eps_dot0};
 
   double eqps = 0.685;
 
@@ -201,14 +182,7 @@ TEST(materials, power_law_rate_sensitivity)
   double const              m{1.0};
   double const              eps_dot0{1e-3};
   lgr::j2::Properties const props{
-      .K        = K,
-      .G        = G,
-      .Y0       = Y0,
-      .n        = n,
-      .eps0     = eps0,
-      .Svis0    = Svis0,
-      .m        = m,
-      .eps_dot0 = eps_dot0};
+      .K = K, .G = G, .Y0 = Y0, .n = n, .eps0 = eps0, .Svis0 = Svis0, .m = m, .eps_dot0 = eps_dot0};
 
   double       delta_eqps = 0.5;
   double const dt         = 0.01;
@@ -219,14 +193,12 @@ TEST(materials, power_law_rate_sensitivity)
   double const h = 1e-5;
 
   delta_eqps += h;
-  double Psi_star_p =
-      lgr::j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
-  double Svis_p = lgr::j2::ViscoplasticStress(props, delta_eqps, dt);
+  double Psi_star_p = lgr::j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
+  double Svis_p     = lgr::j2::ViscoplasticStress(props, delta_eqps, dt);
 
   delta_eqps -= 2 * h;
-  double Psi_star_m =
-      lgr::j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
-  double Svis_m = lgr::j2::ViscoplasticStress(props, delta_eqps, dt);
+  double Psi_star_m = lgr::j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
+  double Svis_m     = lgr::j2::ViscoplasticStress(props, delta_eqps, dt);
 
   delta_eqps += h;
 

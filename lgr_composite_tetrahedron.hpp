@@ -13,8 +13,6 @@ initialize_composite_tetrahedron_grad_N(state& s);
 void
 update_composite_tetrahedron_h_min(state& s);
 void
-update_nodal_mass_composite_tetrahedron(
-    state&               s,
-    material_index const material);
+update_nodal_mass_composite_tetrahedron(state& s, material_index const material);
 
 }  // namespace lgr

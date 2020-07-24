@@ -58,18 +58,8 @@ struct symmetric3x3
     operator()(S_YZ) = yz;
     operator()(S_XZ) = xz;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr symmetric3x3(
-      matrix3x3<Scalar> const t)
-      : symmetric3x3(
-            t(0, 0),
-            t(0, 1),
-            t(0, 2),
-            t(1, 0),
-            t(1, 1),
-            t(1, 2),
-            t(2, 0),
-            t(2, 1),
-            t(2, 2))
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr symmetric3x3(matrix3x3<Scalar> const t)
+      : symmetric3x3(t(0, 0), t(0, 1), t(0, 2), t(1, 0), t(1, 1), t(1, 2), t(2, 0), t(2, 1), t(2, 2))
   {
   }
   HPC_ALWAYS_INLINE
@@ -161,13 +151,7 @@ template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<L>
                   operator+(symmetric3x3<L> const left, R const right) noexcept
 {
-  return symmetric3x3<L>(
-      left(0) + right,
-      left(1) + right,
-      left(2) + right,
-      left(3),
-      left(4),
-      left(5));
+  return symmetric3x3<L>(left(0) + right, left(1) + right, left(2) + right, left(3), left(4), left(5));
 }
 
 template <class L, class R>
@@ -212,13 +196,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr symmetric3x3<L>
                   operator-(symmetric3x3<L> const left, R const right) noexcept
 {
   using st = symmetric3x3<L>;
-  return st(
-      left(0) - right,
-      left(1) - right,
-      left(2) - right,
-      left(3),
-      left(4),
-      left(5));
+  return st(left(0) - right, left(1) - right, left(2) - right, left(3), left(4), left(5));
 }
 
 template <class L, class R>
@@ -240,12 +218,10 @@ template <class L, class R>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 inner_product(symmetric3x3<L> const left, symmetric3x3<R> const right) noexcept
 {
-  auto const diagonal_inner_product = (left(S_XX) * right(S_XX)) +
-                                      (left(S_YY) * right(S_YY)) +
-                                      (left(S_ZZ) * right(S_ZZ));
-  auto const triangular_inner_product = (left(S_XY) * right(S_XY)) +
-                                        (left(S_YZ) * right(S_YZ)) +
-                                        (left(S_XZ) * right(S_XZ));
+  auto const diagonal_inner_product =
+      (left(S_XX) * right(S_XX)) + (left(S_YY) * right(S_YY)) + (left(S_ZZ) * right(S_ZZ));
+  auto const triangular_inner_product =
+      (left(S_XY) * right(S_XY)) + (left(S_YZ) * right(S_YZ)) + (left(S_XZ) * right(S_XZ));
   return diagonal_inner_product + (2.0 * triangular_inner_product);
 }
 
@@ -306,12 +282,7 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr auto
 operator*(symmetric3x3<L> const left, R const right) noexcept
 {
   return symmetric3x3<decltype(L() * R())>(
-      left(0) * right,
-      left(1) * right,
-      left(2) * right,
-      left(3) * right,
-      left(4) * right,
-      left(5) * right);
+      left(0) * right, left(1) * right, left(2) * right, left(3) * right, left(4) * right, left(5) * right);
 }
 
 template <class L, class R>
@@ -335,13 +306,7 @@ operator/(symmetric3x3<L> const left, R const right) noexcept
 {
   using st          = symmetric3x3<decltype(L() / R())>;
   auto const factor = 1.0 / right;
-  return st(
-      left(0) * factor,
-      left(1) * factor,
-      left(2) * factor,
-      left(3) * factor,
-      left(4) * factor,
-      left(5) * factor);
+  return st(left(0) * factor, left(1) * factor, left(2) * factor, left(3) * factor, left(4) * factor, left(5) * factor);
 }
 
 template <class T>
@@ -388,8 +353,7 @@ determinant(symmetric3x3<T> const x) noexcept
   T const yy = x(S_YY);
   T const yz = x(S_YZ);
   T const zz = x(S_ZZ);
-  return (xx * yy * zz) - (xx * yz * yz) - (xy * xy * zz) +
-         2.0 * (xy * xz * yz) - (xz * xz * yy);
+  return (xx * yy * zz) - (xx * yz * yz) - (xy * xy * zz) + 2.0 * (xy * xz * yz) - (xz * xz * yy);
 }
 
 /// \brief Compute the matrix square root using Denman Beavers iterations

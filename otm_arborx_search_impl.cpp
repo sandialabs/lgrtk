@@ -16,8 +16,7 @@ namespace search {
 namespace arborx {
 
 using device_range = Kokkos::RangePolicy<device_exec_space>;
-using device_bvh =
-    ArborX::BoundingVolumeHierarchy<lgr::search::arborx::device_type>;
+using device_bvh   = ArborX::BoundingVolumeHierarchy<lgr::search::arborx::device_type>;
 
 using Kokkos::fence;
 using Kokkos::parallel_for;
@@ -35,13 +34,10 @@ do_search(
 }
 
 HPC_NOINLINE device_nearest_query_view
-make_nearest_node_queries(
-    const device_point_view& points,
-    const int                num_nodes_to_find)
+make_nearest_node_queries(const device_point_view& points, const int num_nodes_to_find)
 {
   const int                 numQueries = points.extent(0);
-  device_nearest_query_view queries(
-      Kokkos::ViewAllocateWithoutInitializing("queries"), numQueries);
+  device_nearest_query_view queries(Kokkos::ViewAllocateWithoutInitializing("queries"), numQueries);
 
   parallel_for(
       "setup_queries", device_range(0, numQueries), KOKKOS_LAMBDA(int i) {
@@ -55,8 +51,7 @@ HPC_NOINLINE device_intersects_query_view
 make_intersect_sphere_queries(const device_sphere_view& point_spheres)
 {
   const int                    numQueries = point_spheres.extent(0);
-  device_intersects_query_view queries(
-      Kokkos::ViewAllocateWithoutInitializing("queries"), numQueries);
+  device_intersects_query_view queries(Kokkos::ViewAllocateWithoutInitializing("queries"), numQueries);
 
   parallel_for(
       "setup_queries", device_range(0, numQueries), KOKKOS_LAMBDA(int i) {
@@ -106,7 +101,7 @@ make_sphere_view(
         auto&& search_sphere = search_spheres(i);
         auto&& coords        = points_to_x[idx_type(i)].load();
         auto&& radius        = points_to_r[idx_type(i)];
-        search_sphere = sphere({{coords(0), coords(1), coords(2)}}, radius);
+        search_sphere        = sphere({{coords(0), coords(1), coords(2)}}, radius);
       });
   fence();
   return search_spheres;

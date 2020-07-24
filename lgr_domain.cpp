@@ -16,7 +16,7 @@ void
 union_domain::mark(
     hpc::device_array_vector<hpc::position<double>, node_index> const& points,
     int const                                                          marker,
-    hpc::device_vector<int, node_index>* markers) const
+    hpc::device_vector<int, node_index>*                               markers) const
 {
   for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
 }
@@ -24,10 +24,9 @@ union_domain::mark(
 #ifdef HPC_ENABLE_STRONG_INDICES
 void
 union_domain::mark(
-    hpc::device_array_vector<hpc::position<double>, element_index> const&
-                                                       points,
-    material_index const                               marker,
-    hpc::device_vector<material_index, element_index>* markers) const
+    hpc::device_array_vector<hpc::position<double>, element_index> const& points,
+    material_index const                                                  marker,
+    hpc::device_vector<material_index, element_index>*                    markers) const
 {
   for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
 }
@@ -37,7 +36,7 @@ void
 union_domain::mark(
     hpc::device_array_vector<hpc::position<double>, node_index> const& points,
     material_index const                                               marker,
-    hpc::device_vector<material_set, node_index>* markers) const
+    hpc::device_vector<material_set, node_index>*                      markers) const
 {
   for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
 }
@@ -56,17 +55,13 @@ collect_set(
     hpc::device_vector<Index, int>&  set_items)
 {
   hpc::device_vector<int, Index> offsets(range.size());
-  hpc::transform_inclusive_scan(
-      hpc::device_policy(), range, offsets, hpc::plus<int>(), is_in_functor);
-  int const set_size = hpc::transform_reduce(
-      hpc::device_policy(), range, int(0), hpc::plus<int>(), is_in_functor);
+  hpc::transform_inclusive_scan(hpc::device_policy(), range, offsets, hpc::plus<int>(), is_in_functor);
+  int const set_size = hpc::transform_reduce(hpc::device_policy(), range, int(0), hpc::plus<int>(), is_in_functor);
   set_items.resize(set_size);
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets   = offsets.cbegin();
   auto       functor            = [=] HPC_DEVICE(Index const item) {
-    if (is_in_functor(item) != 0) {
-      set_items_to_items[items_to_offsets[item] - 1] = item;
-    }
+    if (is_in_functor(item) != 0) { set_items_to_items[items_to_offsets[item] - 1] = item; }
   };
   hpc::for_each(hpc::device_policy(), range, functor);
 }
@@ -75,14 +70,13 @@ void
 assign_element_materials(input const& in, state& s)
 {
   hpc::fill(hpc::device_policy(), s.material, material_index(0));
-  hpc::device_array_vector<hpc::position<double>, element_index>
-               centroid_vector(s.elements.size());
+  hpc::device_array_vector<hpc::position<double>, element_index> centroid_vector(s.elements.size());
   auto const   elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const   element_nodes_to_nodes    = s.elements_to_nodes.cbegin();
   auto const   nodes_to_x                = s.x.cbegin();
-  double const N = 1.0 / double(hpc::weaken(s.nodes_in_element.size()));
-  auto const   elements_to_centroids = centroid_vector.begin();
-  auto         centroid_functor = [=] HPC_DEVICE(element_index const element) {
+  double const N                         = 1.0 / double(hpc::weaken(s.nodes_in_element.size()));
+  auto const   elements_to_centroids     = centroid_vector.begin();
+  auto         centroid_functor          = [=] HPC_DEVICE(element_index const element) {
     auto centroid = hpc::position<double>::zero();
     for (auto const element_node : elements_to_element_nodes[element]) {
       node_index const node = element_nodes_to_nodes[element_node];
@@ -111,9 +105,9 @@ compute_nodal_materials(input const& in, state& s)
     auto const node_elements  = nodes_to_node_elements[node];
     auto       node_materials = material_set::none();
     for (auto const node_element : node_elements) {
-      element_index const  element = node_elements_to_elements[node_element];
+      element_index const  element          = node_elements_to_elements[node_element];
       material_index const element_material = elements_to_materials[element];
-      node_materials = node_materials | material_set(element_material);
+      node_materials                        = node_materials | material_set(element_material);
     }
     nodes_to_materials[node] = node_materials;
   };
@@ -127,8 +121,7 @@ compute_nodal_materials(input const& in, state& s)
 void
 collect_node_sets(input const& in, state& s)
 {
-  hpc::counting_range<material_index> const all_materials(
-      in.materials.size() + in.boundaries.size());
+  hpc::counting_range<material_index> const all_materials(in.materials.size() + in.boundaries.size());
   s.node_sets.resize(all_materials.size());
   assert(s.nodal_materials.size() == s.nodes.size());
   auto const nodes_to_materials = s.nodal_materials.cbegin();
@@ -181,9 +174,7 @@ half_space_domain(plane const& p)
 }
 
 std::unique_ptr<domain>
-box_domain(
-    hpc::position<double> const lower_left,
-    hpc::position<double> const upper_right)
+box_domain(hpc::position<double> const lower_left, hpc::position<double> const upper_right)
 {
   auto out = std::make_unique<clipped_domain<all_space>>(all_space{});
   out->clip({hpc::vector3<double>::x_axis(), lower_left(0)});

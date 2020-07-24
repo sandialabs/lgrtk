@@ -7,9 +7,8 @@
 namespace hpc {
 
 template <class Integral>
-HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr std::
-    enable_if_t<std::is_integral<Integral>::value, Integral>
-    weaken(Integral i) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr std::enable_if_t<std::is_integral<Integral>::value, Integral>
+                  weaken(Integral i) noexcept
 {
   return i;
 }
@@ -23,11 +22,7 @@ class index
 
  public:
   using integral_type = Integral;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index(
-      std::ptrdiff_t i_in) noexcept
-      : i(integral_type(i_in))
-  {
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index(std::ptrdiff_t i_in) noexcept : i(integral_type(i_in)) {}
   HPC_ALWAYS_INLINE
   index() noexcept = default;
   HPC_ALWAYS_INLINE
@@ -121,11 +116,7 @@ class index
   {
     return i;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator integral_type()
-      const noexcept
-  {
-    return i;
-  }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator integral_type() const noexcept { return i; }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index
   operator*(integral_type const n) const noexcept
   {
@@ -137,8 +128,7 @@ class index
     return index(i / n);
   }
   template <class Tag2, class Integral2>
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr
-  operator ::hpc::index<Tag2, Integral2>() const noexcept
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator ::hpc::index<Tag2, Integral2>() const noexcept
   {
     return i;
   }
@@ -150,9 +140,8 @@ class product_tag
 };
 
 template <class L, class R, class LI, class RI>
-HPC_ALWAYS_INLINE
-    HPC_HOST_DEVICE constexpr index<product_tag<L, R>, decltype(LI() * RI())>
-    operator*(index<L, LI> left, index<R, RI> right) noexcept
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index<product_tag<L, R>, decltype(LI() * RI())>
+                  operator*(index<L, LI> left, index<R, RI> right) noexcept
 {
   return left.get() * right.get();
 }
