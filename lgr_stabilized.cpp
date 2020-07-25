@@ -166,7 +166,7 @@ update_p_prime(
         p_dot = (p - old_p) / dt;
       }
       auto const K             = points_to_K[point];
-      auto const p_prime       = c_p * tau * (p_dot - K * div_v);
+      auto const p_prime       = c_p * tau * (K * div_v - p_dot);
       points_to_p_prime[point] = p_prime;
     }
   };
