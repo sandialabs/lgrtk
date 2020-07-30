@@ -800,7 +800,7 @@ otm_run(input const& in, state& s)
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
-        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
+        std::cout << " kinetic energy " << KE << " free energy " << SE << " sum " << KE + SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
@@ -822,7 +822,7 @@ otm_run(input const& in, state& s)
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
-        std::cout << " kinetic energy " << KE << " free energy " << SE << "\n";
+        std::cout << " kinetic energy " << KE << " free energy " << SE << " sum " << KE + SE << "\n";
       }
       auto const do_output =
           in.do_output == true &&

@@ -345,8 +345,8 @@ otm_taylor()
   auto const eps_dot0            = hpc::strain_rate<double>(1.0e-01);
   in.minimum_support_size        = 12;
   in.materials                   = hpc::counting_range<material_index>(1);
-  in.enable_variational_J2[body] = true;
-  in.enable_neo_Hookean[body]    = false;
+  in.enable_variational_J2[body] = false;
+  in.enable_neo_Hookean[body]    = true;
   in.rho0[body]                  = rho;
   in.K0[body]                    = K;
   in.G0[body]                    = G;
@@ -369,7 +369,8 @@ otm_taylor()
   s.time                     = hpc::time<double>(0.0);
   s.max_stable_dt            = in.constant_dt;
   s.num_time_steps           = static_cast<int>(std::round(in.end_time / in.constant_dt));
-  s.use_displacement_contact = true;
+  s.use_displacement_contact = false;
+  s.use_penalty_contact      = true;
   s.contact_penalty_coeff    = hpc::strain_rate_rate<double>(1.0e14);
   otm_allocate_state(in, s);
   s.prescribed_v[body]   = hpc::velocity<double>(0.0, 0.0, 0.0);
@@ -398,7 +399,7 @@ otm_taylor()
       init,
       hpc::maximum<hpc::length<double>>(),
       hpc::identity<hpc::length<double>>());
-  in.enable_adapt                = true;
+  in.enable_adapt                = false;
   in.max_node_neighbor_distance  = h_node_max;
   in.max_point_neighbor_distance = h_point_max;
   otm_run(in, s);
