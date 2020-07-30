@@ -1011,11 +1011,11 @@ taylor_stabilized_tet()
   in.num_file_output_periods     = 1000;
   in.enable_J_averaging          = false;
   in.enable_p_averaging          = false;
-  in.enable_p_prime[body]        = true;
-  in.enable_nodal_pressure[body] = true;
+  in.enable_p_prime[body]        = false;
+  in.enable_nodal_pressure[body] = false;
   in.c_tau[body]                 = 0.5;
-  in.c_v[body]                   = 1.0;
-  in.c_p[body]                   = 1.0;
+  in.c_v[body]                   = 0.0;
+  in.c_p[body]                   = 0.0;
   auto const rho                 = hpc::density<double>(8.96e+03);
   auto const nu                  = hpc::adimensional<double>(0.343);
   auto const E                   = hpc::pressure<double>(110.0e09);

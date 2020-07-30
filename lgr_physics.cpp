@@ -671,9 +671,9 @@ enforce_contact_constraints(state& s)
   auto const nodes_to_x = s.x.cbegin();
   auto const nodes_to_u = s.u.begin();
   auto       functor    = [=] HPC_DEVICE(node_index const node) {
-    auto x = nodes_to_x[node].load();
-    auto u = nodes_to_u[node].load();
-    auto z = x(2);
+    auto const x  = nodes_to_x[node].load();
+    auto       u  = nodes_to_u[node].load();
+    auto const z  = x(2);
     if (z >= 0.0) { u(2) = 0.0; }
     nodes_to_u[node] = u;
   };

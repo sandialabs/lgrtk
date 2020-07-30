@@ -21,7 +21,7 @@ class quaternion
 
  public:
   HPC_ALWAYS_INLINE
-      HPC_HOST_DEVICE constexpr quaternion(Scalar const w, Scalar const x, Scalar const y, Scalar const z) noexcept
+  HPC_HOST_DEVICE constexpr quaternion(Scalar const w, Scalar const x, Scalar const y, Scalar const z) noexcept
       : raw{w, x, y, z}
   {
   }
