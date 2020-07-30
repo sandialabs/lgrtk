@@ -312,7 +312,7 @@ otm_j2_uniaxial_patch_test()
 }
 
 bool
-otm_cylindrical_flyer()
+otm_taylor()
 {
   constexpr material_index body(0);
   constexpr material_index num_materials(1);
@@ -346,6 +346,7 @@ otm_cylindrical_flyer()
   in.minimum_support_size        = 12;
   in.materials                   = hpc::counting_range<material_index>(1);
   in.enable_variational_J2[body] = true;
+  in.enable_neo_Hookean[body]    = false;
   in.rho0[body]                  = rho;
   in.K0[body]                    = K;
   in.G0[body]                    = G;
