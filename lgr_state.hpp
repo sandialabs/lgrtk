@@ -145,11 +145,10 @@ class state
   bool use_maxent_line_search{false};
 
   // For plasticity
-  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index>
-                                                            Fp_total;  // plastic deformation gradient since simulation start
-  hpc::device_vector<hpc::temperature<double>, point_index> temp;    // temperature
-  hpc::device_vector<hpc::strain<double>, point_index>      ep;      // equivalent plastic strain
-  hpc::device_vector<hpc::strain_rate<double>, point_index> ep_dot;  // rate of equivalent plastic strain
+  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total;  // plastic deformation gradient
+  hpc::device_vector<hpc::temperature<double>, point_index>                temp;      // temperature
+  hpc::device_vector<hpc::strain<double>, point_index>                     ep;        // equivalent plastic strain
+  hpc::device_vector<hpc::strain_rate<double>, point_index>                ep_dot;  // rate of equivalent plastic strain
 };
 
 class input;
