@@ -141,8 +141,8 @@ class state
   hpc::length<double>                 min_node_neighbor_dist;
   hpc::inverse_area<double>           otm_beta{0};  // shape function locality parameter.
   hpc::adimensional<double>           otm_gamma{0};
-  bool use_maxent_log_objective{false};  // Use Z or log Z as objective for maxtent functions
-  bool use_maxent_line_search{false};
+  bool use_maxent_log_objective{true};  // Use Z or log Z as objective for maxtent functions
+  bool use_maxent_line_search{true};
 
   // For plasticity
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total;  // plastic deformation gradient

@@ -369,8 +369,8 @@ otm_taylor()
   s.time                     = hpc::time<double>(0.0);
   s.max_stable_dt            = in.constant_dt;
   s.num_time_steps           = static_cast<int>(std::round(in.end_time / in.constant_dt));
-  s.use_displacement_contact = false;
-  s.use_penalty_contact      = true;
+  s.use_displacement_contact = true;
+  s.use_penalty_contact      = false;
   s.contact_penalty_coeff    = hpc::strain_rate_rate<double>(1.0e14);
   otm_allocate_state(in, s);
   s.prescribed_v[body]   = hpc::velocity<double>(0.0, 0.0, 0.0);
