@@ -50,7 +50,9 @@ class input
   hpc::time<double>                                              end_time{0.0};
   double                                                         CFL{0.9};
   bool                                                           use_constant_dt{false};
-  bool                                                           use_contact{false};
+  bool                                                           use_displacement_contact{false};
+  bool                                                           use_penalty_contact{false};
+  hpc::strain_rate_rate<double>                                  contact_penalty_coeff{1.0e14};
   int                                                            minimum_support_size{4};
   hpc::time<double>                                              constant_dt{0.0};
   int                                                            num_file_output_periods{0};

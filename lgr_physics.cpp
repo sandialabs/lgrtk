@@ -359,7 +359,27 @@ update_element_force(state& s)
 }
 
 HPC_NOINLINE inline void
-update_nodal_force(state& s)
+assemble_contact_force(state& s)
+{
+  auto const nodes_to_x    = s.x.cbegin();
+  auto const nodes_to_mass = s.mass.cbegin();
+  auto const nodes_to_f    = s.f.begin();
+  auto const penalty_coeff = s.contact_penalty_coeff;
+  auto       functor       = [=] HPC_DEVICE(node_index const node) {
+    auto       node_f = hpc::force<double>::zero();
+    auto const x      = nodes_to_x[node].load();
+    auto const m      = nodes_to_mass[node];
+    auto const z      = x(2);
+    if (z > 0.0) { node_f(2) = -penalty_coeff * m * z; }
+    auto const f_old = nodes_to_f[node].load();
+    auto const f_new = f_old + node_f;
+    nodes_to_f[node] = f_new;
+  };
+  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+HPC_NOINLINE inline void
+assemble_internal_force(state& s)
 {
   auto const nodes_to_node_elements            = s.nodes_to_node_elements.cbegin();
   auto const node_elements_to_elements         = s.node_elements_to_elements.cbegin();
@@ -381,9 +401,26 @@ update_nodal_force(state& s)
         node_f                 = node_f + point_f;
       }
     }
-    nodes_to_f[node] = node_f;
+    auto const f_old = nodes_to_f[node].load();
+    auto const f_new = f_old + node_f;
+    nodes_to_f[node] = f_new;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
+}
+
+HPC_NOINLINE inline void
+assemble_external_force(state&)
+{
+  // Just a stub for now
+}
+
+HPC_NOINLINE inline void
+update_nodal_force(state& s)
+{
+  hpc::fill(hpc::device_policy(), s.f, hpc::force<double>::zero());
+  assemble_internal_force(s);
+  assemble_external_force(s);
+  if (s.use_penalty_contact == true) { assemble_contact_force(s); }
 }
 
 HPC_NOINLINE inline void
@@ -881,7 +918,9 @@ run(input const& in, std::string const& filename)
     }
   }
   if (in.x_transform) in.x_transform(&s.x);
-  s.use_displacement_contact = in.use_contact;
+  s.use_displacement_contact = in.use_displacement_contact;
+  s.use_penalty_contact      = in.use_penalty_contact;
+  s.contact_penalty_coeff    = in.contact_penalty_coeff;
   resize_state(in, s);
   assign_element_materials(in, s);
   compute_nodal_materials(in, s);

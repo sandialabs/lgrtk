@@ -948,7 +948,9 @@ taylor_composite_tet()
   std::string const        filename{"cylinder-ct.g"};
   in.name                         = "taylor-composite-tet";
   in.CFL                          = 0.1;
-  in.use_contact                  = true;
+  in.use_displacement_contact     = true;
+  in.use_penalty_contact          = false;
+  in.contact_penalty_coeff        = hpc::strain_rate_rate<double>(1.0e+14);
   in.element                      = COMPOSITE_TETRAHEDRON;
   in.end_time                     = 1.0e-04;
   in.num_file_output_periods      = 100;
@@ -1005,10 +1007,12 @@ taylor_stabilized_tet()
   std::string const        filename{"cylinder.g"};
   in.name                        = "taylor_stabilized-tet";
   in.CFL                         = 0.1;
-  in.use_contact                 = true;
+  in.use_displacement_contact    = false;
+  in.use_penalty_contact         = true;
+  in.contact_penalty_coeff       = hpc::strain_rate_rate<double>(1.0e+14);
   in.element                     = TETRAHEDRON;
   in.end_time                    = 1.0e-04;
-  in.num_file_output_periods     = 1000;
+  in.num_file_output_periods     = 100;
   in.enable_J_averaging          = false;
   in.enable_p_averaging          = false;
   in.enable_p_prime[body]        = false;
