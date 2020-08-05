@@ -1032,8 +1032,8 @@ taylor_stabilized_tet()
   auto const Svis0               = hpc::pressure<double>(0.0);
   auto const m                   = hpc::adimensional<double>(1.0);
   auto const eps_dot0            = hpc::strain_rate<double>(1.0e-01);
-  in.enable_variational_J2[body] = false;
-  in.enable_neo_Hookean[body]    = true;
+  in.enable_variational_J2[body] = true;
+  in.enable_neo_Hookean[body]    = false;
   in.rho0[body]                  = rho;
   in.K0[body]                    = K;
   in.G0[body]                    = G;
