@@ -711,8 +711,10 @@ enforce_contact_constraints(state& s)
     auto const x = nodes_to_x[node].load();
     auto       u = nodes_to_u[node].load();
     auto const z = x(2);
-    if (z >= 0.0) { u(2) = 0.0; }
-    nodes_to_u[node] = u;
+    if (z >= 0.0) {
+      u(2)             = 0.0;
+      nodes_to_u[node] = u;
+    }
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
 }

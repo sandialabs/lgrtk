@@ -116,7 +116,7 @@ update_v_prime(input const& in, state& s, material_index const material)
       }
       a                        = a * N;
       auto const rho           = points_to_rho[point];
-      auto const v_prime       = c_v * (tau / rho) * (grad_p - rho * a);
+      auto const v_prime       = -c_v * (tau / rho) * (grad_p + rho * a);
       points_to_v_prime[point] = v_prime;
     }
   };
