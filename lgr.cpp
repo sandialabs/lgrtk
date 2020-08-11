@@ -1017,7 +1017,7 @@ taylor_stabilized_tet()
   in.enable_p_averaging          = false;
   in.enable_p_prime[body]        = false;
   in.enable_nodal_pressure[body] = true;
-  in.c_tau[body]                 = 0.1;
+  in.c_tau[body]                 = 0.5;
   in.c_v[body]                   = 1.0;
   in.c_p[body]                   = 0.0;
   auto const rho                 = hpc::density<double>(8.96e+03);
