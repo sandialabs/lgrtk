@@ -895,6 +895,19 @@ flyer_target_J2()
     hpc::for_each(hpc::device_policy(), nodes, functor);
   };
 
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
   in.initial_v                     = flyer_v;
   in.name                          = "flyer-target";
   in.CFL                           = 0.1;
@@ -903,20 +916,9 @@ flyer_target_J2()
   in.num_file_output_periods       = 50;
   in.enable_J_averaging            = false;
   in.enable_p_averaging            = false;
-  auto const rho                   = hpc::density<double>(8.96e+03);
-  auto const nu                    = hpc::adimensional<double>(0.343);
-  auto const E                     = hpc::pressure<double>(110.0e09);
-  auto const K                     = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
-  auto const G                     = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0                    = hpc::pressure<double>(400.0e+06);
-  auto const n                     = hpc::adimensional<double>(1.0);
-  auto const H0                    = hpc::pressure<double>(100.0e6);
-  auto const eps0                  = hpc::strain<double>(Y0 / H0);
-  auto const Svis0                 = hpc::pressure<double>(0.0);
-  auto const m                     = hpc::adimensional<double>(1.0);
-  auto const eps_dot0              = hpc::strain_rate<double>(1.0e-01);
   in.enable_p_prime[flyer]         = false;
   in.enable_nodal_pressure[flyer]  = true;
+  in.use_global_tau[flyer]         = true;
   in.c_tau[flyer]                  = 1.0;
   in.c_v[flyer]                    = 1.0;
   in.c_p[flyer]                    = 0.0;
@@ -932,6 +934,7 @@ flyer_target_J2()
   in.eps_dot0[flyer]               = eps_dot0;
   in.enable_p_prime[target]        = false;
   in.enable_nodal_pressure[target] = true;
+  in.use_global_tau[target]        = true;
   in.c_tau[target]                 = 1.0;
   in.c_v[target]                   = 1.0;
   in.c_p[target]                   = 0.0;
@@ -958,6 +961,31 @@ taylor_composite_tet()
   constexpr material_index num_boundaries(0);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"cylinder-ct.g"};
+
+  auto const_v = [=](hpc::counting_range<node_index> const nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const&,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto v           = hpc::velocity<double>(0.0, 0.0, 227.0);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
   in.name                         = "taylor-composite-tet";
   in.CFL                          = 0.1;
   in.use_displacement_contact     = true;
@@ -971,18 +999,6 @@ taylor_composite_tet()
   in.enable_comptet_stabilization = true;
   in.enable_p_prime[body]         = false;
   in.enable_nodal_pressure[body]  = false;
-  auto const rho                  = hpc::density<double>(8.96e+03);
-  auto const nu                   = hpc::adimensional<double>(0.343);
-  auto const E                    = hpc::pressure<double>(110.0e09);
-  auto const K                    = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
-  auto const G                    = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0                   = hpc::pressure<double>(400.0e+06);
-  auto const n                    = hpc::adimensional<double>(1.0);
-  auto const H0                   = hpc::pressure<double>(100.0e6);
-  auto const eps0                 = hpc::strain<double>(Y0 / H0);
-  auto const Svis0                = hpc::pressure<double>(0.0);
-  auto const m                    = hpc::adimensional<double>(1.0);
-  auto const eps_dot0             = hpc::strain_rate<double>(1.0e-01);
   in.enable_variational_J2[body]  = true;
   in.rho0[body]                   = rho;
   in.K0[body]                     = K;
@@ -993,17 +1009,8 @@ taylor_composite_tet()
   in.Svis0[body]                  = Svis0;
   in.m[body]                      = m;
   in.eps_dot0[body]               = eps_dot0;
-  auto const_v                    = [=](hpc::counting_range<node_index> const nodes,
-                     hpc::device_array_vector<hpc::position<double>, node_index> const&,
-                     hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
-    auto const nodes_to_v = v_vector->begin();
-    auto       functor    = [=] HPC_DEVICE(node_index const node) {
-      auto v           = hpc::velocity<double>(0.0, 0.0, 227.0);
-      nodes_to_v[node] = v;
-    };
-    hpc::for_each(hpc::device_policy(), nodes, functor);
-  };
-  in.initial_v = const_v;
+  in.initial_v                    = const_v;
+
   run(in, filename);
 }
 
@@ -1017,6 +1024,31 @@ taylor_stabilized_tet()
   constexpr material_index num_boundaries(0);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"cylinder.g"};
+
+  auto const_v = [=](hpc::counting_range<node_index> const nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const&,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto v           = hpc::velocity<double>(0.0, 0.0, 227.0);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
   in.name                        = "taylor_stabilized-tet";
   in.CFL                         = 0.1;
   in.use_displacement_contact    = false;
@@ -1033,18 +1065,6 @@ taylor_stabilized_tet()
   in.c_tau[body]                 = 1.0;
   in.c_v[body]                   = 1.0;
   in.c_p[body]                   = 0.0;
-  auto const rho                 = hpc::density<double>(8.96e+03);
-  auto const nu                  = hpc::adimensional<double>(0.343);
-  auto const E                   = hpc::pressure<double>(110.0e09);
-  auto const K                   = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
-  auto const G                   = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0                  = hpc::pressure<double>(400.0e+06);
-  auto const n                   = hpc::adimensional<double>(1.0);
-  auto const H0                  = hpc::pressure<double>(100.0e6);
-  auto const eps0                = hpc::strain<double>(Y0 / H0);
-  auto const Svis0               = hpc::pressure<double>(0.0);
-  auto const m                   = hpc::adimensional<double>(1.0);
-  auto const eps_dot0            = hpc::strain_rate<double>(1.0e-01);
   in.enable_variational_J2[body] = true;
   in.enable_neo_Hookean[body]    = false;
   in.rho0[body]                  = rho;
@@ -1056,17 +1076,8 @@ taylor_stabilized_tet()
   in.Svis0[body]                 = Svis0;
   in.m[body]                     = m;
   in.eps_dot0[body]              = eps_dot0;
-  auto const_v                   = [=](hpc::counting_range<node_index> const nodes,
-                     hpc::device_array_vector<hpc::position<double>, node_index> const&,
-                     hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
-    auto const nodes_to_v = v_vector->begin();
-    auto       functor    = [=] HPC_DEVICE(node_index const node) {
-      auto v           = hpc::velocity<double>(0.0, 0.0, 227.0);
-      nodes_to_v[node] = v;
-    };
-    hpc::for_each(hpc::device_policy(), nodes, functor);
-  };
-  in.initial_v = const_v;
+  in.initial_v                   = const_v;
+
   run(in, filename);
 }
 
