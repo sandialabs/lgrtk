@@ -93,14 +93,16 @@ update_v_prime(input const& in, state& s, material_index const material)
   auto const nodes_to_a                = s.a.cbegin();
   auto const nodes_to_p_h              = s.p_h[material].cbegin();
   auto const points_to_v_prime         = s.v_prime.begin();
+  auto const global_dt                 = s.max_stable_dt;
   auto const c_tau                     = in.c_tau[material];
   auto const c_v                       = in.c_v[material];
+  auto const use_global_tau            = in.use_global_tau[material];
   auto const N                         = get_N(s);
   auto       functor                   = [=] HPC_DEVICE(element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       auto const point_nodes = points_to_point_nodes[point];
-      auto const dt          = points_to_dt[point];
+      auto const dt          = use_global_tau == true ? global_dt : points_to_dt[point];
       auto const tau         = c_tau * dt;
       auto       grad_p      = hpc::pressure_gradient<double>::zero();
       auto       a           = hpc::acceleration<double>::zero();

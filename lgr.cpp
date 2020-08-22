@@ -1029,7 +1029,8 @@ taylor_stabilized_tet()
   in.enable_p_averaging          = false;
   in.enable_p_prime[body]        = false;
   in.enable_nodal_pressure[body] = true;
-  in.c_tau[body]                 = 0.5;
+  in.use_global_tau[body]        = true;
+  in.c_tau[body]                 = 1.0;
   in.c_v[body]                   = 1.0;
   in.c_p[body]                   = 0.0;
   auto const rho                 = hpc::density<double>(8.96e+03);
@@ -1351,8 +1352,8 @@ main()
   if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((1)) lgr::flyer_target_J2();
+  if ((0)) lgr::flyer_target_J2();
   if ((0)) lgr::taylor_composite_tet();
-  if ((0)) lgr::taylor_stabilized_tet();
+  if ((1)) lgr::taylor_stabilized_tet();
   // run_for_average();
 }

@@ -80,6 +80,7 @@ class input
   hpc::host_vector<double, material_index>                       c_tau;
   hpc::host_vector<double, material_index>                       c_v;
   hpc::host_vector<double, material_index>                       c_p;
+  hpc::host_vector<bool, material_index>                         use_global_tau;
 
   // OTM interpolation shape function locality parameter
   hpc::adimensional<double> otm_gamma{1.0};
@@ -155,6 +156,7 @@ class input
         c_tau(material_count_in, 0.5),
         c_v(material_count_in, 1.0),
         c_p(material_count_in, 1.0),
+        use_global_tau(material_count_in, true),
         E(material_count_in),
         nu(material_count_in),
         Y0(material_count_in),
