@@ -867,9 +867,9 @@ twisting_composite_column_J2()
 }
 
 HPC_NOINLINE void
-flyer_target_J2();
+flyer_target_stabilized_tet();
 void
-flyer_target_J2()
+flyer_target_stabilized_tet()
 {
   constexpr material_index flyer(0);
   constexpr material_index target(1);
@@ -916,6 +916,7 @@ flyer_target_J2()
   in.num_file_output_periods       = 50;
   in.enable_J_averaging            = false;
   in.enable_p_averaging            = false;
+
   in.enable_p_prime[flyer]         = false;
   in.enable_nodal_pressure[flyer]  = true;
   in.use_global_tau[flyer]         = true;
@@ -932,6 +933,7 @@ flyer_target_J2()
   in.Svis0[flyer]                  = Svis0;
   in.m[flyer]                      = m;
   in.eps_dot0[flyer]               = eps_dot0;
+
   in.enable_p_prime[target]        = false;
   in.enable_nodal_pressure[target] = true;
   in.use_global_tau[target]        = true;
@@ -948,6 +950,95 @@ flyer_target_J2()
   in.Svis0[target]                 = Svis0;
   in.m[target]                     = m;
   in.eps_dot0[target]              = eps_dot0;
+
+  run(in, filename);
+}
+
+HPC_NOINLINE void
+flyer_target_composite_tet();
+void
+flyer_target_composite_tet()
+{
+  constexpr material_index flyer(0);
+  constexpr material_index target(1);
+  constexpr material_index num_materials(2);
+  constexpr material_index num_boundaries(0);
+  input                    in(num_materials, num_boundaries);
+  std::string const        filename{"flyer-target.g"};
+  auto const               flyer_radius = 0.2 * 0.0254;
+  auto const               eps          = flyer_radius / 1000.0;
+
+  auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>*       v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const r = std::sqrt(x(0) * x(0) + x(1) * x(1));
+      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
+      if (r < flyer_radius + eps) { v(2) = x(2) < eps ? 2200.0 : 242.0; }
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
+  in.initial_v                     = flyer_v;
+  in.name                          = "flyer-target-ct";
+  in.CFL                           = 0.1;
+  in.element                       = COMPOSITE_TETRAHEDRON;
+  in.end_time                      = 5.0e-06;
+  in.num_file_output_periods       = 50;
+  in.enable_J_averaging            = false;
+  in.enable_p_averaging            = false;
+
+  in.enable_p_prime[flyer]         = false;
+  in.enable_nodal_pressure[flyer]  = true;
+  in.use_global_tau[flyer]         = true;
+  in.c_tau[flyer]                  = 1.0;
+  in.c_v[flyer]                    = 1.0;
+  in.c_p[flyer]                    = 0.0;
+  in.enable_variational_J2[flyer]  = true;
+  in.rho0[flyer]                   = rho;
+  in.K0[flyer]                     = K;
+  in.G0[flyer]                     = G;
+  in.Y0[flyer]                     = Y0;
+  in.n[flyer]                      = n;
+  in.eps0[flyer]                   = eps0;
+  in.Svis0[flyer]                  = Svis0;
+  in.m[flyer]                      = m;
+  in.eps_dot0[flyer]               = eps_dot0;
+
+  in.enable_p_prime[target]        = false;
+  in.enable_nodal_pressure[target] = true;
+  in.use_global_tau[target]        = true;
+  in.c_tau[target]                 = 1.0;
+  in.c_v[target]                   = 1.0;
+  in.c_p[target]                   = 0.0;
+  in.enable_variational_J2[target] = true;
+  in.rho0[target]                  = rho;
+  in.K0[target]                    = K;
+  in.G0[target]                    = G;
+  in.Y0[target]                    = Y0;
+  in.n[target]                     = n;
+  in.eps0[target]                  = eps0;
+  in.Svis0[target]                 = Svis0;
+  in.m[target]                     = m;
+  in.eps_dot0[target]              = eps_dot0;
+
   run(in, filename);
 }
 
@@ -1363,7 +1454,8 @@ main()
   if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((0)) lgr::flyer_target_J2();
+  if ((0)) lgr::flyer_target_stabilized_tet();
+  if ((0)) lgr::flyer_target_composite_tet();
   if ((0)) lgr::taylor_composite_tet();
   if ((1)) lgr::taylor_stabilized_tet();
   // run_for_average();
