@@ -1007,6 +1007,9 @@ flyer_target_composite_tet()
   in.num_file_output_periods = 50;
   in.enable_J_averaging      = false;
   in.enable_p_averaging      = false;
+  in.enable_viscosity               = true;
+  in.linear_artificial_viscosity    = 1.0;
+  in.quadratic_artificial_viscosity = 1.0;
 
   in.enable_p_prime[flyer]        = false;
   in.enable_nodal_pressure[flyer] = true;
@@ -1457,8 +1460,8 @@ main()
   if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((1)) lgr::flyer_target_stabilized_tet();
-  if ((0)) lgr::flyer_target_composite_tet();
+  if ((0)) lgr::flyer_target_stabilized_tet();
+  if ((1)) lgr::flyer_target_composite_tet();
   if ((0)) lgr::taylor_stabilized_tet();
   if ((0)) lgr::taylor_composite_tet();
   // run_for_average();
