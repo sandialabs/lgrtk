@@ -1012,10 +1012,10 @@ flyer_target_composite_tet()
   in.quadratic_artificial_viscosity = 1.0;
 
   in.enable_p_prime[flyer]        = false;
-  in.enable_nodal_pressure[flyer] = true;
+  in.enable_nodal_pressure[flyer] = false;
   in.use_global_tau[flyer]        = true;
-  in.c_tau[flyer]                 = 1.0;
-  in.c_v[flyer]                   = 1.0;
+  in.c_tau[flyer]                 = 0.0;
+  in.c_v[flyer]                   = 0.0;
   in.c_p[flyer]                   = 0.0;
   in.enable_variational_J2[flyer] = true;
   in.rho0[flyer]                  = rho;
@@ -1029,10 +1029,10 @@ flyer_target_composite_tet()
   in.eps_dot0[flyer]              = eps_dot0;
 
   in.enable_p_prime[target]        = false;
-  in.enable_nodal_pressure[target] = true;
+  in.enable_nodal_pressure[target] = false;
   in.use_global_tau[target]        = true;
-  in.c_tau[target]                 = 1.0;
-  in.c_v[target]                   = 1.0;
+  in.c_tau[target]                 = 0.0;
+  in.c_v[target]                   = 0.0;
   in.c_p[target]                   = 0.0;
   in.enable_variational_J2[target] = true;
   in.rho0[target]                  = rho;
