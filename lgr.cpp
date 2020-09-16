@@ -912,8 +912,8 @@ flyer_target_stabilized_tet()
   in.name                           = "flyer-target";
   in.CFL                            = 0.1;
   in.element                        = TETRAHEDRON;
-  in.end_time                       = 5.0e-06;
-  in.num_file_output_periods        = 50;
+  in.end_time                       = 1.0e-04;
+  in.num_file_output_periods        = 1000;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
