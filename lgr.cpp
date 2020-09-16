@@ -1460,8 +1460,8 @@ main()
   if ((0)) lgr::twisting_composite_column_J2();
   if ((0)) lgr::Sod_1D();
   if ((0)) lgr::triple_point();
-  if ((0)) lgr::flyer_target_stabilized_tet();
-  if ((1)) lgr::flyer_target_composite_tet();
+  if ((1)) lgr::flyer_target_stabilized_tet();
+  if ((0)) lgr::flyer_target_composite_tet();
   if ((0)) lgr::taylor_stabilized_tet();
   if ((0)) lgr::taylor_composite_tet();
   // run_for_average();
