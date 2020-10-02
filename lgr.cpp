@@ -1433,36 +1433,37 @@ run_for_average()
 }
 
 int
-main()
+main(int ac, char* av[])
 {
+  std::string const problem = ac > 1 ? av[1] : "";
   HPC_TRAP_FPE();
-  if ((0)) lgr::elastic_wave();
-  if ((0)) lgr::gas_expansion();
-  if ((0)) lgr::spinning_square();
-  if ((0)) lgr::Cooks_membrane();
-  if ((0)) lgr::swinging_plate();
-  if ((0)) lgr::spinning_cube();
-  if ((0)) lgr::elastic_wave_2d();
-  if ((0)) lgr::elastic_wave_3d();
-  if ((0)) lgr::swinging_cube(true);
-  if ((0)) lgr::swinging_cube(false);
-  if ((0)) lgr::twisting_column();
-  if ((0)) lgr::twisting_column_ep(0.05, false);
-  if ((0)) lgr::twisting_column_ep(0.05, true);
-  if ((0)) lgr::Noh_1D();
-  if ((0)) lgr::Noh_2D(false, false);
-  if ((0)) lgr::Noh_2D(true, false);
-  if ((0)) lgr::Noh_2D(true, true);
-  if ((0)) lgr::Noh_3D();
-  if ((0)) lgr::composite_Noh_3D();
-  if ((0)) lgr::spinning_composite_cube();
-  if ((0)) lgr::twisting_composite_column();
-  if ((0)) lgr::twisting_composite_column_J2();
-  if ((0)) lgr::Sod_1D();
-  if ((0)) lgr::triple_point();
-  if ((1)) lgr::flyer_target_stabilized_tet();
-  if ((0)) lgr::flyer_target_composite_tet();
-  if ((0)) lgr::taylor_stabilized_tet();
-  if ((0)) lgr::taylor_composite_tet();
+  if (problem == "composite_Noh_3D") lgr::composite_Noh_3D();
+  if (problem == "Cooks_membrane") lgr::Cooks_membrane();
+  if (problem == "elastic_wave") lgr::elastic_wave();
+  if (problem == "elastic_wave_2d") lgr::elastic_wave_2d();
+  if (problem == "elastic_wave_3d") lgr::elastic_wave_3d();
+  if (problem == "flyer_target_composite_tet") lgr::flyer_target_composite_tet();
+  if (problem == "flyer_target_stabilized_tet") lgr::flyer_target_stabilized_tet();
+  if (problem == "gas_expansion") lgr::gas_expansion();
+  if (problem == "Noh_1D") lgr::Noh_1D();
+  if (problem == "Noh_2D_0_0") lgr::Noh_2D(false, false);
+  if (problem == "Noh_2D_1_0") lgr::Noh_2D(true, false);
+  if (problem == "Noh_2D_1_1") lgr::Noh_2D(true, true);
+  if (problem == "Noh_3D") lgr::Noh_3D();
+  if (problem == "Sod_1D") lgr::Sod_1D();
+  if (problem == "spinning_composite_cube") lgr::spinning_composite_cube();
+  if (problem == "spinning_cube") lgr::spinning_cube();
+  if (problem == "spinning_square") lgr::spinning_square();
+  if (problem == "swinging_cube_0") lgr::swinging_cube(false);
+  if (problem == "swinging_cube_1") lgr::swinging_cube(true);
+  if (problem == "swinging_plate") lgr::swinging_plate();
+  if (problem == "taylor_composite_tet") lgr::taylor_composite_tet();
+  if (problem == "taylor_stabilized_tet") lgr::taylor_stabilized_tet();
+  if (problem == "triple_point") lgr::triple_point();
+  if (problem == "twisting_column_ep_0") lgr::twisting_column_ep(0.05, false);
+  if (problem == "twisting_column_ep_1") lgr::twisting_column_ep(0.05, true);
+  if (problem == "twisting_column") lgr::twisting_column();
+  if (problem == "twisting_composite_column_J2") lgr::twisting_composite_column_J2();
+  if (problem == "twisting_composite_column") lgr::twisting_composite_column();
   // run_for_average();
 }
