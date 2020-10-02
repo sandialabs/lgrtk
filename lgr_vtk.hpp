@@ -32,9 +32,6 @@ class captured_state
   hpc::pinned_vector<hpc::time<double>, point_index>                                             element_dt;
   hpc::pinned_vector<hpc::adimensional<double>, element_index>                                   quality;
   hpc::pinned_vector<material_index, element_index>                                              material;
-#if 0
-    hpc::host_vector<hpc::pinned_vector<hpc::adimensional<double>, node_index>, material_index> ep_h;
-#endif
 };
 
 class file_writer
@@ -46,7 +43,7 @@ class file_writer
   void
   capture(input const& in, state const& s);
   void
-                 write(input const& in, int const file_output_index);
+  write(input const& in, int const file_output_index);
   captured_state captured;
 };
 
