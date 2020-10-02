@@ -139,7 +139,6 @@ otm_populate_new_points(
   auto const                                                    points_to_G      = s.G.begin();
   auto const                                                    points_to_rho    = s.rho.begin();
   auto const                                                    points_to_ep     = s.ep.begin();
-  auto const                                                    points_to_ep_dot = s.ep_dot.begin();
   auto const                                                    points_to_b      = s.b.begin();
   auto const                                                    points_to_V      = s.V.begin();
   auto const                                                    points_to_F      = s.F_total.begin();
@@ -198,7 +197,6 @@ otm_populate_new_points(
     auto point_G      = hpc::pressure<double>(0.0);
     auto point_rho    = hpc::density<double>(0.0);
     auto point_ep     = hpc::strain<double>(0.0);
-    auto point_ep_dot = hpc::strain_rate<double>(0.0);
     auto point_b      = hpc::acceleration<double>::zero();
     auto point_V      = hpc::volume<double>(0.0);
     auto index_r      = hpc::vector3<double>::zero();
@@ -210,7 +208,6 @@ otm_populate_new_points(
       auto const G                       = points_to_G[source_point];
       auto const rho                     = points_to_rho[source_point];
       auto const ep                      = points_to_ep[source_point];
-      auto const ep_dot                  = points_to_ep_dot[source_point];
       auto const b                       = points_to_b[source_point].load();
       auto const N                       = index_to_NZ[i] / Z;
       auto const dV                      = points_to_V[source_point] * N / (1.0 + N);
@@ -222,7 +219,6 @@ otm_populate_new_points(
       point_G += N * G;
       point_rho += N * rho;
       point_ep += N * ep;
-      point_ep_dot += N * ep_dot;
       point_b += N * b;
       point_V += dV;
       points_to_V[source_point] -= dV;
@@ -236,7 +232,6 @@ otm_populate_new_points(
     points_to_G[point]          = point_G;
     points_to_rho[point]        = point_rho;
     points_to_ep[point]         = point_ep;
-    points_to_ep_dot[point]     = point_ep_dot;
     points_to_b[point]          = point_b;
     points_to_V[point]          = point_V;
     auto const R                = hpc::rotation_tensor_from_rotation_vector(index_r);

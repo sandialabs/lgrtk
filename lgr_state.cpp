@@ -35,7 +35,6 @@ resize_state(input const& in, state& s)
     // Plasticity
     s.Fp_total.resize(s.points.size());
     s.ep.resize(s.points.size());
-    s.ep_dot.resize(s.points.size());
   }
   s.material_mass.resize(in.materials.size());
   for (auto& mm : s.material_mass) mm.resize(s.nodes.size());

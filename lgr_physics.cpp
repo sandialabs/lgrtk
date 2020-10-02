@@ -944,7 +944,6 @@ run(input const& in, std::string const& filename)
     hpc::fill(hpc::device_policy(), s.Fp_total, hpc::deformation_gradient<double>::identity());
     hpc::fill(hpc::device_policy(), s.temp, double(0.0));
     hpc::fill(hpc::device_policy(), s.ep, double(0.0));
-    hpc::fill(hpc::device_policy(), s.ep_dot, double(0.0));
     if (s.use_comptet_stabilization == true) { hpc::fill(hpc::device_policy(), s.JavgJ, double(1.0)); }
   }
 
