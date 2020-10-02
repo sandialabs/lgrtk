@@ -889,7 +889,10 @@ flyer_target_stabilized_tet()
       auto const x = hpc::vector3<double>(nodes_to_x[node].load());
       auto const r = std::sqrt(x(0) * x(0) + x(1) * x(1));
       auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
-      if (r < flyer_radius + eps) { v(2) = x(2) < eps ? 2200.0 : 242.0; }
+      if (r < flyer_radius + eps) {
+        if (x(2) < -eps) v(2) = 2200.0;
+        if (-eps <= x(2) && x(2) <= eps) v(2) = 242.0;
+      }
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -980,7 +983,10 @@ flyer_target_composite_tet()
       auto const x = hpc::vector3<double>(nodes_to_x[node].load());
       auto const r = std::sqrt(x(0) * x(0) + x(1) * x(1));
       auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
-      if (r < flyer_radius + eps) { v(2) = x(2) < eps ? 2200.0 : 242.0; }
+      if (r < flyer_radius + eps) {
+        if (x(2) < -eps) v(2) = 2200.0;
+        if (-eps <= x(2) && x(2) <= eps) v(2) = 242.0;
+      }
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -999,14 +1005,238 @@ flyer_target_composite_tet()
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
 
-  in.initial_v               = flyer_v;
-  in.name                    = "flyer-target-ct";
-  in.CFL                     = 0.1;
-  in.element                 = COMPOSITE_TETRAHEDRON;
-  in.end_time                = 5.0e-06;
-  in.num_file_output_periods = 50;
-  in.enable_J_averaging      = false;
-  in.enable_p_averaging      = false;
+  in.initial_v                      = flyer_v;
+  in.name                           = "flyer-target-ct";
+  in.CFL                            = 0.1;
+  in.element                        = COMPOSITE_TETRAHEDRON;
+  in.end_time                       = 5.0e-06;
+  in.num_file_output_periods        = 50;
+  in.enable_J_averaging             = false;
+  in.enable_p_averaging             = false;
+  in.enable_viscosity               = true;
+  in.linear_artificial_viscosity    = 1.0;
+  in.quadratic_artificial_viscosity = 1.0;
+
+  in.enable_p_prime[flyer]        = false;
+  in.enable_nodal_pressure[flyer] = false;
+  in.use_global_tau[flyer]        = true;
+  in.c_tau[flyer]                 = 0.0;
+  in.c_v[flyer]                   = 0.0;
+  in.c_p[flyer]                   = 0.0;
+  in.enable_variational_J2[flyer] = true;
+  in.rho0[flyer]                  = rho;
+  in.K0[flyer]                    = K;
+  in.G0[flyer]                    = G;
+  in.Y0[flyer]                    = Y0;
+  in.n[flyer]                     = n;
+  in.eps0[flyer]                  = eps0;
+  in.Svis0[flyer]                 = Svis0;
+  in.m[flyer]                     = m;
+  in.eps_dot0[flyer]              = eps_dot0;
+
+  in.enable_p_prime[target]        = false;
+  in.enable_nodal_pressure[target] = false;
+  in.use_global_tau[target]        = true;
+  in.c_tau[target]                 = 0.0;
+  in.c_v[target]                   = 0.0;
+  in.c_p[target]                   = 0.0;
+  in.enable_variational_J2[target] = true;
+  in.rho0[target]                  = rho;
+  in.K0[target]                    = K;
+  in.G0[target]                    = G;
+  in.Y0[target]                    = Y0;
+  in.n[target]                     = n;
+  in.eps0[target]                  = eps0;
+  in.Svis0[target]                 = Svis0;
+  in.m[target]                     = m;
+  in.eps_dot0[target]              = eps_dot0;
+
+  run(in, filename);
+}
+
+HPC_NOINLINE void
+rmi_one_wave_stabilized_tet();
+void
+rmi_one_wave_stabilized_tet()
+{
+  constexpr material_index num_materials(2);
+  constexpr material_index num_boundaries(4);
+  constexpr material_index flyer(0);
+  constexpr material_index target(1);
+  constexpr material_index x_min(2);
+  constexpr material_index x_max(3);
+  constexpr material_index y_min(4);
+  constexpr material_index y_max(5);
+  input                    in(num_materials, num_boundaries);
+  std::string const        filename{"rmi-one-wave.g"};
+  auto const               flyer_radius = 0.2 * 0.0254;
+  auto const               eps          = flyer_radius / 1000.0;
+
+  auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>*       v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
+      if (x(2) < -eps) v(2) = 2200.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 242.0;
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+
+  auto const target_length = hpc::length<double>(0.001);
+  auto const target_width  = hpc::length<double>(0.001);
+
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, -target_width / 2.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, target_width / 2.0}, eps);
+
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_max, y_axis});
+
+  in.initial_v                      = flyer_v;
+  in.name                           = "rmi-one-wave";
+  in.CFL                            = 0.1;
+  in.element                        = TETRAHEDRON;
+  in.end_time                       = 5.0e-06;
+  in.num_file_output_periods        = 50;
+  in.enable_J_averaging             = false;
+  in.enable_p_averaging             = false;
+  in.enable_viscosity               = true;
+  in.linear_artificial_viscosity    = 1.0;
+  in.quadratic_artificial_viscosity = 1.0;
+
+  in.enable_p_prime[flyer]        = false;
+  in.enable_nodal_pressure[flyer] = true;
+  in.use_global_tau[flyer]        = true;
+  in.c_tau[flyer]                 = 1.0;
+  in.c_v[flyer]                   = 1.0;
+  in.c_p[flyer]                   = 0.0;
+  in.enable_variational_J2[flyer] = true;
+  in.rho0[flyer]                  = rho;
+  in.K0[flyer]                    = K;
+  in.G0[flyer]                    = G;
+  in.Y0[flyer]                    = Y0;
+  in.n[flyer]                     = n;
+  in.eps0[flyer]                  = eps0;
+  in.Svis0[flyer]                 = Svis0;
+  in.m[flyer]                     = m;
+  in.eps_dot0[flyer]              = eps_dot0;
+
+  in.enable_p_prime[target]        = false;
+  in.enable_nodal_pressure[target] = true;
+  in.use_global_tau[target]        = true;
+  in.c_tau[target]                 = 1.0;
+  in.c_v[target]                   = 1.0;
+  in.c_p[target]                   = 0.0;
+  in.enable_variational_J2[target] = true;
+  in.rho0[target]                  = rho;
+  in.K0[target]                    = K;
+  in.G0[target]                    = G;
+  in.Y0[target]                    = Y0;
+  in.n[target]                     = n;
+  in.eps0[target]                  = eps0;
+  in.Svis0[target]                 = Svis0;
+  in.m[target]                     = m;
+  in.eps_dot0[target]              = eps_dot0;
+
+  run(in, filename);
+}
+
+HPC_NOINLINE void
+rmi_one_wave_composite_tet();
+void
+rmi_one_wave_composite_tet()
+{
+  constexpr material_index num_materials(2);
+  constexpr material_index num_boundaries(4);
+  constexpr material_index flyer(0);
+  constexpr material_index target(1);
+  constexpr material_index x_min(2);
+  constexpr material_index x_max(3);
+  constexpr material_index y_min(4);
+  constexpr material_index y_max(5);
+  input                    in(num_materials, num_boundaries);
+  std::string const        filename{"rmi-one-wave-ct.g"};
+  auto const               flyer_radius = 0.2 * 0.0254;
+  auto const               eps          = flyer_radius / 1000.0;
+
+  auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>*       v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
+      if (x(2) < -eps) v(2) = 2200.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 242.0;
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const n        = hpc::adimensional<double>(1.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+
+  auto const target_length = hpc::length<double>(0.001);
+  auto const target_width  = hpc::length<double>(0.001);
+
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, -target_width / 2.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, target_width / 2.0}, eps);
+
+  in.zero_acceleration_conditions.push_back({x_min, x_axis});
+  in.zero_acceleration_conditions.push_back({x_max, x_axis});
+  in.zero_acceleration_conditions.push_back({y_min, y_axis});
+  in.zero_acceleration_conditions.push_back({y_max, y_axis});
+
+  in.initial_v                      = flyer_v;
+  in.name                           = "rmi-one-wave-ct";
+  in.CFL                            = 0.1;
+  in.element                        = COMPOSITE_TETRAHEDRON;
+  in.end_time                       = 5.0e-06;
+  in.num_file_output_periods        = 50;
+  in.enable_J_averaging             = false;
+  in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
   in.linear_artificial_viscosity    = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
@@ -1438,32 +1668,37 @@ main(int ac, char* av[])
   std::string const problem = ac > 1 ? av[1] : "";
   HPC_TRAP_FPE();
   if (problem == "composite_Noh_3D") lgr::composite_Noh_3D();
-  if (problem == "Cooks_membrane") lgr::Cooks_membrane();
-  if (problem == "elastic_wave") lgr::elastic_wave();
-  if (problem == "elastic_wave_2d") lgr::elastic_wave_2d();
-  if (problem == "elastic_wave_3d") lgr::elastic_wave_3d();
-  if (problem == "flyer_target_composite_tet") lgr::flyer_target_composite_tet();
-  if (problem == "flyer_target_stabilized_tet") lgr::flyer_target_stabilized_tet();
-  if (problem == "gas_expansion") lgr::gas_expansion();
-  if (problem == "Noh_1D") lgr::Noh_1D();
-  if (problem == "Noh_2D_0_0") lgr::Noh_2D(false, false);
-  if (problem == "Noh_2D_1_0") lgr::Noh_2D(true, false);
-  if (problem == "Noh_2D_1_1") lgr::Noh_2D(true, true);
-  if (problem == "Noh_3D") lgr::Noh_3D();
-  if (problem == "Sod_1D") lgr::Sod_1D();
-  if (problem == "spinning_composite_cube") lgr::spinning_composite_cube();
-  if (problem == "spinning_cube") lgr::spinning_cube();
-  if (problem == "spinning_square") lgr::spinning_square();
-  if (problem == "swinging_cube_0") lgr::swinging_cube(false);
-  if (problem == "swinging_cube_1") lgr::swinging_cube(true);
-  if (problem == "swinging_plate") lgr::swinging_plate();
-  if (problem == "taylor_composite_tet") lgr::taylor_composite_tet();
-  if (problem == "taylor_stabilized_tet") lgr::taylor_stabilized_tet();
-  if (problem == "triple_point") lgr::triple_point();
-  if (problem == "twisting_column_ep_0") lgr::twisting_column_ep(0.05, false);
-  if (problem == "twisting_column_ep_1") lgr::twisting_column_ep(0.05, true);
-  if (problem == "twisting_column") lgr::twisting_column();
-  if (problem == "twisting_composite_column_J2") lgr::twisting_composite_column_J2();
-  if (problem == "twisting_composite_column") lgr::twisting_composite_column();
+  else if (problem == "Cooks_membrane") lgr::Cooks_membrane();
+  else if (problem == "elastic_wave") lgr::elastic_wave();
+  else if (problem == "elastic_wave_2d") lgr::elastic_wave_2d();
+  else if (problem == "elastic_wave_3d") lgr::elastic_wave_3d();
+  else if (problem == "flyer_target_composite_tet") lgr::flyer_target_composite_tet();
+  else if (problem == "flyer_target_stabilized_tet") lgr::flyer_target_stabilized_tet();
+  else if (problem == "gas_expansion") lgr::gas_expansion();
+  else if (problem == "Noh_1D") lgr::Noh_1D();
+  else if (problem == "Noh_2D_0_0") lgr::Noh_2D(false, false);
+  else if (problem == "Noh_2D_1_0") lgr::Noh_2D(true, false);
+  else if (problem == "Noh_2D_1_1") lgr::Noh_2D(true, true);
+  else if (problem == "Noh_3D") lgr::Noh_3D();
+  else if (problem == "rmi_one_wave_composite_tet") lgr::rmi_one_wave_composite_tet();
+  else if (problem == "rmi_one_wave_stabilized_tet") lgr::rmi_one_wave_stabilized_tet();
+  else if (problem == "Sod_1D") lgr::Sod_1D();
+  else if (problem == "spinning_composite_cube") lgr::spinning_composite_cube();
+  else if (problem == "spinning_cube") lgr::spinning_cube();
+  else if (problem == "spinning_square") lgr::spinning_square();
+  else if (problem == "swinging_cube_0") lgr::swinging_cube(false);
+  else if (problem == "swinging_cube_1") lgr::swinging_cube(true);
+  else if (problem == "swinging_plate") lgr::swinging_plate();
+  else if (problem == "taylor_composite_tet") lgr::taylor_composite_tet();
+  else if (problem == "taylor_stabilized_tet") lgr::taylor_stabilized_tet();
+  else if (problem == "triple_point") lgr::triple_point();
+  else if (problem == "twisting_column_ep_0") lgr::twisting_column_ep(0.05, false);
+  else if (problem == "twisting_column_ep_1") lgr::twisting_column_ep(0.05, true);
+  else if (problem == "twisting_column") lgr::twisting_column();
+  else if (problem == "twisting_composite_column_J2") lgr::twisting_composite_column_J2();
+  else if (problem == "twisting_composite_column") lgr::twisting_composite_column();
+  else {
+    std::cout << "Unrecognized problem string.\n";
+  }
   // run_for_average();
 }
