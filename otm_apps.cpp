@@ -102,7 +102,9 @@ otm_j2_nu_zero_patch_test()
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform     = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
-  if (err_code != 0) { HPC_ERROR_EXIT("Error reading Exodus file : cube.g"); }
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Error reading Exodus file : cube.g");
+  }
   in.name                           = "nu-zero-patch-test";
   in.end_time                       = 1.0e-03;
   in.num_file_output_periods        = 100;
@@ -209,7 +211,9 @@ otm_j2_uniaxial_patch_test()
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform     = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
-  if (err_code != 0) { HPC_ERROR_EXIT("Error reading Exodus file : cube.g"); }
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Error reading Exodus file : cube.g");
+  }
   in.name                           = "uniaxial-patch-test";
   in.end_time                       = 1.0e-03;
   in.num_file_output_periods        = 100;
@@ -325,7 +329,9 @@ otm_taylor()
   tet_nodes_to_points point_interpolator(points_in_element);
   in.xp_transform     = std::ref(point_interpolator);
   auto const err_code = read_exodus_file(filename, in, s);
-  if (err_code != 0) { HPC_ERROR_EXIT("Error reading Exodus file : cylinder.g"); }
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Error reading Exodus file : cylinder.g");
+  }
   in.name                        = "cylindrical-flyer";
   in.end_time                    = 1.0e-04;
   in.num_file_output_periods     = 100;
@@ -406,8 +412,14 @@ otm_taylor()
   return true;
 }
 
-otm_scope::otm_scope() { search::initialize_otm_search(); }
+otm_scope::otm_scope()
+{
+  search::initialize_otm_search();
+}
 
-otm_scope::~otm_scope() { search::finalize_otm_search(); }
+otm_scope::~otm_scope()
+{
+  search::finalize_otm_search();
+}
 
 }  // namespace lgr

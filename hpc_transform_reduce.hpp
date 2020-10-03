@@ -17,7 +17,9 @@ transform_reduce(local_policy, Range const& range, T init, BinaryOp binary_op, U
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) { init = binary_op(std::move(init), unary_op(*first)); }
+  for (; first != last; ++first) {
+    init = binary_op(std::move(init), unary_op(*first));
+  }
   return init;
 }
 
@@ -27,7 +29,9 @@ transform_reduce(serial_policy, Range const& range, T init, BinaryOp binary_op, 
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) { init = binary_op(std::move(init), unary_op(*first)); }
+  for (; first != last; ++first) {
+    init = binary_op(std::move(init), unary_op(*first));
+  }
   return init;
 }
 

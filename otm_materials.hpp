@@ -62,7 +62,9 @@ variational_J2_point(
   auto const dev_M_tr     = 2.0 * G * dev_Ee_tr;
   auto const sigma_tr_eff = std::sqrt(1.5) * hpc::norm(dev_M_tr);
   auto       Np           = hpc::matrix3x3<double>::zero();
-  if (sigma_tr_eff > 0) { Np = 1.5 * dev_M_tr / sigma_tr_eff; }
+  if (sigma_tr_eff > 0) {
+    Np = 1.5 * dev_M_tr / sigma_tr_eff;
+  }
 
   auto       S0 = j2::FlowStrength(props, eqps);
   auto const r0 = sigma_tr_eff - S0;
@@ -113,7 +115,9 @@ variational_J2_point(
         } else {
           auto alpha_old = alpha;
           alpha          = alpha_old * alpha_old * merit_old / (merit_new - merit_old + 2.0 * alpha_old * merit_old);
-          if (backtrack_factor * alpha_old > alpha) { alpha = backtrack_factor * alpha_old; }
+          if (backtrack_factor * alpha_old > alpha) {
+            alpha = backtrack_factor * alpha_old;
+          }
         }
       }
       auto S    = j2::FlowStrength(props, eqps + delta_eqps) + j2::ViscoplasticStress(props, delta_eqps, dt);

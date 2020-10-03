@@ -376,7 +376,9 @@ otm_assemble_contact_force(state& s)
     auto const x      = nodes_to_x[node].load();
     auto const m      = nodes_to_mass[node];
     auto const z      = x(2);
-    if (z > 0.0) { node_f(2) = -penalty_coeff * m * z; }
+    if (z > 0.0) {
+      node_f(2) = -penalty_coeff * m * z;
+    }
     auto const f_old = nodes_to_f[node].load();
     auto const f_new = f_old + node_f;
     nodes_to_f[node] = f_new;
@@ -390,7 +392,9 @@ otm_update_nodal_force(state& s)
   hpc::fill(hpc::device_policy(), s.f, hpc::force<double>::zero());
   otm_assemble_internal_force(s);
   otm_assemble_external_force(s);
-  if (s.use_penalty_contact == true) { otm_assemble_contact_force(s); }
+  if (s.use_penalty_contact == true) {
+    otm_assemble_contact_force(s);
+  }
 }
 
 void
@@ -494,7 +498,9 @@ otm_update_material_state(input const& in, state& s, material_index const materi
     auto       Keff  = hpc::pressure<double>(0.0);
     auto       Geff  = hpc::pressure<double>(0.0);
     auto       W     = hpc::energy_density<double>(0.0);
-    if (is_neo_hookean == true) { neo_Hookean_point(F, K, G, sigma, Keff, Geff, W); }
+    if (is_neo_hookean == true) {
+      neo_Hookean_point(F, K, G, sigma, Keff, Geff, W);
+    }
     if (is_variational_J2 == true) {
       j2::Properties props{K, G, Y0, n, eps0, Svis0, m, eps_dot0};
       auto           Fp = points_to_Fp[point].load();
@@ -539,9 +545,15 @@ otm_enforce_boundary_conditions(state& s)
     auto const dof     = boundary_to_prescribed_dof[boundary_index].load();
     auto       functor = [=] HPC_DEVICE(node_index const node) {
       auto disp = nodes_to_u[node].load();
-      if (dof(0) == 1) { disp(0) = v(0) * dt; }
-      if (dof(1) == 1) { disp(1) = v(1) * dt; }
-      if (dof(2) == 1) { disp(2) = v(2) * dt; }
+      if (dof(0) == 1) {
+        disp(0) = v(0) * dt;
+      }
+      if (dof(1) == 1) {
+        disp(1) = v(1) * dt;
+      }
+      if (dof(2) == 1) {
+        disp(2) = v(2) * dt;
+      }
       nodes_to_u[node] = disp;
     };
     hpc::for_each(hpc::device_policy(), s.node_sets[boundary_index], functor);
@@ -557,7 +569,9 @@ otm_enforce_contact_constraints(state& s)
     auto x = nodes_to_x[node].load();
     auto u = nodes_to_u[node].load();
     auto z = x(2);
-    if (z >= 0.0) { u(2) = 0.0; }
+    if (z >= 0.0) {
+      u(2) = 0.0;
+    }
     nodes_to_u[node] = u;
   };
   hpc::for_each(hpc::device_policy(), s.nodes, functor);
@@ -585,7 +599,9 @@ otm_update_nodal_position(state& s)
   hpc::for_each(hpc::device_policy(), s.nodes, disp_functor);
 
   otm_enforce_boundary_conditions(s);
-  if (s.use_displacement_contact == true) { otm_enforce_contact_constraints(s); }
+  if (s.use_displacement_contact == true) {
+    otm_enforce_contact_constraints(s);
+  }
 
   auto coord_vel_update_functor = [=] HPC_DEVICE(node_index const node) {
     auto       disp  = nodes_to_u[node].load();
@@ -735,7 +751,9 @@ otm_initialize(input& in, state& s)
   otm_initialize_point_volume(s);
   otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
-  for (auto material : in.materials) { otm_update_material_state(in, s, material); }
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
+  }
   otm_update_nodal_mass(s);
   otm_update_nodal_momentum(s);
 }
@@ -767,7 +785,9 @@ otm_time_integrator_step(input const& in, state& s)
   otm_update_nodal_momentum(s);
   otm_update_nodal_force(s);
   otm_update_reference(s);
-  for (auto material : in.materials) { otm_update_material_state(in, s, material); }
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
+  }
   otm_update_shape_functions(s);
   otm_update_time(in, s);
   otm_update_neighbor_distances(s);
@@ -808,12 +828,16 @@ otm_run(input const& in, state& s)
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
         output_file.capture(s);
-        if (in.debug_output == true) { output_file.to_console(); }
+        if (in.debug_output == true) {
+          output_file.to_console();
+        }
         output_file.write(file_output_index);
         ++file_output_index;
       }
       if (s.n >= s.num_time_steps) continue;
-      if (in.enable_adapt && (s.n % 10 == 0)) { otm_adapt(in, s); }
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+        otm_adapt(in, s);
+      }
       otm_time_integrator_step(in, s);
     }
   } else {
@@ -832,12 +856,16 @@ otm_run(input const& in, state& s)
           std::cout << "outputting file " << file_output_index << " time " << double(s.time) << "\n";
         }
         output_file.capture(s);
-        if (in.debug_output == true) { output_file.to_console(); }
+        if (in.debug_output == true) {
+          output_file.to_console();
+        }
         output_file.write(file_output_index);
         ++file_output_index;
         s.next_file_output_time = double(file_output_index) * file_output_period;
       }
-      if (in.enable_adapt && (s.n % 10 == 0)) { otm_adapt(in, s); }
+      if (in.enable_adapt && (s.n % 10 == 0)) {
+        otm_adapt(in, s);
+      }
       otm_time_integrator_step(in, s);
       ++s.n;
     }

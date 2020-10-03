@@ -114,7 +114,9 @@ class clipped_domain : public domain
   std::vector<plane> m_host_clips;
 
  public:
-  explicit clipped_domain(SourceDomain const& s) : m_source(s) {}
+  explicit clipped_domain(SourceDomain const& s) : m_source(s)
+  {
+  }
   void
   clip(plane const& p)
   {
@@ -139,8 +141,12 @@ class clipped_domain : public domain
     auto       functor       = [=] HPC_DEVICE(Index const i) {
       auto const pt    = points_begin[i].load();
       bool       is_in = (distance(source, pt) >= 0.0);
-      for (auto const clip_plane : clips_range) { is_in &= (distance(clip_plane, pt) >= 0.0); }
-      if (is_in) { markers_begin[i] = marker; }
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
+      }
+      if (is_in) {
+        markers_begin[i] = marker;
+      }
     };
     hpc::for_each(hpc::device_policy(), range, functor);
   }
@@ -180,7 +186,9 @@ class clipped_domain : public domain
     auto       functor       = [=] HPC_DEVICE(node_index const i) {
       auto const pt    = points_begin[i].load();
       bool       is_in = (distance(source, pt) >= 0.0);
-      for (auto const clip_plane : clips_range) { is_in &= (distance(clip_plane, pt) >= 0.0); }
+      for (auto const clip_plane : clips_range) {
+        is_in &= (distance(clip_plane, pt) >= 0.0);
+      }
       if (is_in) {
         material_set set = markers_begin[i];
         set              = set | material_set(marker);

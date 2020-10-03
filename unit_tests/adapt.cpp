@@ -223,7 +223,9 @@ check_point_node_connectivities_after_single_tet_node_adapt(const state& s)
       DEVICE_ASSERT_LT(node, node_index(7));
       node_connect_found[node] = true;
     }
-    for (const bool found : node_connect_found) { DEVICE_EXPECT_EQ(found, true); }
+    for (const bool found : node_connect_found) {
+      DEVICE_EXPECT_EQ(found, true);
+    }
   };
   unit::test_for_each(hpc::device_policy(), s.points, point_check_func);
 }
@@ -277,7 +279,9 @@ check_point_node_connectivities_after_two_tet_point_adapt(const state& s)
       DEVICE_ASSERT_LT(point, point_index(3));
       node_point_found[point] = true;
     }
-    for (const bool found : node_point_found) { DEVICE_EXPECT_TRUE(found); }
+    for (const bool found : node_point_found) {
+      DEVICE_EXPECT_TRUE(found);
+    }
   };
   unit::test_for_each(hpc::device_policy(), s.nodes, node_check_func);
 
@@ -294,7 +298,9 @@ check_point_node_connectivities_after_two_tet_point_adapt(const state& s)
       DEVICE_ASSERT_LT(node, node_index(5));
       node_connect_found[node] = true;
     }
-    for (const bool found : node_connect_found) { DEVICE_EXPECT_TRUE(found); }
+    for (const bool found : node_connect_found) {
+      DEVICE_EXPECT_TRUE(found);
+    }
   };
   unit::test_for_each(hpc::device_policy(), s.points, point_check_func);
 }

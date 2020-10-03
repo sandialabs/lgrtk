@@ -370,7 +370,9 @@ assemble_contact_force(state& s)
     auto const x      = nodes_to_x[node].load();
     auto const m      = nodes_to_mass[node];
     auto const z      = x(2);
-    if (z > 0.0) { node_f(2) = -penalty_coeff * m * z; }
+    if (z > 0.0) {
+      node_f(2) = -penalty_coeff * m * z;
+    }
     auto const f_old = nodes_to_f[node].load();
     auto const f_new = f_old + node_f;
     nodes_to_f[node] = f_new;
@@ -420,7 +422,9 @@ update_nodal_force(state& s)
   hpc::fill(hpc::device_policy(), s.f, hpc::force<double>::zero());
   assemble_internal_force(s);
   assemble_external_force(s);
-  if (s.use_penalty_contact == true) { assemble_contact_force(s); }
+  if (s.use_penalty_contact == true) {
+    assemble_contact_force(s);
+  }
 }
 
 HPC_NOINLINE inline void
@@ -590,7 +594,9 @@ volume_average_rho(state& s)
       total_V += V;
     }
     auto const average_rho = mass / total_V;
-    for (auto const point : elements_to_points[element]) { points_to_rho[point] = average_rho; }
+    for (auto const point : elements_to_points[element]) {
+      points_to_rho[point] = average_rho;
+    }
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
@@ -613,7 +619,9 @@ volume_average_e(state& s)
       mass += V * rho;
     }
     auto const average_e = energy / mass;
-    for (auto const point : elements_to_points[element]) { points_to_e[point] = average_e; }
+    for (auto const point : elements_to_points[element]) {
+      points_to_e[point] = average_e;
+    }
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
@@ -661,8 +669,12 @@ update_single_material_state(
     hpc::time<double> const                                      dt,
     hpc::device_vector<hpc::pressure<double>, node_index> const& old_p_h)
 {
-  if (in.enable_neo_Hookean[material]) { neo_Hookean(in, s, material); }
-  if (in.enable_variational_J2[material]) { variational_J2(in, s, material); }
+  if (in.enable_neo_Hookean[material]) {
+    neo_Hookean(in, s, material);
+  }
+  if (in.enable_variational_J2[material]) {
+    variational_J2(in, s, material);
+  }
   if (in.enable_ideal_gas[material]) {
     if (in.enable_nodal_energy[material]) {
       nodal_ideal_gas(in, s, material);
@@ -688,7 +700,9 @@ update_material_state(
 {
   hpc::fill(hpc::device_policy(), s.sigma, hpc::symmetric_stress<double>::zero());
   hpc::fill(hpc::device_policy(), s.G, hpc::pressure<double>(0.0));
-  for (auto const material : in.materials) { update_single_material_state(in, s, material, dt, old_p_h[material]); }
+  for (auto const material : in.materials) {
+    update_single_material_state(in, s, material, dt, old_p_h[material]);
+  }
 }
 
 HPC_NOINLINE inline void
@@ -752,7 +766,9 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
     for (auto const material : in.materials) {
-      if (in.enable_nodal_pressure[material]) { update_p_h(s, half_dt, material, old_p_h[material]); }
+      if (in.enable_nodal_pressure[material]) {
+        update_p_h(s, half_dt, material, old_p_h[material]);
+      }
     }
     stress_power(s);
     for (auto const material : in.materials) {
@@ -765,8 +781,12 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    if (s.use_displacement_contact == true) { enforce_contact_constraints(s); }
-    if (last_pc) { update_v(s, s.dt, old_v); }
+    if (s.use_displacement_contact == true) {
+      enforce_contact_constraints(s);
+    }
+    if (last_pc) {
+      update_v(s, s.dt, old_v);
+    }
     update_x(s);
     update_reference(s);
     if (in.enable_J_averaging) volume_average_J(s);
@@ -786,7 +806,9 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     if (in.enable_viscosity) update_h_art(in, s);
     update_material_state(in, s, half_dt, old_p_h);
     for (auto const material : in.materials) {
-      if (in.enable_nodal_energy[material]) { interpolate_K(s, material); }
+      if (in.enable_nodal_energy[material]) {
+        interpolate_K(s, material);
+      }
     }
     update_c(s);
     if (in.enable_viscosity) apply_viscosity(in, s);
@@ -795,8 +817,12 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     if (last_pc) find_max_stable_dt(s);
     update_a_from_material_state(in, s);
     for (auto const material : in.materials) {
-      if (in.enable_nodal_pressure[material]) { update_p_h_dot_from_a(in, s, material); }
-      if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) { update_p(s, material); }
+      if (in.enable_nodal_pressure[material]) {
+        update_p_h_dot_from_a(in, s, material);
+      }
+      if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) {
+        update_p(s, material);
+      }
     }
   }
 }
@@ -848,7 +874,9 @@ initialize_material_scalar(
   auto const elements_to_points = s.elements * s.points_in_element;
   auto const points_to_scalar   = out.begin();
   auto       functor            = [=] HPC_DEVICE(element_index const element) {
-    for (auto const point : elements_to_points[element]) { points_to_scalar[point] = scalar; }
+    for (auto const point : elements_to_points[element]) {
+      points_to_scalar[point] = scalar;
+    }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
@@ -860,7 +888,9 @@ common_initialization_part1(input const& in, state& s)
   if (in.enable_viscosity) update_h_art(in, s);
   update_nodal_mass(in, s);
   for (auto const material : in.materials) {
-    if (in.enable_nodal_energy[material]) { update_nodal_density(s, material); }
+    if (in.enable_nodal_energy[material]) {
+      update_nodal_density(s, material);
+    }
   }
   initialize_grad_N(in, s);
   if (in.enable_adapt) {
@@ -881,7 +911,9 @@ common_initialization_part2(input const& in, state& s)
   }
   update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
-    if (in.enable_nodal_energy[material]) { interpolate_K(s, material); }
+    if (in.enable_nodal_energy[material]) {
+      interpolate_K(s, material);
+    }
   }
   update_c(s);
   if (in.enable_viscosity) {
@@ -893,11 +925,17 @@ common_initialization_part2(input const& in, state& s)
   find_max_stable_dt(s);
   update_a_from_material_state(in, s);
   for (auto const material : in.materials) {
-    if (in.enable_nodal_pressure[material]) { update_p_h_dot_from_a(in, s, material); }
-    if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) { update_p(s, material); }
+    if (in.enable_nodal_pressure[material]) {
+      update_p_h_dot_from_a(in, s, material);
+    }
+    if (!(in.enable_nodal_pressure[material] || in.enable_nodal_energy[material])) {
+      update_p(s, material);
+    }
     if (in.enable_nodal_energy[material]) {
       hpc::fill(hpc::device_policy(), s.q, hpc::heat_flux<double>::zero());
-      if (in.enable_p_prime[material]) { hpc::fill(hpc::device_policy(), s.p_prime, hpc::pressure<double>(0)); }
+      if (in.enable_p_prime[material]) {
+        hpc::fill(hpc::device_policy(), s.p_prime, hpc::pressure<double>(0));
+      }
     }
   }
 }
@@ -930,7 +968,9 @@ run(input const& in, std::string const& filename)
   collect_element_sets(in, s);
   for (auto const material : in.materials) {
     initialize_material_scalar(in.rho0[material], s, material, s.rho);
-    if (in.enable_nodal_pressure[material]) { hpc::fill(hpc::device_policy(), s.p_h[material], double(0.0)); }
+    if (in.enable_nodal_pressure[material]) {
+      hpc::fill(hpc::device_policy(), s.p_h[material], double(0.0));
+    }
     if (in.enable_nodal_energy[material]) {
       hpc::fill(hpc::device_policy(), s.e_h[material], in.e0[material]);
     } else {
@@ -944,7 +984,9 @@ run(input const& in, std::string const& filename)
     hpc::fill(hpc::device_policy(), s.Fp_total, hpc::deformation_gradient<double>::identity());
     hpc::fill(hpc::device_policy(), s.temp, double(0.0));
     hpc::fill(hpc::device_policy(), s.ep, double(0.0));
-    if (s.use_comptet_stabilization == true) { hpc::fill(hpc::device_policy(), s.JavgJ, double(1.0)); }
+    if (s.use_comptet_stabilization == true) {
+      hpc::fill(hpc::device_policy(), s.JavgJ, double(1.0));
+    }
   }
 
   common_initialization_part1(in, s);
@@ -991,7 +1033,9 @@ run(input const& in, std::string const& filename)
     output_file.capture(in, s);
     output_file.write(in, file_output_index);
   }
-  if (in.output_to_command_line) { std::cout << "final time " << double(s.time) << "\n"; }
+  if (in.output_to_command_line) {
+    std::cout << "final time " << double(s.time) << "\n";
+  }
 }
 
 }  // namespace lgr

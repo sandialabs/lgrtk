@@ -74,7 +74,9 @@ size_and_fill_lgr_data_structures(
   auto points_to_results     = search_results.begin();
   auto fill_func             = [=] HPC_DEVICE(Index1 point) {
     auto const point_results_range = points_results_ranges[point];
-    for (auto result : point_results_range) { points_to_results[result] = Index2(indices(hpc::weaken(result))); }
+    for (auto result : point_results_range) {
+      points_to_results[result] = Index2(indices(hpc::weaken(result)));
+    }
   };
   hpc::for_each(hpc::device_policy(), search_indices, fill_func);
 }

@@ -25,7 +25,9 @@ class array
   array(std::initializer_list<T> l) noexcept
   {
     auto const b = l.begin();
-    for (std::ptrdiff_t i = 0; i < N; ++i) { new (m_data + i) T(b[i]); }
+    for (std::ptrdiff_t i = 0; i < N; ++i) {
+      new (m_data + i) T(b[i]);
+    }
   }
   HPC_ALWAYS_INLINE
   array() noexcept = default;
@@ -126,7 +128,9 @@ class array_traits<::hpc::array<T, N, I>>
   {
     ::hpc::array<T, N, I> result;
     auto                  it2 = result.begin();
-    for (size_type i = 0; i < N; ++i, ++it, ++it2) { *it2 = *it; }
+    for (size_type i = 0; i < N; ++i, ++it, ++it2) {
+      *it2 = *it;
+    }
     return result;
   }
   template <class Iterator>
@@ -134,7 +138,9 @@ class array_traits<::hpc::array<T, N, I>>
   store(Iterator it, ::hpc::array<T, N, I> const& value) noexcept
   {
     auto it2 = value.begin();
-    for (size_type i = 0; i < N; ++i, ++it, ++it2) { *it = *it2; }
+    for (size_type i = 0; i < N; ++i, ++it, ++it2) {
+      *it = *it2;
+    }
   }
 };
 

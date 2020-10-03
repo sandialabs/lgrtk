@@ -136,7 +136,9 @@ class range_sum
   using const_pointer    = TargetIndex const*;
   using iterator         = ::hpc::range_sum_iterator<TargetIndex, SourceIndex>;
   using const_iterator   = iterator;
-  constexpr range_sum() noexcept : m_vector() {}
+  constexpr range_sum() noexcept : m_vector()
+  {
+  }
   template <class RangeSizes>
   explicit range_sum(RangeSizes const& range_sizes)
   {

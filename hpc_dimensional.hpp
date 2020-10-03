@@ -150,7 +150,9 @@ class quantity
   T m_impl;
 
  public:
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept : m_impl(in) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr quantity(T in) noexcept : m_impl(in)
+  {
+  }
   HPC_ALWAYS_INLINE constexpr quantity() noexcept                   = default;
   HPC_ALWAYS_INLINE constexpr quantity(quantity const& in) noexcept = default;
   HPC_ALWAYS_INLINE quantity&
@@ -159,7 +161,10 @@ class quantity
   HPC_ALWAYS_INLINE constexpr explicit quantity(quantity<T, Dimension2> const& in) noexcept : quantity(T(in))
   {
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T() const noexcept { return m_impl; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator T() const noexcept
+  {
+    return m_impl;
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr T
   get() const noexcept
   {

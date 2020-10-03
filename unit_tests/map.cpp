@@ -27,8 +27,12 @@ resize_preserve(hpc::device_array_vector<T, I>& v, I const new_size)
   hpc::copy(v, host_old);
   v.resize(new_size);
   hpc::pinned_array_vector<T, I> host_new(new_size);
-  for (auto i = 0; i < std::min(old_size, new_size); ++i) { host_new[i] = host_old[i].load(); }
-  for (auto i = old_size; i < new_size; ++i) { host_new[i] = T::zero(); }
+  for (auto i = 0; i < std::min(old_size, new_size); ++i) {
+    host_new[i] = host_old[i].load();
+  }
+  for (auto i = old_size; i < new_size; ++i) {
+    host_new[i] = T::zero();
+  }
   hpc::copy(host_new, v);
 }
 
@@ -42,8 +46,12 @@ resize_preserve(hpc::device_vector<T, I>& v, I const new_size)
   hpc::copy(v, host_old);
   v.resize(new_size);
   hpc::pinned_vector<T, I> host_new(new_size);
-  for (auto i = 0; i < std::min(old_size, new_size); ++i) { host_new[i] = host_old[i]; }
-  for (auto i = old_size; i < new_size; ++i) { host_new[i] = T(0.0); }
+  for (auto i = 0; i < std::min(old_size, new_size); ++i) {
+    host_new[i] = host_old[i];
+  }
+  for (auto i = old_size; i < new_size; ++i) {
+    host_new[i] = T(0.0);
+  }
   hpc::copy(host_new, v);
 }
 
@@ -140,15 +148,15 @@ TEST(map, maxent_populate_points)
   hpc::copy(s.V, V);
   hpc::copy(s.F_total, F);
   hpc::copy(s.Fp_total, Fp);
-  auto const error_K      = std::abs(K[num_points_new - 1] / K0 - 1.0);
-  auto const error_G      = std::abs(G[num_points_new - 1] / G0 - 1.0);
-  auto const error_rho    = std::abs(rho[num_points_new - 1] / rho0 - 1.0);
-  auto const error_ep     = std::abs(ep[num_points_new - 1] / ep0 - 1.0);
-  auto const error_b      = hpc::norm(b[num_points_new - 1].load() - b0) / hpc::norm(b0);
-  auto const error_V      = std::abs(num_points_new * V[num_points_new - 1] / V0 - 1.0);
-  auto const error_F      = hpc::norm(F[num_points_new - 1].load() - F0) / hpc::norm(F0);
-  auto const error_Fp     = hpc::norm(Fp[num_points_new - 1].load() - Fp0) / hpc::norm(Fp0);
-  auto const eps          = hpc::machine_epsilon<double>();
+  auto const error_K   = std::abs(K[num_points_new - 1] / K0 - 1.0);
+  auto const error_G   = std::abs(G[num_points_new - 1] / G0 - 1.0);
+  auto const error_rho = std::abs(rho[num_points_new - 1] / rho0 - 1.0);
+  auto const error_ep  = std::abs(ep[num_points_new - 1] / ep0 - 1.0);
+  auto const error_b   = hpc::norm(b[num_points_new - 1].load() - b0) / hpc::norm(b0);
+  auto const error_V   = std::abs(num_points_new * V[num_points_new - 1] / V0 - 1.0);
+  auto const error_F   = hpc::norm(F[num_points_new - 1].load() - F0) / hpc::norm(F0);
+  auto const error_Fp  = hpc::norm(Fp[num_points_new - 1].load() - Fp0) / hpc::norm(Fp0);
+  auto const eps       = hpc::machine_epsilon<double>();
   ASSERT_LE(error_K, eps);
   ASSERT_LE(error_G, eps);
   ASSERT_LE(error_rho, eps);

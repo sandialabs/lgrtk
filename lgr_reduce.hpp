@@ -10,7 +10,9 @@ transform_reduce(Range const& range, T init, BinaryOp binary_op, UnaryOp unary_o
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) { init = binary_op(std::move(init), unary_op(*first)); }
+  for (; first != last; ++first) {
+    init = binary_op(std::move(init), unary_op(*first));
+  }
   return init;
 }
 

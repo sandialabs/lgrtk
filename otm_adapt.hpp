@@ -45,7 +45,9 @@ align_rotation_vectors(hpc::device_array_vector<T, I>& v)
     auto const vi  = index_to_v[index].load();
     auto const ni  = hpc::norm(vi);
     auto const dot = hpc::inner_product(v0, vi);
-    if (dot <= -alpha * pi * pi) { index_to_v[index] = vi - (2.0 * pi / ni) * vi; }
+    if (dot <= -alpha * pi * pi) {
+      index_to_v[index] = vi - (2.0 * pi / ni) * vi;
+    }
     index_to_norm[index] = ni;
   };
   hpc::for_each(hpc::device_policy(), range, align_functor);
@@ -55,7 +57,9 @@ align_rotation_vectors(hpc::device_array_vector<T, I>& v)
     index_to_v[index] = vi - (2.0 * pi / ni) * vi;
   };
   auto const sum_norms = hpc::reduce(hpc::device_policy(), norms, 0.0);
-  if (sum_norms > n * pi) { hpc::for_each(hpc::device_policy(), range, normalize_functor); }
+  if (sum_norms > n * pi) {
+    hpc::for_each(hpc::device_policy(), range, normalize_functor);
+  }
 }
 
 template <typename NodeIndexArray>
@@ -218,7 +222,9 @@ otm_populate_new_points_linear(
       sum_norms_rvs += nrv;
       auto const rv0 = index_to_r[0].load();
       auto const dot = hpc::inner_product(rv0, rotation_vector);
-      if (dot <= -alpha * pi * pi) { index_to_r[i] = (1.0 - 2.0 * pi / nrv) * rotation_vector; }
+      if (dot <= -alpha * pi * pi) {
+        index_to_r[i] = (1.0 - 2.0 * pi / nrv) * rotation_vector;
+      }
       auto const Fp                      = points_to_Fp[source_point].load();
       auto const Rp                      = hpc::polar_rotation(Fp);
       auto const Up                      = hpc::symm(hpc::transpose(Rp) * Fp);
@@ -230,7 +236,9 @@ otm_populate_new_points_linear(
       sum_norms_rvs_plastic += nrvp;
       auto const rvp0 = index_to_rp[0].load();
       auto const dotp = hpc::inner_product(rvp0, rotation_vector_plastic);
-      if (dotp <= -alpha * pi * pi) { index_to_rp[i] = (1.0 - 2.0 * pi / nrvp) * rotation_vector_plastic; }
+      if (dotp <= -alpha * pi * pi) {
+        index_to_rp[i] = (1.0 - 2.0 * pi / nrvp) * rotation_vector_plastic;
+      }
       ++i;
     }
     if (sum_norms_rvs > source_size * pi) {
@@ -247,17 +255,17 @@ otm_populate_new_points_linear(
         index_to_rp[j]  = (1.0 - 2.0 * pi / nrvp) * rvp;
       }
     }
-    auto point_K      = hpc::pressure<double>(0.0);
-    auto point_G      = hpc::pressure<double>(0.0);
-    auto point_rho    = hpc::density<double>(0.0);
-    auto point_ep     = hpc::strain<double>(0.0);
-    auto point_b      = hpc::acceleration<double>::zero();
-    auto point_V      = hpc::volume<double>(0.0);
-    auto index_r      = hpc::vector3<double>::zero();
-    auto index_u      = hpc::matrix3x3<double>::zero();
-    auto index_rp     = hpc::vector3<double>::zero();
-    auto index_up     = hpc::matrix3x3<double>::zero();
-    i                 = 0;
+    auto point_K   = hpc::pressure<double>(0.0);
+    auto point_G   = hpc::pressure<double>(0.0);
+    auto point_rho = hpc::density<double>(0.0);
+    auto point_ep  = hpc::strain<double>(0.0);
+    auto point_b   = hpc::acceleration<double>::zero();
+    auto point_V   = hpc::volume<double>(0.0);
+    auto index_r   = hpc::vector3<double>::zero();
+    auto index_u   = hpc::matrix3x3<double>::zero();
+    auto index_rp  = hpc::vector3<double>::zero();
+    auto index_up  = hpc::matrix3x3<double>::zero();
+    i              = 0;
     for (auto&& source_point : source_range) {
       auto const K                       = points_to_K[source_point];
       auto const G                       = points_to_G[source_point];

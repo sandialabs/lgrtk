@@ -39,11 +39,13 @@ class file_writer
   std::string prefix;
 
  public:
-  file_writer(std::string const& prefix_in) : prefix(prefix_in) {}
+  file_writer(std::string const& prefix_in) : prefix(prefix_in)
+  {
+  }
   void
   capture(input const& in, state const& s);
   void
-  write(input const& in, int const file_output_index);
+                 write(input const& in, int const file_output_index);
   captured_state captured;
 };
 

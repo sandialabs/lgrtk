@@ -1667,36 +1667,66 @@ main(int ac, char* av[])
 {
   std::string const problem = ac > 1 ? av[1] : "";
   HPC_TRAP_FPE();
-  if (problem == "composite_Noh_3D") lgr::composite_Noh_3D();
-  else if (problem == "Cooks_membrane") lgr::Cooks_membrane();
-  else if (problem == "elastic_wave") lgr::elastic_wave();
-  else if (problem == "elastic_wave_2d") lgr::elastic_wave_2d();
-  else if (problem == "elastic_wave_3d") lgr::elastic_wave_3d();
-  else if (problem == "flyer_target_composite_tet") lgr::flyer_target_composite_tet();
-  else if (problem == "flyer_target_stabilized_tet") lgr::flyer_target_stabilized_tet();
-  else if (problem == "gas_expansion") lgr::gas_expansion();
-  else if (problem == "Noh_1D") lgr::Noh_1D();
-  else if (problem == "Noh_2D_0_0") lgr::Noh_2D(false, false);
-  else if (problem == "Noh_2D_1_0") lgr::Noh_2D(true, false);
-  else if (problem == "Noh_2D_1_1") lgr::Noh_2D(true, true);
-  else if (problem == "Noh_3D") lgr::Noh_3D();
-  else if (problem == "rmi_one_wave_composite_tet") lgr::rmi_one_wave_composite_tet();
-  else if (problem == "rmi_one_wave_stabilized_tet") lgr::rmi_one_wave_stabilized_tet();
-  else if (problem == "Sod_1D") lgr::Sod_1D();
-  else if (problem == "spinning_composite_cube") lgr::spinning_composite_cube();
-  else if (problem == "spinning_cube") lgr::spinning_cube();
-  else if (problem == "spinning_square") lgr::spinning_square();
-  else if (problem == "swinging_cube_0") lgr::swinging_cube(false);
-  else if (problem == "swinging_cube_1") lgr::swinging_cube(true);
-  else if (problem == "swinging_plate") lgr::swinging_plate();
-  else if (problem == "taylor_composite_tet") lgr::taylor_composite_tet();
-  else if (problem == "taylor_stabilized_tet") lgr::taylor_stabilized_tet();
-  else if (problem == "triple_point") lgr::triple_point();
-  else if (problem == "twisting_column_ep_0") lgr::twisting_column_ep(0.05, false);
-  else if (problem == "twisting_column_ep_1") lgr::twisting_column_ep(0.05, true);
-  else if (problem == "twisting_column") lgr::twisting_column();
-  else if (problem == "twisting_composite_column_J2") lgr::twisting_composite_column_J2();
-  else if (problem == "twisting_composite_column") lgr::twisting_composite_column();
+  if (problem == "composite_Noh_3D")
+    lgr::composite_Noh_3D();
+  else if (problem == "Cooks_membrane")
+    lgr::Cooks_membrane();
+  else if (problem == "elastic_wave")
+    lgr::elastic_wave();
+  else if (problem == "elastic_wave_2d")
+    lgr::elastic_wave_2d();
+  else if (problem == "elastic_wave_3d")
+    lgr::elastic_wave_3d();
+  else if (problem == "flyer_target_composite_tet")
+    lgr::flyer_target_composite_tet();
+  else if (problem == "flyer_target_stabilized_tet")
+    lgr::flyer_target_stabilized_tet();
+  else if (problem == "gas_expansion")
+    lgr::gas_expansion();
+  else if (problem == "Noh_1D")
+    lgr::Noh_1D();
+  else if (problem == "Noh_2D_0_0")
+    lgr::Noh_2D(false, false);
+  else if (problem == "Noh_2D_1_0")
+    lgr::Noh_2D(true, false);
+  else if (problem == "Noh_2D_1_1")
+    lgr::Noh_2D(true, true);
+  else if (problem == "Noh_3D")
+    lgr::Noh_3D();
+  else if (problem == "rmi_one_wave_composite_tet")
+    lgr::rmi_one_wave_composite_tet();
+  else if (problem == "rmi_one_wave_stabilized_tet")
+    lgr::rmi_one_wave_stabilized_tet();
+  else if (problem == "Sod_1D")
+    lgr::Sod_1D();
+  else if (problem == "spinning_composite_cube")
+    lgr::spinning_composite_cube();
+  else if (problem == "spinning_cube")
+    lgr::spinning_cube();
+  else if (problem == "spinning_square")
+    lgr::spinning_square();
+  else if (problem == "swinging_cube_0")
+    lgr::swinging_cube(false);
+  else if (problem == "swinging_cube_1")
+    lgr::swinging_cube(true);
+  else if (problem == "swinging_plate")
+    lgr::swinging_plate();
+  else if (problem == "taylor_composite_tet")
+    lgr::taylor_composite_tet();
+  else if (problem == "taylor_stabilized_tet")
+    lgr::taylor_stabilized_tet();
+  else if (problem == "triple_point")
+    lgr::triple_point();
+  else if (problem == "twisting_column_ep_0")
+    lgr::twisting_column_ep(0.05, false);
+  else if (problem == "twisting_column_ep_1")
+    lgr::twisting_column_ep(0.05, true);
+  else if (problem == "twisting_column")
+    lgr::twisting_column();
+  else if (problem == "twisting_composite_column_J2")
+    lgr::twisting_composite_column_J2();
+  else if (problem == "twisting_composite_column")
+    lgr::twisting_composite_column();
   else {
     std::cout << "Unrecognized problem string.\n";
   }

@@ -57,7 +57,9 @@ convert_tet_mesh_to_meshless(const input& in, state& st)
 
   invert_otm_point_node_relations(st);
 
-  if (in.xp_transform) { in.xp_transform(st.points, st.points_to_point_nodes, st.point_nodes_to_nodes, st.x, st.xp); }
+  if (in.xp_transform) {
+    in.xp_transform(st.points, st.points_to_point_nodes, st.point_nodes_to_nodes, st.x, st.xp);
+  }
 
   otm_update_h(st);
 }

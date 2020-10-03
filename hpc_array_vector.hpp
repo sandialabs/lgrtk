@@ -267,7 +267,9 @@ class array_vector
   using iterator                    = ::hpc::array_vector_iterator<T, L, Index>;
   using const_iterator              = ::hpc::array_vector_iterator<T const, L, Index>;
   constexpr array_vector() noexcept = default;
-  array_vector(size_type count) : m_matrix(count, array_size()) {}
+  array_vector(size_type count) : m_matrix(count, array_size())
+  {
+  }
   array_vector(allocator_type const& allocator_in, execution_policy const& exec_in) noexcept
       : m_matrix(allocator_in, exec_in)
   {

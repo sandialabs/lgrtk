@@ -511,13 +511,17 @@ solve_full_pivot(matrix3x3<T> const& A, vector3<T> const& b)
     // Gauss-Jordan elimination
     auto const t = S(pivot_row, pivot_col);
     assert(t != 0.0);
-    for (auto j = 0; j < 3; ++j) { S(pivot_row, j) /= t; }
+    for (auto j = 0; j < 3; ++j) {
+      S(pivot_row, j) /= t;
+    }
     B(pivot_row) /= t;
 
     for (auto i = 0; i < 3; ++i) {
       if (i == pivot_row) continue;
       auto const c = S(i, pivot_col);
-      for (auto j = 0; j < 3; ++j) { S(i, j) -= c * S(pivot_row, j); }
+      for (auto j = 0; j < 3; ++j) {
+        S(i, j) -= c * S(pivot_row, j);
+      }
       B(i) -= c * B(pivot_row);
     }
     // Eliminate current row and col from intact rows and cols
@@ -602,9 +606,13 @@ log_iss(matrix3x3<T> const& A)
     auto const diff = norm_1(X - I);
     if (diff <= c15) {
       auto p = 2;
-      while (pade_coefficients<T>(p) <= diff && p < 16) { ++p; }
+      while (pade_coefficients<T>(p) <= diff && p < 16) {
+        ++p;
+      }
       auto q = 2;
-      while (pade_coefficients<T>(q) <= diff / 2.0 && q < 16) { ++q; }
+      while (pade_coefficients<T>(q) <= diff / 2.0 && q < 16) {
+        ++q;
+      }
       if ((2 * (p - q) / 3) < i || ++j == 2) {
         m = p + 1;
         break;
@@ -672,7 +680,9 @@ binary_powering(matrix3x3<T> const& A, int const e)
   auto X = P;
   for (bits j = i + 1; j <= t; ++j) {
     P = P * P;
-    if (((exponent >> j) & rightmost_bit) != 0) { X = X * P; }
+    if (((exponent >> j) & rightmost_bit) != 0) {
+      X = X * P;
+    }
   }
   return X;
 }
@@ -702,7 +712,9 @@ exp(matrix3x3<T> const& A)
       auto const signed_power  = static_cast<int>(std::ceil(std::log2(norm / theta_highest)));
       auto const power_two     = signed_power > 0 ? static_cast<int>(signed_power) : 0;
       auto       scale         = 1.0;
-      for (int j = 0; j < power_two; ++j) { scale /= 2.0; }
+      for (int j = 0; j < power_two; ++j) {
+        scale /= 2.0;
+      }
       auto const I        = matrix3x3<T>::identity();
       auto const A1       = scale * A;
       auto const A2       = A1 * A1;
@@ -782,11 +794,15 @@ polar_rotation(matrix3x3<T> const& A)
     auto const Z     = 0.5 * (mu * X + transpose(Y) / mu);
     auto const D     = Z - X;
     auto const delta = norm(D) / norm(Z);
-    if (scale == true && delta < tol_scale) { scale = false; }
+    if (scale == true && delta < tol_scale) {
+      scale = false;
+    }
     auto const end_iter = norm(D) <= std::sqrt(tol_conv) || (delta > 0.5 * gamma && scale == false);
     X                   = Z;
     gamma               = delta;
-    if (end_iter == true) { break; }
+    if (end_iter == true) {
+      break;
+    }
     num_iter++;
   }
   return X;

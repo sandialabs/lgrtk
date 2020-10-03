@@ -78,7 +78,9 @@ compute_connected_neighbors(
       auto                        neighbor1    = neighbors[neighbor_ordinal1];
       Index1                      min_neighbor = neighbor1;
       hpc::counting_range<Index1> remaining(neighbor_ordinal1, neighbor_range.end());
-      for (auto neighbor_ordinal2 : remaining) { min_neighbor = hpc::min(min_neighbor, neighbors[neighbor_ordinal2]); }
+      for (auto neighbor_ordinal2 : remaining) {
+        min_neighbor = hpc::min(min_neighbor, neighbors[neighbor_ordinal2]);
+      }
       hpc::swap(neighbor1, min_neighbor);
     }
   };
@@ -94,7 +96,9 @@ compute_connected_neighbors(
     for (auto neighbor_ordinal : except_first) {
       if (neighbors[neighbor_ordinal] != neighbors[*last_unique]) {
         ++last_unique;
-        if (*last_unique != neighbor_ordinal) { neighbors[*last_unique] = std::move(neighbors[neighbor_ordinal]); }
+        if (*last_unique != neighbor_ordinal) {
+          neighbors[*last_unique] = std::move(neighbors[neighbor_ordinal]);
+        }
       }
     }
     uq_counts[i] = ++last_unique - neighbor_range.begin();

@@ -134,14 +134,14 @@ otm_populate_new_points(
   hpc::device_array_vector<hpc::matrix3x3<double>, point_index> u(source_size);
   hpc::device_array_vector<hpc::vector3<double>, point_index>   rp(source_size);
   hpc::device_array_vector<hpc::matrix3x3<double>, point_index> up(source_size);
-  auto const                                                    points_to_xp     = s.xp.cbegin();
-  auto const                                                    points_to_K      = s.K.begin();
-  auto const                                                    points_to_G      = s.G.begin();
-  auto const                                                    points_to_rho    = s.rho.begin();
-  auto const                                                    points_to_ep     = s.ep.begin();
-  auto const                                                    points_to_b      = s.b.begin();
-  auto const                                                    points_to_V      = s.V.begin();
-  auto const                                                    points_to_F      = s.F_total.begin();
+  auto const                                                    points_to_xp  = s.xp.cbegin();
+  auto const                                                    points_to_K   = s.K.begin();
+  auto const                                                    points_to_G   = s.G.begin();
+  auto const                                                    points_to_rho = s.rho.begin();
+  auto const                                                    points_to_ep  = s.ep.begin();
+  auto const                                                    points_to_b   = s.b.begin();
+  auto const                                                    points_to_V   = s.V.begin();
+  auto const                                                    points_to_F   = s.F_total.begin();
   polar_lie_decompose(s.F_total, r, u, source_range);
   auto const points_to_Fp = s.Fp_total.begin();
   polar_lie_decompose(s.Fp_total, rp, up, source_range);
@@ -192,17 +192,17 @@ otm_populate_new_points(
       index_to_NZ[i] = boltzmann_factor;
       ++i;
     }
-    i                 = 0;
-    auto point_K      = hpc::pressure<double>(0.0);
-    auto point_G      = hpc::pressure<double>(0.0);
-    auto point_rho    = hpc::density<double>(0.0);
-    auto point_ep     = hpc::strain<double>(0.0);
-    auto point_b      = hpc::acceleration<double>::zero();
-    auto point_V      = hpc::volume<double>(0.0);
-    auto index_r      = hpc::vector3<double>::zero();
-    auto index_u      = hpc::matrix3x3<double>::zero();
-    auto index_rp     = hpc::vector3<double>::zero();
-    auto index_up     = hpc::matrix3x3<double>::zero();
+    i              = 0;
+    auto point_K   = hpc::pressure<double>(0.0);
+    auto point_G   = hpc::pressure<double>(0.0);
+    auto point_rho = hpc::density<double>(0.0);
+    auto point_ep  = hpc::strain<double>(0.0);
+    auto point_b   = hpc::acceleration<double>::zero();
+    auto point_V   = hpc::volume<double>(0.0);
+    auto index_r   = hpc::vector3<double>::zero();
+    auto index_u   = hpc::matrix3x3<double>::zero();
+    auto index_rp  = hpc::vector3<double>::zero();
+    auto index_up  = hpc::matrix3x3<double>::zero();
     for (auto&& source_point : source_range) {
       auto const K                       = points_to_K[source_point];
       auto const G                       = points_to_G[source_point];
@@ -354,7 +354,9 @@ otm_adapt(const input& in, state& s)
   otm_allocate_state(in, s);
   otm_set_beta(in.otm_gamma, s);
   otm_update_shape_functions(s);
-  for (auto material : in.materials) { otm_update_material_state(in, s, material); }
+  for (auto material : in.materials) {
+    otm_update_material_state(in, s, material);
+  }
 
   return true;
 }

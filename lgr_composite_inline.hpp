@@ -20,7 +20,9 @@ HPC_NOINLINE HPC_HOST_DEVICE inline void
 get_S(S_t& S) noexcept
 {
   for (auto& a : S) {
-    for (auto& b : a) { b = hpc::vector3<double>::zero(); }
+    for (auto& b : a) {
+      b = hpc::vector3<double>::zero();
+    }
   }
   S[0][0](0)  = -2;
   S[0][0](1)  = -2;
@@ -149,7 +151,9 @@ get_gamma(gamma_t& gamma) noexcept
 {
   for (auto& a : gamma) {
     for (auto& b : a) {
-      for (auto& c : b) { c = 0.0; }
+      for (auto& c : b) {
+        c = 0.0;
+      }
     }
   }
   gamma[0][0][0]  = 0.0020833333333333333;
@@ -509,11 +513,15 @@ get_gamma(gamma_t& gamma) noexcept
 HPC_NOINLINE HPC_HOST_DEVICE inline void
 get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexcept
 {
-  for (int tet = 0; tet < 12; ++tet) { O[tet] = hpc::matrix3x3<double>::zero(); }
+  for (int tet = 0; tet < 12; ++tet) {
+    O[tet] = hpc::matrix3x3<double>::zero();
+  }
   for (int tet = 0; tet < 12; ++tet) {
     for (int node = 0; node < 10; ++node) {
       for (int dim1 = 0; dim1 < 3; ++dim1) {
-        for (int dim2 = 0; dim2 < 3; ++dim2) { O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2); }
+        for (int dim2 = 0; dim2 < 3; ++dim2) {
+          O[tet](dim1, dim2) += x[node](dim1) * S[tet][node](dim2);
+        }
       }
     }
   }
@@ -522,7 +530,9 @@ get_O(hpc::array<hpc::vector3<double>, 10> const& x, S_t const& S, O_t& O) noexc
 HPC_NOINLINE HPC_HOST_DEVICE inline void
 get_O_det(O_t const& O, hpc::array<double, 12>& det_O) noexcept
 {
-  for (int tet = 0; tet < 12; ++tet) { det_O[tet] = determinant(O[tet]); }
+  for (int tet = 0; tet < 12; ++tet) {
+    det_O[tet] = determinant(O[tet]);
+  }
 }
 
 static HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::array<double, 4>

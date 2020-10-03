@@ -36,7 +36,9 @@ class otm_file_writer
   std::string prefix;
 
  public:
-  otm_file_writer(std::string const& prefix_in) : prefix(prefix_in) {}
+  otm_file_writer(std::string const& prefix_in) : prefix(prefix_in)
+  {
+  }
   void
   capture(state const& s);
   void

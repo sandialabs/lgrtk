@@ -47,7 +47,9 @@ class device_allocator
     assert(err == cudaSuccess);
     void* ptr;
     err = cudaMalloc(&ptr, n * sizeof(T));
-    if (err != cudaSuccess) { throw std::bad_alloc(); }
+    if (err != cudaSuccess) {
+      throw std::bad_alloc();
+    }
     return static_cast<T*>(ptr);
   }
   void
@@ -96,7 +98,9 @@ class pinned_allocator
     assert(err == cudaSuccess);
     void* ptr;
     err = cudaMallocHost(&ptr, n * sizeof(T));
-    if (err != cudaSuccess) { throw std::bad_alloc(); }
+    if (err != cudaSuccess) {
+      throw std::bad_alloc();
+    }
     return static_cast<T*>(ptr);
   }
   void
@@ -127,7 +131,9 @@ uninitialized_default_construct(serial_policy, Range&& range)
   using range_type = std::decay_t<Range>;
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) { ::new (static_cast<void*>(std::addressof(*first))) typename range_type::value_type; }
+  for (; first != last; ++first) {
+    ::new (static_cast<void*>(std::addressof(*first))) typename range_type::value_type;
+  }
 }
 
 #ifdef HPC_CUDA
@@ -166,7 +172,9 @@ destroy(serial_policy, Range&& range)
 {
   auto       first = range.begin();
   auto const last  = range.end();
-  for (; first != last; ++first) { ::hpc::host_destroy_at(std::addressof(*first)); }
+  for (; first != last; ++first) {
+    ::hpc::host_destroy_at(std::addressof(*first));
+  }
 }
 
 #ifdef HPC_CUDA

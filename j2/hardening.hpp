@@ -62,7 +62,9 @@ ViscoplasticDualKineticPotential(Properties const props, double const delta_eqps
 
   double const exponent = (1.0 + m) / m;
   double       psi_star = 0;
-  if (delta_eqps > 0) { psi_star = dt * Svis0 * eps_dot0 / exponent * std::pow(delta_eqps / dt / eps_dot0, exponent); }
+  if (delta_eqps > 0) {
+    psi_star = dt * Svis0 * eps_dot0 / exponent * std::pow(delta_eqps / dt / eps_dot0, exponent);
+  }
   return psi_star;
 }
 
@@ -73,7 +75,9 @@ ViscoplasticStress(Properties const props, double const delta_eqps, double const
   double const& m        = props.m;
   double const& eps_dot0 = props.eps_dot0;
   double        Svis     = 0;
-  if (delta_eqps > 0) { Svis = Svis0 * std::pow(delta_eqps / dt / eps_dot0, 1.0 / m); }
+  if (delta_eqps > 0) {
+    Svis = Svis0 * std::pow(delta_eqps / dt / eps_dot0, 1.0 / m);
+  }
 
   return Svis;
 }
@@ -85,7 +89,9 @@ ViscoplasticHardeningRate(Properties const props, double const delta_eqps, doubl
   double const& m        = props.m;
   double const& eps_dot0 = props.eps_dot0;
   double        Hvis     = 0;
-  if (delta_eqps > 0) { Hvis = Svis0 / (eps_dot0 * m * dt) * std::pow(delta_eqps / dt / eps_dot0, (1.0 - m) / m); }
+  if (delta_eqps > 0) {
+    Hvis = Svis0 / (eps_dot0 * m * dt) * std::pow(delta_eqps / dt / eps_dot0, (1.0 - m) / m);
+  }
 
   return Hvis;
 }

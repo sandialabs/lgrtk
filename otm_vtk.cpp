@@ -94,7 +94,9 @@ otm_file_writer::write(int const file_output_index)
   if (host_s.Fp_total.size() > 0) {
     write_vtk_full_tensors(point_stream, "plastic_deformation_gradient", host_s.Fp_total);
   }
-  if (host_s.ep.size() > 0) { write_vtk_scalars(point_stream, "ep", host_s.ep); }
+  if (host_s.ep.size() > 0) {
+    write_vtk_scalars(point_stream, "ep", host_s.ep);
+  }
   point_stream.close();
 }
 

@@ -52,7 +52,9 @@ class matrix
   using const_pointer    = T const*;
   using iterator         = typename range_type::iterator;
   using const_iterator   = typename const_range_type::const_iterator;
-  constexpr matrix() noexcept : m_rows(0), m_columns(0) {}
+  constexpr matrix() noexcept : m_rows(0), m_columns(0)
+  {
+  }
   matrix(row_type row_count, column_type column_count)
       : m_data(row_count * column_count), m_rows(row_count), m_columns(column_count)
   {

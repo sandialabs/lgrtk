@@ -52,7 +52,9 @@ get_consistent_mass_matrix(
   gamma_t gamma;
   get_gamma(gamma);
   for (int i = 0; i < 10; ++i) {
-    for (int j = 0; j < 10; ++j) { mass[i][j] = 0.0; }
+    for (int j = 0; j < 10; ++j) {
+      mass[i][j] = 0.0;
+    }
   }
   for (int tet = 0; tet < 12; ++tet) {
     auto const c_s     = C[tet];
@@ -61,7 +63,9 @@ get_consistent_mass_matrix(
     auto const J_s     = O_det[tet];
     auto const gamma_s = gamma[tet];
     for (int i = 0; i < 10; ++i) {
-      for (int j = 0; j < 10; ++j) { mass[i][j] += (J_s * rho_s) * gamma_s[i][j]; }
+      for (int j = 0; j < 10; ++j) {
+        mass[i][j] += (J_s * rho_s) * gamma_s[i][j];
+      }
     }
   }
 }
@@ -71,7 +75,9 @@ lump_mass_matrix(hpc::array<hpc::array<double, 10>, 10> const& mass, hpc::array<
 {
   for (int i = 0; i < 10; ++i) {
     lumped[i] = 0.0;
-    for (int j = 0; j < 10; ++j) { lumped[i] += mass[i][j]; }
+    for (int j = 0; j < 10; ++j) {
+      lumped[i] += mass[i][j];
+    }
   }
 }
 

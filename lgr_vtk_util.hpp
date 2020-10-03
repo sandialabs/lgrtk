@@ -45,7 +45,9 @@ inline void
 write_vtk_points(std::ostream& stream, hpc::pinned_array_vector<hpc::vector3<Quantity>, Index> const& x)
 {
   stream << "POINTS " << x.size() << " double\n";
-  for (auto ref : x) { stream << hpc::vector3<double>(ref.load()) << "\n"; }
+  for (auto ref : x) {
+    stream << hpc::vector3<double>(ref.load()) << "\n";
+  }
 }
 
 template <class Quantity, class Index>
@@ -57,7 +59,9 @@ write_vtk_full_tensors(
 {
   stream << "SCALARS " << name << " double 9\n";
   stream << "LOOKUP_TABLE default\n";
-  for (auto const ref : tensor) { stream << hpc::matrix3x3<double>(ref.load()) << "\n"; }
+  for (auto const ref : tensor) {
+    stream << hpc::matrix3x3<double>(ref.load()) << "\n";
+  }
 }
 
 template <class Quantity, class Index>
@@ -68,7 +72,9 @@ write_vtk_sym_tensors(
     hpc::pinned_array_vector<hpc::symmetric3x3<Quantity>, Index> const& tensor)
 {
   stream << "TENSORS " << name << " double\n";
-  for (auto const ref : tensor) { stream << hpc::symmetric3x3<double>(ref.load()) << "\n"; }
+  for (auto const ref : tensor) {
+    stream << hpc::symmetric3x3<double>(ref.load()) << "\n";
+  }
 }
 
 template <class Quantity, class Index>
@@ -79,7 +85,9 @@ write_vtk_vectors(
     hpc::pinned_array_vector<hpc::vector3<Quantity>, Index> const& vec)
 {
   stream << "VECTORS " << name << " double\n";
-  for (auto const ref : vec) { stream << hpc::vector3<double>(ref.load()) << "\n"; }
+  for (auto const ref : vec) {
+    stream << hpc::vector3<double>(ref.load()) << "\n";
+  }
 }
 
 template <class Quantity, class Index>
@@ -88,7 +96,9 @@ write_vtk_scalars(std::ostream& stream, std::string const& name, hpc::pinned_vec
 {
   stream << "SCALARS " << name << " double 1\n";
   stream << "LOOKUP_TABLE default\n";
-  for (Quantity const val : vec) { stream << double(val) << "\n"; }
+  for (Quantity const val : vec) {
+    stream << double(val) << "\n";
+  }
 }
 
 }  // namespace lgr

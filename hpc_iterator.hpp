@@ -89,7 +89,9 @@ class pointer_iterator
   }
 #ifndef HPC_CHECK_BOUNDS
   HPC_ALWAYS_INLINE
-  HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T*, T*) noexcept : m_pointer(pointer_in) {}
+  HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T*, T*) noexcept : m_pointer(pointer_in)
+  {
+  }
 #else
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr pointer_iterator(T* pointer_in, T* alloc_begin, T* alloc_end) noexcept
       : m_pointer(pointer_in), m_allocation_begin(alloc_begin), m_allocation_end(alloc_end)
@@ -220,7 +222,9 @@ class counting_iterator
   using reference         = T;
   using pointer           = T const*;
   using iterator_category = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_iterator(T value_in) noexcept : m_value(value_in) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr counting_iterator(T value_in) noexcept : m_value(value_in)
+  {
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
   operator==(counting_iterator const& other) const noexcept
   {

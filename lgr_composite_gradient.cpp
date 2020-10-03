@@ -9,7 +9,9 @@ namespace composite_tetrahedron {
 HPC_NOINLINE HPC_HOST_DEVICE inline void
 get_O_inv(O_t const& O, O_t& O_inv) noexcept
 {
-  for (int tet = 0; tet < 12; ++tet) { O_inv[tet] = inverse(O[tet]); }
+  for (int tet = 0; tet < 12; ++tet) {
+    O_inv[tet] = inverse(O[tet]);
+  }
 }
 
 HPC_NOINLINE HPC_HOST_DEVICE inline void
@@ -217,7 +219,9 @@ get_M_inv(hpc::array<double, 12> const& O_det, matrix4x4<double>& M_inv) noexcep
   get_subtet_proj_M(sub_tet_int_proj_M);
   for (int tet = 0; tet < 12; ++tet) {
     for (int i = 0; i < 4; ++i) {
-      for (int j = 0; j < 4; ++j) { M(i, j) += O_det[tet] * sub_tet_int_proj_M[tet](i, j); }
+      for (int j = 0; j < 4; ++j) {
+        M(i, j) += O_det[tet] * sub_tet_int_proj_M[tet](i, j);
+      }
     }
   }
   M_inv = inverse(M);
@@ -252,7 +256,9 @@ get_basis_gradients(
     hpc::array<hpc::array<hpc::vector3<double>, 10>, 4>& grad_N) noexcept
 {
   for (auto& a : grad_N) {
-    for (auto& b : a) { b = hpc::vector3<double>::zero(); }
+    for (auto& b : a) {
+      b = hpc::vector3<double>::zero();
+    }
   }
   hpc::array<hpc::vector3<double>, 4> ref_points;
   get_ref_points(ref_points);
@@ -275,7 +281,9 @@ get_basis_gradients(
       auto const lambda = get_barycentric(ref_points[pt]);
       for (int d = 0; d < 3; ++d) {
         for (int l1 = 0; l1 < 4; ++l1) {
-          for (int l2 = 0; l2 < 4; ++l2) { grad_N[pt][node](d) += lambda[l1] * M_inv(l1, l2) * SOL[l2][node](d); }
+          for (int l2 = 0; l2 < 4; ++l2) {
+            grad_N[pt][node](d) += lambda[l1] * M_inv(l1, l2) * SOL[l2][node](d);
+          }
         }
       }
     }

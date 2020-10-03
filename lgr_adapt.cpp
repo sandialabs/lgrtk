@@ -64,7 +64,9 @@ update_triangle_quality(state& s) noexcept
     auto const                                 point       = elements_to_points[element][fp];
     auto const                                 point_nodes = points_to_point_nodes[point];
     hpc::array<hpc::basis_gradient<double>, 3> grad_N;
-    for (auto const i : nodes_in_element) { grad_N[hpc::weaken(i)] = point_nodes_to_grad_N[point_nodes[i]].load(); }
+    for (auto const i : nodes_in_element) {
+      grad_N[hpc::weaken(i)] = point_nodes_to_grad_N[point_nodes[i]].load();
+    }
     auto const A                 = points_to_V[point] / hpc::length<double>(1.0);
     auto const fast_quality      = triangle_quality(grad_N, A);
     elements_to_quality[element] = fast_quality;
@@ -275,8 +277,12 @@ evaluate_triangle_swap(
       loop_nodes[0]    = c.shell_elements_to_shell_nodes[element][(node_in_element + 1) % 3];
     }
   }
-  if (loop_elements[0] == -1 || loop_elements[1] == -1) { return; }
-  if (c.shell_elements_to_materials[loop_elements[0]] != c.shell_elements_to_materials[loop_elements[1]]) { return; }
+  if (loop_elements[0] == -1 || loop_elements[1] == -1) {
+    return;
+  }
+  if (c.shell_elements_to_materials[loop_elements[0]] != c.shell_elements_to_materials[loop_elements[1]]) {
+    return;
+  }
   auto const old_quality1   = c.shell_element_qualities[loop_elements[0]];
   auto const old_quality2   = c.shell_element_qualities[loop_elements[1]];
   auto const quality_before = hpc::min(old_quality1, old_quality2);
@@ -371,8 +377,12 @@ evaluate_triangle_collapse(
   auto const       h_max                  = hpc::max(h1, h2);
   auto const       l                      = norm(x1 - x2);
   auto const       lm                     = measure_edge(h_min, h_max, l);
-  if (lm >= (1.0 / std::sqrt(2.0))) { return; }
-  if (lm >= shortest_length) { return; }
+  if (lm >= (1.0 / std::sqrt(2.0))) {
+    return;
+  }
+  if (lm >= shortest_length) {
+    return;
+  }
   auto edge_materials = material_set::none();
   for (int element = 0; element < c.num_shell_elements; ++element) {
     hpc::array<hpc::position<double>, 3> proposed_x;
@@ -388,7 +398,9 @@ evaluate_triangle_collapse(
     if (edge_node_in_element != -1) continue;
     proposed_x[center_node_in_element] = c.shell_nodes_to_x[edge_node];
     auto const new_quality             = triangle_quality(proposed_x);
-    if (new_quality < min_acceptable_quality) { return; }
+    if (new_quality < min_acceptable_quality) {
+      return;
+    }
   }
   auto const center_materials = c.shell_nodes_to_materials[center_node];
   auto const target_materials = c.shell_nodes_to_materials[edge_node];
@@ -500,7 +512,9 @@ choose_triangle_adapt(state const& s, adapt_state& a)
   auto const nodes_to_op            = a.op.begin();
   auto       functor                = [=] HPC_DEVICE(node_index const node) {
     cavity_op const op = nodes_to_op[node];
-    if (op == cavity_op::NONE) { return; }
+    if (op == cavity_op::NONE) {
+      return;
+    }
     double const criteria = nodes_to_criteria[node];
     for (auto const node_element : nodes_to_node_elements[node]) {
       element_index const element       = node_elements_to_elements[node_element];
@@ -845,7 +859,9 @@ adapt(input const& in, state& s)
         return op == cavity_op::NONE ? 0 : 1;
       });
   if (num_chosen == 0) return false;
-  if (in.output_to_command_line) { std::cout << "adapting " << num_chosen << " cavities\n"; }
+  if (in.output_to_command_line) {
+    std::cout << "adapting " << num_chosen << " cavities\n";
+  }
   auto const num_new_elements = hpc::reduce(hpc::device_policy(), a.element_counts, element_index(0));
   auto const num_new_nodes    = hpc::reduce(hpc::device_policy(), a.node_counts, node_index(0));
   hpc::offset_scan(hpc::device_policy(), a.element_counts, a.old_elements_to_new_elements);

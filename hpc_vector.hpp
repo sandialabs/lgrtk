@@ -33,8 +33,13 @@ class vector
   using const_pointer    = typename allocator_traits::const_pointer;
   using iterator         = pointer_iterator<T, size_type>;
   using const_iterator   = pointer_iterator<T const, size_type>;
-  constexpr vector() noexcept : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0) {}
-  vector(size_type count) : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0) { resize(count); }
+  constexpr vector() noexcept : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
+  {
+  }
+  vector(size_type count) : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
+  {
+    resize(count);
+  }
   vector(size_type count, value_type const& value) : m_allocator(), m_execution_policy(), m_data(nullptr), m_size(0)
   {
     resize(count);
@@ -73,7 +78,10 @@ class vector
   vector(vector const&) = delete;
   vector&
   operator=(vector const&) = delete;
-  ~vector() { clear(); }
+  ~vector()
+  {
+    clear();
+  }
   T*
   data() noexcept
   {
@@ -128,7 +136,9 @@ class vector
   clear()
   {
     if (m_data) {
-      if (!std::is_trivially_destructible<value_type>::value) { ::hpc::destroy(m_execution_policy, *this); }
+      if (!std::is_trivially_destructible<value_type>::value) {
+        ::hpc::destroy(m_execution_policy, *this);
+      }
       allocator_traits::deallocate(m_allocator, m_data, std::size_t(hpc::weaken(m_size)));
     }
     m_data = nullptr;

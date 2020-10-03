@@ -162,7 +162,9 @@ class inner_iterator<Iterator, layout::right, OuterIndex, InnerIndex>
   using reference         = typename Iterator::reference;
   using pointer           = typename Iterator::pointer;
   using iterator_category = std::random_access_iterator_tag;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit inner_iterator(Iterator impl_in) noexcept : m_begin(impl_in) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit inner_iterator(Iterator impl_in) noexcept : m_begin(impl_in)
+  {
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr bool
   operator==(inner_iterator const& other) const noexcept
   {

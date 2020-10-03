@@ -22,7 +22,9 @@ project(
   auto       functor                  = [=] HPC_DEVICE(Index const old_thing) {
     Index       first = old_things_to_new_things[old_thing];
     Index const last  = old_things_to_new_things[old_thing + Index(1)];
-    for (; first < last; ++first) { new_things_to_old_things[first] = old_thing; }
+    for (; first < last; ++first) {
+      new_things_to_old_things[first] = old_thing;
+    }
   };
   hpc::for_each(hpc::device_policy(), old_things, functor);
 }
@@ -99,7 +101,9 @@ lie_interpolate_data(
       auto const  n1    = hpc::norm(r1);
       auto const  u1    = hpc::log(U1);
       auto const  dot   = hpc::inner_product(r0, r1);
-      if (dot <= -alpha * pi * pi) { r1 = (1.0 - 2.0 * pi / n1) * r1; }
+      if (dot <= -alpha * pi * pi) {
+        r1 = (1.0 - 2.0 * pi / n1) * r1;
+      }
       if (n0 + n1 > 2.0 * pi) {
         r0 = (1.0 - 2.0 * pi / n0) * r0;
         r1 = (1.0 - 2.0 * pi / n1) * r1;

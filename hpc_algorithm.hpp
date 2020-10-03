@@ -27,14 +27,18 @@ template <class Range, class UnaryFunction>
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
 for_each(local_policy, Range&& r, UnaryFunction f) noexcept
 {
-  for (auto it = r.begin(), end = r.end(); it != end; ++it) { f(*it); }
+  for (auto it = r.begin(), end = r.end(); it != end; ++it) {
+    f(*it);
+  }
 }
 
 template <class Range, class UnaryFunction>
 HPC_NOINLINE void
 for_each(serial_policy, Range&& r, UnaryFunction f)
 {
-  for (auto it = r.begin(), end = r.end(); it != end; ++it) { f(*it); }
+  for (auto it = r.begin(), end = r.end(); it != end; ++it) {
+    f(*it);
+  }
 }
 
 #ifdef HPC_CUDA
@@ -53,7 +57,9 @@ copy(local_policy, FromRange const& from, ToRange& to) noexcept
   auto       first   = from.begin();
   auto const last    = from.end();
   auto       d_first = to.begin();
-  while (first != last) { *d_first++ = *first++; }
+  while (first != last) {
+    *d_first++ = *first++;
+  }
 }
 
 template <class FromRange, class ToRange>
@@ -63,7 +69,9 @@ copy(serial_policy, FromRange const& from, ToRange& to)
   auto       first   = from.begin();
   auto const last    = from.end();
   auto       d_first = to.begin();
-  while (first != last) { *d_first++ = *first++; }
+  while (first != last) {
+    *d_first++ = *first++;
+  }
 }
 
 #ifdef HPC_CUDA
@@ -92,7 +100,9 @@ move(local_policy, InputRange& input, OutputRange& output) noexcept
   auto       first   = input.begin();
   auto const last    = input.end();
   auto       d_first = output.begin();
-  while (first != last) { *d_first++ = std::move(*first++); }
+  while (first != last) {
+    *d_first++ = std::move(*first++);
+  }
 }
 
 template <class InputRange, class OutputRange>
@@ -102,7 +112,9 @@ move(serial_policy, InputRange& input, OutputRange& output)
   auto       first   = input.begin();
   auto const last    = input.end();
   auto       d_first = output.begin();
-  while (first != last) { *d_first++ = std::move(*first++); }
+  while (first != last) {
+    *d_first++ = std::move(*first++);
+  }
 }
 
 #ifdef HPC_CUDA
@@ -128,7 +140,9 @@ fill(local_policy, Range& r, T value) noexcept
 {
   auto       first = r.begin();
   auto const last  = r.end();
-  for (; first != last; ++first) { *first = value; }
+  for (; first != last; ++first) {
+    *first = value;
+  }
 }
 
 template <class Range, class T>
@@ -137,7 +151,9 @@ fill(serial_policy, Range& r, T value)
 {
   auto       first = r.begin();
   auto const last  = r.end();
-  for (; first != last; ++first) { *first = value; }
+  for (; first != last; ++first) {
+    *first = value;
+  }
 }
 
 #ifdef HPC_CUDA

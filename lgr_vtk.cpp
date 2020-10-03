@@ -37,7 +37,9 @@ write_vtk_cells(std::ostream& stream, input const& in, captured_state const& s)
     case TETRAHEDRON: cell_type = 10; break;
     case COMPOSITE_TETRAHEDRON: cell_type = 24; break;
   }
-  for (element_index i(0); i < s.elements.size(); ++i) { stream << cell_type << "\n"; }
+  for (element_index i(0); i < s.elements.size(); ++i) {
+    stream << cell_type << "\n";
+  }
 }
 
 static void
@@ -45,7 +47,9 @@ write_vtk_materials(std::ostream& stream, hpc::pinned_vector<material_index, ele
 {
   stream << "SCALARS material int 1\n";
   stream << "LOOKUP_TABLE default\n";
-  for (material_index const val : vec) { stream << val << "\n"; }
+  for (material_index const val : vec) {
+    stream << val << "\n";
+  }
 }
 
 template <class Quantity>
@@ -224,7 +228,9 @@ file_writer::write(input const& in, int const file_output_index)
     }
   }
   write_vtk_scalars(stream, "time_step", captured.elements, captured.points_in_element, captured.element_dt);
-  if (in.enable_adapt) { write_vtk_scalars(stream, "quality", captured.quality); }
+  if (in.enable_adapt) {
+    write_vtk_scalars(stream, "quality", captured.quality);
+  }
   write_vtk_materials(stream, captured.material);
   stream.close();
 }

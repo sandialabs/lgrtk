@@ -56,7 +56,9 @@ initialize_triangle_grad_N(state& s)
     auto const volume = points_to_V[point];
     auto const area   = volume / hpc::length<double>(1.0);
     auto const grad_N = triangle_basis_gradients(x, area);
-    for (int i = 0; i < 3; ++i) { point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i]; }
+    for (int i = 0; i < 3; ++i) {
+      point_nodes_to_grad_N[point_nodes[l_t(i)]] = grad_N[i];
+    }
   };
   hpc::for_each(hpc::device_policy(), s.elements, functor);
 }
@@ -105,7 +107,9 @@ update_triangle_h_art(state& s)
   auto const   elements_to_points = s.elements * s.points_in_element;
   auto         functor            = [=] HPC_DEVICE(element_index const element) {
     hpc::area<double> area = 0.0;
-    for (auto const point : elements_to_points[element]) { area += (points_to_V[point] / hpc::length<double>(1.0)); }
+    for (auto const point : elements_to_points[element]) {
+      area += (points_to_V[point] / hpc::length<double>(1.0));
+    }
     auto const h_art           = C_geom * sqrt(area);
     elements_to_h_art[element] = h_art;
   };

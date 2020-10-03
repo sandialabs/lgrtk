@@ -45,7 +45,9 @@ HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::position<double>
 
 struct tet_nodes_to_points
 {
-  tet_nodes_to_points(int const pts_per_elem) : points_per_element(pts_per_elem) {}
+  tet_nodes_to_points(int const pts_per_elem) : points_per_element(pts_per_elem)
+  {
+  }
 
   int const points_per_element{1};
 

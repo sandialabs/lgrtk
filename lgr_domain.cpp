@@ -4,7 +4,9 @@
 
 namespace lgr {
 
-domain::~domain() {}
+domain::~domain()
+{
+}
 
 void
 union_domain::add(std::unique_ptr<domain>&& uptr)
@@ -18,7 +20,9 @@ union_domain::mark(
     int const                                                          marker,
     hpc::device_vector<int, node_index>*                               markers) const
 {
-  for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
 }
 
 #ifdef HPC_ENABLE_STRONG_INDICES
@@ -28,7 +32,9 @@ union_domain::mark(
     material_index const                                                  marker,
     hpc::device_vector<material_index, element_index>*                    markers) const
 {
-  for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
 }
 #endif
 
@@ -38,7 +44,9 @@ union_domain::mark(
     material_index const                                               marker,
     hpc::device_vector<material_set, node_index>*                      markers) const
 {
-  for (auto const& uptr : m_domains) { uptr->mark(points, marker, markers); }
+  for (auto const& uptr : m_domains) {
+    uptr->mark(points, marker, markers);
+  }
 }
 
 template <class Index, class IsInFunctor>
@@ -61,7 +69,9 @@ collect_set(
   auto const set_items_to_items = set_items.begin();
   auto const items_to_offsets   = offsets.cbegin();
   auto       functor            = [=] HPC_DEVICE(Index const item) {
-    if (is_in_functor(item) != 0) { set_items_to_items[items_to_offsets[item] - 1] = item; }
+    if (is_in_functor(item) != 0) {
+      set_items_to_items[items_to_offsets[item] - 1] = item;
+    }
   };
   hpc::for_each(hpc::device_policy(), range, functor);
 }
@@ -89,7 +99,9 @@ assign_element_materials(input const& in, state& s)
   hpc::for_each(hpc::device_policy(), s.elements, centroid_functor);
   for (auto const material : in.materials) {
     auto const& domain = in.domains[material];
-    if (domain) { domain->mark(centroid_vector, material, &s.material); }
+    if (domain) {
+      domain->mark(centroid_vector, material, &s.material);
+    }
   }
 }
 

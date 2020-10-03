@@ -59,7 +59,10 @@ class material_set
   {
     return (bits | other.bits) == bits;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator std::uint64_t() const noexcept { return bits; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr explicit operator std::uint64_t() const noexcept
+  {
+    return bits;
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE int
   size() const noexcept
   {

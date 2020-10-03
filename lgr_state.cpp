@@ -16,20 +16,26 @@ resize_state(input const& in, state& s)
   s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
   s.F_total.resize(s.points.size());
   s.use_comptet_stabilization = in.enable_comptet_stabilization;
-  if (s.use_comptet_stabilization == true) { s.JavgJ.resize(s.points.size()); }
+  if (s.use_comptet_stabilization == true) {
+    s.JavgJ.resize(s.points.size());
+  }
   s.sigma.resize(s.points.size());
   s.symm_grad_v.resize(s.points.size());
   auto have_nodal_pressure_or_energy = [&](material_index const material) {
     return in.enable_nodal_pressure[material] || in.enable_nodal_energy[material];
   };
-  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) { s.p.resize(s.points.size()); }
+  if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
+    s.p.resize(s.points.size());
+  }
   s.K.resize(s.points.size());
   s.G.resize(s.points.size());
   s.c.resize(s.points.size());
   s.element_f.resize(s.points.size() * s.nodes_in_element.size());
   s.f.resize(s.nodes.size());
   s.rho.resize(s.points.size());
-  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) { s.e.resize(s.points.size()); }
+  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+    s.e.resize(s.points.size());
+  }
   s.rho_e_dot.resize(s.points.size());
   {
     // Plasticity
@@ -41,7 +47,9 @@ resize_state(input const& in, state& s)
   s.mass.resize(s.nodes.size());
   s.a.resize(s.nodes.size());
   s.h_min.resize(s.elements.size());
-  if (in.enable_viscosity) { s.h_art.resize(s.elements.size()); }
+  if (in.enable_viscosity) {
+    s.h_art.resize(s.elements.size());
+  }
   s.nu_art.resize(s.points.size());
   s.element_dt.resize(s.points.size());
   s.p_h.resize(in.materials.size());
@@ -59,7 +67,9 @@ resize_state(input const& in, state& s)
       s.v_prime.resize(s.points.size());
       s.W.resize(s.points.size() * s.nodes_in_element.size());
     }
-    if (in.enable_p_prime[material]) { s.p_prime.resize(s.points.size()); }
+    if (in.enable_p_prime[material]) {
+      s.p_prime.resize(s.points.size());
+    }
     if (in.enable_nodal_energy[material]) {
       s.p_h[material].resize(s.nodes.size());
       s.e_h[material].resize(s.nodes.size());

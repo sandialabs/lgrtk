@@ -13,32 +13,44 @@
     return;                    \
   }
 #define DEVICE_EXPECT_EQ(a, b) \
-  if (a != b) { ++num_fails; }
+  if (a != b) {                \
+    ++num_fails;               \
+  }
 #define DEVICE_ASSERT_NE(a, b) \
   if (a == b) {                \
     ++num_fails;               \
     return;                    \
   }
 #define DEVICE_EXPECT_NE(a, b) \
-  if (a == b) { ++num_fails; }
+  if (a == b) {                \
+    ++num_fails;               \
+  }
 #define DEVICE_ASSERT_GT(a, b) \
   if (a <= b) {                \
     ++num_fails;               \
     return;                    \
   }
 #define DEVICE_EXPECT_GT(a, b) \
-  if (a <= b) { ++num_fails; }
+  if (a <= b) {                \
+    ++num_fails;               \
+  }
 #define DEVICE_ASSERT_LT(a, b) \
   if (a >= b) {                \
     ++num_fails;               \
     return;                    \
   }
 #define DEVICE_EXPECT_LT(a, b) \
-  if (a >= b) { ++num_fails; }
+  if (a >= b) {                \
+    ++num_fails;               \
+  }
 #define DEVICE_EXPECT_TRUE(a) \
-  if (!a) { ++num_fails; }
+  if (!a) {                   \
+    ++num_fails;              \
+  }
 #define DEVICE_EXPECT_FALSE(a) \
-  if (a) { ++num_fails; }
+  if (a) {                     \
+    ++num_fails;               \
+  }
 #else
 #define DEVICE_TEST(a) [=] HPC_DEVICE(a)
 #define DEVICE_ASSERT_EQ(a, b) ASSERT_EQ(a, b)
@@ -61,7 +73,9 @@ template <typename FuncType, typename Range>
 class device_test
 {
  public:
-  device_test(const FuncType& func) : func(func) {}
+  device_test(const FuncType& func) : func(func)
+  {
+  }
 
   HPC_ALWAYS_INLINE HPC_DEVICE int
   operator()(typename Range::value_type i) const

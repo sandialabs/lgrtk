@@ -22,7 +22,9 @@ class index
 
  public:
   using integral_type = Integral;
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index(std::ptrdiff_t i_in) noexcept : i(integral_type(i_in)) {}
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index(std::ptrdiff_t i_in) noexcept : i(integral_type(i_in))
+  {
+  }
   HPC_ALWAYS_INLINE
   index() noexcept = default;
   HPC_ALWAYS_INLINE
@@ -116,7 +118,10 @@ class index
   {
     return i;
   }
-  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator integral_type() const noexcept { return i; }
+  HPC_ALWAYS_INLINE HPC_HOST_DEVICE explicit constexpr operator integral_type() const noexcept
+  {
+    return i;
+  }
   HPC_ALWAYS_INLINE HPC_HOST_DEVICE constexpr index
   operator*(integral_type const n) const noexcept
   {
