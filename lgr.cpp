@@ -1081,7 +1081,7 @@ rmi_one_wave_stabilized_tet()
       auto const x = hpc::vector3<double>(nodes_to_x[node].load());
       auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
       if (x(2) < -eps) v(2) = 2200.0;
-      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5;
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -1193,7 +1193,7 @@ rmi_one_wave_composite_tet()
       auto const x = hpc::vector3<double>(nodes_to_x[node].load());
       auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
       if (x(2) < -eps) v(2) = 2200.0;
-      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5;
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
