@@ -164,6 +164,10 @@ file_writer::capture(input const& in, state const& s)
   }
   captured.material.resize(s.material.size());
   hpc::copy(s.material, captured.material);
+  if (s.ep.size() > 0) {
+    captured.ep.resize(s.ep.size());
+    hpc::copy(s.ep, captured.ep);
+  }
 }
 
 void
@@ -232,6 +236,9 @@ file_writer::write(input const& in, int const file_output_index)
     write_vtk_scalars(stream, "quality", captured.quality);
   }
   write_vtk_materials(stream, captured.material);
+  if (captured.ep.size() > 0) {
+    write_vtk_scalars(stream, "plastic strain", captured.ep);
+  }
   stream.close();
 }
 

@@ -126,6 +126,17 @@ class state
   bool                      use_comptet_stabilization{false};
 
   //
+  // Plasticity
+  //
+
+  // plastic deformation gradient
+  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total;
+  // temperature
+  hpc::device_vector<hpc::temperature<double>, point_index> temp;
+  // equivalent plastic strain
+  hpc::device_vector<hpc::strain<double>, point_index> ep;
+
+  //
   // Exclusive OTM data structures
   //
 
@@ -165,12 +176,6 @@ class state
   hpc::host_array_vector<hpc::vector3<int>, material_index> prescribed_dof;
   // Copied from input structure
   hpc::counting_range<material_index> boundaries{material_index(0)};
-  // plastic deformation gradient
-  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> Fp_total;
-  // temperature
-  hpc::device_vector<hpc::temperature<double>, point_index> temp;
-  // equivalent plastic strain
-  hpc::device_vector<hpc::strain<double>, point_index> ep;
 
   hpc::adimensional<double>     maxent_desired_tolerance{1.0e-14};
   hpc::adimensional<double>     maxent_acceptable_tolerance{1.0e-05};

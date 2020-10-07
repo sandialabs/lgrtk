@@ -27,6 +27,7 @@ class captured_state
   hpc::pinned_vector<hpc::pressure<double>, point_index>                                         p;
   hpc::pinned_vector<hpc::specific_energy<double>, point_index>                                  e;
   hpc::pinned_vector<hpc::density<double>, point_index>                                          rho;
+  hpc::pinned_vector<hpc::density<double>, point_index>                                          ep;
   hpc::pinned_array_vector<hpc::heat_flux<double>, point_index>                                  q;
   hpc::pinned_vector<hpc::pressure<double>, point_index>                                         p_prime;
   hpc::pinned_vector<hpc::time<double>, point_index>                                             element_dt;
