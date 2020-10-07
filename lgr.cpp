@@ -1105,7 +1105,7 @@ rmi_one_wave_stabilized_tet()
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
   auto const target_length = hpc::length<double>(0.001);
-  auto const target_width  = hpc::length<double>(0.001);
+  auto const target_width  = hpc::length<double>(0.001 / 32.0);
 
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
