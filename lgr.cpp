@@ -1128,6 +1128,7 @@ rmi_one_wave_stabilized_tet()
   in.enable_viscosity               = true;
   in.linear_artificial_viscosity    = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
+  in.enable_adapt                   = true;
 
   in.enable_p_prime[flyer]        = false;
   in.enable_nodal_pressure[flyer] = true;
@@ -1240,6 +1241,7 @@ rmi_one_wave_composite_tet()
   in.enable_viscosity               = true;
   in.linear_artificial_viscosity    = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
+  in.enable_adapt                   = false;
 
   in.enable_p_prime[flyer]        = false;
   in.enable_nodal_pressure[flyer] = false;
