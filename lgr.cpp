@@ -1238,6 +1238,7 @@ rmi_one_wave_composite_tet()
   in.num_file_output_periods        = 50;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
+  in.enable_comptet_stabilization   = true;
   in.enable_viscosity               = true;
   in.linear_artificial_viscosity    = 1.0;
   in.quadratic_artificial_viscosity = 1.0;
