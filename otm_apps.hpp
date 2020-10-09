@@ -15,5 +15,7 @@ bool
 otm_j2_nu_zero_patch_test();
 bool
 otm_taylor();
+bool
+otm_rmi();
 
 }  // namespace lgr

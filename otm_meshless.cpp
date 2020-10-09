@@ -813,6 +813,8 @@ otm_run(input const& in, state& s)
   auto const file_output_period =
       num_file_output_periods != 0 ? in.end_time / double(num_file_output_periods) : hpc::time<double>(0.0);
   auto file_output_index = 0;
+  assert(in.initial_v);
+  in.initial_v(s.nodes, s.x, &s.v);
   if (in.use_constant_dt == true) {
     auto const num_time_steps_between_output = static_cast<int>(std::round(file_output_period / in.constant_dt));
     for (s.n = 0; s.n <= s.num_time_steps; ++s.n) {
@@ -820,7 +822,7 @@ otm_run(input const& in, state& s)
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
-        std::cout << " kinetic energy " << KE << " free energy " << SE << " sum " << KE + SE << "\n";
+        std::cout << " T " << KE << " V " << SE << " T+V " << KE + SE << "\n";
       }
       auto const do_output = in.do_output == true && (s.n % num_time_steps_between_output == 0);
       if (do_output == true) {
@@ -846,7 +848,7 @@ otm_run(input const& in, state& s)
         auto const KE = compute_kinetic_energy(s);
         auto const SE = compute_free_energy(s);
         std::cout << "step " << s.n << " time " << double(s.time) << " dt " << double(s.dt);
-        std::cout << " kinetic energy " << KE << " free energy " << SE << " sum " << KE + SE << "\n";
+        std::cout << " T " << KE << " V " << SE << " T+V " << KE + SE << "\n";
       }
       auto const do_output =
           in.do_output == true &&

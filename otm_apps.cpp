@@ -332,6 +332,19 @@ otm_taylor()
   if (err_code != 0) {
     HPC_ERROR_EXIT("Error reading Exodus file : cylinder.g");
   }
+
+  auto const_v = [=](hpc::counting_range<node_index> const nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const&,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector) {
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto v           = hpc::velocity<double>(0.0, 0.0, 227.0);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  in.initial_v                   = const_v;
   in.name                        = "cylindrical-flyer";
   in.end_time                    = 1.0e-04;
   in.num_file_output_periods     = 100;
@@ -389,8 +402,6 @@ otm_taylor()
   hpc::fill(hpc::device_policy(), s.Fp_total, I);
   hpc::fill(hpc::device_policy(), s.ep, ep0);
   hpc::fill(hpc::device_policy(), s.b, b0);
-  auto const init_velocity = hpc::speed<double>(227.0);
-  otm_cylindrical_flyer_ics(s, init_velocity);
   otm_initialize(in, s);
   hpc::length<double> init{0};
   auto const          h_node_max = hpc::transform_reduce(
