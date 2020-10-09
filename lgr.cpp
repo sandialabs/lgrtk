@@ -1317,10 +1317,10 @@ taylor_composite_tet()
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
 
-  auto const               eps          = 1.0e-06;;
+  auto const                            eps = 1.0e-06;
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   in.domains[z_max] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({z_max, z_axis});
+  in.zero_displacement_conditions.push_back({z_max, z_axis});
 
   in.name                         = "taylor-composite-tet";
   in.CFL                          = 0.1;
@@ -1386,10 +1386,10 @@ taylor_stabilized_tet()
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
 
-  auto const               eps          = 1.0e-06;;
+  auto const                            eps = 1.0e-06;
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
   in.domains[z_max] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
-  in.zero_acceleration_conditions.push_back({z_max, z_axis});
+  in.zero_displacement_conditions.push_back({z_max, z_axis});
 
   in.name                        = "taylor_stabilized-tet";
   in.CFL                         = 0.1;

@@ -443,6 +443,21 @@ zero_acceleration(
 }
 
 HPC_NOINLINE inline void
+zero_displacement(
+    hpc::device_vector<node_index, int> const&                   domain,
+    hpc::vector3<double> const                                   axis,
+    hpc::device_array_vector<hpc::position<double>, node_index>* u_vector)
+{
+  auto const nodes_to_u = u_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_u = nodes_to_u[node].load();
+    auto const new_u = old_u - axis * (old_u * axis);
+    nodes_to_u[node] = new_u;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
 update_symm_grad_v(state& s)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
@@ -717,6 +732,14 @@ update_a_from_material_state(input const& in, state& s)
 }
 
 HPC_NOINLINE inline void
+enforce_zero_displacement(input const& in, state& s)
+{
+  for (auto const& cond : in.zero_displacement_conditions) {
+    zero_displacement(s.node_sets[cond.boundary], cond.axis, &s.u);
+  }
+}
+
+HPC_NOINLINE inline void
 enforce_contact_constraints(state& s)
 {
   auto const nodes_to_x = s.x.cbegin();
@@ -781,6 +804,7 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
+    enforce_zero_displacement(in, s);
     if (s.use_displacement_contact == true) {
       enforce_contact_constraints(s);
     }
