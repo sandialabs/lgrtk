@@ -1225,10 +1225,10 @@ rmi_one_wave_composite_tet()
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, -target_width / 2.0}, eps);
   in.domains[y_max] = epsilon_around_plane_domain({y_axis, target_width / 2.0}, eps);
 
-  in.zero_acceleration_conditions.push_back({x_min, x_axis});
-  in.zero_acceleration_conditions.push_back({x_max, x_axis});
-  in.zero_acceleration_conditions.push_back({y_min, y_axis});
-  in.zero_acceleration_conditions.push_back({y_max, y_axis});
+  in.zero_displacement_conditions.push_back({x_min, x_axis});
+  in.zero_displacement_conditions.push_back({x_max, x_axis});
+  in.zero_displacement_conditions.push_back({y_min, y_axis});
+  in.zero_displacement_conditions.push_back({y_max, y_axis});
 
   in.initial_v                      = flyer_v;
   in.name                           = "rmi-one-wave-ct";
