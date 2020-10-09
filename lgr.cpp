@@ -1286,9 +1286,10 @@ taylor_composite_tet();
 void
 taylor_composite_tet()
 {
-  constexpr material_index body(0);
   constexpr material_index num_materials(1);
-  constexpr material_index num_boundaries(0);
+  constexpr material_index num_boundaries(1);
+  constexpr material_index body(0);
+  constexpr material_index z_max(1);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"cylinder-ct.g"};
 
@@ -1316,9 +1317,14 @@ taylor_composite_tet()
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
 
+  auto const               eps          = 1.0e-06;;
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({z_max, z_axis});
+
   in.name                         = "taylor-composite-tet";
   in.CFL                          = 0.1;
-  in.use_displacement_contact     = true;
+  in.use_displacement_contact     = false;
   in.use_penalty_contact          = false;
   in.contact_penalty_coeff        = hpc::strain_rate_rate<double>(1.0e+14);
   in.element                      = COMPOSITE_TETRAHEDRON;
