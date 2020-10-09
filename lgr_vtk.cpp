@@ -237,7 +237,7 @@ file_writer::write(input const& in, int const file_output_index)
   }
   write_vtk_materials(stream, captured.material);
   if (captured.ep.size() > 0) {
-    write_vtk_scalars(stream, "plastic_strain", captured.ep);
+    write_vtk_scalars(stream, "plastic_strain", captured.elements, captured.points_in_element, captured.ep);
   }
   stream.close();
 }
