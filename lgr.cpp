@@ -1309,7 +1309,7 @@ taylor_composite_tet()
   auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
   auto const Y0       = hpc::pressure<double>(400.0e+06);
-  auto const n        = hpc::adimensional<double>(1.0);
+  auto const n        = hpc::adimensional<double>(32.0);
   auto const H0       = hpc::pressure<double>(100.0e6);
   auto const eps0     = hpc::strain<double>(Y0 / H0);
   auto const Svis0    = hpc::pressure<double>(0.0);
@@ -1349,9 +1349,10 @@ taylor_stabilized_tet();
 void
 taylor_stabilized_tet()
 {
-  constexpr material_index body(0);
   constexpr material_index num_materials(1);
-  constexpr material_index num_boundaries(0);
+  constexpr material_index num_boundaries(1);
+  constexpr material_index body(0);
+  constexpr material_index z_max(1);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"cylinder.g"};
 
@@ -1372,17 +1373,22 @@ taylor_stabilized_tet()
   auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
   auto const Y0       = hpc::pressure<double>(400.0e+06);
-  auto const n        = hpc::adimensional<double>(1.0);
+  auto const n        = hpc::adimensional<double>(32.0);
   auto const H0       = hpc::pressure<double>(100.0e6);
   auto const eps0     = hpc::strain<double>(Y0 / H0);
   auto const Svis0    = hpc::pressure<double>(0.0);
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
 
+  auto const               eps          = 1.0e-06;;
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.zero_acceleration_conditions.push_back({z_max, z_axis});
+
   in.name                        = "taylor_stabilized-tet";
   in.CFL                         = 0.1;
   in.use_displacement_contact    = false;
-  in.use_penalty_contact         = true;
+  in.use_penalty_contact         = false;
   in.contact_penalty_coeff       = hpc::strain_rate_rate<double>(1.0e+14);
   in.element                     = TETRAHEDRON;
   in.end_time                    = 1.0e-04;
