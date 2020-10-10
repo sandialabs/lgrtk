@@ -356,7 +356,7 @@ otm_taylor()
   auto const K                   = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G                   = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
   auto const Y0                  = hpc::pressure<double>(400.0e+06);
-  auto const n                   = hpc::adimensional<double>(1.0);
+  auto const n                   = hpc::adimensional<double>(32.0);
   auto const H0                  = hpc::pressure<double>(100.0e6);
   auto const eps0                = hpc::strain<double>(Y0 / H0);
   auto const Svis0               = hpc::pressure<double>(0.0);
@@ -364,8 +364,8 @@ otm_taylor()
   auto const eps_dot0            = hpc::strain_rate<double>(1.0e-01);
   in.minimum_support_size        = 12;
   in.materials                   = hpc::counting_range<material_index>(1);
-  in.enable_variational_J2[body] = false;
-  in.enable_neo_Hookean[body]    = true;
+  in.enable_variational_J2[body] = true;
+  in.enable_neo_Hookean[body]    = false;
   in.rho0[body]                  = rho;
   in.K0[body]                    = K;
   in.G0[body]                    = G;
