@@ -113,7 +113,7 @@ TEST(maxent, partition_unity_gradient_3)
   hexahedron_eight_points(s);
 
   auto const error = lgr_unit::compute_basis_gradient_error(s);
-  auto const eps   = hpc::machine_epsilon<double>();
+  auto const eps   = 256 * hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }
@@ -180,7 +180,7 @@ TEST(maxent, linear_reproducibility_3)
   hexahedron_eight_points(s);
 
   auto const error = lgr_unit::compute_linear_reproducibility_error(s);
-  auto const eps   = hpc::machine_epsilon<double>();
+  auto const eps   = 256 * hpc::machine_epsilon<double>();
 
   ASSERT_LE(error, eps);
 }

@@ -133,7 +133,7 @@ otm_update_shape_functions(state& s)
     using jacobian      = hpc::matrix3x3<hpc::quantity<double, hpc::area_dimension>>;
     auto       J        = jacobian::zero();
     auto       iter     = 0;
-    auto const max_iter = 16;
+    auto const max_iter = 32;
     auto       R0       = hpc::position<double>::zero();
     auto       norm_R0  = 0.0;
     while (converged == false) {

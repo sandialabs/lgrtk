@@ -177,7 +177,7 @@ class state
   // Copied from input structure
   hpc::counting_range<material_index> boundaries{material_index(0)};
 
-  hpc::adimensional<double>     maxent_desired_tolerance{1.0e-14};
+  hpc::adimensional<double>     maxent_desired_tolerance{1.0e-16};
   hpc::adimensional<double>     maxent_acceptable_tolerance{1.0e-05};
   hpc::strain_rate_rate<double> contact_penalty_coeff{0.0};
   bool                          use_displacement_contact{false};
