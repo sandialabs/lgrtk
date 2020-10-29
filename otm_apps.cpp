@@ -423,6 +423,157 @@ otm_taylor()
   return true;
 }
 
+bool
+otm_rmi()
+{
+  constexpr material_index num_materials(2);
+  constexpr material_index num_boundaries(4);
+  constexpr material_index flyer(0);
+  constexpr material_index target(1);
+  constexpr material_index x_min(2);
+  constexpr material_index x_max(3);
+  constexpr material_index y_min(4);
+  constexpr material_index y_max(5);
+  input                    in(num_materials, num_boundaries);
+  state                    s;
+  std::string const        filename{"rmi-one-wave.g"};
+  auto const               points_in_element = 1;
+  in.otm_material_points_to_add_per_element  = points_in_element;
+  tet_nodes_to_points point_interpolator(points_in_element);
+  in.xp_transform     = std::ref(point_interpolator);
+  auto const err_code = read_exodus_file(filename, in, s);
+  if (err_code != 0) {
+    HPC_ERROR_EXIT("Error reading Exodus file : rmi-one-wave.g");
+  }
+
+  auto const flyer_radius = 0.2 * 0.0254;
+  auto const eps          = flyer_radius / 1000.0;
+
+  auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>*       v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
+      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
+      if (x(2) < -eps) v(2) = 2200.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5;
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  in.initial_v               = flyer_v;
+  in.name                    = "rmi-one-wave";
+  in.end_time                = 1.0e-04;
+  in.num_file_output_periods = 100;
+  in.do_output               = true;
+  in.debug_output            = false;
+  auto const rho             = hpc::density<double>(8.96e+03);
+  auto const nu              = hpc::adimensional<double>(0.343);
+  auto const E               = hpc::pressure<double>(110.0e09);
+  auto const K               = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G               = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0              = hpc::pressure<double>(400.0e+06);
+  auto const n               = hpc::adimensional<double>(32.0);
+  auto const H0              = hpc::pressure<double>(100.0e6);
+  auto const eps0            = hpc::strain<double>(Y0 / H0);
+  auto const Svis0           = hpc::pressure<double>(0.0);
+  auto const m               = hpc::adimensional<double>(1.0);
+  auto const eps_dot0        = hpc::strain_rate<double>(1.0e-01);
+  in.minimum_support_size    = 12;
+  in.materials               = hpc::counting_range<material_index>(num_materials);
+
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+
+  auto const target_length = hpc::length<double>(0.001);
+  auto const target_width  = hpc::length<double>(0.001);
+
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
+  in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, -target_width / 2.0}, eps);
+  in.domains[y_max] = epsilon_around_plane_domain({y_axis, target_width / 2.0}, eps);
+
+  in.zero_displacement_conditions.push_back({x_min, x_axis});
+  in.zero_displacement_conditions.push_back({x_max, x_axis});
+  in.zero_displacement_conditions.push_back({y_min, y_axis});
+  in.zero_displacement_conditions.push_back({y_max, y_axis});
+
+  in.CFL             = 0.1;
+  in.use_constant_dt = false;
+  in.constant_dt     = hpc::time<double>(1.0e-07);
+  in.otm_gamma       = 1.5;
+
+  in.enable_variational_J2[flyer] = true;
+  in.enable_neo_Hookean[flyer]    = false;
+  in.rho0[flyer]                  = rho;
+  in.K0[flyer]                    = K;
+  in.G0[flyer]                    = G;
+  in.Y0[flyer]                    = Y0;
+  in.n[flyer]                     = n;
+  in.eps0[flyer]                  = eps0;
+  in.Svis0[flyer]                 = Svis0;
+  in.m[flyer]                     = m;
+  in.eps_dot0[flyer]              = eps_dot0;
+  in.domains[flyer]               = half_space_domain(plane{-z_axis, 0.0});
+
+  in.enable_variational_J2[target] = true;
+  in.enable_neo_Hookean[target]    = false;
+  in.rho0[target]                  = rho;
+  in.K0[target]                    = K;
+  in.G0[target]                    = G;
+  in.Y0[target]                    = Y0;
+  in.n[target]                     = n;
+  in.eps0[target]                  = eps0;
+  in.Svis0[target]                 = Svis0;
+  in.m[target]                     = m;
+  in.eps_dot0[target]              = eps_dot0;
+  in.domains[target]               = half_space_domain(plane{z_axis, 0.0});
+
+  convert_tet_mesh_to_meshless(in, s);
+  search::do_otm_iterative_point_support_search(s, in.minimum_support_size);
+  s.otm_gamma                = in.otm_gamma;
+  s.dt                       = in.constant_dt;
+  s.dt_old                   = in.constant_dt;
+  s.time                     = hpc::time<double>(0.0);
+  s.max_stable_dt            = in.constant_dt;
+  s.num_time_steps           = static_cast<int>(std::round(in.end_time / in.constant_dt));
+  s.use_displacement_contact = true;
+  s.use_penalty_contact      = false;
+  s.contact_penalty_coeff    = hpc::strain_rate_rate<double>(1.0e14);
+  otm_allocate_state(in, s);
+  auto const I   = hpc::deformation_gradient<double>::identity();
+  auto const ep0 = hpc::strain<double>(0.0);
+  auto const b0  = hpc::acceleration<double>::zero();
+  hpc::fill(hpc::device_policy(), s.rho, rho);
+  hpc::fill(hpc::device_policy(), s.F_total, I);
+  hpc::fill(hpc::device_policy(), s.Fp_total, I);
+  hpc::fill(hpc::device_policy(), s.ep, ep0);
+  hpc::fill(hpc::device_policy(), s.b, b0);
+  otm_initialize(in, s);
+  hpc::length<double> init{0};
+  auto const          h_node_max = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.nearest_node_neighbor_dist,
+      init,
+      hpc::maximum<hpc::length<double>>(),
+      hpc::identity<hpc::length<double>>());
+  auto const h_point_max = hpc::transform_reduce(
+      hpc::device_policy(),
+      s.nearest_point_neighbor_dist,
+      init,
+      hpc::maximum<hpc::length<double>>(),
+      hpc::identity<hpc::length<double>>());
+  in.enable_adapt                = false;
+  in.max_node_neighbor_distance  = h_node_max;
+  in.max_point_neighbor_distance = h_point_max;
+  otm_run(in, s);
+  return true;
+}
+
 otm_scope::otm_scope()
 {
   search::initialize_otm_search();

@@ -48,6 +48,78 @@ otm_initialize_displacement(state& s)
   hpc::fill(hpc::device_policy(), s.u, hpc::position<double>(x, y, z));
 }
 
+HPC_NOINLINE inline void
+prescribed_displacement(
+    hpc::device_vector<node_index, int> const&                   domain,
+    hpc::vector3<double> const                                   axis,
+    hpc::length<double> const                                    u,
+    hpc::device_array_vector<hpc::position<double>, node_index>* u_vector)
+{
+  auto const nodes_to_u = u_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_u = nodes_to_u[node].load();
+    auto const new_u = old_u - axis * (old_u * axis) + u * axis;
+    nodes_to_u[node] = new_u;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+prescribed_velocity(
+    hpc::device_vector<node_index, int> const&                   domain,
+    hpc::vector3<double> const                                   axis,
+    hpc::speed<double> const                                     v,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector)
+{
+  auto const nodes_to_v = v_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_v = nodes_to_v[node].load();
+    auto const new_v = old_v - axis * (old_v * axis) + v * axis;
+    nodes_to_v[node] = new_v;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+prescribed_acceleration(
+    hpc::device_vector<node_index, int> const&                       domain,
+    hpc::vector3<double> const                                       axis,
+    hpc::speed_rate<double> const                                    a,
+    hpc::device_array_vector<hpc::acceleration<double>, node_index>* a_vector)
+{
+  auto const nodes_to_a = a_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_a = nodes_to_a[node].load();
+    auto const new_a = old_a - axis * (old_a * axis) + a * axis;
+    nodes_to_a[node] = new_a;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_displacement(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_displacement_conditions) {
+    prescribed_displacement(s.node_sets[cond.boundary], cond.axis, cond.value, &s.u);
+  }
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_velocity(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_velocity_conditions) {
+    prescribed_velocity(s.node_sets[cond.boundary], cond.axis, cond.value, &s.v);
+  }
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_acceleration(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_acceleration_conditions) {
+    prescribed_acceleration(s.node_sets[cond.boundary], cond.axis, cond.value, &s.a);
+  }
+}
+
 void
 otm_initialize_point_volume_1(state& s)
 {

@@ -489,6 +489,8 @@ using temperature = quantity<T, temperature_dimension>;
 template <class T>
 using speed = quantity<T, speed_dimension>;
 template <class T>
+using speed_rate = quantity<T, acceleration_dimension>;
+template <class T>
 using area = quantity<T, area_dimension>;
 template <class T>
 using volume = quantity<T, volume_dimension>;

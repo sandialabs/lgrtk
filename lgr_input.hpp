@@ -38,6 +38,14 @@ class zero_boundary_condition
   hpc::vector3<double> axis;
 };
 
+class prescribed_boundary_condition
+{
+ public:
+  material_index       boundary;
+  hpc::vector3<double> axis;
+  double               value;
+};
+
 class input
 {
  public:
@@ -128,8 +136,12 @@ class input
       hpc::device_array_vector<hpc::position<double>, node_index> const&,
       hpc::device_array_vector<hpc::velocity<double>, node_index>*)>
                                                                                     initial_v;
-  std::vector<zero_boundary_condition>                                              zero_acceleration_conditions;
   std::vector<zero_boundary_condition>                                              zero_displacement_conditions;
+  std::vector<zero_boundary_condition>                                              zero_velocity_conditions;
+  std::vector<zero_boundary_condition>                                              zero_acceleration_conditions;
+  std::vector<prescribed_boundary_condition>                                        prescribed_displacement_conditions;
+  std::vector<prescribed_boundary_condition>                                        prescribed_velocity_conditions;
+  std::vector<prescribed_boundary_condition>                                        prescribed_acceleration_conditions;
   std::function<void(hpc::device_array_vector<hpc::position<double>, node_index>*)> x_transform;
   std::function<void(
       hpc::counting_range<point_index> const,
