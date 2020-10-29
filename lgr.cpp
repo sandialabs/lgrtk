@@ -1080,8 +1080,8 @@ rmi_one_wave_stabilized_tet()
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
       auto const x = hpc::vector3<double>(nodes_to_x[node].load());
       auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
-      if (x(2) < -eps) v(2) = 2200.0;
-      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5;
+      if (x(2) < -eps) v(2) = 1045.0;
+      if (-eps <= x(2) && x(2) <= eps) v(2) = 1045.5;
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -1105,7 +1105,7 @@ rmi_one_wave_stabilized_tet()
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
   auto const target_length = hpc::length<double>(0.001);
-  auto const target_width  = hpc::length<double>(0.001 / 32.0);
+  auto const target_width  = hpc::length<double>(0.001 / 64.0);
 
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
@@ -1121,8 +1121,8 @@ rmi_one_wave_stabilized_tet()
   in.name                           = "rmi-one-wave";
   in.CFL                            = 0.1;
   in.element                        = TETRAHEDRON;
-  in.end_time                       = 5.0e-06;
-  in.num_file_output_periods        = 50;
+  in.end_time                       = 10.0e-06;
+  in.num_file_output_periods        = 100;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
