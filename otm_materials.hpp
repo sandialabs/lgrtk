@@ -151,4 +151,107 @@ variational_J2_point(
   potential = We_vol + We_dev + Wp + psi_star;
 }
 
+// Mie–Grüneisen EOS. Adapted from LGR v2
+//
+// The locus of shocked states comprises a Hugoniot curve for the material.
+// This implementation of the Mie–Grüneisen EOS is based on the Hugoniot
+// relations. References to 'ph' and 'eh' are the pressure and energy on
+// the Hugoniot, respectively.
+//
+// In many relatively stiff solid materials, notably metals, ceramics,
+// and minerals, for example, the Hugoniot states at shock pressures
+// exceeding the elastic limit are accurately represented by a linear
+// relationship between shock velocity (u_s) and particle velocity (u_p):
+//
+//                     u_s = c_0 + s * u_p
+//
+// Then, by using the Hugoniot equations for the conservation of mass
+// and momentum we get to:
+//
+//                             c_0^2
+//   p_h = rho_0 * ------------------------------ * (1 - rho_0 / rho)
+//                  (1 - s * (1 - rho_0 / rho))^2
+//
+// This assumes that the reference pressure is zero and the reference
+// density is rho_0.
+//
+//            HUGONIOT CONSERVATION LAWS
+//            --------------------------
+//
+// Conservation of mass:
+// (1)  rho1 * us = rho2 * (us - u2)
+// (2)         u2 = us * (1- rho1 / rho2)
+//
+// Conservation of momentum:
+// (3)  p2 - p1 = rho1 * us * u2
+//
+// Conservation of energy:
+// (4)  e2 - e1 = (p2 + p1) * (1 / rho1 - 1 / rho2) / 2
+//
+// Merging conservation of mass and momentum:
+// (5)  p2 - p1 = rho1 * us^2 * (1 - rho1 / rho2)
+//
+//                    ASSUMPTIONS
+//                    -----------
+//
+// Linear us-up relation - simplified using Equation (2):
+// (6)  us = c0 + s * up = c0 + s * u2
+// (7)  us = c0 / (1 - s * (1 - rho1 / rho2))
+//
+// The following substitutions are made to get to the final form:
+//   * p2 = ph
+//   * p1 = 0
+//   * e2 = eh
+//   * e1 = 0
+//   * rho2 = rho
+//   * rho1 = rho0
+//
+//                   FINAL FORMS
+//                   -----------
+//
+// Reference Hugoniot Pressure - Equation (3) plus Equations (7) and (2)
+// (8)  ph = rho0 * us^2 * (1 - rho0 / rho)
+// (9)  ph = rho0 * c0^2 / (1 - s * (1 - rho0 / rho))^2 * (1 - rho0 / rho)
+//
+// Reference Hugoniot Energy - Equation (4)
+// (10)  eh = ph * (1 / rho0 - 1 / rho ) / 2
+//
+// Wrapping it all together, we integrate the Gruneisen model to get and
+// explicitly note the dependence of 'ph' and 'eh' on 'rho':
+// (11)  p - ph(rho) = Gamma * rho * (e - eh(rho))
+// (12)  p = ph(rho) + Gamma * rho * (e - eh(rho))
+//
+HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
+mie_gruniesen_eos(
+    hpc::density<double> const         reference_density,
+    hpc::density<double> const         current_density,
+    hpc::specific_energy<double> const internal_energy,
+    hpc::adimensional<double> const    gamma,
+    hpc::speed<double> const           reference_wave_speed,
+    hpc::adimensional<double> const    s,
+    hpc::pressure<double>&             pressure,
+    hpc::speed<double>&                wave_speed)
+{
+  auto const mu = 1.0 - reference_density / current_density;
+  // d mu / d rho
+  auto const dmu = reference_density / (current_density * current_density);
+  // limit 'us' to not drop below 'reference_wave_speed'
+  auto const us = reference_wave_speed / (1.0 - s * std::max(0.0, mu));
+  auto const ph = reference_density * us * us * mu;
+  auto const eh = 0.5 * ph * mu / reference_density;
+  // derivative of pressure with respect to density
+  auto const in_compression = mu > 0.0;
+  auto const dus            = in_compression == true ? (us * s / (1.0 - s * mu)) * dmu : 0.0;
+  auto const dph            = 2.0 * reference_density * us * dus * mu + reference_density * us * us * dmu;
+  auto const deh            = 0.5 * (mu * dph + ph * dmu) / reference_density;
+  auto const dpdrho         = dph - gamma * reference_density * deh;
+  // derivative of pressure with repect to energy
+  auto const dpde = gamma * reference_density;
+  // Pressure
+  pressure = ph + gamma * reference_density * (internal_energy - eh);
+  // Wave speed
+  auto const bulk_modulus = current_density * dpdrho + (pressure / current_density) * dpde;
+  wave_speed              = std::sqrt(bulk_modulus / current_density);
+}
+
 }  // namespace lgr
