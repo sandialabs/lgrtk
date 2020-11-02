@@ -1099,13 +1099,15 @@ rmi_one_wave_stabilized_tet()
   auto const Svis0    = hpc::pressure<double>(0.0);
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  auto const gamma    = hpc::adimensional<double>(1.0);
+  auto const s        = hpc::adimensional<double>(1.0);
 
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
   auto const target_length = hpc::length<double>(0.001);
-  auto const target_width  = hpc::length<double>(0.001 / 64.0);
+  auto const target_width  = hpc::length<double>(0.001 / 32.0);
 
   in.domains[x_min] = epsilon_around_plane_domain({x_axis, -target_length / 2.0}, eps);
   in.domains[x_max] = epsilon_around_plane_domain({x_axis, target_length / 2.0}, eps);
@@ -1130,39 +1132,47 @@ rmi_one_wave_stabilized_tet()
   in.quadratic_artificial_viscosity = 1.0;
   in.enable_adapt                   = false;
 
-  in.enable_p_prime[flyer]        = false;
-  in.enable_nodal_pressure[flyer] = true;
-  in.use_global_tau[flyer]        = true;
-  in.c_tau[flyer]                 = 1.0;
-  in.c_v[flyer]                   = 1.0;
-  in.c_p[flyer]                   = 0.0;
-  in.enable_variational_J2[flyer] = true;
-  in.rho0[flyer]                  = rho;
-  in.K0[flyer]                    = K;
-  in.G0[flyer]                    = G;
-  in.Y0[flyer]                    = Y0;
-  in.n[flyer]                     = n;
-  in.eps0[flyer]                  = eps0;
-  in.Svis0[flyer]                 = Svis0;
-  in.m[flyer]                     = m;
-  in.eps_dot0[flyer]              = eps_dot0;
+  in.enable_nodal_energy[flyer]      = true;
+  in.enable_Mie_Gruneisen_eos[flyer] = true;
+  in.enable_p_prime[flyer]           = false;
+  in.enable_nodal_pressure[flyer]    = true;
+  in.use_global_tau[flyer]           = true;
+  in.c_tau[flyer]                    = 1.0;
+  in.c_v[flyer]                      = 1.0;
+  in.c_p[flyer]                      = 0.0;
+  in.enable_variational_J2[flyer]    = true;
+  in.rho0[flyer]                     = rho;
+  in.K0[flyer]                       = K;
+  in.G0[flyer]                       = G;
+  in.Y0[flyer]                       = Y0;
+  in.n[flyer]                        = n;
+  in.eps0[flyer]                     = eps0;
+  in.Svis0[flyer]                    = Svis0;
+  in.m[flyer]                        = m;
+  in.eps_dot0[flyer]                 = eps_dot0;
+  in.gamma[flyer]                    = gamma;
+  in.s[flyer]                        = s;
 
-  in.enable_p_prime[target]        = false;
-  in.enable_nodal_pressure[target] = true;
-  in.use_global_tau[target]        = true;
-  in.c_tau[target]                 = 1.0;
-  in.c_v[target]                   = 1.0;
-  in.c_p[target]                   = 0.0;
-  in.enable_variational_J2[target] = true;
-  in.rho0[target]                  = rho;
-  in.K0[target]                    = K;
-  in.G0[target]                    = G;
-  in.Y0[target]                    = Y0;
-  in.n[target]                     = n;
-  in.eps0[target]                  = eps0;
-  in.Svis0[target]                 = Svis0;
-  in.m[target]                     = m;
-  in.eps_dot0[target]              = eps_dot0;
+  in.enable_nodal_energy[target]      = true;
+  in.enable_Mie_Gruneisen_eos[target] = true;
+  in.enable_p_prime[target]           = false;
+  in.enable_nodal_pressure[target]    = true;
+  in.use_global_tau[target]           = true;
+  in.c_tau[target]                    = 1.0;
+  in.c_v[target]                      = 1.0;
+  in.c_p[target]                      = 0.0;
+  in.enable_variational_J2[target]    = true;
+  in.rho0[target]                     = rho;
+  in.K0[target]                       = K;
+  in.G0[target]                       = G;
+  in.Y0[target]                       = Y0;
+  in.n[target]                        = n;
+  in.eps0[target]                     = eps0;
+  in.Svis0[target]                    = Svis0;
+  in.m[target]                        = m;
+  in.eps_dot0[target]                 = eps_dot0;
+  in.gamma[target]                    = gamma;
+  in.s[target]                        = s;
 
   run(in, filename);
 }

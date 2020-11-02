@@ -78,10 +78,12 @@ class input
   hpc::host_vector<hpc::specific_energy<double>, material_index> e0;
   hpc::host_vector<bool, material_index>                         enable_neo_Hookean;
   hpc::host_vector<bool, material_index>                         enable_variational_J2;
+  hpc::host_vector<bool, material_index>                         enable_Mie_Gruneisen_eos;
   hpc::host_vector<hpc::pressure<double>, material_index>        K0;
   hpc::host_vector<hpc::pressure<double>, material_index>        G0;
   hpc::host_vector<bool, material_index>                         enable_ideal_gas;
-  hpc::host_vector<double, material_index>                       gamma;
+  hpc::host_vector<hpc::adimensional<double>, material_index>    gamma;
+  hpc::host_vector<hpc::adimensional<double>, material_index>    s;
   hpc::host_vector<bool, material_index>                         enable_nodal_pressure;
   hpc::host_vector<bool, material_index>                         enable_nodal_energy;
   hpc::host_vector<bool, material_index>                         enable_p_prime;
@@ -159,10 +161,12 @@ class input
         e0(material_count_in, double(0.0)),
         enable_neo_Hookean(material_count_in, false),
         enable_variational_J2(material_count_in, false),
+        enable_Mie_Gruneisen_eos(material_count_in, false),
         K0(material_count_in),
         G0(material_count_in, double(0.0)),
         enable_ideal_gas(material_count_in, false),
         gamma(material_count_in),
+        s(material_count_in),
         enable_nodal_pressure(material_count_in, false),
         enable_nodal_energy(material_count_in, false),
         enable_p_prime(material_count_in, false),

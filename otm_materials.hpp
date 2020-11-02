@@ -222,7 +222,7 @@ variational_J2_point(
 // (12)  p = ph(rho) + Gamma * rho * (e - eh(rho))
 //
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE void
-mie_gruniesen_eos(
+Mie_Gruneisen_eos_point(
     hpc::density<double> const         reference_density,
     hpc::density<double> const         current_density,
     hpc::specific_energy<double> const internal_energy,
@@ -230,28 +230,23 @@ mie_gruniesen_eos(
     hpc::speed<double> const           reference_wave_speed,
     hpc::adimensional<double> const    s,
     hpc::pressure<double>&             pressure,
-    hpc::speed<double>&                wave_speed)
+    hpc::pressure<double>&             bulk_modulus)
 {
-  auto const mu = 1.0 - reference_density / current_density;
-  // d mu / d rho
-  auto const dmu = reference_density / (current_density * current_density);
   // limit 'us' to not drop below 'reference_wave_speed'
-  auto const us = reference_wave_speed / (1.0 - s * std::max(0.0, mu));
-  auto const ph = reference_density * us * us * mu;
-  auto const eh = 0.5 * ph * mu / reference_density;
-  // derivative of pressure with respect to density
-  auto const in_compression = mu > 0.0;
-  auto const dus            = in_compression == true ? (us * s / (1.0 - s * mu)) * dmu : 0.0;
-  auto const dph            = 2.0 * reference_density * us * dus * mu + reference_density * us * us * dmu;
-  auto const deh            = 0.5 * (mu * dph + ph * dmu) / reference_density;
-  auto const dpdrho         = dph - gamma * reference_density * deh;
-  // derivative of pressure with repect to energy
-  auto const dpde = gamma * reference_density;
-  // Pressure
-  pressure = ph + gamma * reference_density * (internal_energy - eh);
-  // Wave speed
-  auto const bulk_modulus = current_density * dpdrho + (pressure / current_density) * dpde;
-  wave_speed              = std::sqrt(bulk_modulus / current_density);
+  auto const mu       = 1.0 - reference_density / current_density;
+  auto const dmudrho  = reference_density / (current_density * current_density);
+  auto const us       = reference_wave_speed / (1.0 - s * std::max(0.0, mu));
+  auto const ph       = reference_density * us * us * mu;
+  auto const eh       = 0.5 * ph * mu / reference_density;
+  auto const compress = mu > 0.0;
+  auto const dus      = compress == true ? (us * s / (1.0 - s * mu)) * dmudrho : 0.0;
+  auto const dph      = 2.0 * reference_density * us * dus * mu + reference_density * us * us * dmudrho;
+  auto const deh      = 0.5 * (mu * dph + ph * dmudrho) / reference_density;
+  auto const dpdrho   = dph - gamma * reference_density * deh;
+  auto const dpde     = gamma * reference_density;
+
+  pressure     = ph + gamma * reference_density * (internal_energy - eh);
+  bulk_modulus = current_density * dpdrho + (pressure / current_density) * dpde;
 }
 
 }  // namespace lgr
