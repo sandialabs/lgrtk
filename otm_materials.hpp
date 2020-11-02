@@ -235,7 +235,8 @@ Mie_Gruneisen_eos_point(
   // limit 'us' to not drop below 'reference_wave_speed'
   auto const mu       = 1.0 - reference_density / current_density;
   auto const dmudrho  = reference_density / (current_density * current_density);
-  auto const us       = reference_wave_speed / (1.0 - s * std::max(0.0, mu));
+  auto const den      = mu > 0.0 ? 1.0 - s * mu : 1.0;
+  auto const us       = reference_wave_speed / den;
   auto const ph       = reference_density * us * us * mu;
   auto const eh       = 0.5 * ph * mu / reference_density;
   auto const compress = mu > 0.0;
