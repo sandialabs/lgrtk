@@ -102,8 +102,8 @@ update_v_prime(input const& in, state& s, material_index const material)
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
       auto const point_nodes = points_to_point_nodes[point];
-      auto const dt          = use_global_tau == true ? global_dt : points_to_dt[point];
-      auto const tau         = c_tau * dt;
+      auto const point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
+      auto const tau         = c_tau * point_dt;
       auto       grad_p      = hpc::pressure_gradient<double>::zero();
       auto       a           = hpc::acceleration<double>::zero();
       for (auto const node_in_element : nodes_in_element) {
@@ -143,13 +143,15 @@ update_p_prime(
   auto const nodes_to_p_h              = s.p_h[material].cbegin();
   auto const nodes_to_old_p_h          = old_p_h_vector.cbegin();
   auto const points_to_p_prime         = s.p_prime.begin();
+  auto const global_dt                 = s.max_stable_dt;
   auto const c_tau                     = in.c_tau[material];
   auto const c_p                       = in.c_p[material];
+  auto const use_global_tau            = in.use_global_tau[material];
   auto const N                         = get_N(s);
   auto       functor                   = [=] HPC_DEVICE(element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      auto const                 point_dt    = points_to_dt[point];
+      auto const                 point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
       auto const                 tau         = c_tau * point_dt;
       auto const                 symm_grad_v = points_to_symm_grad_v[point].load();
       auto const                 div_v       = trace(symm_grad_v);
@@ -229,12 +231,14 @@ update_q(input const& in, state& s, material_index const material)
   auto const points_to_K               = s.K.cbegin();
   auto const points_to_q               = s.q.begin();
   auto const c_tau                     = in.c_tau[material];
+  auto const global_dt                 = s.max_stable_dt;
+  auto const use_global_tau            = in.use_global_tau[material];
   auto const N                         = get_N(s);
   auto       functor                   = [=] HPC_DEVICE(element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      auto const            dt          = points_to_dt[point];
-      auto const            tau         = c_tau * dt;
+      auto const            point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
+      auto const            tau         = c_tau * point_dt;
       auto                  grad_p      = hpc::pressure_gradient<double>::zero();
       auto                  a           = hpc::acceleration<double>::zero();
       hpc::pressure<double> p_h         = 0.0;
