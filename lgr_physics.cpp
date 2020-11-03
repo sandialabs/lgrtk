@@ -311,7 +311,7 @@ Mie_Gruneisen_eos(input const& in, state& s, material_index const material)
   auto       functor            = [=] HPC_DEVICE(element_index const element) {
     for (auto const point : elements_to_points[element]) {
       auto const rho = points_to_rho[point];
-      auto const e   = points_to_e[element];
+      auto const e   = points_to_e[point];
       auto       K   = hpc::pressure<double>(0.0);
       auto       p   = hpc::pressure<double>(0.0);
       Mie_Gruneisen_eos_point(rho0, rho, e, gamma, c0, s0, p, K);
