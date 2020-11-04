@@ -504,6 +504,31 @@ interpolate_rho(state& s, material_index const material)
 }
 
 void
+interpolate_e(state& s, material_index const material)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const element_nodes_to_nodes    = s.elements_to_nodes.cbegin();
+  auto const elements_to_points        = s.elements * s.points_in_element;
+  auto const nodes_to_e_h              = s.e_h[material].cbegin();
+  auto const points_to_e               = s.e.begin();
+  auto const N                         = get_N(s);
+  auto       functor                   = [=] HPC_DEVICE(element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const point : elements_to_points[element]) {
+      hpc::specific_energy<double> e = 0.0;
+      for (auto const element_node : element_nodes) {
+        auto const node = element_nodes_to_nodes[element_node];
+        auto const e_h  = nodes_to_e_h[node];
+        e               = e + e_h;
+      }
+      e                  = e * N;
+      points_to_e[point] = e;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
+void
 update_p_h_dot_from_a(input const& in, state& s, material_index const material)
 {
   update_v_prime(in, s, material);

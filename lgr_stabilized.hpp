@@ -39,6 +39,8 @@ interpolate_K(state& s, material_index const);
 void
 interpolate_rho(state& s, material_index const);
 void
+interpolate_e(state& s, material_index const);
+void
 update_p_h_dot_from_a(input const& in, state& s, material_index const material);
 void
 update_e_h_dot_from_a(input const& in, state& s, material_index const material);

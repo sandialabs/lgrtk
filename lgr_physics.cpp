@@ -745,6 +745,7 @@ update_single_material_state(
   }
   if (in.enable_nodal_energy[material]) {
     if (in.enable_Mie_Gruneisen_eos[material]) {
+      interpolate_e(s, material);
       Mie_Gruneisen_eos(in, s, material);
     }
   }
