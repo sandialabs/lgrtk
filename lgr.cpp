@@ -1099,8 +1099,8 @@ rmi_one_wave_stabilized_tet()
   auto const Svis0    = hpc::pressure<double>(0.0);
   auto const m        = hpc::adimensional<double>(1.0);
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
-  auto const gamma    = hpc::adimensional<double>(1.0);
-  auto const s        = hpc::adimensional<double>(1.0);
+  auto const gamma    = hpc::adimensional<double>(1.99);
+  auto const s        = hpc::adimensional<double>(1.489);
 
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
