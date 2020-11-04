@@ -36,6 +36,9 @@ resize_state(input const& in, state& s)
   if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
     s.e.resize(s.points.size());
   }
+  if (hpc::any_of(hpc::serial_policy(), in.enable_Mie_Gruneisen_eos)) {
+    s.e.resize(s.points.size());
+  }
   s.rho_e_dot.resize(s.points.size());
   {
     // Plasticity

@@ -1101,6 +1101,7 @@ rmi_one_wave_stabilized_tet()
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
   auto const gamma    = hpc::adimensional<double>(1.99);
   auto const s        = hpc::adimensional<double>(1.489);
+  auto const e0       = hpc::specific_energy<double>(0.0);
 
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
@@ -1152,6 +1153,7 @@ rmi_one_wave_stabilized_tet()
   in.eps_dot0[flyer]                 = eps_dot0;
   in.gamma[flyer]                    = gamma;
   in.s[flyer]                        = s;
+  in.e0[flyer]                       = e0;
 
   in.enable_nodal_energy[target]      = true;
   in.enable_Mie_Gruneisen_eos[target] = true;
@@ -1173,6 +1175,7 @@ rmi_one_wave_stabilized_tet()
   in.eps_dot0[target]                 = eps_dot0;
   in.gamma[target]                    = gamma;
   in.s[target]                        = s;
+  in.e0[target]                       = e0;
 
   run(in, filename);
 }
