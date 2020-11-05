@@ -228,11 +228,13 @@ update_q(input const& in, state& s, material_index const material)
   auto const nodes_to_a                = s.a.cbegin();
   auto const nodes_to_p_h              = s.p_h[material].cbegin();
   auto const nodes_to_dp_de            = s.dp_de_h[material].cbegin();
+  auto const points_to_dp_de           = s.dp_de.begin();
   auto const points_to_K               = s.K.cbegin();
   auto const points_to_q               = s.q.begin();
   auto const c_tau                     = in.c_tau[material];
   auto const global_dt                 = s.max_stable_dt;
   auto const use_global_tau            = in.use_global_tau[material];
+  auto const enable_eos                = in.enable_Mie_Gruneisen_eos[material];
   auto const N                         = get_N(s);
   auto       functor                   = [=] HPC_DEVICE(element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
@@ -259,7 +261,7 @@ update_q(input const& in, state& s, material_index const material)
       }
       a                  = a * N;
       p_h                = p_h * N;
-      dp_de              = dp_de * N;
+      dp_de              = enable_eos == true ? points_to_dp_de[point] : dp_de * N;
       auto const rho     = points_to_rho[point];
       auto const K       = points_to_K[point];
       auto const q       = -(tau * K / dp_de) * (rho * a + grad_p);

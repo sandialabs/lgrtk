@@ -298,27 +298,28 @@ Mie_Gruneisen_eos(input const& in, state& s, material_index const material)
 {
   auto const points_to_sigma    = s.sigma.begin();
   auto const points_to_K        = s.K.begin();
+  auto const points_to_dp_de    = s.dp_de.begin();
   auto const points_to_rho      = s.rho.cbegin();
   auto const points_to_e        = s.e.cbegin();
   auto const K0                 = in.K0[material];
-  auto const G0                 = in.G0[material];
   auto const rho0               = in.rho0[material];
   auto const gamma              = in.gamma[material];
   auto const s0                 = in.s[material];
-  auto const M0                 = K0 + (4.0 / 3.0) * G0;
-  auto const c0                 = std::sqrt(M0 / rho0);
+  auto const c0                 = std::sqrt(K0 / rho0);
   auto const elements_to_points = s.elements * s.points_in_element;
   auto       functor            = [=] HPC_DEVICE(element_index const element) {
     for (auto const point : elements_to_points[element]) {
-      auto const rho = points_to_rho[point];
-      auto const e   = points_to_e[point];
-      auto       K   = hpc::pressure<double>(0.0);
-      auto       p   = hpc::pressure<double>(0.0);
-      Mie_Gruneisen_eos_point(rho0, rho, e, gamma, c0, s0, p, K);
+      auto const rho   = points_to_rho[point];
+      auto const e     = points_to_e[point];
+      auto       K     = hpc::pressure<double>(0.0);
+      auto       p     = hpc::pressure<double>(0.0);
+      auto       dp_de = hpc::density<double>(0.0);
+      Mie_Gruneisen_eos_point(rho0, rho, e, gamma, c0, s0, p, K, dp_de);
       auto const sigma       = points_to_sigma[point].load();
       auto const vol         = hpc::trace(sigma) / 3;
       points_to_sigma[point] = sigma - (p + vol);
       points_to_K[point]     = K;
+      points_to_dp_de[point] = dp_de;
     }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
@@ -882,7 +883,7 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     if (in.enable_viscosity) update_h_art(in, s);
     update_material_state(in, s, half_dt, old_p_h);
     for (auto const material : in.materials) {
-      if (in.enable_nodal_energy[material]) {
+      if (in.enable_nodal_energy[material] && !in.enable_Mie_Gruneisen_eos[material]) {
         interpolate_K(s, material);
       }
     }
@@ -987,7 +988,7 @@ common_initialization_part2(input const& in, state& s)
   }
   update_material_state(in, s, 0.0, old_p_h);
   for (auto const material : in.materials) {
-    if (in.enable_nodal_energy[material]) {
+    if (in.enable_nodal_energy[material] && !in.enable_Mie_Gruneisen_eos[material]) {
       interpolate_K(s, material);
     }
   }

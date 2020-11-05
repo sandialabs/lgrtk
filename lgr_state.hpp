@@ -77,6 +77,8 @@ class state
   hpc::device_array_vector<hpc::force<double>, node_index> f;
   // element density
   hpc::device_vector<hpc::density<double>, point_index> rho;
+  // derivative of pressure with respect to energy, at constant density
+  hpc::device_vector<dp_de_t, point_index> dp_de;
   // element specific internal energy
   hpc::device_vector<hpc::specific_energy<double>, point_index> e;
   // time derivative of internal energy density
