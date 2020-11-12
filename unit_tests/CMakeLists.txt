@@ -39,14 +39,14 @@ if (LGR_ENABLE_UNIT_TESTS)
   set_property(TARGET ut_lgr PROPERTY CXX_STANDARD_REQUIRED ON)
   set_property(TARGET ut_lgr PROPERTY CXX_EXTENSIONS OFF)
 
-  set(UT_LIBRARIES lgrlib ${GTEST_LIBRARY} pthread)
+  set(UT_LIBRARIES lgrlib ${GTEST_LIBRARIES} pthread)
   if (LGR_ENABLE_EFENCE)
     set(LGR_LIBRARIES ${UT_LIBRARIES} efence)
   endif()
 
   gtest_discover_tests(ut_lgr)
-  target_include_directories(ut_lgr PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}> ${GTEST_INCLUDE_DIR})
-  target_link_libraries(ut_lgr PRIVATE ${UT_LIBRARIES})
+  target_include_directories(ut_lgr PUBLIC ${GTEST_INCLUDE_DIRS})
+  target_link_libraries(ut_lgr ${UT_LIBRARIES})
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tets.g ${CMAKE_CURRENT_BINARY_DIR}/tets.g COPYONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cube.g ${CMAKE_CURRENT_BINARY_DIR}/cube.g COPYONLY)
