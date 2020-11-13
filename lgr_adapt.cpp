@@ -30,7 +30,7 @@ update_bar_quality(state& s)
    gradient magnitudes relate to opposite edge lengths.
   */
 inline HPC_HOST_DEVICE hpc::adimensional<double>
-                       triangle_quality(hpc::array<hpc::basis_gradient<double>, 3> const grad_N, hpc::area<double> const area) noexcept
+triangle_quality(hpc::array<hpc::basis_gradient<double>, 3> const grad_N, hpc::area<double> const area) noexcept
 {
   decltype(1.0 / hpc::area<double>()) sum_g_i_sq = 0.0;
   for (int i = 0; i < 3; ++i) {
@@ -308,7 +308,7 @@ evaluate_triangle_swap(
 }
 
 HPC_ALWAYS_INLINE HPC_HOST_DEVICE hpc::adimensional<double>
-                                  measure_edge(hpc::length<double> const h_min, hpc::length<double> const h_max, hpc::length<double> const l) noexcept
+measure_edge(hpc::length<double> const h_min, hpc::length<double> const h_max, hpc::length<double> const l) noexcept
 {
   return l / (0.5 * (h_min + h_max));
 }

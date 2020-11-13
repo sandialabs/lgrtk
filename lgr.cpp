@@ -1078,10 +1078,10 @@ rmi_one_wave_stabilized_tet()
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
-      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
-      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
-      if (x(2) < -eps) v(2) = 1045.0;
-      if (-eps <= x(2) && x(2) <= eps) v(2) = 1045.5;
+      auto const x     = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const pos   = x(2);
+      auto const s     = pos > eps ? 0.0 : (pos < -eps ? 1045.0 : 1045.0);
+      auto       v     = hpc::velocity<double>(s, 0.0, 0.0);
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
@@ -1101,7 +1101,7 @@ rmi_one_wave_stabilized_tet()
   auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
   auto const gamma    = hpc::adimensional<double>(1.99);
   auto const s        = hpc::adimensional<double>(1.489);
-  auto const e0       = hpc::specific_energy<double>(1.0e-14);
+  auto const e0       = hpc::specific_energy<double>(0.0);
 
   static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
@@ -1204,10 +1204,10 @@ rmi_one_wave_composite_tet()
     auto const nodes_to_x = x_vector.cbegin();
     auto const nodes_to_v = v_vector->begin();
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
-      auto const x = hpc::vector3<double>(nodes_to_x[node].load());
-      auto       v = hpc::velocity<double>(0.0, 0.0, 0.0);
-      if (x(2) < -eps) v(2) = 2200.0;
-      if (-eps <= x(2) && x(2) <= eps) v(2) = 1226.5;
+      auto const x     = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const pos   = x(2);
+      auto const s     = pos > eps ? 0.0 : (pos < -eps ? 1045.0 : 1045.0);
+      auto       v     = hpc::velocity<double>(s, 0.0, 0.0);
       nodes_to_v[node] = v;
     };
     hpc::for_each(hpc::device_policy(), nodes, functor);
