@@ -1080,7 +1080,7 @@ rmi_one_wave_stabilized_tet()
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
       auto const x     = hpc::vector3<double>(nodes_to_x[node].load());
       auto const pos   = x(2);
-      auto const s     = pos > eps ? 0.0 : (pos < -eps ? 1045.0 : 1045.0);
+      auto const s     = pos > eps ? 0.0 : (pos < -eps ? 2200.0 : 2200.0);
       auto       v     = hpc::velocity<double>(0.0, 0.0, s);
       nodes_to_v[node] = v;
     };
