@@ -1087,12 +1087,12 @@ rmi_one_wave_stabilized_tet()
     hpc::for_each(hpc::device_policy(), nodes, functor);
   };
 
-  auto const rho      = hpc::density<double>(8.96e+03);
+  auto const rho      = hpc::density<double>(8.93e+03);
   auto const nu       = hpc::adimensional<double>(0.343);
-  auto const E        = hpc::pressure<double>(110.0e09);
+  auto const E        = hpc::pressure<double>(130.6e09);
   auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0       = hpc::pressure<double>(400.0e+06);
+  auto const Y0       = hpc::pressure<double>(89.7e+06);
   auto const n        = hpc::adimensional<double>(32.0);
   auto const H0       = hpc::pressure<double>(100.0e6);
   auto const eps0     = hpc::strain<double>(Y0 / H0);
