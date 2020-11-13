@@ -1308,7 +1308,7 @@ mg_eos_verify_stabilized_tet()
   constexpr material_index z_max(4);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"mg-eos-verify.g"};
-  auto const               eps = 1.0e-06;
+  auto const               eps = 1.0e-07;
 
   auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
                      hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
@@ -1345,8 +1345,8 @@ mg_eos_verify_stabilized_tet()
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
-  auto const height = hpc::length<double>(0.0001);
-  auto const width  = hpc::length<double>(0.0001);
+  auto const height = hpc::length<double>(1.0e-5);
+  auto const width  = hpc::length<double>(1.0e-5);
 
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, -height / 2.0}, eps);
   in.domains[y_max] = epsilon_around_plane_domain({y_axis, height / 2.0}, eps);
