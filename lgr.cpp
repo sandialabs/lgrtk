@@ -1361,8 +1361,8 @@ mg_eos_verify_stabilized_tet()
   in.name                           = "mg-eos-verify";
   in.CFL                            = 0.1;
   in.element                        = TETRAHEDRON;
-  in.end_time                       = 2.0e-06;
-  in.num_file_output_periods        = 20;
+  in.end_time                       = 1.8e-06;
+  in.num_file_output_periods        = 9;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
