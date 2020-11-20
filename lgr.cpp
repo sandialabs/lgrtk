@@ -1129,8 +1129,8 @@ rmi_one_wave_stabilized_tet()
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
-  in.linear_artificial_viscosity    = 1.0;
-  in.quadratic_artificial_viscosity = 1.0;
+  in.linear_artificial_viscosity    = 0.5;
+  in.quadratic_artificial_viscosity = 2.0;
   in.enable_adapt                   = false;
 
   in.enable_nodal_energy[flyer]      = true;
@@ -1253,8 +1253,8 @@ rmi_one_wave_composite_tet()
   in.enable_p_averaging             = false;
   in.enable_comptet_stabilization   = true;
   in.enable_viscosity               = true;
-  in.linear_artificial_viscosity    = 1.0;
-  in.quadratic_artificial_viscosity = 1.0;
+  in.linear_artificial_viscosity    = 0.5;
+  in.quadratic_artificial_viscosity = 2.0;
   in.enable_adapt                   = false;
 
   in.enable_p_prime[flyer]        = false;
