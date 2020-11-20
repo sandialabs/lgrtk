@@ -1308,7 +1308,9 @@ mg_eos_verify_stabilized_tet()
   constexpr material_index z_max(4);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"mg-eos-verify.g"};
-  auto const               eps = 1.0e-07;
+  auto const               height = hpc::length<double>(1.0e-5);
+  auto const               width  = hpc::length<double>(1.0e-5);
+  auto const               eps    = height / 100.0;
 
   auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
                      hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
@@ -1345,9 +1347,6 @@ mg_eos_verify_stabilized_tet()
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
-  auto const height = hpc::length<double>(1.0e-5);
-  auto const width  = hpc::length<double>(1.0e-5);
-
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, -height / 2.0}, eps);
   in.domains[y_max] = epsilon_around_plane_domain({y_axis, height / 2.0}, eps);
   in.domains[z_min] = epsilon_around_plane_domain({z_axis, -width / 2.0}, eps);
@@ -1367,8 +1366,8 @@ mg_eos_verify_stabilized_tet()
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
-  in.linear_artificial_viscosity    = 1.0;
-  in.quadratic_artificial_viscosity = 1.0;
+  in.linear_artificial_viscosity    = 0.5;
+  in.quadratic_artificial_viscosity = 2.0;
   in.enable_adapt                   = false;
 
   in.enable_nodal_energy[body]      = true;
