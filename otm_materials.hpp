@@ -129,8 +129,6 @@ variational_J2_point(
       HPC_DUMP("variational J2 did not converge to specified tolerance 1.0e-10\n");
       // TODO: handle non-convergence error
     }
-    // std::cout << "variational J2 converged in " << iters << " iterations" <<
-    // std::endl;
     auto dFp = hpc::exp(delta_eqps * Np);
     Fp       = dFp * Fp;
     eqps += delta_eqps;
@@ -144,8 +142,7 @@ variational_J2_point(
   auto psi_star = j2::ViscoplasticDualKineticPotential(props, delta_eqps, dt);
   auto Wp       = j2::HardeningPotential(props, eqps);
 
-  sigma = dev_sigma + p * hpc::matrix3x3<double>::identity();
-
+  sigma     = dev_sigma + p * hpc::matrix3x3<double>::identity();
   Keff      = K;
   Geff      = G;
   potential = We_vol + We_dev + Wp + psi_star;

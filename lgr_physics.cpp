@@ -288,6 +288,7 @@ variational_J2(input const& in, state& s, material_index const material)
       points_to_sigma[point] = sigma;
       points_to_K[point]     = Keff;
       points_to_G[point]     = Geff;
+      points_to_Fp[point]    = Fp;
       points_to_ep[point]    = ep;
     }
   };

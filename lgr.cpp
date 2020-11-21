@@ -1410,7 +1410,7 @@ uniaxial_tension()
 
   input in(num_materials, num_boundaries);
 
-  auto const eps = 1.0e-03;
+  auto const eps   = 1.0e-03;
   auto const speed = hpc::speed<double>(1.0);
 
   auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
