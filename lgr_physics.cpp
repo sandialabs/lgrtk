@@ -288,6 +288,7 @@ variational_J2(input const& in, state& s, material_index const material)
       points_to_sigma[point] = sigma;
       points_to_K[point]     = Keff;
       points_to_G[point]     = Geff;
+      points_to_ep[point]    = ep;
     }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
@@ -502,6 +503,78 @@ zero_acceleration(
     nodes_to_a[node] = new_a;
   };
   hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+prescribed_displacement(
+    hpc::device_vector<node_index, int> const&                   domain,
+    hpc::vector3<double> const                                   axis,
+    hpc::length<double> const                                    u,
+    hpc::device_array_vector<hpc::position<double>, node_index>* u_vector)
+{
+  auto const nodes_to_u = u_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_u = nodes_to_u[node].load();
+    auto const new_u = old_u - axis * (old_u * axis) + u * axis;
+    nodes_to_u[node] = new_u;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+prescribed_velocity(
+    hpc::device_vector<node_index, int> const&                   domain,
+    hpc::vector3<double> const                                   axis,
+    hpc::speed<double> const                                     v,
+    hpc::device_array_vector<hpc::velocity<double>, node_index>* v_vector)
+{
+  auto const nodes_to_v = v_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_v = nodes_to_v[node].load();
+    auto const new_v = old_v - axis * (old_v * axis) + v * axis;
+    nodes_to_v[node] = new_v;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+prescribed_acceleration(
+    hpc::device_vector<node_index, int> const&                       domain,
+    hpc::vector3<double> const                                       axis,
+    hpc::speed_rate<double> const                                    a,
+    hpc::device_array_vector<hpc::acceleration<double>, node_index>* a_vector)
+{
+  auto const nodes_to_a = a_vector->begin();
+  auto       functor    = [=] HPC_DEVICE(node_index const node) {
+    auto const old_a = nodes_to_a[node].load();
+    auto const new_a = old_a - axis * (old_a * axis) + a * axis;
+    nodes_to_a[node] = new_a;
+  };
+  hpc::for_each(hpc::device_policy(), domain, functor);
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_displacement(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_displacement_conditions) {
+    prescribed_displacement(s.node_sets[cond.boundary], cond.axis, cond.value, &s.u);
+  }
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_velocity(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_velocity_conditions) {
+    prescribed_velocity(s.node_sets[cond.boundary], cond.axis, cond.value, &s.v);
+  }
+}
+
+HPC_NOINLINE inline void
+enforce_prescribed_acceleration(input const& in, state& s)
+{
+  for (auto const& cond : in.prescribed_acceleration_conditions) {
+    prescribed_acceleration(s.node_sets[cond.boundary], cond.axis, cond.value, &s.a);
+  }
 }
 
 HPC_NOINLINE inline void
@@ -782,31 +855,7 @@ update_a_from_material_state(input const& in, state& s)
   for (auto const& cond : in.zero_acceleration_conditions) {
     zero_acceleration(s.node_sets[cond.boundary], cond.axis, &s.a);
   }
-}
-
-HPC_NOINLINE inline void
-enforce_zero_displacement(input const& in, state& s)
-{
-  for (auto const& cond : in.zero_displacement_conditions) {
-    zero_displacement(s.node_sets[cond.boundary], cond.axis, &s.u);
-  }
-}
-
-HPC_NOINLINE inline void
-enforce_contact_constraints(state& s)
-{
-  auto const nodes_to_x = s.x.cbegin();
-  auto const nodes_to_u = s.u.begin();
-  auto       functor    = [=] HPC_DEVICE(node_index const node) {
-    auto const x = nodes_to_x[node].load();
-    auto       u = nodes_to_u[node].load();
-    auto const z = x(2);
-    if (z >= 0.0) {
-      u(2)             = 0.0;
-      nodes_to_u[node] = u;
-    }
-  };
-  hpc::for_each(hpc::device_policy(), s.nodes, functor);
+  enforce_prescribed_acceleration(in, s);
 }
 
 HPC_NOINLINE inline void
@@ -838,6 +887,7 @@ midpoint_predictor_corrector_step(input const& in, state& s)
   for (int pc = 0; pc < npc; ++pc) {
     if (pc == 0) advance_time(in, s.max_stable_dt, s.next_file_output_time, &s.time, &s.dt);
     update_v(s, s.dt / 2.0, old_v);
+    enforce_prescribed_velocity(in, s);
     update_symm_grad_v(s);
     bool const last_pc = (pc == (npc - 1));
     auto const half_dt = last_pc ? s.dt : s.dt / 2.0;
@@ -857,12 +907,10 @@ midpoint_predictor_corrector_step(input const& in, state& s)
     }
     if (in.enable_e_averaging) volume_average_e(s);
     update_u(s, half_dt);
-    enforce_zero_displacement(in, s);
-    if (s.use_displacement_contact == true) {
-      enforce_contact_constraints(s);
-    }
+    enforce_prescribed_displacement(in, s);
     if (last_pc) {
       update_v(s, s.dt, old_v);
+      enforce_prescribed_velocity(in, s);
     }
     update_x(s);
     update_reference(s);

@@ -1396,6 +1396,113 @@ mg_eos_verify_stabilized_tet()
 }
 
 HPC_NOINLINE void
+uniaxial_tension();
+void
+uniaxial_tension()
+{
+  constexpr material_index num_materials(1);
+  constexpr material_index num_boundaries(4);
+  constexpr material_index body(0);
+  constexpr material_index x_min(1);
+  constexpr material_index y_min(2);
+  constexpr material_index z_min(3);
+  constexpr material_index z_max(4);
+
+  input in(num_materials, num_boundaries);
+
+  auto const eps = 1.0e-03;
+  auto const speed = hpc::speed<double>(1.0);
+
+  auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
+                     hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
+                     hpc::device_array_vector<hpc::velocity<double>, node_index>*       v_vector) {
+    auto const nodes_to_x = x_vector.cbegin();
+    auto const nodes_to_v = v_vector->begin();
+    auto       functor    = [=] HPC_DEVICE(node_index const node) {
+      auto const x     = hpc::vector3<double>(nodes_to_x[node].load());
+      auto const pos   = x(2);
+      auto const s     = speed * pos;
+      auto       v     = hpc::velocity<double>(0.0, 0.0, s);
+      nodes_to_v[node] = v;
+    };
+    hpc::for_each(hpc::device_policy(), nodes, functor);
+  };
+
+  auto const rho      = hpc::density<double>(8.93e+03);
+  auto const nu       = hpc::adimensional<double>(0.343);
+  auto const E        = hpc::pressure<double>(130.6e09);
+  auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
+  auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
+  auto const Y0       = hpc::pressure<double>(89.7e+06);
+  auto const n        = hpc::adimensional<double>(32.0);
+  auto const H0       = hpc::pressure<double>(100.0e6);
+  auto const eps0     = hpc::strain<double>(Y0 / H0);
+  auto const Svis0    = hpc::pressure<double>(0.0);
+  auto const m        = hpc::adimensional<double>(1.0);
+  auto const eps_dot0 = hpc::strain_rate<double>(1.0e-01);
+  auto const gamma    = hpc::adimensional<double>(1.99);
+  auto const s        = hpc::adimensional<double>(1.489);
+  auto const e0       = hpc::specific_energy<double>(0.0);
+
+  static constexpr hpc::vector3<double> x_axis(1.0, 0.0, 0.0);
+  static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
+  static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
+
+  in.domains[x_min] = epsilon_around_plane_domain({x_axis, 0.0}, eps);
+  in.domains[y_min] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
+  in.domains[z_min] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
+  in.domains[z_max] = epsilon_around_plane_domain({z_axis, 1.0}, eps);
+
+  in.prescribed_velocity_conditions.push_back({x_min, x_axis, 0.0});
+  in.prescribed_velocity_conditions.push_back({y_min, y_axis, 0.0});
+  in.prescribed_velocity_conditions.push_back({z_min, z_axis, 0.0});
+  in.prescribed_velocity_conditions.push_back({z_max, z_axis, speed});
+
+  in.initial_v                      = flyer_v;
+  in.name                           = "uniaxial-tension";
+  in.CFL                            = 0.9;
+  in.element                        = TETRAHEDRON;
+  in.end_time                       = 1.0;
+  in.num_file_output_periods        = 100;
+  in.elements_along_x               = 1;
+  in.x_domain_size                  = 1.0;
+  in.elements_along_y               = 1;
+  in.y_domain_size                  = 1.0;
+  in.elements_along_z               = 1;
+  in.z_domain_size                  = 1.0;
+  in.enable_J_averaging             = false;
+  in.enable_p_averaging             = false;
+  in.enable_viscosity               = false;
+  in.linear_artificial_viscosity    = 0.5;
+  in.quadratic_artificial_viscosity = 2.0;
+  in.enable_adapt                   = false;
+
+  in.enable_nodal_energy[body]      = false;
+  in.enable_Mie_Gruneisen_eos[body] = false;
+  in.enable_p_prime[body]           = false;
+  in.enable_nodal_pressure[body]    = false;
+  in.use_global_tau[body]           = true;
+  in.c_tau[body]                    = 1.0;
+  in.c_v[body]                      = 1.0;
+  in.c_p[body]                      = 0.0;
+  in.enable_variational_J2[body]    = true;
+  in.rho0[body]                     = rho;
+  in.K0[body]                       = K;
+  in.G0[body]                       = G;
+  in.Y0[body]                       = Y0;
+  in.n[body]                        = n;
+  in.eps0[body]                     = eps0;
+  in.Svis0[body]                    = Svis0;
+  in.m[body]                        = m;
+  in.eps_dot0[body]                 = eps_dot0;
+  in.gamma[body]                    = gamma;
+  in.s[body]                        = s;
+  in.e0[body]                       = e0;
+
+  run(in);
+}
+
+HPC_NOINLINE void
 taylor_composite_tet();
 void
 taylor_composite_tet()
@@ -1828,6 +1935,8 @@ main(int ac, char* av[])
     lgr::rmi_one_wave_stabilized_tet();
   else if (problem == "mg_eos_verify_stabilized_tet")
     lgr::mg_eos_verify_stabilized_tet();
+  else if (problem == "uniaxial_tension")
+    lgr::uniaxial_tension();
   else if (problem == "Sod_1D")
     lgr::Sod_1D();
   else if (problem == "spinning_composite_cube")
