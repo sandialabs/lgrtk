@@ -226,8 +226,13 @@ file_writer::write(input const& in, int const file_output_index)
   if (!hpc::all_of(hpc::serial_policy(), in.materials, have_nodal_pressure_or_energy)) {
     write_vtk_scalars(stream, "pressure", captured.elements, captured.points_in_element, captured.p);
   }
-  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+  auto const no_nodal_energy = !hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy);
+  auto const is_solid        = hpc::any_of(hpc::serial_policy(), in.enable_variational_J2) ||
+                        hpc::any_of(hpc::serial_policy(), in.enable_neo_Hookean);
+  if (no_nodal_energy) {
     write_vtk_scalars(stream, "energy", captured.elements, captured.points_in_element, captured.e);
+  }
+  if (no_nodal_energy || is_solid) {
     write_vtk_scalars(stream, "density", captured.elements, captured.points_in_element, captured.rho);
   }
   if (hpc::any_of(hpc::serial_policy(), in.enable_nodal_energy)) {
