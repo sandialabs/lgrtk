@@ -142,9 +142,14 @@ file_writer::capture(input const& in, state const& s)
     captured.p.resize(s.p.size());
     hpc::copy(s.p, captured.p);
   }
-  if (!hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy)) {
+  auto const no_nodal_energy = !hpc::all_of(hpc::serial_policy(), in.enable_nodal_energy);
+  auto const is_solid        = hpc::any_of(hpc::serial_policy(), in.enable_variational_J2) ||
+                        hpc::any_of(hpc::serial_policy(), in.enable_neo_Hookean);
+  if (no_nodal_energy) {
     captured.e.resize(s.e.size());
     hpc::copy(s.e, captured.e);
+  }
+  if (no_nodal_energy || is_solid) {
     captured.rho.resize(s.rho.size());
     hpc::copy(s.rho, captured.rho);
   }
