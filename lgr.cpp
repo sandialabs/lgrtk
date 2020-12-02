@@ -1124,8 +1124,8 @@ rmi_one_wave_stabilized_tet()
   in.name                           = "rmi-one-wave";
   in.CFL                            = 0.1;
   in.element                        = TETRAHEDRON;
-  in.end_time                       = 10.0e-06;
-  in.num_file_output_periods        = 100;
+  in.end_time                       = 2.5e-06;
+  in.num_file_output_periods        = 250;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_viscosity               = true;
@@ -1247,8 +1247,8 @@ rmi_one_wave_composite_tet()
   in.name                           = "rmi-one-wave-ct";
   in.CFL                            = 0.1;
   in.element                        = COMPOSITE_TETRAHEDRON;
-  in.end_time                       = 5.0e-06;
-  in.num_file_output_periods        = 50;
+  in.end_time                       = 2.5e-06;
+  in.num_file_output_periods        = 250;
   in.enable_J_averaging             = false;
   in.enable_p_averaging             = false;
   in.enable_comptet_stabilization   = true;
@@ -1375,8 +1375,8 @@ mg_eos_verify_stabilized_tet()
   in.enable_p_prime[body]           = false;
   in.enable_nodal_pressure[body]    = true;
   in.use_global_tau[body]           = true;
-  in.c_tau[body]                    = 1.0;
-  in.c_v[body]                      = 1.0;
+  in.c_tau[body]                    = 0.0;
+  in.c_v[body]                      = 0.0;
   in.c_p[body]                      = 0.0;
   in.enable_variational_J2[body]    = true;
   in.rho0[body]                     = rho;
