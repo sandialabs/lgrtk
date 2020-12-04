@@ -878,7 +878,7 @@ flyer_target_stabilized_tet()
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"flyer-target.g"};
   auto const               flyer_radius = 0.2 * 0.0254;
-  auto const               eps          = flyer_radius / 1000.0;
+  auto const               eps          = flyer_radius / 100.0;
 
   auto flyer_v = [=](hpc::counting_range<node_index> const                              nodes,
                      hpc::device_array_vector<hpc::position<double>, node_index> const& x_vector,
@@ -888,8 +888,8 @@ flyer_target_stabilized_tet()
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
       auto const x        = hpc::vector3<double>(nodes_to_x[node].load());
       auto const pos      = x(2);
-      auto const r2       = x(0) * x(0) + x(1) * x(1);
-      auto const is_flyer = r2 <= flyer_radius * flyer_radius && pos < eps;
+      auto const r        = sqrt(x(0) * x(0) + x(1) * x(1));
+      auto const is_flyer = r <= flyer_radius + eps && pos <= eps;
       auto const s        = is_flyer == true ? 2200.0 : 0.0;
       auto       v        = hpc::velocity<double>(0.0, 0.0, s);
       nodes_to_v[node]    = v;
