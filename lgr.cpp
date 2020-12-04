@@ -888,7 +888,7 @@ flyer_target_stabilized_tet()
     auto       functor    = [=] HPC_DEVICE(node_index const node) {
       auto const x        = hpc::vector3<double>(nodes_to_x[node].load());
       auto const pos      = x(2);
-      auto const r2       = x(0) * x(0) + x(1) + x(1);
+      auto const r2       = x(0) * x(0) + x(1) * x(1);
       auto const is_flyer = r2 <= flyer_radius * flyer_radius && pos < eps;
       auto const s        = is_flyer == true ? 2200.0 : 0.0;
       auto       v        = hpc::velocity<double>(0.0, 0.0, s);
