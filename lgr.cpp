@@ -1313,7 +1313,7 @@ void
 mg_eos_verify_stabilized_tet()
 {
   constexpr material_index num_materials(1);
-  constexpr material_index num_boundaries(5);
+  constexpr material_index num_boundaries(6);
   constexpr material_index body(0);
   constexpr material_index y_min(1);
   constexpr material_index y_max(2);
