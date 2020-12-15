@@ -1313,14 +1313,12 @@ void
 mg_eos_verify_stabilized_tet()
 {
   constexpr material_index num_materials(1);
-  constexpr material_index num_boundaries(6);
+  constexpr material_index num_boundaries(4);
   constexpr material_index body(0);
   constexpr material_index y_min(1);
   constexpr material_index y_max(2);
   constexpr material_index z_min(3);
   constexpr material_index z_max(4);
-  constexpr material_index y_mid(5);
-  constexpr material_index z_mid(6);
   input                    in(num_materials, num_boundaries);
   std::string const        filename{"mg-eos-verify.g"};
   auto const               height = hpc::length<double>(1.0e-5);
@@ -1362,19 +1360,29 @@ mg_eos_verify_stabilized_tet()
   static constexpr hpc::vector3<double> y_axis(0.0, 1.0, 0.0);
   static constexpr hpc::vector3<double> z_axis(0.0, 0.0, 1.0);
 
+  static constexpr hpc::length<double>     u0(0.0);
+  static constexpr hpc::speed<double>      v0(0.0);
+  static constexpr hpc::speed_rate<double> a0(0.0);
+
   in.domains[y_min] = epsilon_around_plane_domain({y_axis, -height / 2.0}, eps);
   in.domains[y_max] = epsilon_around_plane_domain({y_axis, height / 2.0}, eps);
   in.domains[z_min] = epsilon_around_plane_domain({z_axis, -width / 2.0}, eps);
   in.domains[z_max] = epsilon_around_plane_domain({z_axis, width / 2.0}, eps);
-  in.domains[y_mid] = epsilon_around_plane_domain({y_axis, 0.0}, eps);
-  in.domains[z_mid] = epsilon_around_plane_domain({z_axis, 0.0}, eps);
 
-  in.zero_acceleration_conditions.push_back({y_min, y_axis});
-  in.zero_acceleration_conditions.push_back({y_max, y_axis});
-  in.zero_acceleration_conditions.push_back({z_min, z_axis});
-  in.zero_acceleration_conditions.push_back({z_max, z_axis});
-  in.zero_acceleration_conditions.push_back({y_mid, y_axis});
-  in.zero_acceleration_conditions.push_back({z_mid, z_axis});
+  in.prescribed_displacement_conditions.push_back({y_min, y_axis, u0});
+  in.prescribed_displacement_conditions.push_back({y_max, y_axis, u0});
+  in.prescribed_displacement_conditions.push_back({z_min, z_axis, u0});
+  in.prescribed_displacement_conditions.push_back({z_max, z_axis, u0});
+
+  in.prescribed_velocity_conditions.push_back({y_min, y_axis, v0});
+  in.prescribed_velocity_conditions.push_back({y_max, y_axis, v0});
+  in.prescribed_velocity_conditions.push_back({z_min, z_axis, v0});
+  in.prescribed_velocity_conditions.push_back({z_max, z_axis, v0});
+
+  in.prescribed_acceleration_conditions.push_back({y_min, y_axis, a0});
+  in.prescribed_acceleration_conditions.push_back({y_max, y_axis, a0});
+  in.prescribed_acceleration_conditions.push_back({z_min, z_axis, a0});
+  in.prescribed_acceleration_conditions.push_back({z_max, z_axis, a0});
 
   in.initial_v                      = flyer_v;
   in.name                           = "mg-eos-verify";
