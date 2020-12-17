@@ -1,5 +1,8 @@
 #pragma once
 
+#undef NDEBUG
+#include <cassert>
+
 #include <hpc_dimensional.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_math.hpp>
@@ -127,7 +130,7 @@ variational_J2_point(
     }
     if (!converged) {
       HPC_DUMP("variational J2 did not converge to specified tolerance 1.0e-10\n");
-      exit(1);
+      assert(0);
       // TODO: handle non-convergence error
     }
     auto dFp = hpc::exp(delta_eqps * Np);
