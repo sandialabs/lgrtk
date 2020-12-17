@@ -285,6 +285,11 @@ class numeric_limits<float>
   {
     return FLT_MAX;
   }
+  HPC_HOST_DEVICE static constexpr float
+  infinity() noexcept
+  {
+    return HUGE_VALF;
+  }
 };
 
 template <>
@@ -307,6 +312,11 @@ class numeric_limits<double>
   max() noexcept
   {
     return DBL_MAX;
+  }
+  HPC_HOST_DEVICE static constexpr double
+  infinity() noexcept
+  {
+    return HUGE_VAL;
   }
 };
 
