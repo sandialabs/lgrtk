@@ -86,7 +86,7 @@ ViscoplasticStress(Properties const props, double const delta_eqps, double const
 
   if (Svis0 == 0.0) return 0.0;
 
-  double        Svis     = 0;
+  double Svis = 0;
   if (delta_eqps > 0) {
     Svis = Svis0 * std::pow(delta_eqps / dt / eps_dot0, 1.0 / m);
   }
@@ -103,7 +103,7 @@ ViscoplasticHardeningRate(Properties const props, double const delta_eqps, doubl
 
   if (Svis0 == 0.0) return 0.0;
 
-  double        Hvis     = 0;
+  double Hvis = 0;
   if (delta_eqps > 0) {
     Hvis = Svis0 / (eps_dot0 * m * dt) * std::pow(delta_eqps / dt / eps_dot0, (1.0 - m) / m);
   }

@@ -80,7 +80,7 @@ update_sigma_with_p_h(state& s, material_index const material)
 }
 
 HPC_NOINLINE inline void
-update_v_prime(input const& in, state& s, material_index const material)
+update_v_prime0(input const& in, state& s, material_index const material)
 {
   auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
   auto const elements_to_points        = s.elements * s.points_in_element;
@@ -119,6 +119,52 @@ update_v_prime(input const& in, state& s, material_index const material)
       a                        = a * N;
       auto const rho           = points_to_rho[point];
       auto const v_prime       = -c_v * (tau / rho) * (grad_p + rho * a);
+      points_to_v_prime[point] = v_prime;
+    }
+  };
+  hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
+}
+
+HPC_NOINLINE inline void
+update_v_prime(input const& in, state& s, material_index const material)
+{
+  auto const elements_to_element_nodes = s.elements * s.nodes_in_element;
+  auto const elements_to_points        = s.elements * s.points_in_element;
+  auto const points_to_point_nodes     = s.points * s.nodes_in_element;
+  auto const nodes_in_element          = s.nodes_in_element;
+  auto const element_nodes_to_nodes    = s.elements_to_nodes.cbegin();
+  auto const point_nodes_to_grad_N     = s.grad_N.cbegin();
+  auto const points_to_dt              = s.element_dt.cbegin();
+  auto const points_to_rho             = s.rho.cbegin();
+  auto const points_to_sigma           = s.sigma.cbegin();
+  auto const nodes_to_a                = s.a.cbegin();
+  auto const points_to_v_prime         = s.v_prime.begin();
+  auto const global_dt                 = s.max_stable_dt;
+  auto const c_tau                     = in.c_tau[material];
+  auto const c_v                       = in.c_v[material];
+  auto const use_global_tau            = in.use_global_tau[material];
+  auto const N                         = get_N(s);
+  auto       functor                   = [=] HPC_DEVICE(element_index const element) {
+    auto const element_nodes = elements_to_element_nodes[element];
+    for (auto const point : elements_to_points[element]) {
+      auto const point_nodes = points_to_point_nodes[point];
+      auto const point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
+      auto const tau         = c_tau * point_dt;
+      auto const sigma       = points_to_sigma[point].load();
+      auto       div_sigma   = hpc::pressure_gradient<double>::zero();
+      auto       a           = hpc::acceleration<double>::zero();
+      for (auto const node_in_element : nodes_in_element) {
+        auto const element_node = element_nodes[node_in_element];
+        auto const point_node   = point_nodes[node_in_element];
+        auto const node         = element_nodes_to_nodes[element_node];
+        auto const grad_N       = point_nodes_to_grad_N[point_node].load();
+        div_sigma               = div_sigma + (sigma * grad_N);
+        auto const a_of_node    = nodes_to_a[node].load();
+        a                       = a + a_of_node;
+      }
+      a                        = a * N;
+      auto const rho           = points_to_rho[point];
+      auto const v_prime       = -c_v * (tau / rho) * (div_sigma + rho * a);
       points_to_v_prime[point] = v_prime;
     }
   };

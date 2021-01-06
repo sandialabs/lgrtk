@@ -2,7 +2,6 @@
 
 #undef NDEBUG
 #include <cassert>
-
 #include <hpc_dimensional.hpp>
 #include <hpc_macros.hpp>
 #include <hpc_math.hpp>
