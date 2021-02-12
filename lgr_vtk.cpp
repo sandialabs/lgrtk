@@ -108,7 +108,7 @@ write_vtk_tensors(
     stream << "TENSORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
-      stream << hpc::vector3<double>(mat.begin()[p].load()) << "\n";
+      stream << hpc::matrix3x3<double>(mat.begin()[p].load()) << "\n";
     }
   }
 }
@@ -128,7 +128,7 @@ write_vtk_symmetric_tensors(
     stream << "TENSORS " << name << suffix << " double\n";
     for (auto const e : elements) {
       auto const p = elements_to_points[e][qp];
-      stream << hpc::vector3<double>(mat.begin()[p].load()) << "\n";
+      stream << hpc::symmetric3x3<double>(mat.begin()[p].load()) << "\n";
     }
   }
 }
@@ -213,6 +213,18 @@ file_writer::capture(input const& in, state const& s)
     captured.ep.resize(s.ep.size());
     hpc::copy(s.ep, captured.ep);
   }
+  if (s.F_total.size() > 0) {
+    captured.F_total.resize(s.F_total.size());
+    hpc::copy(s.F_total, captured.F_total);
+  }
+  if (s.Fp_total.size() > 0) {
+    captured.Fp_total.resize(s.Fp_total.size());
+    hpc::copy(s.Fp_total, captured.Fp_total);
+  }
+  if (s.sigma.size() > 0) {
+    captured.sigma.resize(s.sigma.size());
+    hpc::copy(s.sigma, captured.sigma);
+  }
 }
 
 void
@@ -286,6 +298,15 @@ file_writer::write(input const& in, int const file_output_index)
     write_vtk_scalars(stream, "quality", captured.quality);
   }
   write_vtk_materials(stream, captured.material);
+  if (captured.sigma.size() > 0) {
+    write_vtk_symmetric_tensors(stream, "cauchy_stress", captured.elements, captured.points_in_element, captured.sigma);
+  }
+  if (captured.F_total.size() > 0) {
+    write_vtk_tensors(stream, "def_grad", captured.elements, captured.points_in_element, captured.F_total);
+  }
+  if (captured.Fp_total.size() > 0) {
+    write_vtk_tensors(stream, "plastic_def_grad", captured.elements, captured.points_in_element, captured.Fp_total);
+  }
   if (captured.ep.size() > 0) {
     write_vtk_scalars(stream, "plastic_strain", captured.elements, captured.points_in_element, captured.ep);
   }
