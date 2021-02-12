@@ -342,11 +342,11 @@ update_q(input const& in, state& s, material_index const material)
   auto       functor                   = [=] HPC_DEVICE(element_index const element) {
     auto const element_nodes = elements_to_element_nodes[element];
     for (auto const point : elements_to_points[element]) {
-      auto const            point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
-      auto const            tau         = c_tau * point_dt;
-      auto                  a           = hpc::acceleration<double>::zero();
-      dp_de_t               dp_de       = 0.0;
-      auto const            point_nodes = points_to_point_nodes[point];
+      auto const point_dt    = use_global_tau == true ? global_dt : points_to_dt[point];
+      auto const tau         = c_tau * point_dt;
+      auto       a           = hpc::acceleration<double>::zero();
+      dp_de_t    dp_de       = 0.0;
+      auto const point_nodes = points_to_point_nodes[point];
       auto const sigma       = points_to_sigma[point].load();
       auto       div_sigma   = hpc::pressure_gradient<double>::zero();
       for (auto const node_in_element : nodes_in_element) {

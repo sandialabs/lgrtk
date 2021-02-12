@@ -93,6 +93,46 @@ write_vtk_vectors(
   }
 }
 
+template <class Quantity>
+static void
+write_vtk_tensors(
+    std::ostream&                                                          stream,
+    char const*                                                            name,
+    hpc::counting_range<element_index> const                               elements,
+    hpc::counting_range<point_in_element_index> const                      points_in_element,
+    hpc::pinned_array_vector<hpc::matrix3x3<Quantity>, point_index> const& mat)
+{
+  auto const elements_to_points = elements * points_in_element;
+  for (auto const qp : points_in_element) {
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
+    stream << "TENSORS " << name << suffix << " double\n";
+    for (auto const e : elements) {
+      auto const p = elements_to_points[e][qp];
+      stream << hpc::vector3<double>(mat.begin()[p].load()) << "\n";
+    }
+  }
+}
+
+template <class Quantity>
+static void
+write_vtk_symmetric_tensors(
+    std::ostream&                                                             stream,
+    char const*                                                               name,
+    hpc::counting_range<element_index> const                                  elements,
+    hpc::counting_range<point_in_element_index> const                         points_in_element,
+    hpc::pinned_array_vector<hpc::symmetric3x3<Quantity>, point_index> const& mat)
+{
+  auto const elements_to_points = elements * points_in_element;
+  for (auto const qp : points_in_element) {
+    std::string suffix = (points_in_element.size() == 1) ? "" : (std::string("_") + std::to_string(hpc::weaken(qp)));
+    stream << "TENSORS " << name << suffix << " double\n";
+    for (auto const e : elements) {
+      auto const p = elements_to_points[e][qp];
+      stream << hpc::vector3<double>(mat.begin()[p].load()) << "\n";
+    }
+  }
+}
+
 static void
 write_vtk_cell_data(std::ostream& stream, captured_state const& s)
 {
