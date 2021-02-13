@@ -184,6 +184,14 @@ update_reference(state& s)
       }
       auto const old_F_total   = points_to_F_total[point].load();
       auto const new_F_total   = F_incr * old_F_total;
+      new_F_total(0,1) = 0.0;
+      new_F_total(0,2) = 0.0;
+      new_F_total(1,0) = 0.0;
+      new_F_total(1,1) = 1.0;
+      new_F_total(1,2) = 0.0;
+      new_F_total(2,0) = 0.0;
+      new_F_total(2,1) = 0.0;
+      new_F_total(2,2) = 1.0;
       points_to_F_total[point] = new_F_total;
       auto const J             = determinant(F_incr);
       assert(J > 0.0);
