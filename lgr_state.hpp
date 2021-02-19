@@ -41,8 +41,10 @@ class state
   hpc::device_vector<hpc::basis_value<double>, point_node_index> N;
   // gradients of basis functions
   hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N;
+  hpc::device_array_vector<hpc::basis_gradient<double>, point_node_index> grad_N_ref;
   // deformation gradient since simulation start
   hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_total;
+  hpc::device_array_vector<hpc::deformation_gradient<double>, point_index> F_ref;
   // Cauchy stress tensor (full)
   hpc::device_array_vector<hpc::stress<double>, point_index> sigma_full;
   // Cauchy stress tensor (symm)

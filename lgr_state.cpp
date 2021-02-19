@@ -14,7 +14,9 @@ resize_state(input const& in, state& s)
   s.b.resize(s.nodes.size());
   s.V.resize(s.points.size());
   s.grad_N.resize(s.points.size() * s.nodes_in_element.size());
+  s.grad_N_ref.resize(s.points.size() * s.nodes_in_element.size());
   s.F_total.resize(s.points.size());
+  s.F_ref.resize(s.points.size());
   s.use_comptet_stabilization = in.enable_comptet_stabilization;
   if (s.use_comptet_stabilization == true) {
     s.JavgJ.resize(s.points.size());

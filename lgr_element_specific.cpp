@@ -28,6 +28,7 @@ initialize_grad_N(input const& in, state& s)
     case TETRAHEDRON: initialize_tetrahedron_grad_N(s); break;
     case COMPOSITE_TETRAHEDRON: initialize_composite_tetrahedron_grad_N(s); break;
   }
+  hpc::copy(s.grad_N, s.grad_N_ref);
 }
 
 HPC_NOINLINE inline void

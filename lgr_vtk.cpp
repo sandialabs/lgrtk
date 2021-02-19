@@ -217,9 +217,9 @@ file_writer::capture(input const& in, state const& s)
     captured.F_total.resize(s.F_total.size());
     hpc::copy(s.F_total, captured.F_total);
   }
-  if (s.Fp_total.size() > 0) {
+  if (s.F_ref.size() > 0) {
     captured.Fp_total.resize(s.Fp_total.size());
-    hpc::copy(s.Fp_total, captured.Fp_total);
+    hpc::copy(s.F_ref, captured.Fp_total);
   }
   if (s.sigma.size() > 0) {
     captured.sigma.resize(s.sigma.size());
