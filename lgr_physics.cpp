@@ -258,7 +258,7 @@ update_reference(state& s)
       F_ref(2, 1) = 0.0;
       F_ref(2, 2) = 1.0;
       points_to_F_total[point] = new_F_total;
-      points_to_F_ref[point]   = F_ref;
+      points_to_F_ref[point]   = new_F_total - F_ref;
       auto const J             = determinant(F_incr);
       assert(J > 0.0);
       auto const old_V = points_to_V[point];

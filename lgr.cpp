@@ -1405,7 +1405,8 @@ mg_eos_verify_stabilized_tet()
   in.c_tau[body]                    = 1.0;
   in.c_v[body]                      = 0.0;
   in.c_p[body]                      = 0.0;
-  in.enable_variational_J2[body]    = true;
+  in.enable_neo_Hookean[body]       = true;
+  in.enable_variational_J2[body]    = false;
   in.rho0[body]                     = rho;
   in.K0[body]                       = K;
   in.G0[body]                       = G;
