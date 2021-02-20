@@ -1345,7 +1345,7 @@ mg_eos_verify_stabilized_tet()
   auto const E        = hpc::pressure<double>(130.6e09);
   auto const K        = hpc::pressure<double>(E / (3.0 * (1.0 - 2.0 * nu)));
   auto const G        = hpc::pressure<double>(E / (2.0 * (1.0 + nu)));
-  auto const Y0       = hpc::pressure<double>(89.7e+66);
+  auto const Y0       = hpc::pressure<double>(89.7e+06);
   auto const n        = hpc::adimensional<double>(hpc::numeric_limits<double>::infinity());
   auto const H0       = hpc::pressure<double>(100.0e6);
   auto const eps0     = hpc::strain<double>(Y0 / H0);
