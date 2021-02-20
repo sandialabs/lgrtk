@@ -47,7 +47,7 @@ variational_J2_point(
     hpc::deformation_gradient<double>&       Fp,
     hpc::strain<double>&                     eqps)
 {
-  assert(F(0, 1) == 0.0);
+  assert(F(0,1)+F(0,2)+F(1,0)+F(1,1)+F(1,2)+F(2,0)+F(2,1)+F(2,2) == 2.0);
   auto const J    = determinant(F);
   auto const Jm13 = 1.0 / std::cbrt(J);
   auto const Jm23 = Jm13 * Jm13;
