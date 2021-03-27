@@ -164,7 +164,7 @@ update_v_prime(input const& in, state& s, material_index const material)
       }
       a                        = a * N;
       auto const rho           = points_to_rho[point];
-      auto const v_prime       = -c_v * (tau / rho) * (div_sigma + rho * a);
+      auto const v_prime       = -c_v * (tau / rho) * (-div_sigma + rho * a);
       points_to_v_prime[point] = v_prime;
     }
   };
@@ -364,7 +364,7 @@ update_q(input const& in, state& s, material_index const material)
       dp_de              = enable_eos == true ? points_to_dp_de[point] : dp_de * N;
       auto const rho     = points_to_rho[point];
       auto const K       = points_to_K[point];
-      auto const q       = -(tau * K / dp_de) * (rho * a + div_sigma);
+      auto const q       = -(tau * K / dp_de) * (rho * a - div_sigma);
       points_to_q[point] = q;
     }
   };

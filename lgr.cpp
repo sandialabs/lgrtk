@@ -1403,7 +1403,7 @@ mg_eos_verify_stabilized_tet()
   in.enable_nodal_pressure[body]    = true;
   in.use_global_tau[body]           = true;
   in.c_tau[body]                    = 1.0;
-  in.c_v[body]                      = 0.0;
+  in.c_v[body]                      = 1.0;
   in.c_p[body]                      = 0.0;
   in.enable_variational_J2[body]    = true;
   in.rho0[body]                     = rho;
