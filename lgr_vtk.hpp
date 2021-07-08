@@ -21,6 +21,7 @@ class captured_state
   hpc::pinned_array_vector<hpc::position<double>, node_index>                                    x;
   hpc::pinned_array_vector<hpc::velocity<double>, node_index>                                    v;
   hpc::pinned_array_vector<hpc::symmetric_stress<double>, node_index>                            sigma;
+  hpc::pinned_array_vector<hpc::stress<double>, node_index>                                      sigma_full;
   hpc::pinned_array_vector<hpc::deformation_gradient<double>, node_index>                        F_total;
   hpc::pinned_array_vector<hpc::deformation_gradient<double>, node_index>                        Fp_total;
   hpc::host_vector<hpc::pinned_vector<hpc::pressure<double>, node_index>, material_index>        p_h;

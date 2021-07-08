@@ -225,6 +225,10 @@ file_writer::capture(input const& in, state const& s)
     captured.sigma.resize(s.sigma.size());
     hpc::copy(s.sigma, captured.sigma);
   }
+  if (s.sigma_full.size() > 0) {
+    captured.sigma_full.resize(s.sigma_full.size());
+    hpc::copy(s.sigma_full, captured.sigma_full);
+  }
 }
 
 void
@@ -306,6 +310,9 @@ file_writer::write(input const& in, int const file_output_index)
   }
   if (captured.Fp_total.size() > 0) {
     write_vtk_tensors(stream, "plastic_def_grad", captured.elements, captured.points_in_element, captured.Fp_total);
+  }
+  if (captured.sigma_full.size() > 0) {
+    write_vtk_tensors(stream, "cauchy_stress", captured.elements, captured.points_in_element, captured.sigma_full);
   }
   if (captured.ep.size() > 0) {
     write_vtk_scalars(stream, "plastic_strain", captured.elements, captured.points_in_element, captured.ep);
