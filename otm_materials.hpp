@@ -230,7 +230,8 @@ Mie_Gruneisen_eos_point(
     hpc::adimensional<double> const    s,
     hpc::pressure<double>&             pressure,
     hpc::pressure<double>&             bulk_modulus,
-    hpc::density<double>&              dp_de)
+    hpc::density<double>&              dp_de,
+    hpc::speed<double>&                wave_speed)
 {
   // limit 'us' to not drop below 'reference_wave_speed'
   auto const mu       = 1.0 - reference_density / current_density;
@@ -248,6 +249,7 @@ Mie_Gruneisen_eos_point(
   dp_de        = gamma * reference_density;
   pressure     = ph + gamma * reference_density * (internal_energy - eh);
   bulk_modulus = current_density * dpdrho + (pressure / current_density) * dp_de;
+  wave_speed   = std::sqrt(bulk_modulus / current_density);
 }
 
 }  // namespace lgr

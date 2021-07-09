@@ -303,6 +303,7 @@ Mie_Gruneisen_eos(input const& in, state& s, material_index const material)
   auto const points_to_dp_de    = s.dp_de.begin();
   auto const points_to_rho      = s.rho.cbegin();
   auto const points_to_e        = s.e.cbegin();
+  auto const points_to_c        = s.c.begin();
   auto const K0                 = in.K0[material];
   auto const rho0               = in.rho0[material];
   auto const gamma              = in.gamma[material];
@@ -316,12 +317,14 @@ Mie_Gruneisen_eos(input const& in, state& s, material_index const material)
       auto       K     = hpc::pressure<double>(0.0);
       auto       p     = hpc::pressure<double>(0.0);
       auto       dp_de = hpc::density<double>(0.0);
-      Mie_Gruneisen_eos_point(rho0, rho, e, gamma, c0, s0, p, K, dp_de);
+      auto       c     = hpc::speed<double>(0.0);
+      Mie_Gruneisen_eos_point(rho0, rho, e, gamma, c0, s0, p, K, dp_de, c);
       auto const sigma       = points_to_sigma[point].load();
       auto const vol         = hpc::trace(sigma) / 3;
       points_to_sigma[point] = sigma - (p + vol);
       points_to_K[point]     = K;
       points_to_dp_de[point] = dp_de;
+      points_to_c[point]     = c;
     }
   };
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);

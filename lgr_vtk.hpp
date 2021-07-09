@@ -29,6 +29,8 @@ class captured_state
   hpc::host_vector<hpc::pinned_vector<hpc::density<double>, node_index>, material_index>         rho_h;
   hpc::pinned_vector<hpc::length<double>, node_index>                                            h_adapt;
   hpc::pinned_vector<hpc::pressure<double>, point_index>                                         p;
+  hpc::pinned_vector<hpc::pressure<double>, point_index>                                         K;
+  hpc::pinned_vector<hpc::speed<double>, point_index>                                            c;
   hpc::pinned_vector<hpc::specific_energy<double>, point_index>                                  e;
   hpc::pinned_vector<hpc::density<double>, point_index>                                          rho;
   hpc::pinned_vector<hpc::density<double>, point_index>                                          ep;

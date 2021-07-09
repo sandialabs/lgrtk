@@ -229,6 +229,14 @@ file_writer::capture(input const& in, state const& s)
     captured.sigma_full.resize(s.sigma_full.size());
     hpc::copy(s.sigma_full, captured.sigma_full);
   }
+  if (s.c.size() > 0) {
+    captured.c.resize(s.c.size());
+    hpc::copy(s.c, captured.c);
+  }
+  if (s.K.size() > 0) {
+    captured.K.resize(s.K.size());
+    hpc::copy(s.K, captured.K);
+  }
 }
 
 void
@@ -316,6 +324,12 @@ file_writer::write(input const& in, int const file_output_index)
   }
   if (captured.ep.size() > 0) {
     write_vtk_scalars(stream, "plastic_strain", captured.elements, captured.points_in_element, captured.ep);
+  }
+  if (captured.c.size() > 0) {
+    write_vtk_scalars(stream, "wave_speed", captured.elements, captured.points_in_element, captured.c);
+  }
+  if (captured.K.size() > 0) {
+    write_vtk_scalars(stream, "bulk_modulus", captured.elements, captured.points_in_element, captured.K);
   }
   stream.close();
 }
