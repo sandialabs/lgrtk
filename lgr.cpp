@@ -1146,7 +1146,7 @@ rmi_one_wave_stabilized_tet()
   in.quadratic_artificial_viscosity = 2.0;
   in.enable_adapt                   = false;
 
-  in.enable_nodal_energy[flyer]      = false;
+  in.enable_nodal_energy[flyer]      = true;
   in.enable_Mie_Gruneisen_eos[flyer] = true;
   in.enable_p_prime[flyer]           = false;
   in.enable_nodal_pressure[flyer]    = true;
@@ -1168,7 +1168,7 @@ rmi_one_wave_stabilized_tet()
   in.s[flyer]                        = s;
   in.e0[flyer]                       = e0;
 
-  in.enable_nodal_energy[target]      = false;
+  in.enable_nodal_energy[target]      = true;
   in.enable_Mie_Gruneisen_eos[target] = true;
   in.enable_p_prime[target]           = false;
   in.enable_nodal_pressure[target]    = true;
