@@ -1,4 +1,5 @@
 #include <ArborX_LinearBVH.hpp>
+#include <ArborX_Sphere.hpp>
 #include <Kokkos_ExecPolicy.hpp>
 #include <Kokkos_Macros.hpp>
 #include <Kokkos_Parallel.hpp>
