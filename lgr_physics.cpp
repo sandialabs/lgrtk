@@ -358,7 +358,7 @@ ideal_gas(input const& in, state& s, material_index const material)
   hpc::for_each(hpc::device_policy(), s.element_sets[material], functor);
 }
 
-HPC_NOINLINE inline hpc::pressure<double>
+HPC_NOINLINE HPC_HOST_DEVICE inline hpc::pressure<double>
 kappa_prime(hpc::pressure<double> const mu, hpc::adimensional<double> const x)
 {
   return 200.0 * mu * std::log(x) / x;
